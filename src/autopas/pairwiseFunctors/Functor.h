@@ -28,6 +28,9 @@ enum class FunctorN3Modes {
 template <class Particle>
 class VerletListHelpers;
 
+//template <class Particle, class CRTP_T>
+//class Functor;
+
 /**
  * Functor class. This class describes the pairwise interactions between
  * particles.
@@ -52,17 +55,6 @@ class Functor {
    * Make the Implementation type template publicly available.
    */
   using Functor_T = CRTP_T;
-
-  /**
-   * Get aliases for Functor_T's getNeededAttr and getComputedAttr return types.
-   */
-  using getNeededAttrN3ReturnType = typename decltype(std::function{Functor_T::getNeededAttr()})::result_type;
-
-  using getComputedAttrReturnType = typename decltype(std::function{Functor_T::getComputedAttr()})::result_type;
-
-  using getNeededAdditionalAttrReturnType = typename decltype(std::function{Functor_T::getNeededAdditionalAttr()})::result_type;
-
-  static constexpr auto numAdditionalPartitions = Functor_T::getNeededAdditionalAttr().size();
 
   /**
    * Constructor
@@ -99,28 +91,6 @@ class Functor {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }
 
-
-  /**
-   * Get attributes needed for computation.
-   * @return Attributes needed for computation.
-   * @todo C++20: make this function virtual
-   */
-  constexpr static getNeededAttrN3ReturnType getNeededAttr() {
-    return getNeededAttrN3ReturnType{};
-  }
-
-  /**
-   * Get attributes computed by this functor.
-   * @return Attributes computed by this functor.
-   * @todo C++20: make this function virtual
-   */
-  constexpr static getComputedAttrReturnType getComputedAttr() {
-    return getComputedAttrReturnType{};
-  }
-
-  constexpr static getNeededAdditionalAttrReturnType getNeededAdditionalAttr() {
-    return getNeededAdditionalAttrReturnType{};
-  }
 
   /**
    * Functor for structure of arrays (SoA)
@@ -182,6 +152,14 @@ class Functor {
    */
   template <class ParticleCell>
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
+    using getNeededAttrN3ReturnType = typename decltype(std::function{Functor_T::getNeededAttr()})::result_type;
+
+    using getComputedAttrReturnType = typename decltype(std::function{Functor_T::getComputedAttr()})::result_type;
+
+    using getNeededAdditionalAttrReturnType = typename decltype(std::function{Functor_T::getNeededAdditionalAttr()})::result_type;
+
+    static constexpr auto numAdditionalPartitions = Functor_T::getNeededAdditionalAttr().size();
+
     if (not skipSoAResize) {
       soa.resizeArrays(offset + cell.size());
     }
@@ -322,10 +300,10 @@ class Functor {
    */
   template <typename cellIterType, typename additionalPtrType, size_t... additionalPartitionTypeIndices>
   void SoALoaderAdditionalPartitionsImpl(cellIterType &cellIter, additionalPtrType additionalPtr, size_t arrayIndex,
-                                         std::array<size_t, numAdditionalPartitions> maxDepthsOfAdditionalPartitionTypes,
+                                         std::array<size_t, sizeof...(additionalPartitionTypeIndices)> maxDepthsOfAdditionalPartitionTypes,
                                          std::index_sequence<additionalPartitionTypeIndices...>) {
     (SoALoaderAdditionalPartitionsSingleType<cellIterType, additionalPtrType, additionalPartitionTypeIndices>(
-         cellIter, additionalPtr, arrayIndex, maxDepthsOfAdditionalPartitionTypes),...);
+         cellIter, additionalPtr, arrayIndex, maxDepthsOfAdditionalPartitionTypes[additionalPartitionTypeIndices]),...);
   }
 
   /**
@@ -337,14 +315,12 @@ class Functor {
    * @param cellIter iterator pointing to particle in the cell.
    * @param additionalPtr pointer structure of type additionalPtrType.
    * @param arrayIndex index of particle (that is being loaded) in each array of the SoA.
-   * @param maxDepthsOfAdditionalPartitionTypes array of maximum depths of each additional partition type (<=> the size
-   * of the vector of SoAPartitions of that type)
+   * @param maxDepth maximum depth of this additional partition type.
    */
   template <typename cellIterType, typename additionalPtrType, size_t additionalPartitionTypeIndex>
   void SoALoaderAdditionalPartitionsSingleType(cellIterType &cellIter, additionalPtrType additionalPtr, size_t arrayIndex,
-                                               std::array<size_t, numAdditionalPartitions> maxDepthsOfAdditionalPartitionTypes) {
+                                               size_t maxDepth) {
     constexpr size_t numNeededAdditionalAttr = std::get<additionalPartitionTypeIndex>(Functor_T::getNeededAdditionalAttr()).size();
-    const size_t maxDepth = maxDepthsOfAdditionalPartitionTypes[additionalPartitionTypeIndex];
 
     SoALoaderAdditionalPartitionsSingleTypeImpl<cellIterType, additionalPtrType, additionalPartitionTypeIndex>(
         cellIter, additionalPtr, arrayIndex, maxDepth, std::make_index_sequence<numNeededAdditionalAttr>{});
