@@ -130,7 +130,7 @@ struct ConfigurationPattern {
 /**
  * Contains the AST of a rule program.
  */
-namespace rule_syntax {
+namespace RuleSyntax {
 
 class CodeGenerationContext;
 
@@ -555,5 +555,5 @@ struct RuleBasedProgramTree {
   [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext &context) const;
 };
 
-}  // namespace rule_syntax
+}  // namespace RuleSyntax
 }  // namespace autopas

@@ -33,16 +33,19 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
+  ParticleBase()
+      : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _ownershipState(OwnershipState::owned) {}
 
   /**
    * Constructor of the Particle class.
    * @param r Position of the particle.
    * @param v Velocity of the particle.
    * @param id Id of the particle.
+   * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
-  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
+  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
+               OwnershipState ownershipState = OwnershipState::owned)
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _ownershipState(ownershipState) {}
 
   /**
    * Destructor of ParticleBase class
@@ -73,7 +76,7 @@ class ParticleBase {
   /**
    * Defines the state of the ownership of the particle.
    */
-  OwnershipState _ownershipState{OwnershipState::owned};
+  OwnershipState _ownershipState;
 
  public:
   /**
@@ -167,7 +170,8 @@ class ParticleBase {
     const auto distanceVec = r - _r;
     const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
     setR(r);
-    const bool distanceIsFine = distanceSquared < maxDistSquared;
+    const bool distanceIsFine =
+        distanceSquared < maxDistSquared or autopas::utils::Math::isNearAbs(maxDistSquared, 0., 1e-12);
     if (not distanceIsFine) {
       AutoPasLog(WARN, "Particle {}: Distance between old and new position is larger than expected: {} > {}", _id,
                  distanceSquared, maxDistSquared);
