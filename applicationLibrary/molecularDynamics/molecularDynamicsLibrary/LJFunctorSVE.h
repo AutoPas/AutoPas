@@ -14,6 +14,7 @@
 
 #include <array>
 
+#include "MoleculeLJ_NoPPL.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -34,18 +35,27 @@ namespace mdLib {
  * @tparam ParticleCell The type of particlecell.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
- * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
+ * If set to false, _epsilon and _sigma need to be set.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
-template <class Particle, bool applyShift = false, bool useMixing = false,
+template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3,
-                                                                    calculateGlobals, countFLOPs, relevantForTuning>> {
-  using SoAArraysType = typename Particle::SoAArraysType;
+class LJFunctorSVE
+    : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorSVE<applyShift, useMixing, useNewton3, calculateGlobals,
+                                                                    countFLOPs, relevantForTuning>> {
+  /**
+   * Particle Type
+   */
+  using molecule = typename mdLib::MoleculeLJ_NoPPL;
+
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
+  using SoAArraysType = typename molecule::SoAArraysType;
 
  public:
   /**
@@ -53,16 +63,16 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
    */
   LJFunctorSVE() = delete;
 
- private:
   /**
-   * Internal, actual constructor.
+   * Constructor
    * @param cutoff
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
+  explicit LJFunctorSVE(double cutoff)
 #ifdef __ARM_FEATURE_SVE
-      : autopas::Functor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                countFLOPs, relevantForTuning>>(cutoff),
+      : autopas::Functor<
+            molecule, LJFunctorSVE<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -77,39 +87,12 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
     }
   }
 #else
-      : autopas::Functor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                countFLOPs, relevantForTuning>>(cutoff) {
+      : autopas::Functor<
+            molecule, LJFunctorSVE<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
 #endif
- public:
-  /**
-   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
-   * setParticleProperties() to set internal constants because it does not use a particle properties library.
-   *
-   * @note Only to be used with mixing == false.
-   *
-   * @param cutoff
-   */
-  explicit LJFunctorSVE(double cutoff) : LJFunctorSVE(cutoff, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
-
-  /**
-   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
-   * properties like sigma, epsilon and shift.
-   * @param cutoff
-   * @param particlePropertiesLibrary
-   */
-  explicit LJFunctorSVE(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctorSVE(cutoff, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
-  }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -121,47 +104,59 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  /**
+   * Functor for Array of Structures for Lennard Jones.
+   *
+   * @param i Molecule i
+   * @param j Molecule j
+   * @param newton3
+   */
+  void AoSFunctor(molecule &i, molecule &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto sigmaSquared = _sigmaSquaredAoS;
-    auto epsilon24 = _epsilon24AoS;
-    auto shift6 = _shift6AoS;
-    if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
-      if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
-      }
-    }
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+
+    const auto sigmaMixed = useMixing ? i.getSigmaDiv2() + j.getSigmaDiv2() : 0.;
+    const auto sigmaSquared = useMixing ? sigmaMixed * sigmaMixed : _sigmaSquaredAoS;
+    const auto epsilon24 = useMixing ? 24. * i.getSquareRootEpsilon() * j.getSquareRootEpsilon() : _epsilon24AoS;
+
+    const auto dr = i.getR() - j.getR();
+    const auto dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquaredAoS) {
       return;
     }
 
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquared * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
-    i.addF(f);
+    const auto invdr2 = 1. / dr2;
+    const auto lj2 = sigmaSquared * invdr2;
+    const auto lj6 = lj2 * lj2 * lj2;
+    const auto lj12 = lj6 * lj6;
+    const auto lj12m6 = lj12 - lj6;
+    const auto fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    const auto force = dr * fac;
+    i.addF(force);
     if (newton3) {
       // only if we use newton 3 here, we want to
-      j.subF(f);
+      j.subF(force);
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
-      auto virial = dr * f;
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+      auto virial = dr * force;
+     double potentialEnergy6 = epsilon24 * lj12m6;
+      if constexpr (applyShift) {
+        if constexpr (useMixing) {
+          const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquaredAoS;
+          const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+          const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
+          potentialEnergy6 += shift6;
+        } else {
+          potentialEnergy6 += _shift6AoS;
+        }
+      }
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
@@ -214,17 +209,18 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
 #ifdef __ARM_FEATURE_SVE
     if (soa.size() == 0) return;
 
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<molecule::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<molecule::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<molecule::AttributeNames::posZ>();
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<molecule::AttributeNames::ownershipState>();
 
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxptr = soa.template begin<molecule::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<molecule::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<molecule::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict sigmaDiv2ptr = soa.template begin<molecule::AttributeNames::sigmaDiv2>();
+    const auto *const __restrict sqrtEpsilonPtr = soa.template begin<molecule::AttributeNames::squareRootEpsilon>();
 
     svfloat64_t virialSumX = svdup_f64(0.0);
     svfloat64_t virialSumY = svdup_f64(0.0);
@@ -252,6 +248,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
       const svfloat64_t y1 = svdup_f64(yptr[i]);
       const svfloat64_t z1 = svdup_f64(zptr[i]);
 
+      const svfloat64_t sqrtEpsilon1Mul24 = svdup_f64(sqrtEpsilonPtr[i] * 24.);
+      const svfloat64_t sigmaDiv21 = svdup_f64(sigmaDiv2ptr[i]);
+
       svbool_t pg_1, pg_2, pg_3, pg_4;
       size_t j = 0;
       for (; j < i; j += vecLength * 4) {
@@ -265,9 +264,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
 
         SoAKernel<true, false>(j, ownedStatePtr[i] == autopas::OwnershipState::owned,
                                reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
-                               fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
-                               virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
-                               svundef_u64(), pg_4, svundef_u64());
+                               fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2ptr, fxacc, fyacc,
+                               fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2,
+                               svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fxptr[i] += svaddv(svptrue_b64(), fxacc);
@@ -291,25 +290,27 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
 #ifdef __ARM_FEATURE_SVE
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x1ptr = soa1.template begin<molecule::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<molecule::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<molecule::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<molecule::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<molecule::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<molecule::AttributeNames::posZ>();
 
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<molecule::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<molecule::AttributeNames::ownershipState>();
 
-    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx1ptr = soa1.template begin<molecule::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<molecule::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<molecule::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<molecule::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<molecule::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<molecule::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict sigmaDiv2ptr1 = soa1.template begin<molecule::AttributeNames::sigmaDiv2>();
+    const auto *const __restrict sqrtEpsilonPtr1 = soa1.template begin<molecule::AttributeNames::squareRootEpsilon>();
+    const auto *const __restrict sigmaDiv2ptr2 = soa2.template begin<molecule::AttributeNames::sigmaDiv2>();
+    const auto *const __restrict sqrtEpsilonPtr2 = soa2.template begin<molecule::AttributeNames::squareRootEpsilon>();
 
     svfloat64_t virialSumX = svdup_f64(0.0);
     svfloat64_t virialSumY = svdup_f64(0.0);
@@ -335,6 +336,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
       const svfloat64_t y1 = svdup_f64(y1ptr[i]);
       const svfloat64_t z1 = svdup_f64(z1ptr[i]);
 
+      const svfloat64_t sqrtEpsilon1Mul24 = svdup_f64(sqrtEpsilonPtr1[i] * 24.);
+      const svfloat64_t sigmaDiv21 = svdup_f64(sigmaDiv2ptr1[i]);
+
       svbool_t pg_1, pg_2, pg_3, pg_4;
       unsigned int j = 0;
       for (; j < soa2.size(); j += vecLength * 4) {
@@ -348,9 +352,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
 
         SoAKernel<newton3, false>(j, ownedStatePtr1[i] == autopas::OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
-                                  fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, virialSumX,
-                                  virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(),
-                                  pg_3, svundef_u64(), pg_4, svundef_u64());
+                                  fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr2, sigmaDiv2ptr2,
+                                  fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1,
+                                  svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fx1ptr[i] += svaddv_f64(svptrue_b64(), fxacc);
@@ -396,19 +400,50 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
   }
 
   template <bool indexed>
-  inline void lennardJones(const svuint64_t &index, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
+  inline void lennardJones(const svuint64_t &index, const svfloat64_t &sqrtEpsilon1Mul24, const svfloat64_t &sigmaDiv21,
+                           const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaDiv2Ptr,
                            const svbool_t &pgC, const svfloat64_t &dr2, svfloat64_t &epsilon24s, svfloat64_t &shift6s,
                            svfloat64_t &lj6, svfloat64_t &fac) {
-    const svuint64_t typeIds =
-        useMixing ? svmul_m(pgC, (indexed) ? svld1_gather_index(pgC, typeID2ptr, index) : svld1_u64(pgC, typeID2ptr), 3)
-                  : svundef_u64();
-    const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
+    svfloat64_t sigmaSquareds;
+    if constexpr (useMixing) {
+      const svfloat64_t sigmaDiv22 =
+          (indexed) ? svld1_gather_index(pgC, sigmaDiv2Ptr, index) : svld1_f64(pgC, &sigmaDiv2Ptr[j]);
+      const svfloat64_t sigmaMixed = svadd_f64_m(pgC, sigmaDiv21, sigmaDiv22);
+      sigmaSquareds = svmul_f64_m(pgC, sigmaMixed, sigmaMixed);
 
-    const svfloat64_t sigmaSquareds =
-        useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquared);
-    epsilon24s = useMixing ? svld1_gather_index(pgC, mixingDataPtr, typeIds) : svdup_f64(_epsilon24);
-    shift6s = (useMixing && applyShift) ? svld1_gather_index(pgC, mixingDataPtr + 2, typeIds) : svdup_f64(_shift6);
+      const svfloat64_t sqrtEpsilon2 =
+          (indexed) ? svld1_gather_index(pgC, sqrtEpsilonPtr, index) : svld1_f64(pgC, &sqrtEpsilonPtr[j]);
+      epsilon24s = svmul_x(pgC, sqrtEpsilon1Mul24, sqrtEpsilon2);
 
+      if constexpr (applyShift) {
+        // Warning: The following is a division using the Newton-Raphson approximation. According to the BSc thesis of
+        // Eke Timur (https://mediatum.ub.tum.de/1657424), 4 iterations produces bitwise perfect accuracy. No supporting
+        // evidence was given for this.
+        svfloat64_t invCutoffSquared = svrecpe(_cutoffSquared);
+        invCutoffSquared = svmul_x(pgC, invCutoffSquared, svrecps(_cutoffSquared, invCutoffSquared));
+        invCutoffSquared = svmul_x(pgC, invCutoffSquared, svrecps(_cutoffSquared, invCutoffSquared));
+        invCutoffSquared = svmul_x(pgC, invCutoffSquared, svrecps(_cutoffSquared, invCutoffSquared));
+        invCutoffSquared = svmul_x(pgC, invCutoffSquared, svrecps(_cutoffSquared, invCutoffSquared));
+
+        const svfloat64_t sigmaDivCutoffPow2 = svmul_x(pgC, sigmaSquareds, invCutoffSquared);
+        const svfloat64_t sigmaDivCutoffPow4 = svmul_x(pgC, sigmaDivCutoffPow2, sigmaDivCutoffPow2);
+        const svfloat64_t sigmaDivCutoffPow6 = svmul_x(pgC, sigmaDivCutoffPow4, sigmaDivCutoffPow2);
+        const svfloat64_t sigmaDivCutoffPow12 = svmul_x(pgC, sigmaDivCutoffPow6, sigmaDivCutoffPow6);
+
+        const svfloat64_t sigmaDivCutoffPow6SubPow12 = svsub_x(pgC, sigmaDivCutoffPow6, sigmaDivCutoffPow12);
+        shift6s = svmul_x(epsilon24s, sigmaDivCutoffPow6SubPow12);
+      } else {
+        shift6s = svdup_f64(0.);
+      }
+    } else {
+      sigmaSquareds = svdup_f64(_sigmaSquared);
+      epsilon24s = svdup_f64(_epsilon24);
+      shift6s = svdup_f64(_shift6);
+    }
+
+    // Warning: The following is a division using the Newton-Raphson approximation. According to the BSc thesis of Eke
+    // Timur (https://mediatum.ub.tum.de/1657424), 4 iterations produces bitwise perfect accuracy. No supporting
+    // evidence was given for this. Todo Verify this.
     svfloat64_t invdr2 = svrecpe(dr2);
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
@@ -494,9 +529,11 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
       const size_t j, const bool ownedStateIisOwned, const int64_t *const __restrict ownedStatePtr2,
       const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1, const double *const __restrict x2ptr,
       const double *const __restrict y2ptr, const double *const __restrict z2ptr, double *const __restrict fx2ptr,
-      double *const __restrict fy2ptr, double *const __restrict fz2ptr, const size_t *const typeID1ptr,
-      const size_t *const typeID2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
-      svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ, svfloat64_t &potentialEnergySum,
+      double *const __restrict fy2ptr, double *const __restrict fz2ptr, const svfloat64_t &sqrtEpsilon1Mul24,
+      const svfloat64_t &sigmaDiv21, const double *const __restrict sqrtEpsilonPtr,
+      const double *const __restrict sigmaDiv2Ptr, const size_t *const typeID2ptr, svfloat64_t &fxacc,
+      svfloat64_t &fyacc, svfloat64_t &fzacc, svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ,
+      svfloat64_t &potentialEnergySum,
 
       const svbool_t &pg_1, const svuint64_t &index_1, const svbool_t &pg_2, const svuint64_t &index_2,
       const svbool_t &pg_3, const svuint64_t &index_3, const svbool_t &pg_4, const svuint64_t &index_4
@@ -544,28 +581,32 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
     svfloat64_t lj6_1;
     svfloat64_t fac_1;
     if (continue_1)
-      lennardJones<indexed>(index_1, typeID1ptr, typeID2ptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
+      lennardJones<indexed>(index_1, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_1, dr2_1,
+                            epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
     svfloat64_t epsilon24s_2;
     svfloat64_t shift6s_2;
     svfloat64_t lj6_2;
     svfloat64_t fac_2;
     if (continue_2)
-      lennardJones<indexed>(index_2, typeID1ptr, typeID2ptr, pgC_2, dr2_2, epsilon24s_2, shift6s_2, lj6_2, fac_2);
+      lennardJones<indexed>(index_2, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_2, dr2_2,
+                            epsilon24s_2, shift6s_2, lj6_2, fac_2);
 
     svfloat64_t epsilon24s_3;
     svfloat64_t shift6s_3;
     svfloat64_t lj6_3;
     svfloat64_t fac_3;
     if (continue_3)
-      lennardJones<indexed>(index_3, typeID1ptr, typeID2ptr, pgC_3, dr2_3, epsilon24s_3, shift6s_3, lj6_3, fac_3);
+      lennardJones<indexed>(index_3, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_3, dr2_3,
+                            epsilon24s_3, shift6s_3, lj6_3, fac_3);
 
     svfloat64_t epsilon24s_4;
     svfloat64_t shift6s_4;
     svfloat64_t lj6_4;
     svfloat64_t fac_4;
     if (continue_4)
-      lennardJones<indexed>(index_4, typeID1ptr, typeID2ptr, pgC_4, dr2_4, epsilon24s_4, shift6s_4, lj6_4, fac_4);
+      lennardJones<indexed>(index_4, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_4, dr2_4,
+                            epsilon24s_4, shift6s_4, lj6_4, fac_4);
 
     if (continue_1)
       applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
@@ -614,19 +655,20 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __ARM_FEATURE_SVE
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<molecule::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<molecule::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<molecule::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<molecule::AttributeNames::posZ>();
 
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxptr = soa.template begin<molecule::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<molecule::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<molecule::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict sigmaDiv2ptr = soa.template begin<molecule::AttributeNames::sigmaDiv2>();
+    const auto *const __restrict sqrtEpsilonPtr = soa.template begin<molecule::AttributeNames::squareRootEpsilon>();
 
     // accumulators
     svfloat64_t virialSumX = svdup_f64(0.0);
@@ -642,6 +684,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
     const auto x1 = svdup_f64(xptr[indexFirst]);
     const auto y1 = svdup_f64(yptr[indexFirst]);
     const auto z1 = svdup_f64(zptr[indexFirst]);
+
+    const svfloat64_t sqrtEpsilon1Mul24 = svdup_f64(sqrtEpsilonPtr[indexFirst] * 24.);
+    const svfloat64_t sigmaDiv21 = svdup_f64(sigmaDiv2ptr[indexFirst]);
 
     svbool_t pg_1;
     const auto *const ownedStatePtr2 = reinterpret_cast<const int64_t *>(ownedStatePtr);
@@ -664,7 +709,8 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
       svfloat64_t lj6_1;
       svfloat64_t fac_1;
       if (continue_1)
-        lennardJones<true>(index_1, typeIDptr, typeIDptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
+        lennardJones<true>(index_1, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_1, dr2_1,
+                           epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
       if (continue_1)
         applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr,
@@ -693,27 +739,33 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename molecule::AttributeNames, 10>{
+        molecule::AttributeNames::id,        molecule::AttributeNames::posX,
+        molecule::AttributeNames::posY,      molecule::AttributeNames::posZ,
+        molecule::AttributeNames::forceX,    molecule::AttributeNames::forceY,
+        molecule::AttributeNames::forceZ,    molecule::AttributeNames::squareRootEpsilon,
+        molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename molecule::AttributeNames, 7>{molecule::AttributeNames::id,
+                                                            molecule::AttributeNames::posX,
+                                                            molecule::AttributeNames::posY,
+                                                            molecule::AttributeNames::posZ,
+                                                            molecule::AttributeNames::squareRootEpsilon,
+                                                            molecule::AttributeNames::sigmaDiv2,
+                                                            molecule::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 3>{
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+    return std::array<typename molecule::AttributeNames, 3>{
+        molecule::AttributeNames::forceX, molecule::AttributeNames::forceY, molecule::AttributeNames::forceZ};
   }
 
   /**
@@ -831,7 +883,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+      const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
+      const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+      _shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6););
     } else {
       _shift6 = 0.0;
     }
@@ -840,7 +894,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
+      const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquaredAoS;
+      const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+      _shift6AoS = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
     } else {
       _shift6AoS = 0.;
     }
@@ -878,8 +934,6 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
 
   const double _cutoffSquaredAoS;
   double _epsilon24AoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
-
-  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum{0.};
