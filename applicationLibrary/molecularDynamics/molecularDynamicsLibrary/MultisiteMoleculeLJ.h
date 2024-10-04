@@ -83,7 +83,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   // clang-format off
-  using SoAArraysType = typename autopas::utils::SoAType<
+  using SoAArraysType = typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<
       MultisiteMoleculeLJ *,
       size_t, // id
       double, // x
@@ -110,7 +110,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       double, // tz
       size_t, // typeid
       autopas::OwnershipState //ownerState
-  >::Type;
+  >>;
   // clang-format on
 
   /**
@@ -119,7 +119,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr auto get() {
     return this;
   }
 
@@ -131,7 +131,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+  constexpr auto get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {

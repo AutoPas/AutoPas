@@ -4,6 +4,8 @@
  * @date 07.07.2019
  */
 
+#include "autopas/utils/ExceptionHandler.h"
+
 #pragma once
 
 namespace autopas {

@@ -382,49 +382,6 @@ class Functor {
 
   }
 
-
-  /**
-   * Implements loading of SoA buffers.
-   * @tparam cell_t Cell type.
-   * @tparam I Attribute.
-   * @param cell Cell from where the data is loaded.
-   * @param soa  Structure of arrays where the data is copied to.
-   * @param offset Offset within the SoA. The data of the cell should be added
-   * @param skipSoAResize If resizing of the SoA buffers should be skipped or not. If this is called with true, it must
-   * be ensured before the call that there is sufficient capacity in the SoA.
-   * to the SoA with the specified offset.
-   */
-
-  template <typename cell_t, std::size_t... I>
-  void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize,
-                     std::index_sequence<I...>) {
-    if (not skipSoAResize) {
-      soa.resizeArrays(offset + cell.size());
-    }
-
-    if (cell.isEmpty()) return;
-
-    /**
-     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
-     * in the following loop.
-     */
-    // maybe_unused necessary because gcc doesn't understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getNeededAttr()[I]>()...);
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
-      /**
-       * The following statement writes the values of all attributes defined in neededAttr into the respective position
-       * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
-       * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
-       * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[0]>()),
-       * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
-       */
-      ((std::get<I>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[I]>()), ...);
-    }
-  }
-
   /**
    * Implements extraction of SoA buffers.
    * @tparam cell_t Cell type.

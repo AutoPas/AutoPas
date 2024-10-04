@@ -63,10 +63,10 @@ class MoleculeLJ : public autopas::Particle {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+      typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>>;
 
   /**
    * Non-const getter for the pointer of this object.
