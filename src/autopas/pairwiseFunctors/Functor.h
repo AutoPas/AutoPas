@@ -153,9 +153,6 @@ class Functor {
   template <class ParticleCell>
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
     using getNeededAttrN3ReturnType = typename decltype(std::function{Functor_T::getNeededAttr()})::result_type;
-
-    using getComputedAttrReturnType = typename decltype(std::function{Functor_T::getComputedAttr()})::result_type;
-
     using getNeededAdditionalAttrReturnType = typename decltype(std::function{Functor_T::getNeededAdditionalAttr()})::result_type;
 
     static constexpr auto numAdditionalPartitions = Functor_T::getNeededAdditionalAttr().size();
