@@ -352,7 +352,7 @@ class ParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAType[SoAType::main]>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -370,7 +370,7 @@ class ParticleBase {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+      utils::ExceptionHandler::exception("ParticleBase::set() unknown attribute {}", attribute);
     }
   }
 

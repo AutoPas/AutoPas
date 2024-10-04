@@ -238,6 +238,15 @@ class SoA {
   }
 
   /**
+   * Helper for clarity to get the maximum "depths" of all additional partition types i.e. how many partitions are there
+   * of each type.
+   * @return array of max depths
+   */
+  std::array<size_t, numAdditionalTypes> getMaxDepths() {
+    getMaxDepthsImpl(std::make_index_sequence<numAdditionalTypes>{});
+  }
+
+  /**
    * Helper for clarity to resize the maximum "depth" of a given additional partition type.
    * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type.
    * @param newMaxDepth new maximum depth the vector of partitions is resized to.
@@ -388,6 +397,16 @@ class SoA {
       }
     }
     return soaPartitionsOfSingleKindPtrs;
+  }
+
+  /**
+   * Helper for the actual implementation of getMaxDepths that takes the partition types as indices in a parameter pack.
+   * @tparam additionalPartitionTypeIndices parameter pack of indices for each additionalPartitionType
+   * @return array of max depths for each additionalPartitionType
+   */
+  template <size_t... additionalPartitionTypeIndices>
+  std::array<size_t, numAdditionalTypes> getMaxDepthsImpl(std::index_sequence<additionalPartitionTypeIndices...>) {
+    return std::array<size_t, numAdditionalTypes>{getMaxDepthOfGivenType<additionalPartitionTypeIndices>()...};
   }
 
   /**

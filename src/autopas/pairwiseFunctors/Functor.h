@@ -62,6 +62,8 @@ class Functor {
 
   using getNeededAdditionalAttrReturnType = typename decltype(std::function{Functor_T::getNeededAdditionalAttr()})::result_type;
 
+  static constexpr auto numAdditionalPartitions = Functor_T::getNeededAdditionalAttr().size();
+
   /**
    * Constructor
    * @param cutoff
@@ -180,7 +182,40 @@ class Functor {
    */
   template <class ParticleCell>
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
-    SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+    if (not skipSoAResize) {
+      soa.resizeArrays(offset + cell.size());
+    }
+
+    if (cell.isEmpty()) return;
+
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * in the following loop.
+     */
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
+    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<getNeededAttrN3ReturnType , Functor_T::getNeededAttr(),
+                                                    getNeededAdditionalAttrReturnType, Functor_T::getNeededAdditionalAttr()>();
+
+    // get number of partitions of each type
+    const auto maxDepthsOfAdditionalPartitionTypes = soa.getMaxDepths();
+
+    auto cellIter = cell.begin();
+
+    // some aliases that are required as template parameters. These are simply the types of mainPtr, additionalPtr, and
+    // cellIter i.e. the result_types of the functions that are used to obtain these pointers.
+    using mainPtrType = typename decltype(std::function{
+        std::get<0>(soa.template begin<getNeededAttrN3ReturnType , Functor_T::getNeededAttr(),
+                                       getNeededAdditionalAttrReturnType, Functor_T::getNeededAdditionalAttr()>())})::result_type;
+    using additionalPtrType = typename decltype(std::function{
+        std::get<1>(soa.template begin<getNeededAttrN3ReturnType , Functor_T::getNeededAttr(),
+                                       getNeededAdditionalAttrReturnType, Functor_T::getNeededAdditionalAttr()>())})::result_type;
+    using cellIterType = typename decltype(std::function{cell.begin()})::result_type;
+
+    // load particles one-by-one into the SoAPartitions
+    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
+      SoALoaderMainPartitionImpl<cellIterType, mainPtrType>(cellIter, mainPtr, i, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+      SoALoaderAdditionalPartitionsImpl<cellIterType, additionalPtrType>(cellIter, additionalPtr, i, maxDepthsOfAdditionalPartitionTypes, std::make_index_sequence<numAdditionalPartitions>{});
+    }
   }
 
   /**
@@ -250,6 +285,105 @@ class Functor {
   [[nodiscard]] virtual double getHitRate() const { return std::numeric_limits<double>::quiet_NaN(); }
 
  private:
+  /**
+   * Implementation of SoALoader for the main partition. Uses a fold expression to "loop" over each attribute. Loads
+   * only a single particle.
+   * @tparam cellIterType type of cellIter
+   * @tparam mainPtrType type of mainPtr. Should be a tuple of pointers to arrays of the relevant types.
+   * @tparam attr parameter pack of  0,1,2,... for each desired attributes.
+   * @param cellIter iterator pointing to particle in the cell.
+   * @param mainPtr pointer structure of type mainPtrType.
+   * @param arrayIndex index of particle (that is being loaded) in each array of the SoA.
+   */
+  template <typename cellIterType, typename mainPtrType, size_t... attr>
+  void SoALoaderMainPartitionImpl(cellIterType &cellIter, mainPtrType mainPtr, size_t arrayIndex, std::index_sequence<attr...>) {
+    /**
+     * The following statement writes the values of all attributes defined in neededAttr into the respective position
+     * inside the SoA buffer. attr represents the index inside neededAttr. The whole expression is folded sizeof...(attr)
+     * times over the comma operator. E.g. like this (std::index_sequence<attr...> = 0, 1):
+     * ((std::get<0>(mainPtr)[arrayIndex] = cellIter->template get<Functor_T::getNeededAttr()[0]>()),
+     * (std::get<1>(mainPtr)[arrayIndex] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
+     */
+    ((std::get<attr>(mainPtr)[arrayIndex] = cellIter->template get<Functor_T::getNeededAttr()[attr]>()), ...);
+  }
+
+  /**
+   * Implementation of SoALoader for the additional partitions. Uses a fold expression to "loop" over each additional
+   * partition type. Loads only a single particle.
+   * @tparam cellIterType type of cellIter
+   * @tparam additionalPtrType type of additionalPtr. Should be a tuple of a vector of a tuple of pointers to arrays of
+   * the relevant types.
+   * @tparam additionalPartitionTypeIndices parameter pack of indices of additional partition types.
+   * @param cellIter iterator pointing to particle in the cell.
+   * @param additionalPtr pointer structure of type additionalPtrType.
+   * @param arrayIndex index of particle (that is being loaded) in each array of the SoA.
+   * @param maxDepthsOfAdditionalPartitionTypes array of maximum depths of each additional partition type (<=> the size
+   * of the vector of SoAPartitions of that type)
+   */
+  template <typename cellIterType, typename additionalPtrType, size_t... additionalPartitionTypeIndices>
+  void SoALoaderAdditionalPartitionsImpl(cellIterType &cellIter, additionalPtrType additionalPtr, size_t arrayIndex,
+                                         std::array<size_t, numAdditionalPartitions> maxDepthsOfAdditionalPartitionTypes,
+                                         std::index_sequence<additionalPartitionTypeIndices...>) {
+    (SoALoaderAdditionalPartitionsSingleType<cellIterType, additionalPtrType, additionalPartitionTypeIndices>(
+         cellIter, additionalPtr, arrayIndex, maxDepthsOfAdditionalPartitionTypes),...);
+  }
+
+  /**
+   * Loads all SoAPartitions of a single additional partition type. Loads only a single particle.
+   * @tparam cellIterType type of cellIter
+   * @tparam additionalPtrType type of additionalPtr. Should be a tuple of a vector of a tuple of pointers to arrays of
+   * the relevant types.
+   * @tparam additionalPartitionTypeIndex index of the additional partition type.
+   * @param cellIter iterator pointing to particle in the cell.
+   * @param additionalPtr pointer structure of type additionalPtrType.
+   * @param arrayIndex index of particle (that is being loaded) in each array of the SoA.
+   * @param maxDepthsOfAdditionalPartitionTypes array of maximum depths of each additional partition type (<=> the size
+   * of the vector of SoAPartitions of that type)
+   */
+  template <typename cellIterType, typename additionalPtrType, size_t additionalPartitionTypeIndex>
+  void SoALoaderAdditionalPartitionsSingleType(cellIterType &cellIter, additionalPtrType additionalPtr, size_t arrayIndex,
+                                               std::array<size_t, numAdditionalPartitions> maxDepthsOfAdditionalPartitionTypes) {
+    constexpr size_t numNeededAdditionalAttr = std::get<additionalPartitionTypeIndex>(Functor_T::getNeededAdditionalAttr()).size();
+    const size_t maxDepth = maxDepthsOfAdditionalPartitionTypes[additionalPartitionTypeIndex];
+
+    SoALoaderAdditionalPartitionsSingleTypeImpl<cellIterType, additionalPtrType, additionalPartitionTypeIndex>(
+        cellIter, additionalPtr, arrayIndex, maxDepth, std::make_index_sequence<numNeededAdditionalAttr>{});
+  }
+
+  /**
+   * Implementation of SoALoaderAdditionalPartitionsSingleType. Uses a fold expression to "loop" over each attribute of
+   * the additional partition type. Uses a conventional for-loop to loop over each partition of that additional partition
+   * type. Loads only a single particle.
+   * @tparam cellIterType type of cellIter
+   * @tparam additionalPtrType type of additionalPtr. Should be a tuple of a vector of a tuple of pointers to arrays of
+   * the relevant types.
+   * @tparam additionalPartitionTypeIndex index of the additional partition type.
+   * @tparam attr parameter pack of indices 0,1,2,... for each attribute being loaded.
+   * @param cellIter iterator pointing to particle in the cell.
+   * @param additionalPtr pointer structure of type additionalPtrType.
+   * @param arrayIndex index of particle (that is being loaded) in each array of the SoA.
+   * @param maxDepth maximum depth of this additional partition type.
+   */
+  template <typename cellIterType, typename additionalPtrType, size_t additionalPartitionTypeIndex, size_t... attr>
+  void SoALoaderAdditionalPartitionsSingleTypeImpl(cellIterType &cellIter, additionalPtrType additionalPtr,
+                                                   size_t arrayIndex, size_t maxDepth, std::index_sequence<attr...>) {
+    // Loop over each partition of this type
+    for (size_t depth = 0; depth < maxDepth; ++depth) {
+      // Todo add depth to RHS
+      /**
+       * This is a fold expression that "loop" over each attribute (see SoALoaderMainPartitionImpl). For each attribute,
+       * it copies the RHS to the LHS:
+       * * RHS:
+       * * LHS: This is the "arrayIndex"'th element of the "attr"'th array in the relevant SoAPartition. This SoAPartition
+       *   has type index "additionalPartitionTypeIndex" and is the partition of depth "depth" of this type.
+       */
+      ((std::get<attr>(std::get<additionalPartitionTypeIndex>(additionalPtr)[depth])[arrayIndex] =
+            cellIter->template get<std::get<additionalPartitionTypeIndex>(Functor_T::getNeededAdditionalAttr())[attr]>()), ...);
+    }
+
+  }
+
+
   /**
    * Implements loading of SoA buffers.
    * @tparam cell_t Cell type.
