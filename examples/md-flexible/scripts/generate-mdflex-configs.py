@@ -1,5 +1,15 @@
 #!/usr/bin/python3
+import sys
+# Python version check
+if sys.version_info < (3, 8):
+    sys.exit("This script requires Python 3.8 or higher for 'math.prod'!")
+import math
 import yaml
+
+# Make sure the library version is sufficient
+pyyaml_version = tuple(map(int, yaml.__version__.split('.')))
+if pyyaml_version < (5, 1):
+    raise ImportError('You need PyYAML version 5.1 or higher.')
 from yaml.loader import SafeLoader
 
 # if available use tqdm for a progress bar otherwise fall back to itertools
@@ -12,27 +22,29 @@ except ImportError:
 # to judge the adaptability of tuning strategies.
 
 template = """
-container                        :  [LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists Octree]
+functor                          :  Lennard-Jones (12-6) AVX
+# container                        :  [all]
+container                        :  [LinkedCells, VerletLists, VarVerletLists, VerletListsCells, PairwiseVerletLists, VerletClusterLists]
 verlet-rebuild-frequency         :  20
-verlet-skin-radius               :  0.15
+verlet-skin-radius-per-timestep  :  0.0075
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS, SoA]
-traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c01_cuda, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcc_cluster_iteration_cuda, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02, ot_c01, ot_c18]
-tuning-strategy                  :  full-Search
-mpi-strategy                     :  no-mpi
+data-layout                      :  [all]
+traversal                        :  [all]
+tuning-strategies                :  []
 tuning-interval                  :  5000
 tuning-samples                   :  3
-tuning-max-evidence              :  10
-functor                          :  Lennard-Jones (12-6) AVX
-newton3                          :  [disabled, enabled]
+tuning-phases                    :  1
+newton3                          :  [all]
 cutoff                           :  1
-box-min                          :  [-1.75, -1.75, -1.75]
-box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0
-iterations                       :  10
-periodic-boundaries              :  true
+boundary-type                    :  [periodic, periodic, periodic]
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1
 Objects:                         
   CubeClosestPacked:
     0:
@@ -40,10 +52,7 @@ Objects:
       bottomLeftCorner           :  [0, 0, 0]
       particle-spacing           :  0.4
       velocity                   :  [0, 0, 0]
-      particle-type              :  0
-      particle-epsilon           :  1
-      particle-sigma             :  1
-      particle-mass              :  1
+      particle-type-id           :  0
 log-level                        :  info
 no-end-config                    :  true
 no-progress-bar                  :  true
@@ -57,10 +66,8 @@ def make_object(domainSize, numParticles, distribution):
                                            'box-length': objectSize,
                                            'bottomLeftCorner': [0, 0, 0],
                                            'velocity': [0, 0, 0],
-                                           'particle-type': 0,
-                                           'particle-epsilon': 1,
-                                           'particle-sigma': 1,
-                                           'particle-mass': 1}}}
+                                           'particle-type-id': 0,
+                                          }}}
         return cubeUniform
 
     elif distribution[0] == 'gauss':
@@ -72,12 +79,10 @@ def make_object(domainSize, numParticles, distribution):
                                        'box-length': domainSize.copy(),
                                        'bottomLeftCorner': [0, 0, 0],
                                        'velocity': [0, 0, 0],
-                                       'particle-type': 0,
-                                       'particle-epsilon': 1,
-                                       'particle-sigma': 1,
-                                       'particle-mass': 1}}}
+                                       'particle-type-id': 0,
+                                      }}}
         return cubeGauss
-    elif distribution[0] == 'closest-packed':
+    elif distribution[0] == 'closestPacked':
         objectSize = [dSize * distribution[1] for dSize in domainSize]
         objectOffset = [dSize * distribution[2] for dSize in domainSize]
         particleSpacing = ((objectSize[0] * objectSize[1] * objectSize[2] * ((3 / 4) ** (1 / 2)) * (
@@ -86,10 +91,8 @@ def make_object(domainSize, numParticles, distribution):
                                                        'bottomLeftCorner': objectOffset,
                                                        'particle-spacing': particleSpacing,
                                                        'velocity': [0, 0, 0],
-                                                       'particle-type': 0,
-                                                       'particle-epsilon': 1,
-                                                       'particle-sigma': 1,
-                                                       'particle-mass': 1}}}
+                                                       'particle-type-id': 0,
+                                                      }}}
         return cubeClosestPacked
     else:
         print('Error making object')
@@ -121,8 +124,9 @@ def generate(domainSize,
     data['box-max'] = domainSize
     data['cutoff'] = cutoff
     skin = cutoff * skinFactor
-    data['verlet-skin-radius'] = skin
-    data['verlet-rebuild-frequency'] = int(invMaxParticleSpeed * skinFactor)
+    rebuildFrequency = int(invMaxParticleSpeed * skinFactor)
+    data['verlet-skin-radius-per-timestep'] = skin / rebuildFrequency
+    data['verlet-rebuild-frequency'] = rebuildFrequency
     data['functor'] = functor
     data['cell-size'] = [cellSizeFactor]
     data['Objects'] = make_object(domainSize, numParticles, distribution)
@@ -147,30 +151,46 @@ def generate(domainSize,
         yaml.dump(data, fileOutput, sort_keys=False)
 
 
-def isInteresting(domainSize,
-                  numParticles,
-                  distribution,
-                  cutoff,
-                  skinFactor,
+def isInteresting(domainSizeName,
+                  numParticlesName,
+                  distributionName,
+                  cutoffName,
+                  skinFactorName,
                   invMaxParticleSpeed,
                   functor,
-                  cellSizeFactor):
+                  cellSizeFactorName):
 
     """
     Filter to judge if a config is worth to generate.
     """
 
-    tooDenseThreshold = 400  # particles per cell
-    actualDomainSize = domainSizes[domainSize]
-    numCells = actualDomainSize[0] * actualDomainSize[1] * actualDomainSize[2]
-    uniformAvgParticlesPerCell = particleCounts[numParticles] / numCells
+    cellSizeFactor = cellSizeFactors[cellSizeFactorName]
+    domainSize = domainSizes[domainSizeName]
+    cellSize = cutoffs[cutoffName] * (1 + skinFactors[skinFactorName]) * cellSizeFactor
+    cellsPerDimension = [math.floor(d / cellSize) for d in domainSize]
+    # If cells are larger than the domain in any dimension the scenario doesn't make sense
+    if any(item == 0 for item in cellsPerDimension):
+        return False
+    numCells = math.prod(cellsPerDimension)
+    uniformAvgParticlesPerCell = particleCounts[numParticlesName] / numCells
+    # Currently unused:
+    # volume=math.prod(domainSize)
+    # density=particleCounts[numParticlesName]/volume
 
-    return not (uniformAvgParticlesPerCell > tooDenseThreshold
-                or (numParticles == 'very-few' and functor == 'lj-avx')
-                or (numParticles == 'huge' and distribution != 'uniform-whole')
-                # or (cellSizeFactor == 'big')
-                # or (cutoff == 'big')
-                # or (functor == 'lj-no-avx')
+    # Exclusion rules. Mostly to avoid scenarios that take forever to test.
+    return not (False
+                # avoid insanely dense scenarios
+                or uniformAvgParticlesPerCell > 150
+                # be even stricter for gauss because of their dense core
+                or (distributionName == 'concentrated-gauss' and uniformAvgParticlesPerCell > 75)
+                # bigger CSFs are for less dense scenarios
+                or (uniformAvgParticlesPerCell > 50 and cellSizeFactor > 1)
+                # smaller CSFs are for non-sparse scenarios
+                or (uniformAvgParticlesPerCell < 10 and cellSizeFactor < 1)
+                # for huge particle counts only maximal spread is interesting otherwise there are too many interactions
+                or (numParticlesName == 'huge' and distributionName != 'uniform-whole')
+                # only avx functor is relevant
+                or (not functor == 'lj-avx')
                 )
 
 
@@ -195,23 +215,24 @@ if __name__ == "__main__":
         'uniform-whole': ('uniform', 1, 1, 1),
         'uniform-strip': ('uniform', 0.4, 0.6, 1),
         'concentrated-gauss': ('gauss', 0.75, 0.25),
-        'concentrated-closest-packed': ('closest-packed', 0.3, 0.25),
+        'concentrated-closest-packed': ('closestPacked', 0.3, 0.25),
     }
     cutoffs = {
-        'normal': 1,
-        'big': 2.5,
+        'normal': 2.5,
+        'big': 3.5,
     }
-    verletSkinToCutoffFactors = {
+    skinFactors = {
         'small': 0.1,
         'normal': 0.2,
         'big': 0.4,
     }
-    rebuildFrequencySkinFactorFactor = 100
+    invMaxParticleSpeed = 100
     functors = {
         'lj-no-avx': 'Lennard-Jones (12-6)',
         'lj-avx': 'Lennard-Jones (12-6) AVX',
     }
     cellSizeFactors = {
+        'small': 0.5,
         'normal': 1.0,
         'big': 2.0,
     }
@@ -219,14 +240,14 @@ if __name__ == "__main__":
 
     numScenarios = 0
     # loop over cartesian product of all generator options
-    for domainSize, numParticles, distribution, cutoff, verletSkinToCutoffFactor, functor, cellSizeFactor in \
+    for domainSize, numParticles, distribution, cutoff, skinFactor, functor, cellSizeFactor in \
             itertools.product(domainSizes.items(), particleCounts.items(), distributions.items(), cutoffs.items(),
-                              verletSkinToCutoffFactors.items(), functors.items(), cellSizeFactors.items()):
+                              skinFactors.items(), functors.items(), cellSizeFactors.items()):
         # check if this combination is actually interesting to include in the benchmark
-        if isInteresting(domainSize[0], numParticles[0], distribution[0], cutoff[0], verletSkinToCutoffFactor[0],
-                         rebuildFrequencySkinFactorFactor, functor[0], cellSizeFactor[0]):
+        if isInteresting(domainSize[0], numParticles[0], distribution[0], cutoff[0], skinFactor[0],
+                         invMaxParticleSpeed, functor[0], cellSizeFactor[0]):
             numScenarios += 1
-            generate(domainSize[1], numParticles[1], distribution[1], cutoff[1], verletSkinToCutoffFactor[1],
-                     rebuildFrequencySkinFactorFactor, functor[1], cellSizeFactor[1])
+            generate(domainSize[1], numParticles[1], distribution[1], cutoff[1], skinFactor[1],
+                     invMaxParticleSpeed, functor[1], cellSizeFactor[1])
 
     print(str(numScenarios) + ' scenarios generated')
