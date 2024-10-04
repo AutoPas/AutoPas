@@ -75,8 +75,10 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
         this->_internalLinkedCells->getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo,
         interactionLength, 1.3);
 
-    const auto offsetsC08 = VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(
-        this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo()));
+    const auto offsetsC08 = VerletListsCellsHelpers::buildBaseStep(
+        utils::ArrayUtils::static_cast_copy_array<int>(
+            this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo()),
+        TraversalOption::vlc_c08);
 
     // Helper function to estimate the number of neighbor lists for one base step
     // TODO: This is a generous and rough estimate and can probably be improved!
