@@ -611,6 +611,10 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
 
+  constexpr static auto getNeededAdditionalAttr() {
+    return std::array<typename Particle::AttributeNames, 0> {};
+  }
+
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
