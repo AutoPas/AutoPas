@@ -158,7 +158,7 @@ class Functor {
     static constexpr auto numAdditionalPartitions = Functor_T::getNeededAdditionalAttr().size();
 
     if (not skipSoAResize) {
-      soa.resizeArrays(offset + cell.size());
+      soa.resizeLengthOfArrays(offset + cell.size());
     }
 
     if (cell.isEmpty()) return;

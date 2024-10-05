@@ -40,7 +40,7 @@ class SoAView {
    * @param startIndex The index of the first entry of the SoAView.
    * @param endIndex The index of the entry after the last entry of the SoAView.
    */
-  SoAView(SoAType *soa, std::size_t startIndex, std::size_t endIndex)
+  SoAView(SoA<SoAType> *soa, std::size_t startIndex, std::size_t endIndex)
       : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
     if (not(soa->size() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
       autopas::utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
@@ -51,13 +51,13 @@ class SoAView {
    * Constructs a SoAView on the whole content of \p SoA.
    * @param soa The SoA to view.
    */
-  explicit SoAView(SoAType *soa) : _soa(soa), _startIndex(0), _endIndex(soa->size()) {}
+  explicit SoAView(SoA<SoAType> *soa) : _soa(soa), _startIndex(0), _endIndex(soa->size()) {}
 
   /**
    * Implicit constructor that converts a SoA to SoAView.
    * @param soa The SoA to view.
    */
-  SoAView(SoAType &soa) : _soa(&soa), _startIndex(0), _endIndex(soa.size()) {}
+  SoAView(SoA<SoAType> &soa) : _soa(&soa), _startIndex(0), _endIndex(soa.size()) {}
 
   /**
    * Returns a pointer to the given attribute vector in the main SoA partition.
@@ -92,7 +92,7 @@ class SoAView {
   /**
    * The underlying SoA.
    */
-  SoAType *_soa;
+  SoA<SoAType> *_soa;
 
   /**
    * The start index of the view in the SoA. (Inclusive)

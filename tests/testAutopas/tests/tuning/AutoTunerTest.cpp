@@ -56,11 +56,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _, _))
       .Times(testing::AtLeast(1))
       .WillRepeatedly(
-          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeLengthOfArrays(cell.size()); })));
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<FMCell &>(_), _, _, _))
       .Times(testing::AtLeast(1))
       .WillRepeatedly(
-          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeLengthOfArrays(cell.size()); })));
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),

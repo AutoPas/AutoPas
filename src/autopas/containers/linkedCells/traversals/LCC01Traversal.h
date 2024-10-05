@@ -277,7 +277,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::processBa
           ParticleCell &otherCell = cells[otherIndex];
           newSize += otherCell.size();
         }
-        combinationSlice[slice]._particleSoABuffer.resizeArrays(newSize);
+        combinationSlice[slice]._particleSoABuffer.resizeLengthOfArrays(newSize);
       }
       // append buffers
       for (size_t slice = midSlice; slice != currentSlice; ++slice %= cOffSize, ++i) {

@@ -75,7 +75,7 @@ class VLCNeighborListInterface {
     std::inclusive_scan(
         cells.begin(), cells.end(), offsets.begin() + 1,
         [](const size_t &partialSum, const auto &cell) { return partialSum + cell.size(); }, 0);
-    _soa.resizeArrays(offsets.back());
+    _soa.resizeLengthOfArrays(offsets.back());
 
     AUTOPAS_OPENMP(parallel for)
     for (size_t i = 0; i < cells.size(); ++i) {

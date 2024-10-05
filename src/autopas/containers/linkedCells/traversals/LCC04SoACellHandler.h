@@ -308,7 +308,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeBufferIntoC
     if (start == end) {
       continue;
     }
-    buffer.resizeArrays(end);
+    buffer.resizeLengthOfArrays(end);
     auto bufferView = buffer.constructView(start, buffer.size());
 
     const unsigned long currentOffset = baseIndex + _baseOffsets[cellSlice][i];

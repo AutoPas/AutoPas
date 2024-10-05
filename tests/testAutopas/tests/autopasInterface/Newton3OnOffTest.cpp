@@ -115,7 +115,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
                    autopas::ContainerOption::verletListsCells}
               .count(container.getContainerType()) == 0) {
         expectation->WillRepeatedly(
-            testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+            testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeLengthOfArrays(cell.size()); })));
       }
 
       EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))

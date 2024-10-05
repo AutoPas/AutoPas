@@ -147,7 +147,7 @@ TEST_F(SoATest, SoATestSwap) {
   using autopas::Particle;
   autopas::SoAPartition<Particle::SoAArraysType> soa;
 
-  soa.resizeArrays(2);
+  soa.resizeLengthOfArrays(2);
 
   soa.begin<Particle::AttributeNames::id>()[0] = 3;
   soa.begin<Particle::AttributeNames::posX>()[0] = 1.3;
@@ -205,7 +205,7 @@ TEST_F(SoATest, SoATestMultiWriteRead) {
   using autopas::Particle;
   autopas::SoAPartition<Particle::SoAArraysType> soa;
 
-  soa.resizeArrays(1);
+  soa.resizeLengthOfArrays(1);
 
   soa.begin<Particle::AttributeNames::id>()[0] = 1;
 
@@ -284,7 +284,7 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
   EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 1.7);
   EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 1.07);
 
-  soa.resizeArrays(2);
+  soa.resizeLengthOfArrays(2);
 
   soa.begin<Particle::AttributeNames::id>()[1] = 1;
   soa.begin<Particle::AttributeNames::posX>()[1] = 10.3;
