@@ -9,6 +9,7 @@
 #include <tuple>
 #include <vector>
 
+#include "autopas/utils/SoAPartition.h"
 #include "autopas/utils/SoAPartitionView.h"
 #include "autopas/utils/SoAView.h"
 #include "autopas/utils/TupleUtils.h"
@@ -353,7 +354,7 @@ class SoA {
    */
   template <typename mainAttributesType, mainAttributesType attributes, size_t... I>
   auto beginMainAttrImpl() {
-    return _mainSoAPartition.template begin<std::get<I>(attributes)...>();
+    return std::make_tuple(_mainSoAPartition.template begin<std::get<I>(attributes)>()...);
   }
 
   /**

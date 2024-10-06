@@ -154,16 +154,6 @@ class SoAPartition {
   }
 
   /**
-   * Returns a tuple of pointers to the vectors of the given attributes
-   * @tparam attributes parameter pack of the IDs of the desired attributes.
-   * @return Tuple of pointers to the beginnings of the desired attribute vectors.
-   */
-  template <std::size_t... attributes>
-  auto begin() {
-    return std::make_tuple(begin<attributes>()...);
-  }
-
-  /**
    * Returns the number of particles.
    *
    * Since not necessarily all arrays are filled the length of the longest array is returned.
