@@ -14,6 +14,12 @@ endif ()
 # includes the gtest modules
 include(autopas_gtest)
 
+# Find and include Python headers and libraries
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+# Include the Python headers
+include_directories(${Python3_INCLUDE_DIRS})
+
 # add AutoPas tests:
 add_subdirectory(testAutopas)
 add_subdirectory(MPIParallelAutoPasTests)

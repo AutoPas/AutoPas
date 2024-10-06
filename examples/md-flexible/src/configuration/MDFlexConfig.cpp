@@ -290,6 +290,9 @@ std::string MDFlexConfig::to_string() const {
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::fuzzyTuning})) {
     printOption(fuzzyRuleFilename);
   }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::decisionTreeTuning})) {
+    printOption(modelFilename);
+  }
   os << setw(valueOffset) << left << functorOption.name << ":  ";
   switch (functorOption.value) {
     case FunctorOption::lj12_6: {
