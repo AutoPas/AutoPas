@@ -55,4 +55,5 @@ TEMPLATE_RELATIONS     = YES
 HAVE_DOT               = YES
 GENERATE_XML           = YES
 
-EXCLUDE                = @PROJECT_SOURCE_DIR@/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/
+EXCLUDE                = @PROJECT_SOURCE_DIR@/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/  \
+                         @PROJECT_SOURCE_DIR@/src/autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/

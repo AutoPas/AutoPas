@@ -7,7 +7,7 @@
 #include "RuleLanguageParser.h"
 #include "antlr4-runtime.h"
 
-namespace autopas_generated_rule_syntax {
+namespace AutopasGeneratedRuleSyntax {
 
 /**
  * This class defines an abstract visitor for a parse tree
@@ -43,4 +43,4 @@ class RuleLanguageVisitor : public antlr4::tree::AbstractParseTreeVisitor {
   virtual antlrcpp::Any visitIf_statement(RuleLanguageParser::If_statementContext *context) = 0;
 };
 
-}  // namespace autopas_generated_rule_syntax
+}  // namespace AutopasGeneratedRuleSyntax

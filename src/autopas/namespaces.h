@@ -108,6 +108,26 @@ namespace SearchSpaceGenerators {}
 namespace VerletListsCellsHelpers {}
 
 /**
+ * Namespace that contains the fuzzy logic framework used by the FuzzyTuning-strategy.
+ */
+namespace FuzzyLogic {}
+
+/**
+ * Namespace that contains the generated parser for FuzzyRuleFiles.
+ */
+namespace AutopasGeneratedFuzzyRuleSyntax {}
+
+/**
+ * Namespace that contains code for evaluating the RuleBasedTuning-Strategy.
+ */
+namespace RuleSyntax {}
+
+/**
+ * Namespace that contains the generated parser for RuleFiles.
+ */
+namespace AutopasGeneratedRuleSyntax {}
+
+/**
  * Helper function and type aliases for the C08 base step traversal
  */
 namespace LCC08CellHandlerUtility {
