@@ -16,9 +16,9 @@
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
+#include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
-#include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/NumberSetFinite.h"
 

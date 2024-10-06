@@ -6,14 +6,15 @@
 
 #pragma once
 
+#include <Python.h>
+
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
-#include <Python.h>
-#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
-#include "autopas/tuning/Configuration.h"
 
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 
 namespace autopas {
 

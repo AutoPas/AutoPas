@@ -5,7 +5,9 @@
  */
 
 #include "DecisionTreeTuning.h"
+
 #include <Python.h>
+
 #include <iostream>
 #include <sstream>
 
@@ -27,7 +29,7 @@ DecisionTreeTuning::~DecisionTreeTuning() {
 
 void DecisionTreeTuning::loadScript() {
   // Add the current directory to the Python path
-  PyObject *sysPath = PySys_GetObject((char*)"path");
+  PyObject *sysPath = PySys_GetObject((char *)"path");
   PyObject *cwd = PyUnicode_FromString(".");
   PyList_Append(sysPath, cwd);
   Py_DECREF(cwd);
@@ -64,9 +66,7 @@ void DecisionTreeTuning::loadScript() {
   Py_INCREF(_pFunc);
 }
 
-bool DecisionTreeTuning::needsLiveInfo() const {
-  return true;
-}
+bool DecisionTreeTuning::needsLiveInfo() const { return true; }
 
 void DecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
   _currentLiveInfo.clear();
@@ -95,9 +95,7 @@ bool DecisionTreeTuning::optimizeSuggestions(std::vector<Configuration> &configQ
   return true;
 }
 
-TuningStrategyOption DecisionTreeTuning::getOptionType() const {
-  return TuningStrategyOption::decisionTreeTuning;
-}
+TuningStrategyOption DecisionTreeTuning::getOptionType() const { return TuningStrategyOption::decisionTreeTuning; }
 
 std::string DecisionTreeTuning::getPredictionFromPython() {
   // Convert live info to a JSON string
@@ -108,7 +106,8 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
   liveInfoJson.back() = '}';  // Replace the last comma with a closing bracket
 
   // Call the Python function 'main' with the model file and live info JSON
-  PyObject *pArgs = PyTuple_Pack(2, PyUnicode_FromString(_modelFileName.c_str()), PyUnicode_FromString(liveInfoJson.c_str()));
+  PyObject *pArgs =
+      PyTuple_Pack(2, PyUnicode_FromString(_modelFileName.c_str()), PyUnicode_FromString(liveInfoJson.c_str()));
   PyObject *pResult = PyObject_CallObject(_pFunc, pArgs);
   Py_DECREF(pArgs);
 
