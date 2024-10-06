@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <algorithm>
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
