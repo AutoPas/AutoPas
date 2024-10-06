@@ -17,7 +17,6 @@ namespace autopas {
 
 /**
  * @class MockLiveInfo
- * @brief Mock class for simulating the behavior of LiveInfo in unit tests.
  *
  * The MockLiveInfo class inherits from LiveInfo and provides a mock implementation
  * of the get() method to simulate live info for DecisionTreeTuning tests.
@@ -29,7 +28,6 @@ public:
 
 /**
  * @test TestScriptLoading
- * @brief Tests the loading of an invalid Python script for DecisionTreeTuning.
  *
  * This test case ensures that when an invalid or non-existent Python model file is provided
  * to the DecisionTreeTuning constructor, a runtime error is thrown during the `reset()` call.
@@ -47,7 +45,6 @@ TEST(DecisionTreeTuningTest, TestScriptLoading) {
 
 /**
  * @test TestValidPythonResponse
- * @brief Tests the valid interaction with Python script for DecisionTreeTuning.
  *
  * This test case simulates a valid configuration where the Python script successfully
  * returns the expected configuration, and the reset function updates the configuration queue.
@@ -94,7 +91,6 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
 
 /**
  * @test TestInvalidPythonResponse
- * @brief Tests the scenario where the Python script returns invalid or malformed JSON.
  *
  * This test case verifies that when the Python script returns an invalid response (e.g., malformed JSON),
  * the `reset()` function throws a runtime error during the parsing of the configuration.
@@ -129,7 +125,6 @@ TEST(DecisionTreeTuningTest, TestInvalidPythonResponse) {
 
 /**
  * @test TestEmptyLiveInfo
- * @brief Tests the scenario where no live info is provided to DecisionTreeTuning.
  *
  * This test case verifies that even when the live info map is empty, the `reset()` function
  * can still successfully retrieve a configuration from the Python model.

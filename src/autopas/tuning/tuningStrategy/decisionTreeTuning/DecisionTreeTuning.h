@@ -19,7 +19,6 @@ namespace autopas {
 
 /**
  * @class DecisionTreeTuning
- * @brief Tuning strategy that uses a decision tree model to predict the best configuration.
  *
  * This class uses a decision tree model to predict the best configuration based on the current live
  * information. The decision tree model is trained using the Python scikit-learn library. The Python
