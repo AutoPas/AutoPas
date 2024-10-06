@@ -999,9 +999,7 @@ class AutoPas {
    * Set the name / path of the model file for the DecisionTreeTuning.
    * @param modelFileName The name of the model file to use during decision tree tuning.
    */
-  void setModelFileName(const std::string &modelFileName) {
-    _tuningStrategyFactoryInfo.modelFileName = modelFileName;
-  }
+  void setModelFileName(const std::string &modelFileName) { _tuningStrategyFactoryInfo.modelFileName = modelFileName; }
 
   /**
    * Get the name / path of the model file for the DecisionTreeTuning.
