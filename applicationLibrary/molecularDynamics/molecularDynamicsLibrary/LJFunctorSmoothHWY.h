@@ -134,17 +134,10 @@ class LJFunctorSmoothHWY
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    double smoothing = 1;
+
+    double smoothingPot = 1;
     if (dr2 > _cutoffSquareAoS) {
       return;
-    }
-    else if(dr2 >= _innerCutoffSquareAoS){
-      double drtrue = std::sqrt(dr2);
-      double temp = drtrue-_innerCutoffAoS;
-      double _tripleOuterMinusInnerAoSLocal = _tripleOuterMinusInnerAoS;
-      double _cutoffDiffCubedInvAoSLocal = _cutoffDiffCubedInvAoS;
-      smoothing = 1 - (temp * temp) * (_tripleOuterMinusInnerAoSLocal - 2 * drtrue) * _cutoffDiffCubedInvAoSLocal; //justify change
-
     }
 
     double invdr2 = 1. / dr2;
@@ -153,7 +146,26 @@ class LJFunctorSmoothHWY
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac * smoothing;
+    auto f = dr * fac ;
+
+    if(dr2 >= _innerCutoffSquareAoS){
+      double drtrue = std::sqrt(dr2);
+      double sigma6 = sigmasquare * sigmasquare * sigmasquare;
+      double dr6 = dr2 * dr2 * dr2;
+      double term1 = lj6 / (dr6 * dr2) * _cutoffDiffCubedInvAoS * (drtrue - _cutoffAoS);
+      double term2 = _cutoffSquareAoS * (2 * sigma6 - dr6);
+      double term3 = _cutoffAoS * (3 * _innerCutoffAoS - drtrue) * (dr6 - 2 * sigma6);
+      double term4 = drtrue * ((5 * _innerCutoffAoS * sigma6) - (2 * _innerCutoffAoS * dr6) - (3 * sigma6 * drtrue) + (dr6 * drtrue));
+
+      double smoothing = term1 * (term2 + term3 + term4);
+      f = dr * smoothing;
+
+      double temp = drtrue-_innerCutoffAoS;
+      double _tripleOuterMinusInnerAoSLocal = _tripleOuterMinusInnerAoS;
+      double _cutoffDiffCubedInvAoSLocal = _cutoffDiffCubedInvAoS;
+      smoothingPot = 1 - (temp * temp) * (_tripleOuterMinusInnerAoSLocal - 2 * drtrue) * _cutoffDiffCubedInvAoSLocal; //justify change
+    }
+
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
@@ -161,7 +173,7 @@ class LJFunctorSmoothHWY
     }
     if (calculateGlobals) {
       auto virial = dr * f;
-      double upot = smoothing * epsilon24 * lj12m6;
+      double upot = smoothingPot * epsilon24 * lj12m6;
 
       const int threadnum = autopas::autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
@@ -815,21 +827,11 @@ class LJFunctorSmoothHWY
     const auto innerCutoffMask = highway::Ge(dr2, _innerCutoffSquared);
     const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
     const auto cutoffDummyMask = highway::And(cutoffMask, dummyMask);
-    const auto innerCutoffDummyMask =highway::And(innerCutoffMask, dummyMask);
+    const auto innerCutoffDummyMask = highway::And(innerCutoffMask, cutoffDummyMask);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
     }
-    //compute smoothing factor
-    const auto drtrue = highway::Sqrt(dr2);
-    const auto temp = drtrue - _innerCutoff;
-    const auto temp2 = temp*temp;
-    const auto twodrtrue = _twoDouble * drtrue;
-    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodrtrue;
-    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
-    const auto fraction = numerator * _cutoffDiffCubedInv;
-    const auto smoothingTerm = _oneDouble - fraction;
-    const auto smoothingMasked = highway::IfThenElse(innerCutoffDummyMask,smoothingTerm,_oneDouble);
 
     // compute LJ Potential
     const auto invDr2 = _oneDouble / dr2;
@@ -840,9 +842,33 @@ class LJFunctorSmoothHWY
     const auto lj12m6 = lj12 - lj6;
     const auto lj12m6alj12 = lj12m6 + lj12;
     const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
-    const auto fac = lj12m6alj12e * invDr2 * smoothingMasked;
 
-    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+    //compute smoothed force
+    const auto dr1= highway::Sqrt(dr2);
+    const auto sigma6 = sigmaSquareds * sigmaSquareds * sigmaSquareds;
+    const auto dr6 = dr2 * dr2 * dr2;
+    const auto twosigdr6 = (_twoDouble * sigma6 - dr6);
+    const auto term1 = lj6 * epsilon24s * _cutoffDiffCubedInv * (dr1 - _cutoff) / (dr6 * dr2) ;
+    const auto term2 = _cutoffSquared * twosigdr6;
+    const auto term3 = _cutoff * (dr1 - _threeDouble * _innerCutoff ) * twosigdr6;
+    const auto term4 = dr1 * ((_fiveDouble * _innerCutoff * sigma6) - (_twoDouble * _innerCutoff * dr6) - (_threeDouble * sigma6 * dr1) + (dr6 * dr1));
+
+    const auto smoothingTerm = term1 * (term2 + term3 + term4);
+
+    //compute smoothed potential
+    const auto temp = highway::Sub(dr1,_innerCutoff);
+    const auto temp2 = temp * temp;
+    const auto twodr1= _twoDouble * dr1;
+    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodr1;
+    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
+    const auto fraction = numerator * _cutoffDiffCubedInv;
+    const auto smoothingTermPot = _oneDouble - fraction;
+    const auto smoothingMaskedPot = highway::IfThenElse(innerCutoffDummyMask,smoothingTermPot,_oneDouble);
+
+    const auto fac = lj12m6alj12e * invDr2;
+
+    const auto facMaskedBefore = highway::IfThenElseZero(cutoffDummyMask, fac);
+    const auto facMasked = highway::IfThenElse(innerCutoffDummyMask, smoothingTerm, facMaskedBefore);
 
     const VectorDouble fx = drX * facMasked;
     const VectorDouble fy = drY * facMasked;
@@ -862,7 +888,7 @@ class LJFunctorSmoothHWY
       auto virialZ = fz * drZ;
 
       auto uPot = highway::Mul(epsilon24s, lj12m6);
-      uPot = highway::MulAdd(uPot,smoothingMasked,shift6s);
+      uPot = highway::Mul(uPot,smoothingMaskedPot);
       auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
                         
       auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
@@ -1195,7 +1221,10 @@ class LJFunctorSmoothHWY
   const VectorDouble _zeroDouble {highway::Zero(tag_double)};
   const VectorLong _zeroLong {highway::Zero(tag_long)};
   const VectorDouble _oneDouble {highway::Set(tag_double, 1.)};
+  const VectorDouble _minusoneDouble {highway::Set(tag_double, -1.)};
   const VectorDouble _twoDouble {highway::Set(tag_double, 2.)};
+  const VectorDouble _threeDouble {highway::Set(tag_double, 3.)};
+  const VectorDouble _fiveDouble {highway::Set(tag_double, 5.)};
   const VectorLong _oneLong {highway::Set(tag_long, 1)};
   const VectorDouble _ownedStateDummy{highway::Zero(tag_double)};
   const VectorDouble _cutoffSquared {};
