@@ -130,16 +130,9 @@ class LJFunctorSmoothHWYGS
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    double smoothing = 1;
+    double smoothingPot = 1;
     if (dr2 > _cutoffSquareAoS) {
       return;
-    }
-    else if(dr2 > _innerCutoffSquareAoS){
-      double drtrue = std::sqrt(dr2);
-      double temp = drtrue -_innerCutoffAoS;
-      double _tripleOuterMinusInnerAoSLocal = _tripleOuterMinusInnerAoS;
-      double _cutoffDiffCubedInvAoSLocal = _cutoffDiffCubedInvAoS;
-      smoothing = 1 - (temp * temp) * (_tripleOuterMinusInnerAoSLocal - 2 * drtrue) * _cutoffDiffCubedInvAoSLocal; //justify change
     }
 
     double invdr2 = 1. / dr2;
@@ -148,7 +141,27 @@ class LJFunctorSmoothHWYGS
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac * smoothing;
+    auto f = dr * fac;
+
+
+  if(dr2 >= _innerCutoffSquareAoS){
+    double drtrue = std::sqrt(dr2);
+    double sigma6 = sigmasquare * sigmasquare * sigmasquare;
+    double dr6 = dr2 * dr2 * dr2;
+    double term1 = lj6 / (dr6 * dr2) * _cutoffDiffCubedInvAoS * (drtrue - _cutoffAoS);
+    double term2 = _cutoffSquareAoS * (2 * sigma6 - dr6);
+    double term3 = _cutoffAoS * (3 * _innerCutoffAoS - drtrue) * (dr6 - 2 * sigma6);
+    double term4 = drtrue * ((5 * _innerCutoffAoS * sigma6) - (2 * _innerCutoffAoS * dr6) - (3 * sigma6 * drtrue) + (dr6 * drtrue));
+
+    double smoothing = term1 * (term2 + term3 + term4);
+    f = dr * smoothing;
+
+    double temp = drtrue-_innerCutoffAoS;
+    double _tripleOuterMinusInnerAoSLocal = _tripleOuterMinusInnerAoS;
+    double _cutoffDiffCubedInvAoSLocal = _cutoffDiffCubedInvAoS;
+    smoothingPot = 1 - (temp * temp) * (_tripleOuterMinusInnerAoSLocal - 2 * drtrue) * _cutoffDiffCubedInvAoSLocal; //justify change
+  }
+
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
@@ -156,7 +169,7 @@ class LJFunctorSmoothHWYGS
     }
     if (calculateGlobals) {
       auto virial = dr * f;
-      double upot = smoothing * epsilon24 * lj12m6;
+      double upot = smoothingPot * epsilon24 * lj12m6;
 
       const int threadnum = autopas::autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
@@ -544,8 +557,8 @@ class LJFunctorSmoothHWYGS
 #else
     double concatenated[2 * _vecLengthDouble];
     // Store vectors 'a' and 'b' into concatenated array
-    Store(a, tag_double, concatenated);
-    Store(b, tag_double, concatenated + _vecLengthDouble);
+    StoreU(a, tag_double, concatenated);
+    StoreU(b, tag_double, concatenated + _vecLengthDouble);
     // Create a vector to hold the result
     // Load the result starting from the appropriate position
     return highway::LoadU(tag_double,concatenated+shift);
@@ -622,13 +635,13 @@ class LJFunctorSmoothHWYGS
       //gathering indices for the normal functor
       if (numAssignedRegisters + popCountMask < _vecLengthDouble) {
         VectorDouble newInteractionIndices = highway::Compress(loopIndices,cutoffDummyMask);
-        //newInteractionIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountMask),newInteractionIndices);
+        newInteractionIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountMask),newInteractionIndices);
         interactionIndices = alignr(interactionIndices,newInteractionIndices,popCountMask);
         numAssignedRegisters += popCountMask;
       }
       else {
         VectorDouble newInteractionIndices = highway::Compress(loopIndices,cutoffDummyMask);
-        //newInteractionIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountMask),newInteractionIndices);
+        newInteractionIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountMask),newInteractionIndices);
         interactionIndices = alignr(interactionIndices,newInteractionIndices,_vecLengthDouble-numAssignedRegisters);
 
         SoAKernelGS<newton3, remainderI, false>(interactionIndices,
@@ -645,13 +658,13 @@ class LJFunctorSmoothHWYGS
       //gathering indices for the smoothed functor
       if (numAssignedInnerRegisters + popCountInnerMask < _vecLengthDouble) {
         VectorDouble newInteractionInnerIndices = highway::Compress(loopIndices, innerCutoffDummyMask);
-        //newInteractionInnerIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountInnerMask),newInteractionInnerIndices);
+        newInteractionInnerIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountInnerMask),newInteractionInnerIndices);
         interactionInnerIndices = alignr(interactionInnerIndices,newInteractionInnerIndices,popCountInnerMask);
         numAssignedInnerRegisters += popCountInnerMask;
       }
       else {
         VectorDouble newInteractionInnerIndices = highway::Compress(loopIndices, innerCutoffDummyMask);
-        //newInteractionInnerIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountInnerMask),newInteractionInnerIndices);
+        newInteractionInnerIndices = highway::IfThenElseZero(highway::FirstN(tag_double,popCountInnerMask),newInteractionInnerIndices);
         interactionInnerIndices = alignr(interactionInnerIndices,newInteractionInnerIndices,_vecLengthDouble-numAssignedInnerRegisters);
 
         SoAKernelSmoothGS<newton3, remainderI, false>(interactionInnerIndices,
@@ -963,35 +976,36 @@ class LJFunctorSmoothHWYGS
 
     const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
 
-    /*
-    const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
-    const auto innerCutoffMask = highway::Ge(dr2, _innerCutoff);
-    const auto zeroMask = highway::Ne(dr2, _zeroDouble);
-    const auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
-    const auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, dummyMask));
-     */
-
-    //compute smoothing factor
-    const auto drtrue = highway::Sqrt(dr2);
-    const auto temp = drtrue - _innerCutoff;
-    const auto temp2 = temp*temp;
-    const auto twodrtrue = _twoDouble * drtrue;
-    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodrtrue;
-    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
-    const auto fraction = numerator * _cutoffDiffCubedInv;
-    const auto smoothingTerm = _oneDouble - fraction;
-    const auto smoothingMasked = highway::IfThenElse(dummyMask,smoothingTerm,_oneDouble);
-
-    // compute LJ Potential
     const auto invDr2 = _oneDouble / dr2;
     const auto lj2 = sigmaSquareds * invDr2;
     const auto lj4 = lj2 * lj2;
     const auto lj6 = lj2 * lj4;
     const auto lj12 = lj6 * lj6;
     const auto lj12m6 = lj12 - lj6;
-    const auto lj12m6alj12 = lj12m6 + lj12;
-    const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
-    const auto fac = lj12m6alj12e * invDr2 * smoothingMasked;
+
+    //compute smoothed force
+    const auto dr1= highway::Sqrt(dr2);
+    const auto sigma6 = sigmaSquareds * sigmaSquareds * sigmaSquareds;
+    const auto dr6 = dr2 * dr2 * dr2;
+    const auto twosigdr6 = (_twoDouble * sigma6 - dr6);
+    const auto term1 = lj6 * epsilon24s * _cutoffDiffCubedInv * (dr1 - _cutoff) / (dr6 * dr2) ;
+    const auto term2 = _cutoffSquared * twosigdr6;
+    const auto term3 = _cutoff * (dr1 - _threeDouble * _innerCutoff ) * twosigdr6;
+    const auto term4 = dr1 * ((_fiveDouble * _innerCutoff * sigma6) - (_twoDouble * _innerCutoff * dr6) - (_threeDouble * sigma6 * dr1) + (dr6 * dr1));
+
+    const auto smoothingTerm = term1 * (term2 + term3 + term4);
+
+    //compute smoothed potential
+    const auto temp = highway::Sub(dr1,_innerCutoff);
+    const auto temp2 = temp * temp;
+    const auto twodr1= _twoDouble * dr1;
+    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodr1;
+    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
+    const auto fraction = numerator * _cutoffDiffCubedInv;
+    const auto smoothingTermPot = _oneDouble - fraction;
+    const auto smoothingMaskedPot = highway::IfThenElse(dummyMask,smoothingTermPot,_oneDouble);
+
+    const auto fac = smoothingTerm;
 
     const auto facMasked = highway::IfThenElseZero(dummyMask, fac);
 
@@ -1012,8 +1026,8 @@ class LJFunctorSmoothHWYGS
       auto virialY = fy * drY;
       auto virialZ = fz * drZ;
 
-      auto uPot = highway::MulAdd(epsilon24s, lj12m6,shift6s);
-      uPot = highway::Mul(uPot, smoothingTerm);
+      auto uPot = highway::Mul(epsilon24s, lj12m6);
+      uPot = highway::Mul(uPot, smoothingMaskedPot);
       auto uPotMasked = highway::IfThenElseZero(dummyMask, uPot);
 
       auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
@@ -1098,7 +1112,7 @@ class LJFunctorSmoothHWYGS
       auto virialY = fy * drY;
       auto virialZ = fz * drZ;
 
-      auto uPot = highway::MulAdd(epsilon24s, lj12m6,shift6s);
+      auto uPot = highway::Mul(epsilon24s, lj12m6);
       auto uPotMasked = highway::IfThenElseZero(dummyMask, uPot);
 
       auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
@@ -1243,22 +1257,11 @@ class LJFunctorSmoothHWYGS
     const auto zeroMask = highway::Ne(dr2, _zeroDouble);
     const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
     const auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
-    const auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, dummyMask));
+    const auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, cutoffDummyMask));
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
     }
-
-    //compute smoothing factor
-    const auto drtrue = highway::Sqrt(dr2);
-    const auto temp = drtrue - _innerCutoff;
-    const auto temp2 = temp*temp;
-    const auto twodrtrue = _twoDouble * drtrue;
-    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodrtrue;
-    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
-    const auto fraction = numerator * _cutoffDiffCubedInv;
-    const auto smoothingTerm = _oneDouble - fraction;
-    const auto smoothingMasked = highway::IfThenElse(innerCutoffDummyMask,smoothingTerm,_oneDouble);
 
     // compute LJ Potential
     const auto invDr2 = _oneDouble / dr2;
@@ -1269,9 +1272,33 @@ class LJFunctorSmoothHWYGS
     const auto lj12m6 = lj12 - lj6;
     const auto lj12m6alj12 = lj12m6 + lj12;
     const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
-    const auto fac = lj12m6alj12e * invDr2 * smoothingMasked;
 
-    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+    //compute smoothed force
+    const auto dr1= highway::Sqrt(dr2);
+    const auto sigma6 = sigmaSquareds * sigmaSquareds * sigmaSquareds;
+    const auto dr6 = dr2 * dr2 * dr2;
+    const auto twosigdr6 = (_twoDouble * sigma6 - dr6);
+    const auto term1 = lj6 * epsilon24s * _cutoffDiffCubedInv * (dr1 - _cutoff) / (dr6 * dr2) ;
+    const auto term2 = _cutoffSquared * twosigdr6;
+    const auto term3 = _cutoff * (dr1 - _threeDouble * _innerCutoff ) * twosigdr6;
+    const auto term4 = dr1 * ((_fiveDouble * _innerCutoff * sigma6) - (_twoDouble * _innerCutoff * dr6) - (_threeDouble * sigma6 * dr1) + (dr6 * dr1));
+
+    const auto smoothingTerm = term1 * (term2 + term3 + term4);
+
+    //compute smoothed potential
+    const auto temp = highway::Sub(dr1,_innerCutoff);
+    const auto temp2 = temp * temp;
+    const auto twodr1= _twoDouble * dr1;
+    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodr1;
+    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
+    const auto fraction = numerator * _cutoffDiffCubedInv;
+    const auto smoothingTermPot = _oneDouble - fraction;
+    const auto smoothingMaskedPot = highway::IfThenElse(innerCutoffDummyMask,smoothingTermPot,_oneDouble);
+
+    const auto fac = lj12m6alj12e * invDr2;
+
+    const auto facMaskedBefore = highway::IfThenElseZero(cutoffDummyMask, fac);
+    const auto facMasked = highway::IfThenElse(innerCutoffDummyMask, smoothingTerm, facMaskedBefore);
 
     const VectorDouble fx = drX * facMasked;
     const VectorDouble fy = drY * facMasked;
@@ -1291,8 +1318,8 @@ class LJFunctorSmoothHWYGS
       auto virialZ = fz * drZ;
 
 
-      auto uPot = highway::MulAdd(epsilon24s, lj12m6,shift6s);
-      uPot = highway::Mul(uPot, smoothingMasked);
+      auto uPot = highway::Mul(epsilon24s, lj12m6);
+      uPot = highway::Mul(uPot, smoothingMaskedPot);
       auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
 
       auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
@@ -1458,135 +1485,6 @@ class LJFunctorSmoothHWYGS
     }
   }
 
-  template <bool newton3>
-  inline void SoAFunctorVerletImplGS(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                     const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
-      return;
-    }
-
-    const auto *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    auto *const __restrict fxPtr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyPtr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzPtr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-    const auto *const __restrict typeIDPtr = soa.template begin<Particle::AttributeNames::typeId>();
-
-    VectorDouble virialSumX = highway::Zero(tag_double);
-    VectorDouble virialSumY = highway::Zero(tag_double);
-    VectorDouble virialSumZ = highway::Zero(tag_double);
-    VectorDouble uPotSum = highway::Zero(tag_double);
-    VectorDouble fxAcc = highway::Zero(tag_double);
-    VectorDouble fyAcc = highway::Zero(tag_double);
-    VectorDouble fzAcc = highway::Zero(tag_double);
-
-    const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
-    const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
-    const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
-    const int64_t ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
-    const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
-    const MaskDouble ownedMaskI = highway::Ne(ownedStateI, _zeroDouble);
-
-    alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
-    alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
-    alignas(64) std::array<double, _vecLengthDouble> z2Tmp{};
-    alignas(64) std::array<double, _vecLengthDouble> fx2Tmp{};
-    alignas(64) std::array<double, _vecLengthDouble> fy2Tmp{};
-    alignas(64) std::array<double, _vecLengthDouble> fz2Tmp{};
-    alignas(64) std::array<size_t, _vecLengthDouble> typeID2Tmp{};
-    alignas(64) std::array<autopas::OwnershipState, _vecLengthDouble> ownedStates2Tmp{};
-
-    size_t j = 0;
-
-    for (; j < (neighborList.size() & ~(_vecLengthDouble - 1)); j += _vecLengthDouble) {
-
-      // load neighbor particles in consecutive array
-      for (long vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
-        x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
-        y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
-        z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
-        if constexpr (newton3) {
-          fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
-          fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
-          fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
-        }
-        typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
-        ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
-      }
-
-      SoAKernelSmooth<newton3, false, false>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
-                                             x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
-                                             &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
-                                             virialSumY, virialSumZ, uPotSum, 0, 0);
-
-      if constexpr (newton3) {
-
-        for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
-          fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
-          fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
-          fzPtr[neighborList[j + vecIndex]] = fz2Tmp[vecIndex];
-        }
-      }
-    }
-
-    const int rest = static_cast<int>(neighborList.size() & (_vecLengthDouble - 1));
-
-    if (rest > 0) {
-      for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
-        x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
-        y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
-        z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
-        if constexpr (newton3) {
-          fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
-          fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
-          fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
-        }
-        typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
-        ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
-      }
-
-      SoAKernelSmooth<newton3, false, true>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
-                                            x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
-                                            &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
-                                            virialSumY, virialSumZ, uPotSum, 0, rest);
-
-      if constexpr (newton3) {
-
-        for (long vecIndex = 0; vecIndex < _vecLengthDouble && vecIndex < rest; ++vecIndex) {
-          fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
-          fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
-          fzPtr[neighborList[j + vecIndex]] = fz2Tmp[vecIndex];
-        }
-      }
-    }
-
-    fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
-    fyPtr[indexFirst] += highway::ReduceSum(tag_double, fyAcc);
-    fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
-
-    if constexpr (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_num_threads();
-
-      double globals[] = {
-          highway::ReduceSum(tag_double, virialSumX),
-          highway::ReduceSum(tag_double, virialSumY),
-          highway::ReduceSum(tag_double, virialSumZ),
-          highway::ReduceSum(tag_double, uPotSum)
-      };
-
-      double factor = 1.;
-      factor *= newton3 ? .5 : 1.;
-      _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-      _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-      _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-      _aosThreadData[threadnum].uPotSum += globals[3] * factor;
-    }
-  }
 
  public:
   /**
@@ -1757,6 +1655,9 @@ class LJFunctorSmoothHWYGS
   const VectorLong _zeroLong {highway::Zero(tag_long)};
   const VectorDouble _oneDouble {highway::Set(tag_double, 1.)};
   const VectorDouble _twoDouble {highway::Set(tag_double, 2.)};
+  const VectorDouble _threeDouble {highway::Set(tag_double, 3.)};
+  const VectorDouble _fiveDouble {highway::Set(tag_double, 5.)};
+
   const VectorLong _oneLong {highway::Set(tag_long, 1)};
   double asc[_vecLengthDouble];
   VectorDouble _ascendingIndices{};
