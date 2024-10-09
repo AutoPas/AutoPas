@@ -442,7 +442,7 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{
+  MDFlexOption<FunctorOption, __LINE__> functorOption {
     // choose a reasonable default depending on what is available at compile time
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
     FunctorOption::lj12_6_AVX,
@@ -451,9 +451,10 @@ class MDFlexConfig {
 #else
     FunctorOption::lj12_6,
 #endif
-       "functor", true,
-       "Force functor to use. Possible Values: (lennard-jones "
-       "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+        "functor", true,
+        "Force functor to use. Possible Values: (lennard-jones "
+        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
+  };
   /**
    * iterations
    */
