@@ -123,6 +123,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
   _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
   _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
+  _autoPasContainer->setModelFileName(_configuration.modelFilename.value);
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
@@ -584,8 +585,7 @@ void Simulation::logMeasurements() {
     std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
-              << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
-              << "\n";
+              << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%" << "\n";
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
@@ -697,8 +697,8 @@ void Simulation::loadParticles() {
                                 _domainDecomposition->getCommunicator());
     std::cout << "Number of particles at initialization globally"
               // align ":" with the messages above
-              << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length()) << ""
-              << ": " << dataPackage.numParticlesAdded << "\n";
+              << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length()) << "" << ": "
+              << dataPackage.numParticlesAdded << "\n";
     // Sanity check that on a global scope all particles have been loaded
     if (dataPackage.numParticlesAdded != dataPackage.numParticlesInConfig) {
       throw std::runtime_error(

@@ -77,7 +77,7 @@ def load_data_from_directory(live_info_dir: str, tuning_results_dir: str) -> pd.
     return final_merged_df
 
 
-def preprocess_data(merged_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+def preprocess_data(merged_df: pd.DataFrame) -> tuple:
     """
     Preprocess the merged DataFrame for model training.
 
@@ -112,7 +112,7 @@ def preprocess_data(merged_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame
     return X, y, label_encoders
 
 
-def train_model(X: pd.DataFrame, y: pd.DataFrame) -> dict[str, RandomForestClassifier]:
+def train_model(X: pd.DataFrame, y: pd.DataFrame) -> dict:
     """
     Train a RandomForestClassifier for each target variable.
 
@@ -145,7 +145,7 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame) -> dict[str, RandomForestClass
     return models
 
 
-def save_model_and_encoders(models: dict[str, RandomForestClassifier], label_encoders: dict[str, LabelEncoder]) -> None:
+def save_model_and_encoders(models: dict, label_encoders: dict) -> None:
     """
     Save the trained models and LabelEncoders to a single file.
 

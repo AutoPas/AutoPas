@@ -469,6 +469,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.fuzzyRuleFilename.value.empty()) {
           throw std::runtime_error("Parsed rule filename is empty!");
         }
+      } else if (key == config.modelFilename.name) {
+        expected = "String";
+        description = config.modelFilename.description;
+        config.modelFilename.value = node[key].as<std::string>();
+        if (config.modelFilename.value.empty()) {
+          throw std::runtime_error("Parsed rule filename is empty!");
+        }
       } else if (key == config.verletRebuildFrequency.name) {
         expected = "Unsigned Integer >= 1";
         description = config.verletRebuildFrequency.description;

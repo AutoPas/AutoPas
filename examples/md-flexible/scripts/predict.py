@@ -8,7 +8,7 @@ import json
 import os
 
 
-def load_models_and_encoders(model_file: str) -> tuple[dict, dict]:
+def load_models_and_encoders(model_file: str) -> tuple:
     """
     Load the trained models and label encoders from a single pickle file.
 

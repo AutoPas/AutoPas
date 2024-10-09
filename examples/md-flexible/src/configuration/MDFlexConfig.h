@@ -286,6 +286,10 @@ class MDFlexConfig {
    */
   MDFlexOption<std::string, __LINE__> fuzzyRuleFilename{
       "", "fuzzy-rule-filename", true, "Path to a .frule file containing rules for the fuzzy-based tuning method."};
+
+  /**
+   * modelFilename
+   */
   MDFlexOption<std::string, __LINE__> modelFilename{
       "", "model-filename", true, "Path to a .pkl file containing the model for the decision-tree tuning method."};
   /**
@@ -438,19 +442,18 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption {
-    // choose a reasonable default depending on what is available at compile time
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+  // choose a reasonable default depending on what is available at compile time
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-    FunctorOption::lj12_6_AVX,
+      FunctorOption::lj12_6_AVX,
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-    FunctorOption::lj12_6_SVE,
+      FunctorOption::lj12_6_SVE,
 #else
-    FunctorOption::lj12_6,
+      FunctorOption::lj12_6,
 #endif
-        "functor", true,
-        "Force functor to use. Possible Values: (lennard-jones "
-        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
-  };
+      "functor", true,
+      "Force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
   /**
    * iterations
    */
