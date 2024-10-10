@@ -95,6 +95,7 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::ruleBasedTuning, "rule-based"},
+      {autopas::TuningStrategyOption::fuzzyTuning, "fuzzy"},
       {autopas::TuningStrategyOption::slowConfigFilter, "slow-filter"},
       {autopas::TuningStrategyOption::sortByName, "sortbyname"},
       {autopas::TuningStrategyOption::tuningStrategyLogger, "tuningstratLogger"},

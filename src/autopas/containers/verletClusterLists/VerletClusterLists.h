@@ -184,9 +184,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void addHaloParticleImpl(const Particle &haloParticle) override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
-    Particle copy = haloParticle;
-    copy.setOwnershipState(OwnershipState::halo);
-    _particlesToAdd[autopas_get_thread_num()].push_back(copy);
+    _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
   bool updateHaloParticle(const Particle &haloParticle) override {

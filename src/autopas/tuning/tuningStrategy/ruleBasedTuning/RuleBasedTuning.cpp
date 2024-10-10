@@ -12,7 +12,7 @@ namespace autopas {
 
 RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, bool verifyModeEnabled,
                                  std::string ruleFileName, RuleBasedTuning::PrintTuningErrorFunType tuningErrorPrinter)
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
     : _verifyModeEnabled(verifyModeEnabled),
       _tuningErrorPrinter(std::move(tuningErrorPrinter)),
       _searchSpace(searchSpace),
@@ -24,11 +24,15 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
     utils::ExceptionHandler::exception("Rule file {} does not exist!", _ruleFileName);
   }
   // By default, dump the rules for reproducibility reasons.
-  AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
+  int myRank{};
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank == 0) {
+    AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
+  }
 #else
 {
   autopas::utils::ExceptionHandler::exception(
-      "RuleBasedTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
+      "RuleBasedTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
 #endif
 }
 
@@ -37,7 +41,7 @@ bool RuleBasedTuning::needsLiveInfo() const { return true; }
 void RuleBasedTuning::receiveLiveInfo(const LiveInfo &info) { _currentLiveInfo = info; }
 
 void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
   _tuningTime += evidence.value;
   _tuningTimeLifetime += evidence.value;
   _traversalTimes[configuration] = evidence.value;
@@ -51,9 +55,9 @@ void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evid
 #endif
 }
 
-void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                             const EvidenceCollection &evidenceCollection) {
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
   if (_verifyModeEnabled and _tuningTime > 0) {
     // It is fine to leave this log statement on Info level because it is behind if (_verificationModeEnabled).
     AutoPasLog(INFO, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
@@ -73,22 +77,25 @@ void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Co
   _rulesTooHarsh = false;
   optimizeSuggestions(configQueue, evidenceCollection);
 #endif
+
+  // RuleBasedTuning does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 long RuleBasedTuning::getLifetimeWouldHaveSkippedTuningTime() const { return _wouldHaveSkippedTuningTimeLifetime; }
 
 long RuleBasedTuning::getLifetimeTuningTime() const { return _tuningTimeLifetime; }
 
-void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+bool RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                           const EvidenceCollection &evidenceCollection) {
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
   _lastApplicableConfigurationOrders = applyRules(configQueue);
 
   // Don't apply rules if they would wipe the queue and nothing has been tested yet.
   if (_rulesTooHarsh or (_searchSpace.empty() and _tuningTime == 0)) {
     _rulesTooHarsh = true;
     AutoPasLog(WARN, "Rules would remove all available options! Not applying them until next reset.");
-    return;
+    return false;
   }
 
   if (not _verifyModeEnabled) {
@@ -96,11 +103,13 @@ void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueu
     std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
   }
 #endif
+  // RuleBasedTuning does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 TuningStrategyOption RuleBasedTuning::getOptionType() const { return TuningStrategyOption::ruleBasedTuning; }
 
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 
 std::string RuleBasedTuning::rulesToString(const std::string &filePath) const {
   std::ifstream ruleFile(filePath);
@@ -149,21 +158,20 @@ void RuleBasedTuning::verifyCurrentConfigTime(const Configuration &configuration
   }
 }
 
-std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
-    const std::vector<Configuration> &searchSpace) {
+std::vector<RuleSyntax::ConfigurationOrder> RuleBasedTuning::applyRules(const std::vector<Configuration> &searchSpace) {
   AutoPasLog(DEBUG, _currentLiveInfo.toString());
 
   std::vector<RuleVM::MemoryCell> initialStack;
-  std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
+  std::vector<std::pair<std::string, RuleSyntax::Define>> defines{};
   for (const auto &[name, value] : _currentLiveInfo.get()) {
     initialStack.emplace_back(value);
-    defines.push_back({name, {name, std::make_shared<rule_syntax::Literal>(value)}});
+    defines.push_back({name, {name, std::make_shared<RuleSyntax::Literal>(value)}});
   }
 
   std::ifstream ifs{_ruleFileName};
   const std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
-  rule_syntax::RuleBasedProgramParser parser{defines};
+  RuleSyntax::RuleBasedProgramParser parser{defines};
   auto [programTree, context] = parser.parse(content);
 
   const auto generatedProgram = programTree.generateCode(context);
@@ -173,7 +181,7 @@ std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
 
   AutoPasLog(DEBUG, "Remove patterns (Count {}):", removePatterns.size());
   std::vector<ConfigurationPattern> toRemovePatterns{};
-  std::vector<rule_syntax::ConfigurationOrder> applicableConfigurationOrders{};
+  std::vector<RuleSyntax::ConfigurationOrder> applicableConfigurationOrders{};
   for (const auto &patternIdx : removePatterns) {
     const auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
     toRemovePatterns.push_back(pattern);
