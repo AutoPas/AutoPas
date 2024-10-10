@@ -7,9 +7,9 @@ include(autopas_auto4omp)
 if (AUTOPAS_OPENMP)
     message(STATUS "OpenMP enabled.")
     find_package(OpenMP REQUIRED)
-    # OpenMP version 4.5 was specified in 11.2015
     if (
         NOT AUTOPAS_AUTO4OMP
+        # OpenMP version 4.5 was specified in 11.2015
         AND (OpenMP_CXX_SPEC_DATE LESS 201511)
         AND
             NOT

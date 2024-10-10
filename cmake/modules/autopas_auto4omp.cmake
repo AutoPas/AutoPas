@@ -23,8 +23,8 @@ set(
 )
 
 set(
-        AUTOPAS_AUTO4OMP_GIT_FORCE_DOC
-        "Downloads Auto4OMP from Git instead of the bundled zip, despite potential incompatibility with AutoPas."
+        AUTOPAS_AUTO4OMP_ForceBundled_DOC
+        "Loads the bundled Auto4OMP zip instead of downloading it from Git."
 )
 
 set(
@@ -103,21 +103,12 @@ set(
         "Newest OpenMP version supported by AutoPas."
 )
 
-function(set_autopas_auto4omp_target_boolean_doc bool_var target)
-    set(${bool_var} "Boolean that specifies whether Auto4OMP's target ${target} is defined." PARENT_SCOPE)
-endfunction()
-set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omp_DOC" "omp")
-set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget_DOC" "omptarget")
-set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget.rtl.cuda_DOC" "omptarget.rtl.cuda")
-set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget.rtl.x86_64_DOC" "omptarget.rtl.x86_64")
-set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget-nvptx_DOC" "omptarget-nvptx")
-
 # AutoPas CMake variables for Auto4OMP.
 option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
 option(AUTOPAS_LB4OMP "${AUTOPAS_LB4OMP_DOC}" ON)
 option(AUTOPAS_AUTO4OMP_DEBUG "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_MASTER_FORCE "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
-option(AUTOPAS_AUTO4OMP_GIT_FORCE "${AUTOPAS_AUTO4OMP_GIT_FORCE_DOC}" OFF)
+option(AUTOPAS_AUTO4OMP_ForceBundled "${AUTOPAS_AUTO4OMP_ForceBundled_DOC}" ON)
 set(AUTOPAS_AUTO4OMP_GIT_TAG "master" CACHE STRING "${AUTOPAS_AUTO4OMP_GIT_TAG_DOC}")
 set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH "${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC}")
 set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}")
@@ -135,7 +126,7 @@ if (NOT AUTOPAS_AUTO4OMP)
     set(AUTOPAS_LB4OMP OFF CACHE BOOL ${AUTOPAS_LB4OMP_DOC} FORCE)
 elseif (NOT AUTOPAS_OPENMP)
     # If OpenMP disabled, warn.
-    message(WARNING "OpenMP must be enabled to use Auto4. Auto4OMP disabled.")
+    message(WARNING "OpenMP must be enabled to use Auto4OMP. Auto4OMP disabled.")
     set(AUTOPAS_AUTO4OMP OFF CACHE BOOL ${AUTOPAS_AUTO4OMP_DOC} FORCE)
     set(AUTOPAS_LB4OMP OFF CACHE BOOL ${AUTOPAS_LB4OMP_DOC} FORCE)
 else ()
@@ -169,7 +160,7 @@ else ()
     #### Compile and run CycleCounterQuery.cpp to check if a cycle counter's available, inspired from [2, 3].
     execute_process(
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/scripts
-            COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_SOURCE_DIR}/src/autopas/utils/CycleCounterQuery.cpp
+            COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_SOURCE_DIR}/tools/CycleCounterQuery.cpp
             -o ${CMAKE_BINARY_DIR}/scripts/has_builtin_readcyclecounter
     )
     execute_process(
@@ -381,7 +372,7 @@ else ()
     # Enable the FetchContent CMake module.
     include(FetchContent)
 
-    if (AUTOPAS_AUTO4OMP_GIT_FORCE)
+    if (NOT AUTOPAS_AUTO4OMP_ForceBundled)
         # Download Auto4OMP from Git.
         FetchContent_Declare(
                 auto4omp

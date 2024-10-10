@@ -442,11 +442,10 @@ class MDFlexConfig {
   MDFlexOption<autopas::OpenMPKindOption, __LINE__> openMPKind{
       autopas::OpenMPKindOption::omp_runtime, "openmp-kind", true,
       "OpenMP's scheduling kind for color-based traversals. "
-      "Possible values: static, dynamic, guided, auto, runtime, randomSel, exhaustiveSel, binarySearch, expertSel. "
-      "If the CMake option AUTOPAS_LB4OMP is on, LB4OMP's individual scheduling techniques are provided: "
-      "profiling, fsc, mfsc, tap, fac, faca, fac2, fac2a, bold, wf, af, af_a, awf, awf_b, awf_c, awf_d, awf_e, tfss, "
-      "fiss, viss, rnd, trapezoidal, static_steal. "
-      "Default: runtime"};
+      "To use LB4OMP's individual scheduling techniques, turn on the CMake option AUTOPAS_LB4OMP."
+      "Possible values: "
+          + autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllOptions(), " ", {"(", ")"})
+          + " Default: runtime"};
 
   // Simulation Options:
   /**

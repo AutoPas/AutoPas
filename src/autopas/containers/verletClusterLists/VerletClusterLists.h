@@ -880,7 +880,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     const auto numTowers = _towerBlock.size();
 
     // Sets OpenMP's runtime schedule using the OpenMP configurator.
-    if (ParticleContainerInterface<Particle>::_ompConfig != nullptr) {
+    if (ParticleContainerInterface<Particle>::_ompConfig) {
       autopas_set_schedule(*(ParticleContainerInterface<Particle>::_ompConfig));
     }
 
