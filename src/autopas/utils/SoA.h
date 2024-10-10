@@ -109,7 +109,7 @@ class SoA {
    * @param other other SoA buffer
    */
   void append(const SoAType &other) {
-    _mainSoAPartition.append(other->mainSoAPartition);
+    _mainSoAPartition.append(other._mainSoAPartition);
     if (other.size() > 0) {
       appendAdditionalTypesImpl(other, std::make_index_sequence<numAdditionalTypes>{});
     }
@@ -246,7 +246,7 @@ class SoA {
    * @return array of max depths
    */
   std::array<size_t, numAdditionalTypes> getMaxDepths() {
-    getMaxDepthsImpl(std::make_index_sequence<numAdditionalTypes>{});
+    return getMaxDepthsImpl(std::make_index_sequence<numAdditionalTypes>{});
   }
 
   /**
@@ -258,6 +258,20 @@ class SoA {
   void resizeMaxDepthOfGivenType(size_t newMaxDepth) {
     std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions).resize(newMaxDepth);
   }
+
+  /**
+   * The actual SoA data:
+   */
+
+  /**
+   * The Main SoA Partition.
+   */
+  MainPartitionType _mainSoAPartition;
+
+  /**
+   * The Additional SoA Partitions.
+   */
+  AdditionalPartitionType _additionalSoAPartitions;
 
  private:
   /**
@@ -411,19 +425,5 @@ class SoA {
   std::array<size_t, numAdditionalTypes> getMaxDepthsImpl(std::index_sequence<additionalPartitionTypeIndices...>) {
     return std::array<size_t, numAdditionalTypes>{getMaxDepthOfGivenType<additionalPartitionTypeIndices>()...};
   }
-
-  /**
-   * The actual SoA data:
-   */
-
-  /**
-   * The Main SoA Partition.
-   */
-  MainPartitionType _mainSoAPartition;
-
-  /**
-   * The Additional SoA Partitions.
-   */
-  AdditionalPartitionType _additionalSoAPartitions;
 };
 }  // namespace autopas

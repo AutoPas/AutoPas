@@ -10,6 +10,8 @@
 #include <vector>
 #include "autopas/utils/ExceptionHandler.h"
 
+#include "autopas/utils/SoAPartitionView.h"
+
 namespace autopas {
 
 template <class SoAType>
@@ -53,8 +55,8 @@ class SoAView {
    * @param endIndex The index of the entry after the last entry of the SoAView.
    */
   SoAView(SoA<SoAType> *soa, std::size_t startIndex, std::size_t endIndex)
-      : _mainSoAPartitionView(soa->_mainSoAPartition, startIndex, endIndex),
-        _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(*soa, startIndex, endIndex)),
+      : _mainSoAPartitionView(&soa->_mainSoAPartition, startIndex, endIndex),
+        _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(soa, startIndex, endIndex)),
         _startIndex(startIndex), _endIndex(endIndex) {
     if (not(soa->size() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
       autopas::utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
@@ -65,7 +67,7 @@ class SoAView {
    * Constructs a SoAView on the whole content of \p SoA.
    * @param soa The SoA to view.
    */
-  explicit SoAView(SoA<SoAType> *soa) : _mainSoAPartitionView(soa->_mainSoAPartition),
+  explicit SoAView(SoA<SoAType> *soa) : _mainSoAPartitionView(*soa->_mainSoAPartition),
                                         _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(*soa, 0, soa->size())),
                                         _startIndex(0), _endIndex(soa->size()) {}
 
@@ -73,8 +75,8 @@ class SoAView {
    * Implicit constructor that converts a SoA to SoAView.
    * @param soa The SoA to view.
    */
-  SoAView(SoA<SoAType> &soa) : _mainSoAPartitionView(soa->_mainSoAPartition),
-                               _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(*soa, 0, soa->size())),
+  SoAView(SoA<SoAType> &soa) : _mainSoAPartitionView(&soa._mainSoAPartition),
+                               _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(&soa, 0, soa.size())),
                                _startIndex(0), _endIndex(soa.size()) {}
 
   /**
@@ -84,7 +86,7 @@ class SoAView {
    */
   template <size_t attribute>
   auto begin() {
-    return _mainSoAPartitionView->template begin<attribute>();
+    return _mainSoAPartitionView.template begin<attribute>();
   }
 
   /**
