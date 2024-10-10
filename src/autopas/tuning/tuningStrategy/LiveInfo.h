@@ -337,9 +337,10 @@ class LiveInfo {
    */
   template <class Particle, class PairwiseFunctor, size_t... Idx>
   constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
-    return (0 + ... +
-            sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
-                                               typename Particle::SoAArraysType>::type::value_type));
+//    return (0 + ... +
+//            sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
+//                                               typename Particle::SoAArraysType>::type::value_type));
+    return 0; // TODO fix this. This is not entirely trivial.
   }
 
   /**
