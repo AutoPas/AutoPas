@@ -12,6 +12,7 @@
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/Timer.h"
 
 // Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -521,8 +522,8 @@ bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) {
         auto boolean = _autoPasContainer->computeInteractions(&functor);
-        _potentialEnergy2B += functor.getPotentialEnergy();
-        _virial2B += functor.getVirial();
+        _potentialEnergy2B.push_back(functor.getPotentialEnergy());
+        _virial2B.push_back(functor.getVirial());
         return boolean;
       });
   return wasTuningIteration;
@@ -532,8 +533,8 @@ bool Simulation::calculateTriwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor3B<bool>([&](auto &&functor) {
         auto boolean = _autoPasContainer->computeInteractions(&functor);
-        _potentialEnergy3B += functor.getPotentialEnergy();
-        _virial3B += functor.getVirial();
+        _potentialEnergy3B.push_back(functor.getPotentialEnergy());
+        _virial3B.push_back(functor.getVirial());
         return boolean;
       });
   return wasTuningIteration;
@@ -689,8 +690,32 @@ void Simulation::logMeasurements() {
        1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
    std::cout << "MFUPs/sec                          : " << mfups << "\n";
 
-   _potentialEnergy = (_potentialEnergy2B + _potentialEnergy3B)/_iteration;
-   _virial = (_virial2B + _virial3B)/_iteration;
+
+   std::ofstream file("AutoPas_potentialEnergy_" + autopas::utils::Timer::getDateStamp() + ".csv");
+
+   // Check if the file is opened successfully
+   if (!file.is_open()) {
+     std::cout << "Error opening file!" << std::endl;
+   }
+   // Write headers
+   file << "Iteration,Energy2B,Energy3B,Energy,Virial2B,Virial3B,Virial" << std::endl;
+   assert(_potentialEnergy2B.size() == _iteration);
+   assert(_potentialEnergy3B.size() == _iteration);
+   for (auto i=0; i<_iteration; i++) {
+     file << i << ","
+          << _potentialEnergy2B[i] << ","
+          << _potentialEnergy3B[i] <<  ","
+          <<_potentialEnergy2B[i] + _potentialEnergy3B[i] << ","
+          <<_virial2B[i] << ","
+          << _virial3B[i] << ","
+          << _virial2B[i] + _virial3B[i] << std::endl;
+   }
+   file.close();
+
+   _potentialEnergy = (std::accumulate(_potentialEnergy2B.begin(), _potentialEnergy2B.end(), 0)
+                       + std::accumulate(_potentialEnergy3B.begin(), _potentialEnergy3B.end(), 0))/_iteration;
+   _virial = (std::accumulate(_virial2B.begin(), _virial2B.end(), 0) +
+              std::accumulate(_virial3B.begin(), _virial3B.end(), 0))/_iteration;
    std::cout << "Potential Energy: " << _potentialEnergy << " K" << "\n";
    std::cout << "Virial: " << _virial << " K nm" << "\n";
  }
