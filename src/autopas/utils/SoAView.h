@@ -26,10 +26,22 @@ class SoA;
 template <class SoAType>
 class SoAView {
  public:
+  using MainPartitionViewType = typename SoAType::MainPartitionViewType;
+
+  using AdditionalPartitionsViewType = typename SoAType::AdditionalPartitionsViewType;
+
+  /**
+   * Number of additional partition types
+   */
+  static const size_t numAdditionalTypes = std::tuple_size<AdditionalPartitionsViewType>::value;
+
+
   /**
    * Default constructor of SoAView to allow storing it in containers.
    */
-  SoAView() : _soa(nullptr), _startIndex(0), _endIndex(0) {}
+  SoAView() : _mainSoAPartitionView(), _additionalSoAPartitionsView(), _startIndex(0), _endIndex(0) {
+
+  }
 
   /**
    * Constructs a view on \p SoA that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
@@ -41,7 +53,9 @@ class SoAView {
    * @param endIndex The index of the entry after the last entry of the SoAView.
    */
   SoAView(SoA<SoAType> *soa, std::size_t startIndex, std::size_t endIndex)
-      : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
+      : _mainSoAPartitionView(soa->_mainSoAPartition, startIndex, endIndex),
+        _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(*soa, startIndex, endIndex)),
+        _startIndex(startIndex), _endIndex(endIndex) {
     if (not(soa->size() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
       autopas::utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
     }
@@ -51,13 +65,17 @@ class SoAView {
    * Constructs a SoAView on the whole content of \p SoA.
    * @param soa The SoA to view.
    */
-  explicit SoAView(SoA<SoAType> *soa) : _soa(soa), _startIndex(0), _endIndex(soa->size()) {}
+  explicit SoAView(SoA<SoAType> *soa) : _mainSoAPartitionView(soa->_mainSoAPartition),
+                                        _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(*soa, 0, soa->size())),
+                                        _startIndex(0), _endIndex(soa->size()) {}
 
   /**
    * Implicit constructor that converts a SoA to SoAView.
    * @param soa The SoA to view.
    */
-  SoAView(SoA<SoAType> &soa) : _soa(&soa), _startIndex(0), _endIndex(soa.size()) {}
+  SoAView(SoA<SoAType> &soa) : _mainSoAPartitionView(soa->_mainSoAPartition),
+                               _additionalSoAPartitionsView(constructViewOnAdditionalPartitions(*soa, 0, soa->size())),
+                               _startIndex(0), _endIndex(soa.size()) {}
 
   /**
    * Returns a pointer to the given attribute vector in the main SoA partition.
@@ -88,11 +106,15 @@ class SoAView {
    */
   [[nodiscard]] size_t size() const { return _endIndex - _startIndex; }
 
- private:
   /**
-   * The underlying SoA.
+   * The View on the Main SoA Partition.
    */
-  SoA<SoAType> *_soa;
+  MainPartitionViewType _mainSoAPartitionView;
+
+  AdditionalPartitionsViewType _additionalSoAPartitionsView;
+
+ private:
+
 
   /**
    * The start index of the view in the SoA. (Inclusive)
@@ -103,6 +125,33 @@ class SoAView {
    * The end index of the view in the SoA. (Exclusive)
    */
   size_t _endIndex;
+
+
+  auto constructViewOnAdditionalPartitions(SoA<SoAType> *soa, std::size_t startIndex, std::size_t endIndex) {
+    return constructViewOnAdditionalPartitionsImpl(soa, startIndex, endIndex, std::make_index_sequence<numAdditionalTypes>{});
+  }
+
+  template <size_t... additionalPartitionTypeIndices>
+  auto constructViewOnAdditionalPartitionsImpl(SoA<SoAType> *soa, std::size_t startIndex, std::size_t endIndex, std::index_sequence<additionalPartitionTypeIndices...>) {
+    return std::make_tuple(constructViewOnSingleAdditionalPartitionType<additionalPartitionTypeIndices>(soa, startIndex, endIndex)...);
+  }
+
+  template <size_t additionalPartitionTypeIndex>
+  auto constructViewOnSingleAdditionalPartitionType(SoA<SoAType> *soa, std::size_t startIndex, std::size_t endIndex) {
+    using partitionViewType = SoAPartitionView<typename std::tuple_element<additionalPartitionTypeIndex, typename SoAType::AdditionalPartitionTypesReference>>;
+
+    const auto maxDepth = soa->template getMaxDepthOfGivenType<additionalPartitionTypeIndex>();
+
+    std::vector<partitionViewType> additionalPartitionViews{};
+    additionalPartitionViews.resize(maxDepth);
+
+    for (size_t depth = 0; depth < maxDepth; ++depth) {
+      // *std::get<additionalPartitionTypeIndex>(soa->_additionalSoAPartitions)[depth] points to the partition that this
+      // view is of
+      additionalPartitionViews[depth] = partitionViewType(
+          *std::get<additionalPartitionTypeIndex>(soa->_additionalSoAPartitions)[depth], startIndex, endIndex);
+    }
+  }
 };
 
 }  // namespace autopas
