@@ -80,13 +80,15 @@ class SoA {
   /**
    * The Main SoA Partition Type
    */
-  using MainPartitionType = typename SoAType::MainType;
+  using MainPartitionType = typename SoAType::MainPartitionType;
 
   /**
    * The Additional SoA Partitions Type. This is a std::tuple<std::vector<AdditionalSoAPartitionTypes>...> (a tuple,
    * with an element per partition type, of vectors of partitions of that type (which themselves are tuples of vectors)).
    */
-  using AdditionalPartitionType = typename SoAType::AdditionalType;
+  using AdditionalPartitionType = typename SoAType::AdditionalPartitionsType;
+
+  using AdditionalPartitionTypesReference = typename SoAType::AdditionalPartitionTypesReference;
 
   /**
    * Number of additional partition types

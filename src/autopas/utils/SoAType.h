@@ -11,11 +11,13 @@
 #include <vector>
 
 #include "autopas/utils/SoAPartitionType.h"
+#include "autopas/utils/SoAPartition.h"
 
 namespace autopas::utils {
 
 /**
- * Helper struct for getting the types of the main and additional parts of the SoA and passing the type of the SoA.
+ * Helper struct for handling the data structure of SoAPartitions for the SoA class, allowing for simpler definitions of
+ * SoAs in particle classes.
  *
  * @tparam ArrayTypes the template parameter list of types.
  */
@@ -24,12 +26,12 @@ struct SoAType {
   /**
    * Type of the main SoA Partition.
    */
-  using MainType = typename mainPartitionType::Type;
+  using MainPartitionType = SoAPartition<mainPartitionType>;
 
   /**
    * Type of the structure of additional SoA Partitions that the data is stored in.
    */
-  using AdditionalType = typename std::tuple<std::vector<typename additionalPartitionTypes::Type>...>;
+  using AdditionalPartitionsType = std::tuple<std::vector<SoAPartition<additionalPartitionTypes>>...>;
 
   /**
    * Types of the additional SoA Partitions. Data is not intended to be stored using this type, this type is to provide

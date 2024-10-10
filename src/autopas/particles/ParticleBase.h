@@ -313,12 +313,12 @@ class ParticleBase {
   /**
    * The type of the main soa partition.
    */
-  using SoAMainPartitionType = typename SoAArraysType::MainType;
+  using SoAMainPartitionType = typename SoAArraysType::MainPartitionType;
 
   /**
    * The type of the additional soa partition structure.
    */
-  using SoAAdditionalPartitionType = typename SoAArraysType::AdditionalType;
+  using SoAAdditionalPartitionType = typename SoAArraysType::AdditionalPartitionsType;
 
   /**
    * Non-const getter for the pointer of this object.
