@@ -981,22 +981,38 @@ class LJFunctorSmooth
 
       const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-      double smoothing = 1;
+      const SoAFloatPrecision smoothingPot = 1;
       if (dr2 > _cutoffSquared) {
         return;
       }
-      else if(dr2 > _innerCutoffSquared){
-        double drtrue = std::sqrt(dr2);
-        double temp = drtrue-_innerCutoff;
-        smoothing = 1 - (temp * temp) * (_3c_i - 2 * drtrue) / _cutoffDiffCubed; //justify change
-      }
-
       const SoAFloatPrecision invdr2 = 1. / dr2;
       const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
       const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
       const SoAFloatPrecision lj12 = lj6 * lj6;
       const SoAFloatPrecision lj12m6 = lj12 - lj6;
-      const SoAFloatPrecision fac = smoothing * epsilon24 * (lj12 + lj12m6) * invdr2;
+      const SoAFloatPrecision fac =  epsilon24 * (lj12 + lj12m6) * invdr2;
+
+      if(dr2 >= _innerCutoffSquared){
+        const SoAFloatPrecision dr1 = std::sqrt(dr2);
+        const SoAFloatPrecision temp = dr1 - innerCutoff;
+        const SoAFloatPrecision cutoffdiffcubeinv = _cutoffDiffCubedInv;
+        const SoAFloatPrecision _3ci = _3c_i;
+        smoothingPot =  1 - (temp * temp) * (_3ci - 2 * dr1) * cutoffdiffcubeinv ;
+
+        const SoAFloatPrecision sigma6 = sigmaSquared * sigmaSquared * sigmaSquared;
+        const SoAFloatPrecision dr6 = dr2 * dr2 * dr2;
+        const SoAFloatPrecision twosigdr6 = (2 * sigma6 - dr6);
+        const SoAFloatPrecision term1 = lj6 * epsilon24 * cutoffdiffcubeinv  * (dr1 - _cutoff) / (dr6 * dr2) ;
+        const SoAFloatPrecision term2 = _cutoffSquared * twosigdr6;
+        const SoAFloatPrecision term3 = _cutoff * (dr1 - 3 * _innerCutoff ) * twosigdr6;
+        const SoAFloatPrecision term4 = dr1 * ((5* _innerCutoff * sigma6) - (2 * _innerCutoff * dr6) - (3 * sigma6 * dr1) + (dr6 * dr1));
+
+        const SoAFloatPrecision smoothingForce = term1 * (term2 + term3 + term4);
+
+        fac =  smoothingForce;
+      }
+
+
 
       const SoAFloatPrecision fx = drx * fac;
       const SoAFloatPrecision fy = dry * fac;
@@ -1014,7 +1030,7 @@ class LJFunctorSmooth
         SoAFloatPrecision virialx = drx * fx;
         SoAFloatPrecision virialy = dry * fy;
         SoAFloatPrecision virialz = drz * fz;
-        SoAFloatPrecision potentialEnergy6 = (smoothing * epsilon24 * lj12m6 + shift6);
+        SoAFloatPrecision potentialEnergy6 = (smoothingPot * epsilon24 * lj12m6);
 
         // Add to the potential energy sum for each particle which is owned.
         // This results in obtaining 12 * the potential energy for the SoA.
