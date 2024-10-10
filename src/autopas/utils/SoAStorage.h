@@ -14,7 +14,8 @@ namespace autopas::utils {
 
 /**
  * SoAStorage is a helper to access the SoAPartition's storage arrays.
- * @tparam SoAArraysType the type of the storage arrays. should be a tuple of aligned vectors
+ * @tparam SoAArraysType the SoAPartitionType from which SoAStorage can get the actual storage arrays of type
+ * SoAArraysType::Type, a tuple of aligned vectors.
  */
 template <class SoAArraysType>
 class SoAStorage {
@@ -59,7 +60,7 @@ class SoAStorage {
   inline constexpr const auto &getTuple() const { return soaStorageTuple; }
 
  private:
-  SoAArraysType soaStorageTuple;
+  typename SoAArraysType::Type soaStorageTuple;
 };
 
 }  // namespace autopas::utils
