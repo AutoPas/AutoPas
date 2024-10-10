@@ -84,7 +84,7 @@ class SoAView {
    */
   template <size_t attribute>
   auto begin() {
-    return _soa->template begin<attribute>();
+    return _mainSoAPartitionView->template begin<attribute>();
   }
 
   /**
@@ -94,9 +94,9 @@ class SoAView {
    * @param depth depth of desired SoA partition
    * @return Pointer to the beginning of the attribute vector const
    */
-  template <size_t additionalPartitionType, size_t attribute>
+  template <size_t additionalPartitionTypeIndex, size_t attribute>
   [[nodiscard]] auto begin(size_t depth) {
-    return _soa->template begin<additionalPartitionType, attribute>(depth);
+    return std::get<additionalPartitionTypeIndex>(_additionalSoAPartitionsView)[depth].template begin<attribute>();
   }
 
   /**
