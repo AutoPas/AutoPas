@@ -107,7 +107,9 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
+      struct option retStruct {
+          name.c_str(), requiresArgument, nullptr, getOptChar
+      };
       return retStruct;
     }
   };
@@ -437,13 +439,14 @@ class MDFlexConfig {
   /**
    * openMPKind
    */
-  MDFlexOption<autopas::OpenMPKindOption, __LINE__> openMPKind{
+  MDFlexOption<autopas::OpenMPKindOption, __LINE__> openMPKind {
       autopas::OpenMPKindOption::omp_runtime, "openmp-kind", true,
       "OpenMP's scheduling kind for color-based traversals. "
       "To use LB4OMP's individual scheduling techniques, turn on the CMake option AUTOPAS_LB4OMP."
       "Possible values: " +
           autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllOptions(), " ", {"(", ")"}) +
-          " Default: runtime"};
+          " Default: runtime"
+  };
 
   // Simulation Options:
   /**
@@ -453,18 +456,19 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{
-  // choose a reasonable default depending on what is available at compile time
+  MDFlexOption<FunctorOption, __LINE__> functorOption {
+    // choose a reasonable default depending on what is available at compile time
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      FunctorOption::lj12_6_AVX,
+     FunctorOption::lj12_6_AVX,
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      FunctorOption::lj12_6_SVE,
+    FunctorOption::lj12_6_SVE,
 #else
-      FunctorOption::lj12_6,
+    FunctorOption::lj12_6,
 #endif
-      "functor", true,
-      "Force functor to use. Possible Values: (lennard-jones "
-      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+        "functor", true,
+        "Force functor to use. Possible Values: (lennard-jones "
+        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
+  };
   /**
    * iterations
    */
