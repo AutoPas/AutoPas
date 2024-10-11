@@ -7,7 +7,6 @@
 
 #include <cstddef>
 #include <ios>
-#include <iostream>
 #include <limits>
 #include <string>
 #include <utility>
@@ -41,7 +40,7 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 }
 
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const RegularGridDecomposition &decomposition) {
+                                       const RegularGridDecomposition &decomposition) const {
   recordParticleStates(currentIteration, autoPasContainer);
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
@@ -52,7 +51,7 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
 void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
-                                             const autopas::AutoPas<ParticleType> &autoPasContainer) {
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer) const {
   if (_mpiRank == 0) {
     createParticlesPvtuFile(currentIteration);
   }
@@ -202,7 +201,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 
 void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
                                                 const autopas::Configuration &autoPasConfiguration,
-                                                const RegularGridDecomposition &decomposition) {
+                                                const RegularGridDecomposition &decomposition) const {
   if (_mpiRank == 0) {
     createRanksPvtuFile(currentIteration, decomposition);
   }
@@ -217,7 +216,6 @@ void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + timestepFileName.str() + "\"");
   }
 
-  const std::array<int, 6> wholeExtent = calculateWholeExtent(decomposition);
   const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
   const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
 
@@ -269,17 +267,6 @@ void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
   timestepFile << "</VTKFile>\n";
 
   timestepFile.close();
-}
-
-std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDecomposition &domainDecomposition) {
-  std::array<int, 6> wholeExtent{};
-  std::array<int, 3> domainId = domainDecomposition.getDomainId();
-  std::array<int, 3> decomposition = domainDecomposition.getDecomposition();
-  for (size_t i = 0; i < domainId.size(); ++i) {
-    wholeExtent[2 * i] = domainId[i];
-    wholeExtent[2 * i + 1] = std::min(domainId[i] + 1, decomposition[i]);
-  }
-  return wholeExtent;
 }
 
 void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, const std::string &location) {
