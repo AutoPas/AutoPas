@@ -131,11 +131,14 @@ class ParallelVtkWriter {
   void createPvtuFile(size_t currentIteration);
 
   /**
-   * Creates the .pvts file required to load structured grid data from multiple ranks into ParaView.
+   * Creates the .pvtu file for rank data that references all rank data vtu files from this timestep
+   *
+   * @note For visualization in ParaView the .pvtu files need to be loaded.
+   *
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
    */
-  void createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition);
+  void createRanksPvtuFile(size_t currentIteration, const RegularGridDecomposition &decomposition) const;
 
   /**
    * Tries to create a folder at a location.
