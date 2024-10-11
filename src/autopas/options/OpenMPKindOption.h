@@ -300,21 +300,31 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    * @param name the name to convert
    * @return the converted lower case name
    */
-   static std::string toNewName(const std::string &name) {
-     std::string lowName = name;
-     std::transform(lowName.begin(), lowName.end(), lowName.begin(), ::tolower);
-     if (autopas::utils::StringUtils::contains(lowName, "ss")) return "dynamic";
-     else if (autopas::utils::StringUtils::contains(lowName, "gss")) return "guided";
-     else if (autopas::utils::StringUtils::contains(lowName, "mfac2")) return "fac2a";
-     else if (autopas::utils::StringUtils::contains(lowName, "mfac")) return "faca";
-     else if (autopas::utils::StringUtils::contains(lowName, "awf-b")) return "awf_b";
-     else if (autopas::utils::StringUtils::contains(lowName, "awf-c")) return "awf_c";
-     else if (autopas::utils::StringUtils::contains(lowName, "awf-d")) return "awf_d";
-     else if (autopas::utils::StringUtils::contains(lowName, "awf-e")) return "awf_e";
-     else if (autopas::utils::StringUtils::contains(lowName, "tss")) return "trapezoidal";
-     else if (autopas::utils::StringUtils::contains(lowName, "maf")) return "af_a";
-     return lowName;
-   }
+  static std::string toNewName(const std::string &name) {
+    std::string lowName = name;
+    std::transform(lowName.begin(), lowName.end(), lowName.begin(), ::tolower);
+    if (autopas::utils::StringUtils::contains(lowName, "ss"))
+      return "dynamic";
+    else if (autopas::utils::StringUtils::contains(lowName, "gss"))
+      return "guided";
+    else if (autopas::utils::StringUtils::contains(lowName, "mfac2"))
+      return "fac2a";
+    else if (autopas::utils::StringUtils::contains(lowName, "mfac"))
+      return "faca";
+    else if (autopas::utils::StringUtils::contains(lowName, "awf-b"))
+      return "awf_b";
+    else if (autopas::utils::StringUtils::contains(lowName, "awf-c"))
+      return "awf_c";
+    else if (autopas::utils::StringUtils::contains(lowName, "awf-d"))
+      return "awf_d";
+    else if (autopas::utils::StringUtils::contains(lowName, "awf-e"))
+      return "awf_e";
+    else if (autopas::utils::StringUtils::contains(lowName, "tss"))
+      return "trapezoidal";
+    else if (autopas::utils::StringUtils::contains(lowName, "maf"))
+      return "af_a";
+    return lowName;
+  }
 
  private:
   Value _value{Value(-1)};
