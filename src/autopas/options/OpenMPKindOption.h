@@ -7,30 +7,10 @@
 #pragma once
 
 #include "autopas/options/Option.h"
+#include "autopas/utils/StringUtils.h"
 
 namespace autopas {
 inline namespace options {
-
-/**
- * Tests if string s contains sub-string sub.
- * @param s the string
- * @param sub the sub-string
- * @return whether s contains sub
- */
-static bool contains(const std::string &s, const std::string &sub) { return s.find(sub) != std::string::npos; }
-
-/**
- * List of valid scheduling kind abbreviations.
- */
-static const std::array<std::string, 37> validNameAbbreviations{
-    // clang-format off
-    "auto", "dyn",  "SS",   "guid", "GSS",  "run", "sta", "STATIC", "rand", "exh",   "bin",   "exp",
-#ifdef AUTOPAS_USE_LB4OMP
-    "prof", "fsc",  "FSC",  "tap",  "TAP", "fac", "FAC",    "bold", "BOLD",  "wf",    "WF",  "tfss", "TFSS",
-    "fiss", "FISS", "viss", "VISS", "rnd", "RND", "trap",   "TSS",  "steal", "Steal", "af",  "AF"
-#endif
-    // clang-format on
-};
 
 /**
  * Class representing OpenMP's scheduling kind choices.
@@ -322,87 +302,117 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   }
 
   /**
-   * Tells whether a given kind name is valid.
-   * @param name the name to test
-   * @return whether the name is a valid scheduling kind option
+   * Converts the old LB4OMP scheduling technique names to their corresponding new names.
+   * The old names are the ones used in the LB4OMP and Auto4OMP papers and Git Readme.
+   * The new names are the ones accepted in practice by the master branch LB4OMP.
+   * If no conversion takes place, the given name will be returned in lower case.
+   * @param name the name to convert
+   * @return the converted lower case name
    */
-  static bool valid(const std::string &name) {
-    return std::any_of(validNameAbbreviations.begin(), validNameAbbreviations.end(),
-                       [=](const std::string &abbreviation) { return contains(name, abbreviation); });
-  }
+   static std::string toNewName(const std::string &name) {
+     std::string lowName = name;
+     std::transform(lowName.begin(), lowName.end(), lowName.begin(), ::tolower);
+     if (autopas::utils::StringUtils::contains(lowName, "ss")) return "dynamic";
+     else if (autopas::utils::StringUtils::contains(lowName, "gss")) return "guided";
+     else if (autopas::utils::StringUtils::contains(lowName, "mfac2")) return "fac2a";
+     else if (autopas::utils::StringUtils::contains(lowName, "mfac")) return "faca";
+     else if (autopas::utils::StringUtils::contains(lowName, "awf-b")) return "awf_b";
+     else if (autopas::utils::StringUtils::contains(lowName, "awf-c")) return "awf_c";
+     else if (autopas::utils::StringUtils::contains(lowName, "awf-d")) return "awf_d";
+     else if (autopas::utils::StringUtils::contains(lowName, "awf-e")) return "awf_e";
+     else if (autopas::utils::StringUtils::contains(lowName, "tss")) return "trapezoidal";
+     else if (autopas::utils::StringUtils::contains(lowName, "maf")) return "af_a";
+     return lowName;
+   }
 
   /**
    * Parse the scheduling kind option from a string.
-   * @param the name of the scheduling kind
+   * Beside the new names, this parser also accepts the old names used in the LB4OMP/Auto4OMP papers and Git Readme.
+   * @param name the name of the scheduling kind
    * @return the corresponding AutoPas option
    */
   static OpenMPKindOption parse(const std::string &name) {
-    if (contains(name, "dyn") || contains(name, "SS"))
+    std::string lowName = name;
+    std::transform(lowName.begin(), lowName.end(), lowName.begin(), ::tolower);
+    if (autopas::utils::StringUtils::contains(lowName, "dyn") || autopas::utils::StringUtils::contains(lowName, "ss"))
       return OpenMPKindOption::omp_dynamic;
-    else if (contains(name, "guid") || contains(name, "GSS"))
+    else if (autopas::utils::StringUtils::contains(lowName, "guid") ||
+             autopas::utils::StringUtils::contains(lowName, "gss"))
       return OpenMPKindOption::omp_guided;
-    else if (contains(name, "run"))
+    else if (autopas::utils::StringUtils::contains(lowName, "run"))
       return OpenMPKindOption::omp_runtime;
-    else if ((contains(name, "sta") || contains(name, "STATIC")) && !contains(name, "teal"))
+    else if ((autopas::utils::StringUtils::contains(lowName, "sta") ||
+              autopas::utils::StringUtils::contains(lowName, "static")) &&
+             !autopas::utils::StringUtils::contains(lowName, "teal"))
       return OpenMPKindOption::omp_static;
-    else if (contains(name, "rand"))
+    else if (autopas::utils::StringUtils::contains(lowName, "rand"))
       return OpenMPKindOption::auto4omp_randomsel;
-    else if (contains(name, "exh"))
+    else if (autopas::utils::StringUtils::contains(lowName, "exh"))
       return OpenMPKindOption::auto4omp_exhaustivesel;
-    else if (contains(name, "bin"))
+    else if (autopas::utils::StringUtils::contains(lowName, "bin"))
       return OpenMPKindOption::auto4omp_binarySearch;
-    else if (contains(name, "exp"))
+    else if (autopas::utils::StringUtils::contains(lowName, "exp"))
       return OpenMPKindOption::auto4omp_expertsel;
 #ifdef AUTOPAS_USE_LB4OMP  // LB4OMP's scheduling techniques.
-    else if (contains(name, "prof"))
+    else if (autopas::utils::StringUtils::contains(lowName, "prof"))
       return OpenMPKindOption::lb4omp_profiling;
-    else if (contains(name, "mfsc") || contains(name, "mFSC"))
+    else if (autopas::utils::StringUtils::contains(lowName, "mfsc"))
       return OpenMPKindOption::lb4omp_mfsc;
-    else if (contains(name, "fsc") || contains(name, "FSC"))
+    else if (autopas::utils::StringUtils::contains(lowName, "fsc"))
       return OpenMPKindOption::lb4omp_fsc;
-    else if (contains(name, "tap") || contains(name, "TAP"))
+    else if (autopas::utils::StringUtils::contains(lowName, "tap"))
       return OpenMPKindOption::lb4omp_tap;
-    else if (contains(name, "fac2a") || contains(name, "mFAC2"))
+    else if (autopas::utils::StringUtils::contains(lowName, "fac2a") ||
+             autopas::utils::StringUtils::contains(lowName, "mfac2"))
       return OpenMPKindOption::lb4omp_fac2a;
-    else if (contains(name, "fac2") || contains(name, "FAC2"))
+    else if (autopas::utils::StringUtils::contains(lowName, "fac2"))
       return OpenMPKindOption::lb4omp_fac2;
-    else if (contains(name, "faca") || contains(name, "mFAC"))
+    else if (autopas::utils::StringUtils::contains(lowName, "faca") ||
+             autopas::utils::StringUtils::contains(lowName, "mfac"))
       return OpenMPKindOption::lb4omp_faca;
-    else if (contains(name, "fac") || contains(name, "FAC"))
+    else if (autopas::utils::StringUtils::contains(lowName, "fac"))
       return OpenMPKindOption::lb4omp_fac;
-    else if (contains(name, "bold") || contains(name, "BOLD"))
+    else if (autopas::utils::StringUtils::contains(lowName, "bold"))
       return OpenMPKindOption::lb4omp_bold;
-    else if (contains(name, "awf_b") || contains(name, "AWF-B"))
+    else if (autopas::utils::StringUtils::contains(lowName, "awf_b") ||
+             autopas::utils::StringUtils::contains(lowName, "awf-b"))
       return OpenMPKindOption::lb4omp_awf_b;
-    else if (contains(name, "awf_c") || contains(name, "AWF-C"))
+    else if (autopas::utils::StringUtils::contains(lowName, "awf_c") ||
+             autopas::utils::StringUtils::contains(lowName, "awf-c"))
       return OpenMPKindOption::lb4omp_awf_c;
-    else if (contains(name, "awf_d") || contains(name, "AWF-D"))
+    else if (autopas::utils::StringUtils::contains(lowName, "awf_d") ||
+             autopas::utils::StringUtils::contains(lowName, "awf-d"))
       return OpenMPKindOption::lb4omp_awf_d;
-    else if (contains(name, "awf_e") || contains(name, "AWF-E"))
+    else if (autopas::utils::StringUtils::contains(lowName, "awf_e") ||
+             autopas::utils::StringUtils::contains(lowName, "awf-e"))
       return OpenMPKindOption::lb4omp_awf_e;
-    else if (contains(name, "awf") || contains(name, "AWF"))
+    else if (autopas::utils::StringUtils::contains(lowName, "awf"))
       return OpenMPKindOption::lb4omp_awf;
-    else if (contains(name, "wf") || contains(name, "WF"))
+    else if (autopas::utils::StringUtils::contains(lowName, "wf"))
       return OpenMPKindOption::lb4omp_wf;
-    else if (contains(name, "tfss") || contains(name, "TFSS"))
+    else if (autopas::utils::StringUtils::contains(lowName, "tfss"))
       return OpenMPKindOption::lb4omp_tfss;
-    else if (contains(name, "fiss") || contains(name, "FISS"))
+    else if (autopas::utils::StringUtils::contains(lowName, "fiss"))
       return OpenMPKindOption::lb4omp_fiss;
-    else if (contains(name, "viss") || contains(name, "VISS"))
+    else if (autopas::utils::StringUtils::contains(lowName, "viss"))
       return OpenMPKindOption::lb4omp_viss;
-    else if (contains(name, "rnd") || contains(name, "RND"))
+    else if (autopas::utils::StringUtils::contains(lowName, "rnd"))
       return OpenMPKindOption::lb4omp_rnd;
-    else if (contains(name, "trap") || contains(name, "TSS"))
+    else if (autopas::utils::StringUtils::contains(lowName, "trap") ||
+             autopas::utils::StringUtils::contains(lowName, "tss"))
       return OpenMPKindOption::lb4omp_trapezoidal;
-    else if (contains(name, "steal") || contains(name, "Steal"))
+    else if (autopas::utils::StringUtils::contains(lowName, "steal"))
       return OpenMPKindOption::lb4omp_static_steal;
-    else if (contains(name, "af_a") || contains(name, "mAF"))
+    else if (autopas::utils::StringUtils::contains(lowName, "af_a") ||
+             autopas::utils::StringUtils::contains(lowName, "maf"))
       return OpenMPKindOption::lb4omp_af_a;
-    else if (contains(name, "af") || contains(name, "AF"))
+    else if (autopas::utils::StringUtils::contains(lowName, "af"))
       return OpenMPKindOption::lb4omp_af;
 #endif
-    else  // Default.
+    else {
+      utils::ExceptionHandler::exception("Unknown OpenMP kind.");
       return OpenMPKindOption::omp_auto;
+    }
   }
 
  private:

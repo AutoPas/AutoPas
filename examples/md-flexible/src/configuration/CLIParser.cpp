@@ -689,12 +689,12 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.openMPKind)::getoptChar: {
-        if (autopas::OpenMPKindOption::valid(strArg))
-          config.openMPKind.value = autopas::OpenMPKindOption::parse(strArg);
-        else {
+        auto parsedOptions = autopas::OpenMPKindOption::parseOptions(autopas::OpenMPKindOption::toNewName(strArg));
+        if (parsedOptions.size() != 1) {
           cerr << "Error parsing OpenMP kind: " << strArg << endl;
           displayHelp = true;
         }
+        config.openMPKind.value = *parsedOptions.begin();
         break;
       }
 

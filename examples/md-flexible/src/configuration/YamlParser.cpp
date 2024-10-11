@@ -272,11 +272,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Name of an OpenMP scheduling kind, LB4OMP scheduling technique, or Auto4OMP selection method.";
         description = config.openMPKind.description;
 
-        auto name = node[key].as<std::string>();
-        if (autopas::OpenMPKindOption::valid(name))
-          config.openMPKind.value = autopas::OpenMPKindOption::parse(node[key].as<std::string>());
-        else
+        const auto parsedOptions = autopas::OpenMPKindOption::parseOptions(autopas::OpenMPKindOption::toNewName(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one OpenMP kind!")));
+        if (parsedOptions.size() != 1) {
           throw std::runtime_error("Unknown OpenMP kind option!");
+        }
+
+        config.openMPKind.value = *parsedOptions.begin();
       } else if (key == config.deltaT.name) {
         expected = "Positive floating point value.";
         description = config.deltaT.description;

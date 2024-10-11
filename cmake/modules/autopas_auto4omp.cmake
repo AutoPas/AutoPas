@@ -157,15 +157,16 @@ else ()
     ### Cycle counter:
     #### __builtin_readcyclecounter() is available since clang 4 (possibly prior). [1]
     #### On systems lacking a cycle counter register or similar, the function defaults to 0.
-    #### Compile and run CycleCounterQuery.cpp to check if a cycle counter's available, inspired from [2, 3].
+    #### Use _has_builtin(__builtin_readcyclecounter) to check if a cycle counter's available, inspired from [2, 3].
     execute_process(
-            COMMAND mkdir -p ${CMAKE_BINARY_DIR}/scripts
-            COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_SOURCE_DIR}/tools/CycleCounterQuery.cpp
-            -o ${CMAKE_BINARY_DIR}/scripts/has_builtin_readcyclecounter
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tools"
+            COMMAND echo "int main() { return __has_builtin(__builtin_readcyclecounter); }"
+            COMMAND ${CMAKE_CXX_COMPILER} -x c++ -o has_builtin_rcc -
     )
     execute_process(
-            COMMAND "${CMAKE_BINARY_DIR}/scripts/has_builtin_readcyclecounter"
-            OUTPUT_VARIABLE HAS_BUILTIN_READCYCLECOUNTER_OUTPUT
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tools"
+            COMMAND ./has_builtin_rcc
+            RESULT_VARIABLE HAS_BUILTIN_READCYCLECOUNTER_OUTPUT
     )
 
     if (${HAS_BUILTIN_READCYCLECOUNTER_OUTPUT} GREATER 0)
