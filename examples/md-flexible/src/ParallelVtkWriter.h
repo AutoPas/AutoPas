@@ -125,10 +125,13 @@ class ParallelVtkWriter {
   void tryCreateSessionAndDataFolders(const std::string &name, const std::string &location);
 
   /**
-   * Creates the .pvtu file required to load unstructured grid data from multiple ranks into ParaView.
+   * Creates the .pvtu file for particle data that references all particle data vtu files from this timestep.
+   *
+   * @note For visualization in ParaView the .pvtu files need to be loaded.
+   *
    * @param currentIteration: The simulation's current iteration.
    */
-  void createPvtuFile(size_t currentIteration);
+  void createParticlesPvtuFile(size_t currentIteration) const;
 
   /**
    * Creates the .pvtu file for rank data that references all rank data vtu files from this timestep

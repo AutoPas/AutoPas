@@ -54,7 +54,7 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
 void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
                                              const autopas::AutoPas<ParticleType> &autoPasContainer) {
   if (_mpiRank == 0) {
-    createPvtuFile(currentIteration);
+    createParticlesPvtuFile(currentIteration);
   }
 
   std::ostringstream timestepFileName;
@@ -294,9 +294,9 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   tryCreateFolder("data", _sessionFolderPath);
 }
 
-void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
+void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
+  filename << _sessionFolderPath << _sessionName << "_Particles_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
 
   std::ofstream timestepFile;
@@ -332,7 +332,7 @@ void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   timestepFile << "    </PCells>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
+    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_Particles_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
