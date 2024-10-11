@@ -429,6 +429,24 @@ class MDFlexConfig {
       "configuration. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
 
+  /**
+   * openMPChunkSize
+   */
+  MDFlexOption<int, __LINE__> openMPChunkSize{0, "openmp-chunk-size", true,
+                                              "Manual OpenMP chunk size AutoPas traversals. "
+                                              "Default: Auto4OMP's expert chunk parameter."};
+
+  /**
+   * openMPKind
+   */
+  MDFlexOption<autopas::OpenMPKindOption, __LINE__> openMPKind{
+      autopas::OpenMPKindOption::omp_runtime, "openmp-kind", true,
+      "OpenMP's scheduling kind for color-based traversals. "
+      "To use LB4OMP's individual scheduling techniques, turn on the CMake option AUTOPAS_LB4OMP."
+      "Possible values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllOptions(), " ", {"(", ")"}) +
+          " Default: runtime"};
+
   // Simulation Options:
   /**
    * cutoff

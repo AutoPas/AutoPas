@@ -25,6 +25,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -1002,6 +1003,18 @@ class AutoPas {
    * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
   void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
+
+  /**
+   * OpenMP default chunk size setter.
+   * @param s OpenMP default chunk size
+   */
+  void setOpenMPDefaultChunkSize(int s) { openMPDefaultChunkSize = s; }
+
+  /**
+   * OpenMP default scheduling kind setter.
+   * @param k OpenMP default kind
+   */
+  void setOpenMPDefaultKind(OpenMPKindOption k) { openMPDefaultKind = k; }
 
   /**
    * Get the sorting-threshold for traversals that use the CellFunctor.

@@ -258,4 +258,12 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::str
   return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
 
+/**
+ * Tests if string s contains sub-string sub.
+ * @param s the string
+ * @param sub the sub-string
+ * @return whether s contains sub
+ */
+static bool contains(const std::string &s, const std::string &sub) { return s.find(sub) != std::string::npos; }
+
 }  // namespace autopas::utils::StringUtils

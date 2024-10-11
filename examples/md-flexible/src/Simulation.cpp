@@ -135,6 +135,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
+  _autoPasContainer->setOpenMPDefaultChunkSize(_configuration.openMPChunkSize.value);
+  _autoPasContainer->setOpenMPDefaultKind(_configuration.openMPKind.value);
   const auto rank = _domainDecomposition->getDomainIndex();
   const auto *fillerBeforeSuffix =
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
