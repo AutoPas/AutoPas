@@ -58,7 +58,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   }
 
   std::ostringstream timestepFileName;
-  generateFilename("vtu", currentIteration, timestepFileName);
+  generateFilename("Particles", "vtu", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -408,8 +408,8 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   }
 }
 
-void ParallelVtkWriter::generateFilename(const std::string &filetype, size_t currentIteration,
-                                         std::ostringstream &filenameStream) {
-  filenameStream << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
-                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;
+void ParallelVtkWriter::generateFilename(const std::string &tag, const std::string &fileExtension,
+                                         size_t currentIteration, std::ostringstream &filenameStream) const {
+  filenameStream << _dataFolderPath << _sessionName << "_" << tag << "_" << _mpiRank << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << fileExtension;
 }

@@ -150,9 +150,11 @@ class ParallelVtkWriter {
 
   /**
    * Generates the file name for a given vtk file type.
+   * @param tag String tag that is inserted in the file name
    * @param currentIteration: The current iteration to record.
-   * @param filetype: The vtk file type extension. Pass the extension without the '.'.
-   * @param filenameStream: The output string string for the filename.
+   * @param fileExtension: The vtk file type extension. Pass the extension without the '.'.
+   * @param filenameStream: The output string for the filename.
    */
-  void generateFilename(const std::string &filetype, size_t currentIteration, std::ostringstream &filenameStream);
+  void generateFilename(const std::string &tag, const std::string &fileExtension, size_t currentIteration,
+                        std::ostringstream &filenameStream) const;
 };
