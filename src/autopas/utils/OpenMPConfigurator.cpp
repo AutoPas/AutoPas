@@ -9,13 +9,13 @@
 namespace autopas {
 /**
  * OpenMP default chunk size.
- * md-flexible: set via command-line option --openmp-chunk-size <int>
+ * md-flexible: set via command-line option --openmp-chunk-size int
  */
 int openMPDefaultChunkSize = 0;
 
 /**
  * OpenMP default chunk size.
- * md-flexible: set via command-line option --openmp-kind <kind>
+ * md-flexible: set via command-line option --openmp-kind kind
  */
 OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
 
@@ -26,7 +26,8 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
 
 /**
  * OpenMP configurator constructor.
- * @param s chunk size used in OpenMP's loop scheduling
+ * @param kind the OpenMP scheduling kind, LB4OMP scheduling technique, or Auto4OMP selection method to use
+ * @param chunkSize the OpenMP scheduling chunk size to use
  */
 [[maybe_unused]] OpenMPConfigurator::OpenMPConfigurator(OpenMPKindOption kind, int chunkSize) {
   setKind(kind);

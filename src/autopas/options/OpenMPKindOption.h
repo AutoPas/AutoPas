@@ -293,15 +293,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   };
 
   /**
-   * Checks if a given kind is in a given list of kinds.
-   * @return whether the given kind is in the given list of kinds
-   */
-  template <typename... KindList>
-  static bool in(OpenMPKindOption k, KindList... list) {
-    return (... || (k == list));
-  }
-
-  /**
    * Converts the old LB4OMP scheduling technique names to their corresponding new names.
    * The old names are the ones used in the LB4OMP and Auto4OMP papers and Git Readme.
    * The new names are the ones accepted in practice by the master branch LB4OMP.
