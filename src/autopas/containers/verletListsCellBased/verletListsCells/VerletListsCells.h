@@ -123,7 +123,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborListsC08C18(TraversalOption traversal) {
     using namespace utils::ArrayMath::literals;
     // So far this neighborlist rebuilding only supports c08 and c18.
-    if (traversal != TraversalOption::vlc_c08 and traversal != TraversalOption::vlc_c18) {
+    if (traversal != TraversalOption::vlc_c08 and traversal != TraversalOption::vlc_c18 and
+        traversal != TraversalOption::vlc_c01) {
       utils::ExceptionHandler::exception(
           "VerletListsCells::rebuildNeighborListsC08C18() was called with an unsupported traversal. Only vlc_c08 and "
           "vlc_c18 is supported currently.");
@@ -259,10 +260,18 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             const auto cellIndex1 = cellIndexBase + offset1;
             const auto cellIndex2 = cellIndexBase + offset2;
 
-            if (traversal != TraversalOption::vlc_c08) {
+            if (traversal == TraversalOption::vlc_c18) {
               const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
               if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[1] >= cellsPerDim[1] or
                   cell2Coords[2] >= cellsPerDim[2]) {
+                continue;
+              }
+            }
+
+            if (traversal == TraversalOption::vlc_c01) {
+              const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
+              if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[0] < 0 or cell2Coords[1] >= cellsPerDim[1] or
+                  cell2Coords[1] < 0 or cell2Coords[2] >= cellsPerDim[2] or cell2Coords[2] < 0) {
                 continue;
               }
             }
@@ -276,7 +285,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             // Go over all particle pairs in the two cells and insert close pairs into their respective lists
             for (size_t particleIndexCell1 = 0; particleIndexCell1 < cells[cellIndex1].size(); ++particleIndexCell1) {
               auto &p1 = cells[cellIndex1][particleIndexCell1];
-              for (size_t particleIndexCell2 = (cellIndex1 == cellIndex2) ? particleIndexCell1 + 1 : 0;
+              for (size_t particleIndexCell2 = (cellIndex1 == cellIndex2 and traversal != TraversalOption::vlc_c01)
+                                                   ? particleIndexCell1 + 1
+                                                   : 0;
                    particleIndexCell2 < cells[cellIndex2].size(); ++particleIndexCell2) {
                 auto &p2 = cells[cellIndex2][particleIndexCell2];
                 // Ignore dummies and self interaction
@@ -290,7 +301,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                 if (distSquared < interactionLengthSquared) {
                   insert(p1, particleIndexCell1, p2, cellIndex1, cellIndexBase, baseCellsLists);
                   // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
-                  if (not this->_verletBuiltNewton3) {
+                  if (not this->_verletBuiltNewton3 and not(traversal == TraversalOption::vlc_c01)) {
                     insert(p2, particleIndexCell2, p1, cellIndex2, cellIndexBase, baseCellsLists);
                   }
                 }
@@ -324,7 +335,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     } else {
       // Switch to test different implementations for vlc_c08 list generation
       const auto traversalOption = traversal->getTraversalType();
-      if (traversalOption == TraversalOption::vlc_c08 or traversalOption == TraversalOption::vlc_c18) {
+      if (traversalOption == TraversalOption::vlc_c08 or traversalOption == TraversalOption::vlc_c18 or
+          traversalOption == TraversalOption::vlc_c01) {
         rebuildNeighborListsC08C18(traversalOption);
       } else {
         _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),

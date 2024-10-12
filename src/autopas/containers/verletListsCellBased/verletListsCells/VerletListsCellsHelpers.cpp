@@ -50,11 +50,15 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
 
     // Count number of non-aligned dimensions
     const auto factor = estimatorFactors[std::abs(x) + std::abs(y) + std::abs(z)];
-    const auto &[smallerIndex, biggerIndex] = std::minmax(baseCell, partnerCell);
-    // Check if this offset tuple is already in the offsets list and if not add it.
-    if (auto tuple = BaseStepOffsets{smallerIndex, biggerIndex, factor};
-        std::find(offsets.begin(), offsets.end(), tuple) == offsets.end()) {
-      offsets.emplace_back(tuple);
+    if (traversal != TraversalOption::vlc_c01) {
+      const auto &[smallerIndex, biggerIndex] = std::minmax(baseCell, partnerCell);
+      // Check if this offset tuple is already in the offsets list and if not add it.
+      if (auto tuple = BaseStepOffsets{smallerIndex, biggerIndex, factor};
+          std::find(offsets.begin(), offsets.end(), tuple) == offsets.end()) {
+        offsets.emplace_back(tuple);
+      }
+    } else {
+      offsets.emplace_back(BaseStepOffsets{baseCell, partnerCell, factor});
     }
   };
 
@@ -100,6 +104,19 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
     }
   };
 
+  auto buildC01Offsets = [&]() {
+    // In 3D each base cell has 13 neighboring interaction cells + the interaction with it self in the C01 traversal
+    offsets.reserve(27);
+    // Outgoing from a base cell with coordinates [0, 0, 0] find all interaction cells for a c01 base step
+    for (int z = -interactionCellsPerDim; z <= interactionCellsPerDim; ++z) {
+      for (int y = -interactionCellsPerDim; y <= interactionCellsPerDim; ++y) {
+        for (int x = -interactionCellsPerDim; x <= interactionCellsPerDim; ++x) {
+          offsetLoopBody(x, y, z, [&](auto baseCell, auto partnerCell) {});
+        }
+      }
+    }
+  };
+
   // build the offsets with respect to the traversal
   switch (traversal) {
     case TraversalOption::vlc_c08:
@@ -107,6 +124,9 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
       break;
     case TraversalOption::vlc_c18:
       buildC18Offsets();
+      break;
+    case TraversalOption::vlc_c01:
+      buildC01Offsets();
       break;
     default:
       utils::ExceptionHandler::exception(
