@@ -122,12 +122,12 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    */
   void rebuildNeighborListsC08C18(TraversalOption traversal) {
     using namespace utils::ArrayMath::literals;
-    // So far this neighborlist rebuilding only supports c08 and c18.
+    // So far this neighborlist rebuilding only supports c01, c08 c18, sliced traversals.
     if (traversal != TraversalOption::vlc_c08 and traversal != TraversalOption::vlc_c18 and
-        traversal != TraversalOption::vlc_c01) {
+        traversal != TraversalOption::vlc_c01 and traversal != TraversalOption::vlc_sliced and
+        traversal != TraversalOption::vlc_sliced_balanced and traversal != TraversalOption::vlc_sliced_c02) {
       utils::ExceptionHandler::exception(
-          "VerletListsCells::rebuildNeighborListsC08C18() was called with an unsupported traversal. Only vlc_c08 and "
-          "vlc_c18 is supported currently.");
+          "VerletListsCells::rebuildNeighborListsC08C18() was called with an unsupported traversal.");
     }
     // Sanity check.
     if (this->_linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
@@ -260,7 +260,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             const auto cellIndex1 = cellIndexBase + offset1;
             const auto cellIndex2 = cellIndexBase + offset2;
 
-            if (traversal == TraversalOption::vlc_c18) {
+            if (traversal == TraversalOption::vlc_c18 or traversal == TraversalOption::vlc_sliced or
+                traversal == TraversalOption::vlc_sliced_balanced or traversal == TraversalOption::vlc_sliced_c02) {
               const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
               if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[1] >= cellsPerDim[1] or
                   cell2Coords[2] >= cellsPerDim[2]) {
@@ -336,7 +337,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       // Switch to test different implementations for vlc_c08 list generation
       const auto traversalOption = traversal->getTraversalType();
       if (traversalOption == TraversalOption::vlc_c08 or traversalOption == TraversalOption::vlc_c18 or
-          traversalOption == TraversalOption::vlc_c01) {
+          traversalOption == TraversalOption::vlc_c01 or traversalOption == TraversalOption::vlc_sliced or
+          traversalOption == TraversalOption::vlc_sliced_balanced or
+          traversalOption == TraversalOption::vlc_sliced_c02) {
         rebuildNeighborListsC08C18(traversalOption);
       } else {
         _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
