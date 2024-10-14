@@ -75,8 +75,10 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
         this->_internalLinkedCells->getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo,
         interactionLength, 1.3);
 
-    const auto offsetsC08 = VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(
-        this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo()));
+    const auto offsetsC08 = VerletListsCellsHelpers::buildBaseStep(
+        utils::ArrayUtils::static_cast_copy_array<int>(
+            this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo()),
+        TraversalOption::vlc_c08);
 
     // Helper function to estimate the number of neighbor lists for one base step
     // TODO: This is a generous and rough estimate and can probably be improved!
@@ -162,6 +164,12 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle> &getAoSNeighborList() {
     return _aosNeighborList;
   }
+
+  /**
+   * Returns a Mapping of particles to its corresponding cell and index within this cell.
+   * @return Mapping of particles to its corresponding cell and index within this cell.
+   */
+  auto &getParticleToCellMap() { return _particleToCellMap; }
 
   /**
    * Returns the neighbor list in SoA layout.
