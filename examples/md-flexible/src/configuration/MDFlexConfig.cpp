@@ -86,7 +86,7 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * Loads the particles from a checkpoint written with a specific rank.
  * @param filename The name of the pvtu file.
  * @param rank The rank which created the respective vtu file.
- * @param particles Container for the particles recorded in the respective vts file.
+ * @param particles Container for the particles recorded in the respective vtu file.
  */
 void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
   // Parse filename into path and filename: some/long/path/filename
