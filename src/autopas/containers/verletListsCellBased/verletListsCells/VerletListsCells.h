@@ -302,8 +302,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                 const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
                 if (distSquared < interactionLengthSquared) {
                   insert(p1, particleIndexCell1, p2, cellIndex1, cellIndexBase, baseCellsLists);
-                  particleToCellMap[&p1] = std::make_pair(cellIndex1, particleIndexCell1);
-                  particleToCellMap[&p2] = std::make_pair(cellIndex2, particleIndexCell2);
+#pragma omp critical
+                  {
+                    particleToCellMap[&p1] = std::make_pair(cellIndex1, particleIndexCell1);
+                    particleToCellMap[&p2] = std::make_pair(cellIndex2, particleIndexCell2);
+                  }
                   // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
                   if (not this->_verletBuiltNewton3 and not(traversal == TraversalOption::vlc_c01)) {
                     insert(p2, particleIndexCell2, p1, cellIndex2, cellIndexBase, baseCellsLists);
@@ -337,18 +340,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                                          traversal->getTraversalType(), _dataLayoutDuringListRebuild);
 
     } else {
-      // Switch to test different implementations for vlc_c08 list generation
-      const auto traversalOption = traversal->getTraversalType();
-      if (traversalOption == TraversalOption::vlc_c08 or traversalOption == TraversalOption::vlc_c18 or
-          traversalOption == TraversalOption::vlc_c01 or traversalOption == TraversalOption::vlc_sliced or
-          traversalOption == TraversalOption::vlc_sliced_balanced or
-          traversalOption == TraversalOption::vlc_sliced_c02) {
-        rebuildNeighborListsC08C18(traversalOption);
-      } else {
-        _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
-                                           this->getVerletSkin(), this->getInteractionLength(),
-                                           traversal->getTraversalType(), _dataLayoutDuringListRebuild);
-      }
+      rebuildNeighborListsC08C18(traversal->getTraversalType());
     }
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
