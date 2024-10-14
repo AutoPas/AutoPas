@@ -166,6 +166,12 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   /**
+   * Returns a Mapping of particles to its corresponding cell and index within this cell.
+   * @return Mapping of particles to its corresponding cell and index within this cell.
+   */
+  auto &getParticleToCellMap() { return _particleToCellMap; }
+
+  /**
    * Returns the neighbor list in SoA layout.
    * @return Neighbor list in SoA layout.
    */

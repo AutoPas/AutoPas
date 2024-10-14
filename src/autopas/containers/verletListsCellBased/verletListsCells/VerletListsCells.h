@@ -136,6 +136,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
     // Define some aliases
     auto &neighborLists = _neighborList.getAoSNeighborList();
+    auto &particleToCellMap = _neighborList.getParticleToCellMap();
     auto &cells = this->_linkedCells.getCells();
     const auto interactionLength = this->getInteractionLength();
     const auto interactionLengthSquared = interactionLength * interactionLength;
@@ -301,6 +302,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                 const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
                 if (distSquared < interactionLengthSquared) {
                   insert(p1, particleIndexCell1, p2, cellIndex1, cellIndexBase, baseCellsLists);
+                  particleToCellMap[&p1] = std::make_pair(cellIndex1, particleIndexCell1);
+                  particleToCellMap[&p2] = std::make_pair(cellIndex2, particleIndexCell2);
                   // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
                   if (not this->_verletBuiltNewton3 and not(traversal == TraversalOption::vlc_c01)) {
                     insert(p2, particleIndexCell2, p1, cellIndex2, cellIndexBase, baseCellsLists);
