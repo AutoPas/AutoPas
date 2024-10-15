@@ -692,13 +692,13 @@ void Simulation::logMeasurements() {
           <<_virial2B[i] << ","
           << _virial3B[i] << ","
           << _virial2B[i] + _virial3B[i] << std::endl;
+     _potentialEnergy += (_potentialEnergy2B[i]+_potentialEnergy3B[i]);
+     _virial += (_virial2B[i]+_virial3B[i]);
    }
    file.close();
 
-   _potentialEnergy = (std::accumulate(_potentialEnergy2B.begin(), _potentialEnergy2B.end(), 0)
-                       + std::accumulate(_potentialEnergy3B.begin(), _potentialEnergy3B.end(), 0))/_iteration;
-   _virial = (std::accumulate(_virial2B.begin(), _virial2B.end(), 0) +
-              std::accumulate(_virial3B.begin(), _virial3B.end(), 0))/_iteration;
+   _potentialEnergy = _potentialEnergy/_iteration;
+   _virial = _virial/_iteration;
    std::cout << "Potential Energy: " << _potentialEnergy << " K" << "\n";
    std::cout << "Virial: " << _virial << " K nm" << "\n";
  }
