@@ -131,7 +131,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
+  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
@@ -386,9 +386,9 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
-  TimeDiscretization::calculatePositionsAndResetForces(
-      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+  TimeDiscretization::calculatePositionsAndResetForces(*_autoPasContainer,
+                                                       *(_configuration.getParticlePropertiesLibrary()),
+                                                       _configuration.deltaT.value, _configuration.globalForce.value);
   _timers.positionUpdate.stop();
 }
 
@@ -591,6 +591,7 @@ void Simulation::logMeasurements() {
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
+    std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << "\n";
   }
 }
 
