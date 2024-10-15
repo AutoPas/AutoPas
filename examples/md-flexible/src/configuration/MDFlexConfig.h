@@ -288,6 +288,11 @@ class MDFlexConfig {
       "", "fuzzy-rule-filename", true, "Path to a .frule file containing rules for the fuzzy-based tuning method."};
 
   /**
+   * modelFilename
+   */
+  MDFlexOption<std::string, __LINE__> modelFilename{
+      "", "model-filename", true, "Path to a .pkl file containing the model for the decision-tree tuning method."};
+  /**
    * MPITuningMaxDifferenceForBucket
    */
   MDFlexOption<double, __LINE__> MPITuningMaxDifferenceForBucket{
