@@ -82,6 +82,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.relativeBlacklistRange,
       config.relativeOptimumRange,
       config.ruleFilename,
+      config.fuzzyRuleFilename,
       config.selectorStrategy,
       config.traversalOptions,
       config.tuningInterval,
@@ -544,6 +545,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.fuzzyRuleFilename)::getoptChar: {
+        config.fuzzyRuleFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): fuzzy-rule-File " + config.fuzzyRuleFilename.value +
+                                   " not found!");
+        }
+        break;
+      }
       case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {
         try {
           config.MPITuningMaxDifferenceForBucket.value = stod(strArg);
@@ -662,6 +671,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
 
         config.loadBalancer.value = *parsedOptions.begin();
+
+#ifndef MD_FLEXIBLE_ENABLE_ALLLBL
+        if (config.loadBalancer.value == LoadBalancerOption::all) {
+          cerr << "CLI input requests ALL but md-flexible was not compiled with ALL." << endl;
+          displayHelp = true;
+        }
+#endif
         break;
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {
