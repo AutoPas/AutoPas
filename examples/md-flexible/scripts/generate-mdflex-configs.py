@@ -1,4 +1,19 @@
 #!/usr/bin/python3
+
+"""Generates a zoo of configurations for md-flexible
+
+The script generates hundreds of yaml configuration files,
+that aim to cover a wide range of possible simulation states.
+
+It is not simply the cross product of the range of parameters below,
+but also tries to exclude unfeasible combinations, e.g. huge particle
+numbers in tiny domains.
+
+The files are generated in the folder where the script is executed.
+
+"""
+
+# Imports
 import sys
 # Python version check
 if sys.version_info < (3, 8):
@@ -18,9 +33,9 @@ try:
 except ImportError:
     import itertools
 
+
 # Script to generate a wide range of yaml input files intended to be used as benchmarks
 # to judge the adaptability of tuning strategies.
-
 template = """
 functor                          :  Lennard-Jones (12-6) AVX
 # container                        :  [all]    # Currently unfeasible. See below.
