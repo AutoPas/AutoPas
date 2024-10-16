@@ -23,8 +23,13 @@ except ImportError:
 
 template = """
 functor                          :  Lennard-Jones (12-6) AVX
-# container                        :  [all]
-container                        :  [LinkedCells, VerletLists, VarVerletLists, VerletListsCells, PairwiseVerletLists, VerletClusterLists]
+# container                        :  [all]    # Currently unfeasible. See below.
+# Containers that are excluded:
+#   - DirectSum             : Takes too long
+#   - LinkedCellsReferences : Quasi equivalent to LinkedCells
+#   - Octree                : Takes too long
+#   - PairwiseVerletLists   : Uses too much memory resulting in chrashes
+container                        :  [LinkedCells, VerletLists, VarVerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  20
 verlet-skin-radius-per-timestep  :  0.0075
 verlet-cluster-size              :  4
