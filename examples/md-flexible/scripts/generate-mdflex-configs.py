@@ -152,6 +152,8 @@ def generate(domainSize,
                    .replace('Lennard-Jones 12-6', 'LJ')
                    .replace(' ', '_'))
 
+    # This writes all flow style values (lists enclosed in []) to block style (list of -).
+    # While they are not fully equivalent they are mostly interchangeable and not a problem in our context.
     with open(outFilename, 'w') as fileOutput:
         yaml.dump(data, fileOutput, sort_keys=False)
 
