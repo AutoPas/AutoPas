@@ -16,7 +16,7 @@
 
 #else
 
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ_NoPPL.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -47,7 +47,7 @@ using FloatPrecision = double;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
-using ParticleType = mdLib::MoleculeLJ;
+using ParticleType = mdLib::MoleculeLJ_NoPPL;
 #endif
 
 namespace mdFlexibleTypeDefs {
@@ -73,7 +73,7 @@ using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true,
                                                        mdFlexibleTypeDefs::countFLOPs>;
 #else
 using LJFunctorTypeAutovec =
-    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctor<true, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
@@ -89,7 +89,7 @@ using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true
                                                               true, mdFlexibleTypeDefs::countFLOPs>;
 #else
 using LJFunctorTypeAutovecGlobals =
-    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctor<true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
@@ -105,7 +105,7 @@ using LJFunctorTypeAutovecGlobals =
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
 using LJFunctorTypeAVX =
-    mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctorAVX<true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
@@ -121,7 +121,7 @@ using LJFunctorTypeAVX =
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
 using LJFunctorTypeSVE =
-    mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctorSVE<true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif

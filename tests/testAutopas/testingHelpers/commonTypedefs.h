@@ -10,7 +10,7 @@
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ_NoPPL.h"
 
 // a place for usings that are commonly used in tests
 
@@ -26,7 +26,7 @@ using FPCell = autopas::FullParticleCell<autopas::Particle>;
 /**
  * Short for the AutoPas single site Lennard-Jones molecule
  */
-using Molecule = mdLib::MoleculeLJ;
+using Molecule = mdLib::MoleculeLJ_NoPPL;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
@@ -46,7 +46,7 @@ template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 using LJFunctorType =
-    mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>;
+    mdLib::LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>;
 
 /**
  * Helper alias for specialization of LJFunctorType with globals and shift enabled but mixing disabled.

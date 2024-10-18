@@ -400,15 +400,14 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             }
           }
 #else
-          const auto siteType = p->getTypeId();
           const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
             const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
             auto returnedPosition = position;
             returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
             return returnedPosition;
           }();
-          const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
-          const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
+          const auto sigmaSquared = p->getSigma() * p->getSigma();
+          const auto epsilon24 = 24 * p->getEpsilon();
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
           p->addF(force);
 #endif
