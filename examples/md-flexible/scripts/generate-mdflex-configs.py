@@ -234,9 +234,20 @@ if __name__ == "__main__":
         'huge': 4923403,
     }
     distributions = {
+        # Parameters:
+        #   Generator
+        #   Object size X/Y/Z as fraction of the domain size in the respective dimension
         'uniform-whole': ('uniform', 1, 1, 1),
         'uniform-strip': ('uniform', 0.4, 0.6, 1),
+        # Parameters:
+        #   Generator
+        #   Distribution mean as fraction of the domain
+        #   Distribution Stddev as fraction of the domain
         'concentrated-gauss': ('gauss', 0.75, 0.25),
+        # Parameters:
+        #   Generator
+        #   Object size as fraction of the domain
+        #   Object offset as fraction of the domain
         'concentrated-closest-packed': ('closestPacked', 0.3, 0.25),
     }
     cutoffs = {
