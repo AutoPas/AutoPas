@@ -1,3 +1,6 @@
 # Leak Sanitizer ignore list
 # mpich is leaky so ignore everything that comes from it
 leak:libmpich
+
+# Suppress malloc leaks in Python's object allocator
+leak:libpython3.8.so

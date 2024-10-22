@@ -24,6 +24,9 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
 // Destructor
 DecisionTreeTuning::~DecisionTreeTuning() {
   // Finalize Python Interpreter
+  if (_pFunc) {
+    Py_DECREF(_pFunc);  // Clean up the reference to _pFunc
+  }
   Py_Finalize();
 }
 
@@ -106,9 +109,14 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
   liveInfoJson.back() = '}';  // Replace the last comma with a closing bracket
 
   // Call the Python function 'main' with the model file and live info JSON
-  PyObject *pArgs =
-      PyTuple_Pack(2, PyUnicode_FromString(_modelFileName.c_str()), PyUnicode_FromString(liveInfoJson.c_str()));
+  PyObject *firstArg = PyUnicode_FromString(_modelFileName.c_str());
+  PyObject *secondArg = PyUnicode_FromString(liveInfoJson.c_str());
+  PyObject *pArgs = PyTuple_Pack(2, firstArg, secondArg);
+
   PyObject *pResult = PyObject_CallObject(_pFunc, pArgs);
+
+  Py_DECREF(firstArg);
+  Py_DECREF(secondArg);
   Py_DECREF(pArgs);
 
   if (!pResult) {
