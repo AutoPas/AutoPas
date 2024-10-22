@@ -996,6 +996,18 @@ class AutoPas {
   const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
 
   /**
+   * Set the name / path of the model file for the DecisionTreeTuning.
+   * @param modelFileName The name of the model file to use during decision tree tuning.
+   */
+  void setModelFileName(const std::string &modelFileName) { _tuningStrategyFactoryInfo.modelFileName = modelFileName; }
+
+  /**
+   * Get the name / path of the model file for the DecisionTreeTuning.
+   * @return
+   */
+  const std::string &getModelFileName() const { return _tuningStrategyFactoryInfo.modelFileName; }
+
+  /**
    * Set the sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
