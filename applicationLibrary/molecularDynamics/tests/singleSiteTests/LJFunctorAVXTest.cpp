@@ -136,18 +136,18 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
     if constexpr (mixing) {
       return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
-  
+
   auto ljFunctorAVX = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
-  
+
   if constexpr (not mixing) {
     ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -239,7 +239,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
     if constexpr (mixing) {
       return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -247,7 +247,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -348,7 +348,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
     if constexpr (mixing) {
       return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -356,7 +356,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -436,7 +436,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
     if constexpr (mixing) {
       return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -444,7 +444,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -546,7 +546,7 @@ static auto toString = [](const auto &info) {
   return res;
 };
 
-INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool()),
-                         toString);
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest,
+                         ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool()), toString);
 
 #endif  // __AVX__
