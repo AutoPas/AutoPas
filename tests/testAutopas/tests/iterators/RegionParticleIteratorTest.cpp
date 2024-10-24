@@ -8,11 +8,11 @@
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "testingHelpers/EmptyFunctor.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
@@ -39,7 +39,8 @@ auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopa
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
+      containerOption, autopas::InteractionTypeOption::pairwise));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
   autoPas.init();
@@ -77,8 +78,8 @@ TEST_P(RegionParticleIteratorTestOne, testRegionAroundCorner) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    EmptyPairwiseFunctor<Molecule> eFunctor;
+    autoPas.computeInteractions(&eFunctor);
   }
 
   // set up expectations
@@ -325,6 +326,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   };
 
   // Actual test section
+  auto leavingParticles = autoPas.updateContainer();
   // Ensure that particle is found with the given search region before it is moved out of the datastructure
   for (size_t i{0}; i < searchRegions.size(); ++i) {
     const auto startRegion = std::get<0>(searchRegions[i]);
@@ -335,8 +337,9 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   // getParticleImpl of the containers to calculate the correct boxMin and boxMax values
   // Note: It is important to perform this step before the particles are moved. Otherwise they would be sorted into the
   // correct data structure element and the purpose of this test would be lost
-  EmptyFunctor<Molecule> eFunctor;
-  autoPas.iteratePairwise(&eFunctor);
+  EmptyPairwiseFunctor<Molecule> eFunctor;
+  autoPas.computeInteractions(&eFunctor);
+  leavingParticles = autoPas.updateContainer();
 
   // Move the particles outside the simulations box and thus outside the data structure element (e.g: cell) where it is
   // currently stored

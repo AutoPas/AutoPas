@@ -12,9 +12,9 @@ namespace autopas {
  */
 struct IterationMeasurements {
   /**
-   * Time it takes for the LogicHandler's iteratePairwise() function.
+   * Time it takes for the LogicHandler's computeInteractions() function.
    */
-  long timeIteratePairwise{};
+  long timeComputeInteractions{};
 
   /**
    * Time it takes for the Remainder Traversal.

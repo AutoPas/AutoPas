@@ -38,6 +38,7 @@ class ActiveHarmony : public TuningStrategyInterface {
  public:
   /**
    * Constructor. Note that ActiveHarmony assumes every traversal option is only applicable for one container.
+   * @param interactionType
    * @param allowedContainerOptions
    * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
@@ -47,7 +48,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param mpiDivideAndConquer
    * @param comm
    */
-  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
+  ActiveHarmony(const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
                 const NumberSet<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
@@ -93,6 +94,8 @@ class ActiveHarmony : public TuningStrategyInterface {
 #else
   using hdef_t = void *;
 #endif
+
+  const InteractionTypeOption _interactionType;
 
   std::set<ContainerOption> _allowedContainerOptions;
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;

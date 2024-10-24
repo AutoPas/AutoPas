@@ -109,7 +109,7 @@ for datafile in datafiles:
     boxSizeListMax = []
     traversal = []
 
-    regexIterTook = '.* AutoTuner::iteratePairwise +took +([0-9]+) .*'
+    regexIterTook = '.* AutoTuner::computeInteractions +took +([0-9]+) .*'
     regexNumOfParticles = '.*particles-per-dimension*'
     regexNumOfParticlesAbsolute = '.*numberOfParticles*'
     regexBoxMin = '.*box-min*'

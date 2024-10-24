@@ -9,7 +9,7 @@
 
 #include <numeric>
 
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "SlicedBasedTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -26,20 +26,20 @@ namespace autopas {
  * as soon the boundary wall is fully processed.
  *
  * @tparam ParticleCell The type of cells.
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor> {
+template <class ParticleCell, class Functor>
+class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Functor> {
  public:
   /**
    * Constructor of the sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                    double interactionLength, const std::array<double, 3> &cellLength,
+  explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
+                                    const double interactionLength, const std::array<double, 3> &cellLength,
                                     DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                            dataLayout, useNewton3, spaciallyForward) {}
+      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                    useNewton3, spaciallyForward) {}
 
  protected:
   /**
@@ -57,9 +57,9 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairw
   inline void slicedTraversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell, class Functor>
 template <typename LoopBody>
-void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>::slicedTraversal(LoopBody &&loopBody) {
+void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();

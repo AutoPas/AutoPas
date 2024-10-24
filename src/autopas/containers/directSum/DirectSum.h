@@ -12,7 +12,7 @@
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -70,6 +70,9 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells
     this->_cells.resize(7);
+    this->_cells[0].setPossibleParticleOwnerships(OwnershipState::owned);
+    std::for_each(++this->_cells.begin(), this->_cells.end(),
+                  [&](auto &cell) { cell.setPossibleParticleOwnerships(OwnershipState::halo); });
     auto boxLength = boxMax - boxMin;
     this->_cells[0].setCellLength(boxLength);
   }
@@ -146,19 +149,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
-    if (traversalInterface && cellPairTraversal) {
-      cellPairTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
-    }
+  void computeInteractions(TraversalInterface *traversal) override {
+    prepareTraversal(traversal);
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -482,7 +477,27 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     return {cellIndex, particleIndex};
   }
 
+  /**
+   * Checks if a given traversal is allowed for DirectSum and sets it up for the force interactions.
+   * @tparam Traversal Traversal type. E.g. pairwise, triwise
+   * @param traversal
+   */
+  template <typename Traversal>
+  void prepareTraversal(Traversal &traversal) {
+    auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (dsTraversal && cellTraversal) {
+      cellTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "The selected traversal is not compatible with the DirectSum container. TraversalID: {}",
+          traversal->getTraversalType());
+    }
+  }
+
   ParticleCell &getOwnedCell() { return this->_cells[0]; };
+
+  ParticleCell &getHaloCell() { return this->_cells[1]; };
 };
 
 }  // namespace autopas

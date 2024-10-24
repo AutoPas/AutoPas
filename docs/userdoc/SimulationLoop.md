@@ -27,7 +27,7 @@ while (needsMoreIterations()) {
 
    // 2. Particle Interactions
    YourFunctor functor();                       // User code
-   autopas->iteratePairwise(&functor);          // Tuning and parallelization happens here
+   autopas->computeInteractions(&functor);      // Tuning and parallelization happen here
 
    // 3. Your science goes here.
 }
@@ -73,7 +73,7 @@ Examples of this could be:
 ### 2. Particle Interaction
 ```c++
 YourFunctor functor();
-autopas->iteratePairwise(&functor);
+autopas->computeInteractions(&functor);
 ```
 Apply your custom force interaction via one or several functors.
 This step triggers the tuning.

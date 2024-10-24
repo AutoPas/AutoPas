@@ -153,6 +153,11 @@ class Simulation {
     autopas::utils::Timer forceUpdatePairwise;
 
     /**
+     * Records the time used for the triwise force update of all particles.
+     */
+    autopas::utils::Timer forceUpdateTriwise;
+
+    /**
      * Records the time used for the force update of all particles during the tuning iterations.
      */
     autopas::utils::Timer forceUpdateTuning;
@@ -253,8 +258,10 @@ class Simulation {
   void loadParticles();
 
   /**
-   * Estimates the number of tuning iterations which ocurred during the simulation so far.
-   * @return an estimation of the number of tuning iterations which occured so far.
+   * Returns the number of expected maximum number of iterations of the Simulation.
+   * This is exact if the number of iterations was specified, or an estimate based on the number of tuning iterations if
+   * the number of tuning phases is specified.
+   * @return <size_t, bool> Max number of iterations, bool whether it is an estimate.
    */
   [[nodiscard]] std::tuple<size_t, bool> estimateNumberOfIterations() const;
 
@@ -346,6 +353,12 @@ class Simulation {
   bool calculatePairwiseForces();
 
   /**
+   * Calculates the triwise forces between particles in the autopas container.
+   * @return Tells the user if the current iteration of force calculations was a tuning iteration.
+   */
+  bool calculateTriwiseForces();
+
+  /**
    * Adds global forces to the particles in the container.
    * @param globalForce The global force which will be applied to each particle in the container.
    */
@@ -375,11 +388,24 @@ class Simulation {
    * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
    * @note This templated function is private and hence implemented in the .cpp
    *
-   * @tparam T Return type of f.
-   * @tparam F Function type T f(auto functor).
+   * @tparam ReturnType Return type of f.
+   * @tparam FunctionType Function type ReturnType f(auto functor).
    * @param f lambda function.
    * @return Return value of f.
    */
-  template <class T, class F>
-  T applyWithChosenFunctor(F f);
+  template <class ReturnType, class FunctionType>
+  ReturnType applyWithChosenFunctor(FunctionType f);
+
+  /**
+   *
+   * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
+   * @note This templated function is private and hence implemented in the .cpp
+   *
+   * @tparam ReturnType Return type of f.
+   * @tparam FunctionType Function type ReturnType f(auto functor).
+   * @param f lambda function.
+   * @return Return value of f.
+   */
+  template <class ReturnType, class FunctionType>
+  ReturnType applyWithChosenFunctor3B(FunctionType f);
 };

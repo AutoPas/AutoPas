@@ -5,7 +5,7 @@
  */
 
 #pragma once
-#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairC08CellHandler.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -42,7 +42,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
         _functor(pairwiseFunctor),
         _cellHandler(dims, interactionLength, cellLength) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] bool isApplicable() const override {
     return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
@@ -51,7 +51,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setSortingThreshold(size_t sortingThreshold) override {}
@@ -66,7 +66,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     _soa = this->_cellPairVerletList->loadSoA(_functor);
   }

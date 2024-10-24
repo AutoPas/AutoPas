@@ -3,9 +3,11 @@
  * @author tirgendetwas
  * @date 05.12.2020
  */
+
+#include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 #pragma once
@@ -17,7 +19,7 @@ namespace autopas {
  */
 template <class Particle, enum TraversalOption::Value TraversalOptionEnum>
 class VLCAllCellsGeneratorFunctor
-    : public Functor<Particle, VLCAllCellsGeneratorFunctor<Particle, TraversalOptionEnum>> {
+    : public PairwiseFunctor<Particle, VLCAllCellsGeneratorFunctor<Particle, TraversalOptionEnum>> {
   using NeighborListsType = typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle>;
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -34,12 +36,14 @@ class VLCAllCellsGeneratorFunctor
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                               double cutoffSkin, size_t newListAllocationSize,
                               const std::array<size_t, 3> &cellsPerDim = {})
-      : Functor<Particle, VLCAllCellsGeneratorFunctor<Particle, TraversalOptionEnum>>(0.),
+      : PairwiseFunctor<Particle, VLCAllCellsGeneratorFunctor<Particle, TraversalOptionEnum>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _cutoffSkinSquared(cutoffSkin * cutoffSkin),
         _cellsPerDim(cellsPerDim),
         _newListAllocationSize(newListAllocationSize) {}
+
+  std::string getName() override { return "VLCAllCellsGeneratorFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 
@@ -62,7 +66,7 @@ class VLCAllCellsGeneratorFunctor
   void setCells(std::vector<FullParticleCell<Particle>> *cells) { _cells = cells; }
 
   /**
-   * @copydoc Functor::AoSFunctor()
+   * @copydoc PairwiseFunctor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -126,7 +130,7 @@ class VLCAllCellsGeneratorFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle()
+   * @copydoc PairwiseFunctor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;
