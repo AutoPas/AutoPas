@@ -74,7 +74,8 @@ class SoAPartition {
    */
   void append(const SoAPartition<SoAArraysType> &other) {
     if (other.size() > 0) {
-      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+      // std::tuple_size<typename SoAArraysType::Type>::value is the number of vectors in the SoAPartition
+      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<typename SoAArraysType::Type>::value>{});
     }
   }
 
@@ -84,7 +85,8 @@ class SoAPartition {
    */
   void append(const SoAPartitionView<SoAArraysType> &other) {
     if (other.size() > 0) {
-      append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+      // std::tuple_size<typename SoAArraysType::Type>::value is the number of vectors in the SoAPartition
+      append_impl(other, std::make_index_sequence<std::tuple_size<typename SoAArraysType::Type>::value>{});
     }
   }
 

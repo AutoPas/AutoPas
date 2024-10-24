@@ -108,7 +108,7 @@ class SoA {
    * Appends the other SoA buffer to this in a lengthwise manner.
    * @param other other SoA buffer
    */
-  void append(const SoAType &other) {
+  void append(const SoA<SoAType> &other) {
     _mainSoAPartition.append(other._mainSoAPartition);
     if (other.size() > 0) {
       appendAdditionalTypesImpl(other, std::make_index_sequence<numAdditionalTypes>{});
@@ -120,7 +120,7 @@ class SoA {
    * @param other other SoA buffer as an SoAView
    */
   void append(const SoAViewType &other) {
-    _mainSoAPartition.append(other->mainSoAPartition);
+    _mainSoAPartition.append(other._mainSoAPartitionView);
     if (other.size() > 0) {
       appendAdditionalTypesImpl(other, std::make_index_sequence<numAdditionalTypes>{});
     }
@@ -303,7 +303,7 @@ class SoA {
    * @param other other SoA buffer.
    */
   template <size_t... additionalPartitionTypeIndices>
-  void appendImpl(SoAType &other, std::index_sequence<additionalPartitionTypeIndices...>) {
+  void appendAdditionalTypesImpl(const SoA<SoAType> &other, std::index_sequence<additionalPartitionTypeIndices...>) {
     // fold expression
     (appendSingleType<additionalPartitionTypeIndices>(other), ...);
   }
@@ -314,7 +314,7 @@ class SoA {
    * @param other other SoAView buffer.
    */
   template <size_t... additionalPartitionTypeIndices>
-  void appendAdditionalTypesImpl(SoAViewType &other, std::index_sequence<additionalPartitionTypeIndices...>) {
+  void appendAdditionalTypesImpl(const SoAViewType &other, std::index_sequence<additionalPartitionTypeIndices...>) {
     // fold expression
     (appendSingleType<additionalPartitionTypeIndices>(other), ...);
   }
@@ -326,7 +326,7 @@ class SoA {
    * @param other other SoA buffer.
    */
   template <size_t additionalPartitionTypeIndex>
-  void appendSingleType(SoAType &other) {
+  void appendSingleType(SoA<SoAType> &other) {
     // check if resize is needed and if so resize
     const auto otherMaxDepth = other->template getMaxDepthOfGivenType<additionalPartitionTypeIndex>();
     if (otherMaxDepth > this->template getMaxDepthOfGivenType<additionalPartitionTypeIndex>()) {
