@@ -168,8 +168,7 @@ class Functor {
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
-    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<getNeededAttrN3ReturnType , Functor_T::getNeededAttr(),
-                                                    getNeededAdditionalAttrReturnType, Functor_T::getNeededAdditionalAttr()>();
+    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<Functor_T>();
 
     // get number of partitions of each type
     const auto maxDepthsOfAdditionalPartitionTypes = soa.getMaxDepths();
