@@ -33,6 +33,7 @@ target_link_libraries(
         $<$<NOT:$<PLATFORM_ID:Darwin>>:rt> # required for Time.h, on macOS not needed
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:auto4omp::omp>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
@@ -51,6 +52,8 @@ target_compile_definitions(
     PUBLIC
         $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_USE_OPENMP>
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
+        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:AUTOPAS_USE_AUTO4OMP>
+        $<$<BOOL:${AUTOPAS_LB4OMP}>:AUTOPAS_USE_LB4OMP>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
@@ -62,3 +65,14 @@ target_compile_definitions(
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
+
+if (AUTOPAS_AUTO4OMP)
+    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp.h, etc.
+    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src) # For kmp_config.h.
+
+    # Provide libomp.sp.5 for systems with modern OpenMP.
+    add_custom_command(
+            TARGET autopas PRE_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink libomp.so libomp.so.5
+            WORKING_DIRECTORY "${auto4omp_BINARY_DIR}/runtime/src"
+    )
+endif ()
