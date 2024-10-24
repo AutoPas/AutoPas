@@ -81,6 +81,7 @@ bool LJFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   return ret;
 }
 
+template <bool mixing>
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles,
                                                            bool useUnalignedViews) {
   FMCell cell1AVX;
@@ -89,12 +90,14 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0, 1., 1., 1.);
-  PPL.addSiteType(1, 1.5, 2., 1.);
-  PPL.addSiteType(2, 2., 1., 1.);
-  PPL.addSiteType(3, 2.5, 2., 1.);
-  PPL.addSiteType(4, 3., 1., 1.);
-  PPL.calculateMixingCoefficients();
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1., 1., 1.);
+    PPL.addSiteType(1, 1.5, 2., 1.);
+    PPL.addSiteType(2, 2., 1., 1.);
+    PPL.addSiteType(3, 2.5, 2., 1.);
+    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(
@@ -108,7 +111,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
         autopas::internal::markParticleAsDeleted(particle);
       }
     }
-    particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
   }
   for (auto &particle : cell2AVX) {
     if (doDeleteSomeParticles) {
@@ -116,7 +121,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
         autopas::internal::markParticleAsDeleted(particle);
       }
     }
-    particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
   }
 
   // copy cells
@@ -124,11 +131,27 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   FMCell cell2NoAVX(cell2AVX);
 
   constexpr bool shifting = true;
-  constexpr bool mixing = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PPL);
-  ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
-  ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+  auto ljFunctorNoAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+  
+  auto ljFunctorAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+  
+  if constexpr (not mixing) {
+    ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
 
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
@@ -176,6 +199,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
+template <bool mixing>
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles,
                                                           bool useUnalignedViews) {
   FMCell cellAVX;
@@ -183,12 +207,14 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0, 1., 1., 1.);
-  PPL.addSiteType(1, 1.5, 2., 1.);
-  PPL.addSiteType(2, 2., 1., 1.);
-  PPL.addSiteType(3, 2.5, 2., 1.);
-  PPL.addSiteType(4, 3., 1., 1.);
-  PPL.calculateMixingCoefficients();
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1., 1., 1.);
+    PPL.addSiteType(1, 1.5, 2., 1.);
+    PPL.addSiteType(2, 2., 1., 1.);
+    PPL.addSiteType(3, 2.5, 2., 1.);
+    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
@@ -200,17 +226,35 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
         autopas::internal::markParticleAsDeleted(particle);
       }
     }
-    particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
   }
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
-  constexpr bool mixing = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PPL);
-  ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
-  ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+  auto ljFunctorNoAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+
+  auto ljFunctorAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+
+  if constexpr (not mixing) {
+    ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 
@@ -246,6 +290,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
+template <bool mixing>
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles) {
   using namespace autopas::utils::ArrayMath::literals;
 
@@ -254,12 +299,14 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0, 1., 1., 1.);
-  PPL.addSiteType(1, 1.5, 2., 1.);
-  PPL.addSiteType(2, 2., 1., 1.);
-  PPL.addSiteType(3, 2.5, 2., 1.);
-  PPL.addSiteType(4, 3., 1., 1.);
-  PPL.calculateMixingCoefficients();
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1., 1., 1.);
+    PPL.addSiteType(1, 1.5, 2., 1.);
+    PPL.addSiteType(2, 2., 1., 1.);
+    PPL.addSiteType(3, 2.5, 2., 1.);
+    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
@@ -271,7 +318,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
         autopas::internal::markParticleAsDeleted(particle);
       }
     }
-    particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
   }
 
   // generate neighbor lists
@@ -291,15 +340,30 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
+
   constexpr bool shifting = true;
-  constexpr bool mixing = true;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff,
-                                                                                                               PPL);
-  ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(_cutoff,
-                                                                                                                PPL);
-  ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+  auto ljFunctorNoAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+
+  auto ljFunctorAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+
+  if constexpr (not mixing) {
+    ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 
@@ -333,18 +397,21 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
+template <bool mixing>
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellAVX;
 
   constexpr size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0, 1., 1., 1.);
-  PPL.addSiteType(1, 1.5, 2., 1.);
-  PPL.addSiteType(2, 2., 1., 1.);
-  PPL.addSiteType(3, 2.5, 2., 1.);
-  PPL.addSiteType(4, 3., 1., 1.);
-  PPL.calculateMixingCoefficients();
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1., 1., 1.);
+    PPL.addSiteType(1, 1.5, 2., 1.);
+    PPL.addSiteType(2, 2., 1., 1.);
+    PPL.addSiteType(3, 2.5, 2., 1.);
+    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
@@ -356,17 +423,35 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
         autopas::internal::markParticleAsDeleted(particle);
       }
     }
-    particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
   }
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
-  constexpr bool mixing = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PPL);
-  ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
-  ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+  auto ljFunctorNoAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+
+  auto ljFunctorAVX = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    } else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true> (_cutoff);
+    }
+  }();
+
+  if constexpr (not mixing) {
+    ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 
@@ -394,49 +479,74 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
 }
 
 TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXAoS) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXAoS(newton3, doDeleteSomeParticle);
+  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorAVXAoS<true>(newton3, doDeleteSomeParticle);
+  } else {
+    testLJFunctorVSLJFunctorAVXAoS<false>(newton3, doDeleteSomeParticle);
+  }
 }
 
 TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXVerlet) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXVerlet(newton3, doDeleteSomeParticle);
+  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorAVXVerlet<true>(newton3, doDeleteSomeParticle);
+  } else {
+    testLJFunctorVSLJFunctorAVXVerlet<false>(newton3, doDeleteSomeParticle);
+  }
 }
 
 TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellAlignedAccess) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle, false);
+  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorAVXOneCell<true>(newton3, doDeleteSomeParticle, false);
+  } else {
+    testLJFunctorVSLJFunctorAVXOneCell<false>(newton3, doDeleteSomeParticle, false);
+  }
 }
 
 TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellUseUnalignedViews) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle, true);
+  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorAVXOneCell<true>(newton3, doDeleteSomeParticle, true);
+  } else {
+    testLJFunctorVSLJFunctorAVXOneCell<false>(newton3, doDeleteSomeParticle, true);
+  }
 }
 
 TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellsAlignedAccess) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXTwoCells(newton3, doDeleteSomeParticle, false);
+  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorAVXTwoCells<true>(newton3, doDeleteSomeParticle, false);
+  } else {
+    testLJFunctorVSLJFunctorAVXTwoCells<false>(newton3, doDeleteSomeParticle, false);
+  }
 }
 
 TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellsUseUnalignedViews) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXTwoCells(newton3, doDeleteSomeParticle, true);
+  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorAVXTwoCells<true>(newton3, doDeleteSomeParticle, true);
+  } else {
+    testLJFunctorVSLJFunctorAVXTwoCells<false>(newton3, doDeleteSomeParticle, true);
+  }
 }
 
 /**
  * Lambda to generate a readable string out of the parameters of this test.
  */
 static auto toString = [](const auto &info) {
-  auto [newton3, doDeleteSomeParticle] = info.param;
+  const auto [mixing, newton3, doDeleteSomeParticle] = info.param;
   std::stringstream resStream;
-  resStream << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
+  resStream << (mixing ? "mixingEnabled" : "mixingDisabled") << "_" << (newton3 ? "N3" : "noN3") << "_"
+            << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
   return res;
 };
 
-INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testing::Bool(), ::testing::Bool()),
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool()),
                          toString);
 
 #endif  // __AVX__
