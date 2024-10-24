@@ -473,7 +473,7 @@ TEST(FuzzyTuningTest, testMaxDefuzzification) {
 TEST(FuzzyTuningTest, testParseRuleFile) {
   autopas::Logger::create();
 
-  std::string fileContent = R"(
+  const std::string fileContent = R"(
 # Define the settings of the fuzzy control system
 FuzzySystemSettings:
      defuzzificationMethod: "meanOfMaximum"
@@ -509,9 +509,11 @@ if ("homogeneity" == "lower than 0.041") && ("particlesPerCellStdDev" == "lower 
 )";
 
   // make temporary file in /tmp
-  std::string fileName = std::filesystem::temp_directory_path().string() + "/fuzzyRules.frule";
+  const std::string fileName = std::filesystem::temp_directory_path().string() + "/fuzzyRules.frule";
   std::ofstream file(fileName);
   file << fileContent;
+  // make sure the file is written before we use it.
+  file.close();
 
   // parse the file
   autopas::FuzzyTuning tuner{fileName};
