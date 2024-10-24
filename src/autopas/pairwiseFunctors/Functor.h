@@ -91,6 +91,36 @@ class Functor {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }
 
+  /**
+   * Get attributes needed for computation.
+   * @return Attributes needed for computation.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
+
+  /**
+   * Get attributes needed for computation without N3 optimization.
+   * @return Attributes needed for computation.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+    return Functor_T::getNeededAttr();
+  }
+
+  /**
+   * Get attributes computed by this functor.
+   * @return Attributes computed by this functor.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 0>{};
+  }
+
+  constexpr static std::tuple<> getNeededAdditionalAttr() {
+    return {};
+  }
 
   /**
    * Functor for structure of arrays (SoA)
@@ -152,10 +182,7 @@ class Functor {
    */
   template <class ParticleCell>
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
-    using getNeededAttrN3ReturnType = typename decltype(std::function{Functor_T::getNeededAttr()})::result_type;
-    using getNeededAdditionalAttrReturnType = typename decltype(std::function{Functor_T::getNeededAdditionalAttr()})::result_type;
-
-    static constexpr auto numAdditionalPartitions = Functor_T::getNeededAdditionalAttr().size();
+    static constexpr auto numAdditionalPartitions = std::tuple_size_v<decltype(Functor_T::getNeededAdditionalAttr())>;
 
     if (not skipSoAResize) {
       soa.resizeLengthOfArrays(offset + cell.size());
@@ -175,15 +202,9 @@ class Functor {
 
     auto cellIter = cell.begin();
 
-    // some aliases that are required as template parameters. These are simply the types of mainPtr, additionalPtr, and
-    // cellIter i.e. the result_types of the functions that are used to obtain these pointers.
-    using mainPtrType = typename decltype(std::function{
-        std::get<0>(soa.template begin<getNeededAttrN3ReturnType , Functor_T::getNeededAttr(),
-                                       getNeededAdditionalAttrReturnType, Functor_T::getNeededAdditionalAttr()>())})::result_type;
-    using additionalPtrType = typename decltype(std::function{
-        std::get<1>(soa.template begin<getNeededAttrN3ReturnType , Functor_T::getNeededAttr(),
-                                       getNeededAdditionalAttrReturnType, Functor_T::getNeededAdditionalAttr()>())})::result_type;
-    using cellIterType = typename decltype(std::function{cell.begin()})::result_type;
+    using mainPtrType = decltype(mainPtr);
+    using additionalPtrType = decltype(additionalPtr);
+    using cellIterType = decltype(cellIter);
 
     // load particles one-by-one into the SoAPartitions
     for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
