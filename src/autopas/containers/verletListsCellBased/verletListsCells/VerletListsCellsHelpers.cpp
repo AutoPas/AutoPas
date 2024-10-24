@@ -122,25 +122,11 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
     case TraversalOption::vlc_c08:
       buildC08Offsets();
       break;
-    case TraversalOption::vlc_c18:
-      buildC18Offsets();
-      break;
     case TraversalOption::vlc_c01:
       buildC01Offsets();
       break;
-    case TraversalOption::vlc_sliced:
-      buildC18Offsets();
-      break;
-    case TraversalOption::vlc_sliced_balanced:
-      buildC18Offsets();
-      break;
-    case TraversalOption::vlc_sliced_c02:
-      buildC18Offsets();
-      break;
     default:
-      utils::ExceptionHandler::exception(
-          "VerletListsCellsHelpers::buildBaseStep() was called with an unsupported traversal. Only c08 and c18 "
-          "is supported.");
+      buildC18Offsets();
   }
 
   // Sort offsets to group processing of the same cells (-> slightly better cache re-usage)

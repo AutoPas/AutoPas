@@ -253,22 +253,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             const auto cellIndex1 = cellIndexBase + offset1;
             const auto cellIndex2 = cellIndexBase + offset2;
 
-            if (traversal == TraversalOption::vlc_c18 or traversal == TraversalOption::vlc_sliced or
-                traversal == TraversalOption::vlc_sliced_balanced or traversal == TraversalOption::vlc_sliced_c02) {
-              const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
-              if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[1] >= cellsPerDim[1] or
-                  cell2Coords[2] >= cellsPerDim[2]) {
-                continue;
-              }
-            }
-
-            // Ensures the partner cell is not outside the boundary for c01 traversal
-            if (traversal == TraversalOption::vlc_c01) {
-              const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
-              if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[0] < 0 or cell2Coords[1] >= cellsPerDim[1] or
-                  cell2Coords[1] < 0 or cell2Coords[2] >= cellsPerDim[2] or cell2Coords[2] < 0) {
-                continue;
-              }
+            // For all traversals ensures the partner cell is not outside the boundary
+            const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
+            if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[0] < 0 or cell2Coords[1] >= cellsPerDim[1] or
+                cell2Coords[1] < 0 or cell2Coords[2] >= cellsPerDim[2] or cell2Coords[2] < 0) {
+              continue;
             }
 
             // Skip if both cells only contain halos
@@ -280,10 +269,18 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             // Go over all particle pairs in the two cells and insert close pairs into their respective lists
             for (size_t particleIndexCell1 = 0; particleIndexCell1 < cells[cellIndex1].size(); ++particleIndexCell1) {
               auto &p1 = cells[cellIndex1][particleIndexCell1];
-              for (size_t particleIndexCell2 = (cellIndex1 == cellIndex2 and traversal != TraversalOption::vlc_c01)
-                                                   ? particleIndexCell1 + 1
-                                                   : 0;
-                   particleIndexCell2 < cells[cellIndex2].size(); ++particleIndexCell2) {
+
+              // Determine starting index for the second particle in the second cell
+              // If both cells are the same start after the current particle in the first cell.
+              // For vlc_c01 we have to iterate over all pairs like p1<->p2 and p2<->p1 because we do not make use of
+              // newton3
+              size_t startIndexCell2 = 0;
+              if (cellIndex1 == cellIndex2 and traversal != TraversalOption::vlc_c01) {
+                startIndexCell2 = particleIndexCell1 + 1;
+              }
+
+              for (size_t particleIndexCell2 = startIndexCell2; particleIndexCell2 < cells[cellIndex2].size();
+                   ++particleIndexCell2) {
                 auto &p2 = cells[cellIndex2][particleIndexCell2];
                 // Ignore dummies and self interaction
                 if (&p1 == &p2 or p1.isDummy() or p2.isDummy()) {
