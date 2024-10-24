@@ -120,23 +120,15 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * stored together.
    * @param traversal The TraversalOption with which the function is called.
    */
-  void rebuildNeighborListsC08C18(TraversalOption traversal) {
+  void rebuildNeighborListsVLC(TraversalOption traversal) {
     using namespace utils::ArrayMath::literals;
-    // So far this neighborlist rebuilding only supports c01, c08 c18, sliced traversals.
-    if (traversal != TraversalOption::vlc_c08 and traversal != TraversalOption::vlc_c18 and
-        traversal != TraversalOption::vlc_c01 and traversal != TraversalOption::vlc_sliced and
-        traversal != TraversalOption::vlc_sliced_balanced and traversal != TraversalOption::vlc_sliced_c02) {
-      utils::ExceptionHandler::exception(
-          "VerletListsCells::rebuildNeighborListsC08C18() was called with an unsupported traversal.");
-    }
     // Sanity check.
     if (this->_linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
       utils::ExceptionHandler::exception(
-          "VerletListsCells::rebuildNeighborListsC08C18() was called with a CSF < 1 but it only supports CSF>=1.");
+          "VerletListsCells::rebuildNeighborListsVLC() was called with a CSF < 1 but it only supports CSF>=1.");
     }
     // Define some aliases
     auto &neighborLists = _neighborList.getAoSNeighborList();
-    auto &particleToCellMap = _neighborList.getParticleToCellMap();
     auto &cells = this->_linkedCells.getCells();
     const auto interactionLength = this->getInteractionLength();
     const auto interactionLengthSquared = interactionLength * interactionLength;
@@ -270,6 +262,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
               }
             }
 
+            // Ensures the partner cell is not outside the boundary for c01 traversal
             if (traversal == TraversalOption::vlc_c01) {
               const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
               if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[0] < 0 or cell2Coords[1] >= cellsPerDim[1] or
@@ -302,11 +295,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                 const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
                 if (distSquared < interactionLengthSquared) {
                   insert(p1, particleIndexCell1, p2, cellIndex1, cellIndexBase, baseCellsLists);
-#pragma omp critical
-                  {
-                    particleToCellMap[&p1] = std::make_pair(cellIndex1, particleIndexCell1);
-                    particleToCellMap[&p2] = std::make_pair(cellIndex2, particleIndexCell2);
-                  }
                   // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
                   if (not this->_verletBuiltNewton3 and not(traversal == TraversalOption::vlc_c01)) {
                     insert(p2, particleIndexCell2, p1, cellIndex2, cellIndexBase, baseCellsLists);
@@ -340,7 +328,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                                          traversal->getTraversalType(), _dataLayoutDuringListRebuild);
 
     } else {
-      rebuildNeighborListsC08C18(traversal->getTraversalType());
+      rebuildNeighborListsVLC(traversal->getTraversalType());
     }
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {

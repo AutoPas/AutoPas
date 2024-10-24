@@ -153,8 +153,14 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * @copydoc VLCNeighborListInterface::getNumberOfPartners()
    */
   size_t getNumberOfPartners(const Particle *particle) const override {
-    const auto &[cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
-    return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
+    for (const auto &cellsLists : _aosNeighborList) {
+      for (const auto &particlesLists : cellsLists) {
+        if (particlesLists.first == particle) {
+          return particlesLists.second.size();
+        }
+      }
+    }
+    return 0lu;
   }
 
   /**
@@ -164,12 +170,6 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle> &getAoSNeighborList() {
     return _aosNeighborList;
   }
-
-  /**
-   * Returns a Mapping of particles to its corresponding cell and index within this cell.
-   * @return Mapping of particles to its corresponding cell and index within this cell.
-   */
-  auto &getParticleToCellMap() { return _particleToCellMap; }
 
   /**
    * Returns the neighbor list in SoA layout.
