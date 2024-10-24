@@ -461,6 +461,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.ruleFilename.value.empty()) {
           throw std::runtime_error("Parsed rule filename is empty!");
         }
+      } else if (key == config.fuzzyRuleFilename.name) {
+        expected = "String";
+        description = config.fuzzyRuleFilename.description;
+
+        config.fuzzyRuleFilename.value = node[key].as<std::string>();
+        if (config.fuzzyRuleFilename.value.empty()) {
+          throw std::runtime_error("Parsed rule filename is empty!");
+        }
       } else if (key == config.verletRebuildFrequency.name) {
         expected = "Unsigned Integer >= 1";
         description = config.verletRebuildFrequency.description;
@@ -761,6 +769,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!"));
 
         config.loadBalancer.value = *parsedOptions.begin();
+
+#ifndef MD_FLEXIBLE_ENABLE_ALLLBL
+        if (config.loadBalancer.value == LoadBalancerOption::all) {
+          errors.push_back(makeErrorMsg(mark, key,
+                                        "The input file requests ALL but md-flexible was not compiled with ALL.",
+                                        expected, description));
+        }
+#endif
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

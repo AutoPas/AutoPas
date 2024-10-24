@@ -181,15 +181,13 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * Searches the provided halo particle and updates the found particle.
    * Searches for the provided particle within the halo cells of the container
    * and overwrites the found particle with the provided particle.
-   * @param particle
+   * @param haloParticle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(const Particle &particle) override {
-    Particle pCopy = particle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
+  bool updateHaloParticle(const Particle &haloParticle) override {
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
@@ -197,7 +195,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     AutoPasLog(TRACE,
                "updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
-               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
+               haloParticle.getR()[0], haloParticle.getR()[1], haloParticle.getR()[2]);
     return false;
   }
 
