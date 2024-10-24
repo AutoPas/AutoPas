@@ -120,8 +120,8 @@ For examples how to define and configure each object see [`input/AllOptions.yaml
   the domain decomposition.
 The cells contain additional information about the configuration of the AutoPas
   container responsible for simulating the cell.
-To visualize the particle records load the .pvtu files in ParaView. To visualize
-  the cells of the decomposition load the .pvts files in ParaView.
+To visualize the particle records load the `Particles*.pvtu` files in ParaView. To visualize
+  the cells of the decomposition load the `Ranks*.pvtu` files in ParaView.
 
 
 ### Checkpoints
