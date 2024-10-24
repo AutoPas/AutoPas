@@ -193,10 +193,14 @@ TEST_F(AutoTunerTest, testTuningIntervalIsFixed) {
       _confLc_c08_noN3,
   };
 
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto &autoTuner = *tunerMap[autopas::InteractionTypeOption::pairwise];
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -208,7 +212,7 @@ TEST_F(AutoTunerTest, testTuningIntervalIsFixed) {
   size_t tuningIterations = 0;
   while (iterations < numIterations) {
     [[maybe_unused]] auto emigrants = logicHandler.updateContainer();
-    stillTuning = logicHandler.iteratePairwisePipeline(&functor);
+    stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
     if (not lastWasTuningInteration and stillTuning) {
       EXPECT_TRUE(iterations % tuningInterval == 0) << "Tuning phase does at start at fixed iteration number.";
     }
@@ -235,10 +239,14 @@ TEST_F(AutoTunerTest, testTuningPhaseLongerThanTuningInterval) {
       _confLc_c08_N3,
   };
 
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto &autoTuner = *tunerMap[autopas::InteractionTypeOption::pairwise];
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -249,7 +257,7 @@ TEST_F(AutoTunerTest, testTuningPhaseLongerThanTuningInterval) {
 
   while (iterationsDone < iterationsToDo) {
     [[maybe_unused]] auto emigrants = logicHandler.updateContainer();
-    stillTuning = logicHandler.iteratePairwisePipeline(&functor);
+    stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
 
     if (iterationsDone < searchSpace.size() * autoTunerInfo.maxSamples) {
       EXPECT_TRUE(stillTuning) << "AutoTuner should tune.";
