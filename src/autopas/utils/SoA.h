@@ -177,6 +177,12 @@ class SoA {
    */
   template <typename Functor>
   auto begin() {
+    // Check that the functor's getNeededAdditionalAttr returns an array of requested attributes per additional
+    // partition type in the SoA.
+    static constexpr auto numAdditionalTypesFunctor = std::tuple_size_v<decltype(Functor::getNeededAdditionalAttr())>;
+    static_assert(numAdditionalTypesFunctor==numAdditionalTypes, "SoA::begin: Number of additional partition types of"
+                  "the requested additional attributes does not match number of types of additional partition types!");
+
     static constexpr auto numMainAttr = Functor::getNeededAttr().size();
     return std::make_pair(beginMainAttrImpl<Functor>(std::make_index_sequence<numMainAttr>{}),
         beginAdditionalAttrImpl<Functor>(std::make_index_sequence<numAdditionalTypes>{})
