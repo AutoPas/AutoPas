@@ -129,7 +129,7 @@ class MoleculeLJ : public autopas::Particle {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

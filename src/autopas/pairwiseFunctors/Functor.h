@@ -191,8 +191,8 @@ class Functor {
     if (cell.isEmpty()) return;
 
     /**
-     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
-     * in the following loop.
+     * Store the start address of all needed arrays inside the SoA buffer in a main pointer and additional pointer
+     * structure. This avoids unnecessary look ups in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<Functor_T>();
@@ -224,7 +224,30 @@ class Functor {
    */
   template <typename ParticleCell>
   void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
-    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
+    static constexpr auto numAdditionalPartitions = std::tuple_size_v<decltype(Functor_T::getNeededAdditionalAttr())>;
+
+    if (cell.isEmpty()) return;
+
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a main pointer and additional pointer
+     * structure. This avoids unnecessary look ups in the following loop.
+     */
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
+    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<Functor_T>();
+
+    // get number of partitions of each type
+    const auto maxDepthsOfAdditionalPartitionTypes = soa.getMaxDepths();
+
+    auto cellIter = cell.begin();
+
+    using mainPtrType = decltype(mainPtr);
+    using additionalPtrType = decltype(additionalPtr);
+    using cellIterType = decltype(cellIter);
+
+    // load particles one-by-one into the SoAPartitions
+    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
+      SoAExtractorMainPartitionImpl<cellIterType, mainPtrType>(cellIter, mainPtr, i, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
+    }
   }
 
   /**
@@ -280,6 +303,10 @@ class Functor {
   [[nodiscard]] virtual double getHitRate() const { return std::numeric_limits<double>::quiet_NaN(); }
 
  private:
+  /**
+   * SoALoader implementation functions.
+   */
+
   /**
    * Implementation of SoALoader for the main partition. Uses a fold expression to "loop" over each attribute. Loads
    * only a single particle.
@@ -408,6 +435,17 @@ class Functor {
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
     }
   }
+
+  /**
+   * SoAExtractor implementation functions.
+   */
+
+  template <typename cellIterType, typename mainPtrType, size_t... attr>
+  void SoAExtractorMainPartitionImpl(cellIterType &cellIter, mainPtrType mainPtr, size_t arrayIndex, std::index_sequence<attr...>) {
+    (cellIter->template set<Functor_T::getComputedAttr()[attr]>(std::get<attr>(mainPtr)[attr]), ...);
+  }
+
+
 
   double _cutoff;
 };

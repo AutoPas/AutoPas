@@ -33,11 +33,15 @@ struct SoAType {
    */
   using AdditionalPartitionsType = std::tuple<std::vector<SoAPartition<additionalPartitionTypes>>...>;
 
+  using MainPartitionViewType = SoAPartitionView<mainPartitionType>;
+
+  using AdditionalPartitionsViewType = std::tuple<std::vector<SoAPartitionView<additionalPartitionTypes>>...>;
+
   /**
    * Types of the additional SoA Partitions. Data is not intended to be stored using this type, this type is to provide
    * a convenient lookup reference for the types of the additional partitions .
    */
-  using AdditionalPartitionTypesReference = typename std::tuple<typename additionalPartitionTypes::Type...>;
+  using AdditionalPartitionTypesReference = typename std::tuple<additionalPartitionTypes...>;
 };
 
 }  // namespace autopas::utils
