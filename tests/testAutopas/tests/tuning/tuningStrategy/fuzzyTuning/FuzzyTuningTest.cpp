@@ -4,11 +4,12 @@
  * @date 30.06.2024
  */
 
+// Disable these tests if fuzzy tuning is not enabled
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 #include "FuzzyTuningTest.h"
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
@@ -472,7 +473,7 @@ TEST(FuzzyTuningTest, testMaxDefuzzification) {
 TEST(FuzzyTuningTest, testParseRuleFile) {
   autopas::Logger::create();
 
-  std::string fileContent = R"(
+  const std::string fileContent = R"(
 # Define the settings of the fuzzy control system
 FuzzySystemSettings:
      defuzzificationMethod: "meanOfMaximum"
@@ -508,9 +509,11 @@ if ("homogeneity" == "lower than 0.041") && ("particlesPerCellStdDev" == "lower 
 )";
 
   // make temporary file in /tmp
-  std::string fileName = std::filesystem::temp_directory_path().string() + "/fuzzyRules.frule";
+  const std::string fileName = std::filesystem::temp_directory_path().string() + "/fuzzyRules.frule";
   std::ofstream file(fileName);
   file << fileContent;
+  // make sure the file is written before we use it.
+  file.close();
 
   // parse the file
   autopas::FuzzyTuning tuner{fileName};
@@ -572,3 +575,4 @@ if ("homogeneity" == "lower than 0.041") && ("particlesPerCellStdDev" == "lower 
   auto result = newtonSystem->predict(data);
   EXPECT_NEAR(result, 0.6667, 1e-2);
 }
+#endif  // AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING

@@ -74,8 +74,9 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   }
 #else
   if (_domainIndex == 0 and _loadBalancerOption == LoadBalancerOption::all) {
-    std::cout << "ALL load balancer has been disabled during compile time. Load balancing will be turned off."
-              << std::endl;
+    throw std::runtime_error(
+        "RegularGridDecomposition.cpp: Constructor called with loadBalancerOption == ALL but "
+        "ALL load balancer has been disabled during compile time.");
   }
 #endif
 }
@@ -89,12 +90,10 @@ void RegularGridDecomposition::update(const double &work) {
         balanceWithInvertedPressureLoadBalancer(work);
         break;
       }
-#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
       case LoadBalancerOption::all: {
         balanceWithAllLoadBalancer(work);
         break;
       }
-#endif
       default: {
         // do nothing
       }
@@ -664,8 +663,8 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
 
 autopas::AutoPas_MPI_Comm RegularGridDecomposition::getCommunicator() const { return _communicator; }
 
-#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
+#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));
 
   for (int i = 0; i < 3; ++i) {
@@ -683,5 +682,9 @@ void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
     _localBoxMin[i] = updatedVertices[0][i];
     _localBoxMax[i] = updatedVertices[1][i];
   }
-}
+#else
+  throw std::runtime_error(
+      "RegularGridDecomposition::balanceWithAllLoadBalancer()"
+      " called but md-flexible was compiled without ALL.");
 #endif
+}

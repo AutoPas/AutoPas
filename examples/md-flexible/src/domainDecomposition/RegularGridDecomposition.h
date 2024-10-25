@@ -375,11 +375,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void balanceWithInvertedPressureLoadBalancer(double work);
 
-#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * Balances the subdomains of the grid decomposition using the ALL load balancer.
    * @param work: The work performed by the process owning this sudomain.
+   *
+   * @note If md-flexible is compiled without ALL this function throws an exception.
    */
   void balanceWithAllLoadBalancer(const double &work);
-#endif
 };

@@ -666,6 +666,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
 
         config.loadBalancer.value = *parsedOptions.begin();
+
+#ifndef MD_FLEXIBLE_ENABLE_ALLLBL
+        if (config.loadBalancer.value == LoadBalancerOption::all) {
+          cerr << "CLI input requests ALL but md-flexible was not compiled with ALL." << endl;
+          displayHelp = true;
+        }
+#endif
         break;
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {
