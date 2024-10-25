@@ -76,42 +76,51 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
   };
 
   /**
+   * Types of attributes corresponding to those in AttributeNames. These must be in the same order as AttributeNames.
+   * Used for accessing and creating a SoA with a structure that is known only at compile-time.
+   */
+  using AttributeTypes = std::tuple<MoleculeLJ *,
+                                    size_t /*id*/,
+                                    double /*x*/,
+                                    double /*y*/,
+                                    double /*z*/,
+                                    double /*velX*/,
+                                    double /*velY*/,
+                                    double /*velZ*/,
+                                    double /*fx*/,
+                                    double /*fy*/,
+                                    double /*fz*/,
+                                    double /*oldFx*/,
+                                    double /*oldFy*/,
+                                    double /*oldFz*/,
+                                    double /*q0*/,
+                                    double /*q1*/,
+                                    double /*q2*/,
+                                    double /*q3*/,
+                                    double /*angVx*/,
+                                    double /*angVy*/,
+                                    double /*angVz*/,
+                                    double /*tx*/,
+                                    double /*ty*/,
+                                    double /*tz*/,
+                                    size_t /*typeId*/,
+                                    autopas::OwnershipState /*ownershipState*/>;
+
+  /**
    * The type for the SoA storage.
    *
    * @note The attribute owned is of type float but treated as a bool.
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  // clang-format off
   using SoAArraysType = typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<
-      MultisiteMoleculeLJ *,
-      size_t, // id
-      double, // x
-      double, // y
-      double, // z
-      double, // vx
-      double, // vy
-      double, // vz
-      double, // fx
-      double, // fy
-      double, // fz
-      double, // oldFx
-      double, // oldFy
-      double, // oldFz
-      double, // q0
-      double, // q1
-      double, // q2
-      double, // q3
-      double, // angVx
-      double, // angVy
-      double, // angVz
-      double, // tx
-      double, // ty
-      double, // tz
-      size_t, // typeid
-      autopas::OwnershipState //ownerState
-  >>;
-  // clang-format on
+      AttributeTypes, AttributeNames::ptr, AttributeNames::posX, AttributeNames::posY, AttributeNames::posZ,
+      AttributeNames::velocityX, AttributeNames::velocityY, AttributeNames::velocityZ, AttributeNames::forceX,
+      AttributeNames::forceY, AttributeNames::forceZ, AttributeNames::oldForceX, AttributeNames::oldForceY,
+      AttributeNames::oldForceZ, AttributeNames::quaternion0, AttributeNames::quaternion1, AttributeNames::quaternion2,
+      AttributeNames::quaternion3, AttributeNames::angularVelX, AttributeNames::angularVelY,
+      AttributeNames::angularVelZ, AttributeNames::torqueX, AttributeNames::torqueY, AttributeNames::torqueZ,
+      AttributeNames::typeId, AttributeNames::ownershipState>>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -195,7 +204,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element_t<attribute, AttributeTypes> value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

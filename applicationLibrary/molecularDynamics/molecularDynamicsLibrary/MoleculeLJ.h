@@ -56,6 +56,15 @@ class MoleculeLJ : public autopas::Particle {
   };
 
   /**
+   * Types of attributes corresponding to those in AttributeNames. These must be in the same order as AttributeNames.
+   * Used for accessing and creating a SoA with a structure that is known only at compile-time.
+   */
+  using AttributeTypes = std::tuple<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/, double /*velX*/,
+                                    double /*velY*/, double /*velZ*/, double /*fx*/, double /*fy*/, double /*fz*/,
+                                    double /*oldFx*/, double /*oldFy*/, double /*oldFz*/, size_t /*typeId*/,
+                                    autopas::OwnershipState /*ownershipState*/>;
+
+  /**
    * The type for the SoA storage.
    *
    * @note The attribute owned is of type float but treated as a bool.
@@ -63,10 +72,11 @@ class MoleculeLJ : public autopas::Particle {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>>;
+      typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<AttributeTypes,
+          AttributeNames::ptr, AttributeNames::id, AttributeNames::posX, AttributeNames::posY, AttributeNames::posZ,
+          AttributeNames::velocityX, AttributeNames::velocityY, AttributeNames::velocityZ, AttributeNames::forceX,
+          AttributeNames::forceY, AttributeNames::forceZ, AttributeNames::oldForceX, AttributeNames::oldForceY,
+          AttributeNames::oldForceZ, AttributeNames::typeId, AttributeNames::ownershipState>>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -129,7 +139,7 @@ class MoleculeLJ : public autopas::Particle {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element_t<attribute, AttributeTypes> value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

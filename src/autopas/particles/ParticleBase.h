@@ -303,12 +303,21 @@ class ParticleBase {
   using ParticleIdType = idType;
 
   /**
+   * Types of attributes corresponding to those in AttributeNames. These must be in the same order as AttributeNames.
+   * Used for accessing and creating a SoA with a structure that is known only at compile-time.
+   */
+  using AttributeTypes = std::tuple<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/, floatType /*y*/,
+                                    floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                    OwnershipState /*ownershipState*/>;
+
+  /**
    * The type for the soa storage.
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
-                                       floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>>;
+      typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<
+          AttributeTypes, AttributeNames::ptr, AttributeNames::id, AttributeNames::posX, AttributeNames::posY,
+          AttributeNames::posZ, AttributeNames::forceX, AttributeNames::forceY, AttributeNames::forceZ,
+          AttributeNames::ownershipState>>;
 
   /**
    * The type of the main soa partition.
@@ -379,7 +388,7 @@ class ParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element_t<attribute, AttributeTypes> value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
