@@ -247,6 +247,7 @@ class Functor {
     // load particles one-by-one into the SoAPartitions
     for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
       SoAExtractorMainPartitionImpl<cellIterType, mainPtrType>(cellIter, mainPtr, i, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
+      SoAExtractorAdditionalPartitionsImpl<cellIterType, additionalPtrType>(cellIter, additionalPtr, i, maxDepthsOfAdditionalPartitionTypes, std::make_index_sequence<numAdditionalPartitions>{});
     }
   }
 
@@ -397,44 +398,11 @@ class Functor {
        *   has type index "additionalPartitionTypeIndex" and is the partition of depth "depth" of this type.
        */
       ((std::get<attr>(std::get<additionalPartitionTypeIndex>(additionalPtr)[depth])[arrayIndex] =
-            cellIter->template get<std::get<additionalPartitionTypeIndex, (Functor_T::getNeededAdditionalAttr())[attr]>(depth)>), ...);
+            cellIter->template get<std::get<additionalPartitionTypeIndex, Functor_T::getNeededAdditionalAttr()>[attr]>(depth)), ...);
     }
 
   }
 
-  /**
-   * Implements extraction of SoA buffers.
-   * @tparam cell_t Cell type.
-   * @tparam I Attribute.
-   * @param cell Cell.
-   * @param soa SoA buffer.
-   * @param offset Offset
-   */
-  template <typename cell_t, std::size_t... I>
-  void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-    if (cell.isEmpty()) return;
-
-    /**
-     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
-     * in the following loop.
-     */
-    // maybe_unused necessary because gcc doesn't understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
-
-    auto cellIter = cell.begin();
-    // write values in SoAs back to particles
-    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
-      /**
-       * The following statement writes the value of all attributes defined in computedAttr back into the particle.
-       * I represents the index inside computedAttr.
-       * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
-       * (std::index_sequence<I...> = 0, 1):
-       * (cellIter->template set<Functor_T::getComputedAttr()[0]>(std::get<0>(pointer)[i]),
-       * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
-       */
-      (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
-    }
-  }
 
   /**
    * SoAExtractor implementation functions.
@@ -445,7 +413,41 @@ class Functor {
     (cellIter->template set<Functor_T::getComputedAttr()[attr]>(std::get<attr>(mainPtr)[attr]), ...);
   }
 
+  template <typename cellIterType, typename additionalPtrType, size_t... additionalPartitionTypeIndices>
+  void SoAExtractorAdditionalPartitionsImpl(cellIterType &cellIter, additionalPtrType additionalPtr, size_t arrayIndex,
+                                            std::array<size_t, sizeof...(additionalPartitionTypeIndices)> maxDepthsOfAdditionalPartitionTypes,
+                                            std::index_sequence<additionalPartitionTypeIndices...>) {
+    (SoAExtractorAdditionalPartitionsSingleType<cellIterType, additionalPtrType, additionalPartitionTypeIndices>(
+         cellIter, additionalPtr, arrayIndex, maxDepthsOfAdditionalPartitionTypes[additionalPartitionTypeIndices]),...);
+  }
 
+  template <typename cellIterType, typename additionalPtrType, size_t additionalPartitionTypeIndex>
+  void SoAExtractorAdditionalPartitionsSingleType(cellIterType &cellIter, additionalPtrType additionalPtr, size_t arrayIndex,
+                                               size_t maxDepth) {
+    constexpr size_t numNeededAdditionalAttr = std::get<additionalPartitionTypeIndex>(Functor_T::getNeededAdditionalAttr()).size();
+
+    SoAExtractorAdditionalPartitionsSingleTypeImpl<cellIterType, additionalPtrType, additionalPartitionTypeIndex>(
+        cellIter, additionalPtr, arrayIndex, maxDepth, std::make_index_sequence<numNeededAdditionalAttr>{});
+  }
+
+  template <typename cellIterType, typename additionalPtrType, size_t additionalPartitionTypeIndex, size_t... attr>
+  void SoAExtractorAdditionalPartitionsSingleTypeImpl(cellIterType &cellIter, additionalPtrType additionalPtr,
+                                                   size_t arrayIndex, size_t maxDepth, std::index_sequence<attr...>) {
+    // Loop over each partition of this type
+    for (size_t depth = 0; depth < maxDepth; ++depth) {
+      /**
+       * This is a fold expression that "loop" over each attribute (see SoALoaderMainPartitionImpl). For each attribute,
+       * it sets via the particle's setter
+       * * the particle's attribute corresponding to the enum value which is stated at
+       *   std::get<std::get<additionalPartitionTypeIndex, Functor_T::getNeededAdditionalAttr()>[attr]
+       *   at depth 'depth'.
+       * * This is set to corresponding value from the SoA, i.e. taken from the partition of type index
+       *   'additionalPartitionTypeIndex' and depth 'depth', from vector 'attr' at position 'arrayIndex'.
+       */
+      ((cellIter->template set< std::get<additionalPartitionTypeIndex, Functor_T::getComputedAdditionalAttr()>[attr]>(depth, std::get<attr>(std::get<additionalPartitionTypeIndex>(additionalPtr)[depth])[arrayIndex])), ...);
+    }
+
+  }
 
   double _cutoff;
 };
