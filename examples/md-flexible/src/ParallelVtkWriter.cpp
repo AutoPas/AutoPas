@@ -355,8 +355,7 @@ void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
 }
 
 void ParallelVtkWriter::createRanksPvtuFile(
-    size_t currentIteration,
-                                            const RegularGridDecomposition &decomposition,
+    size_t currentIteration, const RegularGridDecomposition &decomposition,
     const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_Ranks_" << std::setfill('0')

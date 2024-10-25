@@ -959,10 +959,10 @@ TEST_F(AutoTunerTest, testMultipleTuners) {
     EXPECT_FALSE(logicHandler.computeInteractionsPipeline(&triFunctor, autopas::InteractionTypeOption::triwise));
   }
 
-  // Outside the tuning phase. Both tuners run with their best configuration.
-  EXPECT_CALL(pairFunctor, AoSFunctor).Times(10 * 3);
-  EXPECT_CALL(triFunctor, AoSFunctor).Times(10 * 3);
-  for (int i = 0; i < 10; i++) {
+  // Outside the tuning phase. Both tuners run with their best configuration. 4 more iterations until next tuning phase.
+  EXPECT_CALL(pairFunctor, AoSFunctor).Times(4 * 3);
+  EXPECT_CALL(triFunctor, AoSFunctor).Times(4 * 3);
+  for (int i = 0; i < 4; i++) {
     auto dummyParticlesVec = logicHandler.updateContainer();
     EXPECT_FALSE(logicHandler.computeInteractionsPipeline(&pairFunctor, autopas::InteractionTypeOption::pairwise));
     EXPECT_FALSE(logicHandler.computeInteractionsPipeline(&triFunctor, autopas::InteractionTypeOption::triwise));

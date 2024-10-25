@@ -137,7 +137,7 @@ class ParallelVtkWriter {
    * @param interactionTypes: Interaction types that are considered in the current simulation.
    */
   void createRanksPvtuFile(size_t currentIteration, const RegularGridDecomposition &decomposition,
-                      const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const;
+                           const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const;
 
   /**
    * Tries to create a folder at a location.

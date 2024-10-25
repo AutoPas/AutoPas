@@ -307,7 +307,9 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 bool AutoTuner::willRebuildNeighborLists() const {
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : _rebuildFrequency;
-  return (_iterationBaseline % iterationsPerRebuild) == 0;
+  // _iterationBaseLine + 1 since we want to look ahead to the next iteration
+  const auto iterationBaselineNextStep = _forceRetune ? _iterationBaseline : _iterationBaseline + 1;
+  return (iterationBaselineNextStep % iterationsPerRebuild) == 0;
 }
 
 bool AutoTuner::initEnergy() {
