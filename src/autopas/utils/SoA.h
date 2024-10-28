@@ -175,17 +175,33 @@ class SoA {
    *   a tuple (an element for each desired additionalAttributeof that SoAPartitionType) of pointers to the start of the
    *   corresponding arrays.
    */
-  template <typename Functor>
+  template <typename Functor, bool isNeeded>
   auto begin() {
+    // Get the attributes we require pointers to
+    constexpr auto mainAttr = [&]() {
+      if constexpr (isNeeded) {
+        return Functor::getNeededAttr();
+      } else {
+        return Functor::getComputedAttr();
+      }
+    }();
+    constexpr auto additionalAttr = [&]() {
+      if constexpr (isNeeded) {
+        return Functor::getNeededAdditionalAttr();
+      } else {
+        return Functor::getComputedAdditionalAttr();
+      }
+    }();
+
     // Check that the functor's getNeededAdditionalAttr returns an array of requested attributes per additional
     // partition type in the SoA.
-    static constexpr auto numAdditionalTypesFunctor = std::tuple_size_v<decltype(Functor::getNeededAdditionalAttr())>;
+    static constexpr auto numAdditionalTypesFunctor = std::tuple_size_v<decltype(additionalAttr)>;
     static_assert(numAdditionalTypesFunctor==numAdditionalTypes, "SoA::begin: Number of additional partition types of"
                   "the requested additional attributes does not match number of types of additional partition types!");
 
-    static constexpr auto numMainAttr = Functor::getNeededAttr().size();
-    return std::make_pair(beginMainAttrImpl<Functor>(std::make_index_sequence<numMainAttr>{}),
-        beginAdditionalAttrImpl<Functor>(std::make_index_sequence<numAdditionalTypes>{})
+    static constexpr auto numMainAttr = mainAttr.size();
+    return std::make_pair(beginMainAttrImpl<Functor, isNeeded>(std::make_index_sequence<numMainAttr>{}),
+        beginAdditionalAttrImpl<Functor, isNeeded>(std::make_index_sequence<numAdditionalTypes>{})
     );
 
   }
@@ -369,9 +385,16 @@ class SoA {
    * @tparam attributes parameter pack of the IDs of the desired attributes.
    * @return Tuple of pointers to the beginnings of the desired attribute vectors.
    */
-  template <class Functor, size_t... I>
+  template <class Functor, bool isNeeded, size_t... I>
   auto beginMainAttrImpl(std::index_sequence<I...>) {
-    return std::make_tuple(_mainSoAPartition.template begin<std::get<I>(Functor::getNeededAttr())>()...);
+    constexpr auto attr = [&]() {
+      if constexpr (isNeeded) {
+        return Functor::getNeededAttr();
+      } else {
+        return Functor::getComputedAttr();
+      }
+    }();
+    return std::make_tuple(_mainSoAPartition.template begin<std::get<I>(attr)>()...);
   }
 
   /**
@@ -384,9 +407,9 @@ class SoA {
    * a tuple (an element for each desired attribute of that SoAPartitionType) of pointers to the start of the corresponding
    * arrays.
    */
-  template <typename Functor, size_t... additionalPartitionTypeIndices>
+  template <typename Functor, bool isNeeded, size_t... additionalPartitionTypeIndices>
   auto beginAdditionalAttrImpl(std::index_sequence<additionalPartitionTypeIndices...>) {
-    return std::make_tuple(beginAdditionalAttrOfSingleKind<Functor, additionalPartitionTypeIndices>()...);
+    return std::make_tuple(beginAdditionalAttrOfSingleKind<Functor, isNeeded, additionalPartitionTypeIndices>()...);
   }
 
   /**
@@ -399,7 +422,7 @@ class SoA {
    * @tparam additionalPartitionTypeIndex the index of this partition type.
    * @return
    */
-  template <typename Functor, size_t additionalPartitionTypeIndex>
+  template <typename Functor, bool isNeeded, size_t additionalPartitionTypeIndex>
   auto beginAdditionalAttrOfSingleKind() {
     using additionalPartitionType = typename std::tuple_element<additionalPartitionTypeIndex, AdditionalPartitionTypesReference>;
     std::vector<additionalPartitionType> &soaPartitionsOfSingleKindPtrs{};
@@ -407,10 +430,18 @@ class SoA {
     const auto maxDepthOfGivenType = getMaxDepthOfGivenType<additionalPartitionTypeIndex>();
     soaPartitionsOfSingleKindPtrs.resize(maxDepthOfGivenType);
 
-    const auto noNeededAttributesOfGivenType = std::get<additionalPartitionTypeIndex>(Functor::getNeededAdditionalAttr()).size();
+    // get desired attributes array
+    constexpr auto attr = [&]() {
+      if constexpr (isNeeded) {
+        return Functor::getNeededAdditionalAttr();
+      } else {
+        return Functor::getComputedAdditionalAttr();
+      }
+    }();
+    const auto noNeededAttributesOfGivenType = std::get<additionalPartitionTypeIndex>(attr).size();
 
     for (size_t depth = 0; depth < maxDepthOfGivenType; ++depth) {
-      auto const pointerPackTmp = beginAdditionalAttrOfSingleKindImpl<Functor, additionalPartitionTypeIndex>(std::make_index_sequence<noNeededAttributesOfGivenType>{});
+      auto const pointerPackTmp = beginAdditionalAttrOfSingleKindImpl<Functor, isNeeded, additionalPartitionTypeIndex>(std::make_index_sequence<noNeededAttributesOfGivenType>{});
       for (size_t i = 0; i < std::tuple_size<additionalPartitionType>(); ++i ) {
         soaPartitionsOfSingleKindPtrs[depth][i] = pointerPackTmp[i];
       }
@@ -418,14 +449,21 @@ class SoA {
     return soaPartitionsOfSingleKindPtrs;
   }
 
-  template <typename Functor, size_t additionalPartitionTypeIndex, size_t... attr>
-  auto beginAdditionalAttrOfSingleKindImpl(size_t depth, std::index_sequence<attr...>) {
+  template <typename Functor, bool isNeeded, size_t additionalPartitionTypeIndex, size_t... I>
+  auto beginAdditionalAttrOfSingleKindImpl(size_t depth, std::index_sequence<I...>) {
     // The partition from which the arrays the returned pointers will point to.
     const auto partitionOfInterest = std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions)[depth];
-    // Extract the array of needed attributes that correspond to this type only.
-    const auto attributesOfInterest = std::get<additionalPartitionTypeIndex>(Functor::getNeededAdditionalAttr());
+    // Extract the array of desired attributes that correspond to this type only.
+    constexpr auto attr = [&]() {
+      if constexpr (isNeeded) {
+        return Functor::getNeededAdditionalAttr();
+      } else {
+        return Functor::getComputedAdditionalAttr();
+      }
+    }();
+    const auto attributesOfInterest = std::get<additionalPartitionTypeIndex>(attr);
     // Return the needed pointers for this partition.
-    return std::make_tuple(partitionOfInterest.template begin<std::get<attr>(attributesOfInterest)>()...);
+    return std::make_tuple(partitionOfInterest.template begin<std::get<I>(attributesOfInterest)>()...);
   }
 
   /**

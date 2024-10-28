@@ -122,6 +122,10 @@ class Functor {
     return {};
   }
 
+  constexpr static std::tuple<> getComputedAdditionalAttr() {
+    return {};
+  }
+
   /**
    * Functor for structure of arrays (SoA)
    *
@@ -195,7 +199,7 @@ class Functor {
      * structure. This avoids unnecessary look ups in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
-    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<Functor_T>();
+    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<Functor_T, true>();
 
     // get number of partitions of each type
     const auto maxDepthsOfAdditionalPartitionTypes = soa.getMaxDepths();
@@ -233,7 +237,7 @@ class Functor {
      * structure. This avoids unnecessary look ups in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
-    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<Functor_T>();
+    [[maybe_unused]] const auto [mainPtr, additionalPtr] = soa.template begin<Functor_T, false>();
 
     // get number of partitions of each type
     const auto maxDepthsOfAdditionalPartitionTypes = soa.getMaxDepths();
