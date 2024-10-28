@@ -47,7 +47,6 @@ void MPIParallelizedStrategyTest::testBucketDistribution(
   // Trigger the tuning strategy to adapt the internal config queue
   autoTuner.addHomogeneityAndMaxDensity(homogeneities[rank], homogeneities[rank], 0);
   autoTuner.forceRetune();
-  autoTuner.bumpIterationCounters();
   autoTuner.prepareIteration();
   const auto [unusedConf, unusedStillTuning] = autoTuner.getNextConfig();
   const auto &configQueue = autoTuner.getConfigQueue();
