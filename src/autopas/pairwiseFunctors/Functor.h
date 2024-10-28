@@ -410,7 +410,7 @@ class Functor {
 
   template <typename cellIterType, typename mainPtrType, size_t... attr>
   void SoAExtractorMainPartitionImpl(cellIterType &cellIter, mainPtrType mainPtr, size_t arrayIndex, std::index_sequence<attr...>) {
-    (cellIter->template set<Functor_T::getComputedAttr()[attr]>(std::get<attr>(mainPtr)[attr]), ...);
+    (cellIter->template set<Functor_T::getComputedAttr()[attr]>(std::get<attr>(mainPtr)[arrayIndex]), ...);
   }
 
   template <typename cellIterType, typename additionalPtrType, size_t... additionalPartitionTypeIndices>

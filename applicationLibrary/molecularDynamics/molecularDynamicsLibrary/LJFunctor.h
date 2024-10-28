@@ -612,7 +612,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   }
 
   constexpr static auto getNeededAdditionalAttr() {
-    return std::array<typename Particle::AttributeNames, 0> {};
+    return std::make_tuple();
   }
 
   /**
