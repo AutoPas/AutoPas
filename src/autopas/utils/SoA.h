@@ -220,11 +220,11 @@ class SoA {
    */
   void clear() {
     _mainSoAPartition.clear();
-//    utils::TupleUtils::for_each(_additionalSoAPartitions.getTuple(), [&](auto &SoAsOfSingleType) {
-//      for (auto &soaTmp : SoAsOfSingleType) {
-//        soaTmp->clear();
-//      }
-//    });
+    utils::TupleUtils::for_each(_additionalSoAPartitions, [&](auto &SoAsOfSingleType) {
+      for (auto &soaTmp : SoAsOfSingleType) {
+        soaTmp->clear();
+      }
+    });
   }
 
   /**
