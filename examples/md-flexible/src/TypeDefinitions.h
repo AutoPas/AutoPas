@@ -9,10 +9,10 @@
 #if MD_FLEXIBLE_MODE == MULTISITE
 
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
-
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #elif defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#include "molecularDynamicsLibrary/PositionStoringMultiSiteMolecule.h"
 #include "molecularDynamicsLibrary/LJPositionUsingMultiSiteFunctor.h"
 #endif
 
