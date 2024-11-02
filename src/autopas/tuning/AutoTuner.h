@@ -373,7 +373,7 @@ class AutoTuner {
    */
   utils::EnergySensor _energySensor;
 
-  /** 
+  /**
    * Is set to true during a tuning phase.
    */
   bool _isTuning{false};
