@@ -19,7 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DoozyX/clang-format-lint-action@v0.16.2
+      # Run the style check
+      - uses: DoozyX/clang-format-lint-action@v0.18.2
         with:
           source: 'src tests examples applicationLibrary tools'
           # exclude: 'none'
@@ -121,9 +122,9 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=OFF \
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config[8] }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
-            -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
+            -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
             -DAUTOPAS_ENABLE_HARMONY=ON \
-            -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON \
+            -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON \
             ..
           entrypoint.sh cmake --build . --parallel 8 
       - name: Run tests ${{ matrix.part }}/2

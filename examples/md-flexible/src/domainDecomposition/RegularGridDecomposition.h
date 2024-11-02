@@ -87,22 +87,16 @@ class RegularGridDecomposition final : public DomainDecomposition {
   [[nodiscard]] const std::array<int, 3> &getDecomposition() const { return _decomposition; }
 
   /**
-   * Returns the numnber of subdomains in the decomposition.
+   * Returns the numnber of subdomains (=ranks) in the decomposition.
    * @return numner of subdomains in the decomposition.
    */
-  [[nodiscard]] int getSubdomainCount() const { return _subdomainCount; }
+  [[nodiscard]] int getNumberOfSubdomains() const { return _subdomainCount; }
 
   /**
    * Returns the current processes domain id.
    * @return domain id of the current processor
    */
   [[nodiscard]] const std::array<int, 3> &getDomainId() const { return _domainId; }
-
-  /**
-   * Returns the number of subdomains in the simulation.
-   * @return number of subdomains
-   */
-  [[nodiscard]] int getNumberOfSubdomains() const;
 
   /**
    * Checks if the provided coordinates are located in the local domain.
@@ -142,6 +136,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param PPL: Particle Properties Library (needed to get particle's sigma)
    */
   void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
+
+  /**
+   * Getter for the communicator that encompasses the whole decomposition.
+   * @return
+   */
+  autopas::AutoPas_MPI_Comm getCommunicator() const;
 
  private:
   /**
@@ -199,7 +199,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   bool _mpiCommunicationNeeded;
 
   /**
-   * The number of subdomains in this decomposition.
+   * The number of subdomains (=ranks) in this decomposition.
    */
   int _subdomainCount{};
 
@@ -375,11 +375,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void balanceWithInvertedPressureLoadBalancer(double work);
 
-#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * Balances the subdomains of the grid decomposition using the ALL load balancer.
    * @param work: The work performed by the process owning this sudomain.
+   *
+   * @note If md-flexible is compiled without ALL this function throws an exception.
    */
   void balanceWithAllLoadBalancer(const double &work);
-#endif
 };

@@ -274,14 +274,10 @@ class AutoTuner {
   size_t _tuningPhase{0};
 
   /**
-   * Number of iterations between two tuning phases.
+   * Fixed interval at which tuning phases are started.
+   * A tuning phase always starts when _iteration % _tuningInterval == 0.
    */
   size_t _tuningInterval;
-
-  /**
-   * Number of iterations since the end of the last tuning phase.
-   */
-  size_t _iterationsSinceTuning;
 
   /**
    * Metric to use for tuning.
@@ -376,5 +372,29 @@ class AutoTuner {
    * Sensor for energy measurement
    */
   utils::EnergySensor _energySensor;
+
+  /** 
+   * Is set to true during a tuning phase.
+   */
+  bool _isTuning{false};
+
+  /**
+   * Is only set to true for the last iteration of a tuning phase.
+   * Specifically, from when tuneConfiguration() selects the optimum until it is reset to false in
+   * bumpIterationCounters().
+   */
+  bool _endOfTuningPhase{false};
+
+  /**
+   * Is set to true in forceRetune() to signal a new tuning phase should start outside the regular tuningInterval. Is
+   * set back to false in tuneConfiguration()
+   */
+  bool _forceRetune{false};
+
+  /**
+   * A counter incremented in every iteration and reset to zero at the beginning of a tuning phase and at the end of
+   * a tuning phase
+   */
+  size_t _iterationBaseline{0};
 };
 }  // namespace autopas

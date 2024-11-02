@@ -175,18 +175,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType p_copy = haloParticle;
-    p_copy.setOwnershipState(OwnershipState::halo);
-    this->_cells[CellTypes::HALO].addParticle(p_copy);
+    this->_cells[CellTypes::HALO].addParticle(haloParticle);
   }
 
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], pCopy,
+    return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], haloParticle,
                                                                  this->getVerletSkin());
   }
 
