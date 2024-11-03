@@ -730,7 +730,29 @@ class LJMultisiteFunctor
   /**
    * @copydoc autopas::Functor::getNeededAttr()
    */
-#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) or MD_FLEXIBLE_MODE!=MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 12>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::relativeSitePositionsX, Particle::AttributeNames::relativeSitePositionsY,
+        Particle::AttributeNames::relativeSitePositionsZ, Particle::AttributeNames::forcesOnSitesX,
+        Particle::AttributeNames::forcesOnSitesY, Particle::AttributeNames::forcesOnSitesZ,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+#elif not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 15>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,      Particle::AttributeNames::torqueX,
+        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
+        Particle::AttributeNames::relativeSitePositionsX, Particle::AttributeNames::relativeSitePositionsY,
+        Particle::AttributeNames::relativeSitePositionsZ,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+#else // not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 16>{
         Particle::AttributeNames::id,          Particle::AttributeNames::posX,
@@ -740,18 +762,6 @@ class LJMultisiteFunctor
         Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
         Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
         Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
-  }
-#else
-  constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 13>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forcesOnSitesX, Particle::AttributeNames::forcesOnSitesY,
-        Particle::AttributeNames::forcesOnSitesZ,
-        Particle::AttributeNames::quaternion0,
-        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
-        Particle::AttributeNames::quaternion3,
         Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
   }
 #endif
@@ -759,7 +769,29 @@ class LJMultisiteFunctor
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
-#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) or MD_FLEXIBLE_MODE!=MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 12>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::relativeSitePositionsX, Particle::AttributeNames::relativeSitePositionsY,
+        Particle::AttributeNames::relativeSitePositionsZ, Particle::AttributeNames::forcesOnSitesX,
+        Particle::AttributeNames::forcesOnSitesY, Particle::AttributeNames::forcesOnSitesZ,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+#elif not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 15>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,      Particle::AttributeNames::torqueX,
+        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
+        Particle::AttributeNames::relativeSitePositionsX, Particle::AttributeNames::relativeSitePositionsY,
+        Particle::AttributeNames::relativeSitePositionsZ,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+#else // not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 16>{
         Particle::AttributeNames::id,          Particle::AttributeNames::posX,
@@ -771,25 +803,12 @@ class LJMultisiteFunctor
         Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
         Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
   }
-#else
-  constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 13>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forcesOnSitesX, Particle::AttributeNames::forcesOnSitesY,
-        Particle::AttributeNames::forcesOnSitesZ,
-        Particle::AttributeNames::quaternion0,
-        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
-        Particle::AttributeNames::quaternion3,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
-  }
-
 #endif
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
-#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) or MD_FLEXIBLE_MODE!=MULTISITE
+#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE)
   constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
