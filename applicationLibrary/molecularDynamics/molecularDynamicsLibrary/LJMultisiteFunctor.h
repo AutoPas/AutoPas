@@ -303,12 +303,18 @@ class LJMultisiteFunctor
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
+#if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
     const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
     const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
     const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+#else
+    const auto *const __restrict relSitePosXptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsX>();
+    const auto *const __restrict relSitePosYptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsY>();
+    const auto *const __restrict relSitePosZptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsZ>();
+#endif
 
-#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) or MD_FLEXIBLE_MODE!=MULTISITE
+#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE)
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
@@ -316,18 +322,11 @@ class LJMultisiteFunctor
     SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
     SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
-
 #else
   auto *const __restrict fXOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesX>();
   auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
   auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
 
-#endif
-
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsX;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsY;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsZ;
 #endif
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
@@ -418,9 +417,9 @@ class LJMultisiteFunctor
 
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site){
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-          absoluteSitePositionsX[siteIndex] = relativeSitePositionsX[site] + xptr[mol];
-          absoluteSitePositionsY[siteIndex] = relativeSitePositionsY[site] + yptr[mol];
-          absoluteSitePositionsZ[siteIndex] = relativeSitePositionsZ[site] + zptr[mol];
+          exactSitePositionX[siteIndex] = relativeSitePositionsX[site] + xptr[mol];
+          exactSitePositionY[siteIndex] = relativeSitePositionsY[site] + yptr[mol];
+          exactSitePositionZ[siteIndex] = relativeSitePositionsZ[site] + zptr[mol];
 #else
           exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
           exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
@@ -449,9 +448,9 @@ class LJMultisiteFunctor
 #endif
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-          absoluteSitePositionsX[siteIndex] = relativeSitePositionsX[site] + xptr[mol];
-          absoluteSitePositionsY[siteIndex] = relativeSitePositionsY[site] + yptr[mol];
-          absoluteSitePositionsZ[siteIndex] = relativeSitePositionsZ[site] + zptr[mol];
+          exactSitePositionX[siteIndex] = relativeSitePositionsX[site] + xptr[mol];
+          exactSitePositionY[siteIndex] = relativeSitePositionsY[site] + yptr[mol];
+          exactSitePositionZ[siteIndex] = relativeSitePositionsZ[site] + zptr[mol];
 #else
           exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
           exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
