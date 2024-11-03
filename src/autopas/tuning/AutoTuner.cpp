@@ -28,6 +28,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
+      _maxAllowedSlowdownFactor(autoTunerInfo.maxAllowedSlowdownFactor),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
@@ -135,6 +136,12 @@ bool AutoTuner::tuneConfiguration() {
   } else {
     // CASE: somewhere in a tuning phase
     _isTuning = true;
+
+    if (_earlyStoppingOfResampling) {
+      _iterationBaseline = 0;
+      _earlyStoppingOfResampling = false;
+    }
+
     AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before optimizeSuggestions: (Size={}) {}", _configQueue.size(),
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                             [](const auto &conf) { return conf.toShortString(false); }));
@@ -173,7 +180,7 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
     return {getCurrentConfig(), false};
-  } else if (getCurrentNumSamples() < _maxSamples) {
+  } else if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
     // If we are still collecting samples from one config return immediately.
     return {getCurrentConfig(), true};
   } else {
@@ -239,7 +246,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   //  - calculate the evidence from the collected samples
   //  - log what was collected
   //  - remove the configuration from the queue
-  if (getCurrentNumSamples() == _maxSamples) {
+  if (getCurrentNumSamples() == _maxSamples or _earlyStoppingOfResampling) {
     const long reducedValue = estimateRuntimeFromSamples();
     _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
 
@@ -280,7 +287,15 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
           return ss.str();
         }());
 
-    _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists, _samplesNotRebuildingNeighborLists,
+    auto samplesRebuildingNeighborLists = _samplesRebuildingNeighborLists;
+    auto samplesNotRebuildingNeighborLists = _samplesNotRebuildingNeighborLists;
+
+    if (_earlyStoppingOfResampling) {
+      // pad sample vectors to length of maxSamples to ensure correct logging
+      samplesNotRebuildingNeighborLists.resize(_maxSamples - samplesRebuildingNeighborLists.size(), -1);
+    }
+
+    _tuningDataLogger.logTuningData(currentConfig, samplesRebuildingNeighborLists, samplesNotRebuildingNeighborLists,
                                     _iteration, reducedValue, smoothedValue);
   }
 }
@@ -395,6 +410,9 @@ bool AutoTuner::prepareIteration() {
     for (const auto &tuningStrat : _tuningStrategies) {
       tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
     }
+
+    // reset fastestTraversalTimeSoFar
+    _fastestIteratePairwiseTime = std::numeric_limits<long>::max();
   }
 
   // if necessary, we need to collect live info in the first tuning iteration
@@ -433,4 +451,22 @@ bool AutoTuner::inTuningPhase() const {
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
 bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
+
+void AutoTuner::evaluateConfigurationPerformance(long performance) {
+  _fastestIteratePairwiseTime = std::min(_fastestIteratePairwiseTime, performance);
+
+  double slowdownFactor = static_cast<double>(performance) / static_cast<double>(_fastestIteratePairwiseTime);
+
+  if (performance == _fastestIteratePairwiseTime) {
+    AutoPasLog(DEBUG, "Configuration achieved new fastest traversal time so far");
+  }
+
+  if (slowdownFactor > _maxAllowedSlowdownFactor) {
+    AutoPasLog(DEBUG,
+               "Configuration is {} times slower than the current fastest traversal time. This is higher than the "
+               "maximum allowed slowdown factor of {}. Further evaluation of this configuration will be skipped.",
+               slowdownFactor, _maxAllowedSlowdownFactor);
+    _earlyStoppingOfResampling = true;
+  }
+}
 }  // namespace autopas

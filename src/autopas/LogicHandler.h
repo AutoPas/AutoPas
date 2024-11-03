@@ -1243,6 +1243,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
+  _autoTuner.evaluateConfigurationPerformance(measurements.timeTotal);
+
   /// Pass on measurements
   // if this was a major iteration add measurements and bump counters
   if (functor->isRelevantForTuning()) {

@@ -228,6 +228,13 @@ class AutoTuner {
    */
   bool canMeasureEnergy() const;
 
+  /**
+   * Notify the tuner about the iteratePairwise runtime of the current configuration. 
+   * Keeps track of the fastest runtime so far and triggers early stopping of the sampling phase if the current runtime is
+   * worse than the fastest runtime by more than the maximum allowed slowdown factor.
+   */
+  void evaluateConfigurationPerformance(long performance);
+
  private:
   /**
    * Measures consumed energy for tuning
@@ -310,6 +317,17 @@ class AutoTuner {
    * How many times each configuration should be tested.
    */
   size_t _maxSamples;
+
+  /**
+   * Maximum allowed slowdown factor for the auto-tuner. A configuration performing worse to the currently fastest
+   * iteratePairwise run by more than this factor is not considered for the next tuning phase.
+   */
+  double _maxAllowedSlowdownFactor;
+
+  /**
+   * The currently fastest iteratePairwise time a configuration has achieved.
+   */
+  long _fastestIteratePairwiseTime = std::numeric_limits<long>::max();
 
   /**
    * Flag indicating if any tuning strategy needs the smoothed homogeneity and max density collected.
@@ -397,6 +415,11 @@ class AutoTuner {
    */
   bool _forceRetune{false};
 
+  /**
+   * Is set to true if the current configuration should not be used to collect further samples because it is
+   * significantly slower than the fastest configuration by more than _maxAllowedSlowdownFactor.
+   */
+  bool _earlyStoppingOfResampling{false};
   /**
    * A counter incremented in every iteration and reset to zero at the beginning of a tuning phase and at the end of
    * a tuning phase

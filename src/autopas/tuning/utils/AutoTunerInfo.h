@@ -30,5 +30,10 @@ struct AutoTunerInfo {
    * Number of samples that shall be collected per combination.
    */
   unsigned int maxSamples{3};
+
+  /**
+   * Maximum allowed slowdown factor for the auto-tuner.
+   */
+  double maxAllowedSlowdownFactor{std::numeric_limits<double>::infinity()};
 };
 }  // namespace autopas
