@@ -268,6 +268,7 @@ std::string MDFlexConfig::to_string() const {
   printOption(tuningMetricOption);
   printOption(tuningInterval);
   printOption(tuningSamples);
+  printOption(maxAllowedSlowdownFactor);
   if (tuningStrategyOptionsContainAnyOf({
           autopas::TuningStrategyOption::randomSearch,
           autopas::TuningStrategyOption::bayesianSearch,
