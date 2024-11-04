@@ -41,7 +41,7 @@ class ParallelVtkWriter {
    * @param decomposition: The decomposition of the global domain.
    */
   void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                      const RegularGridDecomposition &decomposition);
+                      const RegularGridDecomposition &decomposition) const;
 
  private:
   /**
@@ -98,7 +98,7 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulations current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
-  void recordParticleStates(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
+  void recordParticleStates(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer) const;
 
   /**
    * Writes the current domain subdivision into vtk files.
@@ -107,17 +107,7 @@ class ParallelVtkWriter {
    * @param decomposition: The simulations domain decomposition.
    */
   void recordDomainSubdivision(size_t currentIteration, const autopas::Configuration &autoPasConfiguration,
-                               const RegularGridDecomposition &decomposition);
-
-  /**
-   * Calculates the whole extent of the decompositions local domain.
-   * The whole extent defines the space this local domain is occupying in the global domain.
-   * The layout of the returned array is [ xmin, xmax, ymin, ymax, zmin, zmax ], where x, y and z are coordinates in
-   * in the decomposition grid.
-   * @param domainDecomposition: The simulations domain decomposition.
-   * @return the whole extent of the local domain.
-   */
-  static std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
+                               const RegularGridDecomposition &decomposition) const;
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
@@ -125,17 +115,23 @@ class ParallelVtkWriter {
   void tryCreateSessionAndDataFolders(const std::string &name, const std::string &location);
 
   /**
-   * Creates the .pvtu file required to load unstructured grid data from multiple ranks into ParaView.
+   * Creates the .pvtu file for particle data that references all particle data vtu files from this timestep.
+   *
+   * @note For visualization in ParaView the .pvtu files need to be loaded.
+   *
    * @param currentIteration: The simulation's current iteration.
    */
-  void createPvtuFile(size_t currentIteration);
+  void createParticlesPvtuFile(size_t currentIteration) const;
 
   /**
-   * Creates the .pvts file required to load structured grid data from multiple ranks into ParaView.
+   * Creates the .pvtu file for rank data that references all rank data vtu files from this timestep
+   *
+   * @note For visualization in ParaView the .pvtu files need to be loaded.
+   *
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
    */
-  void createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition);
+  void createRanksPvtuFile(size_t currentIteration, const RegularGridDecomposition &decomposition) const;
 
   /**
    * Tries to create a folder at a location.
@@ -147,9 +143,11 @@ class ParallelVtkWriter {
 
   /**
    * Generates the file name for a given vtk file type.
+   * @param tag String tag that is inserted in the file name
    * @param currentIteration: The current iteration to record.
-   * @param filetype: The vtk file type extension. Pass the extension without the '.'.
-   * @param filenameStream: The output string string for the filename.
+   * @param fileExtension: The vtk file type extension. Pass the extension without the '.'.
+   * @param filenameStream: The output string for the filename.
    */
-  void generateFilename(const std::string &filetype, size_t currentIteration, std::ostringstream &filenameStream);
+  void generateFilename(const std::string &tag, const std::string &fileExtension, size_t currentIteration,
+                        std::ostringstream &filenameStream) const;
 };

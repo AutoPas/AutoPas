@@ -15,6 +15,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -127,12 +128,6 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
-   * Returns the particles generated based on the provided configuration file.
-   * @return a vector containing the generated particles.
-   */
-  std::vector<ParticleType> getParticles() { return _particles; }
-
-  /**
    * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
    * @return the ParticlePropertiesLibrary
    */
@@ -175,9 +170,9 @@ class MDFlexConfig {
    * used, don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
    * scheme. The wrong rank might result in a very bad network topology and therefore increase communication costs.
    * @param rank: The MPI rank of the current process.
-   * @param communicatorSize: The size of the MPI communicator used for the simulation.
+   * @param numRanks: The size of the MPI communicator used for the simulation.
    */
-  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize);
+  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks);
 
   /**
    * Choice of the functor
@@ -288,10 +283,23 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
+   * enerySensorOption
+   */
+  MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
+      autopas::EnergySensorOption::none, "energy-sensor", true,
+      "Sensor, used for energy consumption measurement. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::EnergySensorOption::getAllOptions(), " ", {"(", ")"})};
+  /**
    * ruleFilename
    */
   MDFlexOption<std::string, __LINE__> ruleFilename{
       "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
+
+  /**
+   * fuzzyRuleFilename
+   */
+  MDFlexOption<std::string, __LINE__> fuzzyRuleFilename{
+      "", "fuzzy-rule-filename", true, "Path to a .frule file containing rules for the fuzzy-based tuning method."};
 
   /**
    * MPITuningMaxDifferenceForBucket
@@ -766,14 +774,14 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
- private:
   /**
    * Stores the particles generated based on the provided configuration file
    * These particles can be added to the respective autopas container,
    * but have to be converted to the respective particle type, first.
    */
-  std::vector<ParticleType> _particles;
+  std::vector<ParticleType> particles{};
 
+ private:
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation
    */

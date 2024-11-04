@@ -17,7 +17,7 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
-#include "autopas/utils/RaplMeter.h"
+#include "autopas/utils/EnergySensor.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -161,12 +161,6 @@ class AutoTuner {
   void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
 
   /**
-   * Initialize rapl meter.
-   * @return True if energy measurements are possible on this system.
-   */
-  bool initEnergy();
-
-  /**
    * Reset the rapl meter to prepare for a new measurement.
    * @return True if energy measurements are possible on this system.
    */
@@ -226,14 +220,9 @@ class AutoTuner {
    * Returns whether the AutoTuner can take energy measurements.
    * @return
    */
-  bool canMeasureEnergy() const;
+  bool canMeasureEnergy();
 
  private:
-  /**
-   * Measures consumed energy for tuning
-   */
-  utils::RaplMeter _raplMeter;
-
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
@@ -285,14 +274,10 @@ class AutoTuner {
   size_t _tuningPhase{0};
 
   /**
-   * Number of iterations between two tuning phases.
+   * Fixed interval at which tuning phases are started.
+   * A tuning phase always starts when _iteration % _tuningInterval == 0.
    */
   size_t _tuningInterval;
-
-  /**
-   * Number of iterations since the end of the last tuning phase.
-   */
-  size_t _iterationsSinceTuning;
 
   /**
    * Metric to use for tuning.
@@ -382,5 +367,34 @@ class AutoTuner {
    * CSV logger for all samples collected during a tuning phase.
    */
   TuningDataLogger _tuningDataLogger;
+
+  /**
+   * Sensor for energy measurement
+   */
+  utils::EnergySensor _energySensor;
+
+  /**
+   * Is set to true during a tuning phase.
+   */
+  bool _isTuning{false};
+
+  /**
+   * Is only set to true for the last iteration of a tuning phase.
+   * Specifically, from when tuneConfiguration() selects the optimum until it is reset to false in
+   * bumpIterationCounters().
+   */
+  bool _endOfTuningPhase{false};
+
+  /**
+   * Is set to true in forceRetune() to signal a new tuning phase should start outside the regular tuningInterval. Is
+   * set back to false in tuneConfiguration()
+   */
+  bool _forceRetune{false};
+
+  /**
+   * A counter incremented in every iteration and reset to zero at the beginning of a tuning phase and at the end of
+   * a tuning phase
+   */
+  size_t _iterationBaseline{0};
 };
 }  // namespace autopas

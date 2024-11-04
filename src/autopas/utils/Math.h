@@ -222,10 +222,35 @@ double sigmoid(double x);
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
  * @param a
  * @param b
- * @param relativeDifference
+ * @param maxRelativeDifference inclusive, relative to max(|a|, |b|).
  * @return
  */
-bool isNear(double a, double b, double relativeDifference = 1e-9);
+bool isNearRel(double a, double b, double maxRelativeDifference = 1e-9);
+
+/**
+ * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
+ * @param a
+ * @param b
+ * @param maxAbsoluteDifference inclusive
+ * @return
+ */
+bool isNearAbs(double a, double b, double maxAbsoluteDifference);
+
+/**
+ * Round a floating point number to a given number of decimal digits.
+ * @param d Number to round.
+ * @param fixedPrecision Number of decimal digits. Negative values lead to rounding of digits left of the decimal.
+ * @return d rounded to the given number of digits.
+ */
+double roundFixed(double d, int fixedPrecision);
+
+/**
+ * Round a floating point number to a given floating precision.
+ * @param d Number to round.
+ * @param floatingPrecision Number of significant digits. Values <0 will return in 0.
+ * @return d rounded to the given number of digits.
+ */
+double roundFloating(double d, int floatingPrecision);
 
 /**
  * Create a vector of doubles from given elements

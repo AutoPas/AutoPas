@@ -14,6 +14,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -936,6 +937,20 @@ class AutoPas {
   }
 
   /**
+   * Getter for the energy sensor
+   * @return
+   */
+  [[nodiscard]] const EnergySensorOption &getEnergySensorOption() const { return _autoTunerInfo.energySensor; }
+
+  /**
+   * Setter for the energy sensor
+   * @param energySensorOption
+   */
+  void setEnergySensorOption(EnergySensorOption energySensorOption) {
+    _autoTunerInfo.energySensor = energySensorOption;
+  }
+
+  /**
    * Setter for the maximal Difference for the bucket distribution.
    * @param MPITuningMaxDifferenceForBucket
    */
@@ -986,6 +1001,14 @@ class AutoPas {
    * @param ruleFileName The name of the rule file to use during rule based tuning.
    */
   void setRuleFileName(const std::string &ruleFileName) { _tuningStrategyFactoryInfo.ruleFileName = ruleFileName; }
+
+  /**
+   * Set fuzzy rule file name for the RuleBasedTuning.
+   * @param fuzzyRuleFileName The name of the fuzzy rule file to use during rule based tuning.
+   */
+  void setFuzzyRuleFileName(const std::string &fuzzyRuleFileName) {
+    _tuningStrategyFactoryInfo.fuzzyRuleFileName = fuzzyRuleFileName;
+  }
 
   /**
    * Get the name / path of the rule file for the RuleBasedTuning.

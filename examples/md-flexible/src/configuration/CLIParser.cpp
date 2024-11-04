@@ -62,6 +62,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.dontShowProgressBar,
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
+      config.energySensorOption,
       config.functorOption,
       config.vecPatternOptions,
       config.generatorOption,
@@ -83,6 +84,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.relativeBlacklistRange,
       config.relativeOptimumRange,
       config.ruleFilename,
+      config.fuzzyRuleFilename,
       config.selectorStrategy,
       config.traversalOptions,
       config.tuningInterval,
@@ -560,10 +562,28 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningMetricOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.energySensorOption)::getoptChar: {
+        auto parsedOptions = autopas::EnergySensorOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one energy sensor option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.energySensorOption.value = *parsedOptions.begin();
+      }
       case decltype(config.ruleFilename)::getoptChar: {
         config.ruleFilename.value = optarg;
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::parse(): rule-File " + config.ruleFilename.value + " not found!");
+        }
+        break;
+      }
+      case decltype(config.fuzzyRuleFilename)::getoptChar: {
+        config.fuzzyRuleFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): fuzzy-rule-File " + config.fuzzyRuleFilename.value +
+                                   " not found!");
         }
         break;
       }
@@ -685,6 +705,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
 
         config.loadBalancer.value = *parsedOptions.begin();
+
+#ifndef MD_FLEXIBLE_ENABLE_ALLLBL
+        if (config.loadBalancer.value == LoadBalancerOption::all) {
+          cerr << "CLI input requests ALL but md-flexible was not compiled with ALL." << endl;
+          displayHelp = true;
+        }
+#endif
         break;
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {

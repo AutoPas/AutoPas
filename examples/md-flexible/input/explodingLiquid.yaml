@@ -5,7 +5,7 @@
 # data-layout                      :  [AoS, SoA]
 # newton3                          :  [disabled, enabled]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius-per-timestep  :  0.02
+verlet-skin-radius-per-timestep  :  0.05
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
 tuning-strategies                :  [predictive-tuning]
@@ -18,7 +18,7 @@ box-max                          :  [15, 60, 15]
 cell-size                        :  [1]
 deltaT                           :  0.00182367
 iterations                       :  12000
-boundary-type                    : [periodic, periodic, periodic]
+boundary-type                    :  [periodic, periodic, periodic]
 Sites:
   0:
     epsilon                      :  1.
@@ -34,8 +34,9 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
-      box-length                 :  [15, 6, 15]
-      bottomLeftCorner           :  [0, 27, 0]
+      box-length                 :  [14, 6, 14]
+      # Move particles half spacing away from domain border to prevent automatic border extension
+      bottomLeftCorner           :  [0.5, 27, 0.5]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
 no-end-config                    :  true

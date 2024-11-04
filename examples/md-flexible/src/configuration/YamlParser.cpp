@@ -286,6 +286,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.energySensorOption.name) {
+        expected = "Exactly one energy sensor out of the possible options.";
+        description = config.energySensorOption.description;
+        const auto parsedOptions = autopas::EnergySensorOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!"));
+        config.energySensorOption.value = *parsedOptions.begin();
       } else if (key == config.pauseSimulationDuringTuning.name) {
         expected = "Boolean Value";
         description = config.pauseSimulationDuringTuning.description;
@@ -477,6 +483,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.ruleFilename.value = node[key].as<std::string>();
         if (config.ruleFilename.value.empty()) {
+          throw std::runtime_error("Parsed rule filename is empty!");
+        }
+      } else if (key == config.fuzzyRuleFilename.name) {
+        expected = "String";
+        description = config.fuzzyRuleFilename.description;
+
+        config.fuzzyRuleFilename.value = node[key].as<std::string>();
+        if (config.fuzzyRuleFilename.value.empty()) {
           throw std::runtime_error("Parsed rule filename is empty!");
         }
       } else if (key == config.verletRebuildFrequency.name) {
@@ -779,6 +793,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!"));
 
         config.loadBalancer.value = *parsedOptions.begin();
+
+#ifndef MD_FLEXIBLE_ENABLE_ALLLBL
+        if (config.loadBalancer.value == LoadBalancerOption::all) {
+          errors.push_back(makeErrorMsg(mark, key,
+                                        "The input file requests ALL but md-flexible was not compiled with ALL.",
+                                        expected, description));
+        }
+#endif
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

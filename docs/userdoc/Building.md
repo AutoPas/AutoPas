@@ -8,8 +8,8 @@
 
 Optional:
 * For `tuningLogToSQL`: `libsqlite3`
-* For rule based tuning: `pkg-config`. By default, rule based tuning is disabled but can be enabled via the CMake 
-(see [below](#rule-based-tuning)).
+* For rule based tuning and fuzzy tuning: `pkg-config`. By default, rule based tuning and fuzzy tuning are disabled but can be enabled via the CMake 
+(see [below](#rules-based-tuning-fuzzy-tuning))
 
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
@@ -38,28 +38,27 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
-### Enabling Rule Based Tuning
-<a id="rule-based-tuning"> </a>
+### Enabling Rules-Based Tuning and Fuzzy Tuning
+<a id="rules-based-tuning-fuzzy-tuning"></a>
 
 
-One of the possible tuning strategies of AutoPas, rule based tuning, requires dependencies `antlr4cpp` and `uuid`. These
+Two of the possible tuning strategies of AutoPas, rules-based tuning and fuzzy-tuning, require dependencies `antlr4cpp` and `uuid`. These
 are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors. 
 As such, by default, rule based tuning is disabled, and `antlr4cpp` and `uuid` are not compiled.
 
-Rule based tuning can be enabled using a CMake option:
+Both tuning strategies can be enabled via the CMake option:
 ```bash
-cmake -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON .. 
+cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON .. 
 ```
 
 ### Energy Measurements and Tuning
 
 By default, AutoPas tunes for the best configuration according to runtime. For all Linux based systems, it is also possible to tune
-for the algorithm that consumes the least energy. This is implemented via [Intel's RAPL](https://www.intel.com/content/www/us/en/developer/articles/technical/software-security-guidance/advisory-guidance/running-average-power-limit-energy-reporting.html) 
-(Running Average Power Limit) interface.
+for the algorithm that consumes the least energy. This is implemented via [pmt-stable](https://github.com/MaxPraus23/pmt-stable) which is a customised version tuned for performance based on [PMT](https://git.astron.nl/RD/pmt). In the current version, energy consumption can be measured via Intel's RAPL or with LIKWID.
 
-To use energy tuning, energy measurements must be enabled using the CMake option:
+To use energy tuning, the energy sensor, used for measurement, must be specified:
 ```bash
-cmake -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON .. 
+cmake -DPMT_BUILD_RAPL=ON -DPMT_BUILD_LIKWID=ON .. 
 ```
 
 ### Select a Non-Default Compiler
