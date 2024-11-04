@@ -28,6 +28,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_DEM>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
