@@ -223,6 +223,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("dem") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::dem;
         } else {
           throw std::runtime_error("Unrecognized functor!");
         }

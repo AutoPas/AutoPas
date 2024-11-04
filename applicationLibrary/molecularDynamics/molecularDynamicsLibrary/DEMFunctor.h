@@ -65,7 +65,8 @@ class DEMFunctor
                       double dynamicFrictionCoeff, void * /*dummy*/)
       : autopas::Functor<Particle,
                          DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
-            cutoff, elasticStiffness, normalViscosity, staticFrictionCoeff, dynamicFrictionCoeff),
+            cutoff),
+        _radius{cutoff / 2.}, // TODO: use PPL instead
         _cutoffSquared{cutoff * cutoff},
         _elasticStiffness{elasticStiffness},
         _adhesiveStiffness{adhesiveStiffness},
@@ -89,11 +90,27 @@ class DEMFunctor
   /**
    * Minimal Constructor for Functor with mixing disabled. Other Parameters are set with default values.
    * Values taken from https://www2.msm.ctw.utwente.nl/sluding/PAPERS/Alert_Luding2008.pdf page 15.
+   *
+   * @note Only to be used with mixing == false;
    */
   explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 5., 2.5, 1., 5e-5, 1e-5, 1., 1., nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
+  }
+
+  /**
+   * Minimal Constructor for Functor with mixing disabled. Other Parameters are set with default values.
+   * Values taken from https://www2.msm.ctw.utwente.nl/sluding/PAPERS/Alert_Luding2008.pdf page 15.
+   *
+   * @note Only to be used with mixing == true.
+   */
+  explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : DEMFunctor(cutoff, 5., 2.5, 1., 5e-5, 1e-5, 1., 1., nullptr) {
+    static_assert(useMixing,
+                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
+                  "or set mixing to true.");
+    _PPLibrary = &particlePropertiesLibrary;
   }
 
   /**
@@ -130,8 +147,6 @@ class DEMFunctor
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
-
-  std::string getName() final { return "DEMFunctor"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -417,7 +432,7 @@ class DEMFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerletImpl() is not implemented.");
+    autopas::utils::ExceptionHandler::exception("DEMFunctor::SoAFunctorVerletImpl() is not implemented.");
   }
 
   /**

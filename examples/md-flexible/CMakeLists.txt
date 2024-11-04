@@ -20,6 +20,7 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_DEM "Compile DEM Functor." ON)
 
 target_compile_definitions(
         md-flexible
@@ -39,6 +40,9 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_DEM)
+        message(WARNING "DEM functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 

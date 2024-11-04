@@ -283,6 +283,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("dem") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::dem;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"
