@@ -102,6 +102,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: List Workspace Directory
+        run: ls -la /home/runner/work/AutoPas/AutoPas/ && ls -la ${{ github.workspace }}/ && ls -la /home/runner/work/AutoPas/
+
       - name: Check LSAN Ignore List
         run: |
           if [ -f "${{ github.workspace }}/.lsanIgnoreList.txt" ]; then
