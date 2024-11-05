@@ -102,6 +102,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check LSAN Ignore List
+        run: |
+          if [ -f "${{ github.workspace }}/.lsanIgnoreList.txt" ]; then
+            echo "Found .lsanIgnoreList.txt at ${{ github.workspace }}/.lsanIgnoreList.txt"
+            echo "Contents of .lsanIgnoreList.txt:"
+            cat "${{ github.workspace }}/.lsanIgnoreList.txt"
+          else
+            echo ".lsanIgnoreList.txt not found!"
+          fi
+
       - name: Build everything
         run: |
           # derive whether or not to compile with MPI options ON.
