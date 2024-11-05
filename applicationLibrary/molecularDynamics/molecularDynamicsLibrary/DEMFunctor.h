@@ -359,6 +359,18 @@ class DEMFunctor
   }
 
   /**
+   * @copydoc autopas::Functor::SoAFunctorPair()
+   */
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1, soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1, soa2);
+    }
+  }
+
+
+  /**
    * Sets the particle properties constants for this functor.
    *
    * This is only necessary if no particlePropertiesLibrary is used.
@@ -514,6 +526,129 @@ class DEMFunctor
   }
 
  private:
+  /**
+   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
+   *
+   * @tparam newton3
+   * @param soa1
+   * @param soa2
+   */
+   template <bool newton3>
+   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
+     if (soa1.size() == 0 || soa2.size() == 0) return;
+
+     const auto threadnum = autopas::autopas_get_thread_num();
+
+     // Initialize pointers to SoA Data for soa1
+     const auto *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
+     const auto *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
+     const auto *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
+     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+
+     const auto *const __restrict vxptr1 = soa1.template begin<Particle::AttributeNames::velocityX>();
+     const auto *const __restrict vyptr1 = soa1.template begin<Particle::AttributeNames::velocityY>();
+     const auto *const __restrict vzptr1 = soa1.template begin<Particle::AttributeNames::velocityZ>();
+
+     SoAFloatPrecision *const __restrict fxptr1 = soa1.template begin<Particle::AttributeNames::forceX>();
+     SoAFloatPrecision *const __restrict fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
+     SoAFloatPrecision *const __restrict fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
+
+     // Initialize pointers to SoA Data for soa2
+     const auto *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
+     const auto *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
+     const auto *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+
+     const auto *const __restrict vxptr2 = soa2.template begin<Particle::AttributeNames::velocityX>();
+     const auto *const __restrict vyptr2 = soa2.template begin<Particle::AttributeNames::velocityY>();
+     const auto *const __restrict vzptr2 = soa2.template begin<Particle::AttributeNames::velocityZ>();
+
+     SoAFloatPrecision *const __restrict fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
+     SoAFloatPrecision *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
+     SoAFloatPrecision *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+     // Initialize local variables for constants
+     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+     const SoAFloatPrecision radius = _radius;
+
+     // Loop over Particles in soa1
+     for (unsigned int i = 0; i < soa1.size(); ++i) {
+       const auto ownedStateI = ownedStatePtr1[i];
+       if (ownedStateI == autopas::OwnershipState::dummy) continue;
+
+       SoAFloatPrecision fxacc = 0.;
+       SoAFloatPrecision fyacc = 0.;
+       SoAFloatPrecision fzacc = 0.;
+
+       // Loop over Particles in soa2
+       // TODO: parallelize with omp
+       for (unsigned int j = 0; j < soa2.size(); ++j) {
+         const auto ownedStateJ = ownedStatePtr2[j];
+
+         const SoAFloatPrecision drx = xptr1[i] - xptr2[j];
+         const SoAFloatPrecision dry = yptr1[i] - yptr2[j];
+         const SoAFloatPrecision drz = zptr1[i] - zptr2[j];
+
+         const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
+         const SoAFloatPrecision dist = std::sqrt(distSquared);
+         const SoAFloatPrecision overlap = 2. * radius - dist;
+
+         const SoAFloatPrecision invDist = 1.0 / dist;
+         const SoAFloatPrecision normalUnitX = drx * invDist;
+         const SoAFloatPrecision normalUnitY = dry * invDist;
+         const SoAFloatPrecision normalUnitZ = drz * invDist;
+
+         const SoAFloatPrecision relVelX = vxptr1[i] - vxptr2[j];
+         const SoAFloatPrecision relVelY = vyptr1[i] - vyptr2[j];
+         const SoAFloatPrecision relVelZ = vzptr1[i] - vzptr2[j];
+
+         const SoAFloatPrecision relVelDotNormalUnit = relVelX * normalUnitX + relVelY * normalUnitY + relVelZ * normalUnitZ;
+
+         const SoAFloatPrecision tanRelVelX = relVelX - relVelDotNormalUnit * normalUnitX;
+         const SoAFloatPrecision tanRelVelY = relVelY - relVelDotNormalUnit * normalUnitY;
+         const SoAFloatPrecision tanRelVelZ = relVelZ - relVelDotNormalUnit * normalUnitZ;
+
+         // Compute normal force
+         const SoAFloatPrecision normalFX = _elasticStiffness * overlap * normalUnitX - _normalViscosity * relVelDotNormalUnit * normalUnitX;
+         const SoAFloatPrecision normalFY = _elasticStiffness * overlap * normalUnitY - _normalViscosity * relVelDotNormalUnit * normalUnitY;
+         const SoAFloatPrecision normalFZ = _elasticStiffness * overlap * normalUnitZ - _normalViscosity * relVelDotNormalUnit * normalUnitZ;
+
+         // Compute tangential force
+         SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;  // TODO: add tangential spring
+         SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelY;
+         SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelZ;
+
+         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
+         const SoAFloatPrecision normalFMag = std::sqrt(normalFX * normalFX + normalFY * normalFY + normalFZ * normalFZ);
+         const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap);
+
+         if (tanFMag > coulombLimit) {
+           const SoAFloatPrecision scale = _dynamicFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap) / tanFMag;
+           tanFX *= scale;
+           tanFY *= scale;
+           tanFZ *= scale;
+         }
+
+         // Compute total force
+         fxacc += normalFX + tanFX;
+         fyacc += normalFY + tanFY;
+         fzacc += normalFZ + tanFZ;
+
+         // Apply total force
+         if (newton3) {
+           fxptr2[j] -= normalFX + tanFX;
+           fyptr2[j] -= normalFY + tanFY;
+           fzptr2[j] -= normalFZ + tanFZ;
+         }
+       }
+
+       fxptr1[i] += fxacc;
+       fyptr1[i] += fyacc;
+       fzptr1[i] += fzacc;
+     }
+
+   }
+
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
