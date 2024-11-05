@@ -101,38 +101,45 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: List Workspace Directory Structure
+
+      - name: Check Root Directory
         run: |
-          echo "Checking /home/runner/work/AutoPas/AutoPas/"
-          if [ -d "/home/runner/work/AutoPas/AutoPas/" ]; then
-            ls -la /home/runner/work/AutoPas/AutoPas/
+          echo "Listing root directory:"
+          ls -la /
+      
+      - name: Check Home Directory
+        run: |
+          echo "Listing home directory:"
+          ls -la /home/runner/
+      
+      - name: Locate Workspace Directory
+        run: |
+          echo "Trying to locate the workspace directory..."
+          find / -name AutoPas -type d 2>/dev/null || echo "AutoPas directory not found"
+
+      - name: Create LSAN Ignore List if Workspace is Found
+        run: |
+          # Check if we can identify the correct workspace location
+          if [ -d "${{ github.workspace }}" ]; then
+            echo "Workspace located at: ${{ github.workspace }}"
+            echo "Creating .lsanIgnoreList.txt..."
+            cat <<EOT > "${{ github.workspace }}/.lsanIgnoreList.txt"
+            # Add suppression rules here
+            leak:_some_leak_function_name
+            EOT
           else
-            echo "/home/runner/work/AutoPas/AutoPas/ does not exist"
+            echo "Workspace directory not found at expected path: ${{ github.workspace }}"
+            exit 1
           fi
 
-          echo "Checking ${{ github.workspace }}/"
-          if [ -d "${{ github.workspace }}/" ]; then
-            ls -la ${{ github.workspace }}/
-          else
-            echo "${{ github.workspace }}/ does not exist"
-          fi
-
-          echo "Checking /home/runner/work/AutoPas/"
-          if [ -d "/home/runner/work/AutoPas/" ]; then
-            ls -la /home/runner/work/AutoPas/
-          else
-            echo "/home/runner/work/AutoPas/ does not exist"
-          fi
-
-      - name: Check LSAN Ignore List
+      - name: Confirm .lsanIgnoreList.txt Presence
         run: |
           if [ -f "${{ github.workspace }}/.lsanIgnoreList.txt" ]; then
             echo "Found .lsanIgnoreList.txt at ${{ github.workspace }}/.lsanIgnoreList.txt"
-            echo "Contents of .lsanIgnoreList.txt:"
             cat "${{ github.workspace }}/.lsanIgnoreList.txt"
           else
             echo ".lsanIgnoreList.txt not found!"
+            exit 1
           fi
 
       - name: Build everything
