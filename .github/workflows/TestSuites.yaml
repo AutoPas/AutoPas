@@ -92,7 +92,7 @@ jobs:
     container: autopas/${{ matrix.config[0] }}
     env:
         TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
-        LSAN_OPTIONS: "verbosity=1:log_threads=1:suppressions=${{ github.workspace }}/.lsanIgnoreList.txt:ignore_noninstrumented_modules=1"
+        LSAN_OPTIONS: "verbosity=1:log_threads=1:suppressions=/__w/AutoPas/AutoPas/.lsanIgnoreList.txt:ignore_noninstrumented_modules=1"
 
     defaults:
       run:
@@ -102,23 +102,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check Root Directory
+      - name: Verify Workspace Directory and View .lsanIgnoreList.txt
         run: |
-          echo "Listing root directory:"
-          ls -la /
-      
-      - name: Locate Workspace Directory
-        run: |
-          echo "Trying to locate the workspace directory..."
-          find / -name AutoPas -type d 2>/dev/null || echo "AutoPas directory not found"
-
-      - name: Check for Workspace in act
-        run: |
-          echo "Checking for workspace under /__w"
+          echo "Listing /__w directory:"
           ls -la /__w
-
-          echo "Checking for project folder in /__w"
+          echo "Listing /__w/AutoPas directory:"
           ls -la /__w/AutoPas
+          echo "Checking for .lsanIgnoreList.txt:"
+          if [ -f "/__w/AutoPas/AutoPas/.lsanIgnoreList.txt" ]; then
+            echo ".lsanIgnoreList.txt found. Contents:"
+            cat /__w/AutoPas/AutoPas/.lsanIgnoreList.txt
+          else
+            echo ".lsanIgnoreList.txt not found!"
+          fi
 
       - name: Build everything
         run: |
