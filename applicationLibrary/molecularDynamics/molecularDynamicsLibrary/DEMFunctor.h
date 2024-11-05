@@ -252,6 +252,10 @@ class DEMFunctor
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
+    const auto *const __restrict vxptr = soa.template begin<Particle::AttributeNames::velocityX>();
+    const auto *const __restrict vyptr = soa.template begin<Particle::AttributeNames::velocityY>();
+    const auto *const __restrict vzptr = soa.template begin<Particle::AttributeNames::velocityZ>();
+
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
@@ -295,12 +299,9 @@ class DEMFunctor
         const SoAFloatPrecision normalUnitY = dry * invDist;
         const SoAFloatPrecision normalUnitZ = drz * invDist;
 
-        const SoAFloatPrecision relVelX = soa.template get<Particle::AttributeNames::velocityX>(i) -
-                                          soa.template get<Particle::AttributeNames::velocityX>(j);
-        const SoAFloatPrecision relVelY = soa.template get<Particle::AttributeNames::velocityY>(i) -
-                                          soa.template get<Particle::AttributeNames::velocityY>(j);
-        const SoAFloatPrecision relVelZ = soa.template get<Particle::AttributeNames::velocityZ>(i) -
-                                          soa.template get<Particle::AttributeNames::velocityZ>(j);
+        const SoAFloatPrecision relVelX = vxptr[i] - vxptr[j];
+        const SoAFloatPrecision relVelY = vyptr[i] - vyptr[j];
+        const SoAFloatPrecision relVelZ = vzptr[i] - vzptr[j];
 
         const SoAFloatPrecision relVelDotNormalUnit =
             relVelX * normalUnitX + relVelY * normalUnitY + relVelZ * normalUnitZ;
@@ -322,9 +323,9 @@ class DEMFunctor
             _elasticStiffness * overlap * normalUnitZ - _normalViscosity * relVelDotNormalUnit * normalUnitZ;
 
         // Compute tangential force
-        const SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;  // TODO: add tangential spring
-        const SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelY;
-        const SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelZ;
+        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;  // TODO: add tangential spring
+        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelY;
+        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelZ;
 
         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
         const SoAFloatPrecision normalFMag = std::sqrt(normalFX * normalFX + normalFY * normalFY + normalFZ * normalFZ);
