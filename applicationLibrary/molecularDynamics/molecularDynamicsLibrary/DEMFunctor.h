@@ -359,31 +359,6 @@ class DEMFunctor
   }
 
   /**
-   * Computes the force magnitude for the Coulomb force.
-   * @param stiffness
-   * @param normalForceMag
-   * @param overlap
-   * @return
-   */
-  [[nodiscard]] double computeCoulombForceMag(const double stiffness, const double normalForceMag,
-                                              const double overlap) {
-    return stiffness * (normalForceMag + _adhesiveStiffness * overlap);
-  }
-
-  /**
-   * Computes the linear normal force magnitude.
-   * @param overlap
-   * @param normalUnitVectorIJ
-   * @param relativeVelocityIJ
-   * @return
-   */
-  double computeLinearNormalForceMag(const double overlap, const std::array<double, 3> normalUnitVectorIJ,
-                                     const std::array<double, 3> relativeVelocityIJ) {
-    auto normalRelativeVelocity = autopas::utils::ArrayMath::dot(relativeVelocityIJ, normalUnitVectorIJ);
-    return _elasticStiffness * overlap - _normalViscosity * normalRelativeVelocity;
-  }
-
-  /**
    * Sets the particle properties constants for this functor.
    *
    * This is only necessary if no particlePropertiesLibrary is used.
