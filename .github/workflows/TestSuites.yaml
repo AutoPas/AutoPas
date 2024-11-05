@@ -101,9 +101,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
+      - name: List Workspace Directory Structure
+        run: |
+          echo "Checking /home/runner/work/AutoPas/AutoPas/"
+          if [ -d "/home/runner/work/AutoPas/AutoPas/" ]; then
+            ls -la /home/runner/work/AutoPas/AutoPas/
+          else
+            echo "/home/runner/work/AutoPas/AutoPas/ does not exist"
+          fi
 
-      - name: List Workspace Directory
-        run: ls -la /home/runner/work/AutoPas/AutoPas/ && ls -la ${{ github.workspace }}/ && ls -la /home/runner/work/AutoPas/
+          echo "Checking ${{ github.workspace }}/"
+          if [ -d "${{ github.workspace }}/" ]; then
+            ls -la ${{ github.workspace }}/
+          else
+            echo "${{ github.workspace }}/ does not exist"
+          fi
+
+          echo "Checking /home/runner/work/AutoPas/"
+          if [ -d "/home/runner/work/AutoPas/" ]; then
+            ls -la /home/runner/work/AutoPas/
+          else
+            echo "/home/runner/work/AutoPas/ does not exist"
+          fi
 
       - name: Check LSAN Ignore List
         run: |
