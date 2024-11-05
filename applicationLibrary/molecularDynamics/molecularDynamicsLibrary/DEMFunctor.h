@@ -66,7 +66,7 @@ class DEMFunctor
       : autopas::Functor<Particle,
                          DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
             cutoff),
-        _radius{cutoff / 2.}, // TODO: use PPL instead
+        _radius{cutoff / 2.},  // TODO: use PPL instead
         _cutoffSquared{cutoff * cutoff},
         _elasticStiffness{elasticStiffness},
         _adhesiveStiffness{adhesiveStiffness},
@@ -173,54 +173,43 @@ class DEMFunctor
 
     // Compute necessary values and check for distance and contact
     const double radius = _radius;
-    const std::array<double, 3> displacementIJ = i.getR() - j.getR();
-    const double distSquaredIJ = autopas::utils::ArrayMath::dot(displacementIJ, displacementIJ);
-    if (distSquaredIJ > _cutoffSquared) {  // Check cutoff
-      return;
-    }
-    const std::array<double, 3> normalUnitVectorIJ = displacementIJ / autopas::utils::ArrayMath::L2Norm(displacementIJ);
-    double overlap = 2. * radius - autopas::utils::ArrayMath::dot(displacementIJ, normalUnitVectorIJ);
-    if constexpr (useMixing) {
-      overlap = 0.;  // TODO
-    }
-    if (overlap <= 0) {  // Normal Force only active when overlap > 0
-      return;
-    }
-    const std::array<double, 3> relativeVelocityIJ = i.getV() - j.getV();
-    const std::array<double, 3> relativeNormalVelocityIJ = autopas::utils::ArrayMath::mulScalar(
-        normalUnitVectorIJ, autopas::utils::ArrayMath::dot(normalUnitVectorIJ, relativeVelocityIJ));
-    const std::array<double, 3> tangentialRelativeVelocity =
-        relativeVelocityIJ - relativeNormalVelocityIJ;  // TODO: add angle velocities
+    const std::array<double, 3> displacement = i.getR() - j.getR();
+    const double distSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+    if (distSquared > _cutoffSquared) return;
+
+    const double dist = autopas::utils::ArrayMath::L2Norm(displacement);
+    const std::array<double, 3> normalUnit = displacement / dist;
+    double overlap = 2. * radius - dist;
+    // TODO: add case for useMixing, update "overlap"
+    if (overlap <= 0) return;
+
+    const std::array<double, 3> relVel = i.getV() - j.getV();
+    const double normalRelVelMag = autopas::utils::ArrayMath::dot(normalUnit, relVel);
+    const std::array<double, 3> normalRelVel = autopas::utils::ArrayMath::mulScalar(normalUnit, normalRelVelMag);
+    const std::array<double, 3> tanRelVel = relVel - normalRelVel;  // TODO: add angle velocities
 
     // Compute normal force
-    const double normalForceMag = computeLinearNormalForceMag(overlap, normalUnitVectorIJ, relativeVelocityIJ);
-    const std::array<double, 3> normalForce = autopas::utils::ArrayMath::mulScalar(normalUnitVectorIJ, normalForceMag);
+    const double normalFMag = _elasticStiffness * overlap - _normalViscosity * normalRelVelMag;
+    const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);
 
     // Compute tangential force
-    const double coulombLimit = computeCoulombForceMag(_staticFrictionCoeff, normalForceMag, overlap);
-    const std::array<double, 3> tangentialTestForce = autopas::utils::ArrayMath::mulScalar(
-        tangentialRelativeVelocity, -1. * _frictionViscosity);  // TODO: add tangential spring
-    const double tangentialTestForceMag = autopas::utils::ArrayMath::L2Norm(tangentialTestForce);
-    std::array<double, 3> tangentialForce{};
-    if (tangentialTestForceMag <= coulombLimit) {
-      // static friction
-      tangentialForce = tangentialTestForce;
-    } else {
-      // sliding friction
-      const std::array<double, 3> tangentialUnitVector =
-          autopas::utils::ArrayMath::mulScalar(tangentialTestForce, 1. / tangentialTestForceMag);
-      const double slidingFrictionForceMag = computeCoulombForceMag(_dynamicFrictionCoeff, normalForceMag, overlap);
-      tangentialForce = autopas::utils::ArrayMath::mulScalar(tangentialUnitVector, slidingFrictionForceMag);
+    const double coulombLimit = _staticFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap);
+    std::array<double, 3> tanF =
+        autopas::utils::ArrayMath::mulScalar(tanRelVel, -1. * _frictionViscosity);  // TODO: add tangential spring
+    const double tanFMag = autopas::utils::ArrayMath::L2Norm(tanF);
+    if (tanFMag > coulombLimit) {
+      const double scale = _dynamicFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap) / tanFMag;
+      tanF = autopas::utils::ArrayMath::mulScalar(tanF, scale);
     }
 
     // Compute total force
-    auto totalForce = normalForce + tangentialForce;
+    auto totalF = normalF + tanF;
 
     // Apply forces
-    i.addF(totalForce);
+    i.addF(totalF);
     if (newton3) {
       // only if we use newton 3 here, we want to
-      j.subF(totalForce);
+      j.subF(totalF);
     }
 
     if constexpr (countFLOPs) {
@@ -249,6 +238,126 @@ class DEMFunctor
   }
 
   /**
+   * @copydoc autopas::Functor::SoAFunctorSingle()
+   */
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3)
+      final {  // TODo: calculate the global values (potenetialEnergy, virial), add cases for useMixing
+    if (soa.size() == 0) return;
+
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    // Initialize pointers to SoA Data
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    // Initialize local variables for constants
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    const SoAFloatPrecision radius = _radius;
+
+    // Loop over Particles
+    for (unsigned int i = 0; i < soa.size(); i++) {
+      const auto ownedStateI = ownedStatePtr[i];
+      if (ownedStateI == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      SoAFloatPrecision fxacc = 0.;
+      SoAFloatPrecision fyacc = 0.;
+      SoAFloatPrecision fzacc = 0.;
+
+      // TODO: useMixing-case
+
+      // TODO: parallelize with omp
+      for (unsigned int j = i + 1; j < soa.size(); ++j) {
+        // TODO: useMixing-case
+
+        // Compute necessary values for computations of forces
+        const auto ownedStateJ = ownedStatePtr[j];
+
+        const SoAFloatPrecision drx = xptr[i] - xptr[j];
+        const SoAFloatPrecision dry = yptr[i] - yptr[j];
+        const SoAFloatPrecision drz = zptr[i] - zptr[j];
+
+        const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
+        const SoAFloatPrecision dist = std::sqrt(distSquared);
+        const SoAFloatPrecision overlap = 2. * radius - dist;
+
+        const SoAFloatPrecision invDist = 1.0 / dist;
+        const SoAFloatPrecision normalUnitX = drx * invDist;
+        const SoAFloatPrecision normalUnitY = dry * invDist;
+        const SoAFloatPrecision normalUnitZ = drz * invDist;
+
+        const SoAFloatPrecision relVelX = soa.template get<Particle::AttributeNames::velocityX>(i) -
+                                          soa.template get<Particle::AttributeNames::velocityX>(j);
+        const SoAFloatPrecision relVelY = soa.template get<Particle::AttributeNames::velocityY>(i) -
+                                          soa.template get<Particle::AttributeNames::velocityY>(j);
+        const SoAFloatPrecision relVelZ = soa.template get<Particle::AttributeNames::velocityZ>(i) -
+                                          soa.template get<Particle::AttributeNames::velocityZ>(j);
+
+        const SoAFloatPrecision relVelDotNormalUnit =
+            relVelX * normalUnitX + relVelY * normalUnitY + relVelZ * normalUnitZ;
+
+        const SoAFloatPrecision tanRelVelX = relVelX - relVelDotNormalUnit * normalUnitX;
+        const SoAFloatPrecision tanRelVelY = relVelY - relVelDotNormalUnit * normalUnitY;
+        const SoAFloatPrecision tanRelVelZ = relVelZ - relVelDotNormalUnit * normalUnitZ;
+
+        // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
+        const bool mask =
+            distSquared <= cutoffSquared and overlap > 0 and ownedStateJ != autopas::OwnershipState::dummy;
+
+        // Compute normal force
+        const SoAFloatPrecision normalFX =
+            _elasticStiffness * overlap * normalUnitX - _normalViscosity * relVelDotNormalUnit * normalUnitX;
+        const SoAFloatPrecision normalFY =
+            _elasticStiffness * overlap * normalUnitY - _normalViscosity * relVelDotNormalUnit * normalUnitY;
+        const SoAFloatPrecision normalFZ =
+            _elasticStiffness * overlap * normalUnitZ - _normalViscosity * relVelDotNormalUnit * normalUnitZ;
+
+        // Compute tangential force
+        const SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;  // TODO: add tangential spring
+        const SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelY;
+        const SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelZ;
+
+        const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
+        const SoAFloatPrecision normalFMag = std::sqrt(normalFX * normalFX + normalFY * normalFY + normalFZ * normalFZ);
+        const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap);
+
+        if (tanFMag > coulombLimit) {
+          const SoAFloatPrecision scale = _dynamicFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap) / tanFMag;
+          tanFX *= scale;
+          tanFY *= scale;
+          tanFZ *= scale;
+        }
+
+        // Compute total force
+        fxacc += mask * (normalFX + tanFX);
+        fyacc += mask * (normalFY + tanFY);
+        fzacc += mask * (normalFZ + tanFZ);
+
+        // Apply total force
+        if (newton3) {
+          // only if we use newton 3 here, we want to
+          fxptr[j] -= mask * (normalFX + tanFX);
+          fyptr[j] -= mask * (normalFY + tanFY);
+          fzptr[j] -= mask * (normalFZ + tanFZ);
+        }
+
+        fxptr[i] += fxacc;
+        fyptr[i] += fyacc;
+        fzptr[i] += fzacc;
+      }
+    }
+  }
+
+  /**
    * Computes the force magnitude for the Coulomb force.
    * @param stiffness
    * @param normalForceMag
@@ -269,8 +378,8 @@ class DEMFunctor
    */
   double computeLinearNormalForceMag(const double overlap, const std::array<double, 3> normalUnitVectorIJ,
                                      const std::array<double, 3> relativeVelocityIJ) {
-    auto normalRelativeVelocity = -1. * autopas::utils::ArrayMath::dot(relativeVelocityIJ, normalUnitVectorIJ);
-    return _elasticStiffness * overlap + _normalViscosity * normalRelativeVelocity;
+    auto normalRelativeVelocity = autopas::utils::ArrayMath::dot(relativeVelocityIJ, normalUnitVectorIJ);
+    return _elasticStiffness * overlap - _normalViscosity * normalRelativeVelocity;
   }
 
   /**
