@@ -29,6 +29,9 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "iteratePairwise[ns],"
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
+      "rebuildNumberOfNeighborLists,"
+      "numberFastParticles,"
+      "particleBufferSize,"
       "iteratePairwiseTotal[ns],"
       "tuning[ns]";
   if (energyMeasurements) {
@@ -58,17 +61,17 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             bool inTuningPhase, long timeTuning,
                                             const IterationMeasurements &measurements) {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
+  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, numberRebuild, numberFastParticles,particleBufferSize, timeTotal, energyMeasurementsPossible,
                energyPsys, energyPkg, energyRam, energyTotal] = measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
+               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, numberRebuild, numberFastParticles, particleBufferSize,timeTotal,
                timeTuning, energyPsys, energyPkg, energyRam);
   } else {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
-               timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, timeTuning);
+        ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
+               timeIteratePairwise, timeRemainderTraversal, timeRebuild, numberRebuild, numberFastParticles,particleBufferSize, timeTotal, timeTuning);
   }
 #endif
 }

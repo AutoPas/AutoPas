@@ -541,6 +541,10 @@ class AutoPas {
    */
   double getVerletSkin() { return _logicHandlerInfo.verletSkin; };
 
+  std::vector<unsigned long> getFastParticles() {
+    return _logicHandler->getFastParticlesAsVector();
+  }
+
   /**
    * Returns the number of particles in this container.
    * @param behavior Tells this function to report the number of halo, owned or all particles.

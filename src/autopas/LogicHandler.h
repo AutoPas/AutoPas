@@ -12,6 +12,7 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+#include <unordered_set>
 
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/cells/FullParticleCell.h"
@@ -108,6 +109,7 @@ class LogicHandler {
           if (p.isDummy()) {
             continue;
           }
+          //if particle is inside the box of the current container
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
             p.setOwnershipState(OwnershipState::owned);
             _containerSelector.getCurrentContainer().addParticle(p);
@@ -150,11 +152,21 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
+    //IMP: the return value of a function should not be ignored.
+    //If the result of a function marked with [[nodiscard]] is discarded, the compiler will generate a warning.
+    //_neighborListInvalidDoDynamicRebuild
+    // check if there are fast particles
     this->checkNeighborListsInvalidDoDynamicRebuild();
+    // boolean based on above, tuning, and frequency
     bool doDataStructureUpdate = not neighborListsAreValid();
-
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
+    //e.x linkedcells verlet lists etc.
+
+    if (doDataStructureUpdate) {
+      _neighborListsRebuilt++;
+    }
+
 
     AutoPasLog(DEBUG, "Initiating container update.");
     auto leavingParticles = _containerSelector.getCurrentContainer().updateContainer(not doDataStructureUpdate);
@@ -165,6 +177,11 @@ class LogicHandler {
     // updateContainer deletes all halo particles.
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     _numParticlesHalo.store(0, std::memory_order_relaxed);
+
+    for(auto &th : _particleBuffer) {
+        _particleBufferSize += th.size();
+    }
+
     return leavingParticles;
   }
 
@@ -277,6 +294,8 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addParticle()
    */
+  //  this adds particles to the container, at the very beginning,
+  //  so it populates the container, in order to proceed w the calculation
   void addParticle(const Particle &p) {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
@@ -505,6 +524,8 @@ class LogicHandler {
    */
   [[nodiscard]] unsigned long getNumberOfParticlesOwned() const { return _numParticlesOwned; }
 
+  std::vector<unsigned long> getFastParticlesAsVector() {return _fastParticles;}
+
   /**
    * Get the number of halo particles.
    * @return
@@ -584,6 +605,8 @@ class LogicHandler {
    * @return True iff the neighbor lists will not be rebuild.
    */
   bool neighborListsAreValid();
+
+  // bool hasDuplicates(std::vector<std::vector<std::string>>& vec);
 
   /**
    * Checks if any particle has moved more than skin/2.
@@ -770,6 +793,10 @@ class LogicHandler {
    */
   void checkMinimalSize() const;
 
+  /*number of fast particle */
+
+  unsigned long _particleNumber{0};
+
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
    */
@@ -811,6 +838,10 @@ class LogicHandler {
    */
   unsigned int _iteration{0};
 
+  unsigned int _neighborListsRebuilt{0};
+
+  size_t _particleBufferSize{0};
+
   /**
    * Atomic tracker of the number of owned particles.
    */
@@ -825,6 +856,8 @@ class LogicHandler {
    * Buffer to store particles that should not yet be added to the container. There is one buffer per thread.
    */
   std::vector<FullParticleCell<Particle>> _particleBuffer;
+
+  std::vector<unsigned long> _fastParticles;
 
   /**
    * Buffer to store halo particles that should not yet be added to the container. There is one buffer per thread.
@@ -910,15 +943,45 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
       getNeighborListsInvalidDoDynamicRebuild()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    // std::memory_order_relaxed: This is a memory ordering option that affects how memory operations are ordered in
+    // multithreading. memory_order_relaxed: It ensures no synchronization or ordering constraints on other memory
+    // operations. It’s the most relaxed memory ordering, used when you don't need synchronization with other threads,
+    // but you still want atomicity.
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
 }
 
+inline bool hasDuplicates(std::vector<std::vector<std::string>>& vec) {
+  std::unordered_set<std::string> elements;
+  for (auto v : vec) {
+    for (auto e : v) {
+      // Try to insert the number; if it's already present, there's a duplicate
+      if (!elements.insert(e).second) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+//TODO here instead of triggering a rebuild save particles to buffer
+// these will then be automatically considered by the diff containers since they also consider the particles that go outside the container
+// Owned state, a particle with this state is an actual particle and owned by the current AutoPas object!
+// Halo state, a particle with this state is an actual particle, but not owned by the current AutoPas object!
+// Dummy or deleted state, a particle with this state is not an actual particle!
+
 template <typename Particle>
 void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
+
+
+  // std::vector<std::string> buff;
+
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
+
+  int particlesInContainerBefore = _containerSelector.getCurrentContainer().size();
+
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
@@ -927,8 +990,30 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
-    _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+      if (distanceSquare >= halfSkinSquare ) {
+
+        Particle& particle = *iter;
+        Particle& particleCopy = particle;
+        _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+        _containerSelector.getCurrentContainer().deleteParticle(particle);
+
+        _particleNumber ++;
+      }
+
+    // if (_iteration == 0)
+    // _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+
+    // _rebuildIntervals
+    /* if distanceSquare >= halfSkinSquare set _neighborListInvalidDoDynamicRebuild to true
+     * but we dont want to trigger a rebuild, instead we save the particles in the buffer
+     * QUESTION: when then to trigger the rebuild????
+     */
   }
+  if (_fastParticles.size() < _iteration + 1) {
+    _fastParticles.resize(_iteration + 1);
+  }
+  _fastParticles[_iteration] += _particleNumber;
+  _particleNumber = 0;
 }
 
 template <typename Particle>
@@ -936,6 +1021,7 @@ void LogicHandler<Particle>::resetNeighborListsInvalidDoDynamicRebuild() {
   _neighborListInvalidDoDynamicRebuild = false;
 }
 
+// ONLY FOR TESTING
 template <typename Particle>
 void LogicHandler<Particle>::setParticleBuffers(const std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                 const std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
@@ -993,12 +1079,14 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
 
   functor.initTraversal();
   if (doListRebuild) {
+    _neighborListsRebuilt++;
     timerRebuild.start();
     this->updateRebuildPositions();
     container.rebuildNeighborLists(&traversal);
     this->resetNeighborListsInvalidDoDynamicRebuild();
     timerRebuild.stop();
   }
+
   timerIteratePairwise.start();
   container.iteratePairwise(&traversal);
   timerIteratePairwise.stop();
@@ -1018,11 +1106,16 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
 
   timerTotal.stop();
 
+  long numberOfFastParticlesThisIteration = _fastParticles[_iteration];
+
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
   return {timerIteratePairwise.getTotalTime(),
           timerRemainderTraversal.getTotalTime(),
           timerRebuild.getTotalTime(),
+          _neighborListsRebuilt,
+          numberOfFastParticlesThisIteration,
+          _particleBufferSize,
           timerTotal.getTotalTime(),
           energyMeasurementsPossible,
           energyMeasurementsPossible ? energyPsys : nanD,
@@ -1326,6 +1419,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     ss << " Total: " << sum;
     return ss.str();
   };
+
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeIteratePairwise);
@@ -1376,6 +1470,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
 
     _autoTuner.bumpIterationCounters();
+    _neighborListsRebuilt = 0;
+    _particleBufferSize = 0;
     ++_iteration;
   }
   return stillTuning;

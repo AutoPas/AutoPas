@@ -27,6 +27,21 @@ struct IterationMeasurements {
   long timeRebuild{};
 
   /**
+   * Number of rebuild per iteration
+   */
+  long numberRebuild{};
+
+  /**
+   * Number of fast particles per iteration
+   */
+  long numberFastParticles{};
+
+  /**
+   * Size of particle buffer at the end of updateContainer()
+   */
+  size_t particleBufferSize{};
+
+  /**
    * Time it takes for the complete iteratePairwise pipeline.
    */
   long timeTotal{};
