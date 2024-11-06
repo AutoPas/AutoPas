@@ -1014,6 +1014,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   }
   _fastParticles[_iteration] += _particleNumber;
   _particleNumber = 0;
+
 }
 
 template <typename Particle>
