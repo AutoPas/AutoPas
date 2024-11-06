@@ -1,0 +1,69 @@
+# This example simulates the Rayleigh Taylor Instability.
+# Heavier, smaller particles are placed on top of lighter, larger particles.
+# Over the course of the simulation, the particle types switch position.
+#
+# This has been shown to result in "interesting" auto-tuning.
+# There is no guarentee that this will always occur.
+#
+# This is the setup which has been show to result in "interesting" auto-tuning:
+# - Commit: a53d2bc. As AutoPas develops, relative performances can change.
+# - Compiler gcc 13.2.0
+# - Computer: HSUper. Features compute nodes with 2 Intel Icelake sockets, each with a Intel(R) Xeon (R) Platinum 8360Y Processor with 36 cores. Relative performances can change depending on machine. 
+# - MPI/OpenMP Setup: 2 nodes, each with 2 MPI ranks, each with 36 OpenMP processes.
+#
+# This leads to 4 ranks stacked up on top of each other, each with their own AutoPas container.
+# With the above setup, the bottom three ranks always use LC_C08_SoA_N3Enabled.
+# The bottom two switch from CSF 1 to 0.5 as their large particles are replaced by smaller particles. (More particles per volume)
+# The rank above switches the other way.
+# The top rank follows less of a pattern, but frequently chooses some VLC algorithm.
+
+functor                          :  Lennard-Jones (12-6) AVX
+cutoff                           :  3
+verlet-skin-radius-per-timestep  :  0.01
+verlet-rebuild-frequency         :  60
+deltaT                           :  0.00005
+iterations                       :  400000
+boundary-type                    :  [periodic, periodic, reflective]
+globalForce                      :  [0, 0, -12.44]
+data-layout                      :  [AoS, SoA]
+traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02] # Introducing VCL seems to cause some "issues" to be investigated further
+newton3                          : [enabled, disabled]
+cell-size                        : [0.33, 0.5, 1]
+tuning-interval                  :  10000
+tuning-samples                   : 5
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+  1:
+    epsilon                      :  1.
+    sigma                        :  0.5
+    mass                         :  2.
+Objects:
+  CubeClosestPacked:
+    0:
+      particle-type-id           :  0
+      box-length                 :  [40, 40, 20]
+      particle-spacing           :  1.1225
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
+    1:
+      particle-type-id           :  1
+      box-length                 :  [40, 40, 20]
+      particle-spacing           :  0.56125
+      bottomLeftCorner           :  [0, 0, 20.1]
+      velocity                   :  [0, 0, 0]
+thermostat:
+  initialTemperature             :  40
+  targetTemperature              :  40
+  deltaTemperature               :  2
+  thermostatInterval             :  1000
+  addBrownianMotion              :  true
+vtk-write-frequency              :  25000
+vtk-filename                     :  RayleighTaylor
+load-balancer                    :  InvertedPressure
+load-balancing-interval          :  10000
+subdivide-dimension              :  [false, false, true]
+no-progress-bar                  :  true
+fastParticlesThrow               :  true
