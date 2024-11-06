@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Quaternion.h"
