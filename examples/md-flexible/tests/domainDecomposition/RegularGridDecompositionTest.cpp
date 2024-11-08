@@ -212,8 +212,15 @@ TEST_P(RegularGridDecompositionTest, testExchangeHaloParticles) {
     const auto globalMin = domainDecomposition->getGlobalBoxMin();
     const auto globalMax = domainDecomposition->getGlobalBoxMax();
 
+    const int numberOfProcesses = []() {
+      int result;
+      autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &result);
+      return result;
+    }();
+
     // Expect halos only between domains, not at global boundaries, when they are not periodic.
-    const auto haloNumber = (localBoxMin[0] == globalMin[0] or localBoxMax[0] == globalMax[0]) ? 9 : 18;
+    const auto haloNumber =
+        (localBoxMin[0] == globalMin[0] or localBoxMax[0] == globalMax[0]) ? (numberOfProcesses == 1 ? 0 : 9) : 18;
 
     EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo), haloNumber);
   }
