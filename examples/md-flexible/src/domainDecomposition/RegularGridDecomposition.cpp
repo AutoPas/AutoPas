@@ -41,8 +41,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   if (_subdomainCount == 1) {
     _mpiCommunicationNeeded = false;
   }
-  std::cout << "Boundaries: " << _boundaryType[0].to_string() << ", " << _boundaryType[1].to_string() << ", "
-            << _boundaryType[2].to_string() << std::endl;
+
   _decomposition = DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value);
 
   // For reflection, we interact particles with their 'mirror' only if it would cause a repulsive force. This occurs

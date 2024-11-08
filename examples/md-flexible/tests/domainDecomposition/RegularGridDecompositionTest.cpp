@@ -18,13 +18,13 @@ extern template class autopas::AutoPas<ParticleType>;
 
 /**
  * Generate a simulation setup depending on the number of MPI ranks available.
+ * The domain will be a stacked tower along the x-axis.
  * @return tuple(autoPasContainer, domainDecomposition)
  */
 auto initDomain(options::BoundaryTypeOption boundaryType) {
   const int numberOfProcesses = []() {
     int result;
     autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &result);
-    std::cout << "Process size: " << result << std::endl;
     return result;
   }();
 
