@@ -14,7 +14,7 @@
  * Test class for the RegularGridDecomposition domain decomposition class.
  */
 class RegularGridDecompositionTest : public AutoPasTestBase,
-                                      public ::testing::WithParamInterface<options::BoundaryTypeOption> {
+                                     public ::testing::WithParamInterface<options::BoundaryTypeOption> {
  public:
   /**
    * Constructor.

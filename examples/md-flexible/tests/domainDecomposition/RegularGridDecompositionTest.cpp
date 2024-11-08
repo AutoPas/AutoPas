@@ -207,7 +207,7 @@ TEST_P(RegularGridDecompositionTest, testExchangeHaloParticles) {
     for (auto particleIter = autoPasContainer->begin(autopas::IteratorBehavior::halo); particleIter.isValid();
          ++particleIter) {
       EXPECT_THAT(expectedHaloParticlePositions, ::testing::Contains(particleIter->getR()));
-         }
+    }
   } else {
     const auto globalMin = domainDecomposition->getGlobalBoxMin();
     const auto globalMax = domainDecomposition->getGlobalBoxMax();
@@ -219,12 +219,11 @@ TEST_P(RegularGridDecompositionTest, testExchangeHaloParticles) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    TestHaloParticles, RegularGridDecompositionTest,
-    testing::Values(options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::none)
-    //    ,RegularGridDecompositionTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(TestHaloParticles, RegularGridDecompositionTest,
+                         testing::Values(options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::reflective,
+                                         options::BoundaryTypeOption::none)
+                         //    ,RegularGridDecompositionTest::PrintToStringParamName());
 );
-
 
 /**
  * This test is designed to check if particles are properly being migrated.
