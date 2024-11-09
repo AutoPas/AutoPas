@@ -100,6 +100,12 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   // add some type 1 particles
   dummyMolecule.setTypeId(1);
   autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
+#if MD_FLEXIBLE_MODE == MULTISITE
+  // add some type 2 particles. This is to test the case that number of molecule types > number of site types so not
+  // relevant for single-site.
+  dummyMolecule.setTypeId(2);
+  autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
+#endif
 
   // init system with brownian motion and test for the given temperature
   constexpr double targetTemperature1 = 4.2;
@@ -111,13 +117,46 @@ TEST_F(ThermostatTest, MultiComponentTest) {
     EXPECT_NEAR(temperature, targetTemperature1, 0.1);
   }
 
+  // Check no particles have zero temperature (indicating brownian motion hasn't been applied).
+  // We also want to later compare against the current velocity. For simplicity's sake, we use the oldF buffer of the
+  // particle to do so.
+  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+    for (size_t dim = 0; dim < 3; ++dim) {
+      // Check some velocity applied.
+      EXPECT_THAT(iter->getV()[dim], ::testing::Not(::testing::DoubleNear(0, 1e-12)));
+    }
+    // set the oldF to the velocity
+    iter->setOldF(iter->getV());
+  }
+
   // set system to a different temperature through apply and check that the temperature matches for each component
   constexpr double targetTemperature2 = targetTemperature1 + 2.;
+
+  // calculate the expected scaling factors
+  // Note that different components have different scaling factors
+  std::vector<double> scalingFactors{};
+  scalingFactors.reserve(temperatureMap.size());
+  for (size_t i = 0; i < temperatureMap.size(); ++i) {
+    scalingFactors[i] = std::sqrt(targetTemperature2/temperatureMap[i]);
+  }
+
+  // apply thermostat
   Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemperature2, std::numeric_limits<double>::max());
+
+  // check each component's temperature is adjusted to targetTemperature2
   temperatureMap = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
   for (auto &[typeId, temperature] : temperatureMap) {
     EXPECT_NEAR(temperature, targetTemperature2, 1e-9);
   }
+
+  // Check that every particle's velocity has been scaled correctly
+  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+    for (size_t dim = 0; dim < 3; ++dim) {
+      // Check for correct scaling. oldF stores the velocity before the Thermostat::apply.
+      EXPECT_NEAR(iter->getV()[dim], iter->getOldF()[dim] * scalingFactors[iter->getTypeId()], 1e-12);
+    }
+  }
+
 }
 
 /**
