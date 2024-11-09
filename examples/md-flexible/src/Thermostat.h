@@ -139,12 +139,12 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
                                    AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   }
 
-  auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
-
-  for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
-       kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
+  auto kineticEnergyMapIter = kineticEnergyMul2Map.begin();
+  auto numParticleMapIter = numParticleMap.begin();
+  for (int typeID = 0; typeID < numberComponents; ++typeID, ++kineticEnergyMapIter, ++numParticleMapIter) {
     // The calculation below assumes that the Boltzmann constant is 1.
     kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
+    AutoPasLog(DEBUG, "Kinetic Energy for typeID {}: {}", typeID, kineticEnergyMapIter->second);
   }
   return kineticEnergyMul2Map;
 }
@@ -260,6 +260,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #if MD_FLEXIBLE_MODE == MULTISITE
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
+    AutoPasLog(DEBUG, "Thermostat applied.")
   }
 }
 }  // namespace Thermostat
