@@ -137,7 +137,7 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   std::vector<double> scalingFactors{};
   scalingFactors.reserve(temperatureMap.size());
   for (size_t i = 0; i < temperatureMap.size(); ++i) {
-    scalingFactors[i] = std::sqrt(targetTemperature2/temperatureMap[i]);
+    scalingFactors[i] = std::sqrt(targetTemperature2 / temperatureMap[i]);
   }
 
   // apply thermostat
@@ -156,7 +156,6 @@ TEST_F(ThermostatTest, MultiComponentTest) {
       EXPECT_NEAR(iter->getV()[dim], iter->getOldF()[dim] * scalingFactors[iter->getTypeId()], 1e-12);
     }
   }
-
 }
 
 /**
