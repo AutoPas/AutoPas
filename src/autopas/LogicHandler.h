@@ -59,6 +59,7 @@ class LogicHandler {
       : _neighborListRebuildFrequency{rebuildFrequency},
         _autoTuner(autoTuner),
         _particleBuffer(autopas_get_max_threads()),
+        _fastParticles(1,0),
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
@@ -606,7 +607,6 @@ class LogicHandler {
    */
   bool neighborListsAreValid();
 
-  // bool hasDuplicates(std::vector<std::vector<std::string>>& vec);
 
   /**
    * Checks if any particle has moved more than skin/2.
@@ -793,10 +793,6 @@ class LogicHandler {
    */
   void checkMinimalSize() const;
 
-  /*number of fast particle */
-
-  unsigned long _particleNumber{0};
-
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
    */
@@ -973,14 +969,11 @@ inline bool hasDuplicates(std::vector<std::vector<std::string>>& vec) {
 template <typename Particle>
 void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
 
-
-  // std::vector<std::string> buff;
+  unsigned long _particleNumber = 0;
 
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
-
-  int particlesInContainerBefore = _containerSelector.getCurrentContainer().size();
 
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
@@ -1000,21 +993,13 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
         _particleNumber ++;
       }
 
-    // if (_iteration == 0)
     // _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
 
-    // _rebuildIntervals
-    /* if distanceSquare >= halfSkinSquare set _neighborListInvalidDoDynamicRebuild to true
-     * but we dont want to trigger a rebuild, instead we save the particles in the buffer
-     * QUESTION: when then to trigger the rebuild????
-     */
   }
   if (_fastParticles.size() < _iteration + 1) {
     _fastParticles.resize(_iteration + 1);
   }
   _fastParticles[_iteration] += _particleNumber;
-  _particleNumber = 0;
-
 }
 
 template <typename Particle>

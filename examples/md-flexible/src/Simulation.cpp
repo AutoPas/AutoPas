@@ -495,13 +495,6 @@ void Simulation::logSimulationState() {
               << "Halo : " << haloParticles << "\n";
   }
 
-  // int i = 0;
-  // for (auto num : _autoPasContainer->getFastParticles()) {
-  //   if (num != 0) {
-  //     std::cout << "Iteration: " << i << " FastPar: " << num << "\n";
-  //   }
-  //   i++;
-  // }
 }
 
 void Simulation::updateSimulationPauseState() {
