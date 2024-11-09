@@ -260,7 +260,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #if MD_FLEXIBLE_MODE == MULTISITE
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
-    AutoPasLog(DEBUG, "Thermostat applied.")
+    AutoPasLog(DEBUG, "Thermostat applied.");
   }
 }
 }  // namespace Thermostat
