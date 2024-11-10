@@ -219,8 +219,10 @@ TEST_P(RegularGridDecompositionTest, testExchangeHaloParticles) {
     }();
 
     // Expect halos only between domains, not at global boundaries, when they are not periodic.
-    const auto haloNumber =
-        (localBoxMin[0] == globalMin[0] or localBoxMax[0] == globalMax[0]) ? (numberOfProcesses == 1 ? 0 : 9) : 18;
+    const auto haloNumber = autopas::utils::ArrayMath::isNearRel(localBoxMin, globalMin) or
+                                    autopas::utils::ArrayMath::isNearRel(localBoxMax, globalMax)
+                                ? (numberOfProcesses == 1 ? 0 : 9)
+                                : 18;
 
     EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo), haloNumber);
   }
@@ -228,9 +230,7 @@ TEST_P(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
 INSTANTIATE_TEST_SUITE_P(TestHaloParticles, RegularGridDecompositionTest,
                          testing::Values(options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::reflective,
-                                         options::BoundaryTypeOption::none)
-                         //    ,RegularGridDecompositionTest::PrintToStringParamName());
-);
+                                         options::BoundaryTypeOption::none));
 
 /**
  * This test is designed to check if particles are properly being migrated.
