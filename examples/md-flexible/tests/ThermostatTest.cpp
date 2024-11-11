@@ -120,13 +120,13 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   // Check no particles have zero temperature (ensuring brownian motion has been applied).
   // We also want to later compare against the current velocity. For simplicity's sake, we use the oldF buffer of the
   // particle to do so.
-  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+  for (auto &particle : _autopas) {
     for (size_t dim = 0; dim < 3; ++dim) {
       // Check some velocity applied.
-      EXPECT_THAT(iter->getV()[dim], ::testing::Not(::testing::DoubleNear(0, 1e-12)));
+      EXPECT_THAT(particle.getV()[dim], ::testing::Not(::testing::DoubleNear(0, 1e-12)));
     }
     // set the oldF to the velocity
-    iter->setOldF(iter->getV());
+    particle.setOldF(particle.getV());
   }
 
   // set system to a different temperature through apply and check that the temperature matches for each component
