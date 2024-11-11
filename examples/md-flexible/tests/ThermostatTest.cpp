@@ -150,10 +150,10 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   }
 
   // Check that every particle's velocity has been scaled correctly
-  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+  for (auto &particle : _autopas) {
     for (size_t dim = 0; dim < 3; ++dim) {
       // Check for correct scaling. oldF stores the velocity before the Thermostat::apply.
-      EXPECT_NEAR(iter->getV()[dim], iter->getOldF()[dim] * scalingFactors[iter->getTypeId()], 1e-12);
+      EXPECT_NEAR(particle.getV()[dim], particle.getOldF()[dim] * scalingFactors[particle.getTypeId()], 1e-12);
     }
   }
 }
