@@ -206,6 +206,16 @@ class ParticlePropertiesLibrary {
   }
 
   /**
+   * Returns the precomputed mixed epsilon * 6.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @return 6*epsilon_ij
+   */
+  inline floatType getMixing6Epsilon(intType i, intType j) const {
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon6;
+  }
+
+  /**
    * Get complete mixing data for one pair of site types.
    * @param i Id of site one.
    * @param j Id of site two.
@@ -231,6 +241,16 @@ class ParticlePropertiesLibrary {
    */
   inline floatType getMixingSigmaSquared(intType i, intType j) const {
     return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
+  }
+
+  /**
+   * Returns precomputed mixed sigma for one pair of site types.
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @return sigma_ij
+   */
+  inline floatType getMixingSigma(intType i, intType j) const {
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].sigma;
   }
 
   /**
@@ -273,7 +293,9 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _moleculesLargestSigma;
 
   struct PackedMixingData {
+    floatType epsilon6;
     floatType epsilon24;
+    floatType sigma;
     floatType sigmaSquared;
     floatType shift6;
   };
@@ -360,12 +382,15 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
       // epsilon
-      const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      const floatType epsilon6 = 6 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      const floatType epsilon24 = 4 * epsilon6;
+      _computedMixingData[globalIndex].epsilon6 = epsilon6;
       _computedMixingData[globalIndex].epsilon24 = epsilon24;
 
       // sigma
       const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
       const floatType sigmaSquared = sigma * sigma;
+      _computedMixingData[globalIndex].sigma = sigma;
       _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
       // shift6
