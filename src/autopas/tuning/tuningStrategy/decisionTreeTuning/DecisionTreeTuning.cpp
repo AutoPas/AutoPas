@@ -5,12 +5,13 @@
  */
 
 #include "DecisionTreeTuning.h"
-#include "autopas/utils/ExceptionHandler.h"
 
 #include <Python.h>
 
 #include <iostream>
 #include <sstream>
+
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
