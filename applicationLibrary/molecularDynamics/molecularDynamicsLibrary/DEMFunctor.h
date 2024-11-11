@@ -66,7 +66,7 @@ class DEMFunctor
       : autopas::Functor<Particle,
                          DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
             cutoff),
-        _radius{cutoff / 2.},  // TODO: use PPL instead
+        _radius{cutoff / 5.},  // default initialization
         _cutoffSquared{cutoff * cutoff},
         _elasticStiffness{elasticStiffness},
         _adhesiveStiffness{adhesiveStiffness},
@@ -180,7 +180,11 @@ class DEMFunctor
     const double dist = autopas::utils::ArrayMath::L2Norm(displacement);
     const std::array<double, 3> normalUnit = displacement / dist;
     double overlap = 2. * radius - dist;
-    // TODO: add case for useMixing, update "overlap"
+    if (useMixing) {
+     const double radius_i = _PPLibrary->getRadius(i.getTypeId());
+     const double radius_j = _PPLibrary->getRadius(j.getTypeId());
+    overlap = radius_i + radius_j - dist;
+    }
     if (overlap <= 0) return;
 
     const std::array<double, 3> relVel = i.getV() - j.getV();
@@ -189,16 +193,19 @@ class DEMFunctor
     const std::array<double, 3> tanRelVel = relVel - normalRelVel;  // TODO: add angle velocities
 
     // Compute normal force
-    const double normalFMag = _elasticStiffness * overlap - _normalViscosity * normalRelVelMag;
-    const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);
+    const double normalContactFMag = _elasticStiffness * overlap - _normalViscosity * normalRelVelMag;
+    const std::array<double, 3> normalContactF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalContactFMag);
+
+    const std::array<double, 3> normalLongRangeF = {0., 0., 0.};
+    const std::array<double, 3> normalF = normalContactF + normalLongRangeF;
 
     // Compute tangential force
-    const double coulombLimit = _staticFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap);
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
     std::array<double, 3> tanF =
         autopas::utils::ArrayMath::mulScalar(tanRelVel, -1. * _frictionViscosity);  // TODO: add tangential spring
     const double tanFMag = autopas::utils::ArrayMath::L2Norm(tanF);
     if (tanFMag > coulombLimit) {
-      const double scale = _dynamicFrictionCoeff * (normalFMag + _adhesiveStiffness * overlap) / tanFMag;
+      const double scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / tanFMag;
       tanF = autopas::utils::ArrayMath::mulScalar(tanF, scale);
     }
 
@@ -292,7 +299,12 @@ class DEMFunctor
 
         const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
         const SoAFloatPrecision dist = std::sqrt(distSquared);
-        const SoAFloatPrecision overlap = 2. * radius - dist;
+        SoAFloatPrecision overlap = 2. * radius - dist;
+        if (useMixing) {
+            const SoAFloatPrecision radius_i = _PPLibrary->getRadius(typeptr[i]);
+            const SoAFloatPrecision radius_j = _PPLibrary->getRadius(typeptr[j]);
+            overlap = radius_i + radius_j - dist;
+        }
 
         const SoAFloatPrecision invDist = 1.0 / dist;
         const SoAFloatPrecision normalUnitX = drx * invDist;
@@ -567,6 +579,9 @@ class DEMFunctor
      SoAFloatPrecision *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
      SoAFloatPrecision *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
 
+     [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
+     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+
      // Initialize local variables for constants
      const SoAFloatPrecision cutoffSquared = _cutoffSquared;
      const SoAFloatPrecision radius = _radius;
@@ -591,7 +606,12 @@ class DEMFunctor
 
          const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
          const SoAFloatPrecision dist = std::sqrt(distSquared);
-         const SoAFloatPrecision overlap = 2. * radius - dist;
+         SoAFloatPrecision overlap = 2. * radius - dist;
+         if (useMixing) {
+           const SoAFloatPrecision radius_i = _PPLibrary->getRadius(typeptr1[i]);
+           const SoAFloatPrecision radius_j = _PPLibrary->getRadius(typeptr2[j]);
+           overlap = radius_i + radius_j - dist;
+         }
 
          const SoAFloatPrecision invDist = 1.0 / dist;
          const SoAFloatPrecision normalUnitX = drx * invDist;
@@ -748,7 +768,7 @@ class DEMFunctor
   const double _staticFrictionCoeff;
   const double _dynamicFrictionCoeff;
   // not const because they might be reset through PPL
-  double _radius = 0;
+  double _epsilon, _sigma, _radius = 0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

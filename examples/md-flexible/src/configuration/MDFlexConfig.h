@@ -140,8 +140,9 @@ class MDFlexConfig {
    * @param epsilon
    * @param sigma
    * @param mass
+   * @param radius
    */
-  void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass);
+  void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass, double radius);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
@@ -565,6 +566,11 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  /**
+   * radiusMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> radiusMap{
+      {{0ul, 1.}}, "radius", true, "Mapping from site type to a radius value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

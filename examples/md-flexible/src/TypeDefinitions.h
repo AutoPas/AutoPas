@@ -137,7 +137,7 @@ using LJFunctorTypeSVE =
 #if MMD_FLEXIBLE_MODE == MULTISITE
 #error "The DEM functor des not have support for multisite molecules!"
 #else
-using DEMFunctor = mdLib::DEMFunctor<ParticleType, false, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
+using DEMFunctor = mdLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 
 #endif
 

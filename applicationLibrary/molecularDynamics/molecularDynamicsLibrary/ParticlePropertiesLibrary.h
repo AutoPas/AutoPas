@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <algorithm>
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -55,7 +56,7 @@ class ParticlePropertiesLibrary {
    * @param sigma
    * @param mass
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass, const floatType radius);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -123,6 +124,13 @@ class ParticlePropertiesLibrary {
    * @return mass_i
    */
   floatType getSiteMass(intType i) const;
+
+  /**
+   * Getter for the site's radius.
+   * @param i
+   * @return radius_i
+   */
+  floatType getRadius(intType i) const;
 
   /**
    * Getter for a molecules' mass.
@@ -253,6 +261,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
+  std::vector<floatType> _siteRadii;
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -274,7 +283,7 @@ class ParticlePropertiesLibrary {
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType mass) {
+                                                                floatType mass, floatType radius) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
@@ -285,6 +294,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   _epsilons.emplace_back(epsilon);
   _sigmas.emplace_back(sigma);
   _siteMasses.emplace_back(mass);
+  _siteRadii.emplace_back(radius);
 }
 
 template <typename floatType, typename intType>
@@ -420,6 +430,11 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getEpsilon(intType i) c
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) const {
   return _sigmas[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getRadius(intType i) const {
+  return _siteRadii[i];
 }
 
 template <typename floatType, typename intType>
