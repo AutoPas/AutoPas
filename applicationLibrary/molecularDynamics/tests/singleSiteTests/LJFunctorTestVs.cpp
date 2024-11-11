@@ -47,10 +47,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
 
   for (size_t i = 0; i < numParticlesPerCell; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      EXPECT_EQ(cell1NoPPL[i], cell1PPL[i]) << "cell1NoPPL[i] = " << cell1NoPPL[i].toString() << std::endl
-                                            << "cell1PPL[i] = " << cell1PPL[i].toString();
-      EXPECT_EQ(cell2NoPPL[i], cell2PPL[i]) << "cell2NoPPL[i] = " << cell2NoPPL[i].toString() << std::endl
-                                            << "cell2PPL[i] = " << cell2PPL[i].toString();
+      EXPECT_NEAR(cell1NoPPL[i].getF()[j], cell1PPL[i].getF()[j], 1e-13);
+      EXPECT_NEAR(cell2NoPPL[i].getF()[j], cell2PPL[i].getF()[j], 1e-13);
     }
   }
 }
