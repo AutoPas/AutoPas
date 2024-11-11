@@ -49,7 +49,7 @@ class DecisionTreeTuning : public TuningStrategyInterface {
   /**
    * Load the Python script predict.py.
    */
-  void loadScript();  // Function to load the fixed Python script predict.py
+  void loadScript();
   /**
    * Get the prediction from the Python script.
    * @return Prediction from the Python script.

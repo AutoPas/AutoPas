@@ -8,7 +8,7 @@ import sys
 
 def main(model_file: str, live_info_json: str) -> str:
     """
-    Main function that receives the model file and live_info as arguments, simulates a prediction,
+    Main function that receives the model file and live_info as arguments, simulates a mock prediction,
     and returns the predicted configuration.
 
     Args:

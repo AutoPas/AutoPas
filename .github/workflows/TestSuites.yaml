@@ -102,20 +102,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify Workspace Directory and View .lsanIgnoreList.txt
-        run: |
-          echo "Listing /__w directory:"
-          ls -la /__w
-          echo "Listing /__w/AutoPas directory:"
-          ls -la /__w/AutoPas
-          echo "Checking for .lsanIgnoreList.txt:"
-          if [ -f "/__w/AutoPas/AutoPas/.lsanIgnoreList.txt" ]; then
-            echo ".lsanIgnoreList.txt found. Contents:"
-            cat /__w/AutoPas/AutoPas/.lsanIgnoreList.txt
-          else
-            echo ".lsanIgnoreList.txt not found!"
-          fi
-
       - name: Build everything
         run: |
           # derive whether or not to compile with MPI options ON.

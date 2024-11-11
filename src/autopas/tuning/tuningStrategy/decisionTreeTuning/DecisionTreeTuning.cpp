@@ -5,6 +5,7 @@
  */
 
 #include "DecisionTreeTuning.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 #include <Python.h>
 
@@ -40,31 +41,42 @@ void DecisionTreeTuning::loadScript() {
   // Load the fixed Python script predict.py
   PyObject *pName = PyUnicode_DecodeFSDefault("predict");
   if (!pName) {
-    throw std::runtime_error("Failed to convert script name to Python string.");
+    utils::ExceptionHandler::exception("Failed to convert script name to Python string.");
   }
 
   PyObject *pModule = PyImport_Import(pName);
   Py_DECREF(pName);
 
+  // Check if the module was loaded successfully
+  // If not, print the error and throw an exception
   if (!pModule) {
     PyErr_Print();
-    throw std::runtime_error("Failed to load Python module: predict.py");
+    utils::ExceptionHandler::exception("Failed to load Python module: predict.py");
   }
 
+  // Retrieve the module's dictionary object, which stores all its defined variables, functions, and classes.
+  // pDict will be used to access functions or objects within the "predict" module.
   PyObject *pDict = PyModule_GetDict(pModule);
   Py_DECREF(pModule);
 
+  // Check if the dictionary was retrieved successfully
+  // If not, print the error and throw an exception
   if (!pDict) {
     PyErr_Print();
-    throw std::runtime_error("Failed to get dictionary from Python module: predict.py");
+    utils::ExceptionHandler::exception("Failed to get dictionary from Python module: predict.py");
   }
 
+  // Get the Python function 'main' from the module
+  // If the function does not exist or is not callable, print the error and throw an exception
   PyObject *pFunc = PyDict_GetItemString(pDict, "main");
   if (!pFunc || !PyCallable_Check(pFunc)) {
     PyErr_Print();
-    throw std::runtime_error("Failed to find function 'main' in module: predict.py");
+    utils::ExceptionHandler::exception("Failed to get Python function: main");
   }
 
+  // Increment the reference count to keep the Python function alive
+  // as _pFunc is stored as a persistent member of the class.
+  // Without this, Python may garbage-collect the function after this scope.
   _pFunc = pFunc;
   Py_INCREF(_pFunc);
 }
@@ -121,7 +133,7 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
 
   if (!pResult) {
     PyErr_Print();
-    throw std::runtime_error("Error occurred during Python function call");
+    utils::ExceptionHandler::exception("Error occurred during Python function call");
   }
 
   // Extract the result (which is a JSON string of predictions)
@@ -151,10 +163,8 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
     // Using parseOptionExact to parse values for each configuration option
     config.container = ContainerOption::parseOptionExact(getValue("Container"));
     config.traversal = TraversalOption::parseOptionExact(getValue("Traversal"));
-    config.loadEstimator = LoadEstimatorOption::parseOptionExact(getValue("Load Estimator"));
     config.dataLayout = DataLayoutOption::parseOptionExact(getValue("Data Layout"));
     config.newton3 = Newton3Option::parseOptionExact(getValue("Newton 3"));
-    config.cellSizeFactor = std::stod(getValue("CellSizeFactor"));
   } catch (const std::exception &e) {
     AutoPasLog(ERROR, "Exception during parsing prediction: {}", e.what());
     return;  // In case of an error, return without modifying the configQueue
