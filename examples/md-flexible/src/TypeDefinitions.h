@@ -60,6 +60,16 @@ constexpr bool countFLOPs =
 #else
     false;
 #endif
+
+/**
+ * If md-flexible is compiled with globals calculations enabled, use functors which calculate globals.
+ */
+constexpr bool calcGlobals =
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    true;
+#else
+    false;
+#endif
 }  // namespace mdFlexibleTypeDefs
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
@@ -69,30 +79,15 @@ constexpr bool countFLOPs =
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false,
+using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, calcGlobals,
                                                        mdFlexibleTypeDefs::countFLOPs>;
 #else
 using LJFunctorTypeAutovec =
-    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-/**
- * Type of LJFunctorTypeAutovecGlobals used in md-flexible.
- * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- */
-#if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                                              true, mdFlexibleTypeDefs::countFLOPs>;
-#else
-using LJFunctorTypeAutovecGlobals =
-    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
-#endif
-
-#endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
@@ -105,7 +100,7 @@ using LJFunctorTypeAutovecGlobals =
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
 using LJFunctorTypeAVX =
-    mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
@@ -121,7 +116,7 @@ using LJFunctorTypeAVX =
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
 using LJFunctorTypeSVE =
-    mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
