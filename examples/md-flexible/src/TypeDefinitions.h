@@ -79,15 +79,14 @@ constexpr bool calcGlobals =
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, calcGlobals,
-                                                       mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                                       calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
-using LJFunctorTypeAutovec =
-    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
-
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
@@ -99,8 +98,8 @@ using LJFunctorTypeAutovec =
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
-using LJFunctorTypeAVX =
-    mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                             mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
@@ -115,8 +114,8 @@ using LJFunctorTypeAVX =
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
-using LJFunctorTypeSVE =
-    mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                             mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
