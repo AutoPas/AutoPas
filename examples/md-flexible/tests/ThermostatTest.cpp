@@ -117,7 +117,7 @@ TEST_F(ThermostatTest, MultiComponentTest) {
     EXPECT_NEAR(temperature, targetTemperature1, 0.1);
   }
 
-  // Check no particles have zero temperature (indicating brownian motion hasn't been applied).
+  // Check no particles have zero temperature (ensuring brownian motion has been applied).
   // We also want to later compare against the current velocity. For simplicity's sake, we use the oldF buffer of the
   // particle to do so.
   for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
