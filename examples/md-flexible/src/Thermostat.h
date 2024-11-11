@@ -144,7 +144,6 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   for (int typeID = 0; typeID < numberComponents; ++typeID, ++kineticEnergyMapIter, ++numParticleMapIter) {
     // The calculation below assumes that the Boltzmann constant is 1.
     kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
-    AutoPasLog(DEBUG, "Kinetic Energy for typeID {}: {}", typeID, kineticEnergyMapIter->second);
   }
   return kineticEnergyMul2Map;
 }
@@ -231,6 +230,9 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
   using namespace autopas::utils::ArrayMath::literals;
+
+  AutoPasLog(DEBUG, "Applying Thermostat");
+
   const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
@@ -251,6 +253,9 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
             : std::max(currentTemperature - absoluteDeltaTemperature, targetTemperature);
     // Determine a scaling factor for each particle type.
     scalingMap[particleTypeID] = std::sqrt(immediateTargetTemperature / currentTemperature);
+
+    AutoPasLog(DEBUG, "Current temperature of typeID {}: {}", particleTypeID, currentTemperature);
+    AutoPasLog(DEBUG, "Temperature of typeID {} after application of thermostat: {}", particleTypeID, immediateTargetTemperature);
   }
 
   // Scale velocities (and angular velocities) with the scaling map
@@ -261,6 +266,5 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }
-  AutoPasLog(DEBUG, "Thermostat applied.");
 }
 }  // namespace Thermostat
