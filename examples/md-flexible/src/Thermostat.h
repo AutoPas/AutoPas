@@ -255,7 +255,8 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     scalingMap[particleTypeID] = std::sqrt(immediateTargetTemperature / currentTemperature);
 
     AutoPasLog(DEBUG, "Current temperature of typeID {}: {}", particleTypeID, currentTemperature);
-    AutoPasLog(DEBUG, "Temperature of typeID {} after application of thermostat: {}", particleTypeID, immediateTargetTemperature);
+    AutoPasLog(DEBUG, "Temperature of typeID {} after application of thermostat: {}", particleTypeID,
+               immediateTargetTemperature);
   }
 
   // Scale velocities (and angular velocities) with the scaling map
