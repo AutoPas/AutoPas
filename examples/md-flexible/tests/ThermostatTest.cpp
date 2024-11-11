@@ -117,16 +117,16 @@ TEST_F(ThermostatTest, MultiComponentTest) {
     EXPECT_NEAR(temperature, targetTemperature1, 0.1);
   }
 
-  // Check no particles have zero temperature (indicating brownian motion hasn't been applied).
+  // Check no particles have zero temperature (ensuring brownian motion has been applied).
   // We also want to later compare against the current velocity. For simplicity's sake, we use the oldF buffer of the
   // particle to do so.
-  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+  for (auto &particle : _autopas) {
     for (size_t dim = 0; dim < 3; ++dim) {
       // Check some velocity applied.
-      EXPECT_THAT(iter->getV()[dim], ::testing::Not(::testing::DoubleNear(0, 1e-12)));
+      EXPECT_THAT(particle.getV()[dim], ::testing::Not(::testing::DoubleNear(0, 1e-12)));
     }
     // set the oldF to the velocity
-    iter->setOldF(iter->getV());
+    particle.setOldF(particle.getV());
   }
 
   // set system to a different temperature through apply and check that the temperature matches for each component
@@ -150,10 +150,10 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   }
 
   // Check that every particle's velocity has been scaled correctly
-  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+  for (auto &particle : _autopas) {
     for (size_t dim = 0; dim < 3; ++dim) {
       // Check for correct scaling. oldF stores the velocity before the Thermostat::apply.
-      EXPECT_NEAR(iter->getV()[dim], iter->getOldF()[dim] * scalingFactors[iter->getTypeId()], 1e-12);
+      EXPECT_NEAR(particle.getV()[dim], particle.getOldF()[dim] * scalingFactors[particle.getTypeId()], 1e-12);
     }
   }
 }
