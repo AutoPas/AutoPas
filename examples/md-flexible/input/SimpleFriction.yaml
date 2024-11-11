@@ -1,0 +1,53 @@
+# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
+## md-flexible compiled for multi-site molecules.
+container                        :  [DirectSum]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius-per-timestep  :  0.1
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS]
+traversal                        :  [ ds_sequential ] # Please see AllOptions.yaml for a comprehensive list of traversals
+tuning-strategies                :  []
+tuning-interval                  :  2500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  dem
+newton3                          :  [disabled, enabled]
+cutoff                           :  5
+box-min                          :  [-1.75, -1.75, -1.75]
+box-max                          :  [13, 13, 13]
+cell-size                        :  [1]
+deltaT                           :  0.005
+iterations                       :  10000
+boundary-type                    :  [reflective,reflective,reflective]
+globalForce                      :  [0,0,0]
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1000.
+    radius                       :  1.1
+  1:
+    epsilon: 1.
+    sigma: 1.
+    mass: 1.
+    radius: 1.1
+Objects:
+  CubeGrid:
+    0:
+      particles-per-dimension: [ 2, 2, 7 ]
+      particle-spacing: 1.2
+      bottomLeftCorner: [ 1, 1, 1 ]
+      velocity: [ 0, 0, 0 ]
+      particle-type-id: 0
+    1:
+      particles-per-dimension: [ 1, 1, 1 ]
+      particle-spacing: 1.1225
+      bottomLeftCorner: [ 1.6, 1.6, 12]
+      velocity: [ 0, 0, -5 ]
+      particle-type-id: 1
+vtk-filename                     :  simple_friction
+vtk-write-frequency              :  10
+vtk-output-folder                :  vtkOutputFolder
+no-end-config                    :  true
+log-level                        :  trace
