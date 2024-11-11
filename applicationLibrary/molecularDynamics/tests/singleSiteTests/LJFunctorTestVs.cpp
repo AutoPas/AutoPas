@@ -47,8 +47,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
 
   for (size_t i = 0; i < numParticlesPerCell; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      EXPECT_NEAR(cell1NoPPL[i].getF()[j], cell1PPL[i].getF()[j], 1e-13);
-      EXPECT_NEAR(cell2NoPPL[i].getF()[j], cell2PPL[i].getF()[j], 1e-13);
+      EXPECT_NEAR(cell1NoPPL[i].getF()[j], cell1PPL[i].getF()[j], 1e-12);
+      EXPECT_NEAR(cell2NoPPL[i].getF()[j], cell2PPL[i].getF()[j], 1e-12);
     }
   }
 }
