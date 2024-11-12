@@ -9,9 +9,8 @@
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/utils/Math.h"
 
-std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple(const std::vector<autopas::Evidence> &points,
-                                                             size_t pointsPerEstimation,
-                                                             size_t maxDistFromIntervalEdge) {
+std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple(
+    const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation, size_t maxDistFromIntervalEdge) {
   // since we will only smooth the last point there is no outer loop of LOESS and indexToFit shall be fixed
   const auto indexToFit = points.size() - 1;
   const auto firstIndex = indexToFit - pointsPerEstimation + 1;
@@ -23,8 +22,8 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
 
   // Define thresholds for shortcuts: If residuals are beyond these values, they
   // are assumed to be 0, respectively 1.
-//  const auto maxDistFromIntervalEdgeHigh = (double)maxDistFromIntervalEdge * .999;
-//  const auto maxDistFromIntervalEdgeLow = (double)maxDistFromIntervalEdge * .001;
+  //  const auto maxDistFromIntervalEdgeHigh = (double)maxDistFromIntervalEdge * .999;
+  //  const auto maxDistFromIntervalEdgeLow = (double)maxDistFromIntervalEdge * .001;
 
   double sumOfWeights = 0.0;
 
@@ -40,9 +39,10 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
     if (residual <= maxDistFromIntervalEdge and residual > 0) {
       // tri-cube function
       weights[j] = autopas::utils::Math::pow<3>(
-          1.0 - autopas::utils::Math::pow<3>(static_cast<double>(residual) / static_cast<double>(maxDistFromIntervalEdge)));
+          1.0 -
+          autopas::utils::Math::pow<3>(static_cast<double>(residual) / static_cast<double>(maxDistFromIntervalEdge)));
     } else if (residual == 0) {
-      weights[j] = 1.0; // @a
+      weights[j] = 1.0;  // @a
     }
     sumOfWeights += weights[j];
   }
@@ -61,7 +61,7 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
 }
 
 double autopas::smoothing::calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation,
-                           const std::vector<double> &weights) {
+                                               const std::vector<double> &weights) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
   const size_t indexToFit = points.size() - 1;
   const size_t firstIndex = indexToFit - pointsPerEstimation + 1;

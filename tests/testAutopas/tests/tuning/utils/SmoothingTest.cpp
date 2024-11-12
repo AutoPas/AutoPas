@@ -11,7 +11,8 @@
 
 TEST(SmoothingTest, loessLastPoint) {
   std::vector<size_t> xvals{1, 2, 3, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 8, 10, 12};
-  std::vector<long> yvals{18000, 2000, 15000, 6000, 10000, 4000, 16000, 11000, 7000, 3000, 14000, 17000, 20000, 12000, 9000, 13000, 1000, 8000};
+  std::vector<long> yvals{18000, 2000,  15000, 6000,  10000, 4000, 16000, 11000, 7000,
+                          3000,  14000, 17000, 20000, 12000, 9000, 13000, 1000,  8000};
 
   std::vector<autopas::Evidence> obs;
   obs.reserve(xvals.size());
