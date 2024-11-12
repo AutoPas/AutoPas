@@ -694,6 +694,18 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
 
   /**
+   * Get flag for whether a LOESS-based smoothening is used.
+   * @return
+   */
+  [[nodiscard]] bool getUseLOESSSmoothening() const { return _autoTunerInfo.useLOESSSmoothening; }
+
+  /**
+   * Set flag for whether a LOESS-based smoothening is used.
+   * @param useLOESSSmoothening
+   */
+  void setUseLOESSSmoothening(bool useLOESSSmoothening) { _autoTunerInfo.useLOESSSmoothening = useLOESSSmoothening; }
+
+  /**
    * Get maximum number of evidence for tuning
    * @return
    */

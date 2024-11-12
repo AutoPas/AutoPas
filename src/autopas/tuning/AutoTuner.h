@@ -296,6 +296,11 @@ class AutoTuner {
   TuningMetricOption _tuningMetric;
 
   /**
+   * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
+   */
+  bool _useLOESSSmoothening;
+
+  /**
    * Is energy measurement possible.
    * Initialize as true and check in the constructor if it is indeed possible.
    */

@@ -9,9 +9,8 @@
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/utils/Math.h"
 
-std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple(const std::vector<autopas::Evidence> &points,
-                                                             size_t pointsPerEstimation,
-                                                             size_t maxDistFromIntervalEdge) {
+std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple(
+    const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation, size_t maxDistFromIntervalEdge) {
   // since we will only smooth the last point there is no outer loop of LOESS and indexToFit shall be fixed
   const auto indexToFit = points.size() - 1;
   const auto firstIndex = indexToFit - pointsPerEstimation + 1;
@@ -19,12 +18,7 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
   std::vector<double> weights(pointsPerEstimation);
 
   // get iteration number of the point being smoothed
-  const long &xi = (long)points[indexToFit].iteration;
-
-  // Define thresholds for shortcuts: If residuals are beyond these values, they
-  // are assumed to be 0, respectively 1.
-//  const auto maxDistFromIntervalEdgeHigh = (double)maxDistFromIntervalEdge * .999;
-//  const auto maxDistFromIntervalEdgeLow = (double)maxDistFromIntervalEdge * .001;
+  const auto &xi = static_cast<long>(points[indexToFit].iteration);
 
   double sumOfWeights = 0.0;
 
@@ -32,7 +26,7 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
   for (size_t j = 0; j < pointsPerEstimation; ++j) {
     // set weight to zero
     weights[j] = 0.;
-    const long xj = (long)points[j + firstIndex].iteration;
+    const auto xj = static_cast<long>(points[j + firstIndex].iteration);
     // residual = |xi - xj|
     const size_t residual = std::abs(xi - xj);
 
@@ -40,9 +34,13 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
     if (residual <= maxDistFromIntervalEdge and residual > 0) {
       // tri-cube function
       weights[j] = autopas::utils::Math::pow<3>(
-          1.0 - autopas::utils::Math::pow<3>(static_cast<double>(residual) / static_cast<double>(maxDistFromIntervalEdge)));
+          1.0 -
+          autopas::utils::Math::pow<3>(static_cast<double>(residual) / static_cast<double>(maxDistFromIntervalEdge)));
     } else if (residual == 0) {
-      weights[j] = 1.0; // @a
+      // the tri-cube function tends to inf as residual tends to 0. weight=1 matches residual = 1. Using weight=1 for
+      // residual = 0 is not appropriate, however LOESS is not suitable in the residual=0 case anyway. However, we do
+      // not currently in AutoPas require the residual=0 case (this would imply multiple evidence per configuration).
+      weights[j] = 1.0;
     }
     sumOfWeights += weights[j];
   }
@@ -61,7 +59,7 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
 }
 
 double autopas::smoothing::calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation,
-                           const std::vector<double> &weights) {
+                                               const std::vector<double> &weights) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
   const size_t indexToFit = points.size() - 1;
   const size_t firstIndex = indexToFit - pointsPerEstimation + 1;
@@ -70,22 +68,22 @@ double autopas::smoothing::calculateYFitSimple(const std::vector<autopas::Eviden
   // weighted center of x
   double sumWeightedX = 0.;
   for (size_t j = 0; j < weights.size(); ++j) {
-    sumWeightedX += weights[j] * (double)points[j + firstIndex].iteration;
+    sumWeightedX += weights[j] * static_cast<double>(points[j + firstIndex].iteration);
   }
 
   double weightedDistFromCenterXSquare = 0.;
   std::vector<double> deviations(weights.size());
   for (size_t j = 0; j < weights.size(); ++j) {
-    deviations[j] = (double)points[j + firstIndex].iteration - sumWeightedX;
+    deviations[j] = static_cast<double>(points[j + firstIndex].iteration) - sumWeightedX;
     weightedDistFromCenterXSquare += weights[j] * deviations[j] * deviations[j];
   }
 
   // threshold whether points are not too clumped up
-  double pointsRange = (double)points.back().iteration - (double)points.front().iteration;
+  const auto pointsRange = static_cast<double>(points.back().iteration - points.front().iteration);
   if (weightedDistFromCenterXSquare > 1e-6 * pointsRange * pointsRange) {
     // here indexToFit is always at the end of the interval
-    auto distIndexToCenter = deviations.back();
-    double distDivSqDev = distIndexToCenter / weightedDistFromCenterXSquare;
+    const auto distIndexToCenter = deviations.back();
+    const auto distDivSqDev = distIndexToCenter / weightedDistFromCenterXSquare;
 
     for (size_t j = 0; j < weights.size(); ++j) {
       projections[j] = weights[j] * (1. + distDivSqDev * deviations[j]);
@@ -94,7 +92,7 @@ double autopas::smoothing::calculateYFitSimple(const std::vector<autopas::Eviden
 
   double yFitted = 0.;
   for (size_t j = 0; j < projections.size(); ++j) {
-    yFitted += projections[j] * (double)points[j + firstIndex].value;
+    yFitted += projections[j] * static_cast<double>(points[j + firstIndex].value);
   }
 
   return yFitted;

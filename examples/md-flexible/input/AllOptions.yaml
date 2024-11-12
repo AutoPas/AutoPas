@@ -10,6 +10,7 @@ tuning-metric                        :  time
 tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
 tuning-interval                      :  5000
 tuning-samples                       :  3
+use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 functor                              :  Lennard-Jones (12-6) avx
 newton3                              :  [disabled, enabled]

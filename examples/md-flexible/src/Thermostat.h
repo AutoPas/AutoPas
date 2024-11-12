@@ -139,10 +139,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
                                    AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   }
 
-  auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
-
-  for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
-       kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
+  auto kineticEnergyMapIter = kineticEnergyMul2Map.begin();
+  auto numParticleMapIter = numParticleMap.begin();
+  for (int typeID = 0; typeID < numberComponents; ++typeID, ++kineticEnergyMapIter, ++numParticleMapIter) {
     // The calculation below assumes that the Boltzmann constant is 1.
     kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
   }
@@ -231,6 +230,9 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
   using namespace autopas::utils::ArrayMath::literals;
+
+  AutoPasLog(DEBUG, "Applying Thermostat");
+
   const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
@@ -251,6 +253,10 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
             : std::max(currentTemperature - absoluteDeltaTemperature, targetTemperature);
     // Determine a scaling factor for each particle type.
     scalingMap[particleTypeID] = std::sqrt(immediateTargetTemperature / currentTemperature);
+
+    AutoPasLog(DEBUG, "Current temperature of typeID {}: {}", particleTypeID, currentTemperature);
+    AutoPasLog(DEBUG, "Temperature of typeID {} after application of thermostat: {}", particleTypeID,
+               immediateTargetTemperature);
   }
 
   // Scale velocities (and angular velocities) with the scaling map
