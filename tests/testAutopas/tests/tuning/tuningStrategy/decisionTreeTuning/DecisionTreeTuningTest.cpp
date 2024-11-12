@@ -13,6 +13,7 @@
 
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -43,7 +44,7 @@ TEST(DecisionTreeTuningTest, TestScriptLoading) {
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      std::runtime_error);
+      autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 /**
@@ -108,7 +109,7 @@ TEST(DecisionTreeTuningTest, TestInvalidPythonResponse) {
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      std::runtime_error);  // Expect an exception due to invalid JSON
+      autopas::utils::ExceptionHandler::AutoPasException);  // Expect an exception due to invalid JSON
 }
 
 /**
