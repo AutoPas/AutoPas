@@ -158,7 +158,7 @@ class LogicHandler {
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
-    AutoPasLog(DEBUG, "Initiating container update.");
+    AutoPasLog(TRACE, "Initiating container update.");
     auto leavingParticles = _containerSelector.getCurrentContainer().updateContainer(not doDataStructureUpdate);
     leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
 
@@ -202,7 +202,7 @@ class LogicHandler {
     for (size_t i = 0; i < newLength.size(); ++i) {
       // warning threshold is set arbitrary and up for change if needed
       if (relDiffLength[i] > 1.3 or relDiffLength[i] < 0.7) {
-        AutoPasLog(WARN,
+        AutoPasLog(DEBUG,
                    "LogicHandler.resize(): Domain size changed drastically in dimension {}! Gathered AutoTuning "
                    "information might not be applicable anymore!\n"
                    "Size old box : {}\n"
@@ -1289,7 +1289,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
   // Check if the container supports the traversal
   const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(DEBUG, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
+    AutoPasLog(TRACE, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
                conf.traversal);
     return {std::nullopt, true};
   }
