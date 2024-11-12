@@ -1,15 +1,17 @@
 
+#pragma once
 
 #include <array>
 
-#include "src/zonalMethods/zone/Zone.h"
+#include "src/zonalMethods/region/Region.h"
 
 /*
  * This class represents the geographic regions of a import / export zone of a zonal method.
  * The described zone is a rectangular parallelepiped.
  * */
-class RectZone : Zone {
- private:
+class RectRegion : Region {
+
+ public:
   /**
    * Stores the origin of the zone.
    * */
@@ -20,25 +22,20 @@ class RectZone : Zone {
    * */
   std::array<double, 3> _size;
 
- public:
+
   /**
    * Constructor
    * @param origin
    * @param size
+   * @param zoneID
    */
-  RectZone(std::array<double, 3> origin, std::array<double, 3> size) : _origin(origin), _size(size) {}
+  RectRegion(std::array<double, 3> origin, std::array<double, 3> size, char zoneID = 0)
+      : _origin(origin), _size(size), Region(zoneID) {}
 
   /**
-   * Getter for the origin
-   * @return
+   * Constructor
    */
-  inline std::array<double, 3> getOrigin() const { return _origin; }
-
-  /**
-   * Getter for the size
-   * @return
-   */
-  inline std::array<double, 3> getSize() const { return _size; }
+  RectRegion() = default;
 
   /**
    * Collect particles from the AutoPas container and store them in the given buffer.
