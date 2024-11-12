@@ -38,31 +38,31 @@ class EnergySensor {
    * Get joules consumed between start and end state
    * @return double for watts consumed
    */
-  double getJoules();
+  double getJoules() const;
 
   /**
    * Get watts consumed between start and end state
    * @return double for watts consumed
    */
-  double getWatts();
+  double getWatts() const;
 
   /**
    * Get seconds between current start and end state
    * @return double for seconds between time stamps
    */
-  double getSeconds();
+  double getSeconds() const;
 
   /**
    * Getter for used sensor option
    * @return EnergySensorOption displaying which energy sensor is used
    */
-  const EnergySensorOption getOption();
+  const EnergySensorOption getOption() const;
 
   /**
    * Method to convert consumed joules to nanojoules. Used for tuning
    * @return consumed nanojoules
    */
-  long getNanoJoules();
+  long getNanoJoules() const;
 
  private:
   /**

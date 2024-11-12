@@ -27,7 +27,7 @@ bool EnergySensor::startMeasurement() {
   return false;
 }
 
-const EnergySensorOption EnergySensor::getOption() { return _option; }
+const EnergySensorOption EnergySensor::getOption() const { return _option; }
 
 bool EnergySensor::endMeasurement() {
   if (_option != EnergySensorOption::none) {
@@ -37,28 +37,28 @@ bool EnergySensor::endMeasurement() {
   return false;
 }
 
-double EnergySensor::getJoules() {
+double EnergySensor::getJoules() const {
   if (_option != EnergySensorOption::none) {
     return _sensor->joules(_start, _end);
   }
   return -1;
 }
 
-double EnergySensor::getWatts() {
+double EnergySensor::getWatts() const {
   if (_option != EnergySensorOption::none) {
     return _sensor->watts(_start, _end);
   }
   return -1;
 }
 
-double EnergySensor::getSeconds() {
+double EnergySensor::getSeconds() const {
   if (_option != EnergySensorOption::none) {
     return _sensor->seconds(_start, _end);
   }
   return -1;
 }
 
-long EnergySensor::getNanoJoules() {
+long EnergySensor::getNanoJoules() const {
   if (_option != EnergySensorOption::none) {
     return static_cast<long>(_sensor->joules(_start, _end) * 1e9);
   }

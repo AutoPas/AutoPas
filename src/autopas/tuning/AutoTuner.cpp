@@ -400,5 +400,5 @@ bool AutoTuner::inTuningPhase() const {
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
-bool AutoTuner::canMeasureEnergy() { return _energySensor.getOption() != EnergySensorOption::none; }
+bool AutoTuner::canMeasureEnergy() const { return _energySensor.getOption() != EnergySensorOption::none; }
 }  // namespace autopas

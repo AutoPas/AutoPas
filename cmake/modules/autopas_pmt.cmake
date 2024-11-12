@@ -48,6 +48,4 @@ endif()
 
 target_compile_options(pmt PUBLIC -DCMAKE_INSTALL_PREFIX="./build")
 
-get_target_property(propval pmt INTERFACE_INCLUDE_DIRECTORIES)
-
 target_include_directories(pmt SYSTEM PUBLIC "${pmt_SOURCE_DIR}")

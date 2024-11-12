@@ -220,7 +220,7 @@ class AutoTuner {
    * Returns whether the AutoTuner can take energy measurements.
    * @return
    */
-  bool canMeasureEnergy();
+  bool canMeasureEnergy() const;
 
  private:
   /**
