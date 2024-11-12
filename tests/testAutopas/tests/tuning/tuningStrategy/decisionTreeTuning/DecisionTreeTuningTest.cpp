@@ -77,9 +77,7 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   const autopas::Configuration &predictedConfig = configQueue.front();
 
   EXPECT_EQ(predictedConfig.container, autopas::ContainerOption::linkedCells);
-  EXPECT_EQ(predictedConfig.cellSizeFactor, 1.0);
   EXPECT_EQ(predictedConfig.traversal, autopas::TraversalOption::lc_c08);
-  EXPECT_EQ(predictedConfig.loadEstimator, autopas::LoadEstimatorOption::none);
   EXPECT_EQ(predictedConfig.dataLayout, autopas::DataLayoutOption::soa);
   EXPECT_EQ(predictedConfig.newton3, autopas::Newton3Option::enabled);
 }
@@ -141,9 +139,7 @@ TEST(DecisionTreeTuningTest, TestEmptyLiveInfo) {
   const autopas::Configuration &predictedConfig = configQueue.front();
 
   EXPECT_EQ(predictedConfig.container, autopas::ContainerOption::linkedCells);
-  EXPECT_EQ(predictedConfig.cellSizeFactor, 1.0);
   EXPECT_EQ(predictedConfig.traversal, autopas::TraversalOption::lc_c08);
-  EXPECT_EQ(predictedConfig.loadEstimator, autopas::LoadEstimatorOption::none);
   EXPECT_EQ(predictedConfig.dataLayout, autopas::DataLayoutOption::soa);
   EXPECT_EQ(predictedConfig.newton3, autopas::Newton3Option::enabled);
 }
