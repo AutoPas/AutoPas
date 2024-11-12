@@ -316,6 +316,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
         }
+      } else if (key == config.useLOESSSmoothening.name) {
+        expected = "Boolean Value";
+        description = config.useLOESSSmoothening.description;
+
+        config.useLOESSSmoothening.value = node[key].as<bool>();
       } else if (key == config.tuningMaxEvidence.name) {
         expected = "Unsigned Integer >= 1";
         description = config.tuningMaxEvidence.description;

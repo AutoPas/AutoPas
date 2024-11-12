@@ -30,5 +30,9 @@ struct AutoTunerInfo {
    * Number of samples that shall be collected per combination.
    */
   unsigned int maxSamples{3};
+  /**
+   * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
+   */
+  bool useLOESSSmoothening{false};
 };
 }  // namespace autopas
