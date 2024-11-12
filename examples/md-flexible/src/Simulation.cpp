@@ -758,6 +758,15 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::dem: {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+      return f(DEMFunctor{cutoff, particlePropertiesLibrary}); // TODO: To change when mixing should be enabled.
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for DEMFunctor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_DEM=ON`.");
+#endif
+    }
   }
   throw std::runtime_error("Unknown functor choice" +
                            std::to_string(static_cast<int>(_configuration.functorOption.value)));

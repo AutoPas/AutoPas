@@ -308,6 +308,11 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
     }
+    case FunctorOption::dem: {
+      os << "Discrete Element Method" << endl;
+      break;
+
+    }
   }
   printOption(newton3Options);
   printOption(cutoff);
@@ -331,6 +336,7 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << radiusMap.name << ":  " << radiusMap.value.at(siteId) << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE
   os << setw(valueOffset) << left << "Molecules:" << endl;
@@ -468,6 +474,26 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
   }
 }
 
+void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double mass, double radius) {
+  // check if siteId is already existing and if there is no error in input
+  if (epsilonMap.value.count(siteId) == 1) {
+    // check if type is already added
+    if (autopas::utils::Math::isNearRel(epsilonMap.value.at(siteId), epsilon) and
+        autopas::utils::Math::isNearRel(sigmaMap.value.at(siteId), sigma) and
+        autopas::utils::Math::isNearRel(massMap.value.at(siteId), mass) and
+        autopas::utils::Math::isNearRel(radiusMap.value.at(siteId), radius)) {
+      return;
+    } else {  // wrong initialization:
+      throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+    }
+  } else {
+    epsilonMap.value.emplace(siteId, epsilon);
+    sigmaMap.value.emplace(siteId, sigma);
+    massMap.value.emplace(siteId, mass);
+    radiusMap.value.emplace(siteId, radius);
+  }
+}
+
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
                               const std::vector<std::array<double, 3>> &relSitePos,
                               std::array<double, 3> momentOfInertia) {
@@ -499,14 +525,26 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
   // check size of site level vectors match
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size() or
+      epsilonMap.value.size() != radiusMap.value.size()) {
+    throw std::runtime_error("Number of site-level properties differ!");
+  }
+#else
   if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
     throw std::runtime_error("Number of site-level properties differ!");
   }
+#endif
 
   // initialize at site level
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
+                                            massMap.value.at(siteTypeId), radiusMap.value.at(siteTypeId));
+#else
     _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
                                             massMap.value.at(siteTypeId));
+#endif
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

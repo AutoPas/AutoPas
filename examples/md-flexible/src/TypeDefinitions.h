@@ -30,6 +30,11 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+#include "molecularDynamicsLibrary/GranularDEM.h"
+#include "molecularDynamicsLibrary/DEMFunctor.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -46,6 +51,8 @@ using FloatPrecision = double;
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+using ParticleType = mdLib::GranularDEM;
 #else
 using ParticleType = mdLib::MoleculeLJ;
 #endif
@@ -121,7 +128,20 @@ using LJFunctorTypeAVX =
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
 using LJFunctorTypeSVE =
-    mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::LJFunctorSVE<ParticleType, false, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>; //TODO: set mixing, globalCalculations etc. to false for now
+#endif
+
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+/**
+ * Type of LJFunctorTypeDEM used in md-flexible.
+ */
+#if MMD_FLEXIBLE_MODE == MULTISITE
+#error "The DEM functor des not have support for multisite molecules!"
+#else
+using DEMFunctor = mdLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+
 #endif
 
 #endif

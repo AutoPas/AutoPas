@@ -144,6 +144,16 @@ class MDFlexConfig {
   void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass);
 
   /**
+   * Adds parameters of a DEM site and checks if the siteId already exists.
+   * @param siteId
+   * @param epsilon
+   * @param sigma
+   * @param mass
+   * @param radius
+   */
+  void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass, double radius);
+
+  /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
    *
    * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
@@ -175,7 +185,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, dem };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -565,6 +575,11 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  /**
+   * radiusMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> radiusMap{
+      {{0ul, 1.}}, "radius", true, "Mapping from site type to a radius value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

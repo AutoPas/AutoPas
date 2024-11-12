@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <algorithm>
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -56,6 +57,20 @@ class ParticlePropertiesLibrary {
    * @param mass
    */
   void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
+
+
+  /**
+   * Adds the properties of a type of a single LJ site type to the library.
+   *
+   * This function also precomputes all possible mixed values with already known particle types.
+   * If the type id already exists the values will be overwritten.
+   * @param siteId
+   * @param epsilon
+   * @param sigma
+   * @param mass
+   * @param radius
+   */
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass, const floatType radius);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -123,6 +138,13 @@ class ParticlePropertiesLibrary {
    * @return mass_i
    */
   floatType getSiteMass(intType i) const;
+
+  /**
+   * Getter for the site's radius.
+   * @param i
+   * @return radius_i
+   */
+  floatType getRadius(intType i) const;
 
   /**
    * Getter for a molecules' mass.
@@ -198,6 +220,16 @@ class ParticlePropertiesLibrary {
   }
 
   /**
+   * Returns the precomputed mixed epsilon * 6.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @return 6*epsilon_ij
+   */
+  inline floatType getMixing6Epsilon(intType i, intType j) const {
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon6;
+  }
+
+  /**
    * Get complete mixing data for one pair of site types.
    * @param i Id of site one.
    * @param j Id of site two.
@@ -223,6 +255,16 @@ class ParticlePropertiesLibrary {
    */
   inline floatType getMixingSigmaSquared(intType i, intType j) const {
     return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
+  }
+
+  /**
+   * Returns precomputed mixed sigma for one pair of site types.
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @return sigma_ij
+   */
+  inline floatType getMixingSigma(intType i, intType j) const {
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].sigma;
   }
 
   /**
@@ -253,6 +295,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
+  std::vector<floatType> _siteRadii;
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -264,13 +307,31 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _moleculesLargestSigma;
 
   struct PackedMixingData {
+    floatType epsilon6;
     floatType epsilon24;
+    floatType sigma;
     floatType sigmaSquared;
     floatType shift6;
   };
 
   std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
 };
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
+                                                                floatType mass, floatType radius) {
+  if (_numRegisteredSiteTypes != siteID) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
+        "consecutively, starting at id 0. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  ++_numRegisteredSiteTypes;
+  _epsilons.emplace_back(epsilon);
+  _sigmas.emplace_back(sigma);
+  _siteMasses.emplace_back(mass);
+  _siteRadii.emplace_back(radius);
+}
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
@@ -350,12 +411,15 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
       // epsilon
-      const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      const floatType epsilon6 = 6 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      const floatType epsilon24 = 4 * epsilon6;
+      _computedMixingData[globalIndex].epsilon6 = epsilon6;
       _computedMixingData[globalIndex].epsilon24 = epsilon24;
 
       // sigma
       const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
       const floatType sigmaSquared = sigma * sigma;
+      _computedMixingData[globalIndex].sigma = sigma;
       _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
       // shift6
@@ -420,6 +484,11 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getEpsilon(intType i) c
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) const {
   return _sigmas[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getRadius(intType i) const {
+  return _siteRadii[i];
 }
 
 template <typename floatType, typename intType>

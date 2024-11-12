@@ -223,6 +223,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("dem") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::dem;
         } else {
           throw std::runtime_error("Unrecognized functor!");
         }
@@ -543,6 +545,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.epsilonMap.value.clear();
         config.sigmaMap.value.clear();
         config.massMap.value.clear();
+        config.radiusMap.value.clear();
 
         int siteID = 0;
         std::vector<std::string> siteErrors;
@@ -566,8 +569,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+          const auto radius =
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.radiusMap.name.c_str(), siteErrors);
 
+          config.addSiteType(siteID, epsilon, sigma, mass, radius);
+#else
           config.addSiteType(siteID, epsilon, sigma, mass);
+#endif
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
