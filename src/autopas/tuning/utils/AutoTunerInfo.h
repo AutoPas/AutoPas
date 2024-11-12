@@ -33,6 +33,6 @@ struct AutoTunerInfo {
   /**
    * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
    */
-  bool useLOESSSmoothening{false};
+  bool useLOESSSmoothening{true};
 };
 }  // namespace autopas
