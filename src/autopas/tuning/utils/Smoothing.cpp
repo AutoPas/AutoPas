@@ -9,9 +9,8 @@
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/utils/Math.h"
 
-std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple(const std::vector<autopas::Evidence> &points,
-                                                             size_t pointsPerEstimation,
-                                                             size_t maxDistFromIntervalEdge) {
+std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple(
+    const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation, size_t maxDistFromIntervalEdge) {
   // since we will only smooth the last point there is no outer loop of LOESS and indexToFit shall be fixed
   const auto indexToFit = points.size() - 1;
   const auto firstIndex = indexToFit - pointsPerEstimation + 1;
@@ -35,7 +34,8 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
     if (residual <= maxDistFromIntervalEdge and residual > 0) {
       // tri-cube function
       weights[j] = autopas::utils::Math::pow<3>(
-          1.0 - autopas::utils::Math::pow<3>(static_cast<double>(residual) / static_cast<double>(maxDistFromIntervalEdge)));
+          1.0 -
+          autopas::utils::Math::pow<3>(static_cast<double>(residual) / static_cast<double>(maxDistFromIntervalEdge)));
     } else if (residual == 0) {
       // the tri-cube function tends to inf as residual tends to 0. weight=1 matches residual = 1. Using weight=1 for
       // residual = 0 is not appropriate, however LOESS is not suitable in the residual=0 case anyway. However, we do
@@ -59,7 +59,7 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
 }
 
 double autopas::smoothing::calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation,
-                           const std::vector<double> &weights) {
+                                               const std::vector<double> &weights) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
   const size_t indexToFit = points.size() - 1;
   const size_t firstIndex = indexToFit - pointsPerEstimation + 1;

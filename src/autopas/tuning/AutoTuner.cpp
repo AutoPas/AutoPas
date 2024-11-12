@@ -246,9 +246,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 
     // If LOESS-based smoothening is enabled, use it to smooth evidence to remove high outliers. If smoothing results in
     // a higher value or if LOESS-based smoothening is disabled, use the original value.
-    const auto smoothedValue = _useLOESSSmoothening ?
-        std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5))
-        : reducedValue;
+    const auto smoothedValue =
+        _useLOESSSmoothening
+            ? std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5))
+            : reducedValue;
 
     // replace collected evidence with smoothed value to improve next smoothing
     _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
