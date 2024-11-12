@@ -54,7 +54,7 @@ cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON ..
 ### Energy Measurements and Tuning
 
 By default, AutoPas tunes for the best configuration according to runtime. For all Linux based systems, it is also possible to tune
-for the algorithm that consumes the least energy. This is implemented via [pmt-stable](https://github.com/MaxPraus23/pmt-stable) which is a customised version tuned for performance based on [PMT](https://git.astron.nl/RD/pmt). In the current version, energy consumption can be measured via Intel's RAPL or with LIKWID.
+for the algorithm that consumes the least energy. This is implemented via [pmt-stable](https://github.com/MaxPraus23/pmt-stable) which is a customized version tuned for performance based on [PMT](https://git.astron.nl/RD/pmt). In the current version, energy consumption can be measured via Intel's RAPL or with LIKWID.
 
 To use energy tuning, the energy sensor, used for measurement, must be specified:
 ```bash

@@ -11,10 +11,10 @@ tuning-strategies                    :  [slow-config-filter, rule-based-tuning, 
 tuning-interval                      :  5000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
-tuning-metric                        :  energy
+tuning-metric                        :  time # alternatively: energy
 functor                              :  Lennard-Jones (12-6) avx
 newton3                              :  [disabled, enabled]
-energy-sensor                        :  none
+energy-sensor                        :  none  # alternatively: rapl, likwid
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]
