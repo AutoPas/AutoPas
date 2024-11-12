@@ -174,18 +174,28 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
       static_cast<size_t>(autoPasContainer.getNumberOfParticles() * (haloActualVolume / localBoxVolume) * 1.1));
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    const auto periodicBCs = _boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic;
+    const auto atGlobalMinBoundary = isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]);
+    const auto atGlobalMaxBoundary = isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex]);
+
     // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic
     // *and* if both local boundaries are the global boundaries in this dimension
-    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
-        isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]) and
-        isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
+    if (not periodicBCs and atGlobalMinBoundary and atGlobalMaxBoundary) {
       continue;
     }
 
+    // Clear particle lists
     _particlesForLeftNeighbor.clear();
-    collectHaloParticlesForLeftNeighbor(autoPasContainer, dimensionIndex, _particlesForLeftNeighbor);
     _particlesForRightNeighbor.clear();
-    collectHaloParticlesForRightNeighbor(autoPasContainer, dimensionIndex, _particlesForRightNeighbor);
+
+    // Collect particles for the neighboring domain. If the domain is at the global boundary, only collect them in case
+    // of periodic boundaries.
+    if (periodicBCs or not atGlobalMinBoundary) {
+      collectHaloParticlesForLeftNeighbor(autoPasContainer, dimensionIndex, _particlesForLeftNeighbor);
+    }
+    if (periodicBCs or not atGlobalMaxBoundary) {
+      collectHaloParticlesForRightNeighbor(autoPasContainer, dimensionIndex, _particlesForRightNeighbor);
+    }
 
     const double leftHaloMin = _localBoxMin[dimensionIndex] - skinWidth;
     const double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + skinWidth;
