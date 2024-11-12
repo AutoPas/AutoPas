@@ -140,6 +140,15 @@ class MDFlexConfig {
    * @param epsilon
    * @param sigma
    * @param mass
+   */
+  void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass);
+
+  /**
+   * Adds parameters of a DEM site and checks if the siteId already exists.
+   * @param siteId
+   * @param epsilon
+   * @param sigma
+   * @param mass
    * @param radius
    */
   void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass, double radius);

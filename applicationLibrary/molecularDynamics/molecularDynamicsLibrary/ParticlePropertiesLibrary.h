@@ -56,6 +56,20 @@ class ParticlePropertiesLibrary {
    * @param sigma
    * @param mass
    */
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
+
+
+  /**
+   * Adds the properties of a type of a single LJ site type to the library.
+   *
+   * This function also precomputes all possible mixed values with already known particle types.
+   * If the type id already exists the values will be overwritten.
+   * @param siteId
+   * @param epsilon
+   * @param sigma
+   * @param mass
+   * @param radius
+   */
   void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass, const floatType radius);
 
   /**
@@ -317,6 +331,21 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   _sigmas.emplace_back(sigma);
   _siteMasses.emplace_back(mass);
   _siteRadii.emplace_back(radius);
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
+                                                                floatType mass) {
+  if (_numRegisteredSiteTypes != siteID) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
+        "consecutively, starting at id 0. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  ++_numRegisteredSiteTypes;
+  _epsilons.emplace_back(epsilon);
+  _sigmas.emplace_back(sigma);
+  _siteMasses.emplace_back(mass);
 }
 
 template <typename floatType, typename intType>

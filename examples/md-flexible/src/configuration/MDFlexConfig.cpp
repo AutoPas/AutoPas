@@ -456,6 +456,24 @@ void MDFlexConfig::calcSimulationBox() {
   }
 }
 
+void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double mass) {
+  // check if siteId is already existing and if there is no error in input
+  if (epsilonMap.value.count(siteId) == 1) {
+    // check if type is already added
+    if (autopas::utils::Math::isNearRel(epsilonMap.value.at(siteId), epsilon) and
+        autopas::utils::Math::isNearRel(sigmaMap.value.at(siteId), sigma) and
+        autopas::utils::Math::isNearRel(massMap.value.at(siteId), mass)) {
+      return;
+    } else {  // wrong initialization:
+      throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+    }
+  } else {
+    epsilonMap.value.emplace(siteId, epsilon);
+    sigmaMap.value.emplace(siteId, sigma);
+    massMap.value.emplace(siteId, mass);
+  }
+}
+
 void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double mass, double radius) {
   // check if siteId is already existing and if there is no error in input
   if (epsilonMap.value.count(siteId) == 1) {

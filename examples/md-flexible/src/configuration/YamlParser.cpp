@@ -569,10 +569,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
           const auto radius =
-            parseComplexTypeValueSingle<double>(siteIterator->second, config.radiusMap.name.c_str(), siteErrors);
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.radiusMap.name.c_str(), siteErrors);
 
           config.addSiteType(siteID, epsilon, sigma, mass, radius);
+#else
+          config.addSiteType(siteID, epsilon, sigma, mass);
+#endif
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
