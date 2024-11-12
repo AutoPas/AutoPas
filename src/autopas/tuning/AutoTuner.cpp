@@ -45,6 +45,10 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
+  if (_tuningMetric == autopas::TuningMetricOption::energy and not canMeasureEnergy()) {
+    autopas::utils::ExceptionHandler::exception(
+        "AutoTuner: Energy measurement not possible while energy is selected as the tuning metric.");
+  }
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {

@@ -37,17 +37,17 @@ struct IterationMeasurements {
   bool energyMeasurementsPossible{false};
 
   /**
-   * Total energy consumed in watts.
+   * Average energy consumed per time in Watts.
    */
   double energyWatts{};
 
   /**
-   * Total energy consumed in joules.
+   * Total energy consumed in Joules.
    */
   double energyJoules{};
 
   /**
-   * Time in which energy was consumed.
+   * Time in seconds during which energy was consumed.
    */
   double energySeconds{};
 

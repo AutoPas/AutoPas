@@ -58,8 +58,9 @@ for the algorithm that consumes the least energy. This is implemented via [pmt-s
 
 To use energy tuning, the energy sensor, used for measurement, must be specified:
 ```bash
-cmake -DPMT_BUILD_RAPL=ON -DPMT_BUILD_LIKWID=ON .. 
+cmake -DPMT_BUILD_RAPL=ON .. 
 ```
+In this case, the RAPL sensor will be created which can provide energy measurements on both Intel and AMD hardware. Alteranatively, LIKWID can also be used for energy measurements on these hardware.
 
 ### Select a Non-Default Compiler
 If you want to use a different compiler than your system default, change the `CC` and `CXX` environment variables during initial configuration AND building:
