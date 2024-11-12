@@ -316,7 +316,7 @@ class MDFlexConfig {
    * useLOESSSmoothening
    */
   MDFlexOption<bool, __LINE__> useLOESSSmoothening{
-      false, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
+      true, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
   /**
    * tuningMaxEvidence
    */
