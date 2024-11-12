@@ -51,7 +51,6 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
   } else {
     AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening disabled.");
   }
-
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
