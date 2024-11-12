@@ -47,7 +47,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
   if (_tuningMetric == autopas::TuningMetricOption::energy and not canMeasureEnergy()) {
     autopas::utils::ExceptionHandler::exception(
-        "AutoTuner: Energy measurement not possible while energy is selected as the tuning metric.");
+        "AutoTuner: EnergySensor is set to `none` while tuning metric is set to `energy`.");
   }
 }
 

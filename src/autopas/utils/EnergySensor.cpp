@@ -12,10 +12,11 @@
 namespace autopas::utils {
 
 EnergySensor::EnergySensor(EnergySensorOption sensor) : _option(sensor) {
-  if (_option != EnergySensorOption::none) {
+  if (autopas::EnergySensorOption::Value(_option) != -1) {
     _sensor = pmt::Create(sensor.to_string());
   } else {
-    AutoPasLog(WARN, "No sensor for energy consumption measurement specified. Energy will not be measured!");
+    autopas::utils::ExceptionHandler::exception(
+        "Energy sensor must be selected. Select option `none` if you do no want energy measurement.");
   }
 }
 
