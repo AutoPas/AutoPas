@@ -525,14 +525,26 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
   // check size of site level vectors match
-  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size() or epsilonMap.value.size() != radiusMap.value.size()) {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size() or
+      epsilonMap.value.size() != radiusMap.value.size()) {
     throw std::runtime_error("Number of site-level properties differ!");
   }
+#else
+  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
+    throw std::runtime_error("Number of site-level properties differ!");
+  }
+#endif
 
   // initialize at site level
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
     _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
                                             massMap.value.at(siteTypeId), radiusMap.value.at(siteTypeId));
+#else
+    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
+                                            massMap.value.at(siteTypeId));
+#endif
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
