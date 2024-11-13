@@ -83,6 +83,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.relativeOptimumRange,
       config.ruleFilename,
       config.fuzzyRuleFilename,
+      config.modelFilename,
       config.selectorStrategy,
       config.traversalOptions,
       config.tuningInterval,
@@ -550,6 +551,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::parse(): fuzzy-rule-File " + config.fuzzyRuleFilename.value +
                                    " not found!");
+        }
+        break;
+      }
+      case decltype(config.modelFilename)::getoptChar: {
+        config.modelFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): model-Filename " + config.modelFilename.value + " not found!");
         }
         break;
       }
