@@ -8,6 +8,7 @@
 
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 
 namespace autopas {
 
@@ -77,6 +78,11 @@ class TraversalInterface {
    * If this traversal makes use of newton3.
    */
   bool _useNewton3;
+
+  /**
+   * The OpenMP configurator.
+   */
+  OpenMPConfigurator _ompConfig;
 };
 
 }  // namespace autopas

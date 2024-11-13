@@ -17,6 +17,9 @@
 
 #if defined(AUTOPAS_USE_OPENMP)
 #include <omp.h>
+#ifdef AUTOPAS_USE_LB4OMP
+#include <kmp.h>
+#endif
 
 #include <cstddef>  // for size_t
 #include <vector>
@@ -65,6 +68,30 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
  * @param n New max number of threads.
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
+
+/**
+ * Wrapper for omp_set_schedule().
+ * Sets the scheduling kind and chunk size used by schedule(runtime).
+ * Only handles standard OpenMP's kinds. For LB4OMP's extensions, use autopas_auto4omp_set_schedule().
+ * @param kind the standard scheduling kind to use
+ * @param chunkSize the chunk size to use
+ */
+inline void autopas_set_schedule(omp_sched_t kind, int chunkSize) { omp_set_schedule(kind, chunkSize); }
+
+/**
+ * Wrapper for ompc_set_schedule().
+ * Sets the scheduling kind and chunk size used by schedule(runtime).
+ * Unlike standard omp_set_schedule(), this function also handles LB4OMP's scheduling kinds.
+ * @param kind the scheduling kind to use
+ * @param chunkSize the chunk size to use
+ */
+inline void autopas_auto4omp_set_schedule(omp_sched_t kind, int chunkSize) { ompc_set_schedule(kind, chunkSize); }
+
+/**
+ * Wrapper for omp_get_schedule().
+ * Puts the values of OpenMP's scheduling runtime variables at the given pointers.
+ */
+inline void autopas_get_schedule(omp_sched_t *kind, int *chunkSize) { omp_get_schedule(kind, chunkSize); }
 
 /**
  * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.
@@ -126,6 +153,43 @@ class AutoPasLock {
 #define AUTOPAS_OPENMP(args)
 
 /**
+ * Wrapper for omp_sched_t, same as in custom Auto4OMP's omp.h.
+ */
+typedef enum omp_sched_t {
+  omp_sched_static = 1,
+  omp_sched_dynamic = 2,
+  omp_sched_guided = 3,
+  omp_sched_auto = 4,
+  omp_sched_trapezoidal = 101,
+  omp_sched_static_steal = 102,
+
+  // LB4OMP's extensions:
+  omp_sched_fsc = 103,
+  omp_sched_tap = 104,
+  omp_sched_fac = 105,
+  omp_sched_faca = 106,
+  omp_sched_fac2 = 107,
+  omp_sched_fac2a = 108,
+  omp_sched_wf = 109,
+  omp_sched_bold = 110,
+  omp_sched_awf_b = 111,
+  omp_sched_awf_c = 112,
+  omp_sched_awf_d = 113,
+  omp_sched_awf_e = 114,
+  omp_sched_af = 115,
+  omp_sched_af_a = 116,
+  omp_sched_profiling = 117,
+  omp_sched_awf = 118,
+  omp_sched_pls = 119,
+  omp_sched_tfss = 120,
+  omp_sched_mfsc = 121,
+  omp_sched_fiss = 122,
+  omp_sched_viss = 123,
+  omp_sched_rnd = 124,
+  omp_sched_fac2b = 125
+} omp_sched_t;
+
+/**
  * Dummy for omp_set_lock() when no OpenMP is available.
  * @return Always 0.
  */
@@ -148,6 +212,30 @@ inline int autopas_get_max_threads() { return 1; }
  * Does nothing when OpenMP is disabled.
  */
 inline void autopas_set_num_threads(int /* n */) {}
+
+/**
+ * Wrapper for omp_set_schedule().
+ * Sets the scheduling kind and chunk size used by schedule(runtime).
+ * Only handles standard OpenMP's kinds. For LB4OMP's extensions, use autopas_auto4omp_set_schedule().
+ * @param kind the standard scheduling kind to use
+ * @param chunkSize the chunk size to use
+ */
+inline void autopas_set_schedule(omp_sched_t kind, int chunkSize) {}
+
+/**
+ * Wrapper for ompc_set_schedule().
+ * Sets the scheduling kind and chunk size used by schedule(runtime).
+ * Unlike standard omp_set_schedule(), this function also handles LB4OMP's scheduling kinds.
+ * @param kind the scheduling kind to use
+ * @param chunkSize the chunk size to use
+ */
+inline void autopas_auto4omp_set_schedule(omp_sched_t kind, int chunkSize) {}
+
+/**
+ * Wrapper for omp_get_schedule().
+ * Puts the values of OpenMP's scheduling runtime variables at the given pointers.
+ */
+inline void autopas_get_schedule(omp_sched_t * /* kind */, int * /* chunkSize */) {}
 
 /**
  * AutoPasLock for the sequential case.
