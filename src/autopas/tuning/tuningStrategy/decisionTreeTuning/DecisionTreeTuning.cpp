@@ -166,6 +166,10 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
     config.traversal = TraversalOption::parseOptionExact(getValue("Traversal"));
     config.dataLayout = DataLayoutOption::parseOptionExact(getValue("Data Layout"));
     config.newton3 = Newton3Option::parseOptionExact(getValue("Newton 3"));
+    // Load values from the config queue's first element for load estimator and cell size factor
+    config.cellSizeFactor = configQueue.front().cellSizeFactor;
+    config.loadEstimator = configQueue.front().loadEstimator;
+
   } catch (const std::exception &e) {
     AutoPasLog(ERROR, "Exception during parsing prediction: {}", e.what());
     return;  // In case of an error, return without modifying the configQueue
