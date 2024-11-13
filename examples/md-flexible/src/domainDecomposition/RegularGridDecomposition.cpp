@@ -9,6 +9,7 @@
 #include <cmath>
 #include <functional>
 #include <iomanip>
+#include <iostream>
 #include <numeric>
 
 #include "DomainTools.h"
@@ -62,6 +63,15 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   initializeLocalBox();
   // initialize _neighborDomainIndices
   initializeNeighborIndices();
+  // initialize _allNeighborDomainIndices
+  initializeAllNeighborIndices();
+
+  // only if rank is zero
+  /* if (_domainIndex == 0) { */
+  /*   for (auto i : _allNeighborDomainIndices) { */
+  /*     std::cout << i << std::endl; */
+  /*   } */
+  /* } */
 
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
@@ -145,6 +155,40 @@ void RegularGridDecomposition::initializeNeighborIndices() {
     auto succeedingNeighborId = _domainId;
     succeedingNeighborId[i] = (++succeedingNeighborId[i] + _decomposition[i]) % _decomposition[i];
     _neighborDomainIndices[neighborIndex] = DomainTools::convertIdToIndex(succeedingNeighborId, _decomposition);
+  }
+}
+
+void RegularGridDecomposition::initializeAllNeighborIndices() {
+  auto neighborId = _domainId;
+  // iterate over all neighbours
+  for (int x = -1; x < 2; ++x) {
+    for (int y = -1; y < 2; ++y) {
+      for (int z = -1; z < 2; ++z) {
+        // set indices
+        int d[] = {x, y, z};
+        for (int i = 0; i < 3; ++i) {
+          neighborId[i] = ((_domainId[i] + d[i]) + _decomposition[i]) % _decomposition[i];
+        }
+
+        // skip home domain
+        if (!x and !y and !z) {
+          continue;
+        }
+
+        /*
+         * the neighbourIndex is caluculated by taking the relative neighbour position,
+         * adding 1 to each component and interpreting it as a 3-base number.
+         * We subtract 1 at the end, as the home-base ({0, 0, 0}) is not considered here.
+         *
+         * Example:
+         *   right, lower, middle neighbour: {1, -1, 0}
+         *   => Interpretation of 201 as a 3-base number - 1 = 18
+         */
+        auto neighborIndex = (x + 1) * 9 + (y + 1) * 3 + (z + 1) - 1;
+
+        _allNeighborDomainIndices[neighborIndex] = DomainTools::convertIdToIndex(neighborId, _decomposition);
+      }
+    }
   }
 }
 
@@ -265,9 +309,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
                                           _receivedParticlesBuffer, leftNeighbor, rightNeighbor);
       // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
-      AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \
-                                       std::remove_reference_t<decltype(emigrants)> :                     \
-                                           omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+      AUTOPAS_OPENMP(declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(
+          omp_out.end(), omp_in.begin(), omp_in.end())))
       // make sure each buffer gets filled equally while not inducing scheduling overhead
       AUTOPAS_OPENMP(parallel for reduction(vecMergeParticle : emigrants) \
                                   schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / autopas::autopas_get_max_threads())))
