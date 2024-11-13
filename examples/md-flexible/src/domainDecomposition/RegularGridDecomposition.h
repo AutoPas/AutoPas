@@ -119,6 +119,20 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeHaloParticles(AutoPasType &autoPasContainer);
 
   /**
+   * Exchanges zonal halo particles to be exported with all neighbors of the
+   * provided AutoPasContainer.
+   * @param autoPasContainer: The container, where the halo particles originate from.
+   */
+  void exchangeZonalHaloParticlesExport(AutoPasType &autoPasContainer);
+
+  /**
+   * Exchanges zonal halo particles to be imported with all neighbors of the
+   * provided AutoPasContainer.
+   * @param autoPasContainer: The container, where the halo particles originate from.
+   */
+  void exchangeZonalHaloParticlesImport(AutoPasType &autoPasContainer);
+
+  /**
    * Exchanges migrating particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    * @param emigrants: The emigrating particles to send to neighbors.
@@ -154,6 +168,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The number of dimensions in the simulation domain.
    */
   static constexpr int _dimensionCount = 3;
+
+  /**
+   * The number of neighbors of a rectangular domain.
+   * This number does include diagonal neighbors.
+   */
+  static constexpr int _allNeighborCount = 26;
 
   /**
    * Defines which load balancer will be used.
@@ -238,10 +258,16 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::array<autopas::AutoPas_MPI_Comm, _dimensionCount> _planarCommunicators{};
 
   /**
-   * The indices of the local domain's neighbors.
+   * The indices of the local domain's neighbors (not including diagonal neighbors).
    * These correspond to the ranks of the processors which own the neighbor domain.
    */
   std::array<int, _neighborCount> _neighborDomainIndices{};
+
+  /**
+   * The indices of the local domain's neighbors.
+   * These correspond to the ranks of the processors which own the neighbor domain.
+   */
+  std::array<int, _allNeighborCount> _allNeighborDomainIndices{};
 
   /**
    * The minimum coordinates of the local domain.
@@ -307,6 +333,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * This needs to be called after initializeLocalDomain.
    */
   void initializeNeighborIndices();
+
+  /**
+   * Initializes _allNeighborDomainIndices.
+   * This needs to be called after initializeLocalDomain.
+   */
+  void initializeAllNeighborIndices();
 
   /**
    * Sends and also receives particles to and from the left and right neighbours.
