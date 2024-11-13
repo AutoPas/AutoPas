@@ -111,7 +111,8 @@ long autopas::smoothing::smoothLastPoint(const std::vector<Evidence> &points, si
   // get the index of the first point in the neighborhood around indexToFit used for smoothening
   const auto firstIndex = indexToFit - pointsPerEstimation + 1;
 
-  // maxDistFromIntervalEdge = xi - xFirst. By distance, we refer to the distance in iteration number.
+  // maxDistFromIntervalEdge = xi - xFirst.
+  // By distance, we refer to the distance in iteration number.
   const auto maxDistFromIntervalEdge = points[indexToFit].iteration - points[firstIndex].iteration;
 
   // Calculate weights

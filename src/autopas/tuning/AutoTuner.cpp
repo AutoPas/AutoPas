@@ -46,11 +46,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
-  if (_useLOESSSmoothening) {
-    AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening enabled.");
-  } else {
-    AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening disabled.");
-  }
+  AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening {}.", _useLOESSSmoothening ? "enabled" : "disabled");
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
