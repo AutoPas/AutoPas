@@ -23,7 +23,7 @@ class EnergySensorOption : public Option<EnergySensorOption> {
    */
   enum Value {
     /**
-     * No energy sensor. Used when energy measurement not available
+     * No energy sensor.
      */
     none,
     /**
@@ -34,6 +34,10 @@ class EnergySensorOption : public Option<EnergySensorOption> {
      * Use RAPL
      */
     rapl,
+    /**
+     * Use Dummy sensor when running on hardware where energy measurement is not possible, e.g. ARM
+     */
+    dummy,
   };
 
   /**
@@ -62,6 +66,7 @@ class EnergySensorOption : public Option<EnergySensorOption> {
         {EnergySensorOption::none, "none"},
         {EnergySensorOption::likwid, "likwid"},
         {EnergySensorOption::rapl, "rapl"},
+        {EnergySensorOption::dummy, "dummy"},
     };
   };
 

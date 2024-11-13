@@ -47,7 +47,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
   if (_tuningMetric == autopas::TuningMetricOption::energy and not canMeasureEnergy()) {
     autopas::utils::ExceptionHandler::exception(
-        "AutoTuner: EnergySensor is set to `none` while tuning metric is set to `energy`.");
+        "AutoTuner: EnergySensor is set to `dummy` while tuning metric is set to `energy`.");
   }
 }
 
@@ -404,5 +404,5 @@ bool AutoTuner::inTuningPhase() const {
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
-bool AutoTuner::canMeasureEnergy() const { return _energySensor.getOption() != EnergySensorOption::none; }
+bool AutoTuner::canMeasureEnergy() const { return _energySensor.getOption() != EnergySensorOption::dummy; }
 }  // namespace autopas

@@ -280,11 +280,15 @@ class MDFlexConfig {
    * enerySensorOption
    */
   MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
-      {},
-      "energy-sensor",
-      true,
-      "Sensor, used for energy consumption measurement. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::EnergySensorOption::getAllOptions(), " ", {"(", ")"})};
+      autopas::EnergySensorOption::none, "energy-sensor", true,
+      "Sensor used for energy consumption measurement. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(
+              []() {
+                auto options = autopas::EnergySensorOption::getAllOptions();
+                options.erase(autopas::EnergySensorOption::none);
+                return options;
+              }(),
+              " ", {"(", ")"})};
   /**
    * ruleFilename
    */
