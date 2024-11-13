@@ -29,7 +29,7 @@ namespace autopas {
  * @tparam floatType Floating point type to be used for the SoAs.
  * @tparam idType Integer type to be used for IDs.
  */
-template <typename floatType, typename idType>
+template <typename calcType, typename floatType, typename idType>
 class ParticleBase {
  public:
   ParticleBase()
@@ -82,8 +82,8 @@ class ParticleBase {
    * Stream operator for instances of ParticleBase class.
    * @return String representation.
    */
-  template <typename T, typename P>
-  friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
+  template <typename C, typename T, typename P>
+  friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<C, T, P> &D);
 
   /**
    * Equality operator for ParticleBase class.
@@ -287,6 +287,11 @@ class ParticleBase {
   using ParticleSoAFloatPrecision = floatType;
 
   /**
+   * Floating Point Type used for calculations for this particle
+   */
+  using calcPrecision = calcType;
+
+  /**
    * Id Type used for this particle
    */
   using ParticleIdType = idType;
@@ -296,7 +301,7 @@ class ParticleBase {
    * owned is currently used as a floatType to ease calculations within the functors.
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
+      typename autopas::utils::SoAType<ParticleBase<calcType, floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
@@ -396,8 +401,8 @@ class ParticleBase {
  * @param particle
  * @return String representation.
  */
-template <typename floatType, typename idType>
-std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &particle) {
+template <typename calcType, typename floatType, typename idType>
+std::ostream &operator<<(std::ostream &os, const ParticleBase<calcType, floatType, idType> &particle) {
   using utils::ArrayUtils::operator<<;
   os << "Particle"
      << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
