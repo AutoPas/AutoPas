@@ -30,17 +30,12 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
     // residual = |xi - xj|
     const size_t residual = std::abs(xi - xj);
 
-    // check xi and xj are within maxDistFromIntervalEdge (and not the same)
-    if (residual <= maxDistFromIntervalEdge and residual > 0) {
+    // check xi and xj are within maxDistFromIntervalEdge
+    if (residual <= maxDistFromIntervalEdge) {
       // tri-cube function
       weights[j] = autopas::utils::Math::pow<3>(
           1.0 -
           autopas::utils::Math::pow<3>(static_cast<double>(residual) / static_cast<double>(maxDistFromIntervalEdge)));
-    } else if (residual == 0) {
-      // the tri-cube function tends to inf as residual tends to 0. weight=1 matches residual = 1. Using weight=1 for
-      // residual = 0 is not appropriate, however LOESS is not suitable in the residual=0 case anyway. However, we do
-      // not currently in AutoPas require the residual=0 case (this would imply multiple evidence per configuration).
-      weights[j] = 1.0;
     }
     sumOfWeights += weights[j];
   }
