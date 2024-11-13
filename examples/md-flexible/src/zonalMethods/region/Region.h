@@ -1,5 +1,7 @@
 
 #pragma once
+#include <spdlog/spdlog.h>
+
 #include "autopas/AutoPasDecl.h"
 #include "src/TypeDefinitions.h"
 
@@ -42,4 +44,25 @@ class Region {
    * Stores the relative postitioning of the communication partner of this zone
    * */
   std::array<int, 3> _neighbour;
+
+ public:
+  /**
+   * Returns the id of the zone
+   */
+  inline char getZoneID() const { return _zoneID; }
+
+  /**
+   * Sets the id of the zone
+   */
+  inline void setZoneID(char zoneID) { _zoneID = zoneID; }
+
+  /**
+   * Returns the relative postitioning of the communication partner of this zone
+   */
+  inline std::array<int, 3> getNeighbour() const { return _neighbour; }
+
+  /**
+   * Sets the relative postitioning of the communication partner of this zone
+   */
+  inline void setNeighbour(std::array<int, 3> neighbour) { _neighbour = neighbour; }
 };
