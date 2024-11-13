@@ -65,6 +65,8 @@ TEST_F(RegionTest, RectRegionCollectAllTest) {
 
 /**
  * Test if RectRegion collects some particles in the container
+ * NOTE: this test showed that somehow the particle at {4, 4, 4} did not get collected,
+ * despite being at the edge of the specified region.
  */
 TEST_F(RegionTest, RectRegionCollectPartialTest) {
   using namespace autopas::utils::ArrayMath;
