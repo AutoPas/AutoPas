@@ -22,7 +22,7 @@ TEST(SmoothingTest, loessLastPoint) {
 
   // YS values with F = .25, NSTEPS = 0, DELTA = 0.0
   {
-    auto out = autopas::smoothing::smoothLastPoint(obs, (size_t)(.25 * (double)obs.size()));
+    auto out = autopas::smoothing::smoothLastPoint(obs, static_cast<size_t>(.25 * static_cast<double>(obs.size())));
     EXPECT_EQ(out, 5724);
   }
 }
