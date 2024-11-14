@@ -44,7 +44,6 @@ TEST_F(HalfShellTest, regionInitialization) {
   // NOTE: this is a relatively weak check, but it suffices for now.
   size_t particleCount = 0;
   for (auto buffer : _regionBuffers) {
-    std::cout << "Buffer size: " << buffer.size() << std::endl;
     particleCount += buffer.size();
   }
 

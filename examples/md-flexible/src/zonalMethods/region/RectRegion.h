@@ -50,7 +50,7 @@ class RectRegion : public Region {
 
   /**
    * Normalizes the origin and size of the region such that all components of
-   * the size vector are positive,
+   * the _size vector are positive,
    * without changing the specified region.
    * */
   void normalize();
