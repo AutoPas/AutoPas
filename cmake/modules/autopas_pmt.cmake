@@ -1,4 +1,5 @@
 option(pmt_ForceBundled "Do not look for an installed version, always used bundled." ON)
+set(PMT_BUILD_RAPL ON CACHE BOOL "Enabling RAPL always when energy measurement is requested" FORCE)
 
 if (NOT ${pmt_ForceBundled})
     set(expectedVersion ${expectedVersion} QUIET)
