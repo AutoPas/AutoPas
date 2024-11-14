@@ -20,8 +20,9 @@
  * @return Tuple of a vector containing the weights for the neighbors
  * and a bool indicating whether the fitting should be used.
  */
- std::tuple<std::vector<double>, bool> calculateWeightsSimple(
-    const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation, size_t maxDistFromIntervalEdge) {
+std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<autopas::Evidence> &points,
+                                                             size_t pointsPerEstimation,
+                                                             size_t maxDistFromIntervalEdge) {
   // since we will only smooth the last point there is no outer loop of LOESS and indexToFit shall be fixed
   const auto indexToFit = points.size() - 1;
   const auto firstIndex = indexToFit - pointsPerEstimation + 1;
@@ -74,7 +75,7 @@
  * @return
  */
 double calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation,
-                                               const std::vector<double> &weights) {
+                           const std::vector<double> &weights) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
   const size_t indexToFit = points.size() - 1;
   const size_t firstIndex = indexToFit - pointsPerEstimation + 1;
