@@ -1289,7 +1289,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
   // Check if the container supports the traversal
   const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(TRACE, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
+    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
                conf.traversal);
     return {std::nullopt, true};
   }
