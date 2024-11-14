@@ -33,12 +33,12 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
+      _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
-  _samplesNotRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples),
-      _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
+  _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {
@@ -173,7 +173,7 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
     return {getCurrentConfig(), false};
-  } else if (getCurrentNumSamples() < _maxSamples and getCurrentNumSamples() > 0) {
+  } else if (getCurrentNumSamples() < _maxSamples) {
     // If we are still collecting samples from one config return immediately.
     return {getCurrentConfig(), true};
   } else {
