@@ -9,7 +9,18 @@
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/utils/Math.h"
 
-std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple(
+/**
+ * Calculates the weights for the k-neighbors of the last point in the vector using the tri-cube function.
+ * If the sum of weights is <= 0 all neighbors are at the same x coordinate as the point and smoothing will not change
+ * the point. This case is indicated by the bool in the return tuple.
+ *
+ * @param points Sorted collection of observations.
+ * @param pointsPerEstimation Number of neighbors to consider for smoothing.
+ * @param maxDistFromIntervalEdge Largest distance between the point that shall be fitted and its neighbors.
+ * @return Tuple of a vector containing the weights for the neighbors
+ * and a bool indicating whether fitting is unnecessary.
+ */
+ std::tuple<std::vector<double>, bool> calculateWeightsSimple(
     const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation, size_t maxDistFromIntervalEdge) {
   // since we will only smooth the last point there is no outer loop of LOESS and indexToFit shall be fixed
   const auto indexToFit = points.size() - 1;
@@ -42,7 +53,7 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
 
   bool fitIsOk = true;
   // if all residuals were 0 fitting is not necessary because all data comes from the same iteration
-  if (utils::Math::isNearAbs(sumOfWeights, .0, 1e-12)) {
+  if (autopas::utils::Math::isNearAbs(sumOfWeights, .0, 1e-12)) {
     fitIsOk = false;
   } else {
     // normalize weights
@@ -53,7 +64,18 @@ std::tuple<std::vector<double>, bool> autopas::smoothing::calculateWeightsSimple
   return std::make_tuple(weights, fitIsOk);
 }
 
-double autopas::smoothing::calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation,
+/**
+ * Calculates the smoothed y-value of the last point in the vector.
+ * The fitted value is the sum of projections of the y-values of the neighbors in the chosen interval.
+ * Each projection is the sum of the respective weight and the proportion of the residuals of the weighted sum of
+ * squared residuals.
+ *
+ * @param points
+ * @param pointsPerEstimation
+ * @param weights
+ * @return
+ */
+double calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation,
                                                const std::vector<double> &weights) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
   const size_t indexToFit = points.size() - 1;
