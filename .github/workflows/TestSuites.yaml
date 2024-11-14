@@ -119,7 +119,6 @@ jobs:
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
             -DMD_FLEXIBLE_MODE=${{ matrix.md-flex-mode }} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
-            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=OFF \
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config[8] }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
@@ -130,7 +129,7 @@ jobs:
           entrypoint.sh cmake --build . --parallel 8
       - name: Run tests ${{ matrix.part }}/2
         run: |
-          # If single-site & No MPI, run every other AutoPas and example test
+          # If single-site & No MPI, run every other AutoPas and example tests
           if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
           then
             cd build
