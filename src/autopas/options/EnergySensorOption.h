@@ -23,10 +23,6 @@ class EnergySensorOption : public Option<EnergySensorOption> {
    */
   enum Value {
     /**
-     * No energy sensor.
-     */
-    none,
-    /**
      * Use LIKWID
      */
     likwid,
@@ -34,10 +30,6 @@ class EnergySensorOption : public Option<EnergySensorOption> {
      * Use RAPL
      */
     rapl,
-    /**
-     * Use Dummy sensor when running on hardware where energy measurement is not possible, e.g. ARM
-     */
-    dummy,
   };
 
   /**
@@ -63,10 +55,8 @@ class EnergySensorOption : public Option<EnergySensorOption> {
    */
   static std::map<EnergySensorOption, std::string> getOptionNames() {
     return {
-        {EnergySensorOption::none, "none"},
         {EnergySensorOption::likwid, "likwid"},
         {EnergySensorOption::rapl, "rapl"},
-        {EnergySensorOption::dummy, "dummy"},
     };
   };
 

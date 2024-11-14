@@ -34,6 +34,6 @@ struct AutoTunerInfo {
   /**
    * Used energy sensor of energy metric selected
    */
-  EnergySensorOption energySensor{EnergySensorOption::dummy};
+  EnergySensorOption energySensor{EnergySensorOption::rapl};
 };
 }  // namespace autopas

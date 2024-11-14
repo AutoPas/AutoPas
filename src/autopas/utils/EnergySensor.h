@@ -6,7 +6,9 @@
 
 #pragma once
 #include "autopas/options/EnergySensorOption.h"
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 #include "pmt.h"
+#endif
 
 namespace autopas::utils {
 
@@ -18,9 +20,16 @@ namespace autopas::utils {
 class EnergySensor {
  public:
   /**
-   * Cosntructor for energy sensor. Takes @param sensor as possible energy sensors to use
+   * Constructor for energy sensor. Takes @param sensor as possible energy sensors to use
    */
   EnergySensor(EnergySensorOption sensor);
+
+  /**
+   * Intialises the EnergySenor
+   * @param tuningMetricIsEnergy whether energy is selected as the tuning metric
+   * @return whether energy measurement is turned on
+   */
+  bool init(bool tuningMetricIsEnergy);
 
   /**
    * Start measurements. Sets _start
@@ -65,6 +74,7 @@ class EnergySensor {
   long getNanoJoules() const;
 
  private:
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   /**
    * Pointer to the pmt instance to read the energy from
    */
@@ -77,6 +87,7 @@ class EnergySensor {
    * Current end state. Marks ending of current energy measurement cycle
    */
   pmt::State _end;
+#endif
   /**
    * Used energy sensor. Set in constuctor.
    */

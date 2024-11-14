@@ -25,6 +25,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningStrategies(std::move(tuningStrategies)),
       _tuningInterval(autoTunerInfo.tuningInterval),
       _tuningMetric(autoTunerInfo.tuningMetric),
+      _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
@@ -45,10 +46,6 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
-  if (_tuningMetric == autopas::TuningMetricOption::energy and not canMeasureEnergy()) {
-    autopas::utils::ExceptionHandler::exception(
-        "AutoTuner: EnergySensor is set to `dummy` while tuning metric is set to `energy`.");
-  }
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
@@ -311,6 +308,11 @@ bool AutoTuner::willRebuildNeighborLists() const {
   return (_iterationBaseline % iterationsPerRebuild) == 0;
 }
 
+bool AutoTuner::initEnergy() {
+  // Try to initialize the raplMeter
+  return _energySensor.init(_tuningMetric == TuningMetricOption::energy);
+}
+
 bool AutoTuner::resetEnergy() { return _energySensor.startMeasurement(); }
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
@@ -404,5 +406,5 @@ bool AutoTuner::inTuningPhase() const {
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
-bool AutoTuner::canMeasureEnergy() const { return _energySensor.getOption() != EnergySensorOption::dummy; }
+bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 }  // namespace autopas

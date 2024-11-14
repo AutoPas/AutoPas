@@ -161,6 +161,12 @@ class AutoTuner {
   void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
 
   /**
+   * Initialize pmt sensor.
+   * @return True if energy measurements are enabled and possible.
+   */
+  bool initEnergy();
+
+  /**
    * Reset the rapl meter to prepare for a new measurement.
    * @return True if energy measurements are possible on this system.
    */
