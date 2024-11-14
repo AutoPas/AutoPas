@@ -18,7 +18,7 @@
  * @param pointsPerEstimation Number of neighbors to consider for smoothing.
  * @param maxDistFromIntervalEdge Largest distance between the point that shall be fitted and its neighbors.
  * @return Tuple of a vector containing the weights for the neighbors
- * and a bool indicating whether fitting is unnecessary.
+ * and a bool indicating whether the fitting should be used.
  */
  std::tuple<std::vector<double>, bool> calculateWeightsSimple(
     const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation, size_t maxDistFromIntervalEdge) {
