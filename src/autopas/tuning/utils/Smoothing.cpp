@@ -35,8 +35,6 @@
 
   // compute all weights that can be assumed to be non-zero
   for (size_t j = 0; j < pointsPerEstimation; ++j) {
-    // set weight to zero
-    weights[j] = 0.;
     const auto xj = static_cast<long>(points[j + firstIndex].iteration);
     // residual = |xi - xj|
     const size_t residual = std::abs(xi - xj);
