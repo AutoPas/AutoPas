@@ -126,12 +126,12 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 /**
- * Type of LJFunctorTypeAT used in md-flexible.
+ * Type of ATFunctor used in md-flexible.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true,
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
                                               mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
