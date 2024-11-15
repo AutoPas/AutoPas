@@ -29,7 +29,7 @@ class GranularDEM : public autopas::Particle {
    * @param moleculeId Unique Id of the particle.
    * @param typeId TypeId of the particle.
    */
-  GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v, std::array<double, 3> angularVel, unsigned long particleId,
+  GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v, const std::array<double, 3> angularVel, unsigned long particleId,
               unsigned long typeId = 0);
 
   ~GranularDEM() override = default;

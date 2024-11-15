@@ -11,6 +11,7 @@
 #include "mocks/MockFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "discreteElementMethodLibrary/GranularDEM.h"
 
 // a place for usings that are commonly used in tests
 
@@ -27,6 +28,12 @@ using FPCell = autopas::FullParticleCell<autopas::Particle>;
  * Short for the AutoPas single site Lennard-Jones molecule
  */
 using Molecule = mdLib::MoleculeLJ;
+
+/**
+ * Short for the granular particle used in DEMFunctor
+ */
+using GranularParticle = demLib::GranularDEM;
+
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */

@@ -436,7 +436,9 @@ class DEMFunctor
    * @param epsilon24
    * @param sigmaSquared
    */
-  void setParticleProperties(SoAFloatPrecision radius) {  // TODO: add tangential spring etc.
+  void setParticleProperties(SoAFloatPrecision epsilon6, SoAFloatPrecision sigma, SoAFloatPrecision radius) {  // TODO: add tangential spring etc.
+    _epsilon6 = epsilon6;
+    _sigma = sigma;
     _radius = radius;
   }
 
