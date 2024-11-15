@@ -197,34 +197,29 @@ class DEMFunctor
 
     // Compute necessary values and check for distance and contact
     const double cutoff = _cutoff;
-    const double radius = _radius;
-    double sigma = _sigma;
-    double epsilon6 = _epsilon6;
+    const double sigma = useMixing ? _PPLibrary->getMixingSigma(i.getTypeId(), j.getTypeId()) : _sigma;
+    const double epsilon6 = useMixing ? _PPLibrary->getMixing6Epsilon(i.getTypeId(), j.getTypeId()) : _epsilon6;
     const std::array<double, 3> displacement = i.getR() - j.getR();
     const double dist = autopas::utils::ArrayMath::L2Norm(displacement);
-    const std::array<double, 3> normalUnit = displacement / dist;
-    double overlap = 2. * radius - dist;
-    if (useMixing) {
-      epsilon6 = _PPLibrary->getMixing6Epsilon(i.getTypeId(), j.getTypeId());
-      sigma = _PPLibrary->getMixingSigma(i.getTypeId(), j.getTypeId());
-      const double radius_i = _PPLibrary->getRadius(i.getTypeId());
-      const double radius_j = _PPLibrary->getRadius(j.getTypeId());
-      overlap = radius_i + radius_j - dist;
-    }
-    if (dist > cutoff) return;
 
+    if (dist > cutoff) return; // cutoff check
+
+    const std::array<double, 3> normalUnit = displacement / dist;
+    const double overlap = useMixing
+                               ? _PPLibrary->getRadius(i.getTypeId()) + _PPLibrary->getRadius(j.getTypeId()) - dist
+                               : _radius + _radius - dist;
     const std::array<double, 3> relVel = i.getV() - j.getV();
     const double normalRelVelMag = autopas::utils::ArrayMath::dot(normalUnit, relVel);
     const std::array<double, 3> normalRelVel = autopas::utils::ArrayMath::mulScalar(normalUnit, normalRelVelMag);
     const std::array<double, 3> tanRelVel = relVel - normalRelVel;  // TODO: add angle velocities
 
-    const bool overlapPositive = overlap > 0;
+    const bool overlapIsPositive = overlap > 0;
     /**
      * Compute normal force as sum of contact force and long-range force (VdW).
      */
     // Compute normal contact force
     const double normalContactFMag =
-        overlapPositive ? _elasticStiffness * overlap - _normalViscosity * normalRelVelMag : 0.;
+        overlapIsPositive ? _elasticStiffness * overlap - _normalViscosity * normalRelVelMag : 0.;
 
     // Compute normal VdW force
     const double invSigma = 1. / sigma;
@@ -235,12 +230,12 @@ class DEMFunctor
     const double normalVdWFMag = -epsilon6 * invSigma * (lj7 - ljCutoff7);
 
     // Compute total normal force
-    const double normalFMag = normalContactFMag + (not overlapPositive) * normalVdWFMag;
+    const double normalFMag = normalContactFMag + (not overlapIsPositive) * normalVdWFMag;
     const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);
 
     // Compute tangential force
     std::array<double, 3> tanF = {0., 0., 0.};
-    if (overlapPositive) {
+    if (overlapIsPositive) {
       const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
       tanF = autopas::utils::ArrayMath::mulScalar(tanRelVel, -1. * _frictionViscosity);  // TODO: add tangential spring
       double tanFMag = autopas::utils::ArrayMath::L2Norm(tanF);
@@ -392,13 +387,13 @@ class DEMFunctor
 
         // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
         const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
-        const bool overlapPositive = overlap > 0;
+        const bool overlapIsPositive = overlap > 0;
 
         // Compute normal force as sum of contact force and long-range force (VdW).
         const SoAFloatPrecision normalContactFMag =
             _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
-        const SoAFloatPrecision normalVdWFMag = -1. * (not overlapPositive) * epsilon6 * invSigma * (lj7 - ljCutoff7);
-        const SoAFloatPrecision normalFMag = overlapPositive * normalContactFMag + normalVdWFMag;
+        const SoAFloatPrecision normalVdWFMag = -1. * (not overlapIsPositive) * epsilon6 * invSigma * (lj7 - ljCutoff7);
+        const SoAFloatPrecision normalFMag = overlapIsPositive * normalContactFMag + normalVdWFMag;
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalFMag * normalUnitY;
@@ -422,9 +417,9 @@ class DEMFunctor
         }
 
         // Compute total force
-        fxacc += cutOffMask * (normalFX + overlapPositive * tanFX);
-        fyacc += cutOffMask * (normalFY + overlapPositive * tanFY);
-        fzacc += cutOffMask * (normalFZ + overlapPositive * tanFZ);
+        fxacc += cutOffMask * (normalFX + overlapIsPositive * tanFX);
+        fyacc += cutOffMask * (normalFY + overlapIsPositive * tanFY);
+        fzacc += cutOffMask * (normalFZ + overlapIsPositive * tanFZ);
 
         // Apply total force
         if (newton3) {
@@ -731,13 +726,13 @@ class DEMFunctor
 
         // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
         const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
-        const bool overlapPositive = overlap > 0;
+        const bool overlapIsPositive = overlap > 0;
 
         // Compute normal force
         const SoAFloatPrecision normalContactFMag =
             _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
-        const SoAFloatPrecision normalVdWFMag = -1. * (not overlapPositive) * epsilon6 * invSigma * (lj7 - ljCutoff7);
-        const SoAFloatPrecision normalFMag = overlapPositive * normalContactFMag + normalVdWFMag;
+        const SoAFloatPrecision normalVdWFMag = -1. * (not overlapIsPositive) * epsilon6 * invSigma * (lj7 - ljCutoff7);
+        const SoAFloatPrecision normalFMag = overlapIsPositive * normalContactFMag + normalVdWFMag;
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalFMag * normalUnitY;
@@ -761,9 +756,9 @@ class DEMFunctor
         }
 
         // Compute total force
-        fxacc += cutOffMask * (normalFX + overlapPositive * tanFX);
-        fyacc += cutOffMask * (normalFY + overlapPositive * tanFY);
-        fzacc += cutOffMask * (normalFZ + overlapPositive * tanFZ);
+        fxacc += cutOffMask * (normalFX + overlapIsPositive * tanFX);
+        fyacc += cutOffMask * (normalFY + overlapIsPositive * tanFY);
+        fzacc += cutOffMask * (normalFZ + overlapIsPositive * tanFZ);
 
         // Apply total force
         if (newton3) {
