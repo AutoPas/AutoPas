@@ -102,14 +102,15 @@ class AutoTuner {
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
+   * @param needToWait If tuner should wait for other tuners.
    */
-  void bumpIterationCounters();
+  void bumpIterationCounters(bool needToWait = false);
 
   /**
-   * Returns whether rebuildNeighborLists() will be triggered in the next call to iteratePairwise().
+   * Returns whether rebuildNeighborLists() will be triggered in the next iteration.
    * This might also indicate a container change.
    *
-   * @return True if the the current iteration counters indicate a rebuild in the next iteration.
+   * @return True if the current iteration counters indicate a rebuild in the next iteration.
    */
   bool willRebuildNeighborLists() const;
 
@@ -153,12 +154,11 @@ class AutoTuner {
   bool searchSpaceIsEmpty() const;
 
   /**
-   * Log the collected data and if we are at the end of a tuning phase the result to files.
-   * @param conf
+   * After a tuning phase has finished, write the result to a file.
    * @param tuningIteration
    * @param tuningTime
    */
-  void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
+  void logTuningResult(bool tuningIteration, long tuningTime) const;
 
   /**
    * Initialize pmt sensor.

@@ -18,7 +18,6 @@ namespace autopas::internal {
  * two cells of particles.
  * @tparam ParticleCell
  * @tparam ParticleFunctor the functor which
- * @tparam dataLayout the dataLayout to be used
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
  * cell1)
  */
@@ -34,7 +33,7 @@ class CellFunctor {
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
-  explicit CellFunctor(ParticleFunctor *f, double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
+  explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
@@ -75,19 +74,19 @@ class CellFunctor {
    * Set the sorting-threshold
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
   void setSortingThreshold(size_t sortingThreshold);
 
  private:
   /**
-   * Applies the functor to all particle pairs exploiting newtons third law of
-   * motion.
+   * Applies the functor to all particle pairs exploiting newtons third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
-   * The value of newton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or not:
-   * - if newton3 is true: the aos functor will be applied once for each pair (only i,j), passing newton3=true.
-   * - if newton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing newton3=false.
-   * @tparam newton3 defines whether or not to use newton3
+   * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or
+   * not:
+   * - if _useNewton3 is true: the aos functor will be applied once for each pair (only i,j), passing newton3=true.
+   * - if _useNewton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing
+   * newton3=false.
    * @param cell
    */
   void processCellAoS(ParticleCell &cell);
@@ -168,11 +167,10 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(Part
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
-
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((_dataLayout == DataLayoutOption::soa and
-       (cell1._particleSoABuffer.size() == 0 and cell2._particleSoABuffer.size() == 0)) or
-      (_dataLayout == DataLayoutOption::aos and (cell1.isEmpty() and cell2.isEmpty()))) {
+       (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
+      (_dataLayout == DataLayoutOption::aos and (cell1.isEmpty() or cell2.isEmpty()))) {
     return;
   }
 
@@ -236,11 +234,11 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(P
       }
     }
   } else {
-    for (auto cellIter1 = cell.begin(); cellIter1 != cell.end(); ++cellIter1) {
-      auto cellIter2 = cellIter1;
-      ++cellIter2;
-      for (; cellIter2 != cell.end(); ++cellIter2) {
-        interactParticles(*cellIter1, *cellIter2);
+    for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
+      auto p2Ptr = p1Ptr;
+      ++p2Ptr;
+      for (; p2Ptr != cell.end(); ++p2Ptr) {
+        interactParticles(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -277,9 +275,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
   const auto interactParticlesNoN3 = [&](auto &p1, auto &p2) {
     _functor->AoSFunctor(p1, p2, false);
     if constexpr (bidirectional) {
-      if (p2.isOwned()) {
-        _functor->AoSFunctor(p2, p1, false);
-      }
+      _functor->AoSFunctor(p2, p1, false);
     }
   };
 
@@ -287,12 +283,12 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
 
-    for (auto &[p1Projection, p1] : cell1Sorted._particles) {
-      for (auto &[p2Projection, p2] : cell2Sorted._particles) {
+    for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
+      for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
         if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
           break;
         }
-        interactParticlesNoN3(*p1, *p2);
+        interactParticlesNoN3(*p1Ptr, *p2Ptr);
       }
     }
   } else {
