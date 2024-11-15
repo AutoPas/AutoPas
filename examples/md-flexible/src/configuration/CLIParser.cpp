@@ -499,7 +499,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.useLOESSSmoothening)::getoptChar: {
-        config.useLOESSSmoothening.value = true;
+        config.useLOESSSmoothening.value = false;
         break;
       }
       case decltype(config.particleSpacing)::getoptChar: {
