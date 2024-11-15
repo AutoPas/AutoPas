@@ -156,11 +156,10 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+#if MD_FLEXIBLE_MODE == MULTISITE
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::quaternion::rotatePosition;
   using autopas::utils::quaternion::rotatePositionBackwards;
-
-#if MD_FLEXIBLE_MODE == MULTISITE
 
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -179,7 +178,21 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
     iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
   }
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  // TODO: check reference literature, consider using other integration methods
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const std::array<double, 3> torque = iter->getTorque();
+    const double mass = particlePropertiesLibrary.getSiteMass(iter->getTypeId());
+    const double radius = particlePropertiesLibrary.getRadius(iter->getTypeId());
+    const double momentOfInertia = 0.4 * mass * radius * radius;
+    const double invMomentOfInertia = 1. / momentOfInertia;
 
+    const std::array<double, 3> deltaAngularVel =
+        autopas::utils::ArrayMath::mulScalar(torque, invMomentOfInertia * deltaT);
+
+    iter->addAngularVel(deltaAngularVel);
+  }
 #else
   autopas::utils::ExceptionHandler::exception(
       "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
