@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -16,8 +15,9 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
-namespace mdLib {
+namespace demLib {
 
 /**
  * A functor to handle the interactions between particles using Discrete Element Method (DEM).
@@ -868,4 +868,4 @@ class DEMFunctor
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 };
-}  // namespace mdLib
+}  // namespace demLib

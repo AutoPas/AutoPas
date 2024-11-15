@@ -12,7 +12,7 @@
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace mdLib {
+namespace demLib {
 
 /**
  * Granular class for the DEMFunctor.
@@ -311,4 +311,4 @@ class GranularDEM : public autopas::Particle {
     */
     std::array<double, 3> _torque{};
 };
-}  // namespace mdLib
+}  // namespace demLib

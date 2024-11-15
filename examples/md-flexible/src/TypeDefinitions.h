@@ -31,8 +31,8 @@
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-#include "molecularDynamicsLibrary/GranularDEM.h"
-#include "molecularDynamicsLibrary/DEMFunctor.h"
+#include "discreteElementMethodLibrary//GranularDEM.h"
+#include "discreteElementMethodLibrary/DEMFunctor.h"
 #endif
 
 #endif
@@ -52,7 +52,7 @@ using FloatPrecision = double;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
-using ParticleType = mdLib::GranularDEM;
+using ParticleType = demLib::GranularDEM;
 #else
 using ParticleType = mdLib::MoleculeLJ;
 #endif
@@ -140,7 +140,7 @@ using LJFunctorTypeSVE =
 #if MMD_FLEXIBLE_MODE == MULTISITE
 #error "The DEM functor des not have support for multisite molecules!"
 #else
-using DEMFunctor = mdLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+using DEMFunctor = demLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 
 #endif
 

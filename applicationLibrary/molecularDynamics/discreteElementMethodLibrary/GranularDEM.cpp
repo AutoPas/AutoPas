@@ -7,7 +7,7 @@
 
 #include "GranularDEM.h"
 
-namespace mdLib {
+namespace demLib {
 GranularDEM::GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v,
                          std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId)
     : autopas::Particle(pos, v, particleId), _angularVel(angularVel), _torque({0., 0., 0.}), _typeId(typeId) {}
@@ -50,4 +50,4 @@ std::string GranularDEM::toString() const {
   // clang-format on
   return text.str();
 }
-}  // namespace mdLib
+}  // namespace demLib

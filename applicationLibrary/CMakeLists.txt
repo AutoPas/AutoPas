@@ -11,6 +11,15 @@ file(
 
 add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
 
+file(
+        GLOB_RECURSE
+        LIB_DEM_SRC
+        "molecularDynamics/discreteElementMethodLibrary/*.h"
+        "molecularDynamics/discreteElementMethodLibrary/*.cpp"
+)
+
+add_library(discreteElementMethodLibrary STATIC ${LIB_DEM_SRC})
+
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE
         "SINGLESITE"
@@ -32,9 +41,10 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
 endif()
 
 target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
+target_link_libraries(discreteElementMethodLibrary PUBLIC autopas)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
-
+target_include_directories(discreteElementMethodLibrary PUBLIC ./molecularDynamics)
 # --- sph ---
 
 file(
@@ -82,7 +92,8 @@ if (AUTOPAS_BUILD_TESTS)
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
             "molecularDynamics/tests/templateInstantiations/AutoPasInstantiations.cpp"
     )
-    add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp)
+    add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp
+            molecularDynamics/tests/singleSiteTests/DEMFunctorTestNoGlobals.h)
 
     target_include_directories(
             ${TEST_EXE_NAME}
