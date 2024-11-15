@@ -25,7 +25,7 @@ class EnergySensor {
   EnergySensor(EnergySensorOption sensor);
 
   /**
-   * Intialises the EnergySenor
+   * Initializes the EnergySenor
    * @param tuningMetricIsEnergy whether energy is selected as the tuning metric
    * @return whether energy measurement is turned on
    */

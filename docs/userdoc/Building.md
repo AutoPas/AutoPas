@@ -61,11 +61,15 @@ To use energy tuning, energy measurements must be enabled using the CMake option
 cmake -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON .. 
 ```
 
-Additionally, user needs to select an energy sensor used for measurement. By default, RAPL sensor is enabled by setting the default for `PMT_BUILD_RAPL` to `ON`. However, other available sensors like `LIKWID` can also be used by separately compiling them using the CMake option:
+Additionally, an energy sensor used for measurement needs to be selected. By default, RAPL sensor is enabled by setting the default for `PMT_BUILD_RAPL` to `ON`. However, other available sensors like `LIKWID` can also be used by separately compiling them using the CMake option:
 ```bash
 cmake -DPMT_BUILD_LIKWID=ON .. 
 ```
 Note that user must have `LIKWID` installed before enabling this option.
+Similarly, RAPL can be disabled with
+```bash
+cmake -DPMT_BUILD_RAPL=OFF ..
+```
 
 ### Select a Non-Default Compiler
 If you want to use a different compiler than your system default, change the `CC` and `CXX` environment variables during initial configuration AND building:

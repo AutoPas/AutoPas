@@ -13,7 +13,7 @@ file(
 )
 
 option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-        "Enables energy measurements and tuning using PMT library which allows for energy measurement on Intel and AMD hardware using the RAPL interface."
+        "Enables energy measurements and tuning using PMT library and enables the RAPL interface, by default, allowing for energy measurement on Intel and AMD hardware."
         ON
 )
 

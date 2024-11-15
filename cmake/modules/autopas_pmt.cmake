@@ -1,4 +1,7 @@
 option(pmt_ForceBundled "Do not look for an installed version, always used bundled." ON)
+
+# RAPL sensor is disabled in PMT (PMT_BUILD_RAPL is OFF by default),
+# however in AutoPas, it is set to ON by default whenever energy measurement is enabled.
 set(PMT_BUILD_RAPL ON CACHE BOOL "Enabling RAPL always when energy measurement is requested" FORCE)
 
 if (NOT ${pmt_ForceBundled})
