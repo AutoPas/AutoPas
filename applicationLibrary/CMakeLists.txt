@@ -34,6 +34,25 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
+# Set CMake option for dem mode
+set(DEM_MODE
+        "OFF"
+        CACHE
+        STRING "Enable or disable DEM (Discrete Element Method)."
+)
+set_property(CACHE DEM_MODE PROPERTY STRINGS "ON;OFF")
+
+target_compile_definitions(molecularDynamicsLibrary PUBLIC ON=1)
+target_compile_definitions(molecularDynamicsLibrary PUBLIC OFF=0)
+
+string(TOLOWER "${DEM_MODE}" DEM_MODE_lower)
+
+if (DEM_MODE_lower MATCHES "on")
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC DEM_MODE=1)
+elseif (DEM_MODE_lower MATCHES "off")
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC DEM_MODE=0)
+endif()
+
 target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)

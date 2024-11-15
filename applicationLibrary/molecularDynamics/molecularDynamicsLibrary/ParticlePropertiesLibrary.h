@@ -409,7 +409,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
   for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
     for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
       auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
-
+#if DEM_MODE == ON
       // epsilon
       const floatType epsilon6 = 6 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
       const floatType epsilon24 = 4 * epsilon6;
@@ -425,6 +425,20 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       // shift6
       const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
+#else
+      // epsilon
+      const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      _computedMixingData[globalIndex].epsilon24 = epsilon24;
+
+      // sigma
+      const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
+      const floatType sigmaSquared = sigma * sigma;
+      _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
+
+      // shift6
+      const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+      _computedMixingData[globalIndex].shift6 = shift6;
+#endif
     }
   }
 }
