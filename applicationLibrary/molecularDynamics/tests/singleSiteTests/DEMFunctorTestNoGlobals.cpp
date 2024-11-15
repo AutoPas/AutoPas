@@ -24,9 +24,9 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsOverlap) {
         this->frictionViscosity, this->staticFrictionCoeff, this->dynamicFrictionCoeff, particlePropertiesLibrary);
     particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0, this->radius);
   } else {
-    functor = std::make_unique<FuncType>(
-        this->cutoff, this->elasticStiffness, this->adhesiveStiffness, this->frictionStiffness, this->normalViscosity,
-        this->frictionViscosity, this->staticFrictionCoeff, this->dynamicFrictionCoeff);
+    functor = std::make_unique<FuncType>(this->cutoff, this->elasticStiffness, this->adhesiveStiffness,
+                                         this->frictionStiffness, this->normalViscosity, this->frictionViscosity,
+                                         this->staticFrictionCoeff, this->dynamicFrictionCoeff);
     functor->setParticleProperties(this->epsilon * 24, 1, this->radius);
   }
   particlePropertiesLibrary.calculateMixingCoefficients();
@@ -44,9 +44,12 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsOverlap) {
 
   // Then
   const std::array<double, 3> expectedForce = {
-      this->expectedNormalContactForceOverlap[0] + this->expectedNormalVdWForceOverlap[0] + this->expectedFrictionForceOverlap[0],
-      this->expectedNormalContactForceOverlap[1] + this->expectedNormalVdWForceOverlap[1] + this->expectedFrictionForceOverlap[1],
-      this->expectedNormalContactForceOverlap[2] + this->expectedNormalVdWForceOverlap[2] + this->expectedFrictionForceOverlap[2]};
+      this->expectedNormalContactForceOverlap[0] + this->expectedNormalVdWForceOverlap[0] +
+          this->expectedFrictionForceOverlap[0],
+      this->expectedNormalContactForceOverlap[1] + this->expectedNormalVdWForceOverlap[1] +
+          this->expectedFrictionForceOverlap[1],
+      this->expectedNormalContactForceOverlap[2] + this->expectedNormalVdWForceOverlap[2] +
+          this->expectedFrictionForceOverlap[2]};
 
   const std::array<double, 3> expectedForceMixing = {
       this->expectedNormalContactForceMixingOverlap[0] + this->expectedNormalVdWForceMixingOverlap[0] +
@@ -124,15 +127,16 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsNoOverlap) {
         this->frictionViscosity, this->staticFrictionCoeff, this->dynamicFrictionCoeff, particlePropertiesLibrary);
     particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0, this->radius);
   } else {
-    functor = std::make_unique<FuncType>(
-        this->cutoff, this->elasticStiffness, this->adhesiveStiffness, this->frictionStiffness, this->normalViscosity,
-        this->frictionViscosity, this->staticFrictionCoeff, this->dynamicFrictionCoeff);
+    functor = std::make_unique<FuncType>(this->cutoff, this->elasticStiffness, this->adhesiveStiffness,
+                                         this->frictionStiffness, this->normalViscosity, this->frictionViscosity,
+                                         this->staticFrictionCoeff, this->dynamicFrictionCoeff);
     functor->setParticleProperties(this->epsilon * 24, 1, this->radius);
   }
   particlePropertiesLibrary.calculateMixingCoefficients();
 
   GranularParticle p1(this->startingPosNoOverlap[0], this->startingVel[0], this->startingAngVel[0], 0, 0);
-  GranularParticle p2(this->startingPosNoOverlap[1], this->startingVel[1], this->startingAngVel[1], 1, (mixing) ? 1 : 0);
+  GranularParticle p2(this->startingPosNoOverlap[1], this->startingVel[1], this->startingAngVel[1], 1,
+                      (mixing) ? 1 : 0);
 
   // When
   if (auto msg = this->shouldSkipIfNotImplemented([&]() { functor->AoSFunctor(p1, p2, newton3); }); msg != "") {
@@ -144,9 +148,12 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsNoOverlap) {
 
   // Then
   const std::array<double, 3> expectedForce = {
-      this->expectedNormalContactForceNoOverlap[0] + this->expectedNormalVdWForceNoOverlap[0] + this->expectedFrictionForceNoOverlap[0],
-      this->expectedNormalContactForceNoOverlap[1] + this->expectedNormalVdWForceNoOverlap[1] + this->expectedFrictionForceNoOverlap[1],
-      this->expectedNormalContactForceNoOverlap[2] + this->expectedNormalVdWForceNoOverlap[2] + this->expectedFrictionForceNoOverlap[2]};
+      this->expectedNormalContactForceNoOverlap[0] + this->expectedNormalVdWForceNoOverlap[0] +
+          this->expectedFrictionForceNoOverlap[0],
+      this->expectedNormalContactForceNoOverlap[1] + this->expectedNormalVdWForceNoOverlap[1] +
+          this->expectedFrictionForceNoOverlap[1],
+      this->expectedNormalContactForceNoOverlap[2] + this->expectedNormalVdWForceNoOverlap[2] +
+          this->expectedFrictionForceNoOverlap[2]};
 
   const std::array<double, 3> expectedForceMixing = {
       this->expectedNormalContactForceMixingNoOverlap[0] + this->expectedNormalVdWForceMixingNoOverlap[0] +

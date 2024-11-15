@@ -43,13 +43,11 @@ class DEMFunctorTestNoGlobals : public DEMFunctorTest {
   constexpr static std::array<double, 3> expectedNormalContactForceNoOverlap{0., 0., 0.};
   constexpr static std::array<double, 3> expectedNormalContactForceMixingNoOverlap{0., 0., 0.};
 
-
   constexpr static std::array<double, 3> expectedNormalVdWForceOverlap{0.0, 0.0, 0.0};
   constexpr static std::array<double, 3> expectedNormalVdWForceMixingOverlap{0.0, 0.0, 0.0};
 
   constexpr static std::array<double, 3> expectedNormalVdWForceNoOverlap{0.059514258085717045, 0.000000, 0.000000};
   constexpr static std::array<double, 3> expectedNormalVdWForceMixingNoOverlap{0.23967546841725773, 0.000000, 0.000000};
-
 
   constexpr static std::array<double, 3> expectedFrictionForceOverlap{-0.342857, -0.085714, 0.171429};
   constexpr static std::array<double, 3> expectedFrictionForceMixingOverlap{-0.342857, -0.085714, 0.171429};

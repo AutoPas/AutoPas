@@ -10,7 +10,6 @@
 #include <map>
 #include <set>
 #include <vector>
-#include <algorithm>
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -58,7 +57,6 @@ class ParticlePropertiesLibrary {
    */
   void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
 
-
   /**
    * Adds the properties of a type of a single LJ site type to the library.
    *
@@ -70,7 +68,8 @@ class ParticlePropertiesLibrary {
    * @param mass
    * @param radius
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass, const floatType radius);
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass,
+                   const floatType radius);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the

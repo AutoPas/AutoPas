@@ -128,7 +128,8 @@ using LJFunctorTypeAVX =
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
 using LJFunctorTypeSVE =
-    mdLib::LJFunctorSVE<ParticleType, false, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>; //TODO: set mixing, globalCalculations etc. to false for now
+    mdLib::LJFunctorSVE<ParticleType, false, true, autopas::FunctorN3Modes::Both, true,
+                        mdFlexibleTypeDefs::countFLOPs>;  // TODO: set mixing, globalCalculations etc. to false for now
 #endif
 
 #endif
@@ -140,7 +141,8 @@ using LJFunctorTypeSVE =
 #if MMD_FLEXIBLE_MODE == MULTISITE
 #error "The DEM functor des not have support for multisite molecules!"
 #else
-using DEMFunctor = demLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+using DEMFunctor =
+    demLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 
 #endif
 

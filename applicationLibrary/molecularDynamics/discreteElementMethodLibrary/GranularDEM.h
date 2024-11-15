@@ -29,8 +29,8 @@ class GranularDEM : public autopas::Particle {
    * @param moleculeId Unique Id of the particle.
    * @param typeId TypeId of the particle.
    */
-  GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v, const std::array<double, 3> angularVel, unsigned long particleId,
-              unsigned long typeId = 0);
+  GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v, const std::array<double, 3> angularVel,
+              unsigned long particleId, unsigned long typeId = 0);
 
   ~GranularDEM() override = default;
 
@@ -299,16 +299,16 @@ class GranularDEM : public autopas::Particle {
   /**
    * Old Force of the particle experiences as 3D vector.
    */
-   std::array<double, 3> _oldF{};
+  std::array<double, 3> _oldF{};
 
-   /**
-    * Angular velocity of the particle as 3D vector.
-    */
-   std::array<double, 3> _angularVel{};
+  /**
+   * Angular velocity of the particle as 3D vector.
+   */
+  std::array<double, 3> _angularVel{};
 
-   /**
-    * Torque applied to particle.
-    */
-    std::array<double, 3> _torque{};
+  /**
+   * Torque applied to particle.
+   */
+  std::array<double, 3> _torque{};
 };
 }  // namespace demLib

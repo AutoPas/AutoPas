@@ -8,10 +8,10 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
+#include "discreteElementMethodLibrary/GranularDEM.h"
 #include "mocks/MockFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
-#include "discreteElementMethodLibrary/GranularDEM.h"
 
 // a place for usings that are commonly used in tests
 
