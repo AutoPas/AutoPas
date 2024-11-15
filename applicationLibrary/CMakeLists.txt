@@ -7,18 +7,12 @@ file(
         LIB_MD_SRC
         "molecularDynamics/molecularDynamicsLibrary/*.h"
         "molecularDynamics/molecularDynamicsLibrary/*.cpp"
-)
-
-add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
-
-file(
-        GLOB_RECURSE
-        LIB_DEM_SRC
+        # Include DEM-related files
         "molecularDynamics/discreteElementMethodLibrary/*.h"
         "molecularDynamics/discreteElementMethodLibrary/*.cpp"
 )
 
-add_library(discreteElementMethodLibrary STATIC ${LIB_DEM_SRC})
+add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
 
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE
@@ -41,10 +35,8 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
 endif()
 
 target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
-target_link_libraries(discreteElementMethodLibrary PUBLIC autopas)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
-target_include_directories(discreteElementMethodLibrary PUBLIC ./molecularDynamics)
 # --- sph ---
 
 file(
