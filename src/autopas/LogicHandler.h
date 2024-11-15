@@ -202,7 +202,7 @@ class LogicHandler {
     for (size_t i = 0; i < newLength.size(); ++i) {
       // warning threshold is set arbitrary and up for change if needed
       if (relDiffLength[i] > 1.3 or relDiffLength[i] < 0.7) {
-        AutoPasLog(DEBUG,
+        AutoPasLog(WARN,
                    "LogicHandler.resize(): Domain size changed drastically in dimension {}! Gathered AutoTuning "
                    "information might not be applicable anymore!\n"
                    "Size old box : {}\n"
