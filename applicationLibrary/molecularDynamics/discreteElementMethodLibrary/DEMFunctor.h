@@ -56,8 +56,13 @@ class DEMFunctor
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param springStiffness
-   * @param viscousDamping
+   * @param elasticStiffness
+   * @param adhesiveStiffness
+   * @param frictionStiffness
+   * @param normalViscosity
+   * @param frictionViscosity
+   * @param staticFrictionCoeff
+   * @param dynamicFrictionCoeff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
@@ -92,6 +97,8 @@ class DEMFunctor
    * Values taken from https://www2.msm.ctw.utwente.nl/sluding/PAPERS/Alert_Luding2008.pdf page 15.
    *
    * @note Only to be used with mixing == false;
+   *
+   * @param cutoff
    */
   explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 5., 2.5, 1., 5e-5, 1e-5, 1., 1., nullptr) {
     static_assert(not useMixing,
@@ -104,6 +111,9 @@ class DEMFunctor
    * Values taken from https://www2.msm.ctw.utwente.nl/sluding/PAPERS/Alert_Luding2008.pdf page 15.
    *
    * @note Only to be used with mixing == true.
+   *
+   * @param cutoff
+   * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : DEMFunctor(cutoff, 5., 2.5, 1., 5e-5, 1e-5, 1., 1., nullptr) {
@@ -120,6 +130,13 @@ class DEMFunctor
    * @note Only to be used with mixing == false.
    *
    * @param cutoff
+   * @param elasticStiffness
+   * @param adhesiveStiffness
+   * @param frictionStiffness
+   * @param normalViscosity
+   * @param frictionViscosity
+   * @param staticFrictionCoeff
+   * @param dynamicFrictionCoeff
    */
   explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
                       double normalViscosity, double frictionViscosity, double staticFrictionCoeff,
@@ -135,6 +152,13 @@ class DEMFunctor
    * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
    * properties like radius.
    * @param cutoff
+   * @param elasticStiffness
+   * @param adhesiveStiffness
+   * @param frictionStiffness
+   * @param normalViscosity
+   * @param frictionViscosity
+   * @param staticFrictionCoeff
+   * @param dynamicFrictionCoeff
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,

@@ -26,7 +26,8 @@ class GranularDEM : public autopas::Particle {
    * Constructor of granular particle with initialization of typeID.
    * @param pos Position of the particle.
    * @param v Velocity of the particle.
-   * @param moleculeId Unique Id of the particle.
+   * @param angularVel Angular velocity of the particle.
+   * @param particleId Unique Id of the particle.
    * @param typeId TypeId of the particle.
    */
   GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v, const std::array<double, 3> angularVel,
