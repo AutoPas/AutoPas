@@ -8,7 +8,7 @@ AutoPas provides three interfaces to do this:
    They support restriction to certain particle types and regions, as well as parallelization and particle deletion but not addition.
 2. `forEach`-style functions (Experimental, no parallelization yet!).
    Similar to iterators, but prohibit interfering with flow control.
-3. Functor application functions like `AutoPas::iteratePairwise()`.
+3. Functor application functions like `AutoPas::computeInteractions()`.
    Applies the given functor to all particle pairs that are within the cutoff distance.
    
 This documentation page shall primarily focus on the first and slightly touch upon the second point.

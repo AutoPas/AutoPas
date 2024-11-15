@@ -55,7 +55,7 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
     clusterList.extractParticlesFromSoAs(_functor);
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     auto &clusterThreadPartition = clusterList.getClusterThreadPartition();
 

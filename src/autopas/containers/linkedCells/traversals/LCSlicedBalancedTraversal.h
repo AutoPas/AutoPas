@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/SlicedBalancedBasedTraversal.h"
+#include "autopas/containers/cellTraversals/SlicedBalancedBasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -33,7 +33,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>,
-                                  public LCTraversalInterface<ParticleCell> {
+                                  public LCTraversalInterface {
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -42,7 +42,7 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
@@ -53,12 +53,12 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_balanced; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
@@ -67,7 +67,7 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
