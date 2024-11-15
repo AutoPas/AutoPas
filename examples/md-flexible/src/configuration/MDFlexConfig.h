@@ -629,6 +629,12 @@ class MDFlexConfig {
    * velocityStr
    */
   static inline const char *const velocityStr{"velocity"};
+
+  /**
+   * angularVelocityStr
+   */
+  static inline const char *const angularVelocityStr{"angularVelocity"};
+
   /**
    * particlesPerObjectStr
    */

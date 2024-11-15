@@ -26,6 +26,15 @@ class Object {
    */
   Object(const std::array<double, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
 
+  /**
+   * Constructor that should be used by inheriting types.
+   * @param velocity
+   * @param angVelocity
+   * @param typeId
+   */
+  Object(const std::array<double, 3> &velocity, const std::array<double, 3> &angularVelocity, unsigned long typeId)
+      : _velocity(velocity), _angularVelocity(angularVelocity), _typeId(typeId) {}
+
   virtual ~Object() = default;
 
   /**
@@ -51,6 +60,9 @@ class Object {
     particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+    particle.setTorque({0.0, 0.0, 0.0});
+    particle.setAngularVel(_angularVelocity);
 #endif
 
     return particle;
@@ -61,6 +73,12 @@ class Object {
    * @return velocity
    */
   [[nodiscard]] const std::array<double, 3> &getVelocity() const { return _velocity; }
+
+  /**
+   * Getter for Angular Velocity
+   * @return angularVelocity
+   */
+  [[nodiscard]] const std::array<double, 3> &getAngularVelocity() const { return _angularVelocity; }
 
   /**
    * Getter for typeId of Particles in Objet
@@ -122,6 +140,12 @@ class Object {
    * Velocity of every particle in the object.
    */
   std::array<double, 3> _velocity;
+
+  /**
+   * Angular velocity of every particle in the object.
+   */
+   std::array<double, 3> _angularVelocity;
+
   /**
    * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For
    * multi-site simulations, this refers to the molId.

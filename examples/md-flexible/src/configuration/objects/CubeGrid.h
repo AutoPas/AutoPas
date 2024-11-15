@@ -33,6 +33,21 @@ class CubeGrid : public Object {
         _bottomLeftCorner(bottomLeftCorner) {}
 
   /**
+   * Constructor.
+   * @param velocity
+   * @param typeId
+   * @param particlesPerDim
+   * @param particleSpacing
+   * @param bottomLeftCorner
+   */
+  CubeGrid(const std::array<double, 3> &velocity, const std::array<double, 3> &angularVelocity, unsigned long typeId, const std::array<size_t, 3> &particlesPerDim,
+           double particleSpacing, const std::array<double, 3> &bottomLeftCorner)
+      : Object(velocity, angularVelocity, typeId),
+        _particlesPerDim(particlesPerDim),
+        _particleSpacing(particleSpacing),
+        _bottomLeftCorner(bottomLeftCorner) {}
+
+  /**
    * Returns the particle spacing.
    * @return spacing between particles.
    */

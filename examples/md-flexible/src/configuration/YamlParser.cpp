@@ -42,9 +42,14 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
       parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
-
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  const std::array<double, 3> angularVelocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::angularVelocityStr, objectErrors);
+  const CubeGrid cubeGrid(velocity, angularVelocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner);
+  return cubeGrid;
+#else
   const CubeGrid cubeGrid(velocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner);
   return cubeGrid;
+#endif
 }
 
 const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config, const YAML::Node node,
