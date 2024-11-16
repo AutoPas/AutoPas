@@ -61,7 +61,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &neighborList = *(this->_neighborList);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos:

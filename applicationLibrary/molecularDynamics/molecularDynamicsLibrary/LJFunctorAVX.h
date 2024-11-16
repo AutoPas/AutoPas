@@ -14,7 +14,7 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -42,8 +42,9 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
-                                                                    calculateGlobals, countFLOPs, relevantForTuning>> {
+class LJFunctorAVX
+    : public autopas::PairwiseFunctor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
+                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -60,8 +61,8 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                countFLOPs, relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -110,6 +111,8 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
+
+  std::string getName() final { return "LJFunctorAVX"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -176,7 +179,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
@@ -190,7 +193,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
@@ -258,15 +261,15 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += 4) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
-                               &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc,
+                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc, &virialSumX,
                               &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
@@ -375,14 +378,14 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       unsigned int j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                  fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                 fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -607,7 +610,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
  public:
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
