@@ -158,7 +158,9 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
+#endif
     bool doDataStructureUpdate = not neighborListsAreValid();
 
     if (_functorCalls > 0) {
@@ -170,7 +172,9 @@ class LogicHandler {
 
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         _rebuildIntervals.push_back(_stepsSinceLastListRebuild);
+#endif
         _stepsSinceLastListRebuild = 0;
       }
       ++_stepsSinceLastListRebuild;
@@ -1064,8 +1068,11 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
            _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
   };
 
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or getNeighborListsInvalidDoDynamicRebuild() or
-      needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+      or getNeighborListsInvalidDoDynamicRebuild()
+#endif
+      or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -1169,9 +1176,13 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   if (doListRebuild) {
     timerRebuild.start();
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
+#endif
     container.rebuildNeighborLists(&traversal);
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->resetNeighborListsInvalidDoDynamicRebuild();
+#endif
     timerRebuild.stop();
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
