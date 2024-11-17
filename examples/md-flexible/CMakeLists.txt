@@ -16,27 +16,29 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
-option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_XSIMD "If instruction set is available, compile XSIMD Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_MIPP "If instruction set is available, compile MIPP Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_SIMDE "If instruction set is available, compile SIMDe Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_HWY "If instruction set is available, compile Highway Function without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_XSIMD "If instruction set is available, compile XSIMD Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_MIPP "If instruction set is available, compile MIPP Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_SIMDE "If instruction set is available, compile SIMDe Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_HWY "If instruction set is available, compile Highway Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC "Compile auto vectorized Axilrod Teller Functor." OFF)
+option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
 
 target_compile_definitions(
         md-flexible
         PUBLIC
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC>
+        $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_XSIMD}>:MD_FLEXIBLE_FUNCTOR_XSIMD>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIPP}>:MD_FLEXIBLE_FUNCTOR_MIPP>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SIMDE}>:MD_FLEXIBLE_FUNCTOR_SIMDE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HIGHWAY}>:MD_FLEXIBLE_FUNCTOR_HWY>
-        )
+)
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
 string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
@@ -46,6 +48,9 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
+        message(WARNING "Axilrod Teller functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 

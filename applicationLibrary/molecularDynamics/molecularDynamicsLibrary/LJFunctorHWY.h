@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 // #include "VectorizationPatterns.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -42,7 +42,7 @@ namespace mdLib {
         bool relevantForTuning = true>
 
     class LJFunctorHWY
-        : public autopas::Functor<Particle,
+        : public autopas::PairwiseFunctor<Particle,
                          LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
         using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -51,7 +51,7 @@ namespace mdLib {
 
         private:
             explicit LJFunctorHWY(double cutoff, void*)
-                : autopas::Functor<Particle,
+                : autopas::PairwiseFunctor<Particle,
                 LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
                 _cutoffSquared{highway::Set(tag_double, cutoff*cutoff)},
                 _cutoffSquareAoS{cutoff * cutoff},
@@ -96,6 +96,8 @@ namespace mdLib {
                         "or set mixing to true.");
                     _PPLibrary = &particlePropertiesLibrary;
                 }
+
+            std::string getName() final { return "LJFunctorHWY"; }
 
             bool isRelevantForTuning() final { return relevantForTuning; }
 

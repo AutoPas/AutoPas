@@ -91,11 +91,16 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
-    PPL.addSiteType(0, 1., 1., 1.);
-    PPL.addSiteType(1, 1.5, 2., 1.);
-    PPL.addSiteType(2, 2., 1., 1.);
-    PPL.addSiteType(3, 2.5, 2., 1.);
-    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
   }
 
@@ -209,11 +214,16 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
-    PPL.addSiteType(0, 1., 1., 1.);
-    PPL.addSiteType(1, 1.5, 2., 1.);
-    PPL.addSiteType(2, 2., 1., 1.);
-    PPL.addSiteType(3, 2.5, 2., 1.);
-    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
   }
 
@@ -302,11 +312,16 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
-    PPL.addSiteType(0, 1., 1., 1.);
-    PPL.addSiteType(1, 1.5, 2., 1.);
-    PPL.addSiteType(2, 2., 1., 1.);
-    PPL.addSiteType(3, 2.5, 2., 1.);
-    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
   }
 
@@ -408,11 +423,16 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
-    PPL.addSiteType(0, 1., 1., 1.);
-    PPL.addSiteType(1, 1.5, 2., 1.);
-    PPL.addSiteType(2, 2., 1., 1.);
-    PPL.addSiteType(3, 2.5, 2., 1.);
-    PPL.addSiteType(4, 3., 1., 1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
   }
 

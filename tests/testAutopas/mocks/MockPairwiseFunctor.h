@@ -1,5 +1,5 @@
 /**
- * @file MockFunctor.h
+ * @file MockPairwiseFunctor.h
  * @author seckler
  * @date 18.04.18
  */
@@ -14,9 +14,9 @@
 #include "autopas/options/DataLayoutOption.h"
 
 template <class Particle>
-class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
+class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle, MockPairwiseFunctor<Particle>> {
  public:
-  MockFunctor() : autopas::Functor<Particle, MockFunctor<Particle>>(0.){};
+  MockPairwiseFunctor() : autopas::PairwiseFunctor<Particle, MockPairwiseFunctor<Particle>>(0.){};
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
   MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, bool newton3), (override));
 
@@ -61,4 +61,7 @@ class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
 
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
+
+  //  std::string getName() { return "functorName"; }
+  MOCK_METHOD(std::string, getName, (), (override));
 };

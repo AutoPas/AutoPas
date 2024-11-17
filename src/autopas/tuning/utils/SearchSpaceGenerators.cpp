@@ -19,7 +19,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors, const std::set<VectorizationPatternOption> &allowedVecPatternOptions) {
+    const NumberSet<double> *allowedCellSizeFactors, const std::set<VectorizationPatternOption> &allowedVecPatternOptions, 
+    const InteractionTypeOption &interactionType) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
@@ -30,7 +31,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
   for (const auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
     const std::set<TraversalOption> &allContainerTraversals =
-        compatibleTraversals::allCompatibleTraversals(containerOption);
+        compatibleTraversals::allCompatibleTraversals(containerOption, interactionType);
     std::set<TraversalOption> allowedAndApplicable;
     std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),
@@ -46,7 +47,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
             for (const auto &newton3Option : allowedNewton3Options) {
               for (const auto &vecPatternOption : allowedVecPatternOptions) {
                 const Configuration configuration{containerOption,  csf,          traversalOption, loadEstimatorOption,
-                                                  dataLayoutOption, newton3Option, vecPatternOption};
+                                                  dataLayoutOption, newton3Option, interactionType, vecPatternOption};
                 if (configuration.hasCompatibleValues()) {
                   searchSet.insert(configuration);
                 }
@@ -67,7 +68,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
 SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     const std::set<Configuration> &searchSet) {
   OptionSpace optionSpace;
-  for (const auto &[container, traversal, vecPattern, loadEst, dataLayout, newton3, csf] : searchSet) {
+  for (const auto &[container, traversal, vecPattern, loadEst, dataLayout, newton3, csf, interactT] : searchSet) {
     optionSpace.containerOptions.insert(container);
     optionSpace.traversalOptions.insert(traversal);
     optionSpace.loadEstimatorOptions.insert(loadEst);

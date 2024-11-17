@@ -10,17 +10,15 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 
-autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOption> &allowedContainerOptions,
-                                                      const NumberSet<double> &allowedCellSizeFactors,
-                                                      const std::set<TraversalOption> &allowedTraversalOptions,
-                                                      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-                                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                                      const std::set<Newton3Option> &allowedNewton3Options,
-                                                      size_t maxEvidence, AcquisitionFunctionOption predAcqFunction,
-                                                      const std::string &outputSuffix, size_t predNumLHSamples,
-                                                      unsigned long seed,
-                                                      const std::set<VectorizationPatternOption> &allowedVecPatternOptions)
-    : _containerOptionsSet(allowedContainerOptions),
+autopas::BayesianClusterSearch::BayesianClusterSearch(
+    const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
+    const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
+    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+    size_t maxEvidence, AcquisitionFunctionOption predAcqFunction, const std::string &outputSuffix,
+    size_t predNumLHSamples, unsigned long seed, const std::set<VectorizationPatternOption> &allowedVecPatternOptions)
+    : _interactionType(interactionType),
+      _containerOptionsSet(allowedContainerOptions),
       _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
@@ -49,7 +47,7 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOp
   for (const auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
     const std::set<TraversalOption> &allContainerTraversals =
-        compatibleTraversals::allCompatibleTraversals(containerOption);
+        compatibleTraversals::allCompatibleTraversals(containerOption, _interactionType);
     std::set<TraversalOption> allowedAndApplicable;
     std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),

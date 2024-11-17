@@ -3,7 +3,7 @@
 //
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -31,7 +31,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           bool relevantForTuning = true>
 
 class LJFunctorXSIMD
-    : public autopas::Functor<Particle,
+    : public autopas::PairwiseFunctor<Particle,
                      LJFunctorXSIMD<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
     using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -48,7 +48,7 @@ class LJFunctorXSIMD
    * @note param dummy unused, only there to make the signature different from the public constructor.
       */
      explicit LJFunctorXSIMD(double cutoff, void * /*dummy*/)
-         : autopas::Functor<Particle,
+         : autopas::PairwiseFunctor<Particle,
                    LJFunctorXSIMD<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
            _cutoffsquare{cutoff * cutoff},
            _cutoffsquareAoS(cutoff * cutoff),
@@ -93,6 +93,8 @@ class LJFunctorXSIMD
                      "or set mixing to true.");
        _PPLibrary = &particlePropertiesLibrary;
      }
+
+     std::string getName() final { return "LJFunctorXSIMD"; }
 
      bool isRelevantForTuning() final { return relevantForTuning; }
 

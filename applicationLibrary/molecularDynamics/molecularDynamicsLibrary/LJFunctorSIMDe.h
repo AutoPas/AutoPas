@@ -5,7 +5,7 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -37,7 +37,7 @@ namespace mdLib {
             autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
             bool relevantForTuning = true>
     class LJFunctorSIMDe
-            : public autopas::Functor<Particle,
+            : public autopas::PairwiseFunctor<Particle,
                     LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
         using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -54,7 +54,7 @@ namespace mdLib {
          * @note param dummy unused, only there to make the signature different from the public constructor.
          */
         explicit LJFunctorSIMDe(double cutoff, void * /*dummy*/)
-                : autopas::Functor<Particle,
+                : autopas::PairwiseFunctor<Particle,
                 LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
                   _cutoffsquare{simde_mm256_set1_pd(cutoff * cutoff)},
                   _cutoffsquareAoS(cutoff * cutoff),
@@ -94,6 +94,8 @@ namespace mdLib {
                           "or set mixing to true.");
             _PPLibrary = &particlePropertiesLibrary;
         }
+
+        std::string getName() final { return "LJFunctorSIMDe"; }
 
         bool isRelevantForTuning() final { return relevantForTuning; }
 

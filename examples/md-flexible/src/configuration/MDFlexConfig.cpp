@@ -244,8 +244,6 @@ std::string MDFlexConfig::to_string() const {
     printOption(selectorStrategy);
   }
 
-  printOption(dataLayoutOptions);
-  printOption(traversalOptions);
   printOption(tuningStrategyOptions);
 
   // helper function to check if any options of a given list is in the tuningStrategyOptions.
@@ -290,42 +288,81 @@ std::string MDFlexConfig::to_string() const {
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::fuzzyTuning})) {
     printOption(fuzzyRuleFilename);
   }
-  os << setw(valueOffset) << left << functorOption.name << ":  ";
-  switch (functorOption.value) {
-    case FunctorOption::lj12_6: {
-      os << "Lennard-Jones (12-6)" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_AVX: {
-      os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_SVE: {
-      os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_Globals: {
-      os << "Lennard-Jones (12-6) with globals" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_XSIMD: {
-      os << "Lennard-Jones (12-6) XSIMD Wrapper" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_MIPP: {
-      os << "Lennard-Jones (12-6) MIPP Wrapper" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_SIMDe: {
+
+  // TODO: C++20 Use contains instead of count
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+    os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
+    constexpr int indentWidth = 2;
+    const auto indent = std::string(indentWidth, ' ');
+    os << indent;
+    os << setw(valueOffset - indentWidth) << left << functorOption.name << ":  ";
+    switch (functorOption.value) {
+      case FunctorOption::lj12_6: {
+        os << "Lennard-Jones (12-6)" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_AVX: {
+        os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_SVE: {
+        os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_Globals: {
+        os << "Lennard-Jones (12-6) with globals" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_XSIMD: {
+        os << "Lennard-Jones (12-6) XSIMD Wrapper" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_MIPP: {
+        os << "Lennard-Jones (12-6) MIPP Wrapper" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_SIMDe: {
         os << "Lennard-Jones (12-6) SIMD Everywhere Wrapper" << endl;
         break;
-    }
-    case FunctorOption::lj12_6_HWY: {
+      }
+      case FunctorOption::lj12_6_HWY: {
         os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
+        break;
+      }
     }
+    os << indent;
+    printOption(traversalOptions, -indentWidth);
+    os << indent;
+    printOption(dataLayoutOptions, -indentWidth);
+    os << indent;
+    printOption(newton3Options, -indentWidth);
   }
-  printOption(vecPatternOptions);
-  printOption(newton3Options);
+
+  // TODO c++20: use contains instead of count
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+    os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
+    constexpr int indentWidth = 2;
+    const auto indent = std::string(indentWidth, ' ');
+    os << indent;
+    os << setw(valueOffset - indentWidth) << left << functorOption3B.name << ":  ";
+    switch (functorOption3B.value) {
+      case FunctorOption3B::none: {
+        os << "None selected" << endl;
+        break;
+      }
+      case FunctorOption3B::at: {
+        os << "Axilrod-Teller" << endl;
+        break;
+      }
+    }
+    os << indent;
+    printOption(traversalOptions3B, -indentWidth);
+    os << indent;
+    printOption(dataLayoutOptions3B, -indentWidth);
+    os << indent;
+    printOption(newton3Options3B, -indentWidth);
+  }
+
   printOption(cutoff);
   printOption(boxMin);
   printOption(boxMax);
@@ -346,6 +383,7 @@ std::string MDFlexConfig::to_string() const {
     os << "  " << siteId << ":" << endl;
     os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << nuMap.name << ":  " << nuMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -467,21 +505,53 @@ void MDFlexConfig::calcSimulationBox() {
   }
 }
 
-void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double mass) {
+void MDFlexConfig::addSiteType(unsigned long siteId, double mass) {
   // check if siteId is already existing and if there is no error in input
-  if (epsilonMap.value.count(siteId) == 1) {
+  if (massMap.value.count(siteId) == 1) {
     // check if type is already added
-    if (autopas::utils::Math::isNearRel(epsilonMap.value.at(siteId), epsilon) and
-        autopas::utils::Math::isNearRel(sigmaMap.value.at(siteId), sigma) and
-        autopas::utils::Math::isNearRel(massMap.value.at(siteId), mass)) {
+    if (autopas::utils::Math::isNearRel(massMap.value.at(siteId), mass)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
     }
   } else {
-    epsilonMap.value.emplace(siteId, epsilon);
-    sigmaMap.value.emplace(siteId, sigma);
     massMap.value.emplace(siteId, mass);
+  }
+}
+
+void MDFlexConfig::addLJParametersToSite(unsigned long siteId, double epsilon, double sigma) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (epsilonMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNearRel(epsilonMap.value.at(siteId), epsilon) and
+          autopas::utils::Math::isNearRel(sigmaMap.value.at(siteId), sigma)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      epsilonMap.value.emplace(siteId, epsilon);
+      sigmaMap.value.emplace(siteId, sigma);
+    }
+  } else {
+    throw std::runtime_error("Initializing LJ parameters to a non existing site-ID");
+  }
+}
+
+void MDFlexConfig::addATParametersToSite(unsigned long siteId, double nu) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (nuMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNearRel(nuMap.value.at(siteId), nu)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      nuMap.value.emplace(siteId, nu);
+    }
+  } else {
+    throw std::runtime_error("Initializing AT parameters to a non existing site-ID");
   }
 }
 
@@ -515,15 +585,23 @@ void MDFlexConfig::flushParticles() { particles.clear(); }
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
-  // check size of site level vectors match
-  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
-    throw std::runtime_error("Number of site-level properties differ!");
+  // initialize site Ids with mandatory mass parameter
+  for (auto [siteTypeId, mass] : massMap.value) {
+    _particlePropertiesLibrary->addSiteType(siteTypeId, massMap.value.at(siteTypeId));
   }
-
-  // initialize at site level
+  // check size of LJ site parameter vectors match
+  if (epsilonMap.value.size() != sigmaMap.value.size()) {
+    throw std::runtime_error(
+        "MDFlexConfig::initializeParticlePropertiesLibrary(): Number of LJ site-level properties differ! Potentially "
+        "missing epsilon or sigma for some LJ sites.");
+  }
+  // initialize LJ parameters
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
-                                            massMap.value.at(siteTypeId));
+    _particlePropertiesLibrary->addLJParametersToSite(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId));
+  }
+  // initialize AT parameters
+  for (auto [siteTypeId, nu] : nuMap.value) {
+    _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

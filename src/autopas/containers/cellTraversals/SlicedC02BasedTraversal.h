@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "SlicedBasedTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -23,24 +23,24 @@ namespace autopas {
  * the domain into as many slices as possible along this dimension. Unlike the regular
  * sliced traversal, this version uses a 2-coloring to prevent race conditions, instead of
  * locking the starting layers. This could also be describes as a c02-traversal. This class
- * is however not derived from CBasedTraversal, as that would not allow varying slice thicknesses,
+ * is however not derived from ColorBasedTraversal, as that would not allow varying slice thicknesses,
  * and would prevent us from selecting the dimension in which we cut the slices.
  *
  * @tparam ParticleCell The type of cells.
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction between particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor> {
+template <class ParticleCell, class Functor>
+class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functor> {
  public:
   /**
    * Constructor of the colored sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                   double interactionLength, const std::array<double, 3> &cellLength,
+  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
+                                   const double interactionLength, const std::array<double, 3> &cellLength,
                                    DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                            dataLayout, useNewton3, spaciallyForward) {}
+      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                    useNewton3, spaciallyForward) {}
 
   /**
    * The main traversal of the colored sliced traversal.
@@ -71,9 +71,9 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
   }
 };
 
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell, class Functor>
 template <typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>::cSlicedTraversal(LoopBody &&loopBody) {
+void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();

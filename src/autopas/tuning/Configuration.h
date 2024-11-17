@@ -32,25 +32,28 @@ class Configuration {
    * @param _dataLayout
    * @param _newton3
    * @param _cellSizeFactor
+   * @param _interactionType
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          VectorizationPatternOption _vecPattern)
+                          InteractionTypeOption _interactionType, VectorizationPatternOption _vecPattern)
       : container(_container),
         traversal(_traversal),
         vecPattern(_vecPattern),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
-        cellSizeFactor(_cellSizeFactor) {}
+        cellSizeFactor(_cellSizeFactor),
+        interactionType(_interactionType) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
-  constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
+  constexpr Configuration()
+      : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), interactionType() {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -64,9 +67,10 @@ class Configuration {
    * @return A short string representation.
    */
   [[nodiscard]] std::string toShortString(bool fixedLength = true) const {
-    return "{" + container.to_string(fixedLength) + " , " + std::to_string(cellSizeFactor) + " , " +
-           traversal.to_string(fixedLength) + " , " + loadEstimator.to_string(fixedLength) + " , " +
-           dataLayout.to_string(fixedLength) + " , " + newton3.to_string(fixedLength) + "}";
+    return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " +
+           std::to_string(cellSizeFactor) + " , " + traversal.to_string(fixedLength) + " , " +
+           loadEstimator.to_string(fixedLength) + " , " + dataLayout.to_string(fixedLength) + " , " +
+           newton3.to_string(fixedLength) + "}";
   }
 
   /**
@@ -137,6 +141,10 @@ class Configuration {
    * CellSizeFactor
    */
   double cellSizeFactor;
+  /**
+   * Interaction type of the configuration.
+   */
+  InteractionTypeOption interactionType;
 
  private:
   /**
@@ -202,11 +210,12 @@ struct ConfigHash {
    * @return
    */
   std::size_t operator()(Configuration configuration) const {
-    std::size_t enumHash = static_cast<std::size_t>(configuration.newton3) +
-                           static_cast<std::size_t>(configuration.dataLayout) * 10 +
-                           static_cast<std::size_t>(configuration.loadEstimator) * 100 +
-                           static_cast<std::size_t>(configuration.traversal) * 1000 +
-                           static_cast<std::size_t>(configuration.container) * 10000;
+    std::size_t enumHash = static_cast<std::size_t>(configuration.interactionType) +
+                           static_cast<std::size_t>(configuration.newton3) * 10 +
+                           static_cast<std::size_t>(configuration.dataLayout) * 100 +
+                           static_cast<std::size_t>(configuration.loadEstimator) * 1000 +
+                           static_cast<std::size_t>(configuration.traversal) * 10000 +
+                           static_cast<std::size_t>(configuration.container) * 100000;
     std::size_t doubleHash = std::hash<double>{}(configuration.cellSizeFactor);
 
     return enumHash ^ doubleHash;

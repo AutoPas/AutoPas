@@ -25,8 +25,10 @@
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
+// TODO: decide how big this is!
 /**
  * type definition for the serialization of configurations. A serialized config is an array of 13 bytes.
+ * type definition for the serialization of configurations. A serialized config is an array of 14 bytes.
  * */
 using SerializedConfiguration = std::array<std::byte, 14>;
 
@@ -50,6 +52,7 @@ inline std::byte castToByte(TOption option) {
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
+ * @param interactionTypeOption
  * @return
  */
 size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
@@ -57,7 +60,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
                           const std::set<Newton3Option> &newton3Options,
-                          const std::set<VectorizationPatternOption> &vecPatternOptions);
+                          const std::set<VectorizationPatternOption> &vecPatternOptions,
+                          const InteractionTypeOption &interactionTypeOption);
 
 /**
  * Distributes the provided configurations globally for equal work loads.
@@ -69,6 +73,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
+ * @param interactionTypeOption
  * @param rank
  * @param commSize
  */
@@ -76,7 +81,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              std::set<VectorizationPatternOption> &vecPatternOptions,
+                              InteractionTypeOption interactionTypeOption, std::set<VectorizationPatternOption> &vecPatternOptions,
                               int rank, int commSize);
 
 /**
