@@ -74,7 +74,8 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                LoadEstimatorOption::none,
                                DataLayoutOption::aos,
                                Newton3Option::disabled,
-                               interactionType};
+                               interactionType,
+                               VectorizationPatternOption::p1xVec};
 
   if (interactionType == InteractionTypeOption::triwise) {
     fallBackConfig.traversal = TraversalOption::lc_c01;

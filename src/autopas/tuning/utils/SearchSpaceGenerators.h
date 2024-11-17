@@ -38,6 +38,9 @@ struct OptionSpace {
    * Available traversal options.
    */
   std::set<TraversalOption> traversalOptions;
+
+  std::set<VectorizationPatternOption> vecPatternOptions;
+
   /**
    * Available loadEstimator options.
    */
@@ -74,6 +77,7 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
+                                         const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
                                          const InteractionTypeOption &interactionType);
 
 /**

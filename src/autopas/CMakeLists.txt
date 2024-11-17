@@ -12,18 +12,13 @@ file(
     "*.cuh"
 )
 
-option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-        "Enables energy measurements and tuning using Intel's RAPL (Running Average Power Limit) interface for x86 processors
-        running on Linux kernels."
-        OFF
-)
-
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
 if (NOT AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     list(FILTER MY_SRC EXCLUDE REGEX ".*parser_generated.*")
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
+
 
 add_library(autopas STATIC ${MY_SRC})
 
@@ -38,7 +33,12 @@ target_link_libraries(
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
+        pmt
         Eigen3
+        xsimd
+        mipp
+        simde
+        hwy
     PRIVATE
         # harmony are only needed privately when building AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony>
@@ -55,7 +55,6 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
-        $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         _USE_MATH_DEFINES
 )
 

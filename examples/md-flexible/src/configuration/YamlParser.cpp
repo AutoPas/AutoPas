@@ -232,6 +232,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if(strArg.find("xsimd") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_XSIMD;
+        } else if(strArg.find("mipp") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_MIPP;
+        } else if(strArg.find("simde") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
+        } else if(strArg.find("highway") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -285,6 +293,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.newton3Options.value.empty()) {
           throw std::runtime_error("Unknown Newton3 option!");
         }
+      } else if (key == config.vecPatternOptions.name) {
+        expected = "One of the possible values.";
+        description = config.vecPatternOptions.description;
+
+        config.vecPatternOptions.value
+          = autopas::VectorizationPatternOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.vecPatternOptions.value.empty()) {
+          throw std::runtime_error("Unknown VectorizationPattern option!");
+        }
       } else if (key == config.newton3Options3B.name) {
         expected = "YAML-sequence of possible values.";
         description = config.newton3Options3B.description;
@@ -299,6 +317,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.energySensorOption.name) {
+        expected = "Exactly one energy sensor out of the possible options.";
+        description = config.energySensorOption.description;
+        const auto parsedOptions = autopas::EnergySensorOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!"));
+        config.energySensorOption.value = *parsedOptions.begin();
       } else if (key == config.pauseSimulationDuringTuning.name) {
         expected = "Boolean Value";
         description = config.pauseSimulationDuringTuning.description;

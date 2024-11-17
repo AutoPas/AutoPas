@@ -15,6 +15,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -22,6 +23,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -203,7 +205,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_XSIMD, lj12_6_MIPP, lj12_6_SIMDe, lj12_6_HWY };
 
   /**
    * Choice of the Triwise functor
@@ -287,6 +289,11 @@ class MDFlexConfig {
       autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
       "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
+
+  MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions {
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorizationPattern", true,
+      "Vectorization Pattern for HWY Functor."
+  };
   /**
    * cellSizeFactors
    */
@@ -329,6 +336,13 @@ class MDFlexConfig {
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
+  /**
+   * enerySensorOption
+   */
+  MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
+      autopas::EnergySensorOption::none, "energy-sensor", true,
+      "Sensor, used for energy consumption measurement. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::EnergySensorOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * ruleFilename
    */
@@ -492,9 +506,9 @@ class MDFlexConfig {
    * functorOption
    */
   MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
-                                                      FunctorOption::none, "functor", true,
+                                                      FunctorOption::lj12_6_AVX, "functor", true,
                                                       "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"}; // TODO: extend
   /**
    * functorOption3B
    */

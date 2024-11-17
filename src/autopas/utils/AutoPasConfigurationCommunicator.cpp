@@ -191,6 +191,7 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[5] = castToByte(configuration.interactionType);
   // Doubles can't be easily truncated, so store all 8 bytes via memcpy
   std::memcpy(&config[6], &configuration.cellSizeFactor, sizeof(double));
+  config[7] = castToByte(configuration.vecPattern);
   return config;
 }
 
@@ -214,7 +215,7 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
       static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
       static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
       static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]),
+      static_cast<InteractionTypeOption::Value>(config[5]), static_cast<VectorizationPatternOption::Value>(config[7])
   };
 }
 

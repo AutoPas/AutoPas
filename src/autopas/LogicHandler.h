@@ -1084,7 +1084,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
+  const auto [energyWatts, energyJoules, energySeconds, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
@@ -1094,9 +1094,9 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
           energyMeasurementsPossible,
-          energyMeasurementsPossible ? energyPsys : nanD,
-          energyMeasurementsPossible ? energyPkg : nanD,
-          energyMeasurementsPossible ? energyRam : nanD,
+          energyMeasurementsPossible ? energyWatts : nanD,
+          energyMeasurementsPossible ? energyJoules : nanD,
+          energyMeasurementsPossible ? energySeconds : nanD,
           energyMeasurementsPossible ? energyTotal : nanL};
 }
 
@@ -1581,6 +1581,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
+  functor.setVecPattern(configuration.vecPattern);
 
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
@@ -1637,8 +1638,8 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   AutoPasLog(DEBUG, "RebuildNeighborLists           took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "AutoPas::computeInteractions   took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
-    AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
-               measurements.energyPkg, measurements.energyRam);
+    AutoPasLog(DEBUG, "Energy Consumption: Watts: {} Joules: {} Seconds: {}", measurements.energyWatts,
+               measurements.energyJoules, measurements.energySeconds);
   }
   _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(),
                                 measurements);
