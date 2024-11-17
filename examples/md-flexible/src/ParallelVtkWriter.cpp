@@ -117,7 +117,25 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  // print angular velocities
+  timestepFile
+      << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto angVel = particle->getAngularVel();
+    timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print torques
+  timestepFile << "        <DataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto torque = particle->getTorque();
+    timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
 #endif
+
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
@@ -303,6 +321,10 @@ void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
 #if MD_FLEXIBLE_MODE == MULTISITE
   timestepFile
       << "      <PDataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile
+      << "      <PDataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
   timestepFile
       << "      <PDataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
