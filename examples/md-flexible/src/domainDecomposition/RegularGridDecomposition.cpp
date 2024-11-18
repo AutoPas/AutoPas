@@ -21,6 +21,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
+#include "src/zonalMethods/FullShell.h"
+#include "src/zonalMethods/region/RectRegion.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
     : _loadBalancerOption(configuration.loadBalancer.value),
@@ -65,13 +67,8 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   initializeNeighborIndices();
   // initialize _allNeighborDomainIndices
   initializeAllNeighborIndices();
-
-  // only if rank is zero
-  /* if (_domainIndex == 0) { */
-  /*   for (auto i : _allNeighborDomainIndices) { */
-  /*     std::cout << i << std::endl; */
-  /*   } */
-  /* } */
+  // initialize _zonalMethod
+  initilaizeZonalMethod();
 
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
@@ -178,18 +175,30 @@ void RegularGridDecomposition::initializeAllNeighborIndices() {
         /*
          * the neighbourIndex is caluculated by taking the relative neighbour position,
          * adding 1 to each component and interpreting it as a 3-base number.
-         * We subtract 1 at the end, as the home-base ({0, 0, 0}) is not considered here.
+         * We subtract 1 at the end if the initial index is greater than 13,
+         * as the home-base ({0, 0, 0}) is not considered here.
          *
          * Example:
          *   right, lower, middle neighbour: {1, -1, 0}
          *   => Interpretation of 201 as a 3-base number - 1 = 18
          */
-        auto neighborIndex = (x + 1) * 9 + (y + 1) * 3 + (z + 1) - 1;
+        auto neighborIndex = (x + 1) * 9 + (y + 1) * 3 + (z + 1);
+        if (neighborIndex > 13) {
+          neighborIndex--;
+        }
 
         _allNeighborDomainIndices[neighborIndex] = DomainTools::convertIdToIndex(neighborId, _decomposition);
       }
     }
   }
+}
+
+void RegularGridDecomposition::initilaizeZonalMethod() {
+  using namespace autopas::utils::ArrayMath::literals;
+  const double skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
+  RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
+  // NOTE Later: intialize different zonal methods depending on user input
+  _zonalMethod = std::make_unique<FullShell>(FullShell(homeBoxRegion, _cutoffWidth, skinWidth));
 }
 
 bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
@@ -278,6 +287,15 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
   }
   autoPasContainer.addHaloParticles(_haloParticles);
 }
+
+void RegularGridDecomposition::exchangeZonalHaloParticlesExport(AutoPasType &autoPasContainer) {
+  // collect particles to be exported
+  _zonalMethod->collectParticles(autoPasContainer);
+  // send exports and receive imports
+  _zonalMethod->SendAndReceiveExports(autoPasContainer, _communicator, _allNeighborDomainIndices);
+}
+
+void RegularGridDecomposition::exchangeZonalHaloParticlesResults(AutoPasType &autoPasContainer) {}
 
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
