@@ -22,7 +22,8 @@ class RectRegion : public Region {
   std::array<double, 3> _size;
 
   /**
-   * Constructor
+   * Constructor of RectRegion
+   * Normalizes origin and size when called.
    * @param origin
    * @param size
    * @param zoneID
@@ -54,6 +55,13 @@ class RectRegion : public Region {
    * without changing the specified region.
    * */
   void normalize();
+
+
+  /**
+   * Returns a string representation of the region.
+   * @return
+   */
+  std::string toString() const;
 };
 
 #include "autopas/utils/ArrayUtils.h"
