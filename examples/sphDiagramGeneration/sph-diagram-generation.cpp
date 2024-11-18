@@ -162,14 +162,14 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   autopas::utils::Timer t;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
+  for (int i = 0; i < numIterations; ++i) cont->computeInteractions(func);
 
   double elapsedTime = t.stop();
 
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-9;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
+  for (int i = 0; i < numIterations; ++i) cont->computeInteractions(func);
 
   elapsedTime = t.stop();
 

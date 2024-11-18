@@ -12,7 +12,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -144,9 +144,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
-   */
   void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   /**
@@ -173,10 +170,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
@@ -184,12 +181,12 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCellsReferences::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in LinkedCellsReferences::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 

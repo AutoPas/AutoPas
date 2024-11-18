@@ -14,7 +14,7 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -42,8 +42,9 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
-                                                                    calculateGlobals, countFLOPs, relevantForTuning>> {
+class LJFunctorAVX
+    : public autopas::PairwiseFunctor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
+                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -60,8 +61,8 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                countFLOPs, relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -110,6 +111,8 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
+
+  std::string getName() final { return "LJFunctorAVX"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -176,7 +179,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
@@ -190,7 +193,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
@@ -607,7 +610,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
  public:
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
@@ -882,8 +885,8 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
-      AutoPasLog(INFO, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(INFO, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 

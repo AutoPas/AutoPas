@@ -209,6 +209,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.dataLayoutOptions.value.empty()) {
           throw std::runtime_error("Parsed data-layouts-list is empty.");
         }
+      } else if (key == config.dataLayoutOptions3B.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.dataLayoutOptions3B.description;
+
+        config.dataLayoutOptions3B.value =
+            autopas::DataLayoutOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        if (config.dataLayoutOptions3B.value.empty()) {
+          throw std::runtime_error("Parsed data-layouts-list is empty.");
+        }
       } else if (key == config.functorOption.name) {
         expected = "One of the possible values.";
         description = config.functorOption.description;
@@ -224,8 +233,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
-          throw std::runtime_error("Unrecognized functor!");
+          throw std::runtime_error("Unrecognized pairwise functor!");
         }
+        config.addInteractionType(autopas::InteractionTypeOption::pairwise);
+      } else if (key == config.functorOption3B.name) {
+        expected = "One of the possible values.";
+        description = config.functorOption3B.description;
+
+        auto strArg = node[key].as<std::string>();
+        transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+        if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+        } else {
+          throw std::runtime_error("Unrecognized triwise functor!");
+        }
+        config.addInteractionType(autopas::InteractionTypeOption::triwise);
       } else if (key == config.iterations.name) {
         expected = "Unsigned Integer > 0";
         description = config.iterations.description;
@@ -263,6 +285,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.newton3Options.value.empty()) {
           throw std::runtime_error("Unknown Newton3 option!");
         }
+      } else if (key == config.newton3Options3B.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.newton3Options3B.description;
+
+        config.newton3Options3B.value =
+            autopas::Newton3Option::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        if (config.newton3Options3B.value.empty()) {
+          throw std::runtime_error("Unknown Newton3 option!");
+        }
       } else if (key == config.deltaT.name) {
         expected = "Positive floating point value.";
         description = config.deltaT.description;
@@ -286,6 +317,17 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             autopas::TraversalOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.traversalOptions.value.empty()) {
+          throw std::runtime_error("Parsed traversal-list is empty. Maybe you used an unknown option.");
+        }
+
+      } else if (key == config.traversalOptions3B.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.traversalOptions3B.description;
+
+        config.traversalOptions3B.value =
+            autopas::TraversalOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.traversalOptions3B.value.empty()) {
           throw std::runtime_error("Parsed traversal-list is empty. Maybe you used an unknown option.");
         }
 
@@ -547,6 +589,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         // remove default objects
         config.epsilonMap.value.clear();
         config.sigmaMap.value.clear();
+        config.nuMap.value.clear();
         config.massMap.value.clear();
 
         int siteID = 0;
@@ -565,14 +608,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           siteErrors.clear();
           siteID = std::distance(node[MDFlexConfig::siteStr].begin(), siteIterator);
 
-          const auto epsilon =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(), siteErrors);
-          const auto sigma =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
 
-          config.addSiteType(siteID, epsilon, sigma, mass);
+          config.addSiteType(siteID, mass);
+          // Check LJ parameters
+          const auto epsilon = parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(),
+                                                                   siteErrors, false);
+          const auto sigma = parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(),
+                                                                 siteErrors, false);
+          config.addLJParametersToSite(siteID, epsilon, sigma);
+
+          // Check Axilrod-Teller parameter
+          const auto nu =
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
+          config.addATParametersToSite(siteID, nu);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
