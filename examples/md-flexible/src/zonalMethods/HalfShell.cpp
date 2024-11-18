@@ -1,6 +1,8 @@
 
 #include "src/zonalMethods/HalfShell.h"
 
+#include "src/ParticleCommunicator.h"
+
 HalfShell::HalfShell(RectRegion homeBoxRegion, double cutoff, double verletSkinWidth) : ZonalMethod(1) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
@@ -32,6 +34,33 @@ HalfShell::~HalfShell() = default;
 void HalfShell::collectParticles(AutoPasType &autoPasContainer) {
   size_t index = 0;
   for (auto &region : _exportRegions) {
+    // NOTE Optimization: Could reserve buffer in advance
+    _regionBuffers[index].clear();
     region.collectParticles(autoPasContainer, _regionBuffers[index++]);
   }
 }
+
+void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
+                                      std::array<int, 26> allNeighbourIndices) {
+  ParticleCommunicator particleCommunicator(comm);
+  size_t index = 0;
+  for (auto &exRegion : _exportRegions) {
+    auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
+    auto neighbourRank = allNeighbourIndices.at(index);
+    particleCommunicator.sendParticles(_regionBuffers[index++], neighbourRank);
+  }
+  // receive
+  // NOTE Optimization: Could reserve buffer in advance
+  _importParticles.clear();
+  for (auto &imRegion : _importRegions) {
+    auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
+    auto neighbourRank = allNeighbourIndices.at(index);
+    particleCommunicator.receiveParticles(_importParticles, neighbourRank);
+  }
+  particleCommunicator.waitForSendRequests();
+
+  autoPasContainer.addHaloParticles(_importParticles);
+}
+
+void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
+                                      std::array<int, 26> allNeighbourIndices) {}
