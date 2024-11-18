@@ -19,6 +19,13 @@ void RectRegion::collectParticles(AutoPasType &autoPasContainer, std::vector<Par
 
 bool RectRegion::operator==(const RectRegion &other) const { return _origin == other._origin and _size == other._size; }
 
+std::string RectRegion::toString() const {
+  return "Region( origin: " + std::to_string(_origin[0]) + ", " + std::to_string(_origin[1]) + ", " +
+         std::to_string(_origin[2]) + " | size: " + std::to_string(_size[0]) + ", " + std::to_string(_size[1]) + ", " +
+         std::to_string(_size[2]) + " | neighbour: " + std::to_string(_neighbour[0]) + ", " +
+         std::to_string(_neighbour[1]) + ", " + std::to_string(_neighbour[2]) + " )";
+}
+
 void RectRegion::normalize() {
   for (int i = 0; i < 3; ++i) {
     if (_size[i] < 0) {
