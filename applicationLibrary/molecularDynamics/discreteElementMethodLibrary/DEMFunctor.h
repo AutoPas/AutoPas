@@ -206,9 +206,12 @@ class DEMFunctor
     const auto [sigma, epsilon6, radiusI, radiusJ] = computeMaterialProperties(i, j);
     const std::array<double, 3> normalUnit = displacement / dist;
     const double overlap = radiusI + radiusJ - dist;
+    const double radiusIReduced = radiusI - overlap / 2.;
+    const double radiusJReduced = radiusJ - overlap / 2.;
     const std::array<double, 3> relVel = i.getV() - j.getV();
     const double normalRelVelMag = autopas::utils::ArrayMath::dot(normalUnit, relVel);
 
+    // Compute Forces
     // Compute normal forces
     const double normalContactFMag = computeNormalContactFMag(overlap, normalRelVelMag);
     const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, cutoff);
@@ -217,7 +220,7 @@ class DEMFunctor
 
     // Compute tangential force
     const std::array<double, 3> tanF =
-        computeTangentialForce(overlap, i, j, radiusI, radiusJ, normalUnit, normalRelVelMag, normalContactFMag);
+        computeTangentialForce(overlap, i, j, radiusIReduced, radiusJReduced, normalUnit, normalRelVelMag, normalContactFMag);
 
     // Compute total force
     const std::array<double, 3> totalF = normalF + tanF;
@@ -225,8 +228,17 @@ class DEMFunctor
     // Apply forces
     i.addF(totalF);
     if (newton3) {
-      // only if we use newton 3 here, we want to
       j.subF(totalF);
+    }
+
+    // Compute Torques
+    // Compute frictional torque
+    const std::array<double, 3> frictionQI = computeFrictionTorqueI(overlap, radiusIReduced, normalUnit, tanF);
+
+    // Apply torques
+    i.addTorque(frictionQI);
+    if (newton3) {
+      j.addTorque(frictionQI * (radiusJReduced / radiusIReduced));
     }
 
     if constexpr (countFLOPs) {
@@ -281,6 +293,10 @@ class DEMFunctor
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
+    SoAFloatPrecision *const __restrict qXptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict qYptr = soa.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict qZptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     // Initialize local variables for constants
@@ -308,6 +324,11 @@ class DEMFunctor
       SoAFloatPrecision fxacc = 0.;
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
+
+      SoAFloatPrecision qXacc = 0.;
+      SoAFloatPrecision qYacc = 0.;
+      SoAFloatPrecision qZacc = 0.;
+
       double radiusI = constRadius;
 
       if constexpr (useMixing) {
@@ -413,22 +434,47 @@ class DEMFunctor
         }
 
         // Compute total force
-        fxacc += cutOffMask * (normalFX + overlapIsPositive * tanFX);
-        fyacc += cutOffMask * (normalFY + overlapIsPositive * tanFY);
-        fzacc += cutOffMask * (normalFZ + overlapIsPositive * tanFZ);
+        const SoAFloatPrecision totalFX = cutOffMask * (normalFX + overlapIsPositive * tanFX);
+        const SoAFloatPrecision totalFY = cutOffMask * (normalFY + overlapIsPositive * tanFY);
+        const SoAFloatPrecision totalFZ = cutOffMask * (normalFZ + overlapIsPositive * tanFZ);
+
+        fxacc += totalFX;
+        fyacc += totalFY;
+        fzacc += totalFZ;
 
         // Apply total force
         if (newton3) {
           // only if we use newton 3 here, we want to
-          fxptr[j] -= fxacc;
-          fyptr[j] -= fyacc;
-          fzptr[j] -= fzacc;
+          fxptr[j] -= totalFX;
+          fyptr[j] -= totalFY;
+          fzptr[j] -= totalFZ;
         }
 
-        fxptr[i] += fxacc;
-        fyptr[i] += fyacc;
-        fzptr[i] += fzacc;
-      }
+        // Compute torques
+        // Compute frictional torque
+        const SoAFloatPrecision frictionQIX = -radiusIReduced * (normalUnitY * tanFZ - normalUnitZ * tanFY);
+        const SoAFloatPrecision frictionQIY = -radiusIReduced * (normalUnitZ * tanFX - normalUnitX * tanFZ);
+        const SoAFloatPrecision frictionQIZ = -radiusIReduced * (normalUnitX * tanFY - normalUnitY * tanFX);
+
+        qXacc += frictionQIX;
+        qYacc += frictionQIY;
+        qZacc += frictionQIZ;
+
+        // Apply torques
+        if (newton3) {
+          qXptr[j] += (radiusJReduced / radiusIReduced) * frictionQIX;
+          qYptr[j] += (radiusJReduced / radiusIReduced) * frictionQIY;
+          qZptr[j] += (radiusJReduced / radiusIReduced) * frictionQIZ;
+        }
+      } // end of j loop
+
+      fxptr[i] += fxacc;
+      fyptr[i] += fyacc;
+      fzptr[i] += fzacc;
+
+      qXptr[i] += qXacc;
+      qYptr[i] += qYacc;
+      qZptr[i] += qZacc;
     }
   }
 
@@ -636,6 +682,10 @@ class DEMFunctor
     SoAFloatPrecision *const __restrict fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
 
+    SoAFloatPrecision *const __restrict qXptr1 = soa1.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict qYptr1 = soa1.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict qZptr1 = soa1.template begin<Particle::AttributeNames::torqueZ>();
+
     // Initialize pointers to SoA Data for soa2
     const auto *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
@@ -653,6 +703,10 @@ class DEMFunctor
     SoAFloatPrecision *const __restrict fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+    SoAFloatPrecision *const __restrict qXptr2 = soa2.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict qYptr2 = soa2.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict qZptr2 = soa2.template begin<Particle::AttributeNames::torqueZ>();
 
     [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
@@ -679,6 +733,10 @@ class DEMFunctor
       SoAFloatPrecision fxacc = 0.;
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
+
+      SoAFloatPrecision qXacc = 0.;
+      SoAFloatPrecision qYacc = 0.;
+      SoAFloatPrecision qZacc = 0.;
 
       SoAFloatPrecision radiusI = radius;
       // preload all sigma and epsilons for next vectorized region
@@ -780,21 +838,46 @@ class DEMFunctor
         }
 
         // Compute total force
-        fxacc += cutOffMask * (normalFX + overlapIsPositive * tanFX);
-        fyacc += cutOffMask * (normalFY + overlapIsPositive * tanFY);
-        fzacc += cutOffMask * (normalFZ + overlapIsPositive * tanFZ);
+        const SoAFloatPrecision totalFX = cutOffMask * (normalFX + overlapIsPositive * tanFX);
+        const SoAFloatPrecision totalFY = cutOffMask * (normalFY + overlapIsPositive * tanFY);
+        const SoAFloatPrecision totalFZ = cutOffMask * (normalFZ + overlapIsPositive * tanFZ);
+
+        fxacc += totalFX;
+        fyacc += totalFY;
+        fzacc += totalFZ;
 
         // Apply total force
         if (newton3) {
-          fxptr2[j] -= fxacc;
-          fyptr2[j] -= fyacc;
-          fzptr2[j] -= fzacc;
+          fxptr2[j] -= totalFX;
+          fyptr2[j] -= totalFY;
+          fzptr2[j] -= totalFZ;
         }
-      }
+
+        // Compute torques
+        // Compute frictional torque
+        const SoAFloatPrecision frictionQIX = -radiusI * (normalUnitY * tanFZ - normalUnitZ * tanFY);
+        const SoAFloatPrecision frictionQIY = -radiusIReduced * (normalUnitZ * tanFX - normalUnitX * tanFZ);
+        const SoAFloatPrecision frictionQIZ = -radiusIReduced * (normalUnitX * tanFY - normalUnitY * tanFX);
+
+        qXacc += frictionQIX;
+        qYacc += frictionQIY;
+        qZacc += frictionQIZ;
+
+        if (newton3) {
+          qXptr2[j] += (radiusJReduced / radiusIReduced) * frictionQIX;
+          qYptr2[j] += (radiusJReduced / radiusIReduced) * frictionQIY;
+          qZptr2[j] += (radiusJReduced / radiusIReduced) * frictionQIZ;
+        }
+
+      } // end of j loop
 
       fxptr1[i] += fxacc;
       fyptr1[i] += fyacc;
       fzptr1[i] += fzacc;
+
+      qXptr1[i] += qXacc;
+      qYptr1[i] += qYacc;
+      qZptr1[i] += qZacc;
     }
   }
 
@@ -945,7 +1028,7 @@ class DEMFunctor
   }
 
   std::array<double, 3> computeTangentialForce(const double overlap, const Particle &i, const Particle &j,
-                                               const double radiusI, const double radiusJ,
+                                               const double radiusIReduced, const double radiusJReduced,
                                                const std::array<double, 3> &normalUnit, const double normalRelVelMag,
                                                const double normalContactFMag) {
     using namespace autopas::utils::ArrayMath::literals;
@@ -953,8 +1036,6 @@ class DEMFunctor
     if (overlap <= 0) {
       return {0, 0, 0};
     }
-    const double radiusIReduced = radiusI - overlap / 2.;
-    const double radiusJReduced = radiusJ - overlap / 2.;
     const std::array<double, 3> tanRelVel =
         i.getV() - j.getV() + autopas::utils::ArrayMath::cross(normalUnit * radiusIReduced, i.getAngularVel()) +
         autopas::utils::ArrayMath::cross(normalUnit * radiusJReduced, j.getAngularVel());
@@ -971,6 +1052,15 @@ class DEMFunctor
     } else {
       return tanF;
     }
+  }
+
+  std::array<double, 3> computeFrictionTorqueI(const double overlap, const double radiusIReduced, const std::array<double, 3> &normalUnit,
+                                               const std::array<double, 3> &tanF) {
+    using namespace autopas::utils::ArrayMath::literals;
+    if (overlap <= 0) {
+      return {0, 0, 0};
+    }
+    return autopas::utils::ArrayMath::cross(normalUnit * (-radiusIReduced), tanF);
   }
 };
 }  // namespace demLib

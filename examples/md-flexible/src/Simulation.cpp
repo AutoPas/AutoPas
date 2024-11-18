@@ -254,7 +254,7 @@ void Simulation::run() {
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
-#if MD_FLEXIBLE_MODE == MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE || defined(MD_FLEXIBLE_FUNCTOR_DEM)
       updateAngularVelocities();
 #endif
       updateThermostat();
