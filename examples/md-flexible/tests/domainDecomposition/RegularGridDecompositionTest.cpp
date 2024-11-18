@@ -232,6 +232,55 @@ INSTANTIATE_TEST_SUITE_P(TestHaloParticles, RegularGridDecompositionTest,
                                          options::BoundaryTypeOption::none));
 
 /**
+ * Check if RegularGridDecomposition::exchangeHaloParticles generates all expected halo particles.
+ * Create a grid of particles at the border of each rank, then check if halo particles appear in the expected positions
+ * and nowhere else.
+ */
+TEST_F(RegularGridDecompositionTest, testExchangeZonalHaloParticles) {
+  auto [autoPasContainer, domainDecomposition] = initDomain();
+  const auto &localBoxMin = autoPasContainer->getBoxMin();
+  const auto &localBoxMax = autoPasContainer->getBoxMax();
+
+  const auto particlePositions = generatePositionsInsideDomain(*autoPasContainer);
+  ASSERT_THAT(particlePositions, ::testing::SizeIs(27)) << "Test setup faulty!";
+  {
+    size_t id = 0;
+    for (const auto &pos : particlePositions) {
+#if MD_FLEXIBLE_MODE == MULTISITE
+      ParticleType particle(pos, {0., 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, id++);
+#else
+      ParticleType particle(pos, {0., 0., 0.}, id++);
+#endif
+      autoPasContainer->addParticle(particle);
+    }
+  }
+  ASSERT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
+      << "Not all setup particles added to the container!";
+
+  const auto leavingParticles = autoPasContainer->updateContainer();
+  ASSERT_EQ(leavingParticles.size(), 0) << "All particles should have been created inside the container!";
+
+  // halos are generated here, so this is what we actually test
+  domainDecomposition->exchangeZonalHaloParticlesExport(*autoPasContainer);
+
+  EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
+      << "Owned particles missing after halo exchange!";
+
+  // expect particles to be all around the box since every particle creates multiple halo particles.
+  const auto expectedHaloParticlePositions = generatePositionsOutsideDomain(*autoPasContainer);
+  ASSERT_EQ(expectedHaloParticlePositions.size(), 98) << "Expectation setup faulty!";
+
+  EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
+            expectedHaloParticlePositions.size()) << "for Rank: " << domainDecomposition->getDomainIndex();
+
+  for (auto particleIter = autoPasContainer->begin(autopas::IteratorBehavior::halo); particleIter.isValid();
+       ++particleIter) {
+    EXPECT_THAT(expectedHaloParticlePositions, ::testing::Contains(particleIter->getR()))
+        << "for Rank: " << domainDecomposition->getDomainIndex();
+  }
+}
+
+/**
  * This test is designed to check if particles are properly being migrated.
  * It uses a very specific set of particles create a controlled test case.
  * For more information see the comments in the test.
