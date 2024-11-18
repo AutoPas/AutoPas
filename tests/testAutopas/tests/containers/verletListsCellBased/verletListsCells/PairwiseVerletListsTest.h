@@ -13,7 +13,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/UniformGenerator.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

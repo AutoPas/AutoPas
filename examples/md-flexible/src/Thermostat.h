@@ -267,5 +267,6 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }
+  const auto currentTemperatures = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 }
 }  // namespace Thermostat
