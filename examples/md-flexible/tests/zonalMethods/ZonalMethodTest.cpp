@@ -10,6 +10,17 @@
 void ZonalMethodTest::collectParticles(AutoPasType &autoPasContainer) {}
 
 /**
+ * Define function to allow instantiation
+ */
+void ZonalMethodTest::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
+                                            std::array<int, 26> allNeighbourIndices) {}
+/**
+ * Define function to allow instantiation
+ */
+void ZonalMethodTest::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
+                                            std::array<int, 26> allNeighbourIndices) {}
+
+/**
  * Tests the functionality of the getRectRegionConditional function, by
  * specifying a condition which should result in no regions.
  */
@@ -184,4 +195,3 @@ TEST_F(ZonalMethodTest, testRectRegionHSExportCalculation) {
   }
   EXPECT_EQ(expectedRegions.size(), 0);
 }
-
