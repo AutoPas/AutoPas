@@ -37,7 +37,7 @@ void HalfShell::collectParticles(AutoPasType &autoPasContainer) {
 }
 
 void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices) {
+                                      std::array<int, 26> allNeighbourIndices, int ownRank) {
   ParticleCommunicator particleCommunicator(comm);
   size_t index = 0;
   for (auto &exRegion : _exportRegions) {
@@ -59,4 +59,4 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::Au
 }
 
 void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices) {}
+                                      std::array<int, 26> allNeighbourIndices, int ownRank) {}
