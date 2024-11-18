@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -271,7 +271,8 @@ void Simulation::run() {
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
-      _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
+      /* _domainDecomposition->exchangeHaloParticles(*_autoPasContainer); */
+      _domainDecomposition->exchangeZonalHaloParticlesExport(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
       _timers.computationalLoad.start();
@@ -283,6 +284,8 @@ void Simulation::run() {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
       updateSimulationPauseState();
     }
+
+    // NOTE: import here
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
