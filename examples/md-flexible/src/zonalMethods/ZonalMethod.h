@@ -68,7 +68,7 @@ class ZonalMethod {
    * @param homeBoxRegion: region of the home bex
    * @param cutoffRadius: the cutoff radius
    * @param verletSkinWidth: the verlet skin width
-   * @param regions: the export regions
+   * @param regions: the export regions (normalized)
    * @param condition: the condition specifying which neighbours to consider
    * @param calcImports: whether to calculate import regions (default: true)
    */

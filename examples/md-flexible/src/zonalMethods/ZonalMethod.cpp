@@ -43,6 +43,8 @@ void ZonalMethod::getRectRegionsConditional(RectRegion &homeBoxRegion, double cu
 
         tmp.setNeighbour({d[0], d[1], d[2]});
 
+        tmp.normalize();
+
         regions.push_back(tmp);
       }
     }
