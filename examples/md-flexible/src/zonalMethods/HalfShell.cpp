@@ -23,10 +23,6 @@ HalfShell::HalfShell(RectRegion homeBoxRegion, double cutoff, double verletSkinW
   // calculate importRegions
   getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition);
 
-  // for the RegionIterator to operate properly, normalize the regions
-  for (auto &ex : _exportRegions) ex.normalize();
-
-  for (auto &im : _importRegions) im.normalize();
 }
 
 HalfShell::~HalfShell() = default;
