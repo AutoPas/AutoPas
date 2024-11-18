@@ -36,7 +36,7 @@ class HalfShell : public ZonalMethod {
    * @param allNeighbourIndices
    */
   void SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                             std::array<int, 26> allNeighbourIndices) override;
+                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
   /**
    * Send and receive results of the force calculation and
    * store them into the respective particles in the AutoPas container.
@@ -47,7 +47,7 @@ class HalfShell : public ZonalMethod {
    * @param allNeighbourIndices
    */
   void SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                             std::array<int, 26> allNeighbourIndices) override;
+                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
 
  protected:
   /**

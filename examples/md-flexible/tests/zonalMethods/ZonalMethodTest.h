@@ -19,8 +19,8 @@ class ZonalMethodTest : public ZonalMethod, public AutoPasTestBase {
   void collectParticles(AutoPasType &autoPasContainer) override;
 
   void SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                             std::array<int, 26> allNeighbourIndices) override;
+                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
 
   void SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                             std::array<int, 26> allNeighbourIndices) override;
+                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
 };

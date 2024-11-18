@@ -41,7 +41,7 @@ class ZonalMethod {
    * @param allNeighbourIndices
    */
   virtual void SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                     std::array<int, 26> allNeighbourIndices) = 0;
+                                     std::array<int, 26> allNeighbourIndices, int ownRank) = 0;
 
   /**
    * Send and receive results of the force calculation and
@@ -53,7 +53,7 @@ class ZonalMethod {
    * @param allNeighbourIndices
    */
   virtual void SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                     std::array<int, 26> allNeighbourIndices) = 0;
+                                     std::array<int, 26> allNeighbourIndices, int ownRank) = 0;
 
  protected:
   /**

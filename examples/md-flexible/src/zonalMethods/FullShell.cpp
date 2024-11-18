@@ -38,12 +38,13 @@ void FullShell::collectParticles(AutoPasType &autoPasContainer) {
 }
 
 void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices) {
+                                      std::array<int, 26> allNeighbourIndices, int ownRank) {
   ParticleCommunicator particleCommunicator(comm);
   size_t index = 0;
   for (auto &exRegion : _exportRegions) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = allNeighbourIndices.at(index);
+    if (neighbourRank == ownRank) continue;
     particleCommunicator.sendParticles(_regionBuffers[index++], neighbourRank);
   }
   // receive
@@ -52,6 +53,7 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::Au
   for (auto &imRegion : _importRegions) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = allNeighbourIndices.at(index);
+    if (neighbourRank == ownRank) continue;
     particleCommunicator.receiveParticles(_importParticles, neighbourRank);
   }
   particleCommunicator.waitForSendRequests();
@@ -60,4 +62,4 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::Au
 }
 
 void FullShell::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices) {}
+                                      std::array<int, 26> allNeighbourIndices, int ownRank) {}

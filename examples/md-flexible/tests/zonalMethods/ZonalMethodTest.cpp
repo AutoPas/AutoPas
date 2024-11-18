@@ -13,12 +13,12 @@ void ZonalMethodTest::collectParticles(AutoPasType &autoPasContainer) {}
  * Define function to allow instantiation
  */
 void ZonalMethodTest::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                            std::array<int, 26> allNeighbourIndices) {}
+                                            std::array<int, 26> allNeighbourIndices, int ownRank) {}
 /**
  * Define function to allow instantiation
  */
 void ZonalMethodTest::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                            std::array<int, 26> allNeighbourIndices) {}
+                                            std::array<int, 26> allNeighbourIndices, int ownRank) {}
 
 /**
  * Tests the functionality of the getRectRegionConditional function, by
