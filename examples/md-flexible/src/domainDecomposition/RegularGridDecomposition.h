@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "src/zonalMethods/ZonalMethod.h"
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
 #include <ALL.hpp>
 #endif
@@ -126,11 +127,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeZonalHaloParticlesExport(AutoPasType &autoPasContainer);
 
   /**
-   * Exchanges zonal halo particles to be imported with all neighbors of the
+   * Exchanges the resulting forces of the zonal halo particles with all neighbors of the
    * provided AutoPasContainer.
    * @param autoPasContainer: The container, where the halo particles originate from.
    */
-  void exchangeZonalHaloParticlesImport(AutoPasType &autoPasContainer);
+  void exchangeZonalHaloParticlesResults(AutoPasType &autoPasContainer);
 
   /**
    * Exchanges migrating particles with all neighbors of the provided AutoPasContainer.
@@ -301,6 +302,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::vector<ParticleType> _haloParticles{};
 
+  /**
+   * The zonal method used for inter-node communication
+   */
+  std::unique_ptr<ZonalMethod> _zonalMethod;
+
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * The ALL load balancer used for diffuse load balancing
@@ -339,6 +345,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * This needs to be called after initializeLocalDomain.
    */
   void initializeAllNeighborIndices();
+
+  /**
+   * Initializes _zonalMethod
+   * This needs to be called after initializeLocalDomain.
+   */
+  void initilaizeZonalMethod();
 
   /**
    * Sends and also receives particles to and from the left and right neighbours.
