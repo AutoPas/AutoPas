@@ -367,6 +367,11 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
                                                      "Number of samples to collect per configuration."};
   /**
+   * useLOESSSmoothening
+   */
+  MDFlexOption<bool, __LINE__> useLOESSSmoothening{
+      false, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
+  /**
    * tuningMaxEvidence
    */
   MDFlexOption<unsigned int, __LINE__> tuningMaxEvidence{

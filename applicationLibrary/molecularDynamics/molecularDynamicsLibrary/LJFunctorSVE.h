@@ -74,7 +74,7 @@ class LJFunctorSVE
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      AutoPasLog(DEBUG, "Using LJFunctorSVE with countFLOPs but FLOP counting is not implemented."););
+      AutoPasLog(DEBUG, "Using LJFunctorSVE with countFLOPs but FLOP counting is not implemented.");
     }
   }
 #else
