@@ -48,3 +48,11 @@ void ZonalMethod::getRectRegionsConditional(RectRegion &homeBoxRegion, double cu
     }
   }
 }
+
+size_t ZonalMethod::convRelNeighboursToIndex(std::array<int, 3> relNeighbour) {
+  auto index = (relNeighbour[0] + 1) * 9 + (relNeighbour[1] + 1) * 3 + (relNeighbour[2] + 1);
+  if (index > 13) {
+    index--;
+  }
+  return index;
+}
