@@ -20,9 +20,6 @@ extern template class autopas::AutoPas<ParticleType>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovec *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovecGlobals *);
-#endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAVX *);
 #endif
@@ -345,12 +342,13 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
 
         const size_t searchSpaceSizeTriwise =
             _configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) == 0
-                ?: autopas::SearchSpaceGenerators::cartesianProduct(
-                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
-                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
-                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                       autopas::InteractionTypeOption::triwise)
-                       .size();
+                ? 0
+                : autopas::SearchSpaceGenerators::cartesianProduct(
+                      _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
+                      _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                      _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
+                      autopas::InteractionTypeOption::triwise)
+                      .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
       }
@@ -794,15 +792,6 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
-#endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-      return f(LJFunctorTypeAutovecGlobals{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor AutoVec Globals. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=ON`.");
 #endif
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
