@@ -988,7 +988,8 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
         Particle& particle = *iter;
         Particle& particleCopy = particle;
         _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-        _containerSelector.getCurrentContainer().deleteParticle(particle);
+        internal::markParticleAsDeleted(particle);
+        // _containerSelector.getCurrentContainer().deleteParticle(particle);
 
         _particleNumber ++;
       }
