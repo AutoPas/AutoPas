@@ -24,11 +24,6 @@ FullShell::FullShell(RectRegion homeBoxRegion, double cutoff, double verletSkinW
 
   // calculate importRegions - NOTE: no real need to calculate
   getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _importRegions, fsCondition);
-
-  // for the RegionIterator to operate properly, normalize the regions
-  for (auto &ex : _exportRegions) ex.normalize();
-
-  for (auto &im : _importRegions) im.normalize();
 }
 
 FullShell::~FullShell() = default;
