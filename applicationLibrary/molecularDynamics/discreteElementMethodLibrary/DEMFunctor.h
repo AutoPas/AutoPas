@@ -233,7 +233,7 @@ class DEMFunctor
                                                               normalRelVelMag, normalContactFMag);
 
     // Compute total force
-    const std::array<double, 3> totalF = {0., 0., 0.}; // Todo: change
+    const std::array<double, 3> totalF = normalF + tanF;
 
     // Apply forces
     i.addF(totalF);
@@ -244,7 +244,8 @@ class DEMFunctor
     // Compute Torques
     // Compute frictional torque
     const std::array<double, 3> frictionQI = computeFrictionTorqueI(overlap, radiusIReduced, normalUnit, tanF);
-    const std::array<double, 3> rollingQI = computeRollingTorqueI(overlap, radiusIReduced, radiusJReduced, i, j, normalUnit, normalContactFMag);
+    const std::array<double, 3> rollingQI =
+        computeRollingTorqueI(overlap, radiusIReduced, radiusJReduced, i, j, normalUnit, normalContactFMag);
 
     // Apply torques
     i.addTorque(frictionQI + rollingQI);
@@ -467,15 +468,46 @@ class DEMFunctor
         const SoAFloatPrecision frictionQIY = -radiusIReduced * (normalUnitZ * tanFX - normalUnitX * tanFZ);
         const SoAFloatPrecision frictionQIZ = -radiusIReduced * (normalUnitX * tanFY - normalUnitY * tanFX);
 
-        qXacc += frictionQIX;
-        qYacc += frictionQIY;
-        qZacc += frictionQIZ;
+        // Compute rolling torque
+        const SoAFloatPrecision radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
+        const SoAFloatPrecision rollingRelVelX =
+            -radiusReduced * (normalUnitY * (angularVelZptr[i] - angularVelZptr[j]) -
+                              normalUnitZ * (angularVelYptr[i] - angularVelYptr[j]));
+        const SoAFloatPrecision rollingRelVelY =
+            -radiusReduced * (normalUnitZ * (angularVelXptr[i] - angularVelXptr[j]) -
+                              normalUnitX * (angularVelZptr[i] - angularVelZptr[j]));
+        const SoAFloatPrecision rollingRelVelZ =
+            -radiusReduced * (normalUnitX * (angularVelYptr[i] - angularVelYptr[j]) -
+                              normalUnitY * (angularVelXptr[i] - angularVelXptr[j]));
+
+        SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
+        SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
+        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+
+        const SoAFloatPrecision rollingFMag = std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+        const SoAFloatPrecision rollingCoulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+
+        if (rollingFMag > rollingCoulombLimit) {
+          const SoAFloatPrecision scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
+          rollingFX *= scale;
+          rollingFY *= scale;
+          rollingFZ *= scale;
+        }
+
+        const SoAFloatPrecision rollingQIX = -radiusIReduced * (normalUnitY * rollingFZ - normalUnitZ * rollingFY);
+        const SoAFloatPrecision rollingQIY = -radiusIReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
+        const SoAFloatPrecision rollingQIZ = -radiusIReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
 
         // Apply torques
+        qXacc += (frictionQIX + overlapIsPositive * rollingQIX);
+        qYacc += (frictionQIY + overlapIsPositive * rollingQIY);
+        qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ);
+
+
         if (newton3) {
-          qXptr[j] += (radiusJReduced / radiusIReduced) * frictionQIX;
-          qYptr[j] += (radiusJReduced / radiusIReduced) * frictionQIY;
-          qZptr[j] += (radiusJReduced / radiusIReduced) * frictionQIZ;
+          qXptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - overlapIsPositive * rollingQIX);
+          qYptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - overlapIsPositive * rollingQIY);
+          qZptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - overlapIsPositive * rollingQIZ);
         }
       }  // end of j loop
 
@@ -870,14 +902,44 @@ class DEMFunctor
         const SoAFloatPrecision frictionQIY = -radiusIReduced * (normalUnitZ * tanFX - normalUnitX * tanFZ);
         const SoAFloatPrecision frictionQIZ = -radiusIReduced * (normalUnitX * tanFY - normalUnitY * tanFX);
 
-        qXacc += frictionQIX;
-        qYacc += frictionQIY;
-        qZacc += frictionQIZ;
+        // Compute rolling torque
+        const SoAFloatPrecision radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
+        const SoAFloatPrecision rollingRelVelX =
+                -radiusReduced * (normalUnitY * (angularVelZptr1[i] - angularVelZptr2[j]) -
+                                  normalUnitZ * (angularVelYptr1[i] - angularVelYptr2[j]));
+        const SoAFloatPrecision rollingRelVelY =
+                -radiusReduced * (normalUnitZ * (angularVelXptr1[i] - angularVelXptr2[j]) -
+                                  normalUnitX * (angularVelZptr1[i] - angularVelZptr2[j]));
+        const SoAFloatPrecision rollingRelVelZ =
+                -radiusReduced * (normalUnitX * (angularVelYptr1[i] - angularVelYptr2[j]) -
+                                  normalUnitY * (angularVelXptr1[i] - angularVelXptr2[j]));
+
+        SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
+        SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
+        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+
+        const SoAFloatPrecision rollingFMag = std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+        const SoAFloatPrecision rollingCoulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+
+        if (rollingFMag > rollingCoulombLimit) {
+          const SoAFloatPrecision scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
+          rollingFX *= scale;
+          rollingFY *= scale;
+          rollingFZ *= scale;
+        }
+
+        const SoAFloatPrecision rollingQIX = -radiusIReduced * (normalUnitY * rollingFZ - normalUnitZ * rollingFY);
+        const SoAFloatPrecision rollingQIY = -radiusIReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
+        const SoAFloatPrecision rollingQIZ = -radiusIReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
+
+        qXacc += (frictionQIX + overlapIsPositive * rollingQIX);
+        qYacc += (frictionQIY + overlapIsPositive * rollingQIY);
+        qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ);
 
         if (newton3) {
-          qXptr2[j] += (radiusJReduced / radiusIReduced) * frictionQIX;
-          qYptr2[j] += (radiusJReduced / radiusIReduced) * frictionQIY;
-          qZptr2[j] += (radiusJReduced / radiusIReduced) * frictionQIZ;
+          qXptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIX + overlapIsPositive * rollingQIX);
+          qYptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIY + overlapIsPositive * rollingQIY);
+          qZptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ + overlapIsPositive * rollingQIZ);
         }
 
       }  // end of j loop
@@ -1010,7 +1072,7 @@ class DEMFunctor
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 
-  // ----------------------------------------Helper Methods----------------------------------------
+  // ----------------------------------------Helper Methods------------------------------------------------------------
 
   std::tuple<double, double, double, double> computeMaterialProperties(const Particle &i, const Particle &j) const {
     if (!useMixing) {
@@ -1045,7 +1107,6 @@ class DEMFunctor
                                                const std::array<double, 3> &normalUnit, const double normalRelVelMag,
                                                const double normalContactFMag) {
     using namespace autopas::utils::ArrayMath::literals;
-
     if (overlap <= 0) {
       return {0, 0, 0};
     }
@@ -1077,25 +1138,27 @@ class DEMFunctor
     return autopas::utils::ArrayMath::cross(normalUnit * (-radiusIReduced), tanF);
   }
 
-  std::array<double, 3> computeRollingTorqueI(const double overlap, const double radiusIReduced, const double radiusJReduced, const Particle &i, const Particle &j, cont std::array<double, 3> &normalUnit, const double normalContactFMag) {
+  std::array<double, 3> computeRollingTorqueI(const double overlap, const double radiusIReduced,
+                                              const double radiusJReduced, const Particle &i, const Particle &j,
+                                              const std::array<double, 3> &normalUnit, const double normalContactFMag) {
     using namespace autopas::utils::ArrayMath::literals;
     if (overlap <= 0) {
       return {0, 0, 0};
     }
     const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
-    const std::array<double, 3> rollingRelVel = -radiusReduced * (autopas::utils::ArrayMath::cross(normalUnit, i.getAngularVel()) - autopas::utils::ArrayMath::cross(normalUnit, j.getAngularVel()));
-    const std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);
+    const std::array<double, 3> rollingRelVel = (autopas::utils::ArrayMath::cross(normalUnit, i.getAngularVel()) -
+                                                 autopas::utils::ArrayMath::cross(normalUnit, j.getAngularVel())) *
+                                                (-radiusReduced);
+    std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);
     const double rollingFMag = autopas::utils::ArrayMath::L2Norm(rollingF);
 
     const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
     if (rollingFMag > coulombLimit) {
       const std::array<double, 3> rollingFUnit = rollingF / rollingFMag;
       const double scale = _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
-      return rollingFUnit * scale;
-    } else {
-      return rollingF;
+      rollingF = rollingFUnit * scale;
     }
+    return autopas::utils::ArrayMath::cross(normalUnit * (-radiusIReduced), rollingF);
   }
-
 };
 }  // namespace demLib
