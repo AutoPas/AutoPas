@@ -8,7 +8,7 @@
 #pragma once
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -36,8 +36,9 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3,
-                                                              calculateGlobals, countFLOPs, relevantForTuning>> {
+class LJFunctor
+    : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                          countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -61,8 +62,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs,
-                                             relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                     countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -103,6 +104,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
+
+  std::string getName() final { return "LJFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -192,7 +195,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
@@ -254,7 +257,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
       if constexpr (useMixing) {
         for (unsigned int j = 0; j < soa.size(); ++j) {
-          auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
+          auto mixingData = _PPLibrary->getLJMixingData(typeptr[i], typeptr[j]);
           sigmaSquareds[j] = mixingData.sigmaSquared;
           epsilon24s[j] = mixingData.epsilon24;
           if constexpr (applyShift) {
@@ -361,7 +364,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
@@ -558,7 +561,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
  public:
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors!
    */
@@ -670,8 +673,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
-      AutoPasLog(INFO, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(INFO, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
