@@ -39,6 +39,7 @@ void LogicHandlerTest::initLogicHandler() {
       std::make_unique<autopas::LogicHandler<Molecule>>(_tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 /**
  * Tests dynamic rebuild functionalities for one particle case.
  * Dynamic rebuild should be triggered only when particle moves more than skin/2
@@ -210,3 +211,4 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
       << " Particle has moved across the periodic boundary and more than half the skin, but as it is in the buffer, it "
          "doesn't affect the container. \n";
 }
+#endif
