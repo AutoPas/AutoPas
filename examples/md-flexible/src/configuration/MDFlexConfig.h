@@ -204,7 +204,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
 
   /**
    * Choice of the Triwise functor
@@ -374,6 +374,11 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
                                                      "Number of samples to collect per configuration."};
+  /**
+   * useLOESSSmoothening
+   */
+  MDFlexOption<bool, __LINE__> useLOESSSmoothening{
+      false, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
   /**
    * tuningMaxEvidence
    */
