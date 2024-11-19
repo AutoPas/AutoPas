@@ -74,7 +74,7 @@ class LJFunctorSVE
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      AutoPasLog(DEBUG, "Using LJFunctorSVE with countFLOPs but FLOP counting is not implemented."););
+      AutoPasLog(DEBUG, "Using LJFunctorSVE with countFLOPs but FLOP counting is not implemented.");
     }
   }
 #else
@@ -781,8 +781,8 @@ class LJFunctorSVE
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
-      AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 

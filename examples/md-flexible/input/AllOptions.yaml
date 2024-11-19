@@ -20,6 +20,7 @@ tuning-metric                        :  time
 tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
 tuning-interval                      :  5000
 tuning-samples                       :  3
+use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
