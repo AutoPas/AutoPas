@@ -105,7 +105,7 @@ class DEMFunctor
    *
    * @param cutoff
    */
-  explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 5., 2.5, 1., 1e-2, 1e-1, 1e-3, 50., 25., 15., nullptr) {
+  explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 5., 2.5, 10., 1e-2, 1e-1, 0.05, 50., 25., 30., nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -121,7 +121,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 5., 2.5, 1., 1e-2, 1e-1, 1e-3, 50., 25., 15., nullptr) {
+      : DEMFunctor(cutoff, 5., 2.5, 1., 1e-2, 1e-1, 0.05, 50., 25., 30., nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -484,25 +484,27 @@ class DEMFunctor
         SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
         SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
 
-        const SoAFloatPrecision rollingFMag = std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
-        const SoAFloatPrecision rollingCoulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+        const SoAFloatPrecision rollingFMag =
+            std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+        const SoAFloatPrecision rollingCoulombLimit =
+            _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
 
         if (rollingFMag > rollingCoulombLimit) {
-          const SoAFloatPrecision scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
+          const SoAFloatPrecision scale =
+              _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
         }
 
-        const SoAFloatPrecision rollingQIX = -radiusIReduced * (normalUnitY * rollingFZ - normalUnitZ * rollingFY);
-        const SoAFloatPrecision rollingQIY = -radiusIReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
-        const SoAFloatPrecision rollingQIZ = -radiusIReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
+        const SoAFloatPrecision rollingQIX = radiusReduced * (normalUnitY * rollingFZ - normalUnitZ * rollingFY);
+        const SoAFloatPrecision rollingQIY = radiusReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
+        const SoAFloatPrecision rollingQIZ = radiusReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
 
         // Apply torques
         qXacc += (frictionQIX + overlapIsPositive * rollingQIX);
         qYacc += (frictionQIY + overlapIsPositive * rollingQIY);
         qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ);
-
 
         if (newton3) {
           qXptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - overlapIsPositive * rollingQIX);
@@ -898,39 +900,42 @@ class DEMFunctor
 
         // Compute torques
         // Compute frictional torque
-        const SoAFloatPrecision frictionQIX = -radiusI * (normalUnitY * tanFZ - normalUnitZ * tanFY);
+        const SoAFloatPrecision frictionQIX = -radiusIReduced * (normalUnitY * tanFZ - normalUnitZ * tanFY);
         const SoAFloatPrecision frictionQIY = -radiusIReduced * (normalUnitZ * tanFX - normalUnitX * tanFZ);
         const SoAFloatPrecision frictionQIZ = -radiusIReduced * (normalUnitX * tanFY - normalUnitY * tanFX);
 
         // Compute rolling torque
         const SoAFloatPrecision radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
         const SoAFloatPrecision rollingRelVelX =
-                -radiusReduced * (normalUnitY * (angularVelZptr1[i] - angularVelZptr2[j]) -
-                                  normalUnitZ * (angularVelYptr1[i] - angularVelYptr2[j]));
+            -radiusReduced * (normalUnitY * (angularVelZptr1[i] - angularVelZptr2[j]) -
+                              normalUnitZ * (angularVelYptr1[i] - angularVelYptr2[j]));
         const SoAFloatPrecision rollingRelVelY =
-                -radiusReduced * (normalUnitZ * (angularVelXptr1[i] - angularVelXptr2[j]) -
-                                  normalUnitX * (angularVelZptr1[i] - angularVelZptr2[j]));
+            -radiusReduced * (normalUnitZ * (angularVelXptr1[i] - angularVelXptr2[j]) -
+                              normalUnitX * (angularVelZptr1[i] - angularVelZptr2[j]));
         const SoAFloatPrecision rollingRelVelZ =
-                -radiusReduced * (normalUnitX * (angularVelYptr1[i] - angularVelYptr2[j]) -
-                                  normalUnitY * (angularVelXptr1[i] - angularVelXptr2[j]));
+            -radiusReduced * (normalUnitX * (angularVelYptr1[i] - angularVelYptr2[j]) -
+                              normalUnitY * (angularVelXptr1[i] - angularVelXptr2[j]));
 
         SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
         SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
         SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
 
-        const SoAFloatPrecision rollingFMag = std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
-        const SoAFloatPrecision rollingCoulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+        const SoAFloatPrecision rollingFMag =
+            std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+        const SoAFloatPrecision rollingCoulombLimit =
+            _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
 
         if (rollingFMag > rollingCoulombLimit) {
-          const SoAFloatPrecision scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
+          const SoAFloatPrecision scale =
+              _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
         }
 
-        const SoAFloatPrecision rollingQIX = -radiusIReduced * (normalUnitY * rollingFZ - normalUnitZ * rollingFY);
-        const SoAFloatPrecision rollingQIY = -radiusIReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
-        const SoAFloatPrecision rollingQIZ = -radiusIReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
+        const SoAFloatPrecision rollingQIX = radiusReduced * (normalUnitY * rollingFZ - normalUnitZ * rollingFY);
+        const SoAFloatPrecision rollingQIY = radiusReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
+        const SoAFloatPrecision rollingQIZ = radiusReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
 
         qXacc += (frictionQIX + overlapIsPositive * rollingQIX);
         qYacc += (frictionQIY + overlapIsPositive * rollingQIY);
@@ -1158,7 +1163,7 @@ class DEMFunctor
       const double scale = _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
       rollingF = rollingFUnit * scale;
     }
-    return autopas::utils::ArrayMath::cross(normalUnit * (-radiusIReduced), rollingF);
+    return autopas::utils::ArrayMath::cross(normalUnit * radiusReduced, rollingF);
   }
 };
 }  // namespace demLib
