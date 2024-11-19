@@ -1,8 +1,6 @@
 
 #include "src/zonalMethods/FullShell.h"
 
-#include <iostream>
-
 #include "autopas/AutoPas.h"
 #include "src/ParticleCommunicator.h"
 
@@ -19,11 +17,14 @@ FullShell::FullShell(RectRegion homeBoxRegion, double cutoff, double verletSkinW
     return true;
   };
 
-  // calculate exportRegions
-  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, fsCondition, false);
+  auto identifyZone = [](const int d[3]) { return 'A'; };
 
-  // calculate importRegions - NOTE: no real need to calculate
-  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _importRegions, fsCondition);
+  // calculate exportRegions
+  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, fsCondition, identifyZone, false);
+
+  // skip calculation import regions since not needed
+
+  _interactionSchedule.push_back('A');
 }
 
 FullShell::~FullShell() = default;

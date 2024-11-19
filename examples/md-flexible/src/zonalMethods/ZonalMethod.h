@@ -1,5 +1,7 @@
 
 #pragma once
+#include <map>
+
 #include "autopas/AutoPas.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/TypeDefinitions.h"
@@ -55,11 +57,33 @@ class ZonalMethod {
   virtual void SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
                                      std::array<int, 26> allNeighbourIndices, int ownRank) = 0;
 
+  /**
+   * Get the interaction schedule without the home box zone, represented by
+   * a vector of the zone chars in order.
+   */
+  std::vector<char> getInteractionSchedule() const;
+
+  /**
+   * For a given zone, get the zones that are required to interact with (in order).
+   * @param ownZone: the zone to get the interaction zones for
+   */
+  std::vector<char> getInteractionZones(char ownZone) const;
+
  protected:
   /**
    * Stores the number of zones (except for the home zone)
    */
   unsigned int _zoneCount;
+
+  /**
+   * Stores the interaction schedule without the home box zone
+   */
+  std::vector<char> _interactionSchedule;
+
+  /**
+   * Stores the interaction zones
+   */
+  std::map<char, std::vector<char>> _interactionZones;
 
   /**
    * Calculates import / export regions as RectRegion classes, saving them in the given buffer.
@@ -70,11 +94,14 @@ class ZonalMethod {
    * @param verletSkinWidth: the verlet skin width
    * @param regions: the export regions (normalized)
    * @param condition: the condition specifying which neighbours to consider
+   * @param identifyZone: the zone identification function
    * @param calcImports: whether to calculate import regions (default: true)
    */
   virtual void getRectRegionsConditional(RectRegion &homeBoxRegion, double cutoffRadius, double verletSkinWidth,
                                          std::vector<RectRegion> &regions,
-                                         const std::function<bool(const int[3])> &condition, bool calcImports = true);
+                                         const std::function<bool(const int[3])> &condition,
+                                         const std::function<char(const int[3])> &identifyZone,
+                                         bool calcImports = true);
 
   /**
    * Calculate the index (for RegularGridDecomposition:_allNeighbours)

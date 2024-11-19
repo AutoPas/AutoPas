@@ -17,11 +17,16 @@ HalfShell::HalfShell(RectRegion homeBoxRegion, double cutoff, double verletSkinW
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
+
+  auto identifyZone = [](const int d[3]) { return 'A';};
+
   // calculate exportRegions
-  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, hsCondition, false);
+  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, hsCondition, identifyZone, false);
 
   // calculate importRegions
-  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition);
+  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition, identifyZone, true);
+
+  _interactionSchedule.push_back('A');
 
 }
 

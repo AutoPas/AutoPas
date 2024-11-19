@@ -1,13 +1,14 @@
 
 #include "src/zonalMethods/ZonalMethod.h"
 
-ZonalMethod::ZonalMethod(unsigned int zoneCount) : _zoneCount(zoneCount) {}
+ZonalMethod::ZonalMethod(unsigned int zoneCount) : _zoneCount(zoneCount), _interactionSchedule{}, _interactionZones{} {}
 
 ZonalMethod::~ZonalMethod() = default;
 
 void ZonalMethod::getRectRegionsConditional(RectRegion &homeBoxRegion, double cutoffRadius, double verletSkinWidth,
                                             std::vector<RectRegion> &regions,
-                                            const std::function<bool(const int[3])> &condition, bool calcImports) {
+                                            const std::function<bool(const int[3])> &condition,
+                                            const std::function<char(const int[3])> &identifyZone, bool calcImports) {
   // factor for calculating import or export regions
   double factor = 1.0;
   if (!calcImports) {
@@ -42,6 +43,8 @@ void ZonalMethod::getRectRegionsConditional(RectRegion &homeBoxRegion, double cu
         }
 
         tmp.setNeighbour({d[0], d[1], d[2]});
+
+        tmp.setZoneID(identifyZone(d));
 
         tmp.normalize();
 
