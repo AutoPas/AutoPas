@@ -9,9 +9,10 @@
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/utils/Smoothing.h"
 
-TEST(SmoothingTest, lowessLastPoint) {
+TEST(SmoothingTest, loessLastPoint) {
   std::vector<size_t> xvals{1, 2, 3, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 8, 10, 12};
-  std::vector<long> yvals{18, 2, 15, 6, 10, 4, 16, 11, 7, 3, 14, 17, 20, 12, 9, 13, 1, 8};
+  std::vector<long> yvals{18000, 2000,  15000, 6000,  10000, 4000, 16000, 11000, 7000,
+                          3000,  14000, 17000, 20000, 12000, 9000, 13000, 1000,  8000};
 
   std::vector<autopas::Evidence> obs;
   obs.reserve(xvals.size());
@@ -21,7 +22,7 @@ TEST(SmoothingTest, lowessLastPoint) {
 
   // YS values with F = .25, NSTEPS = 0, DELTA = 0.0
   {
-    auto out = autopas::smoothing::smoothLastPoint(obs, (.25 * obs.size()));
-    EXPECT_EQ(out, 6);
+    auto out = autopas::smoothing::smoothLastPoint(obs, (size_t)(.25 * (double)obs.size()));
+    EXPECT_EQ(out, 5724);
   }
 }

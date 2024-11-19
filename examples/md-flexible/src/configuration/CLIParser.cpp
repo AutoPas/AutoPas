@@ -94,6 +94,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningPhases,
       config.tuningSamples,
       config.tuningStrategyOptions,
+      config.useLOESSSmoothening,
       config.useThermostat,
       config.useTuningLogger,
       config.verletClusterSize,
@@ -298,8 +299,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-        } else if (strArg.find("glob") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
@@ -522,6 +521,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Error parsing number of tuning samples: " << optarg << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case decltype(config.useLOESSSmoothening)::getoptChar: {
+        config.useLOESSSmoothening.value = false;
         break;
       }
       case decltype(config.particleSpacing)::getoptChar: {
