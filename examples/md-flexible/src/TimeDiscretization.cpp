@@ -28,7 +28,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   bool throwException = false;
 
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto v = iter->getV();
     auto f = iter->getF();
