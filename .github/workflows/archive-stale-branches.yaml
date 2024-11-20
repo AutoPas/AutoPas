@@ -78,13 +78,20 @@ jobs:
               # Get contributors to the branch
               contributors=$(gh api repos/${{ github.repository }}/compare/master...$branch --jq '.commits[] | "  - \(.commit.author.name) (@\(.author.login))  "' | sort | uniq)
 
+              # Get a summary of the branch changes using Google's Gemini AI
+              diff=$(git diff origin/master...origin/$branch)
+              summary=$(python .github/workflows/create_pr_summary.py <<< "$diff")
+
               # Create the PR body with contributors
               prBody="## **Archiving branch \`$branch\`**
             - **Last commit on:** $lastCommitDateF
             - **First commit on:** $firstCommitDateF  
             - **Total number of commits:** $commitCount  
             - **Contributors:**  
-            $contributors"
+            $contributors  
+            ## Changes Summary  
+            *(Generated using Gemini AI)*  
+            $summary"
           
               # Create PR, close PR, and delete the branch
               echo "  Create PR for ${branch}..."
