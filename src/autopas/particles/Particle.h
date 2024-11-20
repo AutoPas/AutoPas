@@ -26,6 +26,6 @@ using ParticleMP = ParticleBase<float, double, unsigned long>;
 /**
  * Alias for Particle with all variables in 64 bit precision
  */
-using Particle = ParticleMP;
+using Particle = ParticleFP64;
 
 }  // namespace autopas
