@@ -25,9 +25,11 @@ class DEMFunctorTestNoGlobals : public DEMFunctorTest {
   constexpr static double normalViscosity{5e-1};
   constexpr static double frictionViscosity{1e-1};
   constexpr static double rollingViscosity{5e-2};
+  constexpr static double torsionViscosity{5e-2};
   constexpr static double staticFrictionCoeff{10.};
   constexpr static double dynamicFrictionCoeff{10.};
   constexpr static double rollingFrictionCoeff{10.};
+  constexpr static double torsionFrictionCoeff{10.};
 
   constexpr static double epsilon{1.};
   constexpr static double sigma{1.};

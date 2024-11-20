@@ -62,19 +62,21 @@ class DEMFunctor
    * @param normalViscosity
    * @param frictionViscosity
    * @param rollingViscosity
+   * @param torsionViscosity
    * @param staticFrictionCoeff
    * @param dynamicFrictionCoeff
    * @param rollingFrictionCoeff
+   * @param torsionFrictionCo
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
                       double normalViscosity, double frictionViscosity, double rollingViscosity,
-                      double staticFrictionCoeff, double dynamicFrictionCoeff, double rollingFrictionCoeff,
-                      void * /*dummy*/)
+                      double torsionViscosity, double staticFrictionCoeff, double dynamicFrictionCoeff,
+                      double rollingFrictionCoeff, double torsionFrictionCoeff, void * /*dummy*/)
       : autopas::Functor<Particle,
                          DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
             cutoff),
-        _radius{cutoff / 5.},  // default initialization
+        _radius{cutoff / 5.},  // default initialization, can be changed by ParticlePropertiesLibrary
         _cutoff{cutoff},
         _elasticStiffness{elasticStiffness},
         _adhesiveStiffness{adhesiveStiffness},
@@ -82,9 +84,11 @@ class DEMFunctor
         _normalViscosity{normalViscosity},
         _frictionViscosity{frictionViscosity},
         _rollingViscosity{rollingViscosity},
+        _torsionViscosity{torsionViscosity},
         _staticFrictionCoeff{staticFrictionCoeff},
         _dynamicFrictionCoeff{dynamicFrictionCoeff},
         _rollingFrictionCoeff{rollingFrictionCoeff},
+        _torsionFrictionCoeff{torsionFrictionCoeff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
@@ -105,7 +109,8 @@ class DEMFunctor
    *
    * @param cutoff
    */
-  explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 5., 2.5, 10., 1e-2, 1e-1, 0.05, 50., 25., 30., nullptr) {
+  explicit DEMFunctor(double cutoff)
+      : DEMFunctor(cutoff, 5., 2.5, 10., 1e-2, 1e-1, 0.05, 0.05, 50., 25., 30., 30., nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -121,7 +126,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 5., 2.5, 1., 1e-2, 1e-1, 0.05, 50., 25., 30., nullptr) {
+      : DEMFunctor(cutoff, 5., 2.5, 1., 1e-2, 1e-1, 0.05, 0.05, 50., 25., 30., 30., nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -141,15 +146,19 @@ class DEMFunctor
    * @param normalViscosity
    * @param frictionViscosity
    * @param rollingViscosity
+   * @param torsionViscosity
    * @param staticFrictionCoeff
    * @param dynamicFrictionCoeff
    * @param rollingFrictionCoeff
+   * @param torsionFrictionCoeff
    */
   explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
                       double normalViscosity, double frictionViscosity, double rollingViscosity,
-                      double staticFrictionCoeff, double dynamicFrictionCoeff, double rollingFrictionCoeff)
+                      double torsionViscosity, double staticFrictionCoeff, double dynamicFrictionCoeff,
+                      double rollingFrictionCoeff, double torsionFrictionCoeff)
       : DEMFunctor(cutoff, elasticStiffness, adhesiveStiffness, frictionStiffness, normalViscosity, frictionViscosity,
-                   rollingViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff, nullptr) {
+                   rollingViscosity, torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff,
+                   torsionFrictionCoeff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -165,17 +174,21 @@ class DEMFunctor
    * @param normalViscosity
    * @param frictionViscosity
    * @param rollingViscosity
+   * @param torsionViscosity
    * @param staticFrictionCoeff
    * @param dynamicFrictionCoeff
    * @param rollingFrictionCoeff
+   * @param torsionFrictionCoeff
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
                       double normalViscosity, double frictionViscosity, double rollingViscosity,
-                      double staticFrictionCoeff, double dynamicFrictionCoeff, double rollingFrictionCoeff,
+                      double torsionViscosity, double staticFrictionCoeff, double dynamicFrictionCoeff,
+                      double rollingFrictionCoeff, double torsionFrictionCoeff,
                       ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : DEMFunctor(cutoff, elasticStiffness, adhesiveStiffness, frictionStiffness, normalViscosity, frictionViscosity,
-                   rollingViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff, nullptr) {
+                   rollingViscosity, torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff,
+                   torsionFrictionCoeff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -218,6 +231,7 @@ class DEMFunctor
     const double overlap = radiusI + radiusJ - dist;
     const double radiusIReduced = radiusI - overlap / 2.;
     const double radiusJReduced = radiusJ - overlap / 2.;
+    const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
     const std::array<double, 3> relVel = i.getV() - j.getV();
     const double normalRelVelMag = autopas::utils::ArrayMath::dot(normalUnit, relVel);
 
@@ -245,12 +259,14 @@ class DEMFunctor
     // Compute frictional torque
     const std::array<double, 3> frictionQI = computeFrictionTorqueI(overlap, radiusIReduced, normalUnit, tanF);
     const std::array<double, 3> rollingQI =
-        computeRollingTorqueI(overlap, radiusIReduced, radiusJReduced, i, j, normalUnit, normalContactFMag);
+        computeRollingTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag);
+    const std::array<double, 3> torsionQI =
+        computeTorsionTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag);
 
     // Apply torques
-    i.addTorque(frictionQI + rollingQI);
+    i.addTorque(frictionQI + rollingQI + torsionQI);
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI);
+      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);
     }
 
     if constexpr (countFLOPs) {
@@ -486,12 +502,10 @@ class DEMFunctor
 
         const SoAFloatPrecision rollingFMag =
             std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
-        const SoAFloatPrecision rollingCoulombLimit =
-            _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
 
-        if (rollingFMag > rollingCoulombLimit) {
+        if (rollingFMag > coulombLimit) {
           const SoAFloatPrecision scale =
-              _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
+              _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -501,15 +515,46 @@ class DEMFunctor
         const SoAFloatPrecision rollingQIY = radiusReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
         const SoAFloatPrecision rollingQIZ = radiusReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
 
+        // Compute torsion torque
+        const SoAFloatPrecision torsionRelVelScalar =
+            radiusReduced * ((angularVelXptr[i] - angularVelXptr[j]) * normalUnitX +
+                             (angularVelYptr[i] - angularVelYptr[j]) * normalUnitY +
+                             (angularVelZptr[i] - angularVelZptr[j]) * normalUnitZ);
+        const SoAFloatPrecision torsionRelVelX = torsionRelVelScalar * normalUnitX;
+        const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
+        const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
+
+        SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
+        SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
+        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+
+        const SoAFloatPrecision torsionFMag =
+            std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
+
+        if (torsionFMag > coulombLimit) {
+          const SoAFloatPrecision scale =
+              _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / torsionFMag;
+          torsionFX *= scale;
+          torsionFY *= scale;
+          torsionFZ *= scale;
+        }
+
+        const SoAFloatPrecision torsionQIX = radiusReduced * torsionFX;
+        const SoAFloatPrecision torsionQIY = radiusReduced * torsionFY;
+        const SoAFloatPrecision torsionQIZ = radiusReduced * torsionFZ;
+
         // Apply torques
-        qXacc += (frictionQIX + overlapIsPositive * rollingQIX);
-        qYacc += (frictionQIY + overlapIsPositive * rollingQIY);
-        qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ);
+        qXacc += (frictionQIX + overlapIsPositive * rollingQIX + overlapIsPositive * torsionQIX);
+        qYacc += (frictionQIY + overlapIsPositive * rollingQIY + overlapIsPositive * torsionQIY);
+        qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ + overlapIsPositive * torsionQIZ);
 
         if (newton3) {
-          qXptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - overlapIsPositive * rollingQIX);
-          qYptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - overlapIsPositive * rollingQIY);
-          qZptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - overlapIsPositive * rollingQIZ);
+          qXptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - overlapIsPositive * rollingQIX -
+                       overlapIsPositive * torsionQIX);
+          qYptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - overlapIsPositive * rollingQIY -
+                       overlapIsPositive * torsionQIY);
+          qZptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - overlapIsPositive * rollingQIZ -
+                       overlapIsPositive * torsionQIZ);
         }
       }  // end of j loop
 
@@ -922,12 +967,10 @@ class DEMFunctor
 
         const SoAFloatPrecision rollingFMag =
             std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
-        const SoAFloatPrecision rollingCoulombLimit =
-            _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
 
-        if (rollingFMag > rollingCoulombLimit) {
+        if (rollingFMag > coulombLimit) {
           const SoAFloatPrecision scale =
-              _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
+              _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -937,14 +980,46 @@ class DEMFunctor
         const SoAFloatPrecision rollingQIY = radiusReduced * (normalUnitZ * rollingFX - normalUnitX * rollingFZ);
         const SoAFloatPrecision rollingQIZ = radiusReduced * (normalUnitX * rollingFY - normalUnitY * rollingFX);
 
-        qXacc += (frictionQIX + overlapIsPositive * rollingQIX);
-        qYacc += (frictionQIY + overlapIsPositive * rollingQIY);
-        qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ);
+        // Compute torsion torque
+        const SoAFloatPrecision torsionRelVelScalar =
+            radiusReduced * ((angularVelXptr1[i] - angularVelXptr2[j]) * normalUnitX +
+                             (angularVelYptr1[i] - angularVelYptr2[j]) * normalUnitY +
+                             (angularVelZptr1[i] - angularVelZptr2[j]) * normalUnitZ);
+        const SoAFloatPrecision torsionRelVelX = torsionRelVelScalar * normalUnitX;
+        const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
+        const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
+
+        SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
+        SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
+        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+
+        const SoAFloatPrecision torsionFMag =
+            std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
+
+        if (torsionFMag > coulombLimit) {
+          const SoAFloatPrecision scale =
+              _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / torsionFMag;
+          torsionFX *= scale;
+          torsionFY *= scale;
+          torsionFZ *= scale;
+        }
+
+        const SoAFloatPrecision torsionQIX = radiusReduced * torsionFX;
+        const SoAFloatPrecision torsionQIY = radiusReduced * torsionFY;
+        const SoAFloatPrecision torsionQIZ = radiusReduced * torsionFZ;
+
+        // Apply torques
+        qXacc += (frictionQIX + overlapIsPositive * rollingQIX + overlapIsPositive * torsionQIX);
+        qYacc += (frictionQIY + overlapIsPositive * rollingQIY + overlapIsPositive * torsionQIY);
+        qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ + overlapIsPositive * torsionQIZ);
 
         if (newton3) {
-          qXptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIX + overlapIsPositive * rollingQIX);
-          qYptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIY + overlapIsPositive * rollingQIY);
-          qZptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ + overlapIsPositive * rollingQIZ);
+          qXptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - overlapIsPositive * rollingQIX -
+                        overlapIsPositive * torsionQIX);
+          qYptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - overlapIsPositive * rollingQIY -
+                        overlapIsPositive * torsionQIY);
+          qZptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - overlapIsPositive * rollingQIZ -
+                        overlapIsPositive * torsionQIZ);
         }
 
       }  // end of j loop
@@ -1056,9 +1131,11 @@ class DEMFunctor
   const double _normalViscosity;
   const double _frictionViscosity;
   const double _rollingViscosity;
+  const double _torsionViscosity;
   const double _staticFrictionCoeff;
   const double _dynamicFrictionCoeff;
   const double _rollingFrictionCoeff;
+  const double _torsionFrictionCoeff;
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
 
@@ -1143,14 +1220,13 @@ class DEMFunctor
     return autopas::utils::ArrayMath::cross(normalUnit * (-radiusIReduced), tanF);
   }
 
-  std::array<double, 3> computeRollingTorqueI(const double overlap, const double radiusIReduced,
-                                              const double radiusJReduced, const Particle &i, const Particle &j,
-                                              const std::array<double, 3> &normalUnit, const double normalContactFMag) {
+  std::array<double, 3> computeRollingTorqueI(const double overlap, const double radiusReduced, const Particle &i,
+                                              const Particle &j, const std::array<double, 3> &normalUnit,
+                                              const double normalContactFMag) {
     using namespace autopas::utils::ArrayMath::literals;
     if (overlap <= 0) {
       return {0, 0, 0};
     }
-    const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
     const std::array<double, 3> rollingRelVel = (autopas::utils::ArrayMath::cross(normalUnit, i.getAngularVel()) -
                                                  autopas::utils::ArrayMath::cross(normalUnit, j.getAngularVel())) *
                                                 (-radiusReduced);
@@ -1164,6 +1240,27 @@ class DEMFunctor
       rollingF = rollingFUnit * scale;
     }
     return autopas::utils::ArrayMath::cross(normalUnit * radiusReduced, rollingF);
+  }
+
+  std::array<double, 3> computeTorsionTorqueI(const double overlap, const double radiusReduced, const Particle &i,
+                                              const Particle &j, const std::array<double, 3> &normalUnit,
+                                              const double normalContactFMag) {
+    using namespace autopas::utils::ArrayMath::literals;
+    if (overlap <= 0) {
+      return {0, 0, 0};
+    }
+    const std::array<double, 3> torsionRelVel =
+        normalUnit * (normalUnit * i.getAngularVel() - normalUnit * j.getAngularVel()) * radiusReduced;
+    std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);
+    const double torsionFMag = autopas::utils::ArrayMath::L2Norm(torsionF);
+
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+    if (torsionFMag > coulombLimit) {
+      const std::array<double, 3> torsionFUnit = torsionF / torsionFMag;
+      const double scale = _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+      torsionF = torsionFUnit * scale;
+    }
+    return torsionF * radiusReduced;
   }
 };
 }  // namespace demLib

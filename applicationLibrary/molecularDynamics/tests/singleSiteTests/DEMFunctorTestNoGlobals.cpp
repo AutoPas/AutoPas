@@ -21,16 +21,16 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsOverlap) {
 
   particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0, this->radius);
   if constexpr (mixing) {
-    functor = std::make_unique<FuncType>(this->cutoff, this->elasticStiffness, this->adhesiveStiffness,
-                                         this->frictionStiffness, this->normalViscosity, this->frictionViscosity,
-                                         this->rollingViscosity, this->staticFrictionCoeff, this->dynamicFrictionCoeff,
-                                         this->rollingFrictionCoeff, particlePropertiesLibrary);
+    functor = std::make_unique<FuncType>(
+        this->cutoff, this->elasticStiffness, this->adhesiveStiffness, this->frictionStiffness, this->normalViscosity,
+        this->frictionViscosity, this->rollingViscosity, this->torsionViscosity, this->staticFrictionCoeff,
+        this->dynamicFrictionCoeff, this->rollingFrictionCoeff, this->torsionFrictionCoeff, particlePropertiesLibrary);
     particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0, this->radius);
   } else {
-    functor = std::make_unique<FuncType>(this->cutoff, this->elasticStiffness, this->adhesiveStiffness,
-                                         this->frictionStiffness, this->normalViscosity, this->frictionViscosity,
-                                         this->rollingViscosity, this->staticFrictionCoeff, this->rollingFrictionCoeff,
-                                         this->dynamicFrictionCoeff);
+    functor = std::make_unique<FuncType>(
+        this->cutoff, this->elasticStiffness, this->adhesiveStiffness, this->frictionStiffness, this->normalViscosity,
+        this->frictionViscosity, this->rollingViscosity, this->torsionViscosity, this->staticFrictionCoeff,
+        this->dynamicFrictionCoeff, this->rollingFrictionCoeff, this->torsionFrictionCoeff);
     functor->setParticleProperties(this->epsilon * 24, 1, this->radius);
   }
   particlePropertiesLibrary.calculateMixingCoefficients();
@@ -176,16 +176,16 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsNoOverlap) {
 
   particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0, this->radius);
   if constexpr (mixing) {
-    functor = std::make_unique<FuncType>(this->cutoff, this->elasticStiffness, this->adhesiveStiffness,
-                                         this->frictionStiffness, this->normalViscosity, this->frictionViscosity,
-                                         this->rollingViscosity, this->staticFrictionCoeff, this->dynamicFrictionCoeff,
-                                         this->rollingFrictionCoeff, particlePropertiesLibrary);
+    functor = std::make_unique<FuncType>(
+        this->cutoff, this->elasticStiffness, this->adhesiveStiffness, this->frictionStiffness, this->normalViscosity,
+        this->frictionViscosity, this->rollingViscosity, this->torsionViscosity, this->staticFrictionCoeff,
+        this->dynamicFrictionCoeff, this->rollingFrictionCoeff, this->torsionFrictionCoeff, particlePropertiesLibrary);
     particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0, this->radius);
   } else {
-    functor = std::make_unique<FuncType>(this->cutoff, this->elasticStiffness, this->adhesiveStiffness,
-                                         this->frictionStiffness, this->normalViscosity, this->frictionViscosity,
-                                         this->rollingViscosity, this->staticFrictionCoeff, this->dynamicFrictionCoeff,
-                                         this->rollingFrictionCoeff);
+    functor = std::make_unique<FuncType>(
+        this->cutoff, this->elasticStiffness, this->adhesiveStiffness, this->frictionStiffness, this->normalViscosity,
+        this->frictionViscosity, this->rollingViscosity, this->torsionViscosity, this->staticFrictionCoeff,
+        this->dynamicFrictionCoeff, this->rollingFrictionCoeff, this->torsionFrictionCoeff);
     functor->setParticleProperties(this->epsilon * 24, 1, this->radius);
   }
   particlePropertiesLibrary.calculateMixingCoefficients();
