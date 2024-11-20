@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -26,7 +27,7 @@ namespace internal {
  */
 template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
-    : public autopas::Functor<Particle, AsBuildPairGeneratorFunctor<Particle, callCheckInstead>> {
+    : public autopas::PairwiseFunctor<Particle, AsBuildPairGeneratorFunctor<Particle, callCheckInstead>> {
  public:
   /**
    * The structure of the SoAs is defined by the particle.
@@ -65,9 +66,11 @@ class AsBuildPairGeneratorFunctor
    * @param cutoffskin The cutoff skin to use.
    */
   AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
-      : autopas::Functor<Particle, AsBuildPairGeneratorFunctor>(cutoffskin),
+      : autopas::PairwiseFunctor<Particle, AsBuildPairGeneratorFunctor>(cutoffskin),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
+
+  std::string getName() override { return "AsBuildPairGeneratorFunctor"; }
 
   [[nodiscard]] bool isRelevantForTuning() override { return false; }
 

@@ -107,7 +107,7 @@ class AutoPas {
   std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
   /**
-   * Force the internal tuner to enter a new tuning phase upon the next call to iteratePairwise().
+   * Force the internal tuner to enter a new tuning phase upon the next call to computeInteractions().
    */
   void forceRetune();
 
@@ -217,7 +217,7 @@ class AutoPas {
 
   /**
    * Deletes all particles.
-   * @note This invalidates the container, a rebuild is forced on the next iteratePairwise() call.
+   * @note This invalidates the container, a rebuild is forced on the next computeInteractions() call.
    */
   void deleteAllParticles();
 
@@ -253,13 +253,13 @@ class AutoPas {
   bool deleteParticle(Particle &particle);
 
   /**
-   * Function to iterate over all pairs of particles in the container.
+   * Function to iterate over all inter-particle interactions in the container
    * This function only handles short-range interactions.
-   * @param f Functor that describes the pair-potential.
-   * @return true if this was a tuning iteration.
+   * @param f Functor that describes the interaction (e.g. force).
+   * @return true if this was a tuning iteraction.
    */
   template <class Functor>
-  bool iteratePairwise(Functor *f);
+  bool computeInteractions(Functor *f);
 
   /**
    * Iterate over all particles by using
@@ -534,6 +534,7 @@ class AutoPas {
       container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
+
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
@@ -694,6 +695,18 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
 
   /**
+   * Get flag for whether a LOESS-based smoothening is used.
+   * @return
+   */
+  [[nodiscard]] bool getUseLOESSSmoothening() const { return _autoTunerInfo.useLOESSSmoothening; }
+
+  /**
+   * Set flag for whether a LOESS-based smoothening is used.
+   * @param useLOESSSmoothening
+   */
+  void setUseLOESSSmoothening(bool useLOESSSmoothening) { _autoTunerInfo.useLOESSSmoothening = useLOESSSmoothening; }
+
+  /**
    * Get maximum number of evidence for tuning
    * @return
    */
@@ -849,53 +862,115 @@ class AutoPas {
 
   /**
    * Get the list of allowed traversals.
+   * @param interactionType Get allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
-  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedTraversals.at(interactionType);
+  }
 
   /**
    * Set the list of allowed traversals.
    * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
+   * @param interactionType Set allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
-    _allowedTraversals = allowedTraversals;
+  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals,
+                            const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedTraversals[iType] = allowedTraversals;
+      }
+    } else {
+      _allowedTraversals[interactionType] = allowedTraversals;
+    }
   }
 
   /**
    * Get the list of allowed data layouts.
    * @return
+   * @param interactionType Get allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedDataLayouts.at(interactionType);
+  }
 
   /**
    * Set the list of allowed data layouts.
-   * For possible data layout choices see options::DataLayoutOption::Value.
+   * For possible data layouts choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
+   * @param interactionType Set allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
-    _allowedDataLayouts = allowedDataLayouts;
+  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedDataLayouts[iType] = allowedDataLayouts;
+      }
+    } else {
+      _allowedDataLayouts[interactionType] = allowedDataLayouts;
+    }
   }
 
   /**
    * Get the list of allowed newton 3 options.
+   * @param interactionType Get allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
-  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedNewton3Options.at(interactionType);
+  }
 
   /**
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
+   * @param interactionType Set allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
-    _allowedNewton3Options = allowedNewton3Options;
+  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options,
+                                const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedNewton3Options[iType] = allowedNewton3Options;
+      }
+    } else {
+      _allowedNewton3Options[interactionType] = allowedNewton3Options;
+    }
   }
+
+  /**
+   * Set the list of allowed interaction types.
+   * AutoPas will initialize AutoTuners for the allowed interaction types.
+   * For possible newton 3 choices see options::interactionTypeOption::Value.
+   * @param allowedInteractionTypeOptions
+   */
+  void setAllowedInteractionTypeOptions(const std::set<InteractionTypeOption> &allowedInteractionTypeOptions) {
+    _allowedInteractionTypeOptions = allowedInteractionTypeOptions;
+  }
+
   /**
    * Getter for the currently selected configuration.
-   * @return Configuration object currently used.
+   * @return Configuration objects currently used for respective interaction types.
    */
-  [[nodiscard]] const Configuration &getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
+  [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
+  getCurrentConfigs() const {
+    std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
+    currentConfigs.reserve(_autoTuners.size());
+
+    for (const auto &[type, tuner] : _autoTuners) {
+      currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
+    }
+    return currentConfigs;
+  }
 
   /**
    * Getter for the tuning strategy option.
@@ -1044,19 +1119,30 @@ class AutoPas {
    */
   std::set<ContainerOption> _allowedContainers{ContainerOption::getMostOptions()};
   /**
-   * List of traversals AutoPas can choose from.
+   * List of pairwise traversals AutoPas can choose from.
    * For possible traversal choices see options::TraversalOption::Value.
    */
-  std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<TraversalOption>> _allowedTraversals{
+      {InteractionTypeOption::pairwise, TraversalOption::getMostPairwiseOptions()},
+      {InteractionTypeOption::triwise, TraversalOption::getMostTriwiseOptions()}};
   /**
-   * List of data layouts AutoPas can choose from.
+   * List of data layouts AutoPas can choose from for pairwise interactions.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
-  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedDataLayouts{
+      {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
+      {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
   /**
-   * Whether AutoPas is allowed to exploit Newton's third law of motion.
+   * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */
-  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<Newton3Option>> _allowedNewton3Options{
+      {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
+      {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
+  /**
+   * What kind of interactions AutoPas should expect.
+   * By default AutoPas is configured to only use pairwise interactions.
+   */
+  std::set<InteractionTypeOption> _allowedInteractionTypeOptions{InteractionTypeOption::pairwise};
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
@@ -1071,10 +1157,13 @@ class AutoPas {
    * LogicHandler of autopas.
    */
   std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
+
   /**
-   * This is the AutoTuner that owns the container, ...
+   * All AutoTuners used in this instance of AutoPas.
+   * There can be up to one per interaction type.
    */
-  std::unique_ptr<autopas::AutoTuner> _autoTuner;
+  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
+
   /**
    * Stores whether the mpi communicator was provided externally or not
    */
