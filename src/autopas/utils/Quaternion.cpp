@@ -56,6 +56,7 @@ std::array<double, 3> rotatePosition(const std::array<double, 4> &q, const std::
   const auto yy = q[2] * q[2];
   const auto yz = q[2] * q[3];
   const auto zz = q[3] * q[3];
+  // 10 FLOPs
 
   const auto r00 = ww + xx - yy - zz;
   const auto r01 = 2. * (xy - wz);
@@ -66,6 +67,7 @@ std::array<double, 3> rotatePosition(const std::array<double, 4> &q, const std::
   const auto r20 = 2. * (xz - wy);
   const auto r21 = 2. * (yz + wx);
   const auto r22 = ww - xx - yy + zz;
+  // 21 FLOPs
 
   // rotated position
   return {
@@ -73,10 +75,69 @@ std::array<double, 3> rotatePosition(const std::array<double, 4> &q, const std::
       r10 * pos[0] + r11 * pos[1] + r12 * pos[2],
       r20 * pos[0] + r21 * pos[1] + r22 * pos[2],
   };
+  // 15 FLOPs
+
+  // = 46 FLOPs
 }
 
 std::array<double, 3> rotatePositionBackwards(const std::array<double, 4> &q, const std::array<double, 3> &pos) {
   return rotatePosition({q[0], -q[1], -q[2], -q[3]}, pos);
+}
+
+double rotatePositionX(const std::array<double, 4> &q, const std::array<double, 3> &pos) {
+  const auto ww = q[0] * q[0];
+  const auto wy = q[0] * q[2];
+  const auto wz = q[0] * q[3];
+  const auto xx = q[1] * q[1];
+  const auto xy = q[1] * q[2];
+  const auto xz = q[1] * q[3];
+  const auto yy = q[2] * q[2];
+  const auto zz = q[3] * q[3];
+  // 8 FLOPs
+
+  const auto r00 = ww + xx - yy - zz;
+  const auto r01 = 2. * (xy - wz);
+  const auto r02 = 2. * (xz + wy);
+  // 7 FLOPs
+
+  return r00 * pos[0] + r01 * pos[1] + r02 * pos[2];
+  // 5 FLOPs
+
+  // 20 FLOPs
+}
+
+double rotatePositionY(const std::array<double, 4> &q, const std::array<double, 3> &pos) {
+  const auto ww = q[0] * q[0];
+  const auto wx = q[0] * q[1];
+  const auto wz = q[0] * q[3];
+  const auto xx = q[1] * q[1];
+  const auto xy = q[1] * q[2];
+  const auto yy = q[2] * q[2];
+  const auto yz = q[2] * q[3];
+  const auto zz = q[3] * q[3];
+
+  const auto r10 = 2. * (xy + wz);
+  const auto r11 = ww - xx + yy - zz;
+  const auto r12 = 2. * (yz - wx);
+
+  return r10 * pos[0] + r11 * pos[1] + r12 * pos[2];
+}
+
+double rotatePositionZ(const std::array<double, 4> &q, const std::array<double, 3> &pos) {
+  const auto ww = q[0] * q[0];
+  const auto wx = q[0] * q[1];
+  const auto wy = q[0] * q[2];
+  const auto xx = q[1] * q[1];
+  const auto xz = q[1] * q[3];
+  const auto yy = q[2] * q[2];
+  const auto yz = q[2] * q[3];
+  const auto zz = q[3] * q[3];
+
+  const auto r20 = 2. * (xz - wy);
+  const auto r21 = 2. * (yz + wx);
+  const auto r22 = ww - xx - yy + zz;
+
+  return r20 * pos[0] + r21 * pos[1] + r22 * pos[2];
 }
 
 std::array<double, 4> qMul(const std::array<double, 4> &q1, const std::array<double, 4> &q2) {

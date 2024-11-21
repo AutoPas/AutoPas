@@ -42,6 +42,33 @@ std::array<double, 3> rotatePosition(const std::array<double, 4> &q, const std::
 std::array<double, 3> rotatePositionBackwards(const std::array<double, 4> &q, const std::array<double, 3> &pos);
 
 /**
+ * Returns the x-coordinate of a 3D position rotated by a quaternion.
+ * @note This function, in combination with the y and z variants, will use ~50% more FLOPs than rotatePosition due to repeated calculations.
+ * @param q Quaternion defining rotation
+ * @param pos array of 3 doubles, defining position
+ * @return rotated x-coordinate
+ */
+double rotatePositionX(const std::array<double, 4> &q, const std::array<double, 3> &pos);
+
+/**
+ * Returns the y-coordinate of a 3D position rotated by a quaternion.
+ * @note This function, in combination with the x and z variants, will use ~50% more FLOPs than rotatePosition due to repeated calculations.
+ * @param q Quaternion defining rotation
+ * @param pos array of 3 doubles, defining position
+ * @return rotated y-coordinate
+ */
+double rotatePositionY(const std::array<double, 4> &q, const std::array<double, 3> &pos);
+
+/**
+ * Returns the z-coordinate of a 3D position rotated by a quaternion.
+ * @note This function, in combination with the x and y variants, will use ~50% more FLOPs than rotatePosition due to repeated calculations.
+ * @param q Quaternion defining rotation
+ * @param pos array of 3 doubles, defining position
+ * @return rotated z-coordinate
+ */
+double rotatePositionZ(const std::array<double, 4> &q, const std::array<double, 3> &pos);
+
+/**
  * Quaternion multiplication. See Hamiltonian Product: https://en.wikipedia.org/wiki/Quaternion#Hamilton_product.
  * @param q1 quaternion 1
  * @param q2 quaternion 2
