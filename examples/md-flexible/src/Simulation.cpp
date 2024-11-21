@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -85,6 +85,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
+      _calculateStatistics(true),  // TODO: to change
       _vtkWriter(nullptr) {
   _timers.total.start();
   _timers.initialization.start();
@@ -94,6 +95,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     _vtkWriter =
         std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
                                             std::to_string(_configuration.iterations.value).size());
+  }
+
+  if (_calculateStatistics) {
+    _statsCalculator = std::make_shared<StatisticsCalculator>(_configuration.vtkFileName.value,
+                                                              _configuration.vtkOutputFolder.value);  // TODO: to change
   }
 
   if (_configuration.logFileName.value.empty()) {
@@ -186,6 +192,11 @@ void Simulation::run() {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
+    }
+
+    if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value == 0) {  // TODO: to change
+      _statsCalculator->recordStatistics(_iteration, *_autoPasContainer,
+                                         *_configuration.getParticlePropertiesLibrary());
     }
 
     _timers.computationalLoad.start();

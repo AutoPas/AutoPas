@@ -14,6 +14,7 @@
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
+#include "src/StatisticsCalculator.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
@@ -240,9 +241,19 @@ class Simulation {
   std::shared_ptr<ParallelVtkWriter> _vtkWriter;
 
   /**
+   *
+   */
+   std::shared_ptr<StatisticsCalculator> _statsCalculator;
+
+  /**
    * Defines, if vtk files should be created or not.
    */
   bool _createVtkFiles;
+
+  /**
+   * Defines, if statistics should be calculated and saved.
+   */
+  bool _calculateStatistics;
 
  private:
   /**
