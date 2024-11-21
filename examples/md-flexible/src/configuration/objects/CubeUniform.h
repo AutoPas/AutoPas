@@ -24,7 +24,7 @@ class CubeUniform : public Object {
    */
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
               const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId),
+      : Object(velocity, {0., 0., 0.}, typeId),
         _numParticles(numParticles),
         _boxLength(boxLength),
         _bottomLeftCorner(bottomLeftCorner) {}
