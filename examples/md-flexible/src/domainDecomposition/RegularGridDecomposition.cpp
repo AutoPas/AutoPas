@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
@@ -197,8 +198,11 @@ void RegularGridDecomposition::initilaizeZonalMethod() {
   using namespace autopas::utils::ArrayMath::literals;
   const double skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
   RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
+  RectRegion globalBoxRegion(_globalBoxMin, _globalBoxMax - _globalBoxMin);
   // NOTE Later: intialize different zonal methods depending on user input
-  _zonalMethod = std::make_unique<FullShell>(FullShell(homeBoxRegion, _cutoffWidth, skinWidth));
+  _zonalMethod =
+      std::make_unique<FullShell>(FullShell(_cutoffWidth, skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
+                                            _communicator, _allNeighborDomainIndices, _boundaryType));
 }
 
 bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
@@ -291,8 +295,22 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
 void RegularGridDecomposition::exchangeZonalHaloParticlesExport(AutoPasType &autoPasContainer) {
   // collect particles to be exported
   _zonalMethod->collectParticles(autoPasContainer);
+
+  std::stringstream ss;
+  ss << "Hi! I am rank " << _domainIndex << " with _boxMin: (" << _localBoxMin[0] << ", " << _localBoxMin[1] << ", "
+     << _localBoxMin[2] << ") and _boxMax: (" << _localBoxMax[0] << ", " << _localBoxMax[1] << ", " << _localBoxMax[2]
+     << ")" << std::endl;
+
+  auto index = 0;
+  for (auto n : _allNeighborDomainIndices) {
+    ss << "Neighbor of " << _domainIndex << " at " << index << " with rank: " << n << std::endl;
+    index++;
+  }
+
+  std::cout << ss.str() << std::endl;
+
   // send exports and receive imports
-  _zonalMethod->SendAndReceiveExports(autoPasContainer, _communicator, _allNeighborDomainIndices);
+  _zonalMethod->SendAndReceiveExports(autoPasContainer);
 }
 
 void RegularGridDecomposition::exchangeZonalHaloParticlesResults(AutoPasType &autoPasContainer) {}
