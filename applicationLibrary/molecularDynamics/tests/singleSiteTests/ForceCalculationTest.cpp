@@ -12,7 +12,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorType<> *);
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorType<> *);
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
@@ -37,7 +37,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   LJFunctorType<> functor(cutoff);
   functor.setParticleProperties(24, 1);
 
-  autoPas.iteratePairwise(&functor);
+  autoPas.computeInteractions(&functor);
 
   for (auto p = autoPas.begin(); p.isValid(); ++p) {
     auto id = p->getID();

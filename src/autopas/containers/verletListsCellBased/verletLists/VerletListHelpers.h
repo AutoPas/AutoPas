@@ -8,7 +8,7 @@
 
 #include <atomic>
 
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 namespace autopas {
@@ -28,7 +28,7 @@ class VerletListHelpers {
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor> {
+  class VerletListGeneratorFunctor : public PairwiseFunctor<Particle, VerletListGeneratorFunctor> {
    public:
     /**
      * Structure of the SoAs defined by the particle.
@@ -41,9 +41,11 @@ class VerletListHelpers {
      * @param interactionLength
      */
     VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
-        : Functor<Particle, VerletListGeneratorFunctor>(interactionLength),
+        : PairwiseFunctor<Particle, VerletListGeneratorFunctor>(interactionLength),
           _verletListsAoS(verletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
+
+    std::string getName() override { return "VerletListGeneratorFunctor"; }
 
     bool isRelevantForTuning() override { return false; }
 
@@ -191,7 +193,7 @@ class VerletListHelpers {
    * and neighborlistsAreValid()  will return false.
    * @todo: SoA?
    */
-  class VerletListValidityCheckerFunctor : public Functor<Particle, VerletListValidityCheckerFunctor> {
+  class VerletListValidityCheckerFunctor : public PairwiseFunctor<Particle, VerletListValidityCheckerFunctor> {
    public:
     /**
      * Structure of the SoAs defined by the particle.
@@ -204,10 +206,12 @@ class VerletListHelpers {
      * @param cutoff
      */
     VerletListValidityCheckerFunctor(NeighborListAoSType &verletListsAoS, double cutoff)
-        : Functor<Particle, VerletListValidityCheckerFunctor>(cutoff),
+        : PairwiseFunctor<Particle, VerletListValidityCheckerFunctor>(cutoff),
           _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}
+
+    std::string getName() override { return "VerletListValidityCheckerFunctor"; }
 
     bool isRelevantForTuning() override { return false; }
 
