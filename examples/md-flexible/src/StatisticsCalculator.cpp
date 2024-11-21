@@ -25,23 +25,32 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration,
   StatisticsCalculator::writeRow(currentIteration, statistics);
 }
 
-std::tuple<double, double, double> StatisticsCalculator::calculateStatistics(
-    const autopas::AutoPas<ParticleType> &autoPasContainer,
-    ParticlePropertiesLibraryType &particlePropertiesLib) {
+std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateStatistics(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
 
   size_t particleCount = 0;
   std::array<double, 3> meanKineticEnergy = {0., 0., 0.};
+  std::array<double, 3> meanRotationalEnergy = {0., 0., 0.};
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    meanKineticEnergy +=
-        (particle->getV() * particle->getV() * 0.5 * particlePropertiesLib.getSiteMass(particle->getTypeId()));
+    const double mass = particlePropertiesLib.getSiteMass(particle->getTypeId());
+    const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
+    const std::array<double, 3> v = particle->getV();
+    const std::array<double, 3> w = particle->getAngularVel();
+    const double momentOfInertia = 0.4 * mass * radius * radius;
+
+    meanKineticEnergy += (v * v * 0.5 * mass);
+    meanRotationalEnergy += (w * w * 0.5 * momentOfInertia);
+
     ++particleCount;
   }
 
   meanKineticEnergy = meanKineticEnergy * (1. / particleCount);
+  meanRotationalEnergy = meanRotationalEnergy * (1. / particleCount);
 
-  return std::make_tuple(meanKineticEnergy[0], meanKineticEnergy[1], meanKineticEnergy[2]);
+  return std::make_tuple(meanKineticEnergy[0], meanKineticEnergy[1], meanKineticEnergy[2], meanRotationalEnergy[0],
+                         meanRotationalEnergy[1], meanRotationalEnergy[2]);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------

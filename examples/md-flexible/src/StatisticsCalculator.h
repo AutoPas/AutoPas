@@ -7,9 +7,9 @@
 
 #include <sys/stat.h>
 
-#include <tuple>
 #include <array>
 #include <string>
+#include <tuple>
 
 #include "autopas/Autopas.h"
 #include "src/TypeDefinitions.h"
@@ -44,8 +44,8 @@ class StatisticsCalculator {
    * @param particlePropertiesLib
    * @return tuple of doubles containing the statistics.
    */
-  static std::tuple<double, double, double> calculateStatistics(const autopas::AutoPas<ParticleType> &autopasContainer,
-                                         ParticlePropertiesLibraryType &particlePropertiesLib) ;
+  static std::tuple<double, double, double, double, double, double> calculateStatistics(
+      const autopas::AutoPas<ParticleType> &autopasContainer, ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Generates the output file (.csv) for the statistics.
@@ -132,7 +132,6 @@ class StatisticsCalculator {
       throw std::runtime_error("StatisticsCalculator::writeRow(): Could not open file " + _outputFileName);
     }
   }
-
 
   /**
    * The file stream to write the statistics to.
