@@ -62,7 +62,8 @@ void StatisticsCalculator::generateOutputFile() {
   outputFile.open(filename.str(), std::ios::out);
 
   if (outputFile.is_open()) {
-    outputFile << "Iteration,MeanKineticEnergy\n";
+    outputFile << "Iteration,MeanKineticEnergyX, MeanKineticEnergyY, MeanKineticEnergyZ, MeanRotationalEnergyX, "
+                  "MeanRotationalEnergyY, MeanRotationalEnergyZ\n";
   } else {
     throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " + filename.str());
   }
