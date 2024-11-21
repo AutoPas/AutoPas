@@ -1,7 +1,18 @@
 
 #include "src/zonalMethods/ZonalMethod.h"
 
-ZonalMethod::ZonalMethod(unsigned int zoneCount) : _zoneCount(zoneCount), _interactionSchedule{}, _interactionZones{} {}
+ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
+                         autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
+                         std::array<options::BoundaryTypeOption, 3> boundaryType)
+    : _zoneCount(zoneCount),
+      _ownRank(ownRank),
+      _homeBoxRegion(homeBoxRegion),
+      _globalBoxRegion(globalBoxRegion),
+      _comm(comm),
+      _allNeighbourIndices(allNeighbourIndices),
+      _boundaryType(boundaryType),
+      _interactionSchedule({}),
+      _interactionZones({}) {}
 
 ZonalMethod::~ZonalMethod() = default;
 

@@ -5,6 +5,7 @@
 #include "autopas/AutoPas.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/TypeDefinitions.h"
+#include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
 /**
@@ -21,8 +22,17 @@ class ZonalMethod {
   /**
    * Constructor
    * @param zoneCount
+   * @param ownRank
+   * @param homeBoxRegion
+   * @param globalBoxRegion
+   * @param comm (optional)
+   * @param allNeighbourIndices (optional)
+   * @param boundaryType (optional)
    */
-  ZonalMethod(unsigned int zoneCount);
+  ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
+              autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
+              std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
+              std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>());
 
   /**
    * Destructor
@@ -39,11 +49,8 @@ class ZonalMethod {
    * Send and receive exports.
    * Received particles are stored internally.
    * @param autoPasContainer
-   * @param comm
-   * @param allNeighbourIndices
    */
-  virtual void SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                     std::array<int, 26> allNeighbourIndices, int ownRank) = 0;
+  virtual void SendAndReceiveExports(AutoPasType &autoPasContainer) = 0;
 
   /**
    * Send and receive results of the force calculation and
@@ -51,11 +58,8 @@ class ZonalMethod {
    * This function should be called after force calculation, before
    * the velocity calculation.
    * @param autoPasContainer
-   * @param comm
-   * @param allNeighbourIndices
    */
-  virtual void SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                     std::array<int, 26> allNeighbourIndices, int ownRank) = 0;
+  virtual void SendAndReceiveResults(AutoPasType &autoPasContainer) = 0;
 
   /**
    * Get the interaction schedule without the home box zone, represented by
@@ -74,6 +78,36 @@ class ZonalMethod {
    * Stores the number of zones (except for the home zone)
    */
   unsigned int _zoneCount;
+
+  /**
+   * Stores the rank of the home box
+   */
+  int _ownRank;
+
+  /**
+   * Stores the home box region
+   */
+  RectRegion _homeBoxRegion;
+
+  /**
+   * Stores the global box region
+   */
+  RectRegion _globalBoxRegion;
+
+  /**
+   * Stores the MPI communicator
+   */
+  autopas::AutoPas_MPI_Comm _comm;
+
+  /**
+   * Stores the ranks of the neighbour processes
+   */
+  std::array<int, 26> _allNeighbourIndices;
+
+  /**
+   * Stores the boundary types of the global box
+   */
+  std::array<options::BoundaryTypeOption, 3> _boundaryType;
 
   /**
    * Stores the interaction schedule without the home box zone
