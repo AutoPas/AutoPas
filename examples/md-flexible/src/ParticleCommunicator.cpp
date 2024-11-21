@@ -5,6 +5,7 @@
  */
 #include "ParticleCommunicator.h"
 
+#include <sstream>
 #include <vector>
 
 #include "ParticleSerializationTools.h"
@@ -27,9 +28,23 @@ void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedP
 
   receiveDataFromNeighbor(source, receiveBuffer);
 
+  size_t beforeSize = receivedParticles.size();
+  int rank;
+  autopas::AutoPas_MPI_Comm_rank(_communicator, &rank);
+  std::stringstream ss;
+  ss << "Rank : " << rank << " received " << receiveBuffer.size() / 120 << " particles from rank " << source << std::endl;
+  ss << "{ ";
+
   if (!receiveBuffer.empty()) {
     ParticleSerializationTools::deserializeParticles(receiveBuffer, receivedParticles);
+    for(;beforeSize < receivedParticles.size();++beforeSize){
+        ss << "(" << receivedParticles[beforeSize].getR()[0] << ", " << receivedParticles[beforeSize].getR()[1] << ", "
+           << receivedParticles[beforeSize].getR()[2] << "), ";
+    }
   }
+
+  ss << " }" << std::endl;
+  std::cout << ss.str() << std::endl;
 }
 
 void ParticleCommunicator::waitForSendRequests() {
