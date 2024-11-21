@@ -25,7 +25,7 @@ class FullShellTest : public AutoPasTestBase, public FullShell {
    */
   FullShellTest()
       : AutoPasTestBase(),
-        FullShell(_homeBoxRegion, _cutoff, _verletSkinWidth)
+        FullShell(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion)
 
   {}
 

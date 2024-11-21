@@ -14,13 +14,11 @@ class ZonalMethodTest : public ZonalMethod, public AutoPasTestBase {
   /**
    * Constructor.
    */
-  ZonalMethodTest() : ZonalMethod(1), AutoPasTestBase() {}
+  ZonalMethodTest() : ZonalMethod(1, 0, RectRegion({0, 0, 0}, {1, 1, 1}), RectRegion({0, 0, 0}, {1, 1, 1})), AutoPasTestBase() {}
 
   void collectParticles(AutoPasType &autoPasContainer) override;
 
-  void SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
+  void SendAndReceiveExports(AutoPasType &autoPasContainer) override;
 
-  void SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
+  void SendAndReceiveResults(AutoPasType &autoPasContainer) override;
 };

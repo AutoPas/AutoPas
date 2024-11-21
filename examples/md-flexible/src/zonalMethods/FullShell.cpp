@@ -4,7 +4,10 @@
 #include "autopas/AutoPas.h"
 #include "src/ParticleCommunicator.h"
 
-FullShell::FullShell(RectRegion homeBoxRegion, double cutoff, double verletSkinWidth) : ZonalMethod(1) {
+FullShell::FullShell(double cutoff, double verletSkinWidth, int ownRank,
+                     RectRegion homeBoxRegion, RectRegion globalBoxRegion, autopas::AutoPas_MPI_Comm comm,
+                     std::array<int, 26> allNeighbourIndices, std::array<options::BoundaryTypeOption, 3> boundaryType)
+    : ZonalMethod(1, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
@@ -20,7 +23,7 @@ FullShell::FullShell(RectRegion homeBoxRegion, double cutoff, double verletSkinW
   auto identifyZone = [](const int d[3]) { return 'A'; };
 
   // calculate exportRegions
-  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, fsCondition, identifyZone, false);
+  getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, fsCondition, identifyZone, false);
 
   // skip calculation import regions since not needed
 
@@ -38,14 +41,27 @@ void FullShell::collectParticles(AutoPasType &autoPasContainer) {
   }
 }
 
-void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices, int ownRank) {
-  ParticleCommunicator particleCommunicator(comm);
+void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
+  ParticleCommunicator particleCommunicator(_comm);
   size_t index = 0;
   for (auto &exRegion : _exportRegions) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
-    auto neighbourRank = allNeighbourIndices.at(index);
-    if (neighbourRank == ownRank) continue;
+    auto neighbourRank = _allNeighbourIndices.at(index);
+    if (neighbourRank == _ownRank) {
+      // if periodic boundary, add halo particles manually
+      bool periodic = false;
+      // check if we are at a periodic border
+      for (int i = 0; i < 3; i++) {
+        bool atBorder = false;
+
+        if (i != 0 && _boundaryType[i] == options::BoundaryTypeOption::periodic) {
+          periodic = true;
+        }
+      }
+      if (periodic) {
+      }
+      continue;
+    }
     particleCommunicator.sendParticles(_regionBuffers[index++], neighbourRank);
   }
   // receive
@@ -53,8 +69,11 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::Au
   _importParticles.clear();
   for (auto &imRegion : _importRegions) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
-    auto neighbourRank = allNeighbourIndices.at(index);
-    if (neighbourRank == ownRank) continue;
+    auto neighbourRank = _allNeighbourIndices.at(index);
+    if (neighbourRank == _ownRank) {
+      // NOTE: if periodic boundary, add halo particles
+      continue;
+    }
     particleCommunicator.receiveParticles(_importParticles, neighbourRank);
   }
   particleCommunicator.waitForSendRequests();
@@ -62,5 +81,4 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::Au
   autoPasContainer.addHaloParticles(_importParticles);
 }
 
-void FullShell::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices, int ownRank) {}
+void FullShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {}

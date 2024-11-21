@@ -12,13 +12,11 @@ void ZonalMethodTest::collectParticles(AutoPasType &autoPasContainer) {}
 /**
  * Define function to allow instantiation
  */
-void ZonalMethodTest::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                            std::array<int, 26> allNeighbourIndices, int ownRank) {}
+void ZonalMethodTest::SendAndReceiveExports(AutoPasType &autoPasContainer) {}
 /**
  * Define function to allow instantiation
  */
-void ZonalMethodTest::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                                            std::array<int, 26> allNeighbourIndices, int ownRank) {}
+void ZonalMethodTest::SendAndReceiveResults(AutoPasType &autoPasContainer) {}
 
 /**
  * Tests the functionality of the getRectRegionConditional function, by
@@ -31,7 +29,7 @@ TEST_F(ZonalMethodTest, testRectRegionFalseCalculation) {
 
   auto condition = [](const int d[3]) { return false; };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition);
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; });
 
   EXPECT_EQ(regions.size(), 0);
 }
@@ -47,7 +45,7 @@ TEST_F(ZonalMethodTest, testRectRegionTrueCalculation) {
 
   auto condition = [](const int d[3]) { return true; };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition);
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; });
 
   EXPECT_EQ(regions.size(), 26);
 }
@@ -71,7 +69,7 @@ TEST_F(ZonalMethodTest, testRectRegionHSImportCalculation) {
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition);
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; });
 
   EXPECT_EQ(regions.size(), 13);
 
@@ -143,7 +141,7 @@ TEST_F(ZonalMethodTest, testRectRegionHSExportCalculation) {
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, false);
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; }, false);
 
   EXPECT_EQ(regions.size(), 13);
 

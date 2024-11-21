@@ -25,7 +25,7 @@ class HalfShellTest : public AutoPasTestBase, public HalfShell {
    */
   HalfShellTest()
       : AutoPasTestBase(),
-        HalfShell(_homeBoxRegion, _cutoff, _verletSkinWidth)
+        HalfShell(_cutoff, _verletSkinWidth, 1, _homeBoxRegion, _homeBoxRegion)
 
   {}
 

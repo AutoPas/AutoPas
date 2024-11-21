@@ -3,7 +3,10 @@
 
 #include "src/ParticleCommunicator.h"
 
-HalfShell::HalfShell(RectRegion homeBoxRegion, double cutoff, double verletSkinWidth) : ZonalMethod(1) {
+HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
+                     RectRegion globalBoxRegion, autopas::AutoPas_MPI_Comm comm,
+                     std::array<int, 26> allNeighbourIndices, std::array<options::BoundaryTypeOption, 3> boundaryType)
+    : ZonalMethod(1, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
@@ -17,17 +20,15 @@ HalfShell::HalfShell(RectRegion homeBoxRegion, double cutoff, double verletSkinW
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
-
-  auto identifyZone = [](const int d[3]) { return 'A';};
+  auto identifyZone = [](const int d[3]) { return 'A'; };
 
   // calculate exportRegions
-  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, hsCondition, identifyZone, false);
+  getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, hsCondition, identifyZone, false);
 
   // calculate importRegions
-  getRectRegionsConditional(homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition, identifyZone, true);
+  getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition, identifyZone, true);
 
   _interactionSchedule.push_back('A');
-
 }
 
 HalfShell::~HalfShell() = default;
@@ -41,13 +42,12 @@ void HalfShell::collectParticles(AutoPasType &autoPasContainer) {
   }
 }
 
-void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices, int ownRank) {
-  ParticleCommunicator particleCommunicator(comm);
+void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
+  ParticleCommunicator particleCommunicator(_comm);
   size_t index = 0;
   for (auto &exRegion : _exportRegions) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
-    auto neighbourRank = allNeighbourIndices.at(index);
+    auto neighbourRank = _allNeighbourIndices.at(index);
     particleCommunicator.sendParticles(_regionBuffers[index++], neighbourRank);
   }
   // receive
@@ -55,7 +55,7 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::Au
   _importParticles.clear();
   for (auto &imRegion : _importRegions) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
-    auto neighbourRank = allNeighbourIndices.at(index);
+    auto neighbourRank = _allNeighbourIndices.at(index);
     particleCommunicator.receiveParticles(_importParticles, neighbourRank);
   }
   particleCommunicator.waitForSendRequests();
@@ -63,5 +63,4 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::Au
   autoPasContainer.addHaloParticles(_importParticles);
 }
 
-void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm comm,
-                                      std::array<int, 26> allNeighbourIndices, int ownRank) {}
+void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {}

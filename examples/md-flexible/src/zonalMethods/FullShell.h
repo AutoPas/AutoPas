@@ -9,8 +9,17 @@ class FullShell : public ZonalMethod {
    * Constructor
    * @param cutoff
    * @param verletSkinWidth
+   * @param ownRank
+   * @param homeBoxRegion
+   * @param globalBoxRegion
+   * @param comm (optional)
+   * @param allNeighbourIndices (optional)
+   * @param boundaryType (optional)
    * */
-  FullShell(RectRegion homeBoxRegion, double cutoff, double verletSkinWidth);
+  FullShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
+            RectRegion globalBoxRegion, autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
+            std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
+            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>());
 
   /**
    * Destructor
@@ -29,9 +38,10 @@ class FullShell : public ZonalMethod {
    * @param autoPasContainer
    * @param comm
    * @param allNeighbourIndices
+   * @param ownRank
+   * @param boundaryType
    */
-  void SendAndReceiveExports(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
+  void SendAndReceiveExports(AutoPasType &autoPasContainer) override;
   /**
    * Send and receive results of the force calculation and
    * store them into the respective particles in the AutoPas container.
@@ -41,8 +51,7 @@ class FullShell : public ZonalMethod {
    * @param comm
    * @param allNeighbourIndices
    */
-  void SendAndReceiveResults(AutoPasType &autoPasContainer, autopas::AutoPas_MPI_Comm,
-                             std::array<int, 26> allNeighbourIndices, int ownRank) override;
+  void SendAndReceiveResults(AutoPasType &autoPasContainer) override;
 
  protected:
   /**
