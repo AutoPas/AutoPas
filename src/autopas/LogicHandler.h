@@ -1084,7 +1084,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
-  const auto [energyWatts, energyJoules, energySeconds, energyTotal] = autoTuner.sampleEnergy();
+  const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
@@ -1096,7 +1096,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
           energyMeasurementsPossible,
           energyMeasurementsPossible ? energyWatts : nanD,
           energyMeasurementsPossible ? energyJoules : nanD,
-          energyMeasurementsPossible ? energySeconds : nanD,
+          energyMeasurementsPossible ? energyDeltaT : nanD,
           energyMeasurementsPossible ? energyTotal : nanL};
 }
 
@@ -1638,7 +1638,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   AutoPasLog(DEBUG, "AutoPas::computeInteractions   took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
     AutoPasLog(DEBUG, "Energy Consumption: Watts: {} Joules: {} Seconds: {}", measurements.energyWatts,
-               measurements.energyJoules, measurements.energySeconds);
+               measurements.energyJoules, measurements.energyDeltaT);
   }
   _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(),
                                 measurements);

@@ -59,7 +59,7 @@ class EnergySensor {
    * Get seconds between current start and end state
    * @return double for seconds between time stamps
    */
-  double getSeconds() const;
+  double getEnergyDeltaT() const;
 
   /**
    * Getter for used sensor option

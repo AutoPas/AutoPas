@@ -22,7 +22,8 @@ bool EnergySensor::init(bool tuningMetricIsEnergy) {
   return true;
 #else
   if (tuningMetricIsEnergy) {
-    autopas::utils::ExceptionHandler::exception("Energy tuning cannot be performed with energy measurements disabled.");
+    autopas::utils::ExceptionHandler::exception(
+        "Energy tuning cannot be performed because AutoPas has been compiled with AUTOPAS_ENABLE_ENERGY_MEASUREM=OFF.");
   }
   return false;
 #endif
@@ -64,7 +65,7 @@ double EnergySensor::getWatts() const {
 #endif
 }
 
-double EnergySensor::getSeconds() const {
+double EnergySensor::getEnergyDeltaT() const {
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   return _sensor->seconds(_start, _end);
 #else

@@ -49,7 +49,7 @@ struct IterationMeasurements {
   /**
    * Time in seconds during which energy was consumed.
    */
-  double energySeconds{};
+  double energyDeltaT{};
 
   /**
    * Total energy consumed so far

@@ -328,7 +328,7 @@ bool AutoTuner::resetEnergy() { return _energySensor.startMeasurement(); }
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
   _energySensor.endMeasurement();
-  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getSeconds(),
+  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getEnergyDeltaT(),
           _energySensor.getNanoJoules()};
 }
 
