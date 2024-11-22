@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 4 1 */3 *' # At 04:00 on the 1st of every 3rd month.
+  push:
 
 jobs:
   ArchiveStaleBranches:
@@ -27,7 +28,15 @@ jobs:
           python -m pip install --upgrade pip google-generativeai
 
       - name: Install GitHub CLI
-        run: sudo apt-get install -y gh
+        run: |
+          # Get the newest version
+          (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y))
+          sudo mkdir -p -m 755 /etc/apt/keyrings
+          wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+          sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
 
       - name: Filter and Archive Stale Branches
         env:
@@ -36,19 +45,20 @@ jobs:
         run: |
           AGE_CUTOFF=800 # In days
           # Fetch all branches
-          gh api repos/${{ github.repository }}/branches | jq -r '.[].name' > branches.txt
+          git branch -r | grep -v '\->' | sed 's/origin\///' > branches.txt
 
           # Loop through branches
           while read branch; do
+          
             # Skip main branch
             if [ "$branch" = "master" ] || [ "$branch" = "main" ]; then
-              echo "Skipping main branch: ${branch}..."
+              echo "  Main branch: ${branch}. Skipping..."
               continue
             fi
             
             # Skip if open PR exists
-            if gh pr list --head $branch; then
-              echo "There exists an open PR for branch $branch..."
+            if [ -n "$(gh pr list --head $branch --json number --jq '.[]' 2>/dev/null)" ]; then
+              echo "  There exists an open PR for branch $branch. Skipping..."
               continue
             fi
           
@@ -62,7 +72,7 @@ jobs:
           if [ $branchAgeDays -lt $AGE_CUTOFF ]; then
             echo "  Branch $branch is still active. Last commit $branchAgeDays days ago. Skipping..."
           else
-            echo "  Branch $branch is $branchAgeDays minutes old. Archiving..."
+            echo "  Branch $branch is $branchAgeDays days old. Archiving..."
 
             # Get number of new commits
             commitCount=$(gh api repos/${{ github.repository }}/compare/master...$branch --jq '.commits | length')
