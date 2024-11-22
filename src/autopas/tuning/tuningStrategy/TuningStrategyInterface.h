@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <functional>
+#include <optional>
+
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
@@ -25,7 +28,7 @@ class TuningStrategyInterface {
    * Get this object's associated TuningStrategyOption type.
    * @return TuningStrategyOption
    */
-  virtual TuningStrategyOption getOptionType() = 0;
+  virtual TuningStrategyOption getOptionType() const = 0;
 
   /**
    * Notifies the strategy about empirically collected information for the given configuration.
@@ -50,8 +53,9 @@ class TuningStrategyInterface {
    *
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
+   * @return boolean value to signal if the tuning strategy has intentionally wiped the config queue
    */
-  virtual void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  virtual bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                                    const EvidenceCollection &evidenceCollection) = 0;
 
   /**
@@ -63,8 +67,9 @@ class TuningStrategyInterface {
    * @param tuningPhase Gives the current tuning phase to the tuning strategy.
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
+   * @return boolean value to signal if the tuning strategy has intentionally wiped the config queue
    */
-  virtual void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  virtual bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                      const autopas::EvidenceCollection &evidenceCollection) = 0;
 
   /**

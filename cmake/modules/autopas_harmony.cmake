@@ -1,3 +1,10 @@
+option(AUTOPAS_ENABLE_HARMONY "Enables Active Harmony which can be used as a tuning strategy" OFF)
+
+if (NOT AUTOPAS_ENABLE_HARMONY)
+    message(STATUS "harmony disabled")
+    return()
+endif ()
+
 message(STATUS "harmony - using bundled version")
 
 # Enable ExternalProject CMake module
@@ -14,7 +21,8 @@ find_program(MAKE_EXE NAMES gmake nmake make)
 ExternalProject_Add(
     harmony_bundled
     URL ${AUTOPAS_SOURCE_DIR}/libs/harmony.zip
-    URL_HASH MD5=a8768c2886bdc2e44e3b6b7d4f94729c
+    # Hash is with deleted `example/` folder and removed `example` target from the local Makefile
+    URL_HASH MD5=6249e1899005238c608cd8a0c443fbba 
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
     # since we only unpack a header lib src == include
@@ -55,5 +63,7 @@ target_include_directories(
 
 # Set macro needed to set environment variable for ActiveHarmony
 target_compile_definitions(
-    harmony INTERFACE HARMONY_HOME="HARMONY_HOME=${CMAKE_CURRENT_BINARY_DIR}/harmony/include"
+    harmony
+    INTERFACE
+    HARMONY_HOME="HARMONY_HOME=${CMAKE_CURRENT_BINARY_DIR}/harmony/include"
 )

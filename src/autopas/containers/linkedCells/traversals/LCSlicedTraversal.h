@@ -31,8 +31,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>,
-                          public LCTraversalInterface<ParticleCell> {
+class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -41,7 +40,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
@@ -52,7 +51,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced; }
 
@@ -66,7 +65,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCSlicedTraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCSlicedTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

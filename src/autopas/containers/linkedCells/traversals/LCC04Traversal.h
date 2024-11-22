@@ -27,8 +27,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
-                       public LCTraversalInterface<ParticleCell> {
+class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -37,20 +36,20 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, I
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   LCC04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor, double interactionLength,
                  const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                         dataLayout, useNewton3),
         _cellOffsets32Pack(computeOffsets32Pack()),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
                                          1l)) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04; }
 
@@ -85,7 +84,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, I
 
   LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 
-  const std::array<long, 3> _end;
+  std::array<long, 3> _end;
 };
 
 /**
@@ -126,7 +125,6 @@ constexpr auto LCC04Traversal<ParticleCell, PairwiseFunctor>::computeOffsets32Pa
   cellOffsets32Pack[i++] = {2l, 1l, z};
   cellOffsets32Pack[i++] = {2l, 2l, z};
 
-  /// @todo C++20: mark as unlikely
   if (i != 32) {
     utils::ExceptionHandler::exception("Internal error: Wrong number of offsets (expected: 32, actual: {})", i);
   }
@@ -147,14 +145,14 @@ template <class ParticleCell, class PairwiseFunctor>
 void LCC04Traversal<ParticleCell, PairwiseFunctor>::processBasePack32(std::vector<ParticleCell> &cells,
                                                                       const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
-  std::array<long, 3> index;
+  std::array<long, 3> index{};
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension);
 
-  for (auto Offset32Pack : _cellOffsets32Pack) {
+  for (auto offset32Pack : _cellOffsets32Pack) {
     // compute 3D index
     bool isIn = true;
     for (int d = 0; d < 3; ++d) {
-      index[d] = base3DIndex[d] + Offset32Pack[d];
+      index[d] = base3DIndex[d] + offset32Pack[d];
       isIn &= (index[d] >= 0l) and (index[d] < _end[d]);
     }
 
@@ -173,7 +171,7 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor>::processBasePack32(std::vecto
  * @tparam PairwiseFunctor
  */
 template <class ParticleCell, class PairwiseFunctor>
-void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {

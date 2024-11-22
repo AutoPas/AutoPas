@@ -77,7 +77,7 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
 

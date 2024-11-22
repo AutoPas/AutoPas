@@ -13,7 +13,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/GridGenerator.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -49,6 +49,8 @@ class TraversalTest
 
     CountFunctor(floatType cutoff)
         : autopas::PairwiseFunctor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
+
+    std::string getName() override { return "TraversalTestCountFunctor"; }
 
     bool isRelevantForTuning() override { return true; }
 

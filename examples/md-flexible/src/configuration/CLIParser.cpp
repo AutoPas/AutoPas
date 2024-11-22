@@ -60,7 +60,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
-      config.dontMeasureFlops,
       config.dontShowProgressBar,
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
@@ -86,6 +85,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.relativeBlacklistRange,
       config.relativeOptimumRange,
       config.ruleFilename,
+      config.fuzzyRuleFilename,
       config.selectorStrategy,
       config.traversalOptions,
       config.traversalOptions3B,
@@ -95,6 +95,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningPhases,
       config.tuningSamples,
       config.tuningStrategyOptions,
+      config.useLOESSSmoothening,
       config.useThermostat,
       config.useTuningLogger,
       config.verletClusterSize,
@@ -157,7 +158,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.newton3Options3B)::getoptChar: {
         config.newton3Options3B.value = autopas::Newton3Option::parseOptions(strArg);
         if (config.newton3Options3B.value.empty()) {
-          cerr << "Unknown Newton3 3-body option: " << strArg << endl;
+          cerr << "Unknown Newton3 option for triwise interactions: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -244,7 +245,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.dataLayoutOptions3B)::getoptChar: {
         config.dataLayoutOptions3B.value = autopas::DataLayoutOption::parseOptions(strArg);
         if (config.dataLayoutOptions3B.value.empty()) {
-          cerr << "Unknown data layouts for 3-body: " << strArg << endl;
+          cerr << "Unknown data layouts for triwise interactions: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -299,8 +300,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-        } else if (strArg.find("glob") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
@@ -316,15 +315,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         if (strArg.find("at") != string::npos or strArg.find("axi") != string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
-          cerr << "Unknown 3-body functor: " << strArg << endl;
+          cerr << "Unknown triwise functor: " << strArg << endl;
           cerr << "Please use 'Axilrod-Teller'" << endl;
           displayHelp = true;
         }
-        config.addInteractionType(autopas::InteractionTypeOption::threeBody);
-        break;
-      }
-      case decltype(config.dontMeasureFlops)::getoptChar: {
-        config.dontMeasureFlops.value = false;
+        config.addInteractionType(autopas::InteractionTypeOption::triwise);
         break;
       }
       case decltype(config.generatorOption)::getoptChar: {
@@ -533,6 +528,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.useLOESSSmoothening)::getoptChar: {
+        config.useLOESSSmoothening.value = false;
+        break;
+      }
       case decltype(config.particleSpacing)::getoptChar: {
         try {
           config.particleSpacing.value = stod(strArg);
@@ -553,7 +552,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.traversalOptions3B)::getoptChar: {
         config.traversalOptions3B.value = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions3B.value.empty()) {
-          cerr << "Unknown 3-body Traversal: " << strArg << endl;
+          cerr << "Unknown triwise Traversal: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -586,6 +585,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.ruleFilename.value = optarg;
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::parse(): rule-File " + config.ruleFilename.value + " not found!");
+        }
+        break;
+      }
+      case decltype(config.fuzzyRuleFilename)::getoptChar: {
+        config.fuzzyRuleFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): fuzzy-rule-File " + config.fuzzyRuleFilename.value +
+                                   " not found!");
         }
         break;
       }
@@ -707,6 +714,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
 
         config.loadBalancer.value = *parsedOptions.begin();
+
+#ifndef MD_FLEXIBLE_ENABLE_ALLLBL
+        if (config.loadBalancer.value == LoadBalancerOption::all) {
+          cerr << "CLI input requests ALL but md-flexible was not compiled with ALL." << endl;
+          displayHelp = true;
+        }
+#endif
         break;
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {

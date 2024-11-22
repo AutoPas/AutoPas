@@ -13,7 +13,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -43,6 +43,8 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
       if (newton3) _pairs.emplace_back(&j, &i);
     };
   }
+
+  std::string getName() override { return "CollectParticlePairsFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 
@@ -77,6 +79,8 @@ class CollectParticlesPerThreadFunctor
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&i);
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&j);
   }
+
+  std::string getName() override { return "CollectParticlesPerThreadFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 

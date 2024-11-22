@@ -57,22 +57,18 @@ AutoPas<Particle>::~AutoPas() {
 
 template <class Particle>
 AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
-  for (auto &[interactionType, tuner] : other._autoTuners) {
-    _autoTuners[interactionType] = std::move(tuner);
-  }
+  _autoTuners = std::move(other._autoTuners);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
 
 template <class Particle>
 void AutoPas<Particle>::init() {
-  AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
-  AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
-  if (_autoTunerInfo.maxSamples % _verletRebuildFrequency != 0) {
-    AutoPasLog(WARN,
-               "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
-               "when multiple AutoPas instances interact (e.g. via MPI).",
-               _autoTunerInfo.maxSamples, _verletRebuildFrequency);
+  int myRank{};
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank == 0) {
+    AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
+    AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
   }
 
   if (_tuningStrategyFactoryInfo.autopasMpiCommunicator == AUTOPAS_MPI_COMM_NULL) {
@@ -117,9 +113,10 @@ void AutoPas<Particle>::init() {
     if (_useTuningStrategyLoggerProxy) {
       tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
     }
+    auto tunerOutputSuffix = _outputSuffix + "_" + interactionType.to_string();
     _autoTuners.emplace(interactionType,
                         std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                             _verletRebuildFrequency, _outputSuffix));
+                                                             _verletRebuildFrequency, tunerOutputSuffix));
   }
 
   // Create logic handler
@@ -140,12 +137,12 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
   }
 
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    return _logicHandler->template computeInteractionsPipeline<Functor, InteractionTypeOption::pairwise>(f);
+    return _logicHandler->template computeInteractionsPipeline<Functor>(f, InteractionTypeOption::pairwise);
   } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    return _logicHandler->template computeInteractionsPipeline<Functor, InteractionTypeOption::threeBody>(f);
+    return _logicHandler->template computeInteractionsPipeline<Functor>(f, InteractionTypeOption::triwise);
   } else {
     utils::ExceptionHandler::exception(
-        "Functor is not valid. Only 2-body and 3-body functors are supported. Please use a functor derived from "
+        "Functor is not valid. Only pairwise and triwise functors are supported. Please use a functor derived from "
         "PairwiseFunctor or TriwiseFunctor.");
   }
   return false;

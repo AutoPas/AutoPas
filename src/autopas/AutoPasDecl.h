@@ -136,7 +136,7 @@ class AutoPas {
    * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
    * called.
    * @note This functions will create an estimate for the number of halo particles.
-   * @param numParticles No buffer factor is applied. It is probably wise to slighly over-reserve to account for
+   * @param numParticles No buffer factor is applied. It is probably wise to slightly over-reserve to account for
    * imbalance or particle movement.
    */
   void reserve(size_t numParticles);
@@ -157,7 +157,7 @@ class AutoPas {
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
    * @note An exception is thrown if the particle is added and it is not inside of the owned domain (defined by
-   * boxmin and boxmax) of the container.
+   * boxMin and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
   void addParticle(const Particle &p);
@@ -187,8 +187,8 @@ class AutoPas {
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
-   * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin
-   * and boxmax) of the container.
+   * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxMin
+   * and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
   void addHaloParticle(const Particle &haloParticle);
@@ -373,17 +373,22 @@ class AutoPas {
   ConstIteratorT cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
-   * Helper to enable range-based for loops for the AutoPas object.
-   * ParticleIterator::operator==() compares its own validity state against this value. Hence, as soon as the iterator
-   * is invalid the loop ends.
+   * Dummy to make range-based for loops work.
+   *
+   * Range-Based for loops use the incremented begin() expression and compare it against the end() expression.
+   * ContainerIterator implements ContainerIterator::operator==() that accepts a bool as right hand side argument,
+   * which is triggered by this end() function.
+   * This operator then proceeds to check the validity of the iterator itself.
+   *
    * @return false
    */
   [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
-   * iterate over all particles in a specified region
-   * for(auto iter = container.getRegionIterator(lowCorner,
-   * highCorner);iter.isValid();++iter)
+   * Iterate over all particles in a specified region
+   * ```c++
+   * for (auto iter = container.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) { }
+   * ```
    * @param lowerCorner lower corner of the region
    * @param higherCorner higher corner of the region
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
@@ -569,11 +574,6 @@ class AutoPas {
   [[nodiscard]] bool searchSpaceIsTrivial();
 
   /**
-   * Increments any iteration-based counters within AutoPas.
-   */
-  //  void incrementIterationCounters();
-
-  /**
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
@@ -695,6 +695,18 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
 
   /**
+   * Get flag for whether a LOESS-based smoothening is used.
+   * @return
+   */
+  [[nodiscard]] bool getUseLOESSSmoothening() const { return _autoTunerInfo.useLOESSSmoothening; }
+
+  /**
+   * Set flag for whether a LOESS-based smoothening is used.
+   * @param useLOESSSmoothening
+   */
+  void setUseLOESSSmoothening(bool useLOESSSmoothening) { _autoTunerInfo.useLOESSSmoothening = useLOESSSmoothening; }
+
+  /**
    * Get maximum number of evidence for tuning
    * @return
    */
@@ -721,7 +733,7 @@ class AutoPas {
   }
 
   /**
-   * Get the maximum number of tuning phases a configuration can not be tested.
+   * Get the maximum number of tuning phases before a configuration is certainly tested again.
    * @return
    */
   [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const {
@@ -729,8 +741,7 @@ class AutoPas {
   }
 
   /**
-   * For Predictive tuning: Set the relative cutoff for configurations to be blacklisted.
-   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
+   * Set the maximum number of tuning phases before a configuration is certainly tested again.
    * @param maxTuningPhasesWithoutTest
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
@@ -851,8 +862,8 @@ class AutoPas {
 
   /**
    * Get the list of allowed traversals.
-   * @param interactionType Get allowed traversals for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Get allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
   [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals(
@@ -864,19 +875,25 @@ class AutoPas {
    * Set the list of allowed traversals.
    * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
-   * @param interactionType Set allowed traversals for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Set allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals,
                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
-    _allowedTraversals[interactionType] = allowedTraversals;
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedTraversals[iType] = allowedTraversals;
+      }
+    } else {
+      _allowedTraversals[interactionType] = allowedTraversals;
+    }
   }
 
   /**
    * Get the list of allowed data layouts.
    * @return
-   * @param interactionType Get allowed data layouts for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Get allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts(
       const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
@@ -887,18 +904,24 @@ class AutoPas {
    * Set the list of allowed data layouts.
    * For possible data layouts choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
-   * @param interactionType Set allowed data layouts for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Set allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
                              const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
-    _allowedDataLayouts[interactionType] = allowedDataLayouts;
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedDataLayouts[iType] = allowedDataLayouts;
+      }
+    } else {
+      _allowedDataLayouts[interactionType] = allowedDataLayouts;
+    }
   }
 
   /**
    * Get the list of allowed newton 3 options.
-   * @param interactionType Get allowed newton 3 options for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Get allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
   [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options(
@@ -910,12 +933,18 @@ class AutoPas {
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
-   * @param interactionType Set allowed newton 3 options for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Set allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options,
                                 const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
-    _allowedNewton3Options[interactionType] = allowedNewton3Options;
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedNewton3Options[iType] = allowedNewton3Options;
+      }
+    } else {
+      _allowedNewton3Options[interactionType] = allowedNewton3Options;
+    }
   }
 
   /**
@@ -932,11 +961,13 @@ class AutoPas {
    * Getter for the currently selected configuration.
    * @return Configuration objects currently used for respective interaction types.
    */
-  [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, Configuration> getCurrentConfig() const {
-    // TODO: Avoid copying
-    std::unordered_map<InteractionTypeOption::Value, Configuration> currentConfigs;
-    for (auto &[type, tuner] : _autoTuners) {
-      currentConfigs[type] = tuner->getCurrentConfig();
+  [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
+  getCurrentConfigs() const {
+    std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
+    currentConfigs.reserve(_autoTuners.size());
+
+    for (const auto &[type, tuner] : _autoTuners) {
+      currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
   }
@@ -959,6 +990,12 @@ class AutoPas {
   }
 
   /**
+   * Getter for the tuning metric option.
+   * @return
+   */
+  [[nodiscard]] const TuningMetricOption &getTuningMetricOption() const { return _autoTunerInfo.tuningMetric; }
+
+  /**
    * Setter for the tuning metric option.
    * For possible tuning metric choices see options::TuningMetricOption::Value.
    * @param tuningMetricOption
@@ -968,7 +1005,7 @@ class AutoPas {
   }
 
   /**
-   * Setter for the maximal Difference for the bucket distribution
+   * Setter for the maximal Difference for the bucket distribution.
    * @param MPITuningMaxDifferenceForBucket
    */
   void setMPITuningMaxDifferenceForBucket(double MPITuningMaxDifferenceForBucket) {
@@ -976,7 +1013,7 @@ class AutoPas {
   }
 
   /**
-   * Setter for the maxDensity-Weight in calculation for bucket distribution
+   * Setter for the maxDensity-Weight in calculation for bucket distribution.
    * @param MPITuningWeightForMaxDensity
    */
   void setMPITuningWeightForMaxDensity(double MPITuningWeightForMaxDensity) {
@@ -1020,6 +1057,14 @@ class AutoPas {
   void setRuleFileName(const std::string &ruleFileName) { _tuningStrategyFactoryInfo.ruleFileName = ruleFileName; }
 
   /**
+   * Set fuzzy rule file name for the RuleBasedTuning.
+   * @param fuzzyRuleFileName The name of the fuzzy rule file to use during rule based tuning.
+   */
+  void setFuzzyRuleFileName(const std::string &fuzzyRuleFileName) {
+    _tuningStrategyFactoryInfo.fuzzyRuleFileName = fuzzyRuleFileName;
+  }
+
+  /**
    * Get the name / path of the rule file for the RuleBasedTuning.
    * @return
    */
@@ -1029,12 +1074,12 @@ class AutoPas {
    * Set the sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
   void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
 
   /**
-   * Get the sorting-threshold for traversals that use the CellFunctor
+   * Get the sorting-threshold for traversals that use the CellFunctor.
    * @return sorting-threshold
    */
   size_t getSortingThreshold() const { return _sortingThreshold; }
@@ -1079,20 +1124,20 @@ class AutoPas {
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<TraversalOption>> _allowedTraversals{
       {InteractionTypeOption::pairwise, TraversalOption::getMostPairwiseOptions()},
-      {InteractionTypeOption::threeBody, TraversalOption::getMostTriwiseOptions()}};
+      {InteractionTypeOption::triwise, TraversalOption::getMostTriwiseOptions()}};
   /**
    * List of data layouts AutoPas can choose from for pairwise interactions.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedDataLayouts{
       {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
-      {InteractionTypeOption::threeBody, DataLayoutOption::getMostOptions()}};
+      {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<Newton3Option>> _allowedNewton3Options{
       {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
-      {InteractionTypeOption::threeBody, Newton3Option::getMostOptions()}};
+      {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.
@@ -1104,7 +1149,7 @@ class AutoPas {
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
   /**
-   * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and
+   * Load estimation algorithm to be used for efficient parallelization (only relevant for LCSlicedBalancedTraversal and
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};

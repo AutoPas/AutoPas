@@ -30,12 +30,12 @@ class VLCNeighborListInterface {
    * @param cutoff Cutoff radius.
    * @param skin Skin of the verlet list.
    * @param interactionLength Interaction length of the underlying linked cells object.
-   * @param buildTraversalOption Traversal option necessary for generator functor.
+   * @param vlcTraversalOpt Traversal for which this neighbor list is built.
    * @param buildType Type of build functor to be used for the generation of the neighbor list.
    */
   virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                                    double interactionLength, const TraversalOption buildTraversalOption,
-                                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;
+                                    double interactionLength, const TraversalOption vlcTraversalOpt,
+                                    typename VerletListsCellsHelpers::VLCBuildType buildType) = 0;
 
   /**
    * Gets the number of neighbors over all neighbor lists that belong to this particle.
@@ -106,7 +106,13 @@ class VLCNeighborListInterface {
    * for both VLCCellPairNeighborList and VLCAllCellsNeighborList.
    * @param traversal the current traversal
    */
-  virtual void setUpTraversal(TraversalInterface<InteractionTypeOption::pairwise> *traversal) = 0;
+  virtual void setUpTraversal(TraversalInterface *traversal) = 0;
+
+  /**
+   * Set the Linked Cells Pointer for this List.
+   * @param linkedCells
+   */
+  void setLinkedCellsPointer(LinkedCells<Particle> *linkedCells) { this->_internalLinkedCells = linkedCells; }
 
  protected:
   /**
@@ -126,12 +132,12 @@ class VLCNeighborListInterface {
    * @param cutoff Cutoff radius.
    * @param skin Skin of the verlet list.
    * @param interactionLength Interaction length of the underlying linked cells object.
-   * @param buildTraversalOption Traversal option necessary for generator functor.
+   * @param vlcTraversalOpt Traversal for which this neighbor list is built.
    * @param buildType Type of build functor to be used for the generation of the neighbor list.
    */
   virtual void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                                 double interactionLength, const TraversalOption buildTraversalOption,
-                                 typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;
+                                 double interactionLength, const TraversalOption &vlcTraversalOpt,
+                                 typename VerletListsCellsHelpers::VLCBuildType buildType) = 0;
 };
 
 }  // namespace autopas

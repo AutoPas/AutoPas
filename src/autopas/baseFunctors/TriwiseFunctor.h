@@ -1,7 +1,7 @@
 /**
  * @file TriwiseFunctor.h
  *
- * @date 12.08.2032
+ * @date 12.08.2023
  * @author muehlhaeusser
  */
 
@@ -118,11 +118,6 @@ class TriwiseFunctor : public Functor<Particle, CRTP_T> {
                                 const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
-
-  /**
-   * @copydoc autopas::Functor::getName()
-   */
-  virtual std::string getName() { return "TriwiseFunctor"; }
 };
 
 }  // namespace autopas

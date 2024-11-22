@@ -9,7 +9,7 @@
 #include "VerletListHelpers.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/traversals/LCC01Traversal3B.h"
+#include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08NeighborListBuilding3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
@@ -74,7 +74,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
@@ -86,23 +86,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
-    traversal->endTraversal();
-  }
-
-  void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
-    if (verletTraversalInterface) {
-      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
-                                                         _soaNeighborLists, _pairwiseAosNeighborLists);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in VerletLists::computeInteractions");
-    }
-
-    traversal->initTraversal();
-    traversal->traverseParticleTriplets();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -114,10 +98,10 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwise()!
+   * @note This function will be called in computeInteractions()!
    * @param traversal
    */
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
@@ -198,7 +182,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-    this->_linkedCells.iteratePairwise(&traversal);
+    this->_linkedCells.computeInteractions(&traversal);
 
     _soaListIsValid = false;
   }

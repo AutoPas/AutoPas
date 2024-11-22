@@ -102,7 +102,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
   config.addSiteType(0, 1.);
-  config.addLJSite(0, 1., sigma);
+  config.addLJParametersToSite(0, 1., sigma);
 
   const std::array<double, 3> boxLength = config.boxMax.value - config.boxMin.value;
   RegularGridDecomposition domainDecomposition(config);
@@ -116,7 +116,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1.);
-  particlePropertiesLibrary->addLJSite(0, 1., sigma);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1., sigma);
 #if MD_FLEXIBLE_MODE == MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
 #endif

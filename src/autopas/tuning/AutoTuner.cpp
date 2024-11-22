@@ -13,7 +13,6 @@
 
 #include "autopas/tuning/selectors/OptimumSelector.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/tuning/utils/Smoothing.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -24,10 +23,9 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
                      const AutoTunerInfo &autoTunerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
     : _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
-      _iteration(0),
       _tuningInterval(autoTunerInfo.tuningInterval),
-      _iterationsSinceTuning(autoTunerInfo.tuningInterval),  // init to max so that tuning happens in first iteration
       _tuningMetric(autoTunerInfo.tuningMetric),
+      _useLOESSSmoothening(autoTunerInfo.useLOESSSmoothening),
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
@@ -48,6 +46,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
+  AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening {}.", _useLOESSSmoothening ? "enabled" : "disabled");
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
@@ -61,12 +60,12 @@ void AutoTuner::addHomogeneityAndMaxDensity(double homogeneity, double maxDensit
   _timerCalculateHomogeneity.addTime(time);
 }
 
-void AutoTuner::logIteration(const Configuration &conf, bool tuningIteration, long tuningTime) {
+void AutoTuner::logTuningResult(bool tuningIteration, long tuningTime) const {
   // only log if we are at the end of a tuning phase
-  if (not tuningIteration and _iterationsSinceTuning == 0) {
+  if (_endOfTuningPhase) {
     // This string is part of several older scripts, hence it is not recommended to change it.
-    AutoPasLog(DEBUG, "Selected Configuration {}", getCurrentConfig().toString());
-    const auto [_, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+    const auto [conf, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+    AutoPasLog(DEBUG, "Selected Configuration {}", conf.toString());
     _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime, optimalEvidence.value);
   }
 }
@@ -76,13 +75,15 @@ bool AutoTuner::searchSpaceIsTrivial() const { return _searchSpace.size() == 1; 
 bool AutoTuner::searchSpaceIsEmpty() const { return _searchSpace.empty(); }
 
 void AutoTuner::forceRetune() {
-  _iterationsSinceTuning = _tuningInterval;
+  if (inTuningPhase()) {
+    AutoPasLog(WARN, "Warning: Currently running tuning phase is aborted a new one is started!");
+  }
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
+  _forceRetune = true;
+  _iterationBaseline = 0;
 }
 
 bool AutoTuner::tuneConfiguration() {
-  bool stillTuning = true;
-
   utils::Timer tuningTimer;
   tuningTimer.start();
 
@@ -93,9 +94,25 @@ bool AutoTuner::tuneConfiguration() {
   _samplesNotRebuildingNeighborLists.clear();
   _samplesRebuildingNeighborLists.clear();
 
+  // Helper function to reset the ConfigQueue if something wipes it.
+  auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup, const TuningStrategyOption &stratOpt) {
+    if (_configQueue.empty()) {
+      _configQueue = configQueueBackup;
+      AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}",
+                 stratOpt.to_string(), _configQueue.size(),
+                 utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
+                                              [](const auto &conf) { return conf.toShortString(false); }));
+    }
+  };
+
   // Determine where in a tuning phase we are
-  if (_iterationsSinceTuning == _tuningInterval) {
-    // CASE: Start of a tuning phase
+  // If _iterationsInMostRecentTuningPhase >= _tuningInterval the current tuning phase takes more iterations than the
+  // tuning interval -> continue tuning
+  if ((_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune) {
+    // CASE: Start of a new tuning phase
+    _isTuning = true;
+    _forceRetune = false;
+    _iterationBaseline = 0;
     // in the first iteration of a tuning phase we reset all strategies
     // and refill the queue with the complete search space.
     // Reverse the order, because _configQueue is FiLo, and we aim to keep the order for legacy reasons.
@@ -107,40 +124,49 @@ bool AutoTuner::tuneConfiguration() {
                                             [](const auto &conf) { return conf.toShortString(false); }));
     // then let the strategies filter and sort it
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
-      tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
+      const auto configQueueBackup = _configQueue;
+      const auto intentionalWipe = tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::reset(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
+      if (not intentionalWipe) {
+        restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
+      }
     });
   } else {
     // CASE: somewhere in a tuning phase
+    _isTuning = true;
     AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before optimizeSuggestions: (Size={}) {}", _configQueue.size(),
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                             [](const auto &conf) { return conf.toShortString(false); }));
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
-      tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
+      const auto configQueueBackup = _configQueue;
+      const auto intentionalWipe = tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
+      if (not intentionalWipe) {
+        restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
+      }
     });
   }
 
   // CASE: End of a tuning phase. This is not exclusive to the other cases!
   if (_configQueue.empty()) {
-    // TODO: check synchronization here?
-    // if the queue is empty we are done tuning.
-    _iterationsSinceTuning = 0;
+    // If the queue is empty we are done tuning.
+    _endOfTuningPhase = true;
     const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase);
     _configQueue.push_back(optConf);
-    stillTuning = false;
-    // fill up sample buffer to indicate we are not collecting samples anymore
+    _isTuning = false;
+    // Fill up sample buffer to indicate we are not collecting samples anymore.
     _samplesRebuildingNeighborLists.resize(_maxSamples);
+    _iterationBaseline = 0;
   }
   tuningTimer.stop();
 
-  return stillTuning;
+  return _isTuning;
 }
 
 const Configuration &AutoTuner::getCurrentConfig() const { return _configQueue.back(); }
@@ -198,111 +224,103 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
 
 void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
-  if (getCurrentNumSamples() < _maxSamples) {
-    AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
-    if (neighborListRebuilt) {
-      _samplesRebuildingNeighborLists.push_back(sample);
-    } else {
-      _samplesNotRebuildingNeighborLists.push_back(sample);
-    }
-    // if this was the last sample for this configuration:
-    //  - calculate the evidence from the collected samples
-    //  - log what was collected
-    //  - remove the configuration from the queue
-    if (getCurrentNumSamples() == _maxSamples) {
-      const long reducedValue = estimateRuntimeFromSamples();
-      _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
+  // sanity check
+  if (getCurrentNumSamples() >= _maxSamples) {
+    utils::ExceptionHandler::exception(
+        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough "
+        "for this configuration!\n"
+        "tuneConfiguration() should have been called before to process and flush samples.");
+  }
+  AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
+  if (neighborListRebuilt) {
+    _samplesRebuildingNeighborLists.push_back(sample);
+  } else {
+    _samplesNotRebuildingNeighborLists.push_back(sample);
+  }
+  // if this was the last sample for this configuration:
+  //  - calculate the evidence from the collected samples
+  //  - log what was collected
+  //  - remove the configuration from the queue
+  if (getCurrentNumSamples() == _maxSamples) {
+    const long reducedValue = estimateRuntimeFromSamples();
+    _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
 
-      // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
-      const auto smoothedValue =
-          std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5));
+    // If LOESS-based smoothening is enabled, use it to smooth evidence to remove high outliers. If smoothing results in
+    // a higher value or if LOESS-based smoothening is disabled, use the original value.
+    const auto smoothedValue =
+        _useLOESSSmoothening
+            ? std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5))
+            : reducedValue;
 
-      // replace collected evidence with smoothed value to improve next smoothing
-      _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
+    // replace collected evidence with smoothed value to improve next smoothing
+    _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
 
-      std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
-        tuningStrategy->addEvidence(getCurrentConfig(), _evidenceCollection.modifyLastEvidence(currentConfig));
-      });
+    std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
+      tuningStrategy->addEvidence(getCurrentConfig(), _evidenceCollection.modifyLastEvidence(currentConfig));
+    });
 
-      // print config, times and reduced value
-      AutoPasLog(
-          DEBUG, "Collected {} for {}",
-          [&]() {
-            switch (this->_tuningMetric) {
-              case TuningMetricOption::time:
-                return "times";
-              case TuningMetricOption::energy:
-                return "energy consumption";
-            }
-            autopas::utils::ExceptionHandler::exception("AutoTuner::addMeasurement(): Unknown tuning metric.");
-            return "Unknown tuning metric";
-          }(),
-          [&]() {
-            std::ostringstream ss;
-            // print config
-            ss << currentConfig << " : ";
-            // print all timings
-            ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
-                                               {"With rebuilding neighbor lists [ ", " ] "});
-            ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
-                                               {"Without rebuilding neighbor lists [ ", " ] "});
-            ss << "Smoothed value: " << smoothedValue;
-            return ss.str();
-          }());
+    // print config, times and reduced value
+    AutoPasLog(
+        DEBUG, "Collected {} for {}",
+        [&]() {
+          switch (this->_tuningMetric) {
+            case TuningMetricOption::time:
+              return "times";
+            case TuningMetricOption::energy:
+              return "energy consumption";
+          }
+          autopas::utils::ExceptionHandler::exception("AutoTuner::addMeasurement(): Unknown tuning metric.");
+          return "Unknown tuning metric";
+        }(),
+        [&]() {
+          std::ostringstream ss;
+          // print config
+          ss << currentConfig << " : ";
+          // print all timings
+          ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
+                                             {"With rebuilding neighbor lists [ ", " ] "});
+          ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
+                                             {"Without rebuilding neighbor lists [ ", " ] "});
+          ss << "Smoothed value: " << smoothedValue;
+          return ss.str();
+        }());
 
-      _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
-                                      _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);
-    }
+    _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists, _samplesNotRebuildingNeighborLists,
+                                    _iteration, reducedValue, smoothedValue);
   }
 }
 
 void AutoTuner::bumpIterationCounters(bool needToWait) {
-  ++_iteration;
-  if (needToWait) {
-    _iterationsSinceTuning += _tuningInterval + 1;
-  } else {
-    ++_iterationsSinceTuning;
+  // reset counter after all autotuners finished tuning
+  if (not(needToWait or inTuningPhase() or _iterationBaseline < _tuningInterval)) {
+    _iterationBaseline = 0;
   }
-  // this will NOT catch the first tuning phase because _iterationsSinceTuning is initialized to _tuningInterval.
-  // Hence, _tuningPhase is initialized as 1.
-  if (_iterationsSinceTuning == _tuningInterval) {
+  ++_iterationBaseline;
+  ++_iteration;
+  AutoPasLog(DEBUG, "Iteration: {}", _iteration);
+  _endOfTuningPhase = false;
+
+  if (_iteration % _tuningInterval == 0) {
     ++_tuningPhase;
+
+    if (_isTuning) {
+      AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
+                 _tuningInterval);
+    }
   }
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  const bool inTuningPhase = _iterationsSinceTuning >= _tuningInterval;
-  // How many iterations ago did the rhythm of rebuilds change?
-  const auto iterationBaseline = inTuningPhase ? (_iterationsSinceTuning - _tuningInterval) : _iterationsSinceTuning;
   // What is the rebuild rhythm?
-  const auto iterationsPerRebuild = inTuningPhase ? _maxSamples : _rebuildFrequency;
-  return (iterationBaseline % iterationsPerRebuild) == 0;
+  const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : _rebuildFrequency;
+  // _iterationBaseLine + 1 since we want to look ahead to the next iteration
+  const auto iterationBaselineNextStep = _forceRetune ? _iterationBaseline : _iterationBaseline + 1;
+  return (iterationBaselineNextStep % iterationsPerRebuild) == 0;
 }
 
 bool AutoTuner::initEnergy() {
-  // Check if energy measurement is possible.
-  std::string errMsg(_raplMeter.init());
-  if (errMsg.empty()) {
-    try {
-      _raplMeter.reset();
-      _raplMeter.sample();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
-      } else {
-        AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
-        return false;
-      }
-    }
-  } else {
-    if (_tuningMetric == TuningMetricOption::energy) {
-      throw utils::ExceptionHandler::AutoPasException(errMsg);
-    } else {
-      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", errMsg);
-      return false;
-    }
-  }
-  return true;
+  // Try to initialize the raplMeter
+  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
 }
 
 bool AutoTuner::resetEnergy() {
@@ -317,7 +335,7 @@ bool AutoTuner::resetEnergy() {
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
+        utils::ExceptionHandler::exception(e);
       }
     }
   }
@@ -332,7 +350,7 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
+        utils::ExceptionHandler::exception(e);
       }
     }
   }
@@ -355,18 +373,13 @@ long AutoTuner::estimateRuntimeFromSamples() const {
           ? reducedValueBuilding
           : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
 
-  const auto numIterationsNotBuilding =
-      std::max(0, static_cast<int>(_rebuildFrequency) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
-  const auto numIterationsBuilding = _rebuildFrequency - numIterationsNotBuilding;
-
-  // calculate weighted estimate for one iteration
-  return (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
-         _rebuildFrequency;
+  // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
+  return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
 }
 
 bool AutoTuner::prepareIteration() {
   // Flag if this is the first iteration in a new tuning phase
-  const bool startOfTuningPhase = _iterationsSinceTuning == _tuningInterval;
+  const bool startOfTuningPhase = _iteration % _tuningInterval == 0 and not _isTuning;
 
   // first tuning iteration -> reset everything
   if (startOfTuningPhase) {
@@ -404,8 +417,8 @@ bool AutoTuner::prepareIteration() {
 bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
   // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
   constexpr size_t numIterationsForHomogeneity = 10;
-  return _needsHomogeneityAndMaxDensity and _iterationsSinceTuning > _tuningInterval - numIterationsForHomogeneity and
-         _iterationsSinceTuning <= _tuningInterval;
+  return _needsHomogeneityAndMaxDensity and
+         _iteration % _tuningInterval > _tuningInterval - numIterationsForHomogeneity;
 }
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
@@ -423,6 +436,12 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
 bool AutoTuner::inTuningPhase() const {
-  return (_iterationsSinceTuning >= _tuningInterval) and not searchSpaceIsTrivial();
+  // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
+  // been called yet.
+  return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
+
+const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
+
+bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 }  // namespace autopas

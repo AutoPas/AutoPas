@@ -23,8 +23,8 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction between particles.
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface<interactionType> {
+template <class ParticleCell, class Functor, int collapseDepth = 3>
+class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.
@@ -33,14 +33,14 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit ColorBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                const double interactionLength, const std::array<double, 3> &cellLength,
                                DataLayoutOption dataLayout, bool useNewton3)
       : CellTraversal<ParticleCell>(dims),
-        TraversalInterface<interactionType>(dataLayout, useNewton3),
+        TraversalInterface(dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _dataLayoutConverter(functor, dataLayout) {
@@ -127,9 +127,9 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   utils::DataLayoutConverter<Functor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, int collapseDepth>
+template <class ParticleCell, class Functor, int collapseDepth>
 template <typename LoopBody>
-inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, collapseDepth>::colorTraversal(
+inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;

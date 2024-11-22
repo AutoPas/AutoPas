@@ -42,7 +42,7 @@ class CellFunctor3B {
   void processCell(ParticleCell &cell);
 
   /**
-   * Process the interactions between the particles of cell1 with particles of cell2. This includes both 3-body
+   * Process the interactions between the particles of cell1 with particles of cell2. This includes both triwise
    * interactions with 2 particles from cell1 and 1 particle from cell2 as well as 1 particle from cell1 and 2 particles
    * from cell2.
    * @param cell1
@@ -127,7 +127,10 @@ class CellFunctor3B {
    * @param cell1
    * @param cell2
    * @param cell3
-   * @param sortingDirection Normalized vector along which particles are sorted.
+   * @param sortingDirection Normalized vector along which particles from cell1 and cell2 are sorted.
+   *
+   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1 and
+   * cell2.
    */
   void processCellTripleAoSN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
                               const std::array<double, 3> &sortingDirection);
@@ -138,7 +141,10 @@ class CellFunctor3B {
    * @param cell1
    * @param cell2
    * @param cell3
-   * @param sortingDirection Normalized vector along which particles are sorted.
+   * @param sortingDirection Normalized vector along which particles from cell1 and cell2 are sorted.
+   *
+   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1 and
+   * cell2.
    */
   void processCellTripleAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
                                 const std::array<double, 3> &sortingDirection);
@@ -288,9 +294,15 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS
     if (_useNewton3) {
       _functor->AoSFunctor(p1, p2, p3, true);
     } else {
-      _functor->AoSFunctor(p1, p2, p3, false);
-      _functor->AoSFunctor(p2, p1, p3, false);
-      _functor->AoSFunctor(p3, p1, p2, false);
+      if (not p1.isHalo()) {
+        _functor->AoSFunctor(p1, p2, p3, false);
+      }
+      if (not p2.isHalo()) {
+        _functor->AoSFunctor(p2, p1, p3, false);
+      }
+      if (not p3.isHalo()) {
+        _functor->AoSFunctor(p3, p1, p2, false);
+      }
     }
   };
 
@@ -485,19 +497,14 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellTri
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
-    SortedCellView<ParticleCell> cell3Sorted(cell3, sortingDirection);
 
     for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
       for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
         if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
           break;
         }
-        for (auto &[p3Projection, p3Ptr] : cell3Sorted._particles) {
-          if (std::abs(p2Projection - p3Projection) > _sortingCutoff or
-              std::abs(p1Projection - p3Projection) > _sortingCutoff) {
-            break;
-          }
-          _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
+        for (auto &p3 : cell3) {
+          _functor->AoSFunctor(*p1Ptr, *p2Ptr, p3, true);
         }
       }
     }
@@ -528,7 +535,6 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellTri
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
-    SortedCellView<ParticleCell> cell3Sorted(cell3, sortingDirection);
 
     for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
       for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
@@ -536,12 +542,8 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellTri
           break;
         }
 
-        for (auto &[p3Projection, p3Ptr] : cell3Sorted._particles) {
-          if (std::abs(p2Projection - p3Projection) > _sortingCutoff or
-              std::abs(p1Projection - p3Projection) > _sortingCutoff) {
-            break;
-          }
-          interactParticlesNoN3(*p1Ptr, *p2Ptr, *p3Ptr);
+        for (auto &p3 : cell3) {
+          interactParticlesNoN3(*p1Ptr, *p2Ptr, p3);
         }
       }
     }

@@ -20,11 +20,11 @@ class SlowConfigFilter : public TuningStrategyInterface {
    */
   explicit SlowConfigFilter(double relativeBlacklistRange) : _relativeBlacklistRange(relativeBlacklistRange){};
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const EvidenceCollection &evidenceCollection) override;
 
  private:

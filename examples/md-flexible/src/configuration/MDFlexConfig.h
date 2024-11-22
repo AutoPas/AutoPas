@@ -126,12 +126,6 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
-   * Returns the particles generated based on the provided configuration file.
-   * @return a vector containing the generated particles.
-   */
-  std::vector<ParticleType> getParticles() { return _particles; }
-
-  /**
    * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
    * @return the ParticlePropertiesLibrary
    */
@@ -166,7 +160,7 @@ class MDFlexConfig {
    * @param epsilon
    * @param sigma
    */
-  void addLJSite(unsigned long siteId, double epsilon, double sigma);
+  void addLJParametersToSite(unsigned long siteId, double epsilon, double sigma);
 
   /**
    * Adds the Axilrod-Teller parameter nu to the specified site.
@@ -175,7 +169,7 @@ class MDFlexConfig {
    * @param siteId unique site type id
    * @param nu
    */
-  void addATSite(unsigned long siteId, double nu);
+  void addATParametersToSite(unsigned long siteId, double nu);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
@@ -198,21 +192,21 @@ class MDFlexConfig {
   /**
    * Loads the particles from the checkpoint file defined in the configuration file.
    * If the checkpoint has been recorded using multiple processes, the rank of the current process needs to be passed.
-   * The provided rank also needs to respect the domain decomposition. E. g. if the a regular grid decomposition is
-   * used,   * don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
-   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication cost.
+   * The provided rank also needs to respect the domain decomposition. E. g. if the regular grid decomposition is
+   * used, don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
+   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication costs.
    * @param rank: The MPI rank of the current process.
-   * @param communicatorSize: The size of the MPI communicator used for the simulation.
+   * @param numRanks: The size of the MPI communicator used for the simulation.
    */
-  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize);
+  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks);
 
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
 
   /**
-   * Choice of the 3-body functor
+   * Choice of the Triwise functor
    */
   enum class FunctorOption3B { none, at };
 
@@ -249,7 +243,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> dataLayoutOptions3B{
       autopas::DataLayoutOption::getMostOptions(), "data-layout-3b", true,
-      "List of data layout options to use for the 3-body interaction. Possible Values: " +
+      "List of data layout options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * selectorStrategy
@@ -291,7 +285,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options3B{
       autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
-      "List of newton3 options to use for the 3-body interaction. Possible Values: " +
+      "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   /**
    * cellSizeFactors
@@ -342,6 +336,12 @@ class MDFlexConfig {
       "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
 
   /**
+   * fuzzyRuleFilename
+   */
+  MDFlexOption<std::string, __LINE__> fuzzyRuleFilename{
+      "", "fuzzy-rule-filename", true, "Path to a .frule file containing rules for the fuzzy-based tuning method."};
+
+  /**
    * MPITuningMaxDifferenceForBucket
    */
   MDFlexOption<double, __LINE__> MPITuningMaxDifferenceForBucket{
@@ -366,6 +366,11 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
                                                      "Number of samples to collect per configuration."};
+  /**
+   * useLOESSSmoothening
+   */
+  MDFlexOption<bool, __LINE__> useLOESSSmoothening{
+      false, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
   /**
    * tuningMaxEvidence
    */
@@ -500,7 +505,7 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "3-Body force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
   /**
    * iterations
    */
@@ -522,10 +527,6 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"}) +
           " Default: {periodic, periodic, periodic}"};
   /**
-   * dontMeasureFlops
-   */
-  MDFlexOption<bool, __LINE__> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};
-  /**
    * Omit the creation of a config file at the end of the Simulation.
    * This starts with a "not" such that it can be used as a flag with a sane default.
    */
@@ -542,6 +543,11 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
 
+  /**
+   * pauseSimulationDuringTuning
+   */
+  MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
+                                                           "Pauses the update of the simulation during tuning phases."};
   /**
    * sortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
@@ -815,14 +821,14 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
- private:
   /**
    * Stores the particles generated based on the provided configuration file
    * These particles can be added to the respective autopas container,
    * but have to be converted to the respective particle type, first.
    */
-  std::vector<ParticleType> _particles;
+  std::vector<ParticleType> particles{};
 
+ private:
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation
    */

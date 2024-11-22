@@ -10,6 +10,7 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GridGenerator.h"
 
 /**
  * Class describing a regular 3D particle grid object.
@@ -81,11 +82,11 @@ class CubeGrid : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "particles-per-dimension"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_particlesPerDim) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_particlesPerDim) << "\n";
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
-           << ":  " << _particleSpacing << std::endl;
+           << ":  " << _particleSpacing << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
     output << Object::to_string();
     return output.str();
   }
@@ -95,19 +96,15 @@ class CubeGrid : public Object {
    * @param particles The container in which the generated particles get stored.
    */
   void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+    // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
+    auto particlesWrapper = autopasTools::PseudoContainer(particles);
 
-    for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
-      for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
-        for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
-          particle.setR({_bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing,
-                         _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing,
-                         _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing});
-          particles.push_back(particle);
-          particle.setID(particle.getID() + 1);
-        }
-      }
-    }
+    // dummy particle used as a template with id of the first newly generated one
+    const ParticleType dummyParticle = getDummyParticle(particles.size());
+
+    autopasTools::generators::GridGenerator::fillWithParticles(particlesWrapper, _particlesPerDim, dummyParticle,
+                                                               {_particleSpacing, _particleSpacing, _particleSpacing},
+                                                               _bottomLeftCorner);
   }
 
  private:

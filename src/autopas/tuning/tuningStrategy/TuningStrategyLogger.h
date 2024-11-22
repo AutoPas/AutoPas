@@ -30,14 +30,14 @@ class TuningStrategyLogger final : public TuningStrategyInterface {
 
   ~TuningStrategyLogger() override;
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   [[nodiscard]] bool needsLiveInfo() const override;

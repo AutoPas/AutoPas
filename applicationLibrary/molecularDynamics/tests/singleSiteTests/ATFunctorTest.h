@@ -19,7 +19,7 @@ class ATFunctorTest : public AutoPasTestBase {
 
   enum InteractionType { own, pair12, pair21, triple, verlet };
   // Where to place 3 particles. Inside or outside the domain.
-  enum where_type { inside, ininout, inoutout, outside };
+  enum where_type { allInside, ininout, inoutout, allOutside };
 
   /**
    * Checks if the given function throws an exception containing "not implemented".

@@ -26,12 +26,13 @@ bool autopas::Configuration::hasValidValues() const {
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {
+  // Escape for '{' and '}' required when using Apple Clang 15.0.0
   auto rgx = returnHeaderOnly ?
                               // match any sequence before a colon and drop any spaces, comma or brackets before it
-                 std::regex("[{, ]+([^:]+):[^,]*")
+                 std::regex("[\\{, ]+([^:]+):[^,]*")
                               :
                               // match any sequence after a colon and drop any spaces, comma or brackets around it
-                 std::regex(": ([^,]+)(?: ,|})");
+                 std::regex(": ([^,]+)(?: ,|\\})");
   auto searchString = toString();
   std::sregex_iterator matchIter(searchString.begin(), searchString.end(), rgx);
   std::sregex_iterator end;

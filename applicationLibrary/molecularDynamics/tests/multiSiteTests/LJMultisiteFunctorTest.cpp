@@ -13,9 +13,9 @@
 
 void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0, 1.);
-  PPL->addLJSite(0, 1., 1.);
+  PPL->addLJParametersToSite(0, 1., 1.);
   PPL->addSiteType(1, 0.7);
-  PPL->addLJSite(1, 0.5, 0.5);
+  PPL->addLJParametersToSite(1, 0.5, 0.5);
   PPL->addMolType(0, {0}, {{0, 0, 0}}, {1, 1, 1});
   PPL->addMolType(1, {1, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1, 1, 1});
   PPL->addMolType(2, {1, 0, 1, 0}, {{-0.025, 0, -0.025}, {-0.025, 0, 0.025}, {0.025, 0, -0.025}, {0.025, 0, 0.025}},
@@ -231,7 +231,7 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ mo
   mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
                             calculateGlobals, true>
       multiSiteFunctor(cutoff, PPL);
-  mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+  mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, false, true>
       singleSiteFunctor(cutoff, PPL);
 
   // create single site versions of the molecules
@@ -595,9 +595,9 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   ParticlePropertiesLibrary PPL(cutoff);
   PPL.addSiteType(0, 1.);
-  PPL.addLJSite(0, 1., 1.);
+  PPL.addLJParametersToSite(0, 1., 1.);
   PPL.addSiteType(1, 0.5);
-  PPL.addLJSite(1, 0.5, 0.5);
+  PPL.addLJParametersToSite(1, 0.5, 0.5);
   // Molecules to be used in the tests (explanation of choices documented when tests are run).
   // For ease of readability, each molecule has its own molType, even when duplicated.
   MultisiteMoleculeLJ mol0;
@@ -709,7 +709,7 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
 
   ParticlePropertiesLibrary PPL(cutoff);
   PPL.addSiteType(0, 1.);
-  PPL.addLJSite(0, 1., 1.);
+  PPL.addLJParametersToSite(0, 1., 1.);
   PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   PPL.calculateMixingCoefficients();
 
@@ -787,9 +787,9 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 
   ParticlePropertiesLibrary PPL(cutoff);
   PPL.addSiteType(0, 1.);
-  PPL.addLJSite(0, 1., 1.);
+  PPL.addLJParametersToSite(0, 1., 1.);
   PPL.addSiteType(1, 0.5);
-  PPL.addLJSite(0, 0.5, 0.5);
+  PPL.addLJParametersToSite(0, 0.5, 0.5);
 
   MultisiteMoleculeLJ mol0;
   mol0.setR({0., 0., 0.});

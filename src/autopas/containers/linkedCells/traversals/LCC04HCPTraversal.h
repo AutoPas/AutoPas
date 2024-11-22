@@ -27,8 +27,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
-                          public LCTraversalInterface<ParticleCell> {
+class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of c04hcp
@@ -37,20 +36,20 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                     const double interactionLength, const std::array<double, 3> &cellLength,
                     DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                         dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
                                          1l)) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_HCP; }
 
@@ -107,7 +106,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::processBasePack6(std::vec
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {

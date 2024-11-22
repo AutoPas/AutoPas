@@ -19,7 +19,7 @@ namespace autopas {
 
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VCLClusterIterationTraversal : public TraversalInterface<InteractionTypeOption::pairwise>,
+class VCLClusterIterationTraversal : public TraversalInterface,
                                      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -55,7 +55,7 @@ class VCLClusterIterationTraversal : public TraversalInterface<InteractionTypeOp
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
 
     const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {

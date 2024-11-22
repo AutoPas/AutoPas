@@ -26,8 +26,8 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   const double nu0 = 0.1;
   const double mass0 = 1.;
   PPL->addSiteType(0, mass0);
-  PPL->addLJSite(0, epsilon0, sigma0);
-  PPL->addATSite(0, nu0);
+  PPL->addLJParametersToSite(0, epsilon0, sigma0);
+  PPL->addATParametersToSite(0, nu0);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 1);
@@ -42,8 +42,8 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   const double nu1 = 0.2;
   const double mass1 = 1.2;
   PPL->addSiteType(1, mass1);
-  PPL->addLJSite(1, epsilon1, sigma1);
-  PPL->addATSite(1, nu1);
+  PPL->addLJParametersToSite(1, epsilon1, sigma1);
+  PPL->addATParametersToSite(1, nu1);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
@@ -63,7 +63,7 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
 
 /**
  * Adds a LJ site and a AT site to a PPL, and tests that the getters for site values return correct
- * site information being 0 for not explicitly set parameters. Then tests that an error is thrown if a LJ or AT
+ * site information being 0 for not explicitly set parameters. Then tests that an error is thrown if LJ or AT
  * parameters are added for a not yet initialized site.
  */
 TEST_F(ParticlePropertiesLibraryTest, AddingDifferentSitesTest) {
@@ -76,13 +76,13 @@ TEST_F(ParticlePropertiesLibraryTest, AddingDifferentSitesTest) {
   const double sigma0 = 1.;
   const double mass0 = 1.;
   PPL->addSiteType(0, mass0);
-  PPL->addLJSite(0, epsilon0, sigma0);
+  PPL->addLJParametersToSite(0, epsilon0, sigma0);
 
   // Add site 1 as a pure AT site
   const double nu1 = 0.1;
   const double mass1 = 1.2;
   PPL->addSiteType(1, mass1);
-  PPL->addATSite(1, nu1);
+  PPL->addATParametersToSite(1, nu1);
 
   // Check successfully getting of information
   // Uninitialized LJ or AT parameters should be 0
@@ -106,8 +106,8 @@ TEST_F(ParticlePropertiesLibraryTest, AddingDifferentSitesTest) {
   EXPECT_EQ(PPL->getMixingNu(1, 1, 0), 0.0);
 
   // Check that add<LJ/AT>Site for a non-initialized siteId throws an error.
-  EXPECT_ANY_THROW(PPL->addLJSite(2, 1., 1.));
-  EXPECT_ANY_THROW(PPL->addATSite(3, 1.));
+  EXPECT_ANY_THROW(PPL->addLJParametersToSite(2, 1., 1.));
+  EXPECT_ANY_THROW(PPL->addATParametersToSite(3, 1.));
 }
 
 /**
@@ -130,8 +130,8 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   // add two site types
   PPL->addSiteType(0, 1.);
   PPL->addSiteType(1, 1.2);
-  PPL->addLJSite(0, 1., 1.);
-  PPL->addLJSite(1, 0.2, 0.7);
+  PPL->addLJParametersToSite(0, 1., 1.);
+  PPL->addLJParametersToSite(1, 0.2, 0.7);
 
   // Check that PPL is empty of molecule types
   EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 0);
@@ -220,7 +220,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
       std::make_shared<ParticlePropertiesLibrary<double, size_t>>(cutoff);
 
   PPL->addSiteType(0, 1.);
-  PPL->addLJSite(0, epsilon, sigma);
+  PPL->addLJParametersToSite(0, epsilon, sigma);
   PPL->calculateMixingCoefficients();
 
   const auto cutoffSquared = cutoff * cutoff;
@@ -265,11 +265,11 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
   const double epsilon2 = 1.;
   const double sigma2 = 1.;
   PPL->addSiteType(0, 1.);
-  PPL->addLJSite(0, epsilon0, sigma0);
+  PPL->addLJParametersToSite(0, epsilon0, sigma0);
   PPL->addSiteType(1, 1.);
-  PPL->addLJSite(1, epsilon1, sigma1);
+  PPL->addLJParametersToSite(1, epsilon1, sigma1);
   PPL->addSiteType(2, 1.);
-  PPL->addLJSite(2, epsilon2, sigma2);
+  PPL->addLJParametersToSite(2, epsilon2, sigma2);
 
   // Calculate mixing coefficients
   PPL->calculateMixingCoefficients();
@@ -352,11 +352,11 @@ TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
   const double nu2 = 0.3;
 
   PPL->addSiteType(0, 1.);
-  PPL->addATSite(0, nu0);
+  PPL->addATParametersToSite(0, nu0);
   PPL->addSiteType(1, 1.);
-  PPL->addATSite(1, nu1);
+  PPL->addATParametersToSite(1, nu1);
   PPL->addSiteType(2, 1.);
-  PPL->addATSite(2, nu2);
+  PPL->addATParametersToSite(2, nu2);
 
   // Calculate mixing coefficients
   PPL->calculateMixingCoefficients();

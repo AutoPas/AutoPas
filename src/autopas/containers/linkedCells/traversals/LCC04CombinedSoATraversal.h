@@ -23,9 +23,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC04CombinedSoATraversal
-    : public C04BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, 2>,
-      public LCTraversalInterface<ParticleCell> {
+class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>,
+                                  public LCTraversalInterface {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -34,18 +33,18 @@ class LCC04CombinedSoATraversal
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
-      : C04BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, 2>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+      : C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                            dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, dataLayout, useNewton3,
                      this->_overlap) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_combined_SoA; }
 
@@ -72,7 +71,7 @@ class LCC04CombinedSoATraversal
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   _cellHandler.resizeBuffers();
   auto &cells = *(this->_cells);
   this->c04Traversal(

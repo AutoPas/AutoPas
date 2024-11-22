@@ -150,7 +150,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(Part
     return;
   }
 
-  switch (_dataLayout) {
+  // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
+  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       processCellAoS(cell);
       break;
@@ -183,7 +184,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
     return;
   }
 
-  switch (_dataLayout) {
+  // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
+  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
         processCellPairAoSN3(cell1, cell2, sortingDirection);
@@ -208,13 +210,17 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(P
     if (_useNewton3) {
       _functor->AoSFunctor(p1, p2, true);
     } else {
-      _functor->AoSFunctor(p1, p2, false);
-      _functor->AoSFunctor(p2, p1, false);
+      if (not p1.isHalo()) {
+        _functor->AoSFunctor(p1, p2, false);
+      }
+      if (not p2.isHalo()) {
+        _functor->AoSFunctor(p2, p1, false);
+      }
     }
   };
 
   if (cell.size() > _sortingThreshold) {
-    SortedCellView<ParticleCell> cellSorted(cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
+    SortedCellView<ParticleCell> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {
       auto &[p1Projection, p1Ptr] = *cellIter1;

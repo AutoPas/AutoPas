@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <set>
@@ -48,6 +49,8 @@ class ParticlePropertiesLibrary {
   /**
    * Registers a new single site type to the library with a given mass.
    * @note New sites must be registered with consecutive siteIds.
+   * @note This only registers the site. Potential specific parameters must be added afterwards by calling e.g.
+   * `addLJParametersToSite()` for a Lennard-Jones Site.
    *
    * @param siteId
    * @param mass
@@ -55,7 +58,7 @@ class ParticlePropertiesLibrary {
   void addSiteType(const intType siteId, const floatType mass);
 
   /**
-   * Adds the properties of a single LJ site type to the library.
+   * Adds the LJ properties of a single site type to the library.
    *
    * Checks if a site with given siteId was already registered.
    * Old values will be overwritten.
@@ -63,17 +66,17 @@ class ParticlePropertiesLibrary {
    * @param epsilon
    * @param sigma
    */
-  void addLJSite(const intType siteId, const floatType epsilon, const floatType sigma);
+  void addLJParametersToSite(const intType siteId, const floatType epsilon, const floatType sigma);
 
   /**
-   * Adds the properties of a single AT site type to the library.
+   * Adds the AT properties of a single site type to the library.
    *
    * Checks if a site with given siteId was already registered.
    * Old values will be overwritten.
    * @param siteId
    * @param nu
    */
-  void addATSite(const intType siteId, const floatType nu);
+  void addATParametersToSite(const intType siteId, const floatType nu);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -218,7 +221,7 @@ class ParticlePropertiesLibrary {
    * @param  j Id of site two.
    * @return 24*epsilon_ij
    */
-  inline floatType getMixing24Epsilon(intType i, intType j) const {
+  floatType getMixing24Epsilon(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
   }
 
@@ -228,9 +231,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  inline auto getLJMixingData(intType i, intType j) const {
-    return _computedLJMixingData[i * _numRegisteredSiteTypes + j];
-  }
+  auto getLJMixingData(intType i, intType j) const { return _computedLJMixingData[i * _numRegisteredSiteTypes + j]; }
 
   /**
    * Get a pointer to Mixing Data for one pair of LJ site types.
@@ -238,7 +239,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  inline const double *getLJMixingDataPtr(intType i, intType j) {
+  const double *getLJMixingDataPtr(intType i, intType j) {
     return reinterpret_cast<const double *>(&_computedLJMixingData[i * _numRegisteredSiteTypes + j]);
   }
 
@@ -248,7 +249,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return sigma_ij²
    */
-  inline floatType getMixingSigmaSquared(intType i, intType j) const {
+  floatType getMixingSigmaSquared(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
   }
 
@@ -258,7 +259,7 @@ class ParticlePropertiesLibrary {
    * @param j siteId of site two.
    * @return shift * 6
    */
-  inline floatType getMixingShift6(intType i, intType j) const {
+  floatType getMixingShift6(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
@@ -279,7 +280,7 @@ class ParticlePropertiesLibrary {
    * @param  k Id of site three.
    * @return nu_ijk
    */
-  inline floatType getMixingNu(intType i, intType j, intType k) const {
+  floatType getMixingNu(intType i, intType j, intType k) const {
     return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
                                  k]
         .nu;
@@ -292,7 +293,7 @@ class ParticlePropertiesLibrary {
    * @param k Id of site three.
    * @return
    */
-  inline auto getATMixingData(intType i, intType j, intType k) const {
+  auto getATMixingData(intType i, intType j, intType k) const {
     return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
                                  k];
   }
@@ -338,7 +339,8 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addATSiteType(): trying to register a site type with id {}. Please register types "
+        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please "
+        "register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }
@@ -356,10 +358,12 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addLJSite(intType siteID, floatType epsilon, floatType sigma) {
+void ParticlePropertiesLibrary<floatType, intType>::addLJParametersToSite(intType siteID, floatType epsilon,
+                                                                          floatType sigma) {
   if (siteID >= _numRegisteredSiteTypes) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addLJSite(): Trying to set lennard-jones parameters for a site type with id {},"
+        "ParticlePropertiesLibrary::addLJParametersToSite(): Trying to set lennard-jones parameters for a site type "
+        "with id {},"
         " which has not been registered yet. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }
@@ -373,10 +377,11 @@ void ParticlePropertiesLibrary<floatType, intType>::addLJSite(intType siteID, fl
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addATSite(intType siteID, floatType nu) {
+void ParticlePropertiesLibrary<floatType, intType>::addATParametersToSite(intType siteID, floatType nu) {
   if (siteID >= _numRegisteredSiteTypes) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addATSite(): Trying to set the axilrod-teller parameter for a site type with id {},"
+        "ParticlePropertiesLibrary::addATParametersToSite(): Trying to set the axilrod-teller parameter for a site "
+        "type with id {},"
         " which has not been registered yet. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }

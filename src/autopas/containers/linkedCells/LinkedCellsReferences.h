@@ -61,7 +61,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                         const double skinPerTimestep, const unsigned int rebuildFrequency,
                         const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
@@ -83,9 +83,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
-    ParticleType pCopy = p;
     addParticleLock.lock();
-    _particleList.push_back(pCopy);
+    _particleList.push_back(p);
     updateDirtyParticleReferences();
     addParticleLock.unlock();
   }
@@ -94,10 +93,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
     addParticleLock.lock();
-    _particleList.push_back(pCopy);
+    _particleList.push_back(haloParticle);
     updateDirtyParticleReferences();
     addParticleLock.unlock();
   }
@@ -106,16 +103,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
+    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
     }
-    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
+    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
   }
 
@@ -149,13 +144,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
-    updateDirtyParticleReferences();
-  }
-
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    updateDirtyParticleReferences();
-  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   /**
    * Updates all the References in the cells that are out of date.
@@ -181,9 +170,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
@@ -197,7 +186,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -234,10 +223,22 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    }
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
+        // We extend the search box for cells here since particles might have moved
+        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
+                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -264,7 +265,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
       std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax,
+                                             boxMinWithSafetyMargin, boxMaxWithSafetyMargin, endCellIndex);
     }
 
     // shortcut if the given index doesn't exist
@@ -357,7 +359,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     if (exceptionCaught) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(exceptionMsg);
+      autopas::utils::ExceptionHandler::exception(exceptionMsg);
     }
 
     // we have to remove halo particles after the above for-loop since removing halo particles changes the underlying
@@ -533,16 +535,18 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @param cellIndex
    * @param particleIndex
    * @param iteratorBehavior
-   * @param boxMin
-   * @param boxMax
+   * @param boxMin The actual search box min
+   * @param boxMax The actual search box max
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
    * @param endCellIndex Last relevant cell index
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>
-  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
-                                                    IteratorBehavior iteratorBehavior,
-                                                    const std::array<double, 3> &boxMin,
-                                                    const std::array<double, 3> &boxMax, size_t endCellIndex) const {
+  std::tuple<size_t, size_t> advanceIteratorIndices(
+      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
+      const std::array<double, 3> &boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
     const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
@@ -557,10 +561,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         if (isRelevant) {
           // is the cell in the region?
           const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
-          // particles can move over cell borders. Calculate the volume this cell's particles can be.
-          const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellLowCorner, this->getVerletSkin() * 0.5);
-          const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellHighCorner, this->getVerletSkin() * 0.5);
-          isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
+          isRelevant =
+              utils::boxesOverlap(cellLowCorner, cellHighCorner, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
         }
       }
       return isRelevant;

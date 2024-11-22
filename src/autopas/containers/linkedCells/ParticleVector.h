@@ -61,15 +61,15 @@ class ParticleVector {
 
   /**
    * Add a Particle to the data structure.
-   * @param value A reference to the value to be stored
+   * @param particle A reference to the particle to be stored
    */
-  void push_back(Type &value) {
+  void push_back(const Type &particle) {
     _particleListLock.lock();
     _dirty = true;
     if (_particleListImp.capacity() == _particleListImp.size()) {
       _dirtyIndex = 0;
     }
-    _particleListImp.push_back(value);
+    _particleListImp.push_back(particle);
     _particleListLock.unlock();
   }
 

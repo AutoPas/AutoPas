@@ -78,7 +78,7 @@ class VCLSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
 

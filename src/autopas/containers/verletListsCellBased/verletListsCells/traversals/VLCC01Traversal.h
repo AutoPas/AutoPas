@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -46,7 +45,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (this->_typeOfList) {
@@ -78,7 +77,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticlePairs() {
+inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }

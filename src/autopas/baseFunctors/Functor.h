@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
 
@@ -158,13 +159,32 @@ class Functor {
    * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
-  virtual std::string getName() { return "Functor"; }
+  virtual std::string getName() = 0;
 
   /**
    * Getter for the functor's cutoff
    * @return
    */
-  double getCutoff() const { return _cutoff; }
+  [[nodiscard]] double getCutoff() const { return _cutoff; }
+
+  /**
+   * Get the number of FLOPs. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
+   * output as invalid and leaves "Not Implemented" the log.
+   * @return number of FLOPs
+   */
+  [[nodiscard]] virtual size_t getNumFLOPs() const { return std::numeric_limits<size_t>::max(); }
+
+  /**
+   * Get the hit rate. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default NaN output as invalid and
+   * leaves "Not Implemented" in the log.
+   *
+   * @return (number of kernel calls) / (number of distance calculations)
+   */
+  [[nodiscard]] virtual double getHitRate() const { return std::numeric_limits<double>::quiet_NaN(); }
 
  private:
   /**

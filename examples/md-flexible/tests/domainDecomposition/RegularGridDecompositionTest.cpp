@@ -18,9 +18,10 @@ extern template class autopas::AutoPas<ParticleType>;
 
 /**
  * Generate a simulation setup depending on the number of MPI ranks available.
+ * The domain will be a stacked tower along the x-axis.
  * @return tuple(autoPasContainer, domainDecomposition)
  */
-auto initDomain() {
+auto initDomain(options::BoundaryTypeOption boundaryType) {
   const int numberOfProcesses = []() {
     int result;
     autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &result);
@@ -34,12 +35,12 @@ auto initDomain() {
   configuration.verletRebuildFrequency.value = 2;
   const double interactionLength = configuration.cutoff.value + configuration.verletSkinRadiusPerTimestep.value *
                                                                     configuration.verletRebuildFrequency.value;
-  // make sure evey rank gets exactly 3x3x3 cells
+  // make sure evey rank gets exactly 3x3x3 cells, domain split along x-axis
   const double localBoxLength = 3. * interactionLength;
   const double globalBoxLength = localBoxLength * numberOfProcesses;
-  configuration.boxMax.value = {globalBoxLength, globalBoxLength, globalBoxLength};
-  configuration.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
-                                        options::BoundaryTypeOption::periodic};
+  configuration.subdivideDimension.value = {true, false, false};
+  configuration.boxMax.value = {globalBoxLength, localBoxLength, localBoxLength};
+  configuration.boundaryOption.value = {boundaryType, boundaryType, boundaryType};
 
   auto domainDecomposition = std::make_shared<RegularGridDecomposition>(configuration);
   const auto &localBoxMin = domainDecomposition->getLocalBoxMin();
@@ -136,9 +137,12 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
   return positions;
 }
 
+/**
+ * Check if RegularGridDecomposition correctly splits the global domain into equal sized subdomains.
+ */
 TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   using namespace autopas::utils::ArrayMath::literals;
-  auto [autoPasContainer, domainDecomposition] = initDomain();
+  auto [autoPasContainer, domainDecomposition] = initDomain(options::BoundaryTypeOption::periodic);
 
   const auto globalBoxExtend = domainDecomposition->getGlobalBoxMax() - domainDecomposition->getGlobalBoxMin();
   const auto decomposition = domainDecomposition->getDecomposition();
@@ -161,8 +165,9 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
  * Create a grid of particles at the border of each rank, then check if halo particles appear in the expected positions
  * and nowhere else.
  */
-TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
-  auto [autoPasContainer, domainDecomposition] = initDomain();
+TEST_P(RegularGridDecompositionTest, testExchangeHaloParticles) {
+  const auto boundaryType = GetParam();
+  auto [autoPasContainer, domainDecomposition] = initDomain(boundaryType);
   const auto &localBoxMin = autoPasContainer->getBoxMin();
   const auto &localBoxMax = autoPasContainer->getBoxMax();
 
@@ -191,18 +196,41 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
       << "Owned particles missing after halo exchange!";
 
-  // expect particles to be all around the box since every particle creates multiple halo particles.
-  const auto expectedHaloParticlePositions = generatePositionsOutsideDomain(*autoPasContainer);
-  ASSERT_EQ(expectedHaloParticlePositions.size(), 98) << "Expectation setup faulty!";
+  if (boundaryType == options::BoundaryTypeOption::periodic) {
+    // expect particles to be all around the box since every particle creates multiple halo particles.
+    const auto expectedHaloParticlePositions = generatePositionsOutsideDomain(*autoPasContainer);
+    ASSERT_EQ(expectedHaloParticlePositions.size(), 98) << "Expectation setup faulty!";
 
-  EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
-            expectedHaloParticlePositions.size());
+    EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
+              expectedHaloParticlePositions.size());
 
-  for (auto particleIter = autoPasContainer->begin(autopas::IteratorBehavior::halo); particleIter.isValid();
-       ++particleIter) {
-    EXPECT_THAT(expectedHaloParticlePositions, ::testing::Contains(particleIter->getR()));
+    for (auto particleIter = autoPasContainer->begin(autopas::IteratorBehavior::halo); particleIter.isValid();
+         ++particleIter) {
+      EXPECT_THAT(expectedHaloParticlePositions, ::testing::Contains(particleIter->getR()));
+    }
+  } else {
+    const auto globalMin = domainDecomposition->getGlobalBoxMin();
+    const auto globalMax = domainDecomposition->getGlobalBoxMax();
+
+    const int numberOfProcesses = []() {
+      int result;
+      autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &result);
+      return result;
+    }();
+
+    // Expect halos only between domains, not at global boundaries, when they are not periodic.
+    const auto haloNumber = autopas::utils::ArrayMath::isNearRel(localBoxMin, globalMin) or
+                                    autopas::utils::ArrayMath::isNearRel(localBoxMax, globalMax)
+                                ? (numberOfProcesses == 1 ? 0 : 9)
+                                : 18;
+
+    EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo), haloNumber);
   }
 }
+
+INSTANTIATE_TEST_SUITE_P(TestHaloParticles, RegularGridDecompositionTest,
+                         testing::Values(options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::reflective,
+                                         options::BoundaryTypeOption::none));
 
 /**
  * This test is designed to check if particles are properly being migrated.
@@ -210,7 +238,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
  * For more information see the comments in the test.
  */
 TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
-  auto [autoPasContainer, domainDecomposition] = initDomain();
+  auto [autoPasContainer, domainDecomposition] = initDomain(options::BoundaryTypeOption::periodic);
 
   const auto positionsOutsideSubdomain = generatePositionsOutsideDomain(*autoPasContainer);
   ASSERT_THAT(positionsOutsideSubdomain, ::testing::SizeIs(98));

@@ -89,12 +89,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skinPerTimestep, unsigned int rebuildFrequency, size_t clusterSize,
                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<Particle>(),
+      : ParticleContainerInterface<Particle>(skinPerTimestep),
         _towerBlock{boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
-        _skinPerTimestep{skinPerTimestep},
         _rebuildFrequency{rebuildFrequency},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
@@ -141,10 +140,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
-          "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
+          "VerletClusterLists::computeInteractions(): Trying to do a pairwise iteration, even though verlet lists are "
+          "not "
           "valid.");
     }
     auto *traversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
@@ -153,7 +153,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       traversalInterface->setTowers(_towerBlock.getTowersRef());
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in VerletClusterLists::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
@@ -161,7 +161,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -184,9 +184,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void addHaloParticleImpl(const Particle &haloParticle) override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
-    Particle copy = haloParticle;
-    copy.setOwnershipState(OwnershipState::halo);
-    _particlesToAdd[autopas_get_thread_num()].push_back(copy);
+    _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
   bool updateHaloParticle(const Particle &haloParticle) override {
@@ -285,16 +283,28 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // in this context cell == tower
     // catching the edge case that towers are not yet built -> Iterator jumps to additional vectors
     if (_towerBlock.empty()) {
       return {nullptr, 0, 0};
     }
 
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    }
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        return {_towerBlock.getTowerIndex1DAtPosition(boxMin), _towerBlock.getTowerIndex1DAtPosition(boxMax)};
+        // We extend the search box for cells here since particles might have moved
+        return {_towerBlock.getTowerIndex1DAtPosition(boxMinWithSafetyMargin),
+                _towerBlock.getTowerIndex1DAtPosition(boxMaxWithSafetyMargin)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -321,9 +331,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
             _towerBlock[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
       std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax,
+                                             boxMinWithSafetyMargin, boxMaxWithSafetyMargin, endCellIndex);
     }
-
     // shortcut if the given index doesn't exist
     if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
@@ -550,8 +560,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
-      // the status is not invalid
+      // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd
+      // if the status is not invalid
       if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::reduce() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
@@ -752,7 +762,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
     // when rebuildTowersAndClusters() was not called explicitly.
     if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
@@ -772,12 +782,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }
-  }
-
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletClusterLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for "
-        "VerletClusterLists has not been implemented yet.");
   }
 
   /**
@@ -933,13 +937,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  [[nodiscard]] double getVerletSkin() const override { return _skinPerTimestep * _rebuildFrequency; }
+  [[nodiscard]] double getVerletSkin() const override { return this->_skinPerTimestep * _rebuildFrequency; }
 
   /**
    * Set the verlet skin length per timestep for the container.
    * @param skinPerTimestep
    */
-  void setSkinPerTimestep(double skinPerTimestep) { _skinPerTimestep = skinPerTimestep; }
+  void setSkinPerTimestep(double skinPerTimestep) { this->_skinPerTimestep = skinPerTimestep; }
 
   /**
    * Get the rebuild Frequency value for the container.
@@ -953,7 +957,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void setRebuildFrequency(unsigned int rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 
-  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
+  [[nodiscard]] double getInteractionLength() const override {
+    return _cutoff + this->_skinPerTimestep * _rebuildFrequency;
+  }
 
   void deleteAllParticles() override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
@@ -987,7 +993,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       particlesBuffer.clear();
     });
 
-    const double interactionLength = _cutoff + _skinPerTimestep * _rebuildFrequency;
+    const double interactionLength = _cutoff + this->_skinPerTimestep * _rebuildFrequency;
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(
         _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3);
 
@@ -1159,17 +1165,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param cellIndex
    * @param particleIndex
    * @param iteratorBehavior
-   * @param boxMin
-   * @param boxMax
+   * @param boxMin The actual search box min
+   * @param boxMax The actual search box max
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
    * @param endCellIndex
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>
-  [[nodiscard]] std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
-                                                                  IteratorBehavior iteratorBehavior,
-                                                                  const std::array<double, 3> &boxMin,
-                                                                  const std::array<double, 3> &boxMax,
-                                                                  size_t endCellIndex) const {
+  [[nodiscard]] std::tuple<size_t, size_t> advanceIteratorIndices(
+      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
+      const std::array<double, 3> &boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
     const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
@@ -1183,10 +1190,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       if constexpr (regionIter) {
         // is the cell in the region?
         const auto [towerLowCorner, towerHighCorner] = _towerBlock.getTowerBoundingBox(cellIndex);
-        // particles can move over cell borders. Calculate the volume this cell's particles can be.
-        const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
-        const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
-        isRelevant = utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, boxMin, boxMax);
+        isRelevant =
+            utils::boxesOverlap(towerLowCorner, towerHighCorner, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
       }
       return isRelevant;
     };
@@ -1287,10 +1292,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   double _cutoff{};
 
-  /**
-   * SkinPerTimestep.
-   */
-  double _skinPerTimestep{};
   /**
    * rebuidFrequency.
    */

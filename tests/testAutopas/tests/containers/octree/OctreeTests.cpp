@@ -486,8 +486,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   auto &container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
-  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                   false /*calculateGlobals*/>
+  LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, false /*calculateGlobals*/>
       ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
 
@@ -500,13 +499,14 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   for (int unsigned i = 0; i < numHaloParticles; ++i) {
     auto position = haloParticlePositions[i];
     auto particle = Molecule(position, {0, 0, 0}, numParticles + i);
+    particle.setOwnershipState(autopas::OwnershipState::halo);
     container.addHaloParticle(particle);
   }
 
   // Obtain a compatible traversal
   auto traversal = autopas::utils::withStaticCellType<
       Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-    return autopas::TraversalSelector<decltype(particleCellDummy), InteractionTypeOption::pairwise>::generateTraversal(
+    return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(mockFunctor)>(
         traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
   });
 
@@ -538,7 +538,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
-  container.iteratePairwise(traversal.get());
+  container.computeInteractions(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
   // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has

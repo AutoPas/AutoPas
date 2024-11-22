@@ -51,6 +51,8 @@ class VerletListHelpers {
           _verletListsAoS(verletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
+    std::string getName() override { return "VerletListGeneratorFunctor"; }
+
     bool isRelevantForTuning() override { return false; }
 
     bool allowsNewton3() override {
@@ -292,6 +294,8 @@ class VerletListHelpers {
           _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}
+
+    std::string getName() override { return "VerletListValidityCheckerFunctor"; }
 
     bool isRelevantForTuning() override { return false; }
 

@@ -17,7 +17,6 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
-#include "autopas/tuning/utils/TunerSynchronizer.h"
 #include "autopas/utils/RaplMeter.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
@@ -93,7 +92,7 @@ class AutoTuner {
   bool needsHomogeneityAndMaxDensityBeforePrepare() const;
 
   /**
-   * Determines what live infos are needed and resets the strategy upon the start of a new tuning phase.
+   * Determines what live infos are needed and passes collected live info to the tuning strategies.
    *
    * @note The live info is not gathered here because then we would need the container.
    *
@@ -108,10 +107,10 @@ class AutoTuner {
   void bumpIterationCounters(bool needToWait = false);
 
   /**
-   * Returns whether rebuildNeighborLists() will be triggered in the next call to iteratePairwise().
+   * Returns whether rebuildNeighborLists() will be triggered in the next iteration.
    * This might also indicate a container change.
    *
-   * @return True if the the current iteration counters indicate a rebuild in the next iteration.
+   * @return True if the current iteration counters indicate a rebuild in the next iteration.
    */
   bool willRebuildNeighborLists() const;
 
@@ -155,12 +154,11 @@ class AutoTuner {
   bool searchSpaceIsEmpty() const;
 
   /**
-   * Log the collected data and if we are at the end of a tuning phase the result to files.
-   * @param conf
+   * After a tuning phase has finished, write the result to a file.
    * @param tuningIteration
    * @param tuningTime
    */
-  void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
+  void logTuningResult(bool tuningIteration, long tuningTime) const;
 
   /**
    * Initialize rapl meter.
@@ -217,6 +215,18 @@ class AutoTuner {
    * @return
    */
   bool inTuningPhase() const;
+
+  /**
+   * Getter for the internal evidence collection.
+   * @return
+   */
+  const EvidenceCollection &getEvidenceCollection() const;
+
+  /**
+   * Returns whether the AutoTuner can take energy measurements.
+   * @return
+   */
+  bool canMeasureEnergy() const;
 
  private:
   /**
@@ -275,19 +285,20 @@ class AutoTuner {
   size_t _tuningPhase{0};
 
   /**
-   * Number of iterations between two tuning phases.
+   * Fixed interval at which tuning phases are started.
+   * A tuning phase always starts when _iteration % _tuningInterval == 0.
    */
   size_t _tuningInterval;
-
-  /**
-   * Number of iterations since the end of the last tuning phase.
-   */
-  size_t _iterationsSinceTuning;
 
   /**
    * Metric to use for tuning.
    */
   TuningMetricOption _tuningMetric;
+
+  /**
+   * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
+   */
+  bool _useLOESSSmoothening;
 
   /**
    * Is energy measurement possible.
@@ -372,5 +383,29 @@ class AutoTuner {
    * CSV logger for all samples collected during a tuning phase.
    */
   TuningDataLogger _tuningDataLogger;
+
+  /**
+   * Is set to true during a tuning phase.
+   */
+  bool _isTuning{false};
+
+  /**
+   * Is only set to true for the last iteration of a tuning phase.
+   * Specifically, from when tuneConfiguration() selects the optimum until it is reset to false in
+   * bumpIterationCounters().
+   */
+  bool _endOfTuningPhase{false};
+
+  /**
+   * Is set to true in forceRetune() to signal a new tuning phase should start outside the regular tuningInterval. Is
+   * set back to false in tuneConfiguration()
+   */
+  bool _forceRetune{false};
+
+  /**
+   * A counter incremented in every iteration and reset to zero at the beginning of a tuning phase and at the end of
+   * a tuning phase
+   */
+  size_t _iterationBaseline{0};
 };
 }  // namespace autopas

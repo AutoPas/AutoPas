@@ -7,7 +7,7 @@
  * not instantiate this template.
  */
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 #include "autopas/AutoPasImpl.h"
 #include "src/TypeDefinitions.h"
 

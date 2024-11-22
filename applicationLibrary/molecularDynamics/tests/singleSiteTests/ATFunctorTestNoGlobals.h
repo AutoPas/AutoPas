@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "ATFunctorTest.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 template <class FuncType>
@@ -23,7 +22,6 @@ class ATFunctorTestNoGlobals : public ATFunctorTest {
   constexpr static double nu3{0.1};
 
   // These values are obtained from the lammps implementation
-  //
   const std::array<double, 3> expectedForceP1{-188761.250385809, -188761.250385809, -188761.250385809};
   const std::array<double, 3> expectedForceP2{-95789.2912405596, 94380.6251929043, 284550.541626368};
   const std::array<double, 3> expectedForceP3{284550.541626368, 94380.6251929043, -95789.2912405596};

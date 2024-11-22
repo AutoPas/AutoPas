@@ -10,7 +10,6 @@
 
 #include "ATFunctorTest.h"
 #include "AutoPasTestBase.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/ATPotential.h"
 #include "testingHelpers/commonTypedefs.h"

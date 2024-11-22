@@ -39,7 +39,7 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
    * @param interactionLength The interaction length
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit OTC18Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
@@ -85,10 +85,10 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
   }
 
   /**
-   * @copydoc TraversalInterface::traverseParticlePairs()
+   * @copydoc TraversalInterface::traverseParticles()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
 
     auto *haloWrapper = this->getHalo();

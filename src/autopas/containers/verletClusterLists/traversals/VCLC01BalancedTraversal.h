@@ -20,8 +20,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The type of the functor.
  */
 template <class Particle, class PairwiseFunctor>
-class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption::pairwise>,
-                                public VCLTraversalInterface<Particle> {
+class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalInterface<Particle> {
  public:
   /**
    * Constructor of the VCLC01BalancedTraversal.
@@ -56,7 +55,7 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
     clusterList.extractParticlesFromSoAs(_functor);
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     auto &clusterThreadPartition = clusterList.getClusterThreadPartition();
 

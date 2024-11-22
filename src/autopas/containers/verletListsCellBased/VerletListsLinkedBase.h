@@ -41,7 +41,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skinPerTimestep, const unsigned int rebuildFrequency,
                         const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
-      : _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
+      : ParticleContainerInterface<Particle>(skinPerTimestep),
+        _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
@@ -51,6 +52,15 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @copydoc autopas::ParticleContainerInterface::getParticleCellTypeEnum()
    */
   CellType getParticleCellTypeEnum() const override { return _linkedCells.getParticleCellTypeEnum(); };
+
+  /**
+   * Set the number of time-steps since last neighbor list rebuild
+   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
+   */
+  void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
+    this->_stepsSinceLastRebuild = stepsSinceLastRebuild;
+    _linkedCells.setStepsSinceLastRebuild(stepsSinceLastRebuild);
+  }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
@@ -139,7 +149,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
-    return _linkedCells.getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+    return _linkedCells.template getParticleImpl<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin,
+                                                             boxMax);
   }
 
   bool deleteParticle(Particle &particle) override {
@@ -170,15 +181,13 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * Searches the provided halo particle and updates the found particle.
    * Searches for the provided particle within the halo cells of the container
    * and overwrites the found particle with the provided particle.
-   * @param particle
+   * @param haloParticle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(const Particle &particle) override {
-    Particle pCopy = particle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
+  bool updateHaloParticle(const Particle &haloParticle) override {
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
@@ -186,7 +195,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     AutoPasLog(TRACE,
                "updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
-               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
+               haloParticle.getR()[0], haloParticle.getR()[1], haloParticle.getR()[2]);
     return false;
   }
 

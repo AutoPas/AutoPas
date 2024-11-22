@@ -247,7 +247,11 @@ template <class T, std::size_t SIZE>
  */
 template <class T>
 [[nodiscard]] constexpr std::array<T, 3> cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
-  return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
+  return {
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+  };
 }
 
 /**
@@ -355,15 +359,15 @@ template <class T, std::size_t SIZE>
  * @tparam SIZE size of the array
  * @param a input array
  * @param b input array
- * @param relativeDifference
+ * @param maxRelativeDifference
  * @return
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNear(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
-                          double relativeDifference = 1e-9) {
+[[nodiscard]] bool isNearRel(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
+                             double maxRelativeDifference = 1e-9) {
   bool arraysAreNear = true;
   for (std::size_t i = 0; i < SIZE; ++i) {
-    arraysAreNear = arraysAreNear and utils::Math::isNear(a[i], b[i], relativeDifference);
+    arraysAreNear = arraysAreNear and utils::Math::isNearRel(a[i], b[i], maxRelativeDifference);
   }
   return arraysAreNear;
 }
@@ -375,19 +379,19 @@ template <class T, std::size_t SIZE>
  * @tparam SIZE size of the array
  * @param a input vector of arrays
  * @param b input vector of arrays
- * @param relativeDifference
+ * @param maxRelativeDifference
  * @return
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNear(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
-                          double relativeDifference = 1e-9) {
+[[nodiscard]] bool isNearRel(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
+                             double maxRelativeDifference = 1e-9) {
   const auto size = a.size();
   if (size != b.size()) {
     return false;
   }
   bool arraysAreNear = true;
   for (std::size_t i = 0; i < size; ++i) {
-    arraysAreNear = arraysAreNear and utils::ArrayMath::isNear(a[i], b[i], relativeDifference);
+    arraysAreNear = arraysAreNear and utils::ArrayMath::isNearRel(a[i], b[i], maxRelativeDifference);
   }
   return arraysAreNear;
 }

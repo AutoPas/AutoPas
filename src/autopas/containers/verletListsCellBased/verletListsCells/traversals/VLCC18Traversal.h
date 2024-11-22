@@ -7,10 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellTraversals/C18BasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -28,7 +25,7 @@ namespace autopas {
  * @tparam NeighborList type of the neighbor list
  */
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
+class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
@@ -45,12 +42,12 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
   explicit VLCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            const double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                         dataLayout, useNewton3),
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (this->_typeOfList) {
@@ -59,8 +56,8 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_c18;
       default:
-        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: {}",
-                                                    this->_typeOfList.to_string());
+        utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: {}",
+                                           this->_typeOfList.to_string());
     }
     // should never be reached.
     return TraversalOption();
@@ -81,7 +78,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCC18Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticlePairs() {
+void VLCC18Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }

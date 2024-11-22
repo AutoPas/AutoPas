@@ -48,14 +48,14 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   MPIParallelizedStrategy(const Configuration &fallbackConfiguration, const AutoPas_MPI_Comm &comm,
                           double mpiTuningMaxDifferenceForBucket, double mpiTuningWeightForMaxDensity);
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
 
   void receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   [[nodiscard]] inline bool needsSmoothedHomogeneityAndMaxDensity() const override;
