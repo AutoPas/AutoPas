@@ -20,13 +20,13 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 
 void StatisticsCalculator::recordStatistics(size_t currentIteration,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                            ParticlePropertiesLibraryType &particlePropertiesLib) {
+                                            const ParticlePropertiesLibraryType &particlePropertiesLib) {
   const auto statistics = calculateStatistics(autoPasContainer, particlePropertiesLib);
   StatisticsCalculator::writeRow(currentIteration, statistics);
 }
 
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateStatistics(
-    const autopas::AutoPas<ParticleType> &autoPasContainer, ParticlePropertiesLibraryType &particlePropertiesLib) {
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
 
   size_t particleCount = 0;

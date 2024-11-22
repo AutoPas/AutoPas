@@ -241,9 +241,9 @@ class Simulation {
   std::shared_ptr<ParallelVtkWriter> _vtkWriter;
 
   /**
-   *
+   * StatisticsCalculator to calculate and save statistics.
    */
-   std::shared_ptr<StatisticsCalculator> _statsCalculator;
+  std::shared_ptr<StatisticsCalculator> _statsCalculator;
 
   /**
    * Defines, if vtk files should be created or not.
@@ -361,6 +361,15 @@ class Simulation {
    * @param globalForce The global force which will be applied to each particle in the container.
    */
   void calculateGlobalForces(const std::array<double, 3> &globalForce);
+
+  /**
+   * Adds background friction to the particles in the container.
+   * @param forceDampingCoeff
+   * @param torqueDampingCoeff
+   * @param particlePropertiesLib
+   */
+  void calculateBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,
+                                   ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Indicates if enough iterations were completed yet.

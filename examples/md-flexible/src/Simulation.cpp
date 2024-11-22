@@ -187,6 +187,11 @@ void Simulation::finalize() {
 
 void Simulation::run() {
   _timers.simulate.start();
+#if DEM_MODE == ON
+  const double forceDampingCoeff = 0.02; // TODO: use yaml parser instead
+  const double torqueDampingCoeff = 0.02;
+#endif
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -257,6 +262,9 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
+#if DEM_MODE == ON
+    calculateBackgroundFriction(forceDampingCoeff, torqueDampingCoeff, *_configuration.getParticlePropertiesLibrary());
+#endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
@@ -481,6 +489,20 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
+  }
+}
+
+void Simulation::calculateBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,
+                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using namespace autopas::utils::ArrayMath::literals;
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const std::array<double, 3> forceDamping = particle->getV() * forceDampingCoeff;
+    particle->subF(forceDamping);
+
+    const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
+    const std::array<double, 3> torqueDamping = particle->getAngularVel() * (radius * radius * torqueDampingCoeff);
+    particle->subTorque(torqueDamping);
   }
 }
 

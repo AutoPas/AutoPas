@@ -35,7 +35,7 @@ class StatisticsCalculator {
    * Writes the statistics of the current state of the simulation into a file.
    */
   void recordStatistics(size_t currentIteration, const autopas::AutoPas<ParticleType> &autopasContainer,
-                        ParticlePropertiesLibraryType &particlePropertiesLib);
+                        const ParticlePropertiesLibraryType &particlePropertiesLib);
 
  private:
   /**
@@ -45,7 +45,7 @@ class StatisticsCalculator {
    * @return tuple of doubles containing the statistics.
    */
   static std::tuple<double, double, double, double, double, double> calculateStatistics(
-      const autopas::AutoPas<ParticleType> &autopasContainer, ParticlePropertiesLibraryType &particlePropertiesLib);
+      const autopas::AutoPas<ParticleType> &autopasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Generates the output file (.csv) for the statistics.
