@@ -447,19 +447,18 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption {
-    // choose a reasonable default depending on what is available at compile time
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+  // choose a reasonable default depending on what is available at compile time
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-    FunctorOption::lj12_6_AVX,
+      FunctorOption::lj12_6_AVX,
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-    FunctorOption::lj12_6_SVE,
+      FunctorOption::lj12_6_SVE,
 #else
-    FunctorOption::lj12_6,
+      FunctorOption::lj12_6,
 #endif
-        "functor", true,
-        "Force functor to use. Possible Values: (lennard-jones "
-        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
-  };
+      "functor", true,
+      "Force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
   /**
    * iterations
    */
@@ -733,6 +732,18 @@ class MDFlexConfig {
       "globalForce",
       true,
       "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
+
+  /**
+   * Background friction force coefficient
+   */
+  MDFlexOption<double, __LINE__> backgroundForceFrictionCoeff{0., "backgroundForceFrictionCoeff", true,
+                                                              "Background force friction coefficient. Default: 0."};
+
+  /**
+   * Background friction torque coefficient
+   */
+  MDFlexOption<double, __LINE__> backgroundTorqueFrictionCoeff{0., "backgroundTorqueFrictionCoeff", true,
+                                                               "Background friction torque coefficient. Default: 0."};
 
   /**
    * Convenience function testing if the global force contains only 0 entries.

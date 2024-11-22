@@ -187,10 +187,6 @@ void Simulation::finalize() {
 
 void Simulation::run() {
   _timers.simulate.start();
-#if DEM_MODE == ON
-  const double forceDampingCoeff = 0.02; // TODO: use yaml parser instead
-  const double torqueDampingCoeff = 0.02;
-#endif
 
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -263,7 +259,9 @@ void Simulation::run() {
 
     updateInteractionForces();
 #if DEM_MODE == ON
-    calculateBackgroundFriction(forceDampingCoeff, torqueDampingCoeff, *_configuration.getParticlePropertiesLibrary());
+    calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
+                                _configuration.backgroundTorqueFrictionCoeff.value,
+                                *_configuration.getParticlePropertiesLibrary());
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
