@@ -100,13 +100,11 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
- * Lists all traversal options applicable for the Verlet Lists container.
+ * Lists all triwise traversal options applicable for the Verlet Lists container.
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLCompatibleTraversals3B() {
-  static const std::set<TraversalOption> s{
-      TraversalOption::vl_list_iteration_3b, TraversalOption::vl_list_intersection_sorted_3b,
-      TraversalOption::vl_list_intersection_hashing_3b, TraversalOption::vl_pair_list_iteration_3b};
+  static const auto s = filterAllOptions("vl_", InteractionTypeOption::triwise);
   return s;
 }
 
