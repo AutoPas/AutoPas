@@ -109,6 +109,21 @@ class ZonalMethod {
    */
   std::array<options::BoundaryTypeOption, 3> _boundaryType;
 
+
+  /**
+   * Stores whether the home box is at the minimal global boundary:
+   *  1 - yes
+   *  0 - no
+   */
+  std::array<int, 3> _isAtGlobalBoundaryMin;
+
+  /**
+   * Stores whether the home box is at the maximal global boundary
+   *  1 - yes
+   *  0 - no
+   */
+  std::array<int, 3> _isAtGlobalBoundaryMax;
+
   /**
    * Stores the interaction schedule without the home box zone
    */
@@ -143,4 +158,19 @@ class ZonalMethod {
    * @param relNeighbour
    */
   virtual size_t convRelNeighboursToIndex(std::array<int, 3> relNeighbour);
+
+
+  /**
+   * Check if there is a need to collect particles from the given neighbour
+   * @param relNeighbour
+   */
+  virtual bool needToCollectParticles(std::array<int, 3> relNeighbour);
+
+  /**
+   * If the neighbour is over a global periodic boundary, wrap the particles positions
+   * around the global box.
+   * @param relNeighbour
+   * @param particles
+   */
+  virtual void wrapAroundPeriodicBoundary(std::array<int, 3> relNeighbour, std::vector<ParticleType> &particles);
 };
