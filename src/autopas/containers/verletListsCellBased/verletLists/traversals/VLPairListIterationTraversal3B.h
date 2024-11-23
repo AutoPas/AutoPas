@@ -56,16 +56,16 @@ class VLPairListIterationTraversal3B : public TraversalInterface,
   }
 
   void traverseParticles() override {
-    auto &pairwiseAosNeighborLists = *(this->_pairwiseAosNeighborLists);
+    auto &aosNeighborPairsLists = *(this->_aosNeighborPairsLists);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         if (not _useNewton3) {
-          size_t buckets = pairwiseAosNeighborLists.bucket_count();
+          size_t buckets = aosNeighborPairsLists.bucket_count();
           /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-            auto endIter = pairwiseAosNeighborLists.end(bucketId);
-            for (auto bucketIter = pairwiseAosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+            auto endIter = aosNeighborPairsLists.end(bucketId);
+            for (auto bucketIter = aosNeighborPairsLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               Particle &particle = *(bucketIter->first);
               if (not particle.isOwned()) {
                 // skip Halo paraticles, as N3 is disabled

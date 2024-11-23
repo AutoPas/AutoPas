@@ -27,9 +27,9 @@ class VerletListHelpers {
   using NeighborListAoSType = std::unordered_map<Particle *, std::vector<Particle *>>;
 
   /**
-   * Pairwise Neighbor list AoS style.
+   * Neighbor pairs list AoS style.
    */
-  using PairwiseNeighborListAoSType = std::unordered_map<Particle *, std::vector<std::pair<Particle *, Particle *>>>;
+  using NeighborPairsListAoSType = std::unordered_map<Particle *, std::vector<std::pair<Particle *, Particle *>>>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
@@ -191,7 +191,7 @@ class VerletListHelpers {
     double _interactionLengthSquared;
   };
 
-  class PairwiseVerletListGeneratorFunctor : public TriwiseFunctor<Particle, PairwiseVerletListGeneratorFunctor> {
+  class PairVerletListGeneratorFunctor : public TriwiseFunctor<Particle, PairVerletListGeneratorFunctor> {
    public:
     /**
      * Structure of the SoAs defined by the particle.
@@ -200,15 +200,15 @@ class VerletListHelpers {
 
     /**
      * Constructor
-     * @param pairwiseVerletListsAoS
+     * @param pairVerletListsAoS
      * @param interactionLength
      */
-    PairwiseVerletListGeneratorFunctor(PairwiseNeighborListAoSType &pairwiseVerletListsAoS, double interactionLength)
-        : TriwiseFunctor<Particle, PairwiseVerletListGeneratorFunctor>(interactionLength),
-          _pairwiseVerletListsAoS(pairwiseVerletListsAoS),
+    PairVerletListGeneratorFunctor(NeighborPairsListAoSType &pairVerletListsAoS, double interactionLength)
+        : TriwiseFunctor<Particle, PairVerletListGeneratorFunctor>(interactionLength),
+          _pairVerletListsAoS(pairVerletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
-    std::string getName() override { return "PairwiseVerletListGeneratorFunctor"; }
+    std::string getName() override { return "PairVerletListGeneratorFunctor"; }
 
     bool isRelevantForTuning() override { return false; }
 
@@ -245,7 +245,7 @@ class VerletListHelpers {
         // (ensured by traversals)
         // also the list is not allowed to be resized!
 
-        _pairwiseVerletListsAoS.at(&i).push_back(std::make_pair(&j, &k));
+        _pairVerletListsAoS.at(&i).push_back(std::make_pair(&j, &k));
         // no newton3 here, as AoSFunctor(j,i,k) andAoSFunctor (k,i,j) will also be called if newton3 is disabled.
       }
     }
@@ -267,7 +267,7 @@ class VerletListHelpers {
     }
 
    private:
-    PairwiseNeighborListAoSType &_pairwiseVerletListsAoS;
+    NeighborPairsListAoSType &_pairVerletListsAoS;
     double _interactionLengthSquared;
   };
 
