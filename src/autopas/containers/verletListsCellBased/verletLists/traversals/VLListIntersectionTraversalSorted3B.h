@@ -25,8 +25,7 @@ namespace autopas {
  * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class TriwiseFunctor>
-class VLListIntersectionTraversalSorted3B : public TraversalInterface,
-                                            public VLTraversalInterface<ParticleCell> {
+class VLListIntersectionTraversalSorted3B : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
