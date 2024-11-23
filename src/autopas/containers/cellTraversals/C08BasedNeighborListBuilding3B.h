@@ -36,8 +36,8 @@ class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, 
   explicit C08BasedNeighborListBuilding3B(const std::array<unsigned long, 3> &dims, Functor *functor,
                                           const double interactionLength, const std::array<double, 3> &cellLength,
                                           DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength,
-                                                                    dataLayout, useNewton3) {}
+      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                   useNewton3) {}
 
  protected:
   /**

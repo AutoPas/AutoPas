@@ -14,7 +14,6 @@
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal3B.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
@@ -209,8 +208,8 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                          _buildVerletListType);
     }
 
-    auto traversal = VLListIterationTraversal3B<LinkedParticleCell,
-                                                typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor>(
+    auto traversal = VLListIterationTraversal<LinkedParticleCell,
+                                              typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor>(
         &f, dataLayout, useNewton3);
     this->computeInteractions(&traversal);
   }
