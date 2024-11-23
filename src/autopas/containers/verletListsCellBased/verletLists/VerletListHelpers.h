@@ -208,6 +208,8 @@ class VerletListHelpers {
           _pairwiseVerletListsAoS(pairwiseVerletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
+    std::string getName() override { return "PairwiseVerletListGeneratorFunctor"; }
+
     bool isRelevantForTuning() override { return false; }
 
     bool allowsNewton3() override {

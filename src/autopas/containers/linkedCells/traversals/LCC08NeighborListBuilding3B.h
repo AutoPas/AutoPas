@@ -27,7 +27,7 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor>
 class LCC08NeighborListBuilding3B
     : public C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
-      public LCTraversalInterface<ParticleCell> {
+      public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c08 traversal.
@@ -47,7 +47,7 @@ class LCC08NeighborListBuilding3B
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
@@ -67,7 +67,7 @@ class LCC08NeighborListBuilding3B
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08NeighborListBuilding3B<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCC08NeighborListBuilding3B<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

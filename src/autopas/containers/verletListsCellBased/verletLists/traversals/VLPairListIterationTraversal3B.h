@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class TriwiseFunctor>
-class VLPairListIterationTraversal3B : public TraversalInterface<InteractionTypeOption::threeBody>,
+class VLPairListIterationTraversal3B : public TraversalInterface,
                                        public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -55,7 +55,7 @@ class VLPairListIterationTraversal3B : public TraversalInterface<InteractionType
     }
   }
 
-  void traverseParticleTriplets() override {
+  void traverseParticles() override {
     auto &pairwiseAosNeighborLists = *(this->_pairwiseAosNeighborLists);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {

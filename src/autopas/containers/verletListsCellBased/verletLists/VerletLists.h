@@ -104,23 +104,8 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
-    // the neighbor list is now valid
-    this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
-    if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
-      // only do this if we need it, i.e., if we are using soa!
-      generateSoAListFromAoSVerletLists();
-    }
-  }
-
-  /**
-   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iterateTriwise()!
-   * @param traversal
-   */
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    this->_verletBuiltNewton3 = traversal->getUseNewton3();
-
+    // Check for triwise traversals
     switch (traversal->getTraversalType()) {
       case TraversalOption::vl_list_intersection_sorted_3b: {
         this->updateVerletListsAoS3B(traversal->getUseNewton3());
@@ -211,7 +196,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                                  typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
         this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
         this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-    this->_linkedCells.iteratePairwise(&traversal);
+    this->_linkedCells.computeInteractions(&traversal);
 
     _soaListIsValid = false;
   }
@@ -243,7 +228,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         VLListIterationTraversal3B<LinkedParticleCell,
                                    typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor>(
             &f, dataLayout, useNewton3);
-    this->iterateTriwise(&traversal);
+    this->computeInteractions(&traversal);
   }
 
   /**
