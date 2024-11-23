@@ -11,7 +11,7 @@
 #include <string>
 #include <tuple>
 
-#include "autopas/Autopas.h"
+#include "autopas/AutoPas.h"
 #include "src/TypeDefinitions.h"
 
 /**
