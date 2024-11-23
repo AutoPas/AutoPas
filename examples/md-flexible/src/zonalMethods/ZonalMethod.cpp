@@ -1,6 +1,9 @@
 
 #include "src/zonalMethods/ZonalMethod.h"
 
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/Math.h"
+
 ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
                          autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
                          std::array<options::BoundaryTypeOption, 3> boundaryType)
@@ -12,7 +15,23 @@ ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBox
       _allNeighbourIndices(allNeighbourIndices),
       _boundaryType(boundaryType),
       _interactionSchedule({}),
-      _interactionZones({}) {}
+      _interactionZones({}) {
+  using namespace autopas::utils::Math;
+  // intialize _isAtGlobalBoundaryMin and _isAtGlobalBoundaryMax
+  for (size_t i = 0; i < 3; i++) {
+    if (isNearRel(_homeBoxRegion._origin.at(i), _globalBoxRegion._origin.at(i))) {
+      _isAtGlobalBoundaryMin.at(i) = 1;
+    } else {
+      _isAtGlobalBoundaryMin.at(i) = 0;
+    }
+    if (isNearRel(_homeBoxRegion._origin.at(i) + _homeBoxRegion._size.at(i),
+                  _globalBoxRegion._origin.at(i) + _globalBoxRegion._size.at(i))) {
+      _isAtGlobalBoundaryMax.at(i) = 1;
+    } else {
+      _isAtGlobalBoundaryMax.at(i) = 0;
+    }
+  }
+}
 
 ZonalMethod::~ZonalMethod() = default;
 
@@ -71,4 +90,49 @@ size_t ZonalMethod::convRelNeighboursToIndex(std::array<int, 3> relNeighbour) {
     index--;
   }
   return index;
+}
+
+void ZonalMethod::wrapAroundPeriodicBoundary(std::array<int, 3> relNeighbour, std::vector<ParticleType> &particles) {
+  using namespace autopas::utils::ArrayMath::literals;
+  // check if neighbour is over a global boundary (all directions)
+  std::array<double, 3> overGlobalBoundary = {0, 0, 0};
+  for (size_t i = 0; i < 3; i++) {
+    // if the boundary in this direction is periodic
+    if (_boundaryType.at(i) == options::BoundaryTypeOption::periodic) {
+      // check if the neighbour is over the boundary
+      // and set the respective values
+      if (_isAtGlobalBoundaryMin.at(i) && relNeighbour.at(i) < 0) {
+        overGlobalBoundary.at(i) = 1;
+      }
+      if (_isAtGlobalBoundaryMax.at(i) && relNeighbour.at(i) > 0) {
+        overGlobalBoundary.at(i) = -1;
+      }
+    }
+  }
+
+  // if there is no wrapping todo, return
+  if (overGlobalBoundary == std::array<double, 3>{0, 0, 0}) {
+    return;
+  }
+
+  // wrap around global box
+  for (ParticleType &p : particles) {
+    auto pos = p.getR();
+    pos += overGlobalBoundary * _globalBoxRegion._size;
+    p.setR(pos);
+  }
+}
+
+bool ZonalMethod::needToCollectParticles(std::array<int, 3> relNeighbour) {
+  bool allOverBorderArePeriodic = true;
+  for (size_t i = 0; i < 3; i++) {
+    // check if we are going over a global border
+    bool overBoder = (relNeighbour.at(i) < 0 and _isAtGlobalBoundaryMin.at(i)) or
+                     (relNeighbour.at(i) > 0 and _isAtGlobalBoundaryMax.at(i));
+    // if overBorder and not periodic
+    if (overBoder and _boundaryType.at(i) != options::BoundaryTypeOption::periodic) {
+      allOverBorderArePeriodic = false;
+    }
+  }
+  return allOverBorderArePeriodic;
 }
