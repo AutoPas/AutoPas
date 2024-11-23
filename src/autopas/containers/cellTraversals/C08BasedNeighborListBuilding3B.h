@@ -20,8 +20,8 @@ namespace autopas {
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction between particles.
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
-class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, Functor, interactionType> {
+template <class ParticleCell, class Functor>
+class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, Functor> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -36,7 +36,7 @@ class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, 
   explicit C08BasedNeighborListBuilding3B(const std::array<unsigned long, 3> &dims, Functor *functor,
                                           const double interactionLength, const std::array<double, 3> &cellLength,
                                           DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor, interactionType>(dims, functor, interactionLength, cellLength,
+      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength,
                                                                     dataLayout, useNewton3) {}
 
  protected:
@@ -48,9 +48,9 @@ class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, 
   inline void c08Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
+template <class ParticleCell, class Functor>
 template <typename LoopBody>
-inline void C08BasedNeighborListBuilding3B<ParticleCell, Functor, interactionType>::c08Traversal(LoopBody &&loopBody) {
+inline void C08BasedNeighborListBuilding3B<ParticleCell, Functor>::c08Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // last cells also have to be traversed to have correct Neighborlist building between Halo Cells
