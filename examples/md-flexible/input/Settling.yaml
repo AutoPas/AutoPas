@@ -32,13 +32,13 @@ Sites:
 Objects:
   CubeUniform:
       0:
-        numberOfParticles              :  1500
-        box-length                     :  [10, 10, 10]
+        numberOfParticles              :  5000
+        box-length                     :  [15, 15, 15]
         particle-spacing: 1.5
         bottomLeftCorner: [ 2, 2, 2 ]
         velocity: [ 0, 0, 0 ]
         particle-type-id               :  0
-vtk-filename                     :  settling
+vtk-filename                     :  settling_5000_particles_150k_iterations
 vtk-write-frequency              :  10
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
