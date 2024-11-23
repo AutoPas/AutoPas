@@ -128,11 +128,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vl_list_iteration,
     /**
-     * VLListIterationTraversal3b : Distribute processing of neighbor lists dynamically to threads.
-     * Does not support Newton3.
-     */
-    vl_list_iteration_3b,
-    /**
      * VLListIntersectionTraversalSorted3b :  Distribute processing of neighbor lists dynamically to threads.
      * Calls Functor for the Intersection of two Neighborlists. Finds intersection by sorting Neighborlists.
      * Does not support Newton3.
@@ -259,7 +254,7 @@ class TraversalOption : public Option<TraversalOption> {
   static std::set<TraversalOption> getAllTriwiseOptions() {
     return {Value::ds_sequential,
             Value::lc_c01,
-            Value::vl_list_iteration_3b,
+            Value::vl_list_iteration,
             Value::vl_list_intersection_sorted_3b,
             Value::vl_list_intersection_hashing_3b,
             Value::vl_pair_list_iteration_3b};
@@ -338,7 +333,6 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
-        {TraversalOption::vl_list_iteration_3b, "vl_list_iteration_3b"},
         {TraversalOption::vl_list_intersection_sorted_3b, "vl_list_intersection_sorted_3b"},
         {TraversalOption::vl_list_intersection_hashing_3b, "vl_list_intersection_hashing_3b"},
         {TraversalOption::vl_pair_list_iteration_3b, "vl_pair_list_iteration_3b"},

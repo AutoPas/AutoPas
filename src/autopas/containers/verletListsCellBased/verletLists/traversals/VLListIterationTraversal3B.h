@@ -34,7 +34,7 @@ class VLListIterationTraversal3B : public TraversalInterface, public VLTraversal
   explicit VLListIterationTraversal3B(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 
   [[nodiscard]] bool isApplicable() const override {
     return /*(not _useNewton3) and*/ _dataLayout == DataLayoutOption::aos;

@@ -330,7 +330,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
           dataLayout, useNewton3);
     }
     // VerletLists
-    case TraversalOption::vl_list_iteration_3b: {
+    case TraversalOption::vl_list_iteration: {
       return std::make_unique<VLListIterationTraversal3B<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, dataLayout,
                                                                                         useNewton3);
     }
