@@ -96,17 +96,21 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in computeInteractions()!
+   * @note This function will be called in computeInteractions()
    * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    this->updateVerletListsAoS(traversal->getUseNewton3());
 
     // Check for triwise traversals
     switch (traversal->getTraversalType()) {
+      // Standard pairwise traversal
+      case TraversalOption::vl_list_iteration: {
+        this->updateVerletListsAoS<InteractionTypeOption::pairwise>(traversal->getUseNewton3());
+        break;
+      }
       case TraversalOption::vl_list_intersection_sorted_3b: {
-        this->updateVerletListsAoS3B(traversal->getUseNewton3());
+        this->updateVerletListsAoS<InteractionTypeOption::triwise>(traversal->getUseNewton3());
 
         // sort neighborLists for efficient intersecting
         /// @todo paralelize sorting
@@ -127,8 +131,9 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         this->updatePairVerletListsAoS3B(traversal->getUseNewton3());
         break;
       }
+      // Default builds normal neighbor lists including halo particles.
       default: {
-        this->updateVerletListsAoS3B(traversal->getUseNewton3());
+        this->updateVerletListsAoS<InteractionTypeOption::triwise>(traversal->getUseNewton3());
       }
     }
 
@@ -146,35 +151,8 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * Update the verlet lists for AoS usage
    * @param useNewton3
    */
-  virtual void updateVerletListsAoS(bool useNewton3) {
-    generateAoSNeighborLists();
-    typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                       this->getCutoff() + this->getVerletSkin());
-
-    /// @todo autotune traversal
-    DataLayoutOption dataLayout;
-    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
-      dataLayout = DataLayoutOption::aos;
-    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
-      dataLayout = DataLayoutOption::soa;
-    } else {
-      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
-                                         _buildVerletListType);
-    }
-    auto traversal =
-        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-    this->_linkedCells.computeInteractions(&traversal);
-
-    _soaListIsValid = false;
-  }
-
-  /**
-   * Update the verlet lists for AoS usage, also builds Halo neighborlists for 3Body-Traversals that require those
-   * @param useNewton3
-   */
-  virtual void updateVerletListsAoS3B(bool useNewton3) {
+  template <InteractionTypeOption::Value interactionType>
+  void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
                                                                        this->getCutoff() + this->getVerletSkin());
@@ -190,24 +168,33 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                          _buildVerletListType);
     }
 
-    auto traversal = LCC08NeighborListBuilding3B<LinkedParticleCell,
-                                                 typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
-        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-    this->_linkedCells.computeInteractions(&traversal);
+    if constexpr (interactionType == InteractionTypeOption::pairwise) {
+      auto pairwiseTraversal =
+          LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+      this->_linkedCells.computeInteractions(&pairwiseTraversal);
+    } else {
+      auto triwiseTraversal =
+          LCC08NeighborListBuilding3B<LinkedParticleCell,
+                                      typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+      this->_linkedCells.computeInteractions(&triwiseTraversal);
+    }
 
     _soaListIsValid = false;
   }
 
   /**
-   * Update the pairwise verlet lists for AoS usage
+   * Update the pair verlet lists for AoS usage
    * @param useNewton3
    */
   virtual void updatePairVerletListsAoS3B(bool useNewton3) {
-    updateVerletListsAoS3B(false);
+    updateVerletListsAoS<InteractionTypeOption::triwise>(false);
     generateAoSNeighborPairsLists();
-    typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor f(
-        _aosNeighborPairsLists, this->getCutoff() + this->getVerletSkin());
+    typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists,
+                                                                           this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;
@@ -222,10 +209,9 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                          _buildVerletListType);
     }
 
-    auto traversal =
-        VLListIterationTraversal3B<LinkedParticleCell,
-                                   typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor>(
-            &f, dataLayout, useNewton3);
+    auto traversal = VLListIterationTraversal3B<LinkedParticleCell,
+                                                typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor>(
+        &f, dataLayout, useNewton3);
     this->computeInteractions(&traversal);
   }
 
