@@ -5,6 +5,7 @@
 #include "autopas/AutoPas.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/TypeDefinitions.h"
+#include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
@@ -62,16 +63,10 @@ class ZonalMethod {
   virtual void SendAndReceiveResults(AutoPasType &autoPasContainer) = 0;
 
   /**
-   * Get the interaction schedule without the home box zone, represented by
-   * a vector of the zone chars in order.
+   * Calculate the external zonal interactions
+   * @param autoPasContainer
    */
-  std::vector<char> getInteractionSchedule() const;
-
-  /**
-   * For a given zone, get the zones that are required to interact with (in order).
-   * @param ownZone: the zone to get the interaction zones for
-   */
-  std::vector<char> getInteractionZones(char ownZone) const;
+  virtual void calculateExternalZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config);
 
  protected:
   /**
@@ -109,7 +104,6 @@ class ZonalMethod {
    */
   std::array<options::BoundaryTypeOption, 3> _boundaryType;
 
-
   /**
    * Stores whether the home box is at the minimal global boundary:
    *  1 - yes
@@ -127,12 +121,12 @@ class ZonalMethod {
   /**
    * Stores the interaction schedule without the home box zone
    */
-  std::vector<char> _interactionSchedule;
+  std::vector<char> _interactionZones;
 
   /**
    * Stores the interaction zones
    */
-  std::map<char, std::vector<char>> _interactionZones;
+  std::map<char, std::vector<char>> _interactionSchedule;
 
   /**
    * Calculates import / export regions as RectRegion classes, saving them in the given buffer.
@@ -159,7 +153,6 @@ class ZonalMethod {
    */
   virtual size_t convRelNeighboursToIndex(std::array<int, 3> relNeighbour);
 
-
   /**
    * Check if there is a need to collect particles from the given neighbour
    * @param relNeighbour
@@ -173,4 +166,15 @@ class ZonalMethod {
    * @param particles
    */
   virtual void wrapAroundPeriodicBoundary(std::array<int, 3> relNeighbour, std::vector<ParticleType> &particles);
+
+  /**
+   * Calculate the zonal pairwise interaction between the given zones and the given AoS functor.
+   * This is method dependant and should be implemented by each respective subclass.
+   * The function is called by calculateExternalZonalInteractions().
+   * @param zone1
+   * @param zone2
+   * @param aosFunctor
+   */
+  virtual void calculateZonalInteractionPairwise(
+      char zone1, char zone2, std::function<void(ParticleType &, ParticleType &)> aosFunctor) = 0;
 };

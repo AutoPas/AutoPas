@@ -3,6 +3,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Math.h"
+#include "src/TypeDefinitions.h"
 
 ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
                          autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
@@ -14,8 +15,8 @@ ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBox
       _comm(comm),
       _allNeighbourIndices(allNeighbourIndices),
       _boundaryType(boundaryType),
-      _interactionSchedule({}),
-      _interactionZones({}) {
+      _interactionZones({}),
+      _interactionSchedule({}) {
   using namespace autopas::utils::Math;
   // intialize _isAtGlobalBoundaryMin and _isAtGlobalBoundaryMax
   for (size_t i = 0; i < 3; i++) {
@@ -34,6 +35,21 @@ ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBox
 }
 
 ZonalMethod::~ZonalMethod() = default;
+
+void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config) {
+  // NOTE: Need to change functor depending on pairwise / triwise
+  auto &particlePropertiesLibrary = *config.getParticlePropertiesLibrary();
+  const double cutoff = config.cutoff.value;
+  auto ljFunc = LJFunctorTypeAVX{cutoff, particlePropertiesLibrary};
+  auto AoSFunc = [&ljFunc](ParticleType &p1, ParticleType &p2) { return ljFunc.AoSFunctor(p1, p2, false); };
+  for (auto &zone : _interactionZones) {
+    auto schedule = _interactionSchedule.at(zone);
+    for (auto interactZone : schedule) {
+      // interact using functor
+      calculateZonalInteractionPairwise(zone, interactZone, AoSFunc);
+    }
+  }
+}
 
 void ZonalMethod::getRectRegionsConditional(RectRegion &homeBoxRegion, double cutoffRadius, double verletSkinWidth,
                                             std::vector<RectRegion> &regions,
