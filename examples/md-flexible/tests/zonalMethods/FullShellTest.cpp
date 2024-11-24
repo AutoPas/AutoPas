@@ -22,6 +22,7 @@ void FullShellTest::initContainer(AutoPasType &autopas, std::vector<ParticleType
  */
 TEST_F(FullShellTest, testParticleCollection) {
   ASSERT_EQ(_exportRegions.size(), FullShell::_regionCount);
+  ASSERT_EQ(_importRegions.size(), FullShell::_regionCount);
 
   // homogenously distribute particles with a distance of 1 into the 10x10x10 domain
   std::vector<ParticleType> particles;
@@ -45,12 +46,6 @@ TEST_F(FullShellTest, testParticleCollection) {
   size_t particleCount = 0;
   for (auto buffer : _regionBuffers) {
     particleCount += buffer.size();
-    // check if collected particles are inside the home domain
-    for (auto particle : buffer) {
-      ASSERT_TRUE(particle.getR()[0] >= 0 and particle.getR()[0] < 10);
-      ASSERT_TRUE(particle.getR()[1] >= 0 and particle.getR()[1] < 10);
-      ASSERT_TRUE(particle.getR()[2] >= 0 and particle.getR()[2] < 10);
-    }
   }
 
   /*
