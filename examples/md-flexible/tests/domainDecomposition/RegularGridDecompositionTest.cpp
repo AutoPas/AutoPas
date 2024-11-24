@@ -13,6 +13,7 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainTools.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+#include "src/options/BoundaryTypeOption.h"
 
 extern template class autopas::AutoPas<ParticleType>;
 
@@ -236,8 +237,9 @@ INSTANTIATE_TEST_SUITE_P(TestHaloParticles, RegularGridDecompositionTest,
  * Create a grid of particles at the border of each rank, then check if halo particles appear in the expected positions
  * and nowhere else.
  */
-TEST_F(RegularGridDecompositionTest, testExchangeZonalHaloParticles) {
-  auto [autoPasContainer, domainDecomposition] = initDomain();
+TEST_P(RegularGridDecompositionTest, testExchangeZonalHaloParticles) {
+  const auto boundaryType = GetParam();
+  auto [autoPasContainer, domainDecomposition] = initDomain(boundaryType);
   const auto &localBoxMin = autoPasContainer->getBoxMin();
   const auto &localBoxMax = autoPasContainer->getBoxMax();
 
@@ -266,19 +268,41 @@ TEST_F(RegularGridDecompositionTest, testExchangeZonalHaloParticles) {
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
       << "Owned particles missing after halo exchange!";
 
-  // expect particles to be all around the box since every particle creates multiple halo particles.
-  const auto expectedHaloParticlePositions = generatePositionsOutsideDomain(*autoPasContainer);
-  ASSERT_EQ(expectedHaloParticlePositions.size(), 98) << "Expectation setup faulty!";
+  if (boundaryType == options::BoundaryTypeOption::periodic) {
+    // expect particles to be all around the box since every particle creates multiple halo particles.
+    const auto expectedHaloParticlePositions = generatePositionsOutsideDomain(*autoPasContainer);
+    ASSERT_EQ(expectedHaloParticlePositions.size(), 98) << "Expectation setup faulty!";
 
-  EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
-            expectedHaloParticlePositions.size()) << "for Rank: " << domainDecomposition->getDomainIndex();
+    EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
+              expectedHaloParticlePositions.size());
 
-  for (auto particleIter = autoPasContainer->begin(autopas::IteratorBehavior::halo); particleIter.isValid();
-       ++particleIter) {
-    EXPECT_THAT(expectedHaloParticlePositions, ::testing::Contains(particleIter->getR()))
-        << "for Rank: " << domainDecomposition->getDomainIndex();
+    for (auto particleIter = autoPasContainer->begin(autopas::IteratorBehavior::halo); particleIter.isValid();
+         ++particleIter) {
+      EXPECT_THAT(expectedHaloParticlePositions, ::testing::Contains(particleIter->getR()));
+    }
+  } else {
+    const auto globalMin = domainDecomposition->getGlobalBoxMin();
+    const auto globalMax = domainDecomposition->getGlobalBoxMax();
+
+    const int numberOfProcesses = []() {
+      int result;
+      autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &result);
+      return result;
+    }();
+
+    // Expect halos only between domains, not at global boundaries, when they are not periodic.
+    const auto haloNumber = autopas::utils::ArrayMath::isNearRel(localBoxMin, globalMin) or
+                                    autopas::utils::ArrayMath::isNearRel(localBoxMax, globalMax)
+                                ? (numberOfProcesses == 1 ? 0 : 9)
+                                : 18;
+
+    EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo), haloNumber);
   }
 }
+
+INSTANTIATE_TEST_SUITE_P(TestHaloZonalParticles, RegularGridDecompositionTest,
+                         testing::Values(options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::reflective,
+                                         options::BoundaryTypeOption::none));
 
 /**
  * This test is designed to check if particles are properly being migrated.
