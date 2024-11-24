@@ -50,14 +50,18 @@ class VLListIntersectionTraversalSorted3B : public TraversalInterface, public VL
   void initTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversalSorted3B.");
+      utils::ExceptionHandler::exception(
+          "VLListIntersectionTraversalSorted3B::initTraversal(): SoA dataLayout not implemented yet for "
+          "VLListIntersectionTraversalSorted3B.");
     }
   }
 
   void endTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversalSorted3B.");
+      utils::ExceptionHandler::exception(
+          "VLListIntersectionTraversalSorted3B::endTraversal(): SoA dataLayout not implemented yet for "
+          "VLListIntersectionTraversalSorted3B.");
     }
   }
 
@@ -112,18 +116,23 @@ class VLListIntersectionTraversalSorted3B : public TraversalInterface, public VL
           }
         } else {
           // list intersection does not work with the current way neighborlists are built for N3 case
-          utils::ExceptionHandler::exception("VLListIntersectionTraversalSorted3B does not support Newton3.");
+          utils::ExceptionHandler::exception(
+              "VLListIntersectionTraversalSorted3B::traverseParticles(): VLListIntersectionTraversalSorted3B does not "
+              "support Newton3.");
         }
         return;
       }
 
       case DataLayoutOption::soa: {
         utils::ExceptionHandler::exception(
-            "SoA dataLayout not implemented yet for VLListIntersectionTraversalSorted3B.");
+            "VLListIntersectionTraversalSorted3B::traverseParticles(): SoA dataLayout not implemented yet for "
+            "VLListIntersectionTraversalSorted3B.");
         return;
       }
       default: {
-        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", _dataLayout);
+        utils::ExceptionHandler::exception(
+            "VLListIntersectionTraversalSorted3B::traverseParticles(): VerletList dataLayout {} not available",
+            _dataLayout);
       }
     }
   }

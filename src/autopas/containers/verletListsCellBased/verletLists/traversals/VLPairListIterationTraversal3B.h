@@ -8,17 +8,15 @@
 #pragma once
 
 #include "VLTraversalInterface.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
 
 /**
- * This class provides a Traversal for the verlet lists container.
+ * This class provides a triwise traversal for the verlet lists container.
  *
  * @tparam ParticleCell the type of cells
- * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam TriwiseFunctor The functor that defines the interaction of three particles.
  */
 template <class ParticleCell, class TriwiseFunctor>
 class VLPairListIterationTraversal3B : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
@@ -26,7 +24,7 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
 
  public:
   /**
-   * Constructor for Verlet Traversal
+   * Constructor for the Verlet Pair List Iteration Traversal
    * @param triwiseFunctor Functor to be used with this Traversal
    * @param dataLayout
    * @param useNewton3
@@ -43,14 +41,18 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
   void initTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLPairListIterationTraversal3B.");
+      utils::ExceptionHandler::exception(
+          "VLPairListIterationTraversal3B::initTraversal(): SoA dataLayout not implemented yet for "
+          "VLPairListIterationTraversal3B.");
     }
   }
 
   void endTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLPairListIterationTraversal3B.");
+      utils::ExceptionHandler::exception(
+          "VLPairListIterationTraversal3B::endTraversal(): SoA dataLayout not implemented yet for "
+          "VLPairListIterationTraversal3B.");
     }
   }
 
@@ -79,17 +81,21 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
             }
           }
         } else {
-          utils::ExceptionHandler::exception("VLPairListIterationTraversal3B does not support Newton3.");
+          utils::ExceptionHandler::exception(
+              "VLPairListIterationTraversal3B::traverseParticles(): VLPairListIterationTraversal3B does not support "
+              "Newton3.");
         }
         return;
       }
-
       case DataLayoutOption::soa: {
-        utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLPairListIterationTraversal3B.");
+        utils::ExceptionHandler::exception(
+            "VLPairListIterationTraversal3B::traverseParticles(): SoA dataLayout not implemented yet for "
+            "VLPairListIterationTraversal3B.");
         return;
       }
       default: {
-        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", _dataLayout);
+        utils::ExceptionHandler::exception(
+            "VLPairListIterationTraversal3B::traverseParticles(): VerletList dataLayout {} not available", _dataLayout);
       }
     }
   }
