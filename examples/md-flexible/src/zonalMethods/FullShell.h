@@ -16,10 +16,12 @@ class FullShell : public ZonalMethod {
    * @param allNeighbourIndices (optional)
    * @param boundaryType (optional)
    * */
-  FullShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
-            RectRegion globalBoxRegion, autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
+  FullShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
+            autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
             std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
-            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>());
+            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>(
+                {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
+                 options::BoundaryTypeOption::periodic}));
 
   /**
    * Destructor
