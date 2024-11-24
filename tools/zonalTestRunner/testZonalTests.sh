@@ -9,3 +9,4 @@ ctest -R mdFlexTests/ZonalMethodTest
 ctest -R mdFlexTests/HalfShellTest
 ctest -R mdFlexTests/FullShellTest
 ctest -R mdFlexTests/RegionTest
+ctest -R mdFlexTests/TestHaloZonalParticles/RegularGridDecompositionTest.
