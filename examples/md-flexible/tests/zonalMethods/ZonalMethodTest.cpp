@@ -1,7 +1,6 @@
 
 #include "tests/zonalMethods/ZonalMethodTest.h"
 
-#include "src/zonalMethods/HalfShell.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
 /**
@@ -17,6 +16,12 @@ void ZonalMethodTest::SendAndReceiveExports(AutoPasType &autoPasContainer) {}
  * Define function to allow instantiation
  */
 void ZonalMethodTest::SendAndReceiveResults(AutoPasType &autoPasContainer) {}
+
+/**
+ * Define function to allow instantiation
+ */
+void ZonalMethodTest::calculateZonalInteractionPairwise(
+    char zone1, char zone2, std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
 
 /**
  * Tests the functionality of the getRectRegionConditional function, by

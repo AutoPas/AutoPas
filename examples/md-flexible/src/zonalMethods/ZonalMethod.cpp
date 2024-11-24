@@ -3,7 +3,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Math.h"
-#include "src/TypeDefinitions.h"
+#include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
 ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
                          autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
@@ -37,6 +37,9 @@ ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBox
 ZonalMethod::~ZonalMethod() = default;
 
 void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config) {
+  using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+
   // NOTE: Need to change functor depending on pairwise / triwise
   auto &particlePropertiesLibrary = *config.getParticlePropertiesLibrary();
   const double cutoff = config.cutoff.value;

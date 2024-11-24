@@ -28,7 +28,7 @@ HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
   // calculate importRegions
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition, identifyZone, true);
 
-  _interactionSchedule.push_back('A');
+  _interactionZones.push_back('A');
 }
 
 HalfShell::~HalfShell() = default;
@@ -78,5 +78,8 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
 }
 
 void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
-    // get cell
+  // get cell
 }
+
+void HalfShell::calculateZonalInteractionPairwise(char zone1, char zone2,
+                                                  std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}

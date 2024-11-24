@@ -1,5 +1,6 @@
 
 #pragma once
+#include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/ZonalMethod.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
@@ -24,7 +25,9 @@ class HalfShell : public ZonalMethod {
   HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
             autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
             std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
-            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>());
+            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>(
+                {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
+                 options::BoundaryTypeOption::periodic}));
 
   /**
    * Destructor
@@ -84,4 +87,7 @@ class HalfShell : public ZonalMethod {
    * NOTE: We can use a single buffer as HalfShell has only one external zone.
    */
   std::vector<ParticleType> _importParticles;
+
+  void calculateZonalInteractionPairwise(char zone1, char zone2,
+                                         std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
 };

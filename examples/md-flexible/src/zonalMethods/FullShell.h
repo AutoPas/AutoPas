@@ -81,4 +81,7 @@ class FullShell : public ZonalMethod {
    * NOTE: We can use a single buffer as FullShell has only one external zone.
    */
   std::vector<ParticleType> _importParticles;
+
+  void calculateZonalInteractionPairwise(char zone1, char zone2,
+                                         std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
 };
