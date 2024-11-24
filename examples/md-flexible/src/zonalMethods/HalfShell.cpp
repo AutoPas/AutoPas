@@ -38,29 +38,45 @@ void HalfShell::collectParticles(AutoPasType &autoPasContainer) {
   for (auto &region : _exportRegions) {
     // NOTE Optimization: Could reserve buffer in advance
     _regionBuffers[index].clear();
-    region.collectParticles(autoPasContainer, _regionBuffers[index++]);
+    if (needToCollectParticles(region.getNeighbour())) {
+      region.collectParticles(autoPasContainer, _regionBuffers[index]);
+      wrapAroundPeriodicBoundary(region.getNeighbour(), _regionBuffers[index]);
+    }
+    ++index;
   }
 }
 
 void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
   ParticleCommunicator particleCommunicator(_comm);
-  size_t index = 0;
+  size_t bufferIndex = 0;
   for (auto &exRegion : _exportRegions) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
-    particleCommunicator.sendParticles(_regionBuffers[index++], neighbourRank);
+    if (neighbourRank != _ownRank) {
+      particleCommunicator.sendParticles(_regionBuffers[bufferIndex], neighbourRank);
+    }
+    ++bufferIndex;
   }
   // receive
   // NOTE Optimization: Could reserve buffer in advance
+  bufferIndex = 0;
   _importParticles.clear();
   for (auto &imRegion : _importRegions) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
-    particleCommunicator.receiveParticles(_importParticles, neighbourRank);
+    if (neighbourRank != _ownRank) {
+      particleCommunicator.receiveParticles(_importParticles, neighbourRank);
+    } else {
+      _importParticles.insert(_importParticles.end(), _regionBuffers[bufferIndex].begin(),
+                              _regionBuffers[bufferIndex].end());
+    }
+    ++bufferIndex;
   }
   particleCommunicator.waitForSendRequests();
 
   autoPasContainer.addHaloParticles(_importParticles);
 }
 
-void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {}
+void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
+    // get cell
+}
