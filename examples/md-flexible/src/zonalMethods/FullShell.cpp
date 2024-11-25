@@ -79,5 +79,7 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
 
 void FullShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {}
 
+void FullShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {}
+
 void FullShell::calculateZonalInteractionPairwise(char zone1, char zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}

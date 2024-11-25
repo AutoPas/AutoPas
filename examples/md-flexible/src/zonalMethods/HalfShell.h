@@ -61,6 +61,15 @@ class HalfShell : public ZonalMethod {
    */
   void SendAndReceiveResults(AutoPasType &autoPasContainer) override;
 
+  /**
+   * Recollect the halo particles from the AutoPas container and
+   * save them internally.
+   * As this is method specific, this function is pure virtual.
+   * This is called before calculateExternalZonalInteractions().
+   * @param autoPasContainer
+   */
+  void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
+
  protected:
   /**
    * The number of export regions
