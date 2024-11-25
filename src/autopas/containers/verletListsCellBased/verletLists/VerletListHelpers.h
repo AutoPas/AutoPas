@@ -191,6 +191,9 @@ class VerletListHelpers {
     double _interactionLengthSquared;
   };
 
+  /**
+   * This functor can generate verlet lists of neighbor pairs for a triwise traversal.
+   */
   class PairVerletListGeneratorFunctor : public TriwiseFunctor<Particle, PairVerletListGeneratorFunctor> {
    public:
     /**

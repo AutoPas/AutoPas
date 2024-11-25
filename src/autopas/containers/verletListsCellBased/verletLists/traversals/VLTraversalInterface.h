@@ -31,6 +31,7 @@ class VLTraversalInterface {
    * @param cells The cells of the underlying LinkedCells container.
    * @param aosNeighborLists The AoS neighbor list.
    * @param soaNeighborLists The SoA neighbor list.
+   * @param aosNeighborPairsLists A AoS neighbor list of pairs.
    */
   virtual void setCellsAndNeighborLists(
       std::vector<LinkedParticleCell> &cells,
