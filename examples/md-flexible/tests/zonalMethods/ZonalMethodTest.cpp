@@ -24,6 +24,11 @@ void ZonalMethodTest::calculateZonalInteractionPairwise(
     char zone1, char zone2, std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
 
 /**
+ * Define function to allow instantiation
+ */
+void ZonalMethodTest::recollectResultsFromContainer(AutoPasType &autoPasContainer) {}
+
+/**
  * Tests the functionality of the getRectRegionConditional function, by
  * specifying a condition which should result in no regions.
  */

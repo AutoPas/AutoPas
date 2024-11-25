@@ -79,7 +79,10 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
 
 void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
   // get cell
+  auto containerType = autoPasContainer.getContainerType();
 }
+
+void HalfShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {}
 
 void HalfShell::calculateZonalInteractionPairwise(char zone1, char zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
