@@ -1,5 +1,5 @@
 /**
- * @file VLListIterationTraversal3B.h
+ * @file VLPairListIterationTraversal3B.h
  *
  * @date 18.12.2023
  * @author Alexander-Haberl-TUM

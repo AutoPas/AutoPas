@@ -1,5 +1,5 @@
 /**
- * @file VLListIterationTraversal3B.h
+ * @file VLListIntersectionTraversalSorted3B.h
  *
  * @date 18.12.2023
  * @author Alexander-Haberl-TUM
@@ -11,8 +11,6 @@
 #include <memory>
 
 #include "VLTraversalInterface.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
