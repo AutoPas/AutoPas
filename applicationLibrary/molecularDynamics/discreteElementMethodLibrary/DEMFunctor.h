@@ -239,7 +239,7 @@ class DEMFunctor
     // Compute normal forces
     const double normalContactFMag = computeNormalContactFMag(overlap, normalRelVelMag);
     const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, cutoff);
-    const double normalFMag = normalContactFMag + normalVdWFMag;
+    const double normalFMag = normalContactFMag; // add normalVdWFMag again
     const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);
 
     // Compute tangential force
