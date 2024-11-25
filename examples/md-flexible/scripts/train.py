@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
 import pickle
+import glob
 
 
 def extract_timestamp(filename: str) -> str:
@@ -26,56 +27,69 @@ def extract_timestamp(filename: str) -> str:
     return filename.split('_')[-1].split('.')[0]
 
 
-def load_data_from_directory(live_info_dir: str, tuning_results_dir: str) -> pd.DataFrame:
+def load_data_from_directory(results_dir: str) -> pd.DataFrame:
     """
-    Load and merge multiple live info and tuning results CSV files based on matching timestamps in filenames.
+    Load and merge multiple live info and tuning results CSV files assuming leaf folders contain all experiments with
+    each folder containing a live info and tuning result CSV file.
 
     This function matches files from the live info and tuning results directories by their timestamps and merges
     the data based on the 'Iteration' column.
 
     Args:
-        live_info_dir (str): The directory containing live info CSV files.
-        tuning_results_dir (str): The directory containing tuning results CSV files.
+        results_dir (str): The directory containing all experiment CSV files.
 
     Returns:
         pd.DataFrame: A merged DataFrame containing the combined live info and tuning results from all files.
     """
     merged_dfs = []
 
-    # Get all the filenames in both directories
-    live_info_files = os.listdir(live_info_dir)
-    tuning_results_files = os.listdir(tuning_results_dir)
+    # Loop through all leaf folders i.e. the ones in which the csv files are outputted in
 
-    # Create a dictionary to map timestamps to file paths for each directory
-    live_info_dict = {extract_timestamp(f): f for f in live_info_files}
-    tuning_results_dict = {extract_timestamp(f): f for f in tuning_results_files}
+    for root, dirs, files in os.walk('.'):
+        if not dirs:
+            # Get Live Info file
 
-    # Find common timestamps between live info and tuning results files
-    common_timestamps = set(live_info_dict.keys()) & set(tuning_results_dict.keys())
+            live_info_file_pattern = os.path.join(root,"*liveInfoLogger*")
+            live_info_file_list = glob.glob(live_info_file_pattern)
 
-    # Iterate over common timestamps and load/merge corresponding files
-    for timestamp in common_timestamps:
-        live_info_path = os.path.join(live_info_dir, live_info_dict[timestamp])
-        tuning_results_path = os.path.join(tuning_results_dir, tuning_results_dict[timestamp])
+            if len(live_info_file_list) == 0:
+                print(f"No Live Info csv file found in folder {root}")
 
-        # Load the live info and tuning results
-        live_info_df = pd.read_csv(live_info_path)
-        tuning_results_df = pd.read_csv(tuning_results_path)
+            if len(live_info_file_list) > 1:
+                print(f"More than one Live Info csv file found in folder {root}")
 
-        # Merge them on 'Iteration' column
-        merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
+            live_info_file = live_info_file_list[0]
 
-        # Clean column names
-        merged_df.columns = merged_df.columns.str.strip()
+            # Get Iteration file
 
-        # Append the merged DataFrame to the list
-        merged_dfs.append(merged_df)
+            tuning_results_file_pattern = os.path.join(root,"*tuningResults*")
+            tuning_results_file_list = glob.glob(tuning_results_file_pattern)
+
+            if len(tuning_results_file_list) == 0:
+                print(f"No Iteration csv file found in folder {root}")
+
+            if len(tuning_results_file_list) > 1:
+                print(f"More than one Iteration csv file found in folder {root}")
+
+            tuning_results_file = tuning_results_file_list[0]
+
+            # Load the live info and tuning results
+            live_info_df = pd.read_csv(live_info_file)
+            tuning_results_df = pd.read_csv(tuning_results_file)
+
+            # Merge them on 'Iteration' column
+            merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
+
+            # Clean column names
+            merged_df.columns = merged_df.columns.str.strip()
+
+            # Append the merged DataFrame to the list
+            merged_dfs.append(merged_df)
 
     # Combine all merged DataFrames into one
     final_merged_df = pd.concat(merged_dfs, ignore_index=True)
 
     return final_merged_df
-
 
 def preprocess_data(merged_df: pd.DataFrame) -> tuple:
     """
@@ -175,12 +189,9 @@ if __name__ == "__main__":
     This function loads the live info and tuning result data from directories, preprocesses it, trains the models,
     and saves both the models and label encoders in a single file. It prints completion messages after training and saving.
     """
-    # Directories for live info and tuning results
-    live_info_dir = 'data/live_info'
-    tuning_results_dir = 'data/tuning_results'
 
     # Load and preprocess the data
-    merged_df = load_data_from_directory(live_info_dir, tuning_results_dir)
+    merged_df = load_data_from_directory('data')
     X, y, label_encoders = preprocess_data(merged_df)
 
     # Train the model
