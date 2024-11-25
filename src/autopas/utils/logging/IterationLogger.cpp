@@ -24,15 +24,16 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
   std::string csvHeader =
       "Date,"
       "Iteration,"
+      "Functor,"
       "inTuningPhase,"
       "{},"
-      "iteratePairwise[ns],"
+      "computeInteractions[ns],"
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
       "rebuildNumberOfNeighborLists,"
       "numberFastParticles,"
       "particleBufferSize,"
-      "iteratePairwiseTotal[ns],"
+      "computeInteractionsTotal[ns],"
       "tuning[ns]";
   if (energyMeasurements) {
     csvHeader.append(
@@ -58,20 +59,21 @@ autopas::IterationLogger::~IterationLogger() {
 }
 
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
-                                            bool inTuningPhase, long timeTuning,
-                                            const IterationMeasurements &measurements) {
+                                            const std::string &functorName, bool inTuningPhase, long timeTuning,
+                                            const IterationMeasurements &measurements) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, numberRebuild, numberFastParticles,particleBufferSize, timeTotal, energyMeasurementsPossible,
                energyPsys, energyPkg, energyRam, energyTotal] = measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
                configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, numberRebuild, numberFastParticles, particleBufferSize,timeTotal,
                timeTuning, energyPsys, energyPkg, energyRam);
   } else {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
-               timeIteratePairwise, timeRemainderTraversal, timeRebuild, numberRebuild, numberFastParticles,particleBufferSize, timeTotal, timeTuning);
+        ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
+               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, numberRebuild, numberFastParticles,particleBufferSize,timeTotal,
+               timeTuning);
   }
 #endif
 }

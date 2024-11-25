@@ -16,7 +16,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 
 /**
  * A pair of particle counts and halo particle counts.
@@ -35,5 +35,5 @@ class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<
       double cutoff, double skin, unsigned int rebuildFrequency, double interactionLength,
       Vector3DList particlePositions, Vector3DList haloParticlePositions);
 
-  MockFunctor<Molecule> mockFunctor;
+  MockPairwiseFunctor<Molecule> mockFunctor;
 };

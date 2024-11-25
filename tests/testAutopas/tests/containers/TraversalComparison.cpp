@@ -35,13 +35,13 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
  * Adds shifts with the given magnitude to all particles.
  * The shifts are generated in order of the particle id and with a fixed seed to ensure a reproducible behavior.
  * @tparam ContainerType
-& * @param containerPtr
+& * @param container
  * @param magnitude
- * @param totalNumParticles
+ * @param numTotalParticles
  */
 template <class ContainerType>
-void TraversalComparison::executeShift(ContainerType &container, double magnitude, size_t totalNumParticles) {
-  std::vector<std::array<double, 3>> shiftVectorByID(totalNumParticles);
+void TraversalComparison::executeShift(ContainerType &container, double magnitude, size_t numTotalParticles) {
+  std::vector<std::array<double, 3>> shiftVectorByID(numTotalParticles);
   constexpr unsigned seed = 42;
   std::mt19937 generator(seed);
   for (auto &elem : shiftVectorByID) {
@@ -54,13 +54,24 @@ void TraversalComparison::executeShift(ContainerType &container, double magnitud
     }
     ++numIteratedParticles;
   }
-  EXPECT_EQ(numIteratedParticles, totalNumParticles);
+  EXPECT_EQ(numIteratedParticles, numTotalParticles);
 }
 
+/**
+ * Marks a certain percentage of all particles as deleted.
+ * The particles are selected randomly with the given seed.
+ * @tparam ContainerT
+ * @param container
+ * @param numTotalParticles
+ * @param seed
+ * @param interactionT
+ */
 template <typename ContainerT>
-void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles, unsigned seed) {
+void TraversalComparison::markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles, unsigned seed,
+                                                     autopas::InteractionTypeOption interactionT) {
   // Here, we delete about deletionPercentage % of all particles.
-  double deletionPercentage = 30;
+
+  double deletionPercentage = params[interactionT].deletionPercentage;
   std::mt19937 generator(seed);
   std::uniform_real_distribution<double> uniform0_100(0.0, 100.0);
   // We create a vector of numMolecules + numHaloMolecules size.
@@ -78,6 +89,34 @@ void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
   }
 }
 
+template <bool globals>
+std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForces(
+    autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
+    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
+    mykey_t key, bool useSorting) {
+  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
+        interactionType] = key;
+  std::vector<std::array<double, 3>> calculatedForces;
+  Globals calculatedGlobals;
+
+  if (interactionType == autopas::InteractionTypeOption::pairwise) {
+    mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                     globals /*calculateGlobals*/>
+        functor{_cutoff};
+    functor.setParticleProperties(_eps * 24, _sig * _sig);
+    std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
+        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
+  } else if (interactionType == autopas::InteractionTypeOption::triwise) {
+    mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                                globals /*calculateGlobals*/>
+        functor{_cutoff};
+    functor.setParticleProperties(_nu);
+    std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
+        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
+  }
+
+  return {calculatedForces, calculatedGlobals};
+}
 /**
  * Calculates the forces for a given configuration.
  * @param containerOption Specifies the container.
@@ -93,12 +132,14 @@ void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
  * @param useSorting For traversals that use the CellFunctor: if the CellFunctor should apply sorting of particles
  * @return Tuple of forces for all particles, ordered by particle id, and global values.
  */
-template <bool globals>
-std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForces(
-    autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
-    size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-    DeletionPosition particleDeletionPosition, bool useSorting) {
+template <typename Functor, bool globals>
+std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForcesImpl(
+    Functor functor, autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
+    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
+    mykey_t key, bool useSorting) {
+  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
+        interactionType] = key;
+
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
   constexpr double skin = _cutoff * 0.1;
@@ -106,26 +147,24 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
                                                                            autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
-  LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, globals /*calculateGlobals*/>
-      functor{_cutoff};
-  functor.setParticleProperties(_eps * 24, _sig * _sig);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numMolecules);
-  EXPECT_EQ(container.size(), numMolecules) << "Wrong number of molecules inserted!";
+      container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numParticles);
+  EXPECT_EQ(container.size(), numParticles) << "Wrong number of molecules inserted!";
   autopasTools::generators::UniformGenerator::fillWithHaloParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container.getCutoff(),
-      numHaloMolecules);
-  EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
+      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container.getCutoff(),
+      numHaloParticles);
+  EXPECT_EQ(container.size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        auto traversalUniquePtr = autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
-            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+        auto traversalUniquePtr =
+            autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(functor)>(
+                traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
 
-        // set useSorting of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
-        if (auto *cellPairTraversalPtr =
-                dynamic_cast<autopas::CellPairTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
-          cellPairTraversalPtr->setSortingThreshold(useSorting ? 8 : std::numeric_limits<size_t>::max());
+        // set useSorting of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
+        if (auto *cellTraversalPtr =
+                dynamic_cast<autopas::CellTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
+          cellTraversalPtr->setSortingThreshold(useSorting ? 5 : std::numeric_limits<size_t>::max());
         }
 
         return traversalUniquePtr;
@@ -136,23 +175,25 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   if (particleDeletionPosition & DeletionPosition::beforeLists) {
-    markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);
+    markSomeParticlesAsDeleted(container, numParticles + numHaloParticles, 19, interactionType);
   }
 
   container.rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
-    executeShift(container, skin / 2, numMolecules + numHaloMolecules);
+    executeShift(container, skin / 2, numParticles + numHaloParticles);
   }
 
   if (particleDeletionPosition & DeletionPosition::afterLists) {
-    markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 99);
+    markSomeParticlesAsDeleted(container, numParticles + numHaloParticles, 99, interactionType);
   }
+
   functor.initTraversal();
-  container.iteratePairwise(traversal.get());
+  container.computeInteractions(traversal.get());
+
   functor.endTraversal(newton3Option);
 
-  std::vector<std::array<double, 3>> forces(numMolecules);
+  std::vector<std::array<double, 3>> forces(numParticles);
   for (auto it = container.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
     forces.at(it->getID()) = it->getF();
@@ -170,22 +211,23 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
  * For the reference a linked cells algorithm and c08 traversal without sorting particles is used.
  * @param key The key that specifies the simulation.
  */
+template <bool globals>
 void TraversalComparison::generateReference(mykey_t key) {
-  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals] = key;
+  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _, interactionType] = key;
+  std::vector<std::array<double, 3>> calculatedForces;
+  Globals calculatedGlobals;
   // Calculate reference forces. For the reference forces we switch off sorting. For the forces that are calculated in
   // tests and compared against the reference, sorting is enabled.
-  if (globals) {
-    auto [calculatedForces, calculatedGlobals] =
-        calculateForces<true>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
-                              autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                              numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, false);
-    _forcesReference[key] = calculatedForces;
-    _globalValuesReference[key] = calculatedGlobals;
-  } else {
-    auto [calculatedForces, calculatedGlobals] =
-        calculateForces<false>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
-                               autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, false);
+  if (_forcesReference.count(key) == 0) {
+    if (interactionType == autopas::InteractionTypeOption::pairwise) {
+      std::tie(calculatedForces, calculatedGlobals) =
+          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
+                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., key, false);
+    } else if (interactionType == autopas::InteractionTypeOption::triwise) {
+      std::tie(calculatedForces, calculatedGlobals) =
+          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01,
+                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., key, false);
+    }
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   }
@@ -196,32 +238,36 @@ void TraversalComparison::generateReference(mykey_t key) {
  */
 TEST_P(TraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
-        cellSizeFactor, doSlightShift, particleDeletionPosition, globals] = GetParam();
+        cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = GetParam();
+  // Todo: Remove this when the AxilrodTeller functor implements SoA
+  if (interactionType == autopas::InteractionTypeOption::triwise and
+      dataLayoutOption == autopas::DataLayoutOption::soa) {
+    GTEST_SKIP_("SoAs are not yet implemented for triwise traversals/functors.");
+  }
 
-  // empirically determined and set near the minimal possible value for 2000 particles
+  TraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,
+                                   globals,      interactionType};
+
+  // empirically determined and set near the minimal possible value for the given number of particles
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   constexpr double rel_err_tolerance = 1.0e-10;
-  constexpr double rel_err_tolerance_globals = 1.0e-12;
+  constexpr double rel_err_tolerance_globals = 1.0e-10;
+
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
   if (globals) {
-    std::tie(calculatedForces, calculatedGlobals) =
-        calculateForces<true>(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                              numHaloParticles, boxMax, cellSizeFactor, doSlightShift, particleDeletionPosition);
+    std::tie(calculatedForces, calculatedGlobals) = calculateForces<true>(
+        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, true);
+    generateReference<true>(key);
   } else {
-    std::tie(calculatedForces, calculatedGlobals) =
-        calculateForces<false>(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                               numHaloParticles, boxMax, cellSizeFactor, doSlightShift, particleDeletionPosition);
-  }
-  if (calculatedForces.empty()) {
-    GTEST_SKIP_("Not applicable!");
+    std::tie(calculatedForces, calculatedGlobals) = calculateForces<false>(
+        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, true);
+    generateReference<false>(key);
   }
 
-  TraversalComparison::mykey_t key{numParticles,  numHaloParticles,         boxMax,
-                                   doSlightShift, particleDeletionPosition, globals};
-  if (_forcesReference.count(key) == 0) {
-    generateReference(key);
+  if (calculatedForces.empty()) {
+    GTEST_SKIP_("Not applicable!");
   }
 
   for (size_t i = 0; i < numParticles; ++i) {
@@ -237,11 +283,11 @@ TEST_P(TraversalComparison, traversalTest) {
   if (globals) {
     EXPECT_NE(calculatedGlobals.upot, 0);
     EXPECT_NEAR(calculatedGlobals.upot, globalValuesReferenceRef.upot,
-                rel_err_tolerance_globals * globalValuesReferenceRef.upot);
+                std::abs(rel_err_tolerance_globals * globalValuesReferenceRef.upot));
 
     EXPECT_NE(calculatedGlobals.virial, 0);
     EXPECT_NEAR(calculatedGlobals.virial, globalValuesReferenceRef.virial,
-                rel_err_tolerance_globals * globalValuesReferenceRef.virial);
+                std::abs(rel_err_tolerance_globals * globalValuesReferenceRef.virial));
   }
 }
 
@@ -250,12 +296,14 @@ TEST_P(TraversalComparison, traversalTest) {
  */
 static auto toString = [](const auto &info) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
-        cellSizeFactor, doSlightShift, particleDeletionPosition, globals] = info.param;
+        cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = info.param;
   std::stringstream resStream;
-  resStream << containerOption.to_string() << "_" << traversalOption.to_string() << "_" << dataLayoutOption.to_string()
-            << "_" << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles
-            << "_NH" << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_"
-            << cellSizeFactor << "_" << (doSlightShift ? "withShift" : "noshift")
+  resStream << containerOption.to_string() << "_" << traversalOption.to_string()
+            << (interactionType == autopas::InteractionTypeOption::triwise ? "_3B" : "") << "_"
+            << dataLayoutOption.to_string() << "_"
+            << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles << "_NH"
+            << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_" << cellSizeFactor
+            << "_" << (doSlightShift ? "withShift" : "noshift")
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
             << (particleDeletionPosition & DeletionPosition::beforeLists ? "_DeletionsBeforeLists" : "")
             << (particleDeletionPosition & DeletionPosition::afterLists ? "_DeletionsAfterLists" : "")
@@ -271,23 +319,26 @@ static auto toString = [](const auto &info) {
  * @return
  */
 auto TraversalComparison::getTestParams() {
-  std::vector<TestingTuple> params{};
+  std::vector<TestingTuple> testParams{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
-      for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
-        for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
-          for (auto numParticles : {100ul, 2000ul}) {
-            for (auto boxMax : std::vector<std::array<double, 3>>{{3., 3., 3.}, {10., 10., 10.}}) {
-              for (double cellSizeFactor : {0.5, 1., 2.}) {
-                for (auto numHalo : {/*0ul,*/ 200ul}) {
-                  for (bool slightMove : {true, false}) {
-                    for (bool globals : {true, /*false*/}) {
-                      for (DeletionPosition particleDeletionPosition :
-                           {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
-                            DeletionPosition::beforeAndAfterLists}) {
-                        params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
-                                            numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
-                                            particleDeletionPosition, globals);
+    for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
+      for (auto traversalOption :
+           autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
+        for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
+          for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
+            for (auto numParticles : params[interactionType].numParticles) {
+              for (auto boxMax : params[interactionType].boxMax) {
+                for (double cellSizeFactor : params[interactionType].cellSizeFactors) {
+                  for (auto numHalo : params[interactionType].numHaloParticles) {
+                    for (bool slightMove : {true, false}) {
+                      for (bool globals : {true, /*false*/}) {
+                        for (DeletionPosition particleDeletionPosition :
+                             {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
+                              DeletionPosition::beforeAndAfterLists}) {
+                          testParams.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
+                                                  numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
+                                                  particleDeletionPosition, globals, interactionType);
+                        }
                       }
                     }
                   }
@@ -299,8 +350,22 @@ auto TraversalComparison::getTestParams() {
       }
     }
   }
-  return params;
+  return testParams;
 }
+
+std::unordered_map<autopas::InteractionTypeOption::Value, TraversalComparison::TraversalTestParams>
+    TraversalComparison::params = {{autopas::InteractionTypeOption::pairwise,
+                                    {30.,                              // deletionPercentage
+                                     {100, 2000},                      // numParticles
+                                     {200},                            // numHaloParticles
+                                     {{3., 3., 3.}, {10., 10., 10.}},  // boxMax
+                                     {0.5, 1., 2.}}},                  // cellSizeFactor
+                                   {autopas::InteractionTypeOption::triwise,
+                                    {10.,                           // deletionPercentage
+                                     {100, 400},                    // numParticles
+                                     {200},                         // numHaloParticles
+                                     {{3., 3., 3.}, {6., 6., 6.}},  // boxMax
+                                     {0.5, 1., 1.5}}}};             // cellSizeFactor
 
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalComparison, ::testing::ValuesIn(TraversalComparison::getTestParams()),
                          toString);

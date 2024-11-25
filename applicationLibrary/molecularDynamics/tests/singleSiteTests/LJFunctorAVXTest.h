@@ -12,7 +12,7 @@
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using LJFunctorAVXTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
+using LJFunctorAVXTestingTuple = std::tuple<bool /*mixing*/, bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
 
 class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorAVXTestingTuple> {
  public:
@@ -30,10 +30,12 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * Checks SoAFunctorPair(soa1, soa2, newton3)
    *
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
@@ -43,24 +45,30 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * Checks SoAFunctorSingle(soa, newton3)
    *
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
    * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Create two cells and compare AoSFunctor
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDeleteSomeParticles);
 
   /**
@@ -93,8 +101,10 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
   constexpr static double _skin{2.};
   constexpr static unsigned int _rebuildFrequency{20};
   constexpr static double _interactionLengthSquare{(_cutoff + _skin) * (_cutoff + _skin)};
+  // Parameters for mixing = false
   constexpr static double _epsilon{1.};
   constexpr static double _sigma{1.};
+
   const std::array<double, 3> _lowCorner{0., 0., 0.};
   const std::array<double, 3> _highCorner{6., 6., 6.};
 };

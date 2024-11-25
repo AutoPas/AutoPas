@@ -8,17 +8,13 @@
 
 #include <vector>
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-
 namespace autopas {
 
 /**
  * Interface for traversals used by the LinkedCell class.
  *
- * The container only accepts traversals in its iteratePairwise() method that implement this interface.
- * @tparam ParticleCell
+ * The container only accepts traversals that implement this interface.
  */
-template <class ParticleCell>
 class LCTraversalInterface {};
 
 }  // namespace autopas

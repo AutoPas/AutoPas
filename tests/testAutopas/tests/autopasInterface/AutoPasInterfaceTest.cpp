@@ -20,7 +20,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorGlobals *);
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
 constexpr double skin = 0.4;
@@ -182,8 +182,9 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   const auto &recvHaloParticles = sendHaloParticles;
   addHaloParticles(autoPas, recvHaloParticles);
 
-  // 4. iteratePairwise
-  autoPas.iteratePairwise(functor);
+  // 4. computeInteractions
+  autoPas.computeInteractions(functor);
+
   std::cout << "--------------------------------" << std::endl;
 }
 
@@ -221,9 +222,9 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
   addHaloParticles(autoPas1, recvHaloParticles1);
   addHaloParticles(autoPas2, recvHaloParticles2);
 
-  // 4. iteratePairwise
-  autoPas1.iteratePairwise(functor1);
-  autoPas2.iteratePairwise(functor2);
+  // 4. computeInteractions
+  autoPas1.computeInteractions(functor1);
+  autoPas2.computeInteractions(functor2);
 }
 
 template <typename Functor>
@@ -416,7 +417,7 @@ void testHaloCalculation(const autopas::Configuration &conf) {
   LJFunctorGlobals functor(cutoff);
   functor.setParticleProperties(24, 1);
 
-  autoPas.iteratePairwise(&functor);
+  autoPas.computeInteractions(&functor);
 
   doAssertions(autoPas, &functor, 26, __LINE__);
 }
@@ -462,14 +463,8 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   using autopas::utils::ArrayUtils::static_cast_copy_array;
 
   NumThreadGuard numThreadGuard(3);
-  const autopas::Configuration conf = [&]() {
-    const auto [containerOption, traversalOption, loadEstimatorOption, dataLayoutOption, newton3Option,
-                cellSizeOption] = GetParam();
 
-    return autopas::Configuration{containerOption,     cellSizeOption,   traversalOption,
-                                  loadEstimatorOption, dataLayoutOption, newton3Option};
-  }();
-
+  auto conf = GetParam();
   constexpr double cutoffLocal = 1.;
   constexpr double skinLocal = .1;
   constexpr double interactionLength = cutoffLocal + skinLocal;
@@ -486,7 +481,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   containerSelector.selectContainer(conf.container, containerSelectorInfo);
   auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
       containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+        return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<LJFunctorGlobals>(
             conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
       });
 
@@ -505,7 +500,8 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                              autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
-                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get())),
+                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
+                             autopas::InteractionTypeOption::pairwise)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////
@@ -520,7 +516,8 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
 
   const auto &containerOp = GetParam();
   autoPas.setAllowedContainers({containerOp});
-  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOp));
+  autoPas.setAllowedTraversals(
+      autopas::compatibleTraversals::allCompatibleTraversals(containerOp, autopas::InteractionTypeOption::pairwise));
 
   autoPas.init();
 
@@ -571,11 +568,13 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   autopas::AutoPas<Molecule> autoPas1;
   autoPas1.setOutputSuffix("1_");
   autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
-  autoPas1.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption1));
+  autoPas1.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
+      containerOption1, autopas::InteractionTypeOption::pairwise));
   autopas::AutoPas<Molecule> autoPas2;
   autoPas2.setOutputSuffix("2_");
   autoPas2.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
-  autoPas2.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption2));
+  autoPas2.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
+      containerOption2, autopas::InteractionTypeOption::pairwise));
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);
 

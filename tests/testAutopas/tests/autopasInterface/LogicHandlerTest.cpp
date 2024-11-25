@@ -30,13 +30,16 @@ void LogicHandlerTest::initLogicHandler() {
   constexpr unsigned int verletRebuildFrequency = 10;
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled}});
-  _autoTuner =
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+        autopas::InteractionTypeOption::pairwise}});
+  _tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
   _logicHandler =
-      std::make_unique<autopas::LogicHandler<Molecule>>(*_autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+      std::make_unique<autopas::LogicHandler<Molecule>>(_tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 /**
  * Tests dynamic rebuild functionalities for one particle case.
  * Dynamic rebuild should be triggered only when particle moves more than skin/2
@@ -127,7 +130,7 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
   // iterate once so that neighbor lists are valid
   leavingParticles = _logicHandler->updateContainer();
   EXPECT_EQ(leavingParticles.size(), 0) << "No particle has the container \n";
-  _logicHandler->iteratePairwisePipeline(&functor);
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
   ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
@@ -172,7 +175,7 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
 
   // iterate once so that neighbor lists are valid
   auto leavingParticles = _logicHandler->updateContainer();
-  _logicHandler->iteratePairwisePipeline(&functor);
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
   ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
@@ -208,3 +211,4 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
       << " Particle has moved across the periodic boundary and more than half the skin, but as it is in the buffer, it "
          "doesn't affect the container. \n";
 }
+#endif
