@@ -9,6 +9,7 @@
 
 #include <array>
 #include <string>
+#include <unordered_set>
 
 #include "autopas/AutoPas.h"
 #include "autopas/tuning/Configuration.h"
@@ -103,11 +104,14 @@ class ParallelVtkWriter {
   /**
    * Writes the current domain subdivision into vtk files.
    * @param currentIteration: The simulations current iteration.
-   * @param autoPasConfiguration: The configuration of an autoPasContainer.
+   * @param autoPasConfigurations: All current configuration of an autopas container (pairwise, triwise).
    * @param decomposition: The simulations domain decomposition.
    */
-  void recordDomainSubdivision(size_t currentIteration, const autopas::Configuration &autoPasConfiguration,
-                               const RegularGridDecomposition &decomposition) const;
+  void recordDomainSubdivision(
+      size_t currentIteration,
+      const std::unordered_map<autopas::InteractionTypeOption::Value,
+                               std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
+      const RegularGridDecomposition &decomposition) const;
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
@@ -130,8 +134,10 @@ class ParallelVtkWriter {
    *
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
+   * @param interactionTypes: Interaction types that are considered in the current simulation.
    */
-  void createRanksPvtuFile(size_t currentIteration, const RegularGridDecomposition &decomposition) const;
+  void createRanksPvtuFile(size_t currentIteration, const RegularGridDecomposition &decomposition,
+                           const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const;
 
   /**
    * Tries to create a folder at a location.
