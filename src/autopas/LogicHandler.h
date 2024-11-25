@@ -1087,8 +1087,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
+  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();

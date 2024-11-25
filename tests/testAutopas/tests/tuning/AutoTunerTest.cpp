@@ -775,7 +775,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   // Use configurations with N3, otherwise there are more calls to AoSFunctor
-  const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
+  const auto searchSpace = {_confLc_c08_N3, _confLc_c18_N3};
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
       autopas::InteractionTypeOption::pairwise,
@@ -816,7 +816,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   // Here, second config will start to be tuned
 
   dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(300ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(500ms); }));
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
 
   auto secondConfig = autoTuner.getCurrentConfig();
@@ -829,7 +829,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
 
-  // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 350 = 300 + 2 * 25)
+  // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 550 = 500 + 2 * 25)
   dummyParticlesVec = logicHandler.updateContainer();
   EXPECT_CALL(functor, AoSFunctor).Times(1);
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
