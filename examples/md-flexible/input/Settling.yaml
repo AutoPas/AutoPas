@@ -21,8 +21,8 @@ deltaT                           :  0.0005
 iterations                       :  70000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-9.8]
-backgroundForceFrictionCoeff      :  0.00005
-backgroundTorqueFrictionCoeff     :  0.00005
+backgroundForceFrictionCoeff      :  0.0005
+backgroundTorqueFrictionCoeff     :  0.0005
 Sites:
   0:
     epsilon                      :  1.
