@@ -245,7 +245,14 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for pairwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllPairwiseOptions() { return getAllOptions(); }
+  static std::set<TraversalOption> getAllPairwiseOptions() {
+    std::set<TraversalOption> allPairwiseOptions;
+    auto allOptions = getAllOptions();
+    auto triwiseOptions = getAllTriwiseOnlyOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), triwiseOptions.begin(), triwiseOptions.end(),
+                        std::inserter(allPairwiseOptions, allPairwiseOptions.begin()));
+    return allPairwiseOptions;
+  }
 
   /**
    * Set of options that apply for triwise interactions.
@@ -261,12 +268,21 @@ class TraversalOption : public Option<TraversalOption> {
   }
 
   /**
+   * Set of options that apply ONLY for triwise interactions.
+   * @return
+   */
+  static std::set<TraversalOption> getAllTriwiseOnlyOptions() {
+    return {Value::vl_list_intersection_sorted_3b, Value::vl_list_intersection_hashing_3b,
+            Value::vl_pair_list_iteration_3b};
+  }
+
+  /**
    * Set of all pairwise traversals without discouraged options.
    * @return
    */
   static std::set<TraversalOption> getMostPairwiseOptions() {
     std::set<TraversalOption> mostPairwiseOptions;
-    auto allOptions = getAllOptions();
+    auto allOptions = getAllPairwiseOptions();
     auto discouragedOptions = getDiscouragedOptions();
     std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
                         std::inserter(mostPairwiseOptions, mostPairwiseOptions.begin()));

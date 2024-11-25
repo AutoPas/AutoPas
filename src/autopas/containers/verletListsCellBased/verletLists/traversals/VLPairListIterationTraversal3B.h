@@ -73,9 +73,9 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
                 continue;
               }
 
-              for (auto &neighborPtrPair : bucketIter->second) {
-                Particle &neighbor1 = *(neighborPtrPair.first);
-                Particle &neighbor2 = *(neighborPtrPair.second);
+              for (auto &neighborPairPtr : bucketIter->second) {
+                Particle &neighbor1 = *(neighborPairPtr.first);
+                Particle &neighbor2 = *(neighborPairPtr.second);
                 _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
               }
             }

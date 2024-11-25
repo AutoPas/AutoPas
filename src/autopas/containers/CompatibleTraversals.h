@@ -174,7 +174,13 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
+  return {
+      TraversalOption::vl_pair_list_iteration_3b,
+      TraversalOption::vl_list_intersection_sorted_3b,
+      TraversalOption::vl_list_intersection_hashing_3b,
+  };
+};
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return
