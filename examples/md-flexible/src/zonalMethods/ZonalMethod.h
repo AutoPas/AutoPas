@@ -63,10 +63,22 @@ class ZonalMethod {
   virtual void SendAndReceiveResults(AutoPasType &autoPasContainer) = 0;
 
   /**
-   * Calculate the external zonal interactions
+   * Calculate the interaction between the external zones.
+   * This function should be called after recollectResultsFromContainer().
    * @param autoPasContainer
    */
   virtual void calculateExternalZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config);
+
+  /**
+   * Recollect the halo particles from the AutoPas container and
+   * save them internally.
+   * As this is method specific, this function is pure virtual.
+   * This is called before calculateExternalZonalInteractions().
+   * @param autoPasContainer
+   */
+  virtual void recollectResultsFromContainer(AutoPasType &autoPasContainer) = 0;
+
+
 
  protected:
   /**
@@ -175,6 +187,6 @@ class ZonalMethod {
    * @param zone2
    * @param aosFunctor
    */
-  virtual void calculateZonalInteractionPairwise(
-      char zone1, char zone2, std::function<void(ParticleType &, ParticleType &)> aosFunctor) = 0;
+  virtual void calculateZonalInteractionPairwise(char zone1, char zone2,
+                                                 std::function<void(ParticleType &, ParticleType &)> aosFunctor) = 0;
 };
