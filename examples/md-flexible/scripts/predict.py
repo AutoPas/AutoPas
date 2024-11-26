@@ -47,8 +47,7 @@ def preprocess_live_info(live_info: dict) -> pd.DataFrame:
         pd.DataFrame: A DataFrame containing the processed features ready for prediction.
     """
     # Define the required features for the model input
-    features = ['avgParticlesPerCell', 'maxParticlesPerCell', 'homogeneity', 'maxDensity', 'particlesPerCellStdDev',
-                'threadCount']
+    features = ['avgParticlesPerCell', 'maxParticlesPerCell', 'particlesPerCellStdDev', 'threadCount', 'percentParticlesPerBlurredCellStdDev', 'skin']
 
     # Extract the relevant features from live info
     live_info_input = {feature: live_info[feature] for feature in features}
