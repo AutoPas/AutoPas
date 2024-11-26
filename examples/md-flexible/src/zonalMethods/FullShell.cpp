@@ -29,6 +29,7 @@ FullShell::FullShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, fsCondition, identifyZone, true);
 
   _interactionZones.push_back('A');
+  _interactionSchedule.insert_or_assign('A', std::vector<char>{});
 }
 
 FullShell::~FullShell() = default;
