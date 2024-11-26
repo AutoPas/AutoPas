@@ -1,6 +1,7 @@
 
 #include "src/zonalMethods/HalfShell.h"
 
+#include "autopas/utils/ArrayMath.h"
 #include "src/ParticleCommunicator.h"
 
 HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
@@ -29,6 +30,7 @@ HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition, identifyZone, true);
 
   _interactionZones.push_back('A');
+  _interactionSchedule.insert_or_assign('A', std::vector<char>{});
 }
 
 HalfShell::~HalfShell() = default;
@@ -60,29 +62,100 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
   // receive
   // NOTE Optimization: Could reserve buffer in advance
   bufferIndex = 0;
-  _importParticles.clear();
+  for (auto &imRegion : _importRegions) {
+    _importBuffers[bufferIndex].clear();
+    auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
+    auto neighbourRank = _allNeighbourIndices.at(index);
+    if (neighbourRank != _ownRank) {
+      particleCommunicator.receiveParticles(_importBuffers[bufferIndex], neighbourRank);
+    } else {
+      _importBuffers[bufferIndex].insert(_importBuffers[bufferIndex].end(), _regionBuffers[bufferIndex].begin(),
+                                         _regionBuffers[bufferIndex].end());
+    }
+    autoPasContainer.addHaloParticles(_importBuffers[bufferIndex]);
+    ++bufferIndex;
+  }
+  particleCommunicator.waitForSendRequests();
+}
+
+void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
+  ParticleCommunicator particleCommunicator(_comm);
+  // send results
+  size_t bufferIndex = 0;
   for (auto &imRegion : _importRegions) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.receiveParticles(_importParticles, neighbourRank);
+      particleCommunicator.sendParticles(_importBuffers[bufferIndex], neighbourRank);
     } else {
-      _importParticles.insert(_importParticles.end(), _regionBuffers[bufferIndex].begin(),
-                              _regionBuffers[bufferIndex].end());
+      // NOTE: We can only add the results inside the container if
+      // we do not have sent exported in to the home box from both directions
+      // <- which is guaranteed no the case for HalfShell
+      _regionBuffers[bufferIndex].insert(_regionBuffers[bufferIndex].end(), _importBuffers[bufferIndex].begin(),
+                                         _importBuffers[bufferIndex].end());
+    }
+    ++bufferIndex;
+  }
+
+  // receive reseults
+  bufferIndex = 0;
+  for (auto &exRegion : _exportRegions) {
+    auto size = _regionBuffers[bufferIndex].size();
+    _regionBuffers[bufferIndex].clear();
+    _regionBuffers[bufferIndex].reserve(size);
+    auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
+    auto neighbourRank = _allNeighbourIndices.at(index);
+    if (neighbourRank != _ownRank) {
+      particleCommunicator.receiveParticles(_regionBuffers[bufferIndex], neighbourRank);
     }
     ++bufferIndex;
   }
   particleCommunicator.waitForSendRequests();
 
-  autoPasContainer.addHaloParticles(_importParticles);
+  // save results to container
+  using namespace autopas::utils::ArrayMath::literals;
+  bufferIndex = 0;
+  // for all exported regions
+  for (auto &exRegion : _exportRegions) {
+    // go over all exported particles in the container
+    for (auto particleIter = autoPasContainer.getRegionIterator(exRegion._origin, exRegion._origin + exRegion._size,
+                                                                autopas::IteratorBehavior::owned);
+         particleIter.isValid(); ++particleIter) {
+      // find the corresponding result in the buffer
+      size_t result_index = 0;
+      for (auto &result : _regionBuffers[bufferIndex]) {
+        if (particleIter->getID() == result.getID()) {
+          // if found, add the result and delete from buffer
+          particleIter->addF(result.getF());
+          _regionBuffers[bufferIndex].erase(_regionBuffers[bufferIndex].begin() + result_index);
+          break;
+        }
+        ++result_index;
+      }
+    }
+    ++bufferIndex;
+  }
 }
 
-void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
-  // get cell
-  auto containerType = autoPasContainer.getContainerType();
+void HalfShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {
+  // clear and reserve space
+  for (auto &buffer : _importBuffers) {
+    auto size = buffer.size();
+    buffer.clear();
+    buffer.reserve(size);
+  }
+  // iterate over halo particles and insert into respecitve buffer
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
+    size_t bufferIndex = 0;
+    for (auto &imRegion : _importRegions) {
+      if (imRegion.contains(iter->getR())) {
+        _importBuffers[bufferIndex].push_back(*iter);
+        break;
+      }
+      ++bufferIndex;
+    }
+  }
 }
-
-void HalfShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {}
 
 void HalfShell::calculateZonalInteractionPairwise(char zone1, char zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
