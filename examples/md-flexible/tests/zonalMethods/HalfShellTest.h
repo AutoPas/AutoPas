@@ -25,7 +25,8 @@ class HalfShellTest : public AutoPasTestBase, public HalfShell {
    */
   HalfShellTest()
       : AutoPasTestBase(),
-        HalfShell(_cutoff, _verletSkinWidth, 1, _homeBoxRegion, _homeBoxRegion)
+        HalfShell(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion, autopas::AutoPas_MPI_Comm(),
+                  _allNeighbourIndices)
 
   {}
 
@@ -39,5 +40,7 @@ class HalfShellTest : public AutoPasTestBase, public HalfShell {
   constexpr static double _verletSkinWidth = 0.1;
   constexpr static std::array<double, 3> _boxMin = {0, 0, 0};
   constexpr static std::array<double, 3> _boxMax = {10, 10, 10};
+  constexpr static std::array<int, 26> _allNeighbourIndices = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   inline const static RectRegion _homeBoxRegion{_boxMin, _boxMax - _boxMin};
 };
