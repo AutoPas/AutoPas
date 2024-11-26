@@ -245,12 +245,12 @@ class DEMFunctor
     // Compute normal forces
     const double normalContactFMag = computeNormalContactFMag(overlap, normalRelVelMag);  // 3 FLOPS
     const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, cutoff);
-    const double normalFMag = normalContactFMag;  // TODO: add normalVdWFMag again
+    const double normalFMag = normalContactFMag + normalVdWFMag;  // 1 FLOP
     const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
     // Compute tangential force
     const std::array<double, 3> tanF = computeTangentialForce(overlap, i, j, radiusIReduced, radiusJReduced, normalUnit,
-                                                              normalRelVelMag, normalContactFMag);
+                                                              normalRelVelMag, normalContactFMag, threadnum);
 
     // Compute total force
     const std::array<double, 3> totalF = normalF + tanF; // 3 FLOPS
@@ -265,21 +265,21 @@ class DEMFunctor
     // Compute frictional torque
     const std::array<double, 3> frictionQI = computeFrictionTorqueI(overlap, radiusIReduced, normalUnit, tanF);
     const std::array<double, 3> rollingQI =
-        computeRollingTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag);
+        computeRollingTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag, threadnum);
     const std::array<double, 3> torsionQI =
-        computeTorsionTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag);
+        computeTorsionTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag, threadnum);
 
     // Apply torques
-    i.addTorque(frictionQI + rollingQI + torsionQI); // 6 FLOPS
+    i.addTorque(frictionQI + rollingQI + torsionQI); // 9 FLOPS
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI); // 7 FLOPS
+      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI); // 10 FLOPS
     }
 
     if constexpr (countFLOPs) {
       if (newton3) {
-        // ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
       } else {
-        // ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
       }
     }
 
@@ -1078,6 +1078,9 @@ class DEMFunctor
       numKernelCallsNoN3 = 0;
       numKernelCallsN3 = 0;
       numDistCalls = 0;
+      numInnerIfTanFCalls = 0;
+      numInnerIfRollingQCalls = 0;
+      numInnerIfTorsionQCalls = 0;
       // numGlobalCalcsNoN3 = 0;
       // numGlobalCalcsN3 = 0;
     }
@@ -1104,6 +1107,21 @@ class DEMFunctor
      * Used for calculating number of FLOPs and hit rate.
      */
     size_t numDistCalls = 0;
+
+    /**
+     * Number of inner if tanF calls.
+     */
+    size_t numInnerIfTanFCalls = 0;
+
+    /**
+     * Number of inner if rollingQ calls.
+     */
+    size_t numInnerIfRollingQCalls = 0;
+
+    /**
+     * Number of inner if torsionQ calls.
+     */
+    size_t numInnerIfTorsionQCalls = 0;
 
     /**
      * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
@@ -1172,26 +1190,40 @@ class DEMFunctor
   }
 
   double computeNormalContactFMag(const double overlap, const double normalRelVelMag) {
+    /**
+     * If overlap <= 0: 0 FLOP
+     * Else: 3 FLOPS
+     */
     return overlap > 0 ? _elasticStiffness * overlap - _normalViscosity * normalRelVelMag : 0;
   }
 
   double computeNormalVdWFMag(const double overlap, const double dist, const double sigma, const double epsilon6,
                               const double cutoff) {
+    /**
+     * If overlap <= 0: 0 FLOP
+     * Else: 19 FLOPS
+     */
     if (overlap > 0) {
       return 0;
     }
-    const double invSigma = 1. / sigma;
-    const double lj2 = (sigma * sigma) / (dist * dist);
-    const double lj7 = lj2 * lj2 * lj2 * (sigma / dist);
-    const double ljCutoff2 = (sigma * sigma) / (cutoff * cutoff);
-    const double ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * (sigma / cutoff);
-    return -epsilon6 * invSigma * (lj7 - ljCutoff7);
+    const double invSigma = 1. / sigma; // 1 FLOP
+    const double lj2 = (sigma * sigma) / (dist * dist); // 3 FLOPS
+    const double lj7 = lj2 * lj2 * lj2 * (sigma / dist); // 4 FLOPS
+    const double ljCutoff2 = (sigma * sigma) / (cutoff * cutoff); // 3 FLOPS
+    const double ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * (sigma / cutoff); // 4 FLOPS
+    return -epsilon6 * invSigma * (lj7 - ljCutoff7); // 4 FLOPS
   }
 
   std::array<double, 3> computeTangentialForce(const double overlap, const Particle &i, const Particle &j,
                                                const double radiusIReduced, const double radiusJReduced,
                                                const std::array<double, 3> &normalUnit, const double normalRelVelMag,
-                                               const double normalContactFMag) {
+                                               const double normalContactFMag, const int threadnum) {
+    /**
+     * If overlap <= 0: 0 FLOP
+     * Else:
+     *  If tanFMag > coulombLimit: 54 FLOPS
+     *  Else: 45 FLOPS
+     */
     using namespace autopas::utils::ArrayMath::literals;
     if (overlap <= 0) {
       return {0, 0, 0};
@@ -1205,7 +1237,9 @@ class DEMFunctor
 
     const std::array<double, 3> tanF = tanVel * (-_frictionViscosity);  // 3 FLOPS
     const double tanFMag = autopas::utils::ArrayMath::L2Norm(tanF);     // 6 FLOPS
-    if (tanFMag > coulombLimit) {                                       // 3 + 3 + 3 = 9 FLOPS
+    if (tanFMag > coulombLimit) {
+      // 3 + 3 + 3 = 9 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;
       const std::array<double, 3> tanFUnit = tanF / tanFMag;
       const double scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
       return tanFUnit * scale;
@@ -1217,6 +1251,10 @@ class DEMFunctor
   std::array<double, 3> computeFrictionTorqueI(const double overlap, const double radiusIReduced,
                                                const std::array<double, 3> &normalUnit,
                                                const std::array<double, 3> &tanF) {
+    /**
+     * If overlap <= 0: 0 FLOP
+     * Else: 12 FLOPS
+     */
     using namespace autopas::utils::ArrayMath::literals;
     if (overlap <= 0) {
       return {0, 0, 0};
@@ -1226,7 +1264,7 @@ class DEMFunctor
 
   std::array<double, 3> computeRollingTorqueI(const double overlap, const double radiusReduced, const Particle &i,
                                               const Particle &j, const std::array<double, 3> &normalUnit,
-                                              const double normalContactFMag) {
+                                              const double normalContactFMag, const int threadnum) {
     using namespace autopas::utils::ArrayMath::literals;
     if (overlap <= 0) {
       return {0, 0, 0};
@@ -1239,6 +1277,7 @@ class DEMFunctor
 
     const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
     if (rollingFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;
       const std::array<double, 3> rollingFUnit = rollingF / rollingFMag;
       const double scale = _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
       rollingF = rollingFUnit * scale;
@@ -1248,7 +1287,13 @@ class DEMFunctor
 
   std::array<double, 3> computeTorsionTorqueI(const double overlap, const double radiusReduced, const Particle &i,
                                               const Particle &j, const std::array<double, 3> &normalUnit,
-                                              const double normalContactFMag) {
+                                              const double normalContactFMag, const int threadnum) {
+    /**
+     * If overlap <= 0: 0 FLOP
+     * Else:
+     *  If: torsionFMag > coulombLimit: 34 FLOPS
+     *  Else: 25 FLOPS
+     */
     using namespace autopas::utils::ArrayMath::literals;
     using namespace autopas::utils::ArrayMath;
     if (overlap <= 0) {
@@ -1262,6 +1307,7 @@ class DEMFunctor
 
     const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap); // 3 FLOPS
     if (torsionFMag > coulombLimit) { // 3 + 3 + 3 = 9 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;
       const std::array<double, 3> torsionFUnit = torsionF / torsionFMag;
       const double scale = _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
       torsionF = torsionFUnit * scale;
