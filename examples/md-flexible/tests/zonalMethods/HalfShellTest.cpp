@@ -3,6 +3,8 @@
 
 #include <gtest/gtest.h>
 
+#include "src/TypeDefinitions.h"
+
 void HalfShellTest::initContainer(AutoPasType &autopas, std::vector<ParticleType> particles) {
   autopas.setBoxMin(_boxMin);
   autopas.setBoxMax(_boxMax);
@@ -69,4 +71,75 @@ TEST_F(HalfShellTest, regionInitialization) {
    *  100 + 10 + 10 + 1 + 100 + 10 + 10 + 1 + 100 + 10 + 1 + 10 + 1 = 364
    */
   ASSERT_EQ(particleCount, 364);
+}
+
+/**
+ * Test if the result is recollected correctly
+ * NOTE: this test assumes that the region initialization test passes
+ */
+TEST_F(HalfShellTest, testResultRecollection) {
+  initContainer(_autopas, {});
+
+  auto hsCondition = [](const int d[3]) {
+    /**
+     * Stencil:
+     *  z > 0 +
+     *  z == 0 and y > 0 +
+     *  z == 0 and y == 0 and x > 0
+     */
+    return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
+  };
+
+  std::map<std::tuple<int, int, int>, std::vector<size_t>> regionParticles;
+  size_t id = 0;
+  // iterate over neighbours
+  for (int x = -1; x < 2; ++x) {
+    for (int y = -1; y < 2; ++y) {
+      for (int z = -1; z < 2; ++z) {
+        int d[3] = {x, y, z};
+        // if neighbour is in the stencil
+        if (hsCondition(d)) {
+          std::vector<ParticleType> particles;
+          std::vector<size_t> indices;
+          // set a random number of particles
+          size_t numberOfParticles = rand() % 100 + 1;
+          for (size_t i = 0; i < numberOfParticles; i++) {
+            double px = (x == -1) * (_boxMin[0] - 0.5) + (x == 0) * (_boxMin[0] + 5) + (x == 1) * (_boxMax[0] + 0.5);
+            double py = (y == -1) * (_boxMin[0] - 0.5) + (y == 0) * (_boxMin[0] + 5) + (y == 1) * (_boxMax[0] + 0.5);
+            double pz = (z == -1) * (_boxMin[0] - 0.5) + (z == 0) * (_boxMin[0] + 5) + (z == 1) * (_boxMax[0] + 0.5);
+            ParticleType p({px, py, pz}, {0, 0, 0}, id);
+            indices.push_back(id++);
+            particles.push_back(p);
+          }
+          _autopas.addHaloParticles(particles);
+          regionParticles.insert_or_assign(std::make_tuple(x, y, z), indices);
+        }
+      }
+    }
+  }
+
+  // recollect
+  recollectResultsFromContainer(_autopas);
+
+  // check if particles are in their correct region
+  size_t index = 0;
+  for (auto &imRegion : _importRegions) {
+    auto expectedParticles = regionParticles.at(
+        std::make_tuple(imRegion.getNeighbour()[0], imRegion.getNeighbour()[1], imRegion.getNeighbour()[2]));
+    for (auto &p : _importBuffers[index]) {
+      bool found = false;
+      size_t r_index = 0;
+      for (auto &r : expectedParticles) {
+        if (p.getID() == r) {
+          found = true;
+          expectedParticles.erase(expectedParticles.begin() + r_index);
+          break;
+        }
+        ++r_index;
+      }
+      EXPECT_TRUE(found);
+    }
+    EXPECT_EQ(expectedParticles.size(), 0);
+    ++index;
+  }
 }
