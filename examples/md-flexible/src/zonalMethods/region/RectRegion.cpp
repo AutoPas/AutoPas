@@ -17,6 +17,11 @@ void RectRegion::collectParticles(AutoPasType &autoPasContainer, std::vector<Par
   }
 }
 
+bool RectRegion::contains(std::array<double, 3> position) {
+  return position[0] >= _origin[0] and position[0] < _origin[0] + _size[0] and position[1] >= _origin[1] and
+         position[1] < _origin[1] + _size[1] and position[2] >= _origin[2] and position[2] < _origin[2] + _size[2];
+}
+
 bool RectRegion::operator==(const RectRegion &other) const { return _origin == other._origin and _size == other._size; }
 
 std::string RectRegion::toString() const {

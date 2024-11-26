@@ -42,6 +42,14 @@ class RectRegion : public Region {
    */
   void collectParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &buffer) override;
 
+
+  /**
+   * Check if the given position is inside the region
+   * @param position
+   * @return
+   */
+  bool contains(std::array<double, 3> position) override;
+
   /**
    * Equality operator
    * @param other The other RectRegion to compare with.
