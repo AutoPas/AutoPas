@@ -239,7 +239,8 @@ void Simulation::run() {
         /* _domainDecomposition->update(computationalLoad); */
         /* auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(), */
         /*                                                         _domainDecomposition->getLocalBoxMax()); */
-        /* // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the */
+        /* // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in
+         * the */
         /* // container again. */
         /* // Reinsert emigrants if they are now inside the domain and mark local copies as dummy, */
         /* // so that remove_if can erase them after. */
@@ -254,7 +255,8 @@ void Simulation::run() {
         /*   return false; */
         /* }); */
 
-        /* emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }), */
+        /* emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy();
+         * }), */
         /*                 emigrants.end()); */
 
         /* emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end()); */
@@ -285,7 +287,9 @@ void Simulation::run() {
       updateSimulationPauseState();
     }
 
-    // NOTE: import here
+    // NOTE: calculate zonal interactions and them exchange results between ranks
+    _domainDecomposition->calculateZonalInteractions(*_autoPasContainer, _configuration);
+    _domainDecomposition->exchangeZonalHaloParticlesResults(*_autoPasContainer);
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
