@@ -2,6 +2,7 @@
 #include "src/zonalMethods/HalfShell.h"
 
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleCommunicator.h"
 
 HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
@@ -100,12 +101,12 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
   // receive reseults
   bufferIndex = 0;
   for (auto &exRegion : _exportRegions) {
-    auto size = _regionBuffers[bufferIndex].size();
-    _regionBuffers[bufferIndex].clear();
-    _regionBuffers[bufferIndex].reserve(size);
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
+      auto size = _regionBuffers[bufferIndex].size();
+      _regionBuffers[bufferIndex].clear();
+      _regionBuffers[bufferIndex].reserve(size);
       particleCommunicator.receiveParticles(_regionBuffers[bufferIndex], neighbourRank);
     }
     ++bufferIndex;
