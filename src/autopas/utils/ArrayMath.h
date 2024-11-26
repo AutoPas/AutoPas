@@ -239,6 +239,42 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * Returns the x-coordinate of the cross product of a and b.
+ * @tparam T floating point type
+ * @param a 3D vector (denoted by array of 3 floats)
+ * @param b 3D vector (denoted by array of 3 floats)
+ * @return x-coordinate of cross product a x b
+ */
+template <class T>
+[[nodiscard]] constexpr T crossX (const std::array<T, 3> &a, const std::array<T, 3> &b) {
+  return a[1] * b[2] - a[2] * b[1];
+}
+
+/**
+ * Returns the y-coordinate of the cross product of a and b.
+ * @tparam T floating point type
+ * @param a 3D vector (denoted by array of 3 floats)
+ * @param b 3D vector (denoted by array of 3 floats)
+ * @return y-coordinate of cross product a x b
+ */
+template <class T>
+[[nodiscard]] constexpr T crossY (const std::array<T, 3> &a, const std::array<T, 3> &b) {
+  return a[2] * b[0] - a[0] * b[2];
+}
+
+/**
+ * Returns the z-coordinate of the cross product of a and b.
+ * @tparam T floating point type
+ * @param a 3D vector (denoted by array of 3 floats)
+ * @param b 3D vector (denoted by array of 3 floats)
+ * @return z-coordinate of cross product a x b
+ */
+template <class T>
+[[nodiscard]] constexpr T crossZ (const std::array<T, 3> &a, const std::array<T, 3> &b) {
+  return a[0] * b[1] - a[1] * b[0];
+}
+
+/**
  * Generates the cross product of two arrays of 3 floats.
  * @tparam T floating point type
  * @param a 3D vector (denoted by array of 3 floats)
@@ -248,9 +284,9 @@ template <class T, std::size_t SIZE>
 template <class T>
 [[nodiscard]] constexpr std::array<T, 3> cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
   return {
-      a[1] * b[2] - a[2] * b[1],
-      a[2] * b[0] - a[0] * b[2],
-      a[0] * b[1] - a[1] * b[0],
+      crossX(a, b),
+      crossY(a, b),
+      crossZ(a, b),
   };
 }
 
