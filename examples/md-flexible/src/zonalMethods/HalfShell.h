@@ -93,9 +93,8 @@ class HalfShell : public ZonalMethod {
 
   /*
    * Stores the particles imported from neighbours.
-   * NOTE: We can use a single buffer as HalfShell has only one external zone.
    */
-  std::vector<ParticleType> _importParticles;
+  std::array<std::vector<ParticleType>, _regionCount> _importBuffers;
 
   void calculateZonalInteractionPairwise(char zone1, char zone2,
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
