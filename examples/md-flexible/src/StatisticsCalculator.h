@@ -33,19 +33,24 @@ class StatisticsCalculator {
 
   /**
    * Writes the statistics of the current state of the simulation into a file.
+   * @param currentIteration The current iteration of the simulation.
+   * @param globalForceZ The global force in z-direction.
+   * @param autopasContainer The AutoPas container.
+   * @param particlePropertiesLib The particle properties library.
    */
-  void recordStatistics(size_t currentIteration, const autopas::AutoPas<ParticleType> &autopasContainer,
+  void recordStatistics(size_t currentIteration, const double globalForceZ, const autopas::AutoPas<ParticleType> &autopasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLib);
 
  private:
   /**
    * Calculates the statistics of the current state of the simulation.
    * @param autopasContainer
+   * @param globalForceZ
    * @param particlePropertiesLib
    * @return tuple of doubles containing the statistics.
    */
-  static std::tuple<double, double, double, double, double, double> calculateStatistics(
-      const autopas::AutoPas<ParticleType> &autopasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
+  static std::tuple<double, double, double, double, double, double, double> calculateStatistics(
+      const autopas::AutoPas<ParticleType> &autopasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Generates the output file (.csv) for the statistics.

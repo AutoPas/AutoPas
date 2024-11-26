@@ -196,7 +196,7 @@ void Simulation::run() {
     }
 
     if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value == 0) {  // TODO: to change
-      _statsCalculator->recordStatistics(_iteration, *_autoPasContainer,
+      _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
 
