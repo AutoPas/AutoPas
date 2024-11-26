@@ -23,6 +23,14 @@ class Region {
    */
   virtual void collectParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &buffer) = 0;
 
+
+  /**
+   * Check if the given position is inside the region
+   * @param position
+   * @return
+   */
+  virtual bool contains(std::array<double, 3> position) = 0;
+
   /**
    * Constructor of Region
    * @param zoneID
