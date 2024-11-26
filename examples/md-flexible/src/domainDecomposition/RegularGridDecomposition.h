@@ -127,6 +127,14 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeZonalHaloParticlesExport(AutoPasType &autoPasContainer);
 
   /**
+   * Recollects the imported particles to their respecitve zones and calculates the 
+   * interaction between them (depending on the interaction schedule of the method).
+   * @param autoPasContainer.
+   * @param config 
+   */
+  void calculateZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config);
+
+  /**
    * Exchanges the resulting forces of the zonal halo particles with all neighbors of the
    * provided AutoPasContainer.
    * @param autoPasContainer: The container, where the halo particles originate from.

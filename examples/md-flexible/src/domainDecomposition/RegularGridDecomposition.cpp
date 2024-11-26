@@ -21,6 +21,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
+#include "src/configuration/MDFlexConfig.h"
 #include "src/zonalMethods/FullShell.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
@@ -299,7 +300,18 @@ void RegularGridDecomposition::exchangeZonalHaloParticlesExport(AutoPasType &aut
   _zonalMethod->SendAndReceiveExports(autoPasContainer);
 }
 
-void RegularGridDecomposition::exchangeZonalHaloParticlesResults(AutoPasType &autoPasContainer) {}
+void RegularGridDecomposition::calculateZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config) {
+  // recollect imported particles back from autopas container
+  _zonalMethod->recollectResultsFromContainer(autoPasContainer);
+
+  // calculate interactions
+  _zonalMethod->calculateExternalZonalInteractions(autoPasContainer, config);
+}
+
+void RegularGridDecomposition::exchangeZonalHaloParticlesResults(AutoPasType &autoPasContainer) {
+  // send and receive results
+  _zonalMethod->SendAndReceiveResults(autoPasContainer);
+}
 
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
