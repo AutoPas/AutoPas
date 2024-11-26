@@ -243,7 +243,7 @@ class DEMFunctor
     }
     // Compute Forces
     // Compute normal forces
-    const double normalContactFMag = computeNormalContactFMag(overlap, normalRelVelMag);  // 3 FLOPS
+    const double normalContactFMag = computeNormalContactFMag(overlap, normalRelVelMag);
     const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, cutoff);
     const double normalFMag = normalContactFMag + normalVdWFMag;  // 1 FLOP
     const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);  // 3 FLOPS
@@ -1221,8 +1221,8 @@ class DEMFunctor
     /**
      * If overlap <= 0: 0 FLOP
      * Else:
-     *  If tanFMag > coulombLimit: 54 FLOPS
-     *  Else: 45 FLOPS
+     *  If tanFMag > coulombLimit: 60 FLOPS
+     *  Else: 51 FLOPS
      */
     using namespace autopas::utils::ArrayMath::literals;
     if (overlap <= 0) {
@@ -1230,7 +1230,7 @@ class DEMFunctor
     }
     const std::array<double, 3> tanRelVel =
         i.getV() - j.getV() + autopas::utils::ArrayMath::cross(normalUnit * radiusIReduced, i.getAngularVel()) +
-        autopas::utils::ArrayMath::cross(normalUnit * radiusJReduced, j.getAngularVel());                   // 27 FLOPS
+        autopas::utils::ArrayMath::cross(normalUnit * radiusJReduced, j.getAngularVel());                   // 33 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * normalRelVelMag;                                // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                          // 3 FLOPS
     const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
