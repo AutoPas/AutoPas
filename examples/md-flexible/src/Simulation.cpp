@@ -682,7 +682,7 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
 
     std::cout << "Global statistics at the end of simulation:" << std::endl;
-    std::cout << "  Potential Energy                             : " << _ePot << std::endl;
+    std::cout << "  Potential Energy                             : " << _energySum << std::endl;
     std::cout << "  Virial Sum                                   : " << _virialSum << std::endl;
   }
 }
