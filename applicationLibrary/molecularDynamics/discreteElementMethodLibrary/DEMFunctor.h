@@ -253,12 +253,12 @@ class DEMFunctor
                                                               normalRelVelMag, normalContactFMag);
 
     // Compute total force
-    const std::array<double, 3> totalF = normalF + tanF;
+    const std::array<double, 3> totalF = normalF + tanF; // 3 FLOPS
 
     // Apply forces
-    i.addF(totalF);
+    i.addF(totalF); // 3 FLOPS
     if (newton3) {
-      j.subF(totalF);
+      j.subF(totalF); // 3 FLOPS
     }
 
     // Compute Torques
@@ -270,9 +270,9 @@ class DEMFunctor
         computeTorsionTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag);
 
     // Apply torques
-    i.addTorque(frictionQI + rollingQI + torsionQI);
+    i.addTorque(frictionQI + rollingQI + torsionQI); // 6 FLOPS
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);
+      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI); // 7 FLOPS
     }
 
     if constexpr (countFLOPs) {
