@@ -143,3 +143,70 @@ TEST_F(HalfShellTest, testResultRecollection) {
     ++index;
   }
 }
+
+/**
+ * Test if the SendAndReceiveResults() for a single domain.
+ */
+TEST_F(HalfShellTest, testSendAndReceiveResults) {
+  auto hsCondition = [](const int d[3]) {
+    /**
+     * Stencil:
+     *  z > 0 +
+     *  z == 0 and y > 0 +
+     *  z == 0 and y == 0 and x > 0
+     */
+    return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
+  };
+
+  std::vector<ParticleType> particles;
+  std::map<size_t, std::array<double, 3>> expectedForce;
+  size_t bufferIndex = 0;
+  size_t id = 0;
+  // iterate over neighbours
+  for (int x = -1; x < 2; ++x) {
+    for (int y = -1; y < 2; ++y) {
+      for (int z = -1; z < 2; ++z) {
+        int d[3] = {x, y, z};
+        // if neighbour is in the stencil
+        if (hsCondition(d)) {
+          // particle inside the domain
+          double px = (x == -1) * (_boxMin[0] + 0.5) + (x == 0) * (_boxMin[0] + 5) + (x == 1) * (_boxMax[0] - 0.5);
+          double py = (y == -1) * (_boxMin[0] + 0.5) + (y == 0) * (_boxMin[0] + 5) + (y == 1) * (_boxMax[0] - 0.5);
+          double pz = (z == -1) * (_boxMin[0] + 0.5) + (z == 0) * (_boxMin[0] + 5) + (z == 1) * (_boxMax[0] - 0.5);
+
+          ParticleType p({px, py, pz}, {0, 0, 0}, id);
+          p.setF({0, 0, 0});
+          particles.push_back(p);
+
+          // corresponding export particle with same id but different position
+          double ox = (x == -1) * (_boxMin[0] - 0.5) + (x == 0) * (_boxMin[0] + 5) + (x == 1) * (_boxMax[0] + 0.5);
+          double oy = (y == -1) * (_boxMin[0] - 0.5) + (y == 0) * (_boxMin[0] + 5) + (y == 1) * (_boxMax[0] + 0.5);
+          double oz = (z == -1) * (_boxMin[0] - 0.5) + (z == 0) * (_boxMin[0] + 5) + (z == 1) * (_boxMax[0] + 0.5);
+          ParticleType o({ox, oy, oz}, {0, 0, 0}, id);
+          std::array<double, 3> force = {(double)(rand() % 100), (double)(rand() % 100), (double)(rand() % 100)};
+          o.setF(force);
+          expectedForce.insert_or_assign(id, force);
+          _regionBuffers[bufferIndex].push_back(o);
+
+          ++id;
+          ++bufferIndex;
+        }
+      }
+    }
+  }
+
+  // initiate domain
+  initContainer(_autopas, particles);
+
+  SendAndReceiveResults(_autopas);
+
+  // check if all forces are correct
+  for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+    auto id = iter->getID();
+    auto expectedF = expectedForce.at(id);
+    auto actualF = iter->getF();
+    EXPECT_DOUBLE_EQ(expectedF[0], actualF[0]);
+    EXPECT_DOUBLE_EQ(expectedF[1], actualF[1]);
+    EXPECT_DOUBLE_EQ(expectedF[2], actualF[2]);
+  }
+}
