@@ -1677,7 +1677,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
     const Configuration &conf, Functor &functor, const InteractionTypeOption &interactionType) {
   // Check if the container supports the traversal
   const auto allContainerTraversals =
-      compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);
+      compatibleTraversals::allCompatibleTraversals(conf.container, interactionType);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
     AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
                conf.traversal);
