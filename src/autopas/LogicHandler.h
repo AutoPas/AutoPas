@@ -1032,6 +1032,7 @@ class LogicHandler {
 
 template <typename Particle>
 void LogicHandler<Particle>::updateRebuildPositions() {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
@@ -1039,6 +1040,7 @@ void LogicHandler<Particle>::updateRebuildPositions() {
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
+#endif
 }
 
 template <typename Particle>
@@ -1081,6 +1083,7 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
 
 template <typename Particle>
 void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
@@ -1094,6 +1097,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
   }
+#endif
 }
 
 template <typename Particle>
