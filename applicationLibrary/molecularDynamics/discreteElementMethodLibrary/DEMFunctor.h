@@ -225,12 +225,22 @@ class DEMFunctor
 
     if (dist > cutoff) return;  // cutoff check
 
-    // Retrieve particle-specific parameters, calculate generally necessary values (3 + 2 + 2 + 2 + 3 + 3 + 5 = 20
-    // FLOPS)
+    // Retrieve particle-specific parameters, calculate generally necessary values (2 FlOPS)
     const auto [sigma, epsilon6, radiusI, radiusJ] = computeMaterialProperties(i, j);
+    const double overlap = radiusI + radiusJ - dist;
+    const bool overlapIsPositive = overlap > 0;
+
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numContacts += (overlapIsPositive ? 1 : 0);
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += (overlapIsPositive and newton3 ? 1 : 0);
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (overlapIsPositive and not newton3 ? 1 : 0);
+    }
+
+    if (overlap <= 0) return;  // VdW deactivated
+
+    // (3 + 2 + 2 + 3 + 3 + 5 = 18 FLOPS)
     assert(dist != 0. && "Distance is zero, division by zero detected!");
     const std::array<double, 3> normalUnit = displacement / dist;
-    const double overlap = radiusI + radiusJ - dist;
     const double radiusIReduced = radiusI - overlap / 2.;
     const double radiusJReduced = radiusJ - overlap / 2.;
     assert((radiusIReduced + radiusJReduced) != 0. && "Distance is zero, division by zero detected!");
@@ -238,29 +248,25 @@ class DEMFunctor
     const std::array<double, 3> relVel = i.getV() - j.getV();
     const double normalRelVelMag = autopas::utils::ArrayMath::dot(normalUnit, relVel);
 
-    if constexpr (countFLOPs) {
-      if (overlap > 0) {
-        ++_aosThreadDataFLOPs[threadnum].numContacts;
-      }
-    }
     // Compute Forces
     // Compute normal forces
     const double normalContactFMag = computeNormalContactFMag(overlap, normalRelVelMag);
     // const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, cutoff);
-    const double normalFMag = normalContactFMag;  // 1 FLOP
+    const double normalFMag = normalContactFMag;                                                         // 1 FLOP
     const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
     // Compute tangential force
-    const std::array<double, 3> tanF = computeTangentialForce(overlap, i, j, radiusIReduced, radiusJReduced, normalUnit,
-                                                              normalRelVelMag, normalContactFMag, threadnum);
+    const std::array<double, 3> tanF =
+        computeTangentialForce(overlap, relVel, i, j, radiusIReduced, radiusJReduced, normalUnit, normalRelVelMag,
+                               normalContactFMag, threadnum);
 
     // Compute total force
-    const std::array<double, 3> totalF = normalF + tanF; // 3 FLOPS
+    const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
 
     // Apply forces
-    i.addF(totalF); // 3 FLOPS
+    i.addF(totalF);  // 3 FLOPS
     if (newton3) {
-      j.subF(totalF); // 3 FLOPS
+      j.subF(totalF);  // 3 FLOPS
     }
 
     // Compute Torques
@@ -272,33 +278,9 @@ class DEMFunctor
         computeTorsionTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag, threadnum);
 
     // Apply torques
-    i.addTorque(frictionQI + rollingQI + torsionQI); // 9 FLOPS
+    i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI); // 10 FLOPS
-    }
-
-    if constexpr (countFLOPs) {
-      if (newton3) {
-        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
-      } else {
-        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
-      }
-    }
-
-    if constexpr (calculateGloabls) {
-      // TODO
-
-      // for non-newton3 the second particle will be considered in a separate calculation
-      if (newton3 and j.isOwned()) {
-        // TODO
-      }
-      if constexpr (countFLOPs) {
-        if (newton3) {
-          // ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
-        } else {
-          // ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
-        }
-      }
+      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
     }
   }
 
@@ -338,17 +320,26 @@ class DEMFunctor
     // Initialize local variables for constants
     const SoAFloatPrecision cutoff = _cutoff;
     const SoAFloatPrecision constRadius = _radius;
-    const SoAFloatPrecision const_sigma = _sigma;
-    const SoAFloatPrecision const_epsilon6 = _epsilon6;
+    //const SoAFloatPrecision const_sigma = _sigma;
+    //const SoAFloatPrecision const_epsilon6 = _epsilon6;
 
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
+    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
+    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
     if constexpr (useMixing) {
       // Preload all sigma and epsilons for next vectorized region.
       // Not preloading and directly using the values, will produce worse results.
-      sigmas.resize(soa.size());
-      epsilon6s.resize(soa.size());
+      //sigmas.resize(soa.size());
+      //epsilon6s.resize(soa.size());
     }
+
+    // Count FLOPS variables
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numContactsSum = 0;
+    size_t numInnerIfTanFCallsSum = 0;
+    size_t numInnerIfRollingQCallsSum = 0;
+    size_t numInnerIfTorsionQCallsSum = 0;
 
     // Loop over Particles
     for (unsigned int i = 0; i < soa.size(); i++) {
@@ -371,12 +362,14 @@ class DEMFunctor
         radiusI = _PPLibrary->getRadius(typeptr[i]);
         for (unsigned int j = 0; j < soa.size(); ++j) {
           auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
-          sigmas[j] = mixingData.sigma;
-          epsilon6s[j] = mixingData.epsilon6;
+          //sigmas[j] = mixingData.sigma;
+          //epsilon6s[j] = mixingData.epsilon6;
         }
       }
 
-      // TODO: parallelize with omp
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum,                \
+                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum, numInnerIfTanFCallsSum, \
+                               numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         // Compute necessary values for computations of forces
         const auto ownedStateJ = ownedStatePtr[j];
@@ -385,19 +378,32 @@ class DEMFunctor
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
         const SoAFloatPrecision drz = zptr[i] - zptr[j];
 
-        SoAFloatPrecision sigma = const_sigma;
-        SoAFloatPrecision epsilon6 = const_epsilon6;
+        //SoAFloatPrecision sigma = const_sigma;
+        //SoAFloatPrecision epsilon6 = const_epsilon6;
         double radiusJ = constRadius;
 
         if (useMixing) {
-          sigma = sigmas[j];
-          epsilon6 = epsilon6s[j];
+          //sigma = sigmas[j];
+          //epsilon6 = epsilon6s[j];
           radiusJ = _PPLibrary->getRadius(typeptr[j]);
         }
 
         const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
         const SoAFloatPrecision dist = std::sqrt(distSquared);
         SoAFloatPrecision overlap = 2. * (radiusI + radiusJ) - dist;
+
+        // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
+        const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
+        const bool overlapIsPositive = overlap > 0;
+
+        if constexpr (countFLOPs) {
+          numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+          numKernelCallsN3Sum += (cutOffMask and overlapIsPositive ? 1 : 0);
+        }
+
+        if (not(cutOffMask and overlapIsPositive)) {
+          continue;  // VdW deactivated
+        }
 
         const SoAFloatPrecision invDist = 1. / dist;
         const SoAFloatPrecision invDistSquared = 1. / distSquared;
@@ -421,47 +427,47 @@ class DEMFunctor
         const SoAFloatPrecision relVelAngularJZ =
             radiusJReduced * (normalUnitX * angularVelYptr[j] - normalUnitY * angularVelXptr[j]);
 
-        const SoAFloatPrecision relVelX = vxptr[i] - vxptr[j] + relVelAngularIX + relVelAngularJX;
-        const SoAFloatPrecision relVelY = vyptr[i] - vyptr[j] + relVelAngularIY + relVelAngularJY;
-        const SoAFloatPrecision relVelZ = vzptr[i] - vzptr[j] + relVelAngularIZ + relVelAngularJZ;
+        const SoAFloatPrecision tanRelVelX = vxptr[i] - vxptr[j] + relVelAngularIX + relVelAngularJX;
+        const SoAFloatPrecision tanRelVelY = vyptr[i] - vyptr[j] + relVelAngularIY + relVelAngularJY;
+        const SoAFloatPrecision tanRelVelZ = vzptr[i] - vzptr[j] + relVelAngularIZ + relVelAngularJZ;
 
-        const SoAFloatPrecision relVelDotNormalUnit =
-            relVelX * normalUnitX + relVelY * normalUnitY + relVelZ * normalUnitZ;
+        const SoAFloatPrecision tanRelVelDotNormalUnit =
+            tanRelVelX * normalUnitX + tanRelVelY * normalUnitY + tanRelVelZ * normalUnitZ;
 
-        const SoAFloatPrecision tanRelVelX = relVelX - relVelDotNormalUnit * normalUnitX;
-        const SoAFloatPrecision tanRelVelY = relVelY - relVelDotNormalUnit * normalUnitY;
-        const SoAFloatPrecision tanRelVelZ = relVelZ - relVelDotNormalUnit * normalUnitZ;
+        const SoAFloatPrecision tanRelVelTotalX = tanRelVelX - tanRelVelDotNormalUnit * normalUnitX;
+        const SoAFloatPrecision tanRelVelTotalY = tanRelVelY - tanRelVelDotNormalUnit * normalUnitY;
+        const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - tanRelVelDotNormalUnit * normalUnitZ;
 
-        const SoAFloatPrecision invSigma = 1. / sigma;
-        const SoAFloatPrecision lj2 = sigma * sigma * invDistSquared;
-        const SoAFloatPrecision lj7 = lj2 * lj2 * lj2 * sigma * invDist;
-        const SoAFloatPrecision ljCutoff2 = sigma * sigma / (cutoff * cutoff);
-        const SoAFloatPrecision ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * sigma / cutoff;
-
-        // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
-        const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
-        const bool overlapIsPositive = overlap > 0;
+        // const SoAFloatPrecision invSigma = 1. / sigma;
+        // const SoAFloatPrecision lj2 = sigma * sigma * invDistSquared;
+        // const SoAFloatPrecision lj7 = lj2 * lj2 * lj2 * sigma * invDist;
+        // const SoAFloatPrecision ljCutoff2 = sigma * sigma / (cutoff * cutoff);
+        // const SoAFloatPrecision ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * sigma / cutoff;
 
         // Compute normal force as sum of contact force and long-range force (VdW).
         const SoAFloatPrecision normalContactFMag =
-            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
-        const SoAFloatPrecision normalVdWFMag = -1. * (not overlapIsPositive) * epsilon6 * invSigma * (lj7 - ljCutoff7);
-        const SoAFloatPrecision normalFMag = overlapIsPositive * normalContactFMag + normalVdWFMag;
+            _elasticStiffness * overlap - _normalViscosity * tanRelVelDotNormalUnit;
+        // const SoAFloatPrecision normalVdWFMag = -1. * (not overlapIsPositive) * epsilon6 * invSigma * (lj7 -
+        // ljCutoff7);
+        const SoAFloatPrecision normalFMag = overlapIsPositive * normalContactFMag;  // VdW deactivated
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalFMag * normalUnitY;
         const SoAFloatPrecision normalFZ = normalFMag * normalUnitZ;
 
         // Compute tangential force
-        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;
-        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelY;
-        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelZ;
+        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
+        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
+        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
 
         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
         const SoAFloatPrecision coulombLimit =
             _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
 
         if (tanFMag > coulombLimit) {
+          if constexpr (countFLOPs) {
+            ++numInnerIfTanFCallsSum;
+          }
           const SoAFloatPrecision scale =
               _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / tanFMag;
           tanFX *= scale;
@@ -474,17 +480,15 @@ class DEMFunctor
         const SoAFloatPrecision totalFY = cutOffMask * (normalFY + overlapIsPositive * tanFY);
         const SoAFloatPrecision totalFZ = cutOffMask * (normalFZ + overlapIsPositive * tanFZ);
 
+        // Apply total force
         fxacc += totalFX;
         fyacc += totalFY;
         fzacc += totalFZ;
 
-        // Apply total force
-        if (newton3) {
-          // only if we use newton 3 here, we want to
-          fxptr[j] -= totalFX;
-          fyptr[j] -= totalFY;
-          fzptr[j] -= totalFZ;
-        }
+        // newton3
+        fxptr[j] -= totalFX;
+        fyptr[j] -= totalFY;
+        fzptr[j] -= totalFZ;
 
         // Compute torques
         // Compute frictional torque
@@ -512,6 +516,9 @@ class DEMFunctor
             std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
 
         if (rollingFMag > coulombLimit) {
+          if constexpr (countFLOPs) {
+            ++numInnerIfRollingQCallsSum;
+          }
           const SoAFloatPrecision scale =
               _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
           rollingFX *= scale;
@@ -540,6 +547,9 @@ class DEMFunctor
             std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
 
         if (torsionFMag > coulombLimit) {
+          if constexpr (countFLOPs) {
+            ++numInnerIfTorsionQCallsSum;
+          }
           const SoAFloatPrecision scale =
               _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / torsionFMag;
           torsionFX *= scale;
@@ -556,14 +566,14 @@ class DEMFunctor
         qYacc += (frictionQIY + overlapIsPositive * rollingQIY + overlapIsPositive * torsionQIY);
         qZacc += (frictionQIZ + overlapIsPositive * rollingQIZ + overlapIsPositive * torsionQIZ);
 
-        if (newton3) {
-          qXptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - overlapIsPositive * rollingQIX -
-                       overlapIsPositive * torsionQIX);
-          qYptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - overlapIsPositive * rollingQIY -
-                       overlapIsPositive * torsionQIY);
-          qZptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - overlapIsPositive * rollingQIZ -
-                       overlapIsPositive * torsionQIZ);
-        }
+        // newton3
+        qXptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - overlapIsPositive * rollingQIX -
+                     overlapIsPositive * torsionQIX);
+        qYptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - overlapIsPositive * rollingQIY -
+                     overlapIsPositive * torsionQIY);
+        qZptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - overlapIsPositive * rollingQIZ -
+                     overlapIsPositive * torsionQIZ);
+
       }  // end of j loop
 
       fxptr[i] += fxacc;
@@ -573,6 +583,15 @@ class DEMFunctor
       qXptr[i] += qXacc;
       qYptr[i] += qYacc;
       qZptr[i] += qZacc;
+    }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numContacts += numContactsSum;
+      _aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls += numInnerIfTanFCallsSum;
+      _aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls += numInnerIfRollingQCallsSum;
+      _aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls += numInnerIfTorsionQCallsSum;
     }
   }
 
@@ -723,10 +742,7 @@ class DEMFunctor
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
-  [[nodiscard]] size_t getNumFLOPs() const override {
-    // TODO
-    return 0;
-  }
+  [[nodiscard]] size_t getNumFLOPs() const override { return 0; }
 
   [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {  // TODO: use "HitRate" only as variable to count number of contacts for now
@@ -804,15 +820,24 @@ class DEMFunctor
     // Initialize local variables for constants
     const SoAFloatPrecision cutoff = _cutoff;
     const SoAFloatPrecision radius = _radius;
-    SoAFloatPrecision sigma = _sigma;
-    SoAFloatPrecision epsilon6 = _epsilon6;
+    //SoAFloatPrecision sigma = _sigma;
+    //SoAFloatPrecision epsilon6 = _epsilon6;
+
+    // Variables for counting FLOPS
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numContactsSum = 0;
+    size_t numInnerIfTanFCallsSum = 0;
+    size_t numInnerIfRollingQCallsSum = 0;
+    size_t numInnerIfTorsionQCallsSum = 0;
 
     // preload all sigma and epsilons for next vectorized region
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
+    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
+    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
     if constexpr (useMixing) {
-      sigmas.resize(soa2.size());
-      epsilon6s.resize(soa2.size());
+      //sigmas.resize(soa2.size());
+      //epsilon6s.resize(soa2.size());
     }
 
     // Loop over Particles in soa1
@@ -833,13 +858,15 @@ class DEMFunctor
       if constexpr (useMixing) {
         radiusI = _PPLibrary->getRadius(typeptr1[i]);
         for (unsigned int j = 0; j < soa2.size(); ++j) {
-          sigmas[j] = _PPLibrary->getMixingSigma(typeptr1[i], typeptr2[j]);
-          epsilon6s[j] = _PPLibrary->getMixing6Epsilon(typeptr1[i], typeptr2[j]);
+          //sigmas[j] = _PPLibrary->getMixingSigma(typeptr1[i], typeptr2[j]);
+          //epsilon6s[j] = _PPLibrary->getMixing6Epsilon(typeptr1[i], typeptr2[j]);
         }
       }
 
       // Loop over Particles in soa2
-      // TODO: parallelize with omp
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum,                \
+                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum, numInnerIfTanFCallsSum, \
+                               numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
 
@@ -852,10 +879,27 @@ class DEMFunctor
         SoAFloatPrecision radiusJ = radius;
         if (useMixing) {
           radiusJ = _PPLibrary->getRadius(typeptr2[j]);
-          sigma = sigmas[j];
-          epsilon6 = epsilon6s[j];
+          //sigma = sigmas[j];
+          //epsilon6 = epsilon6s[j];
         }
         const SoAFloatPrecision overlap = 2. * (radiusI + radiusJ) - dist;
+
+        // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
+        const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
+        const bool overlapIsPositive = overlap > 0;
+
+        if constexpr (countFLOPs) {
+          numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+          if constexpr (newton3) {
+            numKernelCallsN3Sum += (cutOffMask and overlapIsPositive ? 1 : 0);
+          } else {
+            numKernelCallsNoN3Sum += (cutOffMask and overlapIsPositive ? 1 : 0);
+          }
+        }
+
+        if (not(cutOffMask and overlapIsPositive)) {
+          continue;  // VdW deactivated
+        }
 
         const SoAFloatPrecision invDist = 1.0 / dist;
         const SoAFloatPrecision invDistSquared = 1.0 / distSquared;
@@ -890,28 +934,25 @@ class DEMFunctor
         const SoAFloatPrecision tanRelVelY = relVelY - relVelDotNormalUnit * normalUnitY;
         const SoAFloatPrecision tanRelVelZ = relVelZ - relVelDotNormalUnit * normalUnitZ;
 
-        const SoAFloatPrecision invSigma = 1. / sigma;
-        const SoAFloatPrecision lj2 = sigma * sigma * invDistSquared;
-        const SoAFloatPrecision lj7 = lj2 * lj2 * lj2 * sigma * invDist;
-        const SoAFloatPrecision ljCutoff2 = sigma * sigma / (cutoff * cutoff);
-        const SoAFloatPrecision ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * sigma / cutoff;
-
-        // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
-        const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
-        const bool overlapIsPositive = overlap > 0;
+        // const SoAFloatPrecision invSigma = 1. / sigma;
+        // const SoAFloatPrecision lj2 = sigma * sigma * invDistSquared;
+        // const SoAFloatPrecision lj7 = lj2 * lj2 * lj2 * sigma * invDist;
+        // const SoAFloatPrecision ljCutoff2 = sigma * sigma / (cutoff * cutoff);
+        // const SoAFloatPrecision ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * sigma / cutoff;
 
         // Compute normal force
         const SoAFloatPrecision normalContactFMag =
             _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
-        const SoAFloatPrecision normalVdWFMag = -1. * (not overlapIsPositive) * epsilon6 * invSigma * (lj7 - ljCutoff7);
-        const SoAFloatPrecision normalFMag = overlapIsPositive * normalContactFMag + normalVdWFMag;
+        // const SoAFloatPrecision normalVdWFMag = -1. * (not overlapIsPositive) * epsilon6 * invSigma * (lj7 -
+        // ljCutoff7);
+        const SoAFloatPrecision normalFMag = overlapIsPositive * normalContactFMag;  // VdW deactivated
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalFMag * normalUnitY;
         const SoAFloatPrecision normalFZ = normalFMag * normalUnitZ;
 
         // Compute tangential force
-        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;  // TODO: add tangential spring
+        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;
         SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelY;
         SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelZ;
 
@@ -920,6 +961,9 @@ class DEMFunctor
             _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
 
         if (tanFMag > coulombLimit) {
+          if constexpr (countFLOPs) {
+            ++numInnerIfTanFCallsSum;
+          }
           const SoAFloatPrecision scale =
               _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / tanFMag;
           tanFX *= scale;
@@ -969,6 +1013,9 @@ class DEMFunctor
             std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
 
         if (rollingFMag > coulombLimit) {
+          if constexpr (countFLOPs) {
+            ++numInnerIfRollingQCallsSum;
+          }
           const SoAFloatPrecision scale =
               _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / rollingFMag;
           rollingFX *= scale;
@@ -997,6 +1044,9 @@ class DEMFunctor
             std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
 
         if (torsionFMag > coulombLimit) {
+          if constexpr (countFLOPs) {
+            ++numInnerIfTorsionQCallsSum;
+          }
           const SoAFloatPrecision scale =
               _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap) / torsionFMag;
           torsionFX *= scale;
@@ -1021,7 +1071,6 @@ class DEMFunctor
           qZptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - overlapIsPositive * rollingQIZ -
                         overlapIsPositive * torsionQIZ);
         }
-
       }  // end of j loop
 
       fxptr1[i] += fxacc;
@@ -1031,6 +1080,16 @@ class DEMFunctor
       qXptr1[i] += qXacc;
       qYptr1[i] += qYacc;
       qZptr1[i] += qZacc;
+    }
+
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numContacts += numContactsSum;
+      _aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls += numInnerIfTanFCallsSum;
+      _aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls += numInnerIfRollingQCallsSum;
+      _aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls += numInnerIfTorsionQCallsSum;
     }
   }
 
@@ -1208,18 +1267,19 @@ class DEMFunctor
     if (overlap > 0) {
       return 0;
     }
-    const double invSigma = 1. / sigma; // 1 FLOP
-    const double lj2 = (sigma * sigma) / (dist * dist); // 3 FLOPS
-    const double lj7 = lj2 * lj2 * lj2 * (sigma / dist); // 4 FLOPS
-    const double ljCutoff2 = (sigma * sigma) / (cutoff * cutoff); // 3 FLOPS
-    const double ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * (sigma / cutoff); // 4 FLOPS
-    return -epsilon6 * invSigma * (lj7 - ljCutoff7); // 4 FLOPS
+    const double invSigma = 1. / sigma;                                             // 1 FLOP
+    const double lj2 = (sigma * sigma) / (dist * dist);                             // 3 FLOPS
+    const double lj7 = lj2 * lj2 * lj2 * (sigma / dist);                            // 4 FLOPS
+    const double ljCutoff2 = (sigma * sigma) / (cutoff * cutoff);                   // 3 FLOPS
+    const double ljCutoff7 = ljCutoff2 * ljCutoff2 * ljCutoff2 * (sigma / cutoff);  // 4 FLOPS
+    return -epsilon6 * invSigma * (lj7 - ljCutoff7);                                // 4 FLOPS
   }
 
-  std::array<double, 3> computeTangentialForce(const double overlap, const Particle &i, const Particle &j,
-                                               const double radiusIReduced, const double radiusJReduced,
-                                               const std::array<double, 3> &normalUnit, const double normalRelVelMag,
-                                               const double normalContactFMag, const int threadnum) {
+  std::array<double, 3> computeTangentialForce(const double overlap, const std::array<double, 3> relVel,
+                                               const Particle &i, const Particle &j, const double radiusIReduced,
+                                               const double radiusJReduced, const std::array<double, 3> &normalUnit,
+                                               const double normalRelVelMag, const double normalContactFMag,
+                                               const int threadnum) {
     /**
      * If overlap <= 0: 0 FLOP
      * Else:
@@ -1231,8 +1291,8 @@ class DEMFunctor
       return {0, 0, 0};
     }
     const std::array<double, 3> tanRelVel =
-        i.getV() - j.getV() + autopas::utils::ArrayMath::cross(normalUnit * radiusIReduced, i.getAngularVel()) +
-        autopas::utils::ArrayMath::cross(normalUnit * radiusJReduced, j.getAngularVel());                   // 33 FLOPS
+        relVel + autopas::utils::ArrayMath::cross(normalUnit * radiusIReduced, i.getAngularVel()) +
+        autopas::utils::ArrayMath::cross(normalUnit * radiusJReduced, j.getAngularVel());                   // 30 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * normalRelVelMag;                                // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                          // 3 FLOPS
     const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
@@ -1267,6 +1327,12 @@ class DEMFunctor
   std::array<double, 3> computeRollingTorqueI(const double overlap, const double radiusReduced, const Particle &i,
                                               const Particle &j, const std::array<double, 3> &normalUnit,
                                               const double normalContactFMag, const int threadnum) {
+    /**
+     * If overlap <= 0: 0 FLOP
+     * Else:
+     *  If: rollingFMag > coulombLimit: 57 FLOPS
+     *  Else: 48 FLOPS
+     */
     using namespace autopas::utils::ArrayMath::literals;
     if (overlap <= 0) {
       return {0, 0, 0};
@@ -1303,18 +1369,18 @@ class DEMFunctor
     }
     const std::array<double, 3> torsionRelVel =
         normalUnit * (dot(normalUnit, i.getAngularVel()) - dot(normalUnit, j.getAngularVel())) *
-        radiusReduced;                                                      // 3 + 3 + 1 + 3 = 10 FLOPS
-    std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
-    const double torsionFMag = autopas::utils::ArrayMath::L2Norm(torsionF); // 6 FLOPS
+        radiusReduced;                                                       // 3 + 3 + 1 + 3 = 10 FLOPS
+    std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);   // 3 FLOPS
+    const double torsionFMag = autopas::utils::ArrayMath::L2Norm(torsionF);  // 6 FLOPS
 
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap); // 3 FLOPS
-    if (torsionFMag > coulombLimit) { // 3 + 3 + 3 = 9 FLOPS
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
+    if (torsionFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
       ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;
       const std::array<double, 3> torsionFUnit = torsionF / torsionFMag;
       const double scale = _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
       torsionF = torsionFUnit * scale;
     }
-    return torsionF * radiusReduced; // 3 = 3 FLOPS
+    return torsionF * radiusReduced;  // 3 = 3 FLOPS
   }
 };
 }  // namespace demLib
