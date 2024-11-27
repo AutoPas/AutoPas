@@ -320,16 +320,16 @@ class DEMFunctor
     // Initialize local variables for constants
     const SoAFloatPrecision cutoff = _cutoff;
     const SoAFloatPrecision constRadius = _radius;
-    //const SoAFloatPrecision const_sigma = _sigma;
-    //const SoAFloatPrecision const_epsilon6 = _epsilon6;
+    // const SoAFloatPrecision const_sigma = _sigma;
+    // const SoAFloatPrecision const_epsilon6 = _epsilon6;
 
-    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
-    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
+    // std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
+    // std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
     if constexpr (useMixing) {
       // Preload all sigma and epsilons for next vectorized region.
       // Not preloading and directly using the values, will produce worse results.
-      //sigmas.resize(soa.size());
-      //epsilon6s.resize(soa.size());
+      // sigmas.resize(soa.size());
+      // epsilon6s.resize(soa.size());
     }
 
     // Count FLOPS variables
@@ -362,8 +362,8 @@ class DEMFunctor
         radiusI = _PPLibrary->getRadius(typeptr[i]);
         for (unsigned int j = 0; j < soa.size(); ++j) {
           auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
-          //sigmas[j] = mixingData.sigma;
-          //epsilon6s[j] = mixingData.epsilon6;
+          // sigmas[j] = mixingData.sigma;
+          // epsilon6s[j] = mixingData.epsilon6;
         }
       }
 
@@ -378,19 +378,19 @@ class DEMFunctor
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
         const SoAFloatPrecision drz = zptr[i] - zptr[j];
 
-        //SoAFloatPrecision sigma = const_sigma;
-        //SoAFloatPrecision epsilon6 = const_epsilon6;
+        // SoAFloatPrecision sigma = const_sigma;
+        // SoAFloatPrecision epsilon6 = const_epsilon6;
         double radiusJ = constRadius;
 
         if (useMixing) {
-          //sigma = sigmas[j];
-          //epsilon6 = epsilon6s[j];
+          // sigma = sigmas[j];
+          // epsilon6 = epsilon6s[j];
           radiusJ = _PPLibrary->getRadius(typeptr[j]);
         }
 
         const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
         const SoAFloatPrecision dist = std::sqrt(distSquared);
-        SoAFloatPrecision overlap = 2. * (radiusI + radiusJ) - dist;
+        SoAFloatPrecision overlap = (radiusI + radiusJ) - dist;
 
         // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
         const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
@@ -406,7 +406,7 @@ class DEMFunctor
         }
 
         const SoAFloatPrecision invDist = 1. / dist;
-        const SoAFloatPrecision invDistSquared = 1. / distSquared;
+        // const SoAFloatPrecision invDistSquared = 1. / distSquared;
         const SoAFloatPrecision normalUnitX = drx * invDist;
         const SoAFloatPrecision normalUnitY = dry * invDist;
         const SoAFloatPrecision normalUnitZ = drz * invDist;
@@ -427,6 +427,13 @@ class DEMFunctor
         const SoAFloatPrecision relVelAngularJZ =
             radiusJReduced * (normalUnitX * angularVelYptr[j] - normalUnitY * angularVelXptr[j]);
 
+        const SoAFloatPrecision relVelX = vxptr[i] - vxptr[j];
+        const SoAFloatPrecision relVelY = vyptr[i] - vyptr[j];
+        const SoAFloatPrecision relVelZ = vzptr[i] - vzptr[j];
+
+        const SoAFloatPrecision relVelDotNormalUnit =
+            relVelX * normalUnitX + relVelY * normalUnitY + relVelZ * normalUnitZ;
+
         const SoAFloatPrecision tanRelVelX = vxptr[i] - vxptr[j] + relVelAngularIX + relVelAngularJX;
         const SoAFloatPrecision tanRelVelY = vyptr[i] - vyptr[j] + relVelAngularIY + relVelAngularJY;
         const SoAFloatPrecision tanRelVelZ = vzptr[i] - vzptr[j] + relVelAngularIZ + relVelAngularJZ;
@@ -446,7 +453,7 @@ class DEMFunctor
 
         // Compute normal force as sum of contact force and long-range force (VdW).
         const SoAFloatPrecision normalContactFMag =
-            _elasticStiffness * overlap - _normalViscosity * tanRelVelDotNormalUnit;
+            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
         // const SoAFloatPrecision normalVdWFMag = -1. * (not overlapIsPositive) * epsilon6 * invSigma * (lj7 -
         // ljCutoff7);
         const SoAFloatPrecision normalFMag = overlapIsPositive * normalContactFMag;  // VdW deactivated
@@ -820,8 +827,8 @@ class DEMFunctor
     // Initialize local variables for constants
     const SoAFloatPrecision cutoff = _cutoff;
     const SoAFloatPrecision radius = _radius;
-    //SoAFloatPrecision sigma = _sigma;
-    //SoAFloatPrecision epsilon6 = _epsilon6;
+    // SoAFloatPrecision sigma = _sigma;
+    // SoAFloatPrecision epsilon6 = _epsilon6;
 
     // Variables for counting FLOPS
     size_t numDistanceCalculationSum = 0;
@@ -833,11 +840,11 @@ class DEMFunctor
     size_t numInnerIfTorsionQCallsSum = 0;
 
     // preload all sigma and epsilons for next vectorized region
-    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
-    //std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
+    // std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmas;
+    // std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon6s;
     if constexpr (useMixing) {
-      //sigmas.resize(soa2.size());
-      //epsilon6s.resize(soa2.size());
+      // sigmas.resize(soa2.size());
+      // epsilon6s.resize(soa2.size());
     }
 
     // Loop over Particles in soa1
@@ -858,8 +865,8 @@ class DEMFunctor
       if constexpr (useMixing) {
         radiusI = _PPLibrary->getRadius(typeptr1[i]);
         for (unsigned int j = 0; j < soa2.size(); ++j) {
-          //sigmas[j] = _PPLibrary->getMixingSigma(typeptr1[i], typeptr2[j]);
-          //epsilon6s[j] = _PPLibrary->getMixing6Epsilon(typeptr1[i], typeptr2[j]);
+          // sigmas[j] = _PPLibrary->getMixingSigma(typeptr1[i], typeptr2[j]);
+          // epsilon6s[j] = _PPLibrary->getMixing6Epsilon(typeptr1[i], typeptr2[j]);
         }
       }
 
@@ -879,10 +886,10 @@ class DEMFunctor
         SoAFloatPrecision radiusJ = radius;
         if (useMixing) {
           radiusJ = _PPLibrary->getRadius(typeptr2[j]);
-          //sigma = sigmas[j];
-          //epsilon6 = epsilon6s[j];
+          // sigma = sigmas[j];
+          // epsilon6 = epsilon6s[j];
         }
-        const SoAFloatPrecision overlap = 2. * (radiusI + radiusJ) - dist;
+        const SoAFloatPrecision overlap = (radiusI + radiusJ) - dist;
 
         // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
         const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
@@ -923,16 +930,23 @@ class DEMFunctor
         const SoAFloatPrecision relVelAngularJZ =
             radiusJReduced * (normalUnitX * angularVelYptr2[j] - normalUnitY * angularVelXptr2[j]);
 
-        const SoAFloatPrecision relVelX = vxptr1[i] - vxptr2[j] + relVelAngularIX + relVelAngularJX;
-        const SoAFloatPrecision relVelY = vyptr1[i] - vyptr2[j] + relVelAngularIY + relVelAngularJY;
-        const SoAFloatPrecision relVelZ = vzptr1[i] - vzptr2[j] + relVelAngularIZ + relVelAngularJZ;
+        const SoAFloatPrecision relVelX = vxptr1[i] - vxptr2[j];
+        const SoAFloatPrecision relVelY = vyptr1[i] - vyptr2[j];
+        const SoAFloatPrecision relVelZ = vzptr1[i] - vzptr2[j];
 
         const SoAFloatPrecision relVelDotNormalUnit =
             relVelX * normalUnitX + relVelY * normalUnitY + relVelZ * normalUnitZ;
 
-        const SoAFloatPrecision tanRelVelX = relVelX - relVelDotNormalUnit * normalUnitX;
-        const SoAFloatPrecision tanRelVelY = relVelY - relVelDotNormalUnit * normalUnitY;
-        const SoAFloatPrecision tanRelVelZ = relVelZ - relVelDotNormalUnit * normalUnitZ;
+        const SoAFloatPrecision tanRelVelX = vxptr1[i] - vxptr2[j] + relVelAngularIX + relVelAngularJX;
+        const SoAFloatPrecision tanRelVelY = vyptr1[i] - vyptr2[j] + relVelAngularIY + relVelAngularJY;
+        const SoAFloatPrecision tanRelVelZ = vzptr1[i] - vzptr2[j] + relVelAngularIZ + relVelAngularJZ;
+
+        const SoAFloatPrecision tanRelVelDotNormalUnit =
+            tanRelVelX * normalUnitX + tanRelVelY * normalUnitY + tanRelVelZ * normalUnitZ;
+
+        const SoAFloatPrecision tanRelVelTotalX = tanRelVelX - tanRelVelDotNormalUnit * normalUnitX;
+        const SoAFloatPrecision tanRelVelTotalY = tanRelVelY - tanRelVelDotNormalUnit * normalUnitY;
+        const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - tanRelVelDotNormalUnit * normalUnitZ;
 
         // const SoAFloatPrecision invSigma = 1. / sigma;
         // const SoAFloatPrecision lj2 = sigma * sigma * invDistSquared;
@@ -952,9 +966,9 @@ class DEMFunctor
         const SoAFloatPrecision normalFZ = normalFMag * normalUnitZ;
 
         // Compute tangential force
-        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelX;
-        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelY;
-        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelZ;
+        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
+        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
+        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
 
         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
         const SoAFloatPrecision coulombLimit =
