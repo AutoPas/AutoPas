@@ -110,7 +110,7 @@ class DEMFunctor
    * @param cutoff
    */
   explicit DEMFunctor(double cutoff)
-      : DEMFunctor(cutoff, 50., 2.5, 1, 5e-5, 1e-5, 2.5e-6, 2.5e-6, 15, 15, 5, 5, nullptr) {
+      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-5, 2.5e-6, 2.5e-6, 75, 75, 25, 25, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -126,7 +126,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 50., 2.5, 1, 5e-5, 1e-5, 2.5e-6, 2.5e-6, 15, 15, 5, 5, nullptr) {
+      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-5, 2.5e-6, 2.5e-6, 75, 75, 25, 25, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -228,10 +228,12 @@ class DEMFunctor
     // Retrieve particle-specific parameters, calculate generally necessary values (3 + 2 + 2 + 2 + 3 + 3 + 5 = 20
     // FLOPS)
     const auto [sigma, epsilon6, radiusI, radiusJ] = computeMaterialProperties(i, j);
+    assert(dist != 0. && "Distance is zero, division by zero detected!");
     const std::array<double, 3> normalUnit = displacement / dist;
     const double overlap = radiusI + radiusJ - dist;
     const double radiusIReduced = radiusI - overlap / 2.;
     const double radiusJReduced = radiusJ - overlap / 2.;
+    assert((radiusIReduced + radiusJReduced) != 0. && "Distance is zero, division by zero detected!");
     const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
     const std::array<double, 3> relVel = i.getV() - j.getV();
     const double normalRelVelMag = autopas::utils::ArrayMath::dot(normalUnit, relVel);
@@ -244,8 +246,8 @@ class DEMFunctor
     // Compute Forces
     // Compute normal forces
     const double normalContactFMag = computeNormalContactFMag(overlap, normalRelVelMag);
-    const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, cutoff);
-    const double normalFMag = normalContactFMag + normalVdWFMag;  // 1 FLOP
+    // const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, cutoff);
+    const double normalFMag = normalContactFMag;  // 1 FLOP
     const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
     // Compute tangential force
