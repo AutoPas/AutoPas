@@ -412,6 +412,7 @@ class DEMFunctor
         const bool overlapIsPositive = overlap > 0;
 
         if constexpr (countFLOPs) {
+          numContactsSum += overlapIsPositive ? 1 : 0;
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
           numKernelCallsN3Sum += (cutOffMask and overlapIsPositive ? 1 : 0);
         }
@@ -936,6 +937,7 @@ class DEMFunctor
         const bool overlapIsPositive = overlap > 0;
 
         if constexpr (countFLOPs) {
+          numContactsSum += overlapIsPositive ? 1 : 0;
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
           if constexpr (newton3) {
             numKernelCallsN3Sum += (cutOffMask and overlapIsPositive ? 1 : 0);
