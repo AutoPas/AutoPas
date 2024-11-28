@@ -301,7 +301,7 @@ class DEMFunctor
     // Compute torsional torque
     const std::array<double, 3> torsionRelVel =
         normalUnit * (dot(normalUnit, i.getAngularVel()) - dot(normalUnit, j.getAngularVel())) *
-        radiusReduced;                                                      // 3 + 3 + 1 + 3 = 10 FLOPS
+        radiusReduced;                                                      // 5 + 5 + 1 + 1 + 3 = 15 FLOPS
     std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
     const double torsionFMag = L2Norm(torsionF);                            // 6 FLOPS
 
@@ -760,7 +760,53 @@ class DEMFunctor
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
-  [[nodiscard]] size_t getNumFLOPs() const override { return 0; }
+  [[nodiscard]] size_t getNumFLOPs() const override {
+    /**
+     * FLOP count:
+     * DistCall: 11
+     * KernelNoN3: 24 (NormalF) + 48 (TanF) + 6 (ApplyF) + 12 (FrictionQ) + 45 (RollingQ) + 27 (TorsionQ) + 9 (ApplyQ) = 171
+     * KernelN3: KernelNoN3 + 3 (ApplyF) + 10 (ApplyQ) = 184
+     * InnerIfTanFCall: 9
+     * InnerIfRollingQCall: 9
+     * InnerIfTorsionQCall: 9
+     */
+    if constexpr (countFLOPs) {
+      const size_t numDistCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      const size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+
+      // Inner-If calls
+      const size_t numInnerIfTanFCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numInnerIfTanFCalls; });
+      const size_t numInnerIfRollingQCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numInnerIfRollingQCalls; });
+      const size_t numInnerIfTorsionQCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numInnerIfTorsionQCalls; });
+
+      constexpr size_t numFLOPsPerDistanceCall = 11;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 171;
+      constexpr size_t numFLOPsPerN3KernelCall = 184;
+      constexpr size_t numFLOPsPerInnerIfTanFCall = 9;
+      constexpr size_t numFLOPsPerInnerIfRollingQCall = 9;
+      constexpr size_t numFLOPsPerInnerIfTorsionQCall = 9;
+
+      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
+             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numInnerIfTanFCallsAcc * numFLOPsPerInnerIfTanFCall +
+             numInnerIfRollingQCallsAcc * numFLOPsPerInnerIfRollingQCall + numInnerIfTorsionQCallsAcc * numFLOPsPerInnerIfTorsionQCall;
+    } else {
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      return std::numeric_limits<size_t>::max();
+    }
+  }
 
   [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {  // TODO: use "HitRate" only as variable to count number of contacts for now
