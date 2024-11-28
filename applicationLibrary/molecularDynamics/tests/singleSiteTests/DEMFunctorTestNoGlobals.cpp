@@ -66,14 +66,20 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsOverlap) {
           this->expectedFrictionForceMixingOverlap[2]};
 
   const std::array<double, 3> expectedTorque = {
-      this->expectedFrictionTorqueIOverlap[0] + this->expectedRollingTorqueIOverlap[0],
-      this->expectedFrictionTorqueIOverlap[1] + this->expectedRollingTorqueIOverlap[1],
-      this->expectedFrictionTorqueIOverlap[2] + this->expectedRollingTorqueIOverlap[2]};
+      this->expectedFrictionTorqueIOverlap[0] + this->expectedRollingTorqueIOverlap[0] +
+          this->expectedTorsionTorqueIOverlap[0],
+      this->expectedFrictionTorqueIOverlap[1] + this->expectedRollingTorqueIOverlap[1] +
+          this->expectedTorsionTorqueIOverlap[1],
+      this->expectedFrictionTorqueIOverlap[2] + this->expectedRollingTorqueIOverlap[2] +
+          this->expectedTorsionTorqueIOverlap[2]};
 
   const std::array<double, 3> expectedTorqueMixing = {
-      this->expectedFrictionTorqueIMixingOverlap[0] + this->expectedRollingTorqueIMixingOverlap[0],
-      this->expectedFrictionTorqueIMixingOverlap[1] + this->expectedRollingTorqueIMixingOverlap[1],
-      this->expectedFrictionTorqueIMixingOverlap[2] + this->expectedRollingTorqueIMixingOverlap[2]};
+      this->expectedFrictionTorqueIMixingOverlap[0] + this->expectedRollingTorqueIMixingOverlap[0] +
+          this->expectedTorsionTorqueIMixingOverlap[0],
+      this->expectedFrictionTorqueIMixingOverlap[1] + this->expectedRollingTorqueIMixingOverlap[1] +
+          this->expectedTorsionTorqueIMixingOverlap[1],
+      this->expectedFrictionTorqueIMixingOverlap[2] + this->expectedRollingTorqueIMixingOverlap[2] +
+          this->expectedTorsionTorqueIMixingOverlap[2]};
 
   if (mixing) {
     EXPECT_NEAR(f1one[0], expectedForceMixing[0], this->absDelta);
@@ -100,15 +106,15 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsOverlap) {
 
       EXPECT_NEAR(q2one[0],
                   frictionTorqueNewton3Factor * this->expectedFrictionTorqueIMixingOverlap[0] -
-                      this->expectedRollingTorqueIMixingOverlap[0],
+                      this->expectedRollingTorqueIMixingOverlap[0] - this->expectedTorsionTorqueIMixingOverlap[0],
                   this->absDelta);
       EXPECT_NEAR(q2one[1],
                   frictionTorqueNewton3Factor * this->expectedFrictionTorqueIMixingOverlap[1] -
-                      this->expectedRollingTorqueIMixingOverlap[1],
+                      this->expectedRollingTorqueIMixingOverlap[1] - this->expectedTorsionTorqueIMixingOverlap[1],
                   this->absDelta);
       EXPECT_NEAR(q2one[2],
                   frictionTorqueNewton3Factor * this->expectedFrictionTorqueIMixingOverlap[2] -
-                      this->expectedRollingTorqueIMixingOverlap[2],
+                      this->expectedRollingTorqueIMixingOverlap[2] - this->expectedTorsionTorqueIMixingOverlap[2],
                   this->absDelta);
     } else {
       EXPECT_NEAR(f2one[0], -expectedForce[0], this->absDelta);
@@ -117,15 +123,15 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsOverlap) {
 
       EXPECT_NEAR(q2one[0],
                   frictionTorqueNewton3Factor * this->expectedFrictionTorqueIMixingOverlap[0] -
-                      this->expectedRollingTorqueIOverlap[0],
+                      this->expectedRollingTorqueIOverlap[0] - this->expectedTorsionTorqueIOverlap[0],
                   this->absDelta);
       EXPECT_NEAR(q2one[1],
                   frictionTorqueNewton3Factor * this->expectedFrictionTorqueIMixingOverlap[1] -
-                      this->expectedRollingTorqueIOverlap[1],
+                      this->expectedRollingTorqueIOverlap[1] - this->expectedTorsionTorqueIOverlap[1],
                   this->absDelta);
       EXPECT_NEAR(q2one[2],
                   frictionTorqueNewton3Factor * this->expectedFrictionTorqueIMixingOverlap[2] -
-                      this->expectedRollingTorqueIOverlap[2],
+                      this->expectedRollingTorqueIOverlap[2] - this->expectedTorsionTorqueIOverlap[2],
                   this->absDelta);
     }
   } else {
@@ -222,14 +228,20 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsNoOverlap) {
           this->expectedFrictionForceMixingNoOverlap[2]};
 
   const std::array<double, 3> expectedTorque = {
-      this->expectedFrictionTorqueINoOverlap[0] + this->expectedRollingTorqueINoOverlap[0],
-      this->expectedFrictionTorqueINoOverlap[1] + this->expectedRollingTorqueINoOverlap[1],
-      this->expectedFrictionTorqueINoOverlap[2] + this->expectedRollingTorqueINoOverlap[2]};
+      this->expectedFrictionTorqueINoOverlap[0] + this->expectedRollingTorqueINoOverlap[0] +
+          this->expectedTorsionTorqueINoOverlap[0],
+      this->expectedFrictionTorqueINoOverlap[1] + this->expectedRollingTorqueINoOverlap[1] +
+          this->expectedTorsionTorqueINoOverlap[1],
+      this->expectedFrictionTorqueINoOverlap[2] + this->expectedRollingTorqueINoOverlap[2] +
+          this->expectedTorsionTorqueINoOverlap[2]};
 
   const std::array<double, 3> expectedTorqueMixing = {
-      this->expectedFrictionTorqueIMixingNoOverlap[0] + this->expectedRollingTorqueIMixingNoOverlap[0],
-      this->expectedFrictionTorqueIMixingNoOverlap[1] + this->expectedRollingTorqueIMixingNoOverlap[1],
-      this->expectedFrictionTorqueIMixingNoOverlap[2] + this->expectedRollingTorqueIMixingNoOverlap[2]};
+      this->expectedFrictionTorqueIMixingNoOverlap[0] + this->expectedRollingTorqueIMixingNoOverlap[0] +
+          this->expectedTorsionTorqueIMixingNoOverlap[0],
+      this->expectedFrictionTorqueIMixingNoOverlap[1] + this->expectedRollingTorqueIMixingNoOverlap[1] +
+          this->expectedTorsionTorqueIMixingNoOverlap[1],
+      this->expectedFrictionTorqueIMixingNoOverlap[2] + this->expectedRollingTorqueIMixingNoOverlap[2] +
+          this->expectedTorsionTorqueIMixingNoOverlap[2]};
 
   if (mixing) {
     EXPECT_NEAR(f1one[0], expectedForceMixing[0], this->absDelta);
@@ -255,24 +267,33 @@ TYPED_TEST_P(DEMFunctorTestNoGlobals, testAoSNoGlobalsNoOverlap) {
       EXPECT_NEAR(f2one[2], -expectedForceMixing[2], this->absDelta);
 
       EXPECT_NEAR(q2one[0],
-                  this->expectedFrictionTorqueIMixingNoOverlap[0] - this->expectedRollingTorqueIMixingNoOverlap[0],
+                  this->expectedFrictionTorqueIMixingNoOverlap[0] - this->expectedRollingTorqueIMixingNoOverlap[0] -
+                      this->expectedTorsionTorqueIMixingNoOverlap[0],
                   this->absDelta);
       EXPECT_NEAR(q2one[1],
-                  this->expectedFrictionTorqueIMixingNoOverlap[1] - this->expectedRollingTorqueIMixingNoOverlap[1],
+                  this->expectedFrictionTorqueIMixingNoOverlap[1] - this->expectedRollingTorqueIMixingNoOverlap[1] -
+                      this->expectedTorsionTorqueIMixingNoOverlap[1],
                   this->absDelta);
       EXPECT_NEAR(q2one[2],
-                  this->expectedFrictionTorqueIMixingNoOverlap[2] - this->expectedRollingTorqueIMixingNoOverlap[2],
+                  this->expectedFrictionTorqueIMixingNoOverlap[2] - this->expectedRollingTorqueIMixingNoOverlap[2] -
+                      this->expectedTorsionTorqueIMixingNoOverlap[2],
                   this->absDelta);
     } else {
       EXPECT_NEAR(f2one[0], -expectedForce[0], this->absDelta);
       EXPECT_NEAR(f2one[1], -expectedForce[1], this->absDelta);
       EXPECT_NEAR(f2one[2], -expectedForce[2], this->absDelta);
 
-      EXPECT_NEAR(q2one[0], this->expectedFrictionTorqueINoOverlap[0] - this->expectedRollingTorqueINoOverlap[0],
+      EXPECT_NEAR(q2one[0],
+                  this->expectedFrictionTorqueINoOverlap[0] - this->expectedRollingTorqueINoOverlap[0] -
+                      this->expectedTorsionTorqueINoOverlap[0],
                   this->absDelta);
-      EXPECT_NEAR(q2one[1], this->expectedFrictionTorqueINoOverlap[1] - this->expectedRollingTorqueINoOverlap[1],
+      EXPECT_NEAR(q2one[1],
+                  this->expectedFrictionTorqueINoOverlap[1] - this->expectedRollingTorqueINoOverlap[1] -
+                      this->expectedTorsionTorqueINoOverlap[1],
                   this->absDelta);
-      EXPECT_NEAR(q2one[2], this->expectedFrictionTorqueINoOverlap[2] - this->expectedRollingTorqueINoOverlap[2],
+      EXPECT_NEAR(q2one[2],
+                  this->expectedFrictionTorqueINoOverlap[2] - this->expectedRollingTorqueINoOverlap[2] -
+                      this->expectedTorsionTorqueINoOverlap[2],
                   this->absDelta);
     }
   } else {
