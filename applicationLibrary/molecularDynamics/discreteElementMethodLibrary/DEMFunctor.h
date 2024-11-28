@@ -207,6 +207,7 @@ class DEMFunctor
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
+    using namespace autopas::utils::ArrayMath;
 
     if (i.isDummy() or j.isDummy()) {
       return;
@@ -244,18 +245,30 @@ class DEMFunctor
     assert((radiusIReduced + radiusJReduced) != 0. && "Distance is zero, division by zero detected!");
     const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
     const std::array<double, 3> relVel = i.getV() - j.getV();
-    const double relVelDotNormalUnit = autopas::utils::ArrayMath::dot(normalUnit, relVel);
+    const double relVelDotNormalUnit = dot(normalUnit, relVel);
 
     // Compute Forces
     // Compute normal forces
-    const double normalContactFMag = computeNormalContactFMag(overlap, relVelDotNormalUnit);
-    const double normalFMag = normalContactFMag;                                                         // 1 FLOP
-    const std::array<double, 3> normalF = autopas::utils::ArrayMath::mulScalar(normalUnit, normalFMag);  // 3 FLOPS
+    const double normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;  // 3 FLOPS
+    const double normalFMag = normalContactFMag;
+    const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
     // Compute tangential force
-    const std::array<double, 3> tanF =
-        computeTangentialForce(overlap, relVel, i, j, radiusIReduced, radiusJReduced, normalUnit, relVelDotNormalUnit,
-                               normalContactFMag, threadnum);
+    const std::array<double, 3> tanRelVel = relVel + cross(normalUnit * radiusIReduced, i.getAngularVel()) +
+                                            cross(normalUnit * radiusJReduced, j.getAngularVel());          // 30 FLOPS
+    const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                            // 3 FLOPS
+    const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                          // 3 FLOPS
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
+    std::array<double, 3> tanF = tanVel * (-_frictionViscosity);                                            // 3 FLOPS
+    const double tanFMag = L2Norm(tanF);                                                                    // 6 FLOPS
+
+    if (tanFMag > coulombLimit) {
+      // 3 + 3 + 3 = 9 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;
+      const std::array<double, 3> tanFUnit = tanF / tanFMag;
+      const double scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+      tanF = tanFUnit * scale;
+    }
 
     // Compute total force
     const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
@@ -268,11 +281,37 @@ class DEMFunctor
 
     // Compute Torques
     // Compute frictional torque
-    const std::array<double, 3> frictionQI = computeFrictionTorqueI(overlap, radiusIReduced, normalUnit, tanF);
-    const std::array<double, 3> rollingQI =
-        computeRollingTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag, threadnum);
-    const std::array<double, 3> torsionQI =
-        computeTorsionTorqueI(overlap, radiusReduced, i, j, normalUnit, normalContactFMag, threadnum);
+    const std::array<double, 3> frictionQI = cross(normalUnit * (-radiusIReduced), tanF);  // 3 + 9 = 12 FLOPS
+
+    // Compute rolling torque
+    const std::array<double, 3> rollingRelVel =
+        (cross(normalUnit, i.getAngularVel()) - cross(normalUnit, j.getAngularVel())) *
+        (-radiusReduced);                                                   // 9 + 9 + 3 + 3 = 24 FLOPS
+    std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);  // 3 FLOPS
+    const double rollingFMag = L2Norm(rollingF);                            // 6 FLOPS
+
+    if (rollingFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;
+      const std::array<double, 3> rollingFUnit = rollingF / rollingFMag;
+      const double scale = _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+      rollingF = rollingFUnit * scale;
+    }
+    const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
+
+    // Compute torsional torque
+    const std::array<double, 3> torsionRelVel =
+        normalUnit * (dot(normalUnit, i.getAngularVel()) - dot(normalUnit, j.getAngularVel())) *
+        radiusReduced;                                                      // 3 + 3 + 1 + 3 = 10 FLOPS
+    std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
+    const double torsionFMag = L2Norm(torsionF);                            // 6 FLOPS
+
+    if (torsionFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;
+      const std::array<double, 3> torsionFUnit = torsionF / torsionFMag;
+      const double scale = _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+      torsionF = torsionFUnit * scale;
+    }
+    const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 = 3 FLOPS
 
     // Apply torques
     i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
@@ -1022,12 +1061,9 @@ class DEMFunctor
         qZacc += (frictionQIZ + rollingQIZ + torsionQIZ);
 
         if (newton3) {
-          qXptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - rollingQIX -
-                        torsionQIX);
-          qYptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY -
-                        torsionQIY);
-          qZptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ -
-                        torsionQIZ);
+          qXptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIX - rollingQIX - torsionQIX);
+          qYptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY);
+          qZptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ);
         }
       }  // end of j loop
 
