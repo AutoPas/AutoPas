@@ -571,29 +571,6 @@ void Simulation::logSimulationState() {
 }
 
 void Simulation::updateSimulationPauseState() {
-  // If we are at the beginning of a tuning phase, we need to freeze the simulation
-  if (_currentIterationIsTuningIteration and (not _previousIterationWasTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase...\n";
-    _simulationIsPaused = true;
-  }
-
-  // If we are at the end of a tuning phase, we need to resume the simulation
-  if (_previousIterationWasTuningIteration and (not _currentIterationIsTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase.\n";
-
-    // reset the forces which accumulated during the tuning phase
-    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF(_configuration.globalForce.value);
-    }
-
-    // calculate the forces of the latest iteration again
-    updateInteractionForces();
-
-    _simulationIsPaused = false;
-  }
-}
-
-void Simulation::updateSimulationPauseState() {
  // If we are at the beginning of a tuning phase, we need to freeze the simulation
  if (_currentIterationIsTuningIteration and (not _previousIterationWasTuningIteration)) {
    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase...\n";
