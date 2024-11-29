@@ -45,7 +45,7 @@ def load_data_from_directory(results_dir: str) -> pd.DataFrame:
 
     # Loop through all leaf folders i.e. the ones in which the csv files are outputted in
 
-    for root, dirs, files in os.walk('.'):
+    for root, dirs, files in os.walk(results_dir):
         if not dirs:
             # Get Live Info file
 
@@ -146,7 +146,7 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame) -> dict:
     # Train a RandomForestClassifier for each target
     models = {}
     for i, column in enumerate(y.columns):
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model = RandomForestClassifier(n_estimators=1, random_state=42)
         model.fit(X_train, y_train.iloc[:, i])
         models[column] = model
 
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     """
 
     # Load and preprocess the data
-    merged_df = load_data_from_directory('data')
+    merged_df = load_data_from_directory('./data')
     X, y, label_encoders = preprocess_data(merged_df)
 
     # Train the model
