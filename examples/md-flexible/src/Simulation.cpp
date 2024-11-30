@@ -203,8 +203,9 @@ void Simulation::run() {
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(_configuration.globalForce.value, 9.8, M_PI, 50000); // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(globalForce); // normal case parameter: _configuration.globalForce.value
+      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
+          _configuration.globalForce.value, 9.8, M_PI, 50000);  // TODO: precalculate the global force magnitude
+      updatePositionsAndResetForces(globalForce);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -406,8 +407,8 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 void Simulation::updatePositionsAndResetForces(const std::array<double, 3> &globalForce) {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
-      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      globalForce, _configuration.fastParticlesThrow.value);
+      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value, globalForce,
+      _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -492,8 +493,10 @@ void Simulation::calculateGlobalForce(const std::array<double, 3> &globalForce) 
   }
 }
 
-std::array<double, 3>  Simulation::calculateRotationalGlobalForce(const std::array<double, 3> &globalForce, const double globalForceMagnitude, const double angularFrequency,
-                                                     const size_t iterationFrom) const {
+std::array<double, 3> Simulation::calculateRotationalGlobalForce(const std::array<double, 3> &globalForce,
+                                                                 const double globalForceMagnitude,
+                                                                 const double angularFrequency,
+                                                                 const size_t iterationFrom) const {
   /**
    * Formula:
    * theta(t) = angularFrequency * (t - iterationFrom * deltaT)
@@ -501,6 +504,12 @@ std::array<double, 3>  Simulation::calculateRotationalGlobalForce(const std::arr
    * g_y(t) = globalForceMagnitude * cos(theta(t))
    * g_z = 0
    */
+  if (iterationFrom > _configuration.iterations.value) {
+    std::cerr << "Simulation::calculateRoationalGlobalForce(): iterationFrom=" << iterationFrom
+              << " has to be larger than the number of whole iterations=" << _configuration.iterations.value
+              << std::endl;
+  }
+
   if (_iteration < iterationFrom) {
     return globalForce;
   }
@@ -511,7 +520,6 @@ std::array<double, 3>  Simulation::calculateRotationalGlobalForce(const std::arr
   const double g_z = 0;
 
   return {g_x, g_y, g_z};
-
 }
 
 void Simulation::calculateBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,
