@@ -17,9 +17,10 @@ namespace mdLib {
 /**
  * Molecule class for the LJFunctor.
  */
-class MoleculeLJ : public autopas::Particle {
+template <typename calcType, typename accuType, typename idType>
+class MoleculeLJBase : public autopas::Particle {
  public:
-  MoleculeLJ() = default;
+  MoleculeLJBase() = default;
 
   /**
    * Constructor of lennard jones molecule with initialization of typeID.
@@ -28,10 +29,11 @@ class MoleculeLJ : public autopas::Particle {
    * @param moleculeId Unique Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-             unsigned long typeId = 0);
+  MoleculeLJBase(const std::array<calcType, 3> &pos, const std::array<calcType, 3> &v, unsigned long moleculeId,
+                 unsigned long typeId = 0)
+      : autopas::Particle(pos, v, moleculeId), _typeId(typeId){};
 
-  ~MoleculeLJ() override = default;
+  ~MoleculeLJBase() override = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -62,11 +64,10 @@ class MoleculeLJ : public autopas::Particle {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType = typename autopas::utils::SoAType<
+      MoleculeLJBase *, size_t /*id*/, calcType /*x*/, calcType /*y*/, calcType /*z*/, calcType /*vx*/, calcType /*vy*/,
+      calcType /*vz*/, accuType /*fx*/, accuType /*fy*/, accuType /*fz*/, accuType /*oldFx*/, accuType /*oldFy*/,
+      accuType /*oldFz*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -169,31 +170,45 @@ class MoleculeLJ : public autopas::Particle {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] const std::array<double, 3> &getOldF() const;
+  [[nodiscard]] const std::array<accuType, 3> &getOldF() const { return _oldF; };
 
   /**
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce);
+  void setOldF(const std::array<accuType, 3> &oldForce) { _oldF = oldForce; };
 
   /**
    * Get TypeId.
    * @return
    */
-  [[nodiscard]] size_t getTypeId() const;
+  [[nodiscard]] size_t getTypeId() const { return _typeId; };
 
   /**
    * Set the type id of the Molecule.
    * @param typeId
    */
-  void setTypeId(size_t typeId);
+  void setTypeId(size_t typeId) { _typeId = typeId; };
 
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  [[nodiscard]] std::string toString() const override;
+  [[nodiscard]] std::string toString() const override {
+    using autopas::utils::ArrayUtils::operator<<;
+    std::ostringstream text;
+    // clang-format off
+  text << "MoleculeLJ"
+     << "\nID                 : " << _id
+     << "\nPosition           : " << _r
+     << "\nVelocity           : " << _v
+     << "\nForce              : " << _f
+     << "\nOld Force          : " << _oldF
+     << "\nType ID            : " << _typeId
+     << "\nOwnershipState     : " << _ownershipState;
+    // clang-format on
+    return text.str();
+  };
 
  protected:
   /**
@@ -208,7 +223,9 @@ class MoleculeLJ : public autopas::Particle {
   /**
    * Old Force of the particle experiences as 3D vector.
    */
-  std::array<double, 3> _oldF = {0., 0., 0.};
+  std::array<accuType, 3> _oldF = {0., 0., 0.};
 };
+
+using MoleculeLJ = MoleculeLJBase<double, double, unsigned long>;
 
 }  // namespace mdLib
