@@ -6,6 +6,7 @@
 #include "Simulation.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
@@ -202,6 +203,7 @@ void Simulation::run() {
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
+      // TODO: for tumbler simulation, add global force here
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
@@ -487,6 +489,42 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
+  }
+}
+
+void Simulation::calculateGlobalForcesUntil(const std::array<double, 3> &globalForces, const size_t iterationUntil) {
+  if (_iteration >= iterationUntil) {
+    return;
+  }
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    particle->addF(globalForces);
+  }
+}
+
+void Simulation::calculateRotationalGlobalForcesFrom(const double globalForceMagnitude, const double angularFrequency,
+                                                     const size_t iterationFrom) {
+  /**
+   * Formula:
+   * theta(t) = angularFrequency * (t - iterationFrom * deltaT)
+   * g_x(t) = globalForceMagnitude * sin(theta(t))
+   * g_y(t) = globalForceMagnitude * cos(theta(t))
+   * g_z = 0
+   */
+  if (_iteration < iterationFrom) {
+    return;
+  }
+
+  const double theta = angularFrequency * (_iteration - iterationFrom) * _configuration.deltaT.value;
+  const double g_x = globalForceMagnitude * sin(theta);
+  const double g_y = globalForceMagnitude * cos(theta);
+  const double g_z = 0;
+
+  const std::array<double, 3> rotatingGlobalForces = {g_x, g_y, g_z};
+
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    particle->addF(rotatingGlobalForces);
   }
 }
 
