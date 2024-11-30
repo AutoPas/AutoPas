@@ -203,8 +203,8 @@ void Simulation::run() {
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      // TODO: for tumbler simulation, add global force here
-      updatePositionsAndResetForces();
+      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(_configuration.globalForce.value, 9.8, M_PI, 50000); // TODO: precalculate the global force magnitude
+      updatePositionsAndResetForces(globalForce); // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -403,11 +403,11 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
   return ss.str();
 }
 
-void Simulation::updatePositionsAndResetForces() {
+void Simulation::updatePositionsAndResetForces(const std::array<double, 3> &globalForce) {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+      globalForce, _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -485,25 +485,15 @@ bool Simulation::calculatePairwiseForces() {
   return wasTuningIteration;
 }
 
-void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
+void Simulation::calculateGlobalForce(const std::array<double, 3> &globalForce) {
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }
 }
 
-void Simulation::calculateGlobalForcesUntil(const std::array<double, 3> &globalForces, const size_t iterationUntil) {
-  if (_iteration >= iterationUntil) {
-    return;
-  }
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForces);
-  }
-}
-
-void Simulation::calculateRotationalGlobalForcesFrom(const double globalForceMagnitude, const double angularFrequency,
-                                                     const size_t iterationFrom) {
+std::array<double, 3>  Simulation::calculateRotationalGlobalForce(const std::array<double, 3> &globalForce, const double globalForceMagnitude, const double angularFrequency,
+                                                     const size_t iterationFrom) const {
   /**
    * Formula:
    * theta(t) = angularFrequency * (t - iterationFrom * deltaT)
@@ -512,7 +502,7 @@ void Simulation::calculateRotationalGlobalForcesFrom(const double globalForceMag
    * g_z = 0
    */
   if (_iteration < iterationFrom) {
-    return;
+    return globalForce;
   }
 
   const double theta = angularFrequency * (_iteration - iterationFrom) * _configuration.deltaT.value;
@@ -520,12 +510,8 @@ void Simulation::calculateRotationalGlobalForcesFrom(const double globalForceMag
   const double g_y = globalForceMagnitude * cos(theta);
   const double g_z = 0;
 
-  const std::array<double, 3> rotatingGlobalForces = {g_x, g_y, g_z};
+  return {g_x, g_y, g_z};
 
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(rotatingGlobalForces);
-  }
 }
 
 void Simulation::calculateBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,

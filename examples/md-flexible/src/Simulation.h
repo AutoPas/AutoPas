@@ -292,7 +292,7 @@ class Simulation {
    * Updates the position of particles in the local AutoPas container. In addition, the oldForce is set to the value of
    * the current forces and the force buffers of the particles are reset to the global force.
    */
-  void updatePositionsAndResetForces();
+  void updatePositionsAndResetForces(const std::array<double, 3> &globalForce);
 
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.
@@ -360,7 +360,17 @@ class Simulation {
    * Adds global forces to the particles in the container.
    * @param globalForce The global force which will be applied to each particle in the container.
    */
-  void calculateGlobalForces(const std::array<double, 3> &globalForce);
+  void calculateGlobalForce(const std::array<double, 3> &globalForce);
+
+   /**
+    * Implements rational global forces on the particles in the container.
+    *
+    * @globalForce The global force vector to be applied before the iterationFrom
+    * @param globalForceMagnitude The magnitude of the rotational global force.
+    * @param angularFrequency The angular frequency of the rotational global force.
+    * @param iterationFrom The iteration from which the rotational global force should be applied.
+    */
+   std::array<double, 3> calculateRotationalGlobalForce(const std::array<double, 3> &globalForce, const double globalForceMagnitude, const double angularFrequency, const size_t iterationFrom) const;
 
   /**
    * Adds background friction to the particles in the container.
