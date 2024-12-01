@@ -36,6 +36,25 @@ class CubeClosestPacked : public Object {
         _xOffset(particleSpacing * 1. / 2.),
         _yOffset(particleSpacing * sqrt(1. / 12.)) {}
 
+  /**
+   * Constructor.
+   * @param velocity
+   * @param angularVelocity
+   * @param typeId
+   * @param particleSpacing distance between all neighboring particles
+   * @param boxLength
+   * @param bottomLeftCorner
+   */
+  CubeClosestPacked(const std::array<double, 3> &velocity, const std::array<double, 3> &angularVelocity, unsigned long typeId, double particleSpacing,
+                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+      : Object(velocity,angularVelocity, typeId),
+        _boxLength(boxLength),
+        _particleSpacing(particleSpacing),
+        _bottomLeftCorner(bottomLeftCorner),
+        _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)),
+        _xOffset(particleSpacing * 1. / 2.),
+        _yOffset(particleSpacing * sqrt(1. / 12.)) {}
+
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
   /**

@@ -113,8 +113,11 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  const CubeClosestPacked cubeClosestPacked(velocity, {0., 0., 0.}, particleType, particleSpacing, boxLength, bottomLeftCorner);
+#else
   const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner);
-
+#endif
   return cubeClosestPacked;
 }
 
