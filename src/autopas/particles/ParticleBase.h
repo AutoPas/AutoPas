@@ -165,10 +165,10 @@ class ParticleBase {
    * @param maxDistSquared The maximum expected movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool setRDistanceCheck(const std::array<calcType, 3> &r, double maxDistSquared) {
+  bool setRDistanceCheck(const std::array<calcType, 3> &r, calcType maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto distanceVec = r - _r;
-    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
+    const calcType distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
     setR(r);
     const bool distanceIsFine =
         distanceSquared < maxDistSquared or autopas::utils::Math::isNearAbs(maxDistSquared, 0., 1e-12);
@@ -199,7 +199,7 @@ class ParticleBase {
    * @param maxDistSquared The maximum expected movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool addRDistanceCheck(const std::array<calcType, 3> &r, double maxDistSquared) {
+  bool addRDistanceCheck(const std::array<calcType, 3> &r, calcType maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto newR = _r + r;
     return setRDistanceCheck(newR, maxDistSquared);
