@@ -136,6 +136,14 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all traversal options applicable for the HierarchicalGrid container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allHGCompatibleTraversals() {
+  return allLCCompatibleTraversals();
+}
+
+/**
  * Provides a set of all traversals that only support Newton3 mode disabled.
  * @return
  */
@@ -212,6 +220,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::octree: {
           return allOTCompatibleTraversals();
+        }
+        case ContainerOption::hierarchicalGrid: {
+          return allHGCompatibleTraversals();
         }
       }
     }

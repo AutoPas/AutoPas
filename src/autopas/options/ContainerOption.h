@@ -68,6 +68,11 @@ class ContainerOption : public Option<ContainerOption> {
      * distributed since it is space adaptive
      */
     octree,
+    /**
+     * HierarchicalGrid: Contains multiple LinkedCells that have different cutoffs. Particles are sorted into the
+     * hierarchy with the smallest cutoff that is bigger or equal than particles interactionLength.
+     */
+    hierarchicalGrid,
   };
 
   /**
@@ -110,6 +115,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
         {ContainerOption::octree, "Octree"},
+        {ContainerOption::hierarchicalGrid, "HierarchicalGrid"}
     };
   };
 
