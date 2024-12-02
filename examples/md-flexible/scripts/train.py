@@ -78,7 +78,7 @@ def load_data_from_directory(results_dir: str) -> pd.DataFrame:
             tuning_results_df = pd.read_csv(tuning_results_file)
 
             # Combine tuning results into one column
-            tuning_results_df['combined'] = tuning_results_df['Container'] + tuning_results_df['Traversal'] + tuning_results_df['Load Estimator'] + tuning_results_df['Data Layout'] + tuning_results_df['Newton3'] + tuning_results_df['CellSizeFactor'].map(str)
+            tuning_results_df['combined'] = tuning_results_df['Container'] + ';' + tuning_results_df['Traversal'] + ';' + tuning_results_df['Load Estimator'] + ';' + tuning_results_df['Data Layout'] + ';' + tuning_results_df['Newton 3'] + ';' + tuning_results_df['CellSizeFactor'].map(str)
 
             # Merge them on 'Iteration' column
             merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')

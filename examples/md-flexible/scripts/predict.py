@@ -75,16 +75,29 @@ def predict(live_info: dict, models: dict, label_encoders: dict) -> dict:
     """
     live_info_df = preprocess_live_info(live_info)
 
-    predictions = {}
+    predictions_combined = {}
 
     # Perform prediction for each target
     for target, model in models.items():
         prediction_encoded = model.predict(live_info_df)
         prediction = label_encoders[target].inverse_transform(prediction_encoded)
-        predictions[target] = prediction[0]
+        predictions_combined[target] = prediction[0]
 
-    # Convert CellSizeFactor to string as a workaround as sending float values caused issues
-    predictions['CellSizeFactor'] = str(predictions['CellSizeFactor'])
+    print(predictions_combined)
+
+    predictions_split = predictions_combined['combined'].split(';')
+
+    print(predictions_split)
+
+    predictions = {
+        'Container' : predictions_split[0],
+        'Traversal' : predictions_split[1],
+        'Load Estimator' : predictions_split[2],
+        'Data Layout' : predictions_split[3],
+        'Newton 3' : predictions_split[4],
+        'CellSizeFactor' : predictions_split[5]
+    }
+
     return predictions
 
 
