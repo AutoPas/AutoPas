@@ -114,19 +114,19 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(double cutoff) final { _baseCutoff = cutoff; }
+  void setCutoff(const double cutoff) final { _baseCutoff = cutoff; }
 
   [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
-  [[nodiscard]] virtual size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
     size_t numParticles = 0;
     for (const auto &linkedCells: _hierarchies) {
-      numParticles += linkedCells.getNumberOfParticles();
+      numParticles += linkedCells.getNumberOfParticles(behavior);
     }
     return numParticles;
   }
 
-  [[nodiscard]] virtual size_t size() const override {
+  [[nodiscard]] size_t size() const override {
     size_t numParticles = 0;
     for (const auto &linkedCells: _hierarchies) {
       numParticles += linkedCells.size();
@@ -170,8 +170,19 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     return _hierarchies[getHierarchyLevel(particle)].deleteParticle(particle);
   }
 
-  // TODO: Implement
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override = 0;
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    size_t prevCells = 0;
+    // find which hierarchy contains cellIndex
+    for (size_t currentLevel = 0; currentLevel < _numHierarchyLevels; ++currentLevel) {
+      const auto cellCount = _hierarchies[currentLevel].getCells().size();
+      if (cellIndex < prevCells + cellCount) {
+        return _hierarchies[currentLevel].deleteParticle(cellIndex - prevCells, particleIndex);
+      }
+      prevCells += cellCount;
+    }
+    utils::ExceptionHandler::exception("Error: Couldn't find particle at cellIndex:", cellIndex, " particleIndex:", particleIndex);
+    return false;
+  }
 
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     _hierarchies[getHierarchyLevel(haloParticle)].addParticle(haloParticle);
@@ -279,9 +290,9 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     }
 
     const auto threadNum = autopas_get_thread_num();
-    // new iteration
     if (cellIndex == 0 && particleIndex == 0) {
-      cellIndex = ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : threadNum);
+      // new iteration
+      cellIndex = ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
       _currentLevel[threadNum * _cacheOffset] = _prevCells[threadNum * _cacheOffset] = 0;
     }
 
@@ -291,9 +302,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
     // get which hierarchy cellIndex is in
     while (currentLevel < _numHierarchyLevels) {
-      const auto [startCellIndex, endCellIndex] =
-          _hierarchies[currentLevel].template getCellsRange<regionIter>(iteratorBehavior, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
-      const auto cellCount = startCellIndex - startCellIndex + 1;
+      const auto cellCount = _hierarchies[currentLevel].getCells().size();
       if (cellIndex - prevCells >= cellCount) {
         // skip this level
         prevCells += cellCount;
@@ -301,7 +310,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
         continue;
       }
       const auto ret =
-          _hierarchies[currentLevel].template getParticleImpl<regionIter>(cellIndex - prevCells + startCellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+          _hierarchies[currentLevel].template getParticleImpl<regionIter>(cellIndex - prevCells, particleIndex, iteratorBehavior, boxMin, boxMax);
       if (ret[0] == nullptr) {
         // not found, check next level
         if (cellIndex - prevCells < cellCount) {
@@ -310,7 +319,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
             ++cellIndex;
           }
           else {
-            cellIndex = prevCells + cellCount + threadNum;
+            cellIndex = prevCells + cellCount;
           }
           particleIndex = 0;
         }

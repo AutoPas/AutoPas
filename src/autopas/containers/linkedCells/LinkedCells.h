@@ -212,32 +212,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                            std::numeric_limits<double>::max()};
     return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  /**
-   * Get range of cells that is in [boxMin, boxMax]
-   * @tparam regionIter
-   * @param iteratorBehavior
-   * @param boxMin
-   * @param boxMax
-   * @return
-   */
-  template <bool regionIter>
-  std::tuple<size_t, size_t> getCellsRange(const IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const {
-    if constexpr (regionIter) {
-      // We extend the search box for cells here since particles might have moved
-      return {_cellBlock.get1DIndexOfPosition(boxMin),
-              _cellBlock.get1DIndexOfPosition(boxMax)};
-    } else {
-      if (not(iteratorBehavior & IteratorBehavior::halo)) {
-        // only potentially owned region
-        return {_cellBlock.getFirstOwnedCellIndex(), _cellBlock.getLastOwnedCellIndex()};
-      } else {
-        // whole range of cells
-        return {0, this->_cells.size() - 1};
-      }
-    }
-  }
 
   /**
    * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
@@ -266,8 +240,21 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
 
     // first and last relevant cell index
-    const auto [startCellIndex, endCellIndex] =
-        getCellsRange<regionIter>(cellIndex, boxMinWithSafetyMargin, boxMaxWithSafetyMargin)();
+    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
+      if constexpr (regionIter) {
+        // We extend the search box for cells here since particles might have moved
+        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
+                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
+      } else {
+        if (not(iteratorBehavior & IteratorBehavior::halo)) {
+          // only potentially owned region
+          return {_cellBlock.getFirstOwnedCellIndex(), _cellBlock.getLastOwnedCellIndex()};
+        } else {
+          // whole range of cells
+          return {0, this->_cells.size() - 1};
+        }
+      }
+    }();
 
     // if we are at the start of an iteration ...
     if (cellIndex == 0 and particleIndex == 0) {
