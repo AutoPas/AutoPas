@@ -15,6 +15,7 @@
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StringUtils.h"
+#include "tests/containers/TraversalComparison.h"
 
 namespace autopas {
 
@@ -67,6 +68,21 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
           }
           // make sure cutoffs are sorted
           std::sort(_cutoffs.begin(), _cutoffs.end());
+          // calculate max allowable cutoff
+          double maxLength = 1e15;
+          for (size_t i = 0; i < 3; ++i) {
+            maxLength = std::min(maxLength, boxMax[i] - boxMin[i]);
+          }
+          maxLength -= _skin;
+          // fix cutoffs if they are bigger than maxLength
+          while (_cutoffs.back() > maxLength) {
+            AutoPasLog(ERROR, "Cutoff {} bigger than max allowable according to box size, adjusting to {}", _cutoffs.back(), maxLength);
+            _cutoffs.back() = maxLength;
+            if (_cutoffs.size() > 1 && _cutoffs[_cutoffs.size() - 2] >= _cutoffs[_cutoffs.size() - 1]) {
+              AutoPasLog(ERROR, "Deleting biggest cutoff to avoid hierarchies with same cutoff");
+              _cutoffs.pop_back();
+            }
+          }
           // biggest interaction length
           const double interactionLengthBiggest = _cutoffs.back() + _skin;
           // generate LinkedCells for each hierarchy, with different cutoffs
@@ -112,12 +128,14 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
-  [[nodiscard]] double getCutoff() const final { return _baseCutoff; }
+  [[nodiscard]] double getCutoff() const final { return _cutoffs.back(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(const double cutoff) final { _baseCutoff = cutoff; }
+  void setCutoff(const double cutoff) final {
+    //_baseCutoff = cutoff;
+  }
 
   [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
@@ -168,7 +186,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   void addParticleImpl(const ParticleType &p) override {
-    _hierarchies[getHierarchyLevel(p)]->addParticle(p);
+    _hierarchies[getHierarchyLevel(p)]->addParticleImpl(p);
   }
 
   bool deleteParticle(Particle &particle) override {
@@ -185,12 +203,12 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       }
       prevCells += cellCount;
     }
-    utils::ExceptionHandler::exception("Error: Couldn't find particle at cellIndex:", cellIndex, " particleIndex:", particleIndex);
+    utils::ExceptionHandler::exception("Error: Couldn't find particle at cellIndex: {} particleIndex: {}", cellIndex, particleIndex);
     return false;
   }
 
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    _hierarchies[getHierarchyLevel(haloParticle)]->addParticle(haloParticle);
+    _hierarchies[getHierarchyLevel(haloParticle)]->addHaloParticleImpl(haloParticle);
   }
 
   bool updateHaloParticle(const ParticleType &haloParticle) override {
@@ -287,7 +305,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     const auto threadNum = autopas_get_thread_num();
     if (cellIndex == 0 && particleIndex == 0) {
       // new iteration
-      cellIndex = ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
       _currentLevel[threadNum * _cacheOffset] = _prevCells[threadNum * _cacheOffset] = 0;
     }
 
@@ -355,6 +372,35 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   /**
+ * Reduce properties of particles as defined by a lambda function.
+ * @tparam Lambda (Particle p, A initialValue) -> void
+ * @tparam A type of particle attribute to be reduced
+ * @param reduceLambda code to reduce properties of particles
+ * @param result reference to result of type A
+ * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
+ */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    for (size_t idx = 0; idx < _hierarchies.size(); idx++) {
+      _hierarchies[idx]->reduce(reduceLambda, result, behavior);
+    }
+  }
+
+  /**
+ * Execute code on all particles in this container as defined by a lambda function.
+ * @tparam Lambda (Particle &p) -> void
+ * @param forEachLambda code to be executed on all particles
+ * @param behavior @see IteratorBehavior
+ */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    //AUTOPAS_OPENMP(parallel for)
+    for (size_t idx = 0; idx < _hierarchies.size(); idx++) {
+      _hierarchies[idx]->forEach(forEachLambda, behavior);
+    }
+  }
+
+  /**
   * Execute code on all particles in this container in a certain region as defined by a lambda function.
   * @tparam Lambda (Particle &p) -> void
   * @param forEachLambda code to be executed on all particles
@@ -365,7 +411,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    AUTOPAS_OPENMP(parallel for)
+    //AUTOPAS_OPENMP(parallel for)
     for (size_t idx = 0; idx < _hierarchies.size(); idx++) {
       _hierarchies[idx]->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     }
