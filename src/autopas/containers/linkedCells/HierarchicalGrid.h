@@ -60,7 +60,12 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
         _skin(skinPerTimestep * rebuildFrequency),
         _numHierarchyLevels(cutoffs.size()),
         _cellSizeFactor(cellSizeFactor),
+        _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
         _cutoffs(cutoffs) {
+          // resize iteration storage variables
+          _currentLevel.resize(autopas_get_max_threads() * _cacheOffset, 0);
+          _prevCells.resize(autopas_get_max_threads() * _cacheOffset, 0);
+
           if(_cutoffs.empty()) {
             utils::ExceptionHandler::exception("Error: Hierarchical Grid cutoffs vector is empty.");
           }
@@ -273,14 +278,17 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
     }
 
+    const auto threadNum = autopas_get_thread_num();
     // new iteration
     if (cellIndex == 0 && particleIndex == 0) {
-      cellIndex = ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
+      cellIndex = ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : threadNum);
+      _currentLevel[threadNum * _cacheOffset] = _prevCells[threadNum * _cacheOffset] = 0;
     }
 
-    // you can store currentLevel and prevCells as member variables to store current stage of iteration
-    // it will be faster but the function getParticleImpl cant be const then
-    size_t currentLevel = 0, prevCells = 0;
+    // get stored data
+    auto &currentLevel = _currentLevel[threadNum * _cacheOffset];
+    auto &prevCells = _prevCells[threadNum * _cacheOffset];
+
     // get which hierarchy cellIndex is in
     while (currentLevel < _numHierarchyLevels) {
       const auto [startCellIndex, endCellIndex] =
@@ -302,7 +310,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
             ++cellIndex;
           }
           else {
-            cellIndex = prevCells + cellCount + autopas_get_thread_num();
+            cellIndex = prevCells + cellCount + threadNum;
           }
           particleIndex = 0;
         }
@@ -399,6 +407,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   double _skin;
   size_t _numHierarchyLevels;
   const double _cellSizeFactor;
+  // store iteration stage
+  mutable std::vector<size_t> _currentLevel;
+  mutable std::vector<size_t> _prevCells;
+  const size_t _cacheOffset;
 
   /**
    *
