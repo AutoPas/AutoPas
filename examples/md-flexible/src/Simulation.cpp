@@ -202,7 +202,7 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    const size_t rotationalGlobalForceIterationFrom = 750000;
+    const size_t rotationalGlobalForceIterationFrom = 75000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
           _configuration.globalForce.value, -9.8, M_PI/8., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
