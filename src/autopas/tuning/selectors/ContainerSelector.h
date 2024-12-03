@@ -11,6 +11,7 @@
 
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/linkedCells/HierarchicalGrid.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -153,6 +154,12 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       container =
           std::make_unique<Octree<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep,
                                              containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+      break;
+    }
+    case ContainerOption::hierarchicalGrid: {
+      container =
+          std::make_unique<HierarchicalGrid<Particle>>(_boxMin, _boxMax, _cutoff, std::vector<double>{2.5, 5}, containerInfo.verletSkinPerTimestep,
+                                       containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
       break;
     }
     default: {

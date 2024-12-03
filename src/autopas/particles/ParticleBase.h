@@ -230,7 +230,7 @@ class ParticleBase {
    * default 1, can be overridden to whatever is appropitate for the custom Particle type
    * @return floatType size of the Particle
    */
-  virtual floatType getSize() {
+  virtual floatType getSize() const {
     return 1;
   }
 

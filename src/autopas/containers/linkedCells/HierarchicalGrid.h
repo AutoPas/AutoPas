@@ -10,13 +10,9 @@
 #include <array>
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/CellBlock3D.h"
-#include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/iterators/ContainerIterator.h"
-#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StringUtils.h"
 
@@ -72,7 +68,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
           // make sure cutoffs are sorted
           std::sort(_cutoffs.begin(), _cutoffs.end());
           // biggest interaction length
-          double interactionLengthBiggest = _cutoffs.back() + _skin;
+          const double interactionLengthBiggest = _cutoffs.back() + _skin;
           // generate LinkedCells for each hierarchy, with different cutoffs
           _hierarchies.reserve(_numHierarchyLevels);
           for(size_t i = 0; i < _numHierarchyLevels; ++i) {
@@ -82,7 +78,14 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
             // for each LinkedCells so that the cellLength is equal to actual interaction length of that level
             const double interactionLengthLevel = _cutoffs[i] + _skin;
             const double ratio = interactionLengthLevel / interactionLengthBiggest;
-            _hierarchies[i] = LinkedCells<Particle>(_boxMin, _boxMax, _cutoffs.back(), skinPerTimestep, rebuildFrequency, cellSizeFactor * ratio);
+            _hierarchies.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(
+              _boxMin,
+              _boxMax,
+              _cutoffs.back(),
+              skinPerTimestep,
+              rebuildFrequency,
+              cellSizeFactor * ratio
+            ));
           }
         }
 
@@ -118,10 +121,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
   [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
-  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     size_t numParticles = 0;
     for (const auto &linkedCells: _hierarchies) {
-      numParticles += linkedCells.getNumberOfParticles(behavior);
+      numParticles += linkedCells->getNumberOfParticles(behavior);
     }
     return numParticles;
   }
@@ -129,7 +132,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   [[nodiscard]] size_t size() const override {
     size_t numParticles = 0;
     for (const auto &linkedCells: _hierarchies) {
-      numParticles += linkedCells.size();
+      numParticles += linkedCells->size();
     }
     return numParticles;
   }
@@ -157,26 +160,28 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
-    // TODO: add reserve somehow
-    // do not do anything, because numParticles includes all particles over all hierarchies
+    // reserves more because reserve is designed for only one hierarchy
     // can do numParticles / _numHierarchyLevels, will not be accurate
+    for (size_t i = 0; i < _numHierarchyLevels; ++i) {
+      _hierarchies[i]->reserve(numParticles, numParticlesHaloEstimate);
+    }
   }
 
   void addParticleImpl(const ParticleType &p) override {
-    _hierarchies[getHierarchyLevel(p)].addParticle(p);
+    _hierarchies[getHierarchyLevel(p)]->addParticle(p);
   }
 
   bool deleteParticle(Particle &particle) override {
-    return _hierarchies[getHierarchyLevel(particle)].deleteParticle(particle);
+    return _hierarchies[getHierarchyLevel(particle)]->deleteParticle(particle);
   }
 
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
     size_t prevCells = 0;
     // find which hierarchy contains cellIndex
     for (size_t currentLevel = 0; currentLevel < _numHierarchyLevels; ++currentLevel) {
-      const auto cellCount = _hierarchies[currentLevel].getCells().size();
+      const auto cellCount = _hierarchies[currentLevel]->getCells().size();
       if (cellIndex < prevCells + cellCount) {
-        return _hierarchies[currentLevel].deleteParticle(cellIndex - prevCells, particleIndex);
+        return _hierarchies[currentLevel]->deleteParticle(cellIndex - prevCells, particleIndex);
       }
       prevCells += cellCount;
     }
@@ -185,23 +190,23 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    _hierarchies[getHierarchyLevel(haloParticle)].addParticle(haloParticle);
+    _hierarchies[getHierarchyLevel(haloParticle)]->addParticle(haloParticle);
   }
 
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    return _hierarchies[getHierarchyLevel(haloParticle)].updateHaloParticle(haloParticle);
+    return _hierarchies[getHierarchyLevel(haloParticle)]->updateHaloParticle(haloParticle);
   }
 
   void deleteHaloParticles() override {
     AUTOPAS_OPENMP(parallel for)
     for (size_t idx = 0; idx < _numHierarchyLevels; idx++) {
-      _hierarchies[idx].deleteHaloParticles();
+      _hierarchies[idx]->deleteHaloParticles();
     }
   }
 
   void deleteAllParticles() override {
     for (auto &linkedCells: _hierarchies) {
-      linkedCells.deleteAllParticles();
+      linkedCells->deleteAllParticles();
     }
   }
 
@@ -221,7 +226,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       // // fix interactionLength
       // traversalSelectorInfo.interactionLength = _cutoffs[i] + _skin; // cellLength
       // TODO: how to get functor here?
-      _hierarchies[i].computeInteractions(traversal);
+      _hierarchies[i]->computeInteractions(traversal);
     }
     // calculate cross hierarchy
     computeCrossInteractions(traversal);
@@ -234,7 +239,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     std::vector<ParticleType> invalidParticles;
     // parallelized inside each updateContainer
     for (auto &linkedCells: _hierarchies) {
-      auto invalidParticlesSingle = linkedCells.updateContainer(keepNeighborListsValid);
+      auto invalidParticlesSingle = linkedCells->updateContainer(keepNeighborListsValid);
       invalidParticles.insert(invalidParticles.end(), std::make_move_iterator(invalidParticlesSingle.begin()),
         std::make_move_iterator(invalidParticlesSingle.end()));
     }
@@ -243,7 +248,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // return traversal info of hierarchy with biggest interactionLength
-    return _hierarchies.back().getTraversalSelectorInfo();
+    return _hierarchies.back()->getTraversalSelectorInfo();
   }
 
   std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
@@ -279,16 +284,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
-    using namespace autopas::utils::ArrayMath::literals;
-
-    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
-    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
-    if constexpr (regionIter) {
-      // We extend the search box for cells here since particles might have moved
-      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-    }
-
     const auto threadNum = autopas_get_thread_num();
     if (cellIndex == 0 && particleIndex == 0) {
       // new iteration
@@ -302,7 +297,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
     // get which hierarchy cellIndex is in
     while (currentLevel < _numHierarchyLevels) {
-      const auto cellCount = _hierarchies[currentLevel].getCells().size();
+      const auto cellCount = static_cast<const CellBasedParticleContainer<FullParticleCell<Particle>>&>(*_hierarchies[currentLevel]).getCells().size();
       if (cellIndex - prevCells >= cellCount) {
         // skip this level
         prevCells += cellCount;
@@ -310,8 +305,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
         continue;
       }
       const auto ret =
-          _hierarchies[currentLevel].template getParticleImpl<regionIter>(cellIndex - prevCells, particleIndex, iteratorBehavior, boxMin, boxMax);
-      if (ret[0] == nullptr) {
+          _hierarchies[currentLevel]->template getParticleImpl<regionIter>(cellIndex - prevCells, particleIndex, iteratorBehavior, boxMin, boxMax);
+      if (std::get<0>(ret) == nullptr) {
         // not found, check next level
         if (cellIndex - prevCells < cellCount) {
           // if current level was just finished, we need to increase cellIndex here
@@ -327,7 +322,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
         ++currentLevel;
       }
       else {
-        return {ret[0], ret[1] + prevCells, ret[2]};
+        return {std::get<0>(ret), std::get<1>(ret) + prevCells, std::get<2>(ret)};
       }
     }
     return {nullptr, 0, 0};
@@ -346,6 +341,19 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
+  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
+    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+    typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+  }
+
+  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const override {
+    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+  }
+
   /**
   * Execute code on all particles in this container in a certain region as defined by a lambda function.
   * @tparam Lambda (Particle &p) -> void
@@ -359,7 +367,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     AUTOPAS_OPENMP(parallel for)
     for (size_t idx = 0; idx < _hierarchies.size(); idx++) {
-      _hierarchies[idx].forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      _hierarchies[idx]->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     }
   }
 
@@ -377,7 +385,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     for (size_t idx = 0; idx < _hierarchies.size(); idx++) {
-      _hierarchies[idx].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      _hierarchies[idx]->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     }
   }
   
@@ -435,8 +443,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
         return i;
       }
     }
-    AutoPasLog(ERROR, "Size of Particle times baseCutoff is bigger than biggest cutoff of HierarchicalGrid, "
-                      "will result in wrong interaction calculation");
+    AutoPasLog(ERROR, "Size of Particle times baseCutoff is bigger than biggest cutoff of HierarchicalGrid,"
+                      "will result in wrong interaction calculation.");
     return _numHierarchyLevels - 1;
   }
 
@@ -471,7 +479,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   //   }
   // }
 
-  std::vector<autopas::LinkedCells<Particle>> _hierarchies;
+  std::vector<std::unique_ptr<LinkedCells<Particle>>> _hierarchies;
   std::vector<double> _cutoffs;
 
 };
