@@ -284,6 +284,7 @@ class ParticleBase {
 
   /**
    * Floating Point Type used for this particle
+   * TODO Remove
    */
   using ParticleSoAFloatPrecision = accuType;
 
@@ -291,6 +292,11 @@ class ParticleBase {
    * Floating Point Type used for calculations for this particle
    */
   using CalcPrecision = calcType;
+
+  /**
+   * Floating Point Type used for accumulations for this particle
+   */
+  using AccuPrecision = accuType;
 
   /**
    * Id Type used for this particle

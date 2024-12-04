@@ -39,12 +39,23 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
 class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3,
                                                               calculateGlobals, countFLOPs, relevantForTuning>> {
   /**
+   * FloatType used for calculations
+   */
+  using CalcPrecision = typename Particle::CalcPrecision;
+
+  /**
+   * FloatType used for accumulations or more relevant calculations
+   */
+  using AccuPrecision = typename Particle::AccuPrecision;
+
+  /**
    * Structure of the SoAs defined by the particle.
    */
   using SoAArraysType = typename Particle::SoAArraysType;
 
   /**
    * Precision of SoA entries.
+   * TODO Remove
    */
   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
 
@@ -60,7 +71,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, void * /*dummy*/)
+  explicit LJFunctor(CalcPrecision cutoff, void * /*dummy*/)
       : autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs,
                                              relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
@@ -84,7 +95,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    *
    * @param cutoff
    */
-  explicit LJFunctor(double cutoff) : LJFunctor(cutoff, nullptr) {
+  explicit LJFunctor(CalcPrecision cutoff) : LJFunctor(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -96,7 +107,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctor(CalcPrecision cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -127,9 +138,9 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       ++_aosThreadDataFLOPs[threadnum].numDistCalls;
     }
 
-    auto sigmaSquared = _sigmaSquared;
-    auto epsilon24 = _epsilon24;
-    auto shift6 = _shift6;
+    CalcPrecision sigmaSquared = _sigmaSquared;
+    CalcPrecision epsilon24 = _epsilon24;
+    CalcPrecision shift6 = _shift6;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
@@ -137,24 +148,30 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    std::array<CalcPrecision, 3> dr = i.getR() - j.getR();
+    CalcPrecision dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
       return;
     }
 
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquared * invdr2;
+    CalcPrecision invdr2 = static_cast<CalcPrecision>(1.) / dr2;
+    CalcPrecision lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
-    i.addF(f);
+    CalcPrecision lj12 = lj6 * lj6;
+    CalcPrecision lj12m6 = lj12 - lj6;
+    CalcPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    std::array<CalcPrecision, 3> f = dr * fac;
+    std::array<CalcPrecision, 3> convertedF;
+    if constexpr (std::is_same_v<CalcPrecision, AccuPrecision>) {
+      convertedF = f;
+    } else {
+      convertedF = std::copy(f.begin(), f.end(), convertedF.begin());
+    }
+    i.addF(convertedF);
     if (newton3) {
       // only if we use newton 3 here, we want to
-      j.subF(f);
+      j.subF(convertedF);
     }
 
     if constexpr (countFLOPs) {
@@ -170,7 +187,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * f;
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+      AccuPrecision potentialEnergy6 = static_cast<AccuPrecision>(epsilon24) * static_cast<AccuPrecision>(lj12m6) +
+                                       static_cast<AccuPrecision>(shift6);
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
@@ -1118,8 +1136,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     }
 
     // variables
-    std::array<double, 3> virialSum;
-    double potentialEnergySum;
+    std::array<AccuPrecision, 3> virialSum;
+    AccuPrecision potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
@@ -1189,17 +1207,17 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
-  const double _cutoffSquared;
+  const CalcPrecision _cutoffSquared;
   // not const because they might be reset through PPL
-  double _epsilon24, _sigmaSquared, _shift6 = 0;
+  CalcPrecision _epsilon24, _sigmaSquared, _shift6 = 0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _potentialEnergySum;
+  AccuPrecision _potentialEnergySum;
 
   // sum of the virial, only calculated if calculateGlobals is true
-  std::array<double, 3> _virialSum;
+  std::array<AccuPrecision, 3> _virialSum;
 
   // thread buffer for aos
   std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals{};
