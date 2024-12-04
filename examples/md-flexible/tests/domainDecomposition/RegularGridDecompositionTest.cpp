@@ -240,6 +240,7 @@ INSTANTIATE_TEST_SUITE_P(TestHaloParticles, RegularGridDecompositionTest,
 TEST_P(RegularGridDecompositionTest, testExchangeZonalHaloParticles) {
   const auto boundaryType = GetParam();
   auto [autoPasContainer, domainDecomposition] = initDomain(boundaryType);
+  domainDecomposition->setZonalMethodType(ZonalMethodType::FullShellOption);
   const auto &localBoxMin = autoPasContainer->getBoxMin();
   const auto &localBoxMax = autoPasContainer->getBoxMax();
 
