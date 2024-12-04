@@ -306,7 +306,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addParticle()
    */
-  void addParticle(const Particle &p) {
+  void addParticle(const Particle &p, bool forceToContainer = false) {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
@@ -320,7 +320,7 @@ class LogicHandler {
     }
     Particle particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
-    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+    if (forceToContainer) {
       // Container has to (about to) be invalid to be able to add Particles!
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
@@ -333,7 +333,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addHaloParticle()
    */
-  void addHaloParticle(const Particle &haloParticle) {
+  void addHaloParticle(const Particle &haloParticle, bool forceToContainer = false) {
     auto &container = _containerSelector.getCurrentContainer();
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
@@ -347,7 +347,7 @@ class LogicHandler {
     }
     Particle haloParticleCopy = haloParticle;
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
-    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+    if (forceToContainer) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {

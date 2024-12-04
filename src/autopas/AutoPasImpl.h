@@ -189,19 +189,19 @@ void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalo
 }
 
 template <class Particle>
-void AutoPas<Particle>::addParticle(const Particle &p) {
-  _logicHandler->addParticle(p);
+void AutoPas<Particle>::addParticle(const Particle &p, bool forceToContainer) {
+  _logicHandler->addParticle(p, forceToContainer);
 }
 
 template <class Particle>
 template <class Collection>
-void AutoPas<Particle>::addParticles(Collection &&particles) {
+void AutoPas<Particle>::addParticles(Collection &&particles, bool forceToContainer) {
   addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
 }
 
 template <class Particle>
 template <class Collection, class F>
-void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
+void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate, bool forceToContainer) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
@@ -248,19 +248,19 @@ void AutoPas<Particle>::forceRetune() {
 }
 
 template <class Particle>
-void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
-  _logicHandler->addHaloParticle(haloParticle);
+void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle, bool forceToContainer) {
+  _logicHandler->addHaloParticle(haloParticle, forceToContainer);
 }
 
 template <class Particle>
 template <class Collection>
-void AutoPas<Particle>::addHaloParticles(Collection &&particles) {
+void AutoPas<Particle>::addHaloParticles(Collection &&particles, bool forceToContainer) {
   addParticlesAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
 }
 
 template <class Particle>
 template <class Collection, class F>
-void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) {
+void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate, bool forceToContainer) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))

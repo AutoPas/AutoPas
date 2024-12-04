@@ -160,7 +160,7 @@ class AutoPas {
    * boxMin and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addParticle(const Particle &p);
+  void addParticle(const Particle &p, bool forceToContainer = false);
 
   /**
    * Adds all particles from the collection to the container.
@@ -170,7 +170,7 @@ class AutoPas {
    * @param particles
    */
   template <class Collection>
-  void addParticles(Collection &&particles);
+  void addParticles(Collection &&particles, bool forceToContainer = false);
 
   /**
    * Adds all particles for which predicate(particle) == true to the container.
@@ -182,7 +182,7 @@ class AutoPas {
    * @param predicate Condition that determines if an individual particle should be added.
    */
   template <class Collection, class F>
-  void addParticlesIf(Collection &&particles, F predicate);
+  void addParticlesIf(Collection &&particles, F predicate, bool forceToContainer = false);
 
   /**
    * Adds a particle to the container that lies in the halo region of the container.
@@ -191,7 +191,7 @@ class AutoPas {
    * and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addHaloParticle(const Particle &haloParticle);
+  void addHaloParticle(const Particle &haloParticle, bool forceToContainer = false);
 
   /**
    * Adds all halo particles from the collection to the container.
@@ -201,7 +201,7 @@ class AutoPas {
    * @param particles
    */
   template <class Collection>
-  void addHaloParticles(Collection &&particles);
+  void addHaloParticles(Collection &&particles, bool forceToContainer = false);
 
   /**
    * Adds all halo particles for which predicate(particle) == true to the container.
@@ -213,7 +213,7 @@ class AutoPas {
    * @param predicate Condition that determines if an individual particle should be added.
    */
   template <class Collection, class F>
-  void addHaloParticlesIf(Collection &&particles, F predicate);
+  void addHaloParticlesIf(Collection &&particles, F predicate, bool forceToContainer = false);
 
   /**
    * Deletes all particles.
