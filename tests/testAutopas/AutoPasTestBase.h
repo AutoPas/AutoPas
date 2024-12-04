@@ -10,7 +10,6 @@
 
 #include "autopas/utils/logging/Logger.h"
 
-
 class AutoPasTestBase : public testing::Test {
  public:
   AutoPasTestBase() { autopas::Logger::create(); }

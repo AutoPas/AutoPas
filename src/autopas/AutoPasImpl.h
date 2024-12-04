@@ -196,7 +196,7 @@ void AutoPas<Particle>::addParticle(const Particle &p, bool forceToContainer) {
 template <class Particle>
 template <class Collection>
 void AutoPas<Particle>::addParticles(Collection &&particles, bool forceToContainer) {
-  addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
+  addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i], forceToContainer); });
 }
 
 template <class Particle>
@@ -216,7 +216,7 @@ void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate, bool
 
   addParticlesAux(numTrue, 0, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
-      addParticle(particles[i]);
+      addParticle(particles[i], forceToContainer);
     }
   });
 }
@@ -255,7 +255,8 @@ void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle, bool force
 template <class Particle>
 template <class Collection>
 void AutoPas<Particle>::addHaloParticles(Collection &&particles, bool forceToContainer) {
-  addParticlesAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
+  addParticlesAux(0, particles.size(), particles.size(),
+                  [&](auto i) { addHaloParticle(particles[i], forceToContainer); });
 }
 
 template <class Particle>
@@ -275,7 +276,7 @@ void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate, 
 
   addParticlesAux(0, numTrue, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
-      addHaloParticle(particles[i]);
+      addHaloParticle(particles[i], forceToContainer);
     }
   });
 }
