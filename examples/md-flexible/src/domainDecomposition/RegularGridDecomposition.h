@@ -127,10 +127,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeZonalHaloParticlesExport(AutoPasType &autoPasContainer);
 
   /**
-   * Recollects the imported particles to their respecitve zones and calculates the 
+   * Recollects the imported particles to their respecitve zones and calculates the
    * interaction between them (depending on the interaction schedule of the method).
    * @param autoPasContainer.
-   * @param config 
+   * @param config
    */
   void calculateZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config);
 
@@ -165,6 +165,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @return
    */
   autopas::AutoPas_MPI_Comm getCommunicator() const;
+
+  /**
+   * Setter for the ZonalMethodType
+   * @param zonalMethodType
+   */
+  inline void setZonalMethodType(ZonalMethodType zonalMethodType) { _zonalMethodType = zonalMethodType; }
 
  private:
   /**
@@ -314,6 +320,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The zonal method used for inter-node communication
    */
   std::unique_ptr<ZonalMethod> _zonalMethod;
+
+  /**
+   * The type of zonal method
+   */
+  ZonalMethodType _zonalMethodType{ZonalMethodType::FullShellOption};
 
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**

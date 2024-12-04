@@ -23,6 +23,8 @@
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/zonalMethods/FullShell.h"
+#include "src/zonalMethods/HalfShell.h"
+#include "src/zonalMethods/ZonalMethod.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
@@ -200,9 +202,22 @@ void RegularGridDecomposition::initilaizeZonalMethod() {
   RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
   RectRegion globalBoxRegion(_globalBoxMin, _globalBoxMax - _globalBoxMin);
   // NOTE Later: intialize different zonal methods depending on user input
-  _zonalMethod =
+  switch (_zonalMethodType) {
+    case ZonalMethodType::FullShellOption:
+      _zonalMethod =
+          std::make_unique<FullShell>(FullShell(_cutoffWidth, skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
+                                                _communicator, _allNeighborDomainIndices, _boundaryType));
+      break;
+    case ZonalMethodType::HalfShellOption:
+      _zonalMethod =
+          std::make_unique<HalfShell>(HalfShell(_cutoffWidth, skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
+                                                _communicator, _allNeighborDomainIndices, _boundaryType));
+      break;
+    default:
       std::make_unique<FullShell>(FullShell(_cutoffWidth, skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                             _communicator, _allNeighborDomainIndices, _boundaryType));
+      break;
+  }
 }
 
 bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
