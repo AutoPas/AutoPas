@@ -68,8 +68,7 @@ class LogicHandler {
         _flopLogger(outputSuffix),
         _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())),
-        _stepsSinceLastListRebuild(rebuildFrequency)
-  {
+        _stepsSinceLastListRebuild(rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // Initialize AutoPas with tuners for given interaction types
@@ -1619,7 +1618,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   autoTuner.logTuningResult(stillTuning, tuningTimer.getTotalTime());
 
   // Safety check to rebuild when container changed (e.g. between pairwise and triwise config)
-   if (not (_containerSelector.getCurrentContainer().getContainerType() == oldContainer)) {
+  if (not(_containerSelector.getCurrentContainer().getContainerType() == oldContainer)) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
