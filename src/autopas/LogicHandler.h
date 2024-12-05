@@ -1085,7 +1085,10 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   functor.endTraversal(newton3);
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
+  const auto numFLOP = functor.getNumFLOPs();
+  const auto energyPerFLOP = energyTotal / numFLOP;
   timerTotal.stop();
+  const auto energyDelayProduct = energyTotal * timerTotal.getTotalTime();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
@@ -1097,7 +1100,10 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
           energyMeasurementsPossible ? energyPsys : nanD,
           energyMeasurementsPossible ? energyPkg : nanD,
           energyMeasurementsPossible ? energyRam : nanD,
-          energyMeasurementsPossible ? energyTotal : nanL};
+          energyMeasurementsPossible ? energyTotal : nanL,
+          energyMeasurementsPossible ? static_cast<long>(numFLOP) : nanL,
+          energyMeasurementsPossible ? static_cast<long>(energyPerFLOP) : nanL,
+          energyMeasurementsPossible ? energyDelayProduct : nanL};
 }
 
 template <typename Particle>
@@ -1641,7 +1647,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                measurements.energyPkg, measurements.energyRam);
   }
   _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(),
-                                measurements);
+                                measurements, functor->getNumFLOPs());
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
@@ -1656,6 +1662,10 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
             return measurements.timeTotal;
           case TuningMetricOption::energy:
             return measurements.energyTotal;
+         case TuningMetricOption::energyPerFLOP:
+            return static_cast<long>(measurements.energyTotal / functor->getNumFLOPs());
+          case TuningMetricOption::energyDelayProduct:
+            return measurements.energyTotal * measurements.timeTotal;
           default:
             autopas::utils::ExceptionHandler::exception(
                 "LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
