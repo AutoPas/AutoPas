@@ -268,6 +268,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
               return "times";
             case TuningMetricOption::energy:
               return "energy consumption";
+            case TuningMetricOption::energyPerFLOP:
+              return "energyPerFLOP";
+            case TuningMetricOption::energyDelayProduct:
+              return "energyDelayProduct";
           }
           autopas::utils::ExceptionHandler::exception("AutoTuner::addMeasurement(): Unknown tuning metric.");
           return "Unknown tuning metric";
@@ -320,7 +324,7 @@ bool AutoTuner::willRebuildNeighborLists() const {
 
 bool AutoTuner::initEnergy() {
   // Try to initialize the raplMeter
-  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
+  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy || _tuningMetric == TuningMetricOption::energyPerFLOP || _tuningMetric == TuningMetricOption::energyDelayProduct);
 }
 
 bool AutoTuner::resetEnergy() {
@@ -334,7 +338,7 @@ bool AutoTuner::resetEnergy() {
        */
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
+      if (_tuningMetric == TuningMetricOption::energy || _tuningMetric == TuningMetricOption::energyPerFLOP || _tuningMetric == TuningMetricOption::energyDelayProduct) {
         utils::ExceptionHandler::exception(e);
       }
     }
@@ -349,7 +353,7 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
     } catch (const utils::ExceptionHandler::AutoPasException &e) {
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
+      if (_tuningMetric == TuningMetricOption::energy || _tuningMetric == TuningMetricOption::energyPerFLOP || _tuningMetric == TuningMetricOption::energyDelayProduct) {
         utils::ExceptionHandler::exception(e);
       }
     }
