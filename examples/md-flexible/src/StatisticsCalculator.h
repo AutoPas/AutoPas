@@ -44,18 +44,30 @@ class StatisticsCalculator {
  private:
   /**
    * Calculates the statistics of the current state of the simulation.
-   * @param autopasContainer
+   * @param autoPasContainer
    * @param globalForceZ
    * @param particlePropertiesLib
    * @return tuple of doubles containing the statistics.
    */
-  static std::tuple<double, double, double, double, double, double, double> calculateStatistics(
-      const autopas::AutoPas<ParticleType> &autopasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
+  static std::tuple<double, double, double, double, double, double, double>
+  calculateMeanPotentialKineticRotationalEnergy(
+      const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
+
+  /**
+   * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.
+   * @param autoPasContainer
+   * @param particlePropertiesLib
+   * @return
+   */
+  std::tuple<double, double, double> calculateOverlapDistForceMagSum(
+      const autopas::AutoPas<ParticleType> &autoPasContainer,
+      const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Generates the output file (.csv) for the statistics.
+   * @param columnNames The names of the columns in the output file.
    */
-  void generateOutputFile();
+  void generateOutputFile(const std::vector<std::string>& columnNames);
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.

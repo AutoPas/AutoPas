@@ -15,17 +15,29 @@
 StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::string &outputFolder)
     : _sessionName(std::move(sessionName)) {
   tryCreateStatisticsFolders(_sessionName, outputFolder);
-  generateOutputFile();
+  /**
+  std::vector<std::string> columnNames = {
+      "Iteration", "MeanPotentialEnergyZ", "MeanKineticEnergyX", "MeanKineticEnergyY",
+      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
+  };
+   **/
+  const std::vector<std::string> columnNames = {
+      "Iteration", "OverlapSum", "DistSum", "ForceMagSum"
+  };
+  generateOutputFile(columnNames);
 }
 
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
-  const auto statistics = calculateStatistics(autoPasContainer, globalForceZ, particlePropertiesLib);
+
+  //const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib); TODO: change
+  const auto statistics = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
   StatisticsCalculator::writeRow(currentIteration, statistics);
+
 }
 
-std::tuple<double, double, double, double, double, double, double> StatisticsCalculator::calculateStatistics(
+std::tuple<double, double, double, double, double, double, double> StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -58,17 +70,64 @@ std::tuple<double, double, double, double, double, double, double> StatisticsCal
                          meanRotationalEnergy[0], meanRotationalEnergy[1], meanRotationalEnergy[2]);
 }
 
+std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistForceMagSum(
+    const autopas::AutoPas<ParticleType> &autoPasContainer,
+    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
+
+  double overlapSum = 0.;
+  double distSum = 0.;
+  double forceMagSum = 0.;
+
+  for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
+    for (auto j = autoPasContainer.begin(autopas::IteratorBehavior::owned); j.isValid(); ++j) {
+      if (i->getID() == j->getID()) {
+        continue;
+      }
+
+      const std::array<double, 3> x_i = i->getR();
+      const std::array<double, 3> x_j = j->getR();
+      const std::array<double, 3> displacement = x_i - x_j;
+      const double dist = L2Norm(displacement);
+
+      const double radius_i = particlePropertiesLib.getRadius(i->getTypeId());
+      const double radius_j = particlePropertiesLib.getRadius(j->getTypeId());
+      const double overlap = radius_i + radius_j - dist;
+
+      const std::array<double, 3> force_i = i->getF();
+      const std::array<double, 3> force_j = j->getF();
+      const double forceMag = L2Norm(force_i) + L2Norm(force_j);
+
+      overlapSum += (overlap > 0 ? overlap : 0);
+      distSum += dist;
+      forceMagSum += forceMag;
+    }
+  }
+
+    overlapSum /= 2.;
+    distSum /= 2.;
+    forceMagSum /= 2.;
+
+    return std::make_tuple(overlapSum, distSum, forceMagSum);
+}
+
 //---------------------------------------------Helper Methods-----------------------------------------------------
 
-void StatisticsCalculator::generateOutputFile() {
+void StatisticsCalculator::generateOutputFile(const std::vector<std::string>& columnNames) {
   std::ostringstream filename;
   filename << _statisticsFolderPath << _sessionName << "_statistics.csv";
 
   outputFile.open(filename.str(), std::ios::out);
 
   if (outputFile.is_open()) {
-    outputFile << "Iteration,MeanPotentialEnergyZ, MeanKineticEnergyX, MeanKineticEnergyY, MeanKineticEnergyZ, MeanRotationalEnergyX, "
-                  "MeanRotationalEnergyY, MeanRotationalEnergyZ\n";
+    for (size_t i = 0; i < columnNames.size(); ++i) {
+      outputFile << columnNames[i];
+      if (i < columnNames.size() - 1) {
+        outputFile << ",";
+      }
+    }
+    outputFile << "\n";
   } else {
     throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " + filename.str());
   }
