@@ -16,7 +16,7 @@ verlet-rebuild-frequency             :  20
 verlet-skin-radius-per-timestep      :  0.01
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
-tuning-metric                        :  time
+tuning-metric                        :  time, energy, energyPerFLOP, energyDelayProduct
 tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
 tuning-interval                      :  5000
 tuning-samples                       :  3
