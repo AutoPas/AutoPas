@@ -773,6 +773,8 @@ class LJFunctor
       constexpr size_t numFLOPsPerN3GlobalCalc = applyShift ? 13 : 12;
       constexpr size_t numFLOPsPerNoN3GlobalCalc = applyShift ? 9 : 8;
 
+      AutoPasLog(TRACE, "numDistCalls: {}, numKernelCallsN3: {}, numKernelCallsNoN3: {}, numGlobalCalcsN3: {}, numGlobalCalcsNoN3: {}", numDistCallsAcc, numKernelCallsN3Acc, numKernelCallsNoN3Acc, numGlobalCalcsN3Acc, numGlobalCalcsNoN3Acc);
+
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
              numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
              numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
