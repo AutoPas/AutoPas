@@ -56,5 +56,23 @@ struct IterationMeasurements {
    * energy sources.
    */
   long energyTotal{};
+
+  /**
+   * Number of Flops executed during the iteration.
+   */
+  long numFLOP{};
+
+  /**
+   * Energy consumed per FLOP.
+   */
+  long energyPerFLOP{};
+
+  /**
+   * Energy Delay Product.
+   */
+  long energyDelayProduct{};
+
+
+
 };
 }  // namespace autopas
