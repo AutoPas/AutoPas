@@ -154,7 +154,7 @@ class LJFunctorAVX
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = dr * fac;
     i.addF(f);
-    if (newton3) {
+    if (newton3 || j.isHalo()) {
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
