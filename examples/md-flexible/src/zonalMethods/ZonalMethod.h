@@ -9,8 +9,6 @@
 #include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
-enum ZonalMethodType { FullShellOption, HalfShellOption };
-
 /**
  * This abstract class represents a zonal method.
  * All specific zonal method classes should extend this class.
