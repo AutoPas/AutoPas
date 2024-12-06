@@ -830,6 +830,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
+      } else if (key == config.zonalMethodOption.name) {
+        expected = "Exactly one zonal method out of the possible values.";
+        description = config.zonalMethodOption.description;
+
+        const auto parsedOptions = options::ZonalMethodOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass exactly one extrapolation method!"));
+
+        config.zonalMethodOption.value = *parsedOptions.begin();
+
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

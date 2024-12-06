@@ -32,6 +32,7 @@
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "src/options/ZonalMethodOption.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -107,9 +108,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -814,6 +813,13 @@ class MDFlexConfig {
   MDFlexOption<std::string, __LINE__> outputSuffix{"", "output-suffix", true,
                                                    "An identifier that is contained in the filename of all log files."};
 
+  /**
+   * zonalMethodOption
+   */
+  MDFlexOption<options::ZonalMethodOption, __LINE__> zonalMethodOption{
+      options::ZonalMethodOption::fullshell, "zonalMethod", true,
+      "Method to use for zonal method. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(options::ZonalMethodOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * valueOffset used for cli-output alignment
    */
