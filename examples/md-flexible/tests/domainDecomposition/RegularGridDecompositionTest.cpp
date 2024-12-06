@@ -14,6 +14,7 @@
 #include "src/domainDecomposition/DomainTools.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "src/options/ZonalMethodOption.h"
 
 extern template class autopas::AutoPas<ParticleType>;
 
@@ -35,7 +36,7 @@ auto initDomain(options::BoundaryTypeOption boundaryType) {
   configuration.verletSkinRadius.value = 1.0;
   configuration.verletRebuildFrequency.value = 2;
   const double interactionLength = configuration.cutoff.value + configuration.verletSkinRadius.value;
-  // make sure evey rank gets exactly 3x3x3 cells
+  configuration.zonalMethodOption.value = options::ZonalMethodOption::fullshell;
   const double localBoxLength = 3. * interactionLength;
   const double globalBoxLength = localBoxLength * numberOfProcesses;
   configuration.subdivideDimension.value = {true, false, false};
@@ -240,7 +241,6 @@ INSTANTIATE_TEST_SUITE_P(TestHaloParticles, RegularGridDecompositionTest,
 TEST_P(RegularGridDecompositionTest, testExchangeZonalHaloParticles) {
   const auto boundaryType = GetParam();
   auto [autoPasContainer, domainDecomposition] = initDomain(boundaryType);
-  domainDecomposition->setZonalMethodType(ZonalMethodType::FullShellOption);
   const auto &localBoxMin = autoPasContainer->getBoxMin();
   const auto &localBoxMax = autoPasContainer->getBoxMax();
 
