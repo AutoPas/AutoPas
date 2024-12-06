@@ -694,10 +694,12 @@ class LogicHandler {
    * @tparam Functor
    * @param functor
    * @param newton3
+   * @param useSoA Use SoA functor calls where it is feasible. This still leaves some interactions with the AoS functor
+   * but the switch is useful to disable SoA calls if a functor doesn't support them at all.
    * @return
    */
   template <class Functor>
-  void computeRemainderInteractions(Functor &functor, bool newton3);
+  void computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA);
 
   /**
    * Performs the interactions ParticleContainer::computeInteractions() did not cover.
@@ -718,11 +720,12 @@ class LogicHandler {
    * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
    * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
    * updated.
+   * @param useSoA Use SoAFunctor calls instead of AoSFunctor calls wherever it makes sense.
    */
   template <bool newton3, class ContainerType, class PairwiseFunctor>
   void computeRemainderInteractions2B(PairwiseFunctor *f, ContainerType &container,
                                       std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffers, bool useSoA);
 
   /**
    * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and
@@ -1088,8 +1091,9 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerComputeInteractions.stop();
 
   timerComputeRemainder.start();
-  computeRemainderInteractions(functor, newton3);
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
+  const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
+  computeRemainderInteractions(functor, newton3, dataLayout);
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
@@ -1111,15 +1115,17 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
 template <typename Particle>
 template <class Functor>
-void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, bool newton3) {
+void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA) {
   auto &container = _containerSelector.getCurrentContainer();
 
   withStaticContainerType(container, [&](auto &actualContainerType) {
     if constexpr (utils::isPairwiseFunctor<Functor>()) {
       if (newton3) {
-        computeRemainderInteractions2B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions2B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer,
+                                             useSoA);
       } else {
-        computeRemainderInteractions2B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions2B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer,
+                                              useSoA);
       }
     } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
       if (newton3) {
@@ -1135,7 +1141,7 @@ template <class Particle>
 template <bool newton3, class ContainerType, class PairwiseFunctor>
 void LogicHandler<Particle>::computeRemainderInteractions2B(
     PairwiseFunctor *f, ContainerType &container, std::vector<FullParticleCell<Particle>> &particleBuffers,
-    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+    std::vector<FullParticleCell<Particle>> &haloParticleBuffers, bool useSoA) {
   // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
   if (_bufferLocks.size() < particleBuffers.size()) {
     utils::ExceptionHandler::exception("Not enough locks for non-halo buffers! Num Locks: {}, Buffers: {}",
