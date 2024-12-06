@@ -197,9 +197,8 @@ class LJFunctor
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
-   * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool /*newton3*/) final {
     if (soa.size() == 0) return;
 
     const auto threadnum = autopas::autopas_get_thread_num();
@@ -354,8 +353,6 @@ class LJFunctor
       _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
     }
     if (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_thread_num();
-
       _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
       _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
       _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
