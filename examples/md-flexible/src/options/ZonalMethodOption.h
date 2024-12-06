@@ -19,11 +19,7 @@ class ZonalMethodOption : public autopas::Option<ZonalMethodOption> {
   /**
    * Possible choices of boundary condition
    */
-  enum Value {
-    fullshell,
-    halfshell,
-    midpoint
-  };
+  enum Value { none, fullshell, halfshell, midpoint };
   ZonalMethodOption() = default;
 
   /**
@@ -49,7 +45,8 @@ class ZonalMethodOption : public autopas::Option<ZonalMethodOption> {
    * @return map option -> string representation
    */
   static std::map<ZonalMethodOption, std::string> getOptionNames() {
-    return {{ZonalMethodOption::fullshell, "fullshell"},
+    return {{ZonalMethodOption::none, "none"},
+            {ZonalMethodOption::fullshell, "fullshell"},
             {ZonalMethodOption::halfshell, "halfshell"},
             {ZonalMethodOption::midpoint, "midpoint"}};
   }

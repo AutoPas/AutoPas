@@ -12,6 +12,7 @@
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "src/options/ZonalMethodOption.h"
 
 // Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -271,8 +272,11 @@ void Simulation::run() {
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
-      /* _domainDecomposition->exchangeHaloParticles(*_autoPasContainer); */
-      _domainDecomposition->exchangeZonalHaloParticlesExport(*_autoPasContainer);
+      if (_configuration.zonalMethodOption.value == options::ZonalMethodOption::none) {
+        _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
+      } else {
+        _domainDecomposition->exchangeZonalHaloParticlesExport(*_autoPasContainer);
+      }
       _timers.haloParticleExchange.stop();
 
       _timers.computationalLoad.start();
@@ -286,8 +290,10 @@ void Simulation::run() {
     }
 
     // NOTE: calculate zonal interactions and them exchange results between ranks
-    _domainDecomposition->calculateZonalInteractions(*_autoPasContainer, _configuration);
-    _domainDecomposition->exchangeZonalHaloParticlesResults(*_autoPasContainer);
+    if (_configuration.zonalMethodOption.value != options::ZonalMethodOption::none) {
+      _domainDecomposition->calculateZonalInteractions(*_autoPasContainer, _configuration);
+      _domainDecomposition->exchangeZonalHaloParticlesResults(*_autoPasContainer);
+    }
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
