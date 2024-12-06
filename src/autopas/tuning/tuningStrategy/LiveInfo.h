@@ -52,8 +52,6 @@ class LiveInfo {
    * Currently, it provides:
    * - numOwnedParticles: The number of particles in the container that are marked as owned.
    * - numHaloParticles: The number of particles in the container that are marked as halo.
-   * - numDummyParticles: The number of particles in the container that are marked as dummy.
-   * - numTotalParticles: The total number of particles in the container.
    * - cutoff: The configured cutoff radius.
    * - skin: The configured skin radius.
    * - domainSizeX: The size of the domain on the x-axis.
@@ -100,13 +98,9 @@ class LiveInfo {
 
     const auto numOwnedParticles = container.getNumberOfParticles(OwnershipState::owned);
     const auto numHaloParticles = container.getNumberOfParticles(OwnershipState::halo);
-    const auto numDummyParticles = container.getNumberOfParticles(OwnershipState::dummy);
-    const auto numTotalParticles = numOwnedParticles + numHaloParticles + numDummyParticles;
 
     infos["numOwnedParticles"] = numOwnedParticles;
     infos["numHaloParticles"] = numHaloParticles;
-    infos["numDummyParticles"] = numDummyParticles;
-    infos["numTotalParticles"] = numTotalParticles;
 
     infos["cutoff"] = cutoff;
     infos["skin"] = container.getVerletSkin();
