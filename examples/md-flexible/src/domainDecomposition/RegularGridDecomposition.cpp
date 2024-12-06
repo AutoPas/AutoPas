@@ -19,6 +19,7 @@
 #include "autopas/utils/Math.h"
 #include "autopas/utils/Quaternion.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/logging/Logger.h"
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
@@ -71,7 +72,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // initialize _allNeighborDomainIndices
   initializeAllNeighborIndices();
   // initialize _zonalMethod
-  initilaizeZonalMethod();
+  initilaizeZonalMethod(configuration.zonalMethodOption.value);
 
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
@@ -196,25 +197,23 @@ void RegularGridDecomposition::initializeAllNeighborIndices() {
   }
 }
 
-void RegularGridDecomposition::initilaizeZonalMethod() {
+void RegularGridDecomposition::initilaizeZonalMethod(options::ZonalMethodOption zonalMethodType) {
   using namespace autopas::utils::ArrayMath::literals;
-  const double skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
   RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
   RectRegion globalBoxRegion(_globalBoxMin, _globalBoxMax - _globalBoxMin);
-  // NOTE Later: intialize different zonal methods depending on user input
-  switch (_zonalMethodType) {
-    case ZonalMethodType::FullShellOption:
+  switch (zonalMethodType) {
+    case options::ZonalMethodOption::fullshell:
       _zonalMethod =
-          std::make_unique<FullShell>(FullShell(_cutoffWidth, skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
+          std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                                 _communicator, _allNeighborDomainIndices, _boundaryType));
       break;
-    case ZonalMethodType::HalfShellOption:
+    case options::ZonalMethodOption::halfshell:
       _zonalMethod =
-          std::make_unique<HalfShell>(HalfShell(_cutoffWidth, skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
+          std::make_unique<HalfShell>(HalfShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                                 _communicator, _allNeighborDomainIndices, _boundaryType));
       break;
     default:
-      std::make_unique<FullShell>(FullShell(_cutoffWidth, skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
+      std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                             _communicator, _allNeighborDomainIndices, _boundaryType));
       break;
   }
@@ -235,7 +234,8 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
   _haloParticles.clear();
   const double haloWidth = _cutoffWidth + _skinWidth;
 
-  // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add 10%
+  // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add
+  // 10%
   const auto localBoxDimensions = _localBoxMax - _localBoxMin;
   const auto localBoxVolume = std::reduce(localBoxDimensions.begin(), localBoxDimensions.end(), 1., std::multiplies());
   const auto haloBoxDimensions = localBoxDimensions + 2 * haloWidth;
@@ -259,8 +259,8 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     _particlesForLeftNeighbor.clear();
     _particlesForRightNeighbor.clear();
 
-    // Collect particles for the neighboring domain. If the domain is at the global boundary, only collect them in case
-    // of periodic boundaries.
+    // Collect particles for the neighboring domain. If the domain is at the global boundary, only collect them in
+    // case of periodic boundaries.
     if (periodicBCs or not atGlobalMinBoundary) {
       collectHaloParticlesForLeftNeighbor(autoPasContainer, dimensionIndex, _particlesForLeftNeighbor);
     }
@@ -413,19 +413,19 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
         // molecules who will experience repulsion from the boundary.
 
-        // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the largest
-        // sigma of any site of that molecule. Some molecules may still experience attraction in which case their force
-        // is reset to before the force interaction.
+        // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the
+        // largest sigma of any site of that molecule. Some molecules may still experience attraction in which case
+        // their force is reset to before the force interaction.
         //
-        // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has a
-        // site closer than this distance, with a large enough epsilon, that repulsion would occur. For computational
-        // cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory, with an appropriate
-        // step-size and molecular model, not cause any problems.
+        // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has
+        // a site closer than this distance, with a large enough epsilon, that repulsion would occur. For
+        // computational cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory,
+        // with an appropriate step-size and molecular model, not cause any problems.
 
-        // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor requires
-        // adding 3 additional molecule types for every molecule type, as we would require relative site positions
-        // mirrored in all 3-dimensions. Then the reflected relative site positions can be rotated using the mirrored
-        // quaternion produced by quaternion::qMirror.
+        // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor
+        // requires adding 3 additional molecule types for every molecule type, as we would require relative site
+        // positions mirrored in all 3-dimensions. Then the reflected relative site positions can be rotated using the
+        // mirrored quaternion produced by quaternion::qMirror.
         //
         // As this is nasty, we reimplement the kernel of the lennard-jones force here. We also use this for
         // single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating a
