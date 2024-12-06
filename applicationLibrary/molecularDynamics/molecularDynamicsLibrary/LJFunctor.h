@@ -198,7 +198,7 @@ class LJFunctor
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
    */
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool /*newton3*/) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
 
     const auto threadnum = autopas::autopas_get_thread_num();

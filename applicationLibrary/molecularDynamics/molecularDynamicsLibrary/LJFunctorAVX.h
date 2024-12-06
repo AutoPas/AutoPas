@@ -182,9 +182,7 @@ class LJFunctorAVX
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the soa.
    */
-  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool /*newton3*/) final {
-    SoAFunctorSingleImpl(soa);
-  }
+  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final { SoAFunctorSingleImpl(soa); }
 
   // clang-format off
   /**
