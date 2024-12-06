@@ -6,6 +6,7 @@
 
 #include "LinkedCellsTest.h"
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayUtils.h"
 
 TYPED_TEST_SUITE_P(LinkedCellsTest);
@@ -18,9 +19,9 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   const std::array<double, 3> boxMax{4.5, 4.5, 4.5};
   // set values so we have 3x3x3 cells + halo = 5x5x5
   const double cutoff{1.0};
-  const double skinPerTimestep{0.1};
+  const double skin{0.5};
   const double rebuildFrequency{5.};
-  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
+  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skin, rebuildFrequency);
 
   // create owned particles
   const std::vector<autopas::Particle> ownedParticles{
@@ -85,7 +86,6 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
 
   std::vector<Particle> invalidParticles;
   EXPECT_NO_THROW(invalidParticles = linkedCells.updateContainer(this->_keepListsValid));
-
   EXPECT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
 
@@ -124,9 +124,9 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   const std::array<double, 3> boxMin{0., 0., 0.};
   const std::array<double, 3> boxMax{10., 10., 10.};
   const double cutoff{1.5};
-  const double skinPerTimestep{1.};  // particles are moved by up to 0.5 and lists might be kept valid
+  const double skin{1.};  // particles are moved by up to 0.5 and lists might be kept valid
   const double rebuildFrequency{1.};
-  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
+  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skin, rebuildFrequency);
 
   int id = 1;
   for (const double x : {0., 5., 9.999}) {

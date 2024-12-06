@@ -10,6 +10,16 @@ Particles leaving the domain are always returned, and particles can be added and
 Historically this interface behavior was also called 'Linked-Cells-like'.
 For periodic boundary conditions or in an MPI-parallel simulation, the user is responsible for inserting the appropriate halo particles.
 
+### Static Rebuilding
+The particle neighbor lists are updated at a fixed rebuild frequency specified by the user.
+This works well with an appropriately chosen `skin`. A warning is shown when particles move faster than expected.
+User can additionally enable throwing exception when a particle is too fast by passing `fastParticleThrow` as `true` in the input file. 
+
+### Dynamic Rebuilding
+The particle neighbor lists are updated when a particle moves more than `verletSkin / 2` or at the rebuild frequency. 
+For this, every particle stores the position at which its neighbor list was rebuilt last in a member called `rAtRebuild`.
+This was implemented in the [PR 821](https://github.com/AutoPas/AutoPas/pull/821), so refer to it for more details.
+
 ## Internal Container Behavior
 For Verlet list-based containers to perform efficiently, the aforementioned behavior is a problem, because they rely on their list references to not change until the next list rebuild.
 So our solution is to internally use a 'Verlet-like' behavior for all containers,  where the actual container is not updated in every time step, leading to particles not necessarily being sorted into their new cells.
