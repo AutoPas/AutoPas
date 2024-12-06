@@ -15,6 +15,9 @@ class RebuildNeighborListsTest
     : public AutoPasTestBase,
       public ::testing::WithParamInterface<std::tuple<autopas::Configuration, autopas::Configuration>> {
  public:
+  RebuildNeighborListsTest() = default;
+  ~RebuildNeighborListsTest() override = default;
+
   static std::set<autopas::Configuration> getPairwiseConfigs();
   static std::set<autopas::Configuration> getTriwiseConfigs();
 
