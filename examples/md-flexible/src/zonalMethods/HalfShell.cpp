@@ -2,7 +2,6 @@
 #include "src/zonalMethods/HalfShell.h"
 
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleCommunicator.h"
 
 HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
