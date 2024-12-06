@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "src/options/ZonalMethodOption.h"
 #include "src/zonalMethods/ZonalMethod.h"
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
 #include <ALL.hpp>
@@ -166,12 +167,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   autopas::AutoPas_MPI_Comm getCommunicator() const;
 
-  /**
-   * Setter for the ZonalMethodType
-   * @param zonalMethodType
-   */
-  inline void setZonalMethodType(ZonalMethodType zonalMethodType) { _zonalMethodType = zonalMethodType; }
-
  private:
   /**
    * The number of neighbors of a rectangular domain.
@@ -299,6 +294,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @note This buffer exists solely to avoid reallocations.
    */
   std::vector<ParticleType> _particlesForLeftNeighbor{};
+
   /**
    * Buffer for particles to be sent to the right neighbor.
    * @note This buffer exists solely to avoid reallocations.
@@ -320,11 +316,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The zonal method used for inter-node communication
    */
   std::unique_ptr<ZonalMethod> _zonalMethod;
-
-  /**
-   * The type of zonal method
-   */
-  ZonalMethodType _zonalMethodType{ZonalMethodType::FullShellOption};
 
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
@@ -369,7 +360,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Initializes _zonalMethod
    * This needs to be called after initializeLocalDomain.
    */
-  void initilaizeZonalMethod();
+  void initilaizeZonalMethod(options::ZonalMethodOption);
 
   /**
    * Sends and also receives particles to and from the left and right neighbours.
