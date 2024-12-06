@@ -597,12 +597,14 @@ class LogicHandler {
 
   /**
    * Getter for the mean rebuild frequency.
-   * Helpful for determining the frequency for the dynamic containers
+   * Helpful for determining the frequency for the dynamic containers as well as for determining fast particles by
+   * computing skinPerStep for static container
    * @return value of the mean frequency as double
    */
   [[nodiscard]] double getMeanRebuildFrequency() const {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     if (_rebuildIntervals.empty()) {
-      return 0.;
+      return static_cast<double>(_neighborListRebuildFrequency);
     } else {
       // Neglecting the first entry in the vector as _stepsSinceLastListRebuild is initialized to a very large value,
       // to trigger the first rebuild when starting the simulation,
@@ -611,6 +613,9 @@ class LogicHandler {
       return std::accumulate(_rebuildIntervals.begin() + 1, _rebuildIntervals.end(), 0.) /
              static_cast<double>(_rebuildIntervals.size() - 1);
     }
+#else
+    return static_cast<double>(_neighborListRebuildFrequency);
+#endif
   }
 
   /**

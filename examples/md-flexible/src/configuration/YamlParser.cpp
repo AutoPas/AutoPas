@@ -528,6 +528,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.verletSkinRadius.description;
 
         config.verletSkinRadius.value = node[key].as<double>();
+      } else if (key == config.fastParticlesThrow.name) {
+        expected = "Boolean Value";
+        description = config.fastParticlesThrow.description;
+
+        config.fastParticlesThrow.value = node[key].as<bool>();
       } else if (key == config.verletClusterSize.name) {
         expected = "Unsigned Integer";
         description = config.verletClusterSize.description;

@@ -84,7 +84,9 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &le
       }
     }
     p.setR(pos);
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     p.resetRAtRebuild();
+#endif
   }
   return enteringParticles;
 }
@@ -134,7 +136,9 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
           particleCopy.resetRAtRebuild();
+#endif
           haloParticles.push_back(particleCopy);
         }
       }

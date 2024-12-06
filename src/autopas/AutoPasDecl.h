@@ -1038,7 +1038,8 @@ class AutoPas {
 
   /**
    * Getter for the mean rebuild frequency.
-   * Helpful for analyzing the behavior of the dynamic containers.
+   * Helpful for determining the frequency for the dynamic containers as well as for determining fast particles by
+   * computing skinPerStep for static container
    * @return Value of the mean rebuild frequency as double
    */
   double getMeanRebuildFrequency() { return _logicHandler->getMeanRebuildFrequency(); }

@@ -232,6 +232,9 @@ std::string MDFlexConfig::to_string() const {
   printOption(containerOptions);
 
   // since all containers are rebuilt only periodically print Verlet config always.
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  printOption(fastParticlesThrow);
+#endif
   printOption(verletRebuildFrequency);
   printOption(verletSkinRadius);
   const auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);

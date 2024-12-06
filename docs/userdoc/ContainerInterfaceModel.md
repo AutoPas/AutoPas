@@ -1,6 +1,7 @@
 # Container Interface Model
 
-The behavior described in this section is completely hidden from AutoPas users. 
+The behavior described in this section is completely hidden from AutoPas users.
+To ensure functionality, particles must not move more than `verletSkinPerTimestep / 2` per timestep.
 This was initially implemented in [PR 642](https://github.com/AutoPas/AutoPas/pull/642), so more details can be found there.
 
 ## External Black-Box Interface
@@ -8,6 +9,11 @@ For an AutoPas user from the outside, it appears that the particle container is 
 Particles leaving the domain are always returned, and particles can be added and deleted at any time.
 Historically this interface behavior was also called 'Linked-Cells-like'.
 For periodic boundary conditions or in an MPI-parallel simulation, the user is responsible for inserting the appropriate halo particles.
+
+### Static Rebuilding
+The particle neighbor lists are updated at a fixed rebuild frequency specified by the user.
+This works well with an appropriately chosen `skin`. A warning is shown when particles move faster than expected.
+User can additionally enable throwing exception when a particle is too fast by passing `fastParticleThrow` as `true` in the input file. 
 
 ### Dynamic Rebuilding
 The particle neighbor lists are updated when a particle moves more than `verletSkin / 2` or at the rebuild frequency. 
