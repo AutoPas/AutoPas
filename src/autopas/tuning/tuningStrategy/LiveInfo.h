@@ -18,6 +18,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -46,8 +47,10 @@ class LiveInfo {
    * The gathered information should allow to estimate the performance of different configurations.
    *
    * Currently, it provides:
-   * - numParticles: The number of particles in the container.
-   * - numHaloParticles: The number of particles in the container that are outside of the domain.
+   * - numOwnedParticles: The number of particles in the container that are marked as owned.
+   * - numHaloParticles: The number of particles in the container that are marked as halo.
+   * - numDummyParticles: The number of particles in the container that are marked as dummy.
+   * - numTotalParticles: The total number of particles in the container.
    * - cutoff: The configured cutoff radius.
    * - skin: The configured skin radius.
    * - domainSizeX: The size of the domain on the x-axis.
@@ -88,10 +91,20 @@ class LiveInfo {
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
     const auto cutoff = container.getCutoff();
-    const auto cutoffInv = 1.0 / cutoff;
-    const auto numParticles = container.getNumberOfParticles();
+    const auto skin = container.getVerletSkin();
+    const auto interactionLength = cutoff + skin;
+    const auto interactionLengthInv = 1. / interactionLength;
 
-    infos["numParticles"] = numParticles;
+    const auto numOwnedParticles = container.getNumberOfParticles(OwnershipState::owned);
+    const auto numHaloParticles = container.getNumberOfParticles(OwnershipState::halo);
+    const auto numDummyParticles = container.getNumberOfParticles(OwnershipState::dummy);
+    const auto numTotalParticles = numOwnedParticles + numHaloParticles + numDummyParticles;
+
+    infos["numOwnedParticles"] = numOwnedParticles;
+    infos["numHaloParticles"] = numHaloParticles;
+    infos["numDummyParticles"] = numDummyParticles;
+    infos["numTotalParticles"] = numTotalParticles;
+
     infos["cutoff"] = cutoff;
     infos["skin"] = container.getVerletSkin();
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
@@ -104,7 +117,7 @@ class LiveInfo {
     infos["particleSize"] = sizeof(Particle);
 
     // Calculate number of cells for a linked cells container, assuming cell size factor == 1
-    const auto cellsPerDim = ceilToInt(domainSize * cutoffInv);
+    const auto cellsPerDim = ceilToInt(domainSize * interactionLengthInv);
     const auto numCells = static_cast<size_t>(cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]);
     infos["numCells"] = numCells;
 
@@ -137,7 +150,7 @@ class LiveInfo {
     infos["numHaloParticles"] = particleBins.back();
 
     // calculate statistics about particle distributions per cell
-    const auto avgParticlesPerCell = numParticles == 0
+    const auto avgParticlesPerCell = numTotalParticles == 0
                                          ? 0.
                                          : static_cast<double>(container.getNumberOfParticles() - particleBins.back()) /
                                                static_cast<double>(numCells);
