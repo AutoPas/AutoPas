@@ -91,6 +91,6 @@ class FullShell : public ZonalMethod {
    */
   std::vector<ParticleType> _importParticles;
 
-  void calculateZonalInteractionPairwise(char zone1, char zone2,
+  void calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
 };

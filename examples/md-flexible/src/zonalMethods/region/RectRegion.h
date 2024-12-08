@@ -28,7 +28,7 @@ class RectRegion : public Region {
    * @param size
    * @param zoneID
    */
-  RectRegion(std::array<double, 3> origin, std::array<double, 3> size, char zoneID = 0);
+  RectRegion(std::array<double, 3> origin, std::array<double, 3> size, std::string zoneID = "I");
 
   /**
    * Constructor

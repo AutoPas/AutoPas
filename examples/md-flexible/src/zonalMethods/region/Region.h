@@ -35,7 +35,7 @@ class Region {
    * Constructor of Region
    * @param zoneID
    */
-  Region(size_t zoneID = 0) : _zoneID(zoneID) {}
+  Region(std::string zoneID = "I") : _zoneID(zoneID) {}
 
   /**
    * Destructor
@@ -46,7 +46,7 @@ class Region {
   /**
    * Stores the id of which zone it belongs to
    * */
-  char _zoneID;
+  std::string _zoneID;
 
   /**
    * Stores the relative postitioning of the communication partner of this zone
@@ -57,12 +57,12 @@ class Region {
   /**
    * Returns the id of the zone
    */
-  inline char getZoneID() const { return _zoneID; }
+  inline std::string getZoneID() const { return _zoneID; }
 
   /**
    * Sets the id of the zone
    */
-  inline void setZoneID(char zoneID) { _zoneID = zoneID; }
+  inline void setZoneID(std::string zoneID) { _zoneID = zoneID; }
 
   /**
    * Returns the relative postitioning of the communication partner of this zone
