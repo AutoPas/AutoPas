@@ -3,7 +3,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 
-RectRegion::RectRegion(std::array<double, 3> origin, std::array<double, 3> size, char zoneID)
+RectRegion::RectRegion(std::array<double, 3> origin, std::array<double, 3> size, std::string zoneID)
     : _origin(origin), _size(size), Region(zoneID) {
   normalize();
 }

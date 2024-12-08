@@ -96,6 +96,6 @@ class HalfShell : public ZonalMethod {
    */
   std::array<std::vector<ParticleType>, _regionCount> _importBuffers;
 
-  void calculateZonalInteractionPairwise(char zone1, char zone2,
+  void calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
 };

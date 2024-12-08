@@ -57,7 +57,7 @@ void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContain
 void ZonalMethod::getRectRegionsConditional(RectRegion &homeBoxRegion, double cutoffRadius, double verletSkinWidth,
                                             std::vector<RectRegion> &regions,
                                             const std::function<bool(const int[3])> &condition,
-                                            const std::function<char(const int[3])> &identifyZone, bool calcImports) {
+                                            const std::function<std::string(const int[3])> &identifyZone, bool calcImports) {
   // factor for calculating import or export regions
   double factor = 1.0;
   if (!calcImports) {

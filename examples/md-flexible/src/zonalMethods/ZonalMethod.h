@@ -131,12 +131,12 @@ class ZonalMethod {
   /**
    * Stores the interaction schedule without the home box zone
    */
-  std::vector<char> _interactionZones;
+  std::vector<std::string> _interactionZones;
 
   /**
    * Stores the interaction zones
    */
-  std::map<char, std::vector<char>> _interactionSchedule;
+  std::map<std::string, std::vector<std::string>> _interactionSchedule;
 
   /**
    * Calculates import / export regions as RectRegion classes, saving them in the given buffer.
@@ -153,7 +153,7 @@ class ZonalMethod {
   virtual void getRectRegionsConditional(RectRegion &homeBoxRegion, double cutoffRadius, double verletSkinWidth,
                                          std::vector<RectRegion> &regions,
                                          const std::function<bool(const int[3])> &condition,
-                                         const std::function<char(const int[3])> &identifyZone,
+                                         const std::function<std::string(const int[3])> &identifyZone,
                                          bool calcImports = true);
 
   /**
@@ -185,6 +185,6 @@ class ZonalMethod {
    * @param zone2
    * @param aosFunctor
    */
-  virtual void calculateZonalInteractionPairwise(char zone1, char zone2,
+  virtual void calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                                  std::function<void(ParticleType &, ParticleType &)> aosFunctor) = 0;
 };

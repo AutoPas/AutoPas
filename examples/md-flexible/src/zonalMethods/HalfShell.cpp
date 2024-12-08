@@ -21,7 +21,7 @@ HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
-  auto identifyZone = [](const int d[3]) { return 'A'; };
+  auto identifyZone = [](const int d[3]) { return "A"; };
 
   // calculate exportRegions
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, hsCondition, identifyZone, false);
@@ -29,8 +29,8 @@ HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
   // calculate importRegions
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition, identifyZone, true);
 
-  _interactionZones.push_back('A');
-  _interactionSchedule.insert_or_assign('A', std::vector<char>{});
+  _interactionZones.push_back("A");
+  _interactionSchedule.insert_or_assign("A", std::vector<std::string>{});
 }
 
 HalfShell::~HalfShell() = default;
@@ -157,5 +157,5 @@ void HalfShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {
   }
 }
 
-void HalfShell::calculateZonalInteractionPairwise(char zone1, char zone2,
+void HalfShell::calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}

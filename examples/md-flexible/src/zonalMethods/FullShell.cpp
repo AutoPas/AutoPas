@@ -20,7 +20,7 @@ FullShell::FullShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
     return true;
   };
 
-  auto identifyZone = [](const int d[3]) { return 'A'; };
+  auto identifyZone = [](const int d[3]) { return "A"; };
 
   // calculate exportRegions
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, fsCondition, identifyZone, false);
@@ -28,8 +28,8 @@ FullShell::FullShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
   // calculate importRegions
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, fsCondition, identifyZone, true);
 
-  _interactionZones.push_back('A');
-  _interactionSchedule.insert_or_assign('A', std::vector<char>{});
+  _interactionZones.push_back("A");
+  _interactionSchedule.insert_or_assign("A", std::vector<std::string>{});
 }
 
 FullShell::~FullShell() = default;
@@ -82,5 +82,5 @@ void FullShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {}
 
 void FullShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {}
 
-void FullShell::calculateZonalInteractionPairwise(char zone1, char zone2,
+void FullShell::calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}

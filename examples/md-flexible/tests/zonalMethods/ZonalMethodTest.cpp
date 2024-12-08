@@ -21,7 +21,7 @@ void ZonalMethodTest::SendAndReceiveResults(AutoPasType &autoPasContainer) {}
  * Define function to allow instantiation
  */
 void ZonalMethodTest::calculateZonalInteractionPairwise(
-    char zone1, char zone2, std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
+    std::string zone1, std::string zone2, std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
 
 /**
  * Define function to allow instantiation
@@ -39,7 +39,7 @@ TEST_F(ZonalMethodTest, testRectRegionFalseCalculation) {
 
   auto condition = [](const int d[3]) { return false; };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; });
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return "A"; });
 
   EXPECT_EQ(regions.size(), 0);
 }
@@ -55,7 +55,7 @@ TEST_F(ZonalMethodTest, testRectRegionTrueCalculation) {
 
   auto condition = [](const int d[3]) { return true; };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; });
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return "A"; });
 
   EXPECT_EQ(regions.size(), 26);
 }
@@ -79,7 +79,7 @@ TEST_F(ZonalMethodTest, testRectRegionHSImportCalculation) {
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; });
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return "A"; });
 
   EXPECT_EQ(regions.size(), 13);
 
@@ -151,7 +151,7 @@ TEST_F(ZonalMethodTest, testRectRegionHSExportCalculation) {
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
-  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return 'A'; }, false);
+  getRectRegionsConditional(homeBoxRegion, 0.5, 0.1, regions, condition, [](const int d[3]) { return "A"; }, false);
 
   EXPECT_EQ(regions.size(), 13);
 
