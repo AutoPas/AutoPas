@@ -381,6 +381,8 @@ class Simulation {
   void calculateBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,
                                    ParticlePropertiesLibraryType &particlePropertiesLib);
 
+  void applyStrainStressResizing(const double SumOfForcesOnXUpperWall, const double pressure, const double damping_coeff, const double finalBoxMaxY);
+
   /**
    * Indicates if enough iterations were completed yet.
    * Uses class member variables.

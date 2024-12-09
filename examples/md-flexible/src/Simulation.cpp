@@ -549,9 +549,13 @@ void Simulation::calculateBackgroundFriction(const double forceDampingCoeff, con
 }
 
 void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall, const double pressure,
-                                           const double damping_coeff) {
+                                           const double damping_coeff, const double finalBoxMaxY) {
   // Calculating values for strain-controlled movement
-
+  const double initialBoxMaxY = _configuration.boxMax.value[1];
+  const double rate_of_deformation = M_PI / 4.;
+  const double newBoxMaxY =
+      finalBoxMaxY + 0.5 * (initialBoxMaxY - finalBoxMaxY) *
+                         (1 + cos(rate_of_deformation * _iteration * _configuration.deltaT.value));  // TODO
 
   // Calculating values for stress-controlled movement
   const double area_x_upper_wall = (_configuration.boxMax.value[0] - _configuration.boxMin.value[0]) *
@@ -563,7 +567,7 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
 
   // Resizing box
   const std::array<double, 3> currentBoxMax = _autoPasContainer->getBoxMax();
-  const std::array<double, 3> newBoxMax = {currentBoxMax[0] + delta_x, currentBoxMax[1], currentBoxMax[2]};
+  const std::array<double, 3> newBoxMax = {currentBoxMax[0] + delta_x, newBoxMaxY, currentBoxMax[2]};
   _autoPasContainer->resizeBox(_autoPasContainer->getBoxMin(), newBoxMax);
 }
 
