@@ -8,6 +8,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
+#include "mocks/HgridMoleculeLJ.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "mocks/MockTriwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -27,7 +28,7 @@ using FPCell = autopas::FullParticleCell<autopas::Particle>;
 /**
  * Short for the AutoPas single site Lennard-Jones molecule
  */
-using Molecule = mdLib::MoleculeLJ;
+using Molecule = HgridMoleculeLJ;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
