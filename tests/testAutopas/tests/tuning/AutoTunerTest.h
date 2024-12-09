@@ -65,4 +65,9 @@ class AutoTunerTest : public AutoPasTestBase {
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
       autopas::InteractionTypeOption::triwise};
+
+ protected:
+  template <typename Functor>
+  void testAllConfigsOfType(Functor &functor, size_t numExpectedConfigs,
+                            const autopas::InteractionTypeOption &interactionType);
 };
