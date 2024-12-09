@@ -45,7 +45,7 @@ void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({3, 3, 3});
   autoPas.setCutoff(1.1);
-  autoPas.setVerletSkinPerTimestep(0.2);
+  autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(1);
 
   // Direct Sum for now to allow newton3 on and off.

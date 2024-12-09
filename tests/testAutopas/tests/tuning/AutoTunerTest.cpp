@@ -32,14 +32,14 @@ using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
-  const double verletSkinPerTimestep = 0;
+  const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 64;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{8., 8., 8.},
       .cutoff = 1.8,
-      .verletSkinPerTimestep = .01,
+      .verletSkin = .2,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,

@@ -261,9 +261,15 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
     if (p.getID() == 1) {
       // moves particle 1 outside the container (leaving particle!)
       p.addR({-0.04, 0., 0.});
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+      p.resetRAtRebuild();
+#endif
     } else if (p.getID() == 2) {
       // Should normally move it to next linked cell, here the cell should NOT change!
       p.addR({0.04, 0., 0.});
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+      p.resetRAtRebuild();
+#endif
     }
   }
 

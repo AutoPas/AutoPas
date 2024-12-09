@@ -29,7 +29,7 @@ namespace TimeDiscretization {
  * @param deltaT The time step width.
  * @param globalForce Base force value to which every particle is reset.
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
- * (>skin/2/rebuildFrequency).
+ * (>skin/rebuildFrequency/2). Does nothing if dynamic containers are enabled.
  */
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
