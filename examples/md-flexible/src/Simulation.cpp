@@ -204,9 +204,12 @@ void Simulation::run() {
     _timers.computationalLoad.start();
     const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
+      /**
       const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-          _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(globalForce);  // normal case parameter: _configuration.globalForce.value
+          _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);
+          **/
+      updatePositionsAndResetForces(
+          _configuration.globalForce.value);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -250,8 +253,9 @@ void Simulation::run() {
       _timers.migratingParticleExchange.stop();
 
       _timers.reflectParticlesAtBoundaries.start();
-      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
-                                                         *_configuration.getParticlePropertiesLibrary());
+      double forceSumOnXUpperWall = _domainDecomposition->reflectParticlesAtBoundaries(
+          *_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
+      // std::cout << "forceSumOnXUpperWall at iteration " << _iteration << ": " << forceSumOnXUpperWall << std::endl;
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
@@ -262,17 +266,17 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
-#if DEM_MODE == ON
-    if (_iteration < rotationalGlobalForceIterationFrom) {
-      calculateBackgroundFriction(0.5,
-                                  0.75,
-                                  *_configuration.getParticlePropertiesLibrary());
-    } else {
-      calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
-                                  _configuration.backgroundTorqueFrictionCoeff.value,
-                                  *_configuration.getParticlePropertiesLibrary());
-    }
-
+#if DEM_MODE == ON /**                                                                 \
+     if (_iteration < rotationalGlobalForceIterationFrom) {                            \
+       calculateBackgroundFriction(0.5,                                                \
+                                   0.75,                                               \
+                                   *_configuration.getParticlePropertiesLibrary());    \
+     } else {                                                                          \
+       calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,  \
+                                   _configuration.backgroundTorqueFrictionCoeff.value, \
+                                   *_configuration.getParticlePropertiesLibrary());    \
+     }                                                                                 \
+ **/
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
@@ -542,6 +546,25 @@ void Simulation::calculateBackgroundFriction(const double forceDampingCoeff, con
     const std::array<double, 3> torqueDamping = particle->getAngularVel() * (radius * radius * torqueDampingCoeff);
     particle->subTorque(torqueDamping);
   }
+}
+
+void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall, const double pressure,
+                                           const double damping_coeff) {
+  // Calculating values for strain-controlled movement
+
+
+  // Calculating values for stress-controlled movement
+  const double area_x_upper_wall = (_configuration.boxMax.value[0] - _configuration.boxMin.value[0]) *
+                                   (_configuration.boxMax.value[1] - _configuration.boxMin.value[1]);
+  const double force_from_outside = pressure * area_x_upper_wall;
+  const double force_from_inside = SumOfForcesOnXUpperWall;
+  const double v_x_wall = damping_coeff * (force_from_inside - force_from_outside);
+  const double delta_x = v_x_wall * _configuration.deltaT.value;
+
+  // Resizing box
+  const std::array<double, 3> currentBoxMax = _autoPasContainer->getBoxMax();
+  const std::array<double, 3> newBoxMax = {currentBoxMax[0] + delta_x, currentBoxMax[1], currentBoxMax[2]};
+  _autoPasContainer->resizeBox(_autoPasContainer->getBoxMin(), newBoxMax);
 }
 
 void Simulation::logSimulationState() {

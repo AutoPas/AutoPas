@@ -291,10 +291,12 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   }
 }
 
-void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
+double RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   using autopas::utils::Math::isNearRel;
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
+
+  double ForceMagSumToXUpperWall = 0.0;
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
@@ -411,6 +413,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
           p->addF(force);
+          if (dimensionIndex == 0 && isUpper) {
+            ForceMagSumToXUpperWall += autopas::utils::ArrayMath::L2Norm(force);
+          }
 #endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -443,7 +448,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
       reflect(true);
     }
-  }
+  } // end of dimension loop
+  return ForceMagSumToXUpperWall;
 }
 
 void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
