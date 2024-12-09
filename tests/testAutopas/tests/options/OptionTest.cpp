@@ -52,7 +52,7 @@ TEST(OptionTest, parseContainerOptionsTest) {
       {autopas::ContainerOption::linkedCellsReferences, "linkedCellsreferenc"},
       {autopas::ContainerOption::pairwiseVerletLists, "pairwiseVerlet"},
       {autopas::ContainerOption::octree, "octree"},
-         {autopas::ContainerOption::hierarchicalGrid, "hierarchicalGrid"}};
+      {autopas::ContainerOption::hierarchicalGrid, "hierarchicalGrid"}};
 
   EXPECT_EQ(mapEnumString.size(), autopas::ContainerOption::getOptionNames().size());
 

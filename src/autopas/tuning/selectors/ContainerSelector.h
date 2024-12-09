@@ -158,8 +158,11 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     }
     case ContainerOption::hierarchicalGrid: {
       container =
-          std::make_unique<HierarchicalGrid<Particle>>(_boxMin, _boxMax, _cutoff, std::vector<double>{_cutoff}, containerInfo.verletSkinPerTimestep,
-                                       containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+          std::make_unique<HierarchicalGrid<Particle>>(_boxMin, _boxMax, _cutoff,
+                                                       std::vector<double>{_cutoff, _cutoff * 2, _cutoff * 3, _cutoff * 4, _cutoff * 5},
+                                                       containerInfo.verletSkinPerTimestep,
+                                                       containerInfo.verletRebuildFrequency,
+                                                       containerInfo.cellSizeFactor);
       break;
     }
     default: {
