@@ -597,8 +597,9 @@ class LogicHandler {
 
   /**
    * Getter for the mean rebuild frequency.
-   * Helpful for determining the frequency for the dynamic containers as well as for determining fast particles by
-   * computing skinPerStep for static container
+   * Helpful for determining the frequency for the dynamic containers
+   * This function is only used for dynamic containers currently but returns user defined rebuild frequency for static
+   * case for safety.
    * @return value of the mean frequency as double
    */
   [[nodiscard]] double getMeanRebuildFrequency() const {

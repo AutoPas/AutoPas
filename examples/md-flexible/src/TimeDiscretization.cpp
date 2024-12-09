@@ -59,12 +59,13 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
         throwException = true;
       }
     }
-  }
-
-  if (throwException) {
-    throw std::runtime_error("At least one particle was too fast!");
 #endif
   }
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  if (throwException) {
+    throw std::runtime_error("At least one particle was too fast!");
+  }
+#endif
 }
 
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
