@@ -253,9 +253,14 @@ void Simulation::run() {
       _timers.migratingParticleExchange.stop();
 
       _timers.reflectParticlesAtBoundaries.start();
+      // Reflect particles at the boundaries + strain-stress resizing
       double forceSumOnXUpperWall = _domainDecomposition->reflectParticlesAtBoundaries(
           *_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
-      // std::cout << "forceSumOnXUpperWall at iteration " << _iteration << ": " << forceSumOnXUpperWall << std::endl;
+      const double pressureScalingFactor = 1e6;
+      const double pressure = 10 * pressureScalingFactor;
+      const double damping_coeff = 0.25;
+      const double finalBoxMaxY = _configuration.boxMax.value[1] * 0.9;
+      applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, 50000, 0.5);
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
@@ -549,21 +554,25 @@ void Simulation::calculateBackgroundFriction(const double forceDampingCoeff, con
 }
 
 void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall, const double pressure,
-                                           const double damping_coeff, const double finalBoxMaxY) {
+                                           const double damping_coeff, const double finalBoxMaxY,
+                                           const size_t starting_iteration, const double minRadius) {
   // Calculating values for strain-controlled movement
   const double initialBoxMaxY = _configuration.boxMax.value[1];
-  const double rate_of_deformation = M_PI / 4.;
+  const double rate_of_deformation = M_PI / 8.;
+  const double delta_T = _configuration.deltaT.value;
   const double newBoxMaxY =
-      finalBoxMaxY + 0.5 * (initialBoxMaxY - finalBoxMaxY) *
-                         (1 + cos(rate_of_deformation * _iteration * _configuration.deltaT.value));  // TODO
+      _iteration < starting_iteration
+          ? initialBoxMaxY
+          : finalBoxMaxY + 0.5 * (initialBoxMaxY - finalBoxMaxY) *
+                               (1 + cos(rate_of_deformation * (_iteration - starting_iteration) * delta_T)); // strain-controlled movement only after starting_iteration
 
   // Calculating values for stress-controlled movement
   const double area_x_upper_wall = (_configuration.boxMax.value[0] - _configuration.boxMin.value[0]) *
                                    (_configuration.boxMax.value[1] - _configuration.boxMin.value[1]);
   const double force_from_outside = pressure * area_x_upper_wall;
   const double force_from_inside = SumOfForcesOnXUpperWall;
-  const double v_x_wall = damping_coeff * (force_from_inside - force_from_outside);
-  const double delta_x = v_x_wall * _configuration.deltaT.value;
+  const double a_x_wall = damping_coeff * (force_from_inside - force_from_outside);
+  const double delta_x = std::min(0.5 * a_x_wall * delta_T * delta_T, 0.5 * minRadius); // to prevent particles to be pushed out of the box
 
   // Resizing box
   const std::array<double, 3> currentBoxMax = _autoPasContainer->getBoxMax();
