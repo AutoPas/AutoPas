@@ -196,6 +196,9 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+    // HierarchicalGrid Traversals:
+    // test
+    hgrid_test,
   };
 
   /**
@@ -331,6 +334,9 @@ class TraversalOption : public Option<TraversalOption> {
         // Octree Traversals:
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
+
+        // HierarchicalGrid Traversals:
+        {TraversalOption::hgrid_test, "hgrid_test"},
     };
   };
 

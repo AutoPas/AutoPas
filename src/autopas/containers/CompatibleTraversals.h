@@ -140,7 +140,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allHGCompatibleTraversals() {
-  return allLCCompatibleTraversals();
+  static const std::set<TraversalOption> s{TraversalOption::hgrid_test};
+  return s;
 }
 
 /**

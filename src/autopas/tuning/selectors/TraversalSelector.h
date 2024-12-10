@@ -22,6 +22,7 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
+#include "autopas/containers/linkedCells/traversals/HGridTraversal.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
@@ -296,6 +297,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
       using ParticleType = typename ParticleCell::ParticleType;
       return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor>>(
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
+    }
+
+    case TraversalOption::hgrid_test: {
+      return std::make_unique<HGridTraversal<ParticleCell, PairwiseFunctor>>(
+          &pairwiseFunctor,
+          dataLayout, useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
