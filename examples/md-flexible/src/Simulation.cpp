@@ -202,7 +202,7 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    const size_t rotationalGlobalForceIterationFrom = 60000;
+    // const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       /**
       const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
@@ -258,7 +258,7 @@ void Simulation::run() {
           *_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
       const double pressureScalingFactor = 1e6;
       const double pressure = 10 * pressureScalingFactor;
-      const double damping_coeff = 0.25;
+      const double damping_coeff = 0.1;
       const double finalBoxMaxY = _configuration.boxMax.value[1] * 0.9;
       applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, 50000, 0.5);
       _timers.reflectParticlesAtBoundaries.stop();
@@ -564,7 +564,8 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
       _iteration < starting_iteration
           ? initialBoxMaxY
           : finalBoxMaxY + 0.5 * (initialBoxMaxY - finalBoxMaxY) *
-                               (1 + cos(rate_of_deformation * (_iteration - starting_iteration) * delta_T)); // strain-controlled movement only after starting_iteration
+                               (1 + cos(rate_of_deformation * (_iteration - starting_iteration) *
+                                        delta_T));  // strain-controlled movement only after starting_iteration
 
   // Calculating values for stress-controlled movement
   const double area_x_upper_wall = (_configuration.boxMax.value[0] - _configuration.boxMin.value[0]) *
@@ -572,11 +573,19 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
   const double force_from_outside = pressure * area_x_upper_wall;
   const double force_from_inside = SumOfForcesOnXUpperWall;
   const double a_x_wall = damping_coeff * (force_from_inside - force_from_outside);
-  const double delta_x = std::min(0.5 * a_x_wall * delta_T * delta_T, 0.5 * minRadius); // to prevent particles to be pushed out of the box
+  // Prevent particles to be pushed out of the box
+  const double maxMovement = 0.25 * minRadius;
+  const double delta_x_abs_calculated = std::abs(0.5 * a_x_wall * delta_T * delta_T);
+  const double delta_x =
+      a_x_wall > 0 ? std::min(delta_x_abs_calculated, maxMovement) : -std::min(delta_x_abs_calculated, maxMovement);
 
   // Resizing box
   const std::array<double, 3> currentBoxMax = _autoPasContainer->getBoxMax();
   const std::array<double, 3> newBoxMax = {currentBoxMax[0] + delta_x, newBoxMaxY, currentBoxMax[2]};
+
+  std::cout << "Iteration " << _iteration << ": Resizing X-axis from " << currentBoxMax[0] << " to " << newBoxMax[0]
+            << " and Y-axis from " << currentBoxMax[1] << " to " << newBoxMax[1] << std::endl;
+
   _autoPasContainer->resizeBox(_autoPasContainer->getBoxMin(), newBoxMax);
 }
 
