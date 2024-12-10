@@ -15,7 +15,7 @@ namespace sphLib {
 /**
  * Basic SPHParticle class.
  */
-class SPHParticle : public autopas::Particle {
+class SPHParticle : public autopas::ParticleBase<double, double, unsigned long> {
  public:
   /**
    * Default constructor of SPHParticle.

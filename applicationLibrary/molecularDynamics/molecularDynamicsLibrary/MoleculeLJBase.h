@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleBase.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace mdLib {
