@@ -18,7 +18,7 @@ namespace mdLib {
  * Molecule class for the LJFunctor.
  */
 template <typename calcType, typename accuType, typename idType>
-class MoleculeLJBase : public autopas::Particle {
+class MoleculeLJBase : public autopas::ParticleBase<calcType, accuType, idType> {
  public:
   MoleculeLJBase() = default;
 
@@ -29,9 +29,9 @@ class MoleculeLJBase : public autopas::Particle {
    * @param moleculeId Unique Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  MoleculeLJBase(const std::array<calcType, 3> &pos, const std::array<calcType, 3> &v, unsigned long moleculeId,
+  MoleculeLJBase(const std::array<calcType, 3> &pos, const std::array<calcType, 3> &v, idType moleculeId,
                  unsigned long typeId = 0)
-      : autopas::Particle(pos, v, moleculeId), _typeId(typeId){};
+      : autopas::ParticleBase<calcType, accuType, idType>(pos, v, moleculeId), _typeId(typeId){};
 
   ~MoleculeLJBase() override = default;
 
@@ -88,33 +88,33 @@ class MoleculeLJBase : public autopas::Particle {
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
-      return getID();
+      return this->getID();
     } else if constexpr (attribute == AttributeNames::posX) {
-      return getR()[0];
+      return this->getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
-      return getR()[1];
+      return this->getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
-      return getR()[2];
+      return this->getR()[2];
     } else if constexpr (attribute == AttributeNames::velocityX) {
-      return getV()[0];
+      return this->getV()[0];
     } else if constexpr (attribute == AttributeNames::velocityY) {
-      return getV()[1];
+      return this->getV()[1];
     } else if constexpr (attribute == AttributeNames::velocityZ) {
-      return getV()[2];
+      return this->getV()[2];
     } else if constexpr (attribute == AttributeNames::forceX) {
-      return getF()[0];
+      return this->getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
-      return getF()[1];
+      return this->getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
-      return getF()[2];
+      return this->getF()[2];
     } else if constexpr (attribute == AttributeNames::oldForceX) {
-      return getOldF()[0];
+      return this->getOldF()[0];
     } else if constexpr (attribute == AttributeNames::oldForceY) {
-      return getOldF()[1];
+      return this->getOldF()[1];
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      return getOldF()[2];
+      return this->getOldF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
-      return getTypeId();
+      return this->getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
@@ -132,31 +132,31 @@ class MoleculeLJBase : public autopas::Particle {
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
-      setID(value);
+      this->setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
-      _r[0] = value;
+      this->_r[0] = value;
     } else if constexpr (attribute == AttributeNames::posY) {
-      _r[1] = value;
+      this->_r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
-      _r[2] = value;
+      this->_r[2] = value;
     } else if constexpr (attribute == AttributeNames::velocityX) {
-      _v[0] = value;
+      this->_v[0] = value;
     } else if constexpr (attribute == AttributeNames::velocityY) {
-      _v[1] = value;
+      this->_v[1] = value;
     } else if constexpr (attribute == AttributeNames::velocityZ) {
-      _v[2] = value;
+      this->_v[2] = value;
     } else if constexpr (attribute == AttributeNames::forceX) {
-      _f[0] = value;
+      this->_f[0] = value;
     } else if constexpr (attribute == AttributeNames::forceY) {
-      _f[1] = value;
+      this->_f[1] = value;
     } else if constexpr (attribute == AttributeNames::forceZ) {
-      _f[2] = value;
+      this->_f[2] = value;
     } else if constexpr (attribute == AttributeNames::oldForceX) {
-      _oldF[0] = value;
+      this->_oldF[0] = value;
     } else if constexpr (attribute == AttributeNames::oldForceY) {
-      _oldF[1] = value;
+      this->_oldF[1] = value;
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      _oldF[2] = value;
+      this->_oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -199,13 +199,13 @@ class MoleculeLJBase : public autopas::Particle {
     std::ostringstream text;
     // clang-format off
   text << "MoleculeLJ"
-     << "\nID                 : " << _id
-     << "\nPosition           : " << _r
-     << "\nVelocity           : " << _v
-     << "\nForce              : " << _f
-     << "\nOld Force          : " << _oldF
-     << "\nType ID            : " << _typeId
-     << "\nOwnershipState     : " << _ownershipState;
+     << "\nID                 : " << this->_id
+     << "\nPosition           : " << this->_r
+     << "\nVelocity           : " << this->_v
+     << "\nForce              : " << this->_f
+     << "\nOld Force          : " << this->_oldF
+     << "\nType ID            : " << this->_typeId
+     << "\nOwnershipState     : " << this->_ownershipState;
     // clang-format on
     return text.str();
   };
