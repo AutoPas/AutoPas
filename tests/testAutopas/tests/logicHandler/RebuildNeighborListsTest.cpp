@@ -16,22 +16,22 @@
 using ::testing::_;
 
 TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
-  // ::testing::Sequence seq;
-  //
-  // const unsigned int verletRebuildFrequency = 3;
-  // const autopas::AutoTunerInfo autoTunerInfo{
-  //     .tuningInterval = 1000,
-  //     .maxSamples = 3,
-  // };
-  // const autopas::LogicHandlerInfo logicHandlerInfo{
-  //     .boxMin{0., 0., 0.},
-  //     .boxMax{10., 10., 10.},
-  //     .cutoff = 3.,
-  // };
-  // autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  //
-  // const autopas::AutoTuner::SearchSpaceType searchSpace{std::get<0>(GetParam())};
-  // const autopas::AutoTuner::SearchSpaceType searchSpace3B{std::get<1>(GetParam())};
+  ::testing::Sequence seq;
+
+  const unsigned int verletRebuildFrequency = 3;
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 1000,
+      .maxSamples = 3,
+  };
+  const autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+      .cutoff = 3.,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  const autopas::AutoTuner::SearchSpaceType searchSpace{std::get<0>(GetParam())};
+  const autopas::AutoTuner::SearchSpaceType searchSpace3B{std::get<1>(GetParam())};
   //
   // std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   // tunerMap.emplace(
