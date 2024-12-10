@@ -15,47 +15,6 @@
 
 using ::testing::_;
 
-std::set<autopas::Configuration> RebuildNeighborListsTest::getPairwiseConfigs() {
-  const double _cellSizeFactor{1.};
-  const autopas::Configuration _confVl_list_it_noN3{autopas::ContainerOption::verletLists,
-                                                    _cellSizeFactor,
-                                                    autopas::TraversalOption::vl_list_iteration,
-                                                    autopas::LoadEstimatorOption::none,
-                                                    autopas::DataLayoutOption::aos,
-                                                    autopas::Newton3Option::disabled,
-                                                    autopas::InteractionTypeOption::pairwise};
-  const autopas::Configuration _confLc_c01_noN3{
-      autopas::ContainerOption::linkedCells,   _cellSizeFactor,
-      autopas::TraversalOption::lc_c01,        autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
-      autopas::InteractionTypeOption::pairwise};
-  return {_confLc_c01_noN3, _confVl_list_it_noN3};
-}
-
-std::set<autopas::Configuration> RebuildNeighborListsTest::getTriwiseConfigs() {
-  const double _cellSizeFactor{1.};
-  const autopas::Configuration _confVl_list_it_noN3_3B{autopas::ContainerOption::verletLists,
-                                                       _cellSizeFactor,
-                                                       autopas::TraversalOption::vl_list_iteration,
-                                                       autopas::LoadEstimatorOption::none,
-                                                       autopas::DataLayoutOption::aos,
-                                                       autopas::Newton3Option::disabled,
-                                                       autopas::InteractionTypeOption::triwise};
-  const autopas::Configuration _confLc_c01_noN3_3B{
-      autopas::ContainerOption::linkedCells,  _cellSizeFactor,
-      autopas::TraversalOption::lc_c01,       autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos,         autopas::Newton3Option::disabled,
-      autopas::InteractionTypeOption::triwise};
-  const autopas::Configuration _confVl_pairlist_noN3_3B{autopas::ContainerOption::verletLists,
-                                                        _cellSizeFactor,
-                                                        autopas::TraversalOption::vl_pair_list_iteration_3b,
-                                                        autopas::LoadEstimatorOption::none,
-                                                        autopas::DataLayoutOption::aos,
-                                                        autopas::Newton3Option::disabled,
-                                                        autopas::InteractionTypeOption::triwise};
-  return {_confLc_c01_noN3_3B, _confVl_list_it_noN3_3B, _confVl_pairlist_noN3_3B};
-}
-
 TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   ::testing::Sequence seq;
 
@@ -162,6 +121,5 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, RebuildNeighborListsTest,
-                         Combine(ValuesIn(RebuildNeighborListsTest::getPairwiseConfigs()),
-                                 ValuesIn(RebuildNeighborListsTest::getTriwiseConfigs())),
-                         RebuildNeighborListsTest::configsToString);
+                         Combine(ValuesIn(getPairwiseConfigs()), ValuesIn(getTriwiseConfigs())),
+                         RebuildNeighborListsTest::PrintToStringParamName());
