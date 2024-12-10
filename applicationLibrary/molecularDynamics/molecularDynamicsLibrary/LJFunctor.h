@@ -41,12 +41,12 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   /**
    * FloatType used for calculations
    */
-  using CalcPrecision = typename Particle::CalcPrecision;
+  using CalcPrecision = typename Particle::ParticleCalcPrecision;
 
   /**
    * FloatType used for accumulations or more relevant calculations
    */
-  using AccuPrecision = typename Particle::AccuPrecision;
+  using AccuPrecision = typename Particle::ParticleAccuPrecision;
 
   /**
    * Structure of the SoAs defined by the particle.

@@ -291,12 +291,12 @@ class ParticleBase {
   /**
    * Floating Point Type used for calculations for this particle
    */
-  using CalcPrecision = calcType;
+  using ParticleCalcPrecision = calcType;
 
   /**
    * Floating Point Type used for accumulations for this particle
    */
-  using AccuPrecision = accuType;
+  using ParticleAccuPrecision = accuType;
 
   /**
    * Id Type used for this particle
