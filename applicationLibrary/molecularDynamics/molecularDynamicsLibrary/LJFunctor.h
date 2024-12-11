@@ -424,10 +424,10 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
 
     // Checks whether the cells are halo cells.
-    SoAFloatPrecision potentialEnergySum = 0.;
-    SoAFloatPrecision virialSumX = 0.;
-    SoAFloatPrecision virialSumY = 0.;
-    SoAFloatPrecision virialSumZ = 0.;
+    AccuPrecision potentialEnergySum = 0.;
+    AccuPrecision virialSumX = 0.;
+    AccuPrecision virialSumY = 0.;
+    AccuPrecision virialSumZ = 0.;
 
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
@@ -435,15 +435,15 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     size_t numGlobalCalcsN3Sum = 0;
     size_t numGlobalCalcsNoN3Sum = 0;
 
-    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-    SoAFloatPrecision shift6 = _shift6;
-    SoAFloatPrecision sigmaSquared = _sigmaSquared;
-    SoAFloatPrecision epsilon24 = _epsilon24;
+    const CalcPrecision cutoffSquared = _cutoffSquared;
+    CalcPrecision shift6 = _shift6;
+    CalcPrecision sigmaSquared = _sigmaSquared;
+    CalcPrecision epsilon24 = _epsilon24;
 
     // preload all sigma and epsilons for next vectorized region
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
+    std::vector<CalcPrecision, autopas::AlignedAllocator<CalcPrecision>> sigmaSquareds;
+    std::vector<CalcPrecision, autopas::AlignedAllocator<CalcPrecision>> epsilon24s;
+    std::vector<CalcPrecision, autopas::AlignedAllocator<CalcPrecision>> shift6s;
     if constexpr (useMixing) {
       sigmaSquareds.resize(soa2.size());
       epsilon24s.resize(soa2.size());
@@ -454,9 +454,9 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     }
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
-      SoAFloatPrecision fxacc = 0;
-      SoAFloatPrecision fyacc = 0;
-      SoAFloatPrecision fzacc = 0;
+      AccuPrecision fxacc = 0;
+      AccuPrecision fyacc = 0;
+      AccuPrecision fzacc = 0;
 
       const auto ownedStateI = ownedStatePtr1[i];
       if (ownedStateI == autopas::OwnershipState::dummy) {
@@ -488,34 +488,36 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
         const auto ownedStateJ = ownedStatePtr2[j];
 
-        const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
-        const SoAFloatPrecision dry = y1ptr[i] - y2ptr[j];
-        const SoAFloatPrecision drz = z1ptr[i] - z2ptr[j];
+        const CalcPrecision drx = x1ptr[i] - x2ptr[j];
+        const CalcPrecision dry = y1ptr[i] - y2ptr[j];
+        const CalcPrecision drz = z1ptr[i] - z2ptr[j];
 
-        const SoAFloatPrecision drx2 = drx * drx;
-        const SoAFloatPrecision dry2 = dry * dry;
-        const SoAFloatPrecision drz2 = drz * drz;
+        const CalcPrecision drx2 = drx * drx;
+        const CalcPrecision dry2 = dry * dry;
+        const CalcPrecision drz2 = drz * drz;
 
-        const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
+        const CalcPrecision dr2 = drx2 + dry2 + drz2;
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
         const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
-        const SoAFloatPrecision invdr2 = 1. / dr2;
-        const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
-        const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
-        const SoAFloatPrecision lj12 = lj6 * lj6;
-        const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
+        const CalcPrecision invdr2 = 1. / dr2;
+        const CalcPrecision lj2 = sigmaSquared * invdr2;
+        const CalcPrecision lj6 = lj2 * lj2 * lj2;
+        const CalcPrecision lj12 = lj6 * lj6;
+        const CalcPrecision lj12m6 = lj12 - lj6;
+        const CalcPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
-        const SoAFloatPrecision fx = drx * fac;
-        const SoAFloatPrecision fy = dry * fac;
-        const SoAFloatPrecision fz = drz * fac;
+        const CalcPrecision fx = drx * fac;
+        const CalcPrecision fy = dry * fac;
+        const CalcPrecision fz = drz * fac;
 
+        // implicit cast to (potentially) different precision
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
+
         if (newton3) {
           fx2ptr[j] -= fx;
           fy2ptr[j] -= fy;
@@ -532,15 +534,14 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         }
 
         if constexpr (calculateGlobals) {
-          SoAFloatPrecision virialx = drx * fx;
-          SoAFloatPrecision virialy = dry * fy;
-          SoAFloatPrecision virialz = drz * fz;
-          SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
+          CalcPrecision virialx = drx * fx;
+          CalcPrecision virialy = dry * fy;
+          CalcPrecision virialz = drz * fz;
+          CalcPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
           // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-          const SoAFloatPrecision energyFactor =
-              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-              (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+          const CalcPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
+                                             (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
