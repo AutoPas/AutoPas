@@ -15,13 +15,12 @@ class RebuildNeighborListsTest
     : public AutoPasTestBase,
       public ::testing::WithParamInterface<std::tuple<autopas::Configuration, autopas::Configuration>> {
  public:
-  static std::set<autopas::Configuration> getPairwiseConfigs();
-  static std::set<autopas::Configuration> getTriwiseConfigs();
+  RebuildNeighborListsTest() = default;
+  ~RebuildNeighborListsTest() override = default;
 
   // Custom function to generate readable names
   static std::string configsToString(
       const ::testing::TestParamInfo<std::tuple<autopas::Configuration, autopas::Configuration>> &info) {
-    const auto &configs = info.param;
     const auto &pairwiseConfig = std::get<0>(info.param);
     const auto &triwiseConfig = std::get<1>(info.param);
     std::stringstream resStream;

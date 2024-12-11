@@ -15,16 +15,16 @@
 
 using ::testing::_;
 
-std::set<autopas::Configuration> RebuildNeighborListsTest::getPairwiseConfigs() {
-  const double _cellSizeFactor{1.};
-  const autopas::Configuration _confVl_list_it_noN3{autopas::ContainerOption::verletLists,
-                                                    _cellSizeFactor,
-                                                    autopas::TraversalOption::vl_list_iteration,
-                                                    autopas::LoadEstimatorOption::none,
-                                                    autopas::DataLayoutOption::aos,
-                                                    autopas::Newton3Option::disabled,
-                                                    autopas::InteractionTypeOption::pairwise};
-  const autopas::Configuration _confLc_c01_noN3{
+std::set<autopas::Configuration> getPairwiseConfigs() {
+  constexpr double _cellSizeFactor{1.};
+  constexpr autopas::Configuration _confVl_list_it_noN3{autopas::ContainerOption::verletLists,
+                                                        _cellSizeFactor,
+                                                        autopas::TraversalOption::vl_list_iteration,
+                                                        autopas::LoadEstimatorOption::none,
+                                                        autopas::DataLayoutOption::aos,
+                                                        autopas::Newton3Option::disabled,
+                                                        autopas::InteractionTypeOption::pairwise};
+  constexpr autopas::Configuration _confLc_c01_noN3{
       autopas::ContainerOption::linkedCells,   _cellSizeFactor,
       autopas::TraversalOption::lc_c01,        autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
@@ -32,41 +32,39 @@ std::set<autopas::Configuration> RebuildNeighborListsTest::getPairwiseConfigs() 
   return {_confLc_c01_noN3, _confVl_list_it_noN3};
 }
 
-std::set<autopas::Configuration> RebuildNeighborListsTest::getTriwiseConfigs() {
-  const double _cellSizeFactor{1.};
-  const autopas::Configuration _confVl_list_it_noN3_3B{autopas::ContainerOption::verletLists,
-                                                       _cellSizeFactor,
-                                                       autopas::TraversalOption::vl_list_iteration,
-                                                       autopas::LoadEstimatorOption::none,
-                                                       autopas::DataLayoutOption::aos,
-                                                       autopas::Newton3Option::disabled,
-                                                       autopas::InteractionTypeOption::triwise};
-  const autopas::Configuration _confLc_c01_noN3_3B{
+std::set<autopas::Configuration> getTriwiseConfigs() {
+  constexpr double _cellSizeFactor{1.};
+  constexpr autopas::Configuration _confVl_list_it_noN3_3B{autopas::ContainerOption::verletLists,
+                                                           _cellSizeFactor,
+                                                           autopas::TraversalOption::vl_list_iteration,
+                                                           autopas::LoadEstimatorOption::none,
+                                                           autopas::DataLayoutOption::aos,
+                                                           autopas::Newton3Option::disabled,
+                                                           autopas::InteractionTypeOption::triwise};
+  constexpr autopas::Configuration _confLc_c01_noN3_3B{
       autopas::ContainerOption::linkedCells,  _cellSizeFactor,
       autopas::TraversalOption::lc_c01,       autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,         autopas::Newton3Option::disabled,
       autopas::InteractionTypeOption::triwise};
-  const autopas::Configuration _confVl_pairlist_noN3_3B{autopas::ContainerOption::verletLists,
-                                                        _cellSizeFactor,
-                                                        autopas::TraversalOption::vl_pair_list_iteration_3b,
-                                                        autopas::LoadEstimatorOption::none,
-                                                        autopas::DataLayoutOption::aos,
-                                                        autopas::Newton3Option::disabled,
-                                                        autopas::InteractionTypeOption::triwise};
+  constexpr autopas::Configuration _confVl_pairlist_noN3_3B{autopas::ContainerOption::verletLists,
+                                                            _cellSizeFactor,
+                                                            autopas::TraversalOption::vl_pair_list_iteration_3b,
+                                                            autopas::LoadEstimatorOption::none,
+                                                            autopas::DataLayoutOption::aos,
+                                                            autopas::Newton3Option::disabled,
+                                                            autopas::InteractionTypeOption::triwise};
   return {_confLc_c01_noN3_3B, _confVl_list_it_noN3_3B, _confVl_pairlist_noN3_3B};
 }
 
 TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   ::testing::Sequence seq;
 
-  // also check if rebuild is detected if next config is invalid
-
-  const unsigned int verletRebuildFrequency = 3;
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr unsigned int verletRebuildFrequency = 3;
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
       .maxSamples = 3,
   };
-  const autopas::LogicHandlerInfo logicHandlerInfo{
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 3.,
@@ -79,13 +77,11 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
       autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::triwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace3B, autoTunerInfo, verletRebuildFrequency, ""));
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "2B"));
+  tunerMap.emplace(autopas::InteractionTypeOption::triwise,
+                   std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace3B, autoTunerInfo,
+                                                        verletRebuildFrequency, "3B"));
   autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
-  auto &autoTuner2B = *tunerMap[autopas::InteractionTypeOption::pairwise];
-  auto &autoTuner3B = *tunerMap[autopas::InteractionTypeOption::triwise];
 
   ::testing::NiceMock<MockPairwiseFunctor<Molecule>> pairwiseFunctor;
   ::testing::NiceMock<MockTriwiseFunctor<Molecule>> triwiseFunctor;
@@ -110,7 +106,7 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   auto p3 = Molecule{{5., 4., 5.}, {0., 0., 0.}, 0};
   logicHandler.addParticle(p3);
 
-  auto emptyVec = logicHandler.updateContainer();
+  static_cast<void>(logicHandler.updateContainer());
 
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(6);
   EXPECT_CALL(triwiseFunctor, AoSFunctor(_, _, _, _)).Times(3);
@@ -124,7 +120,7 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   auto p4 = Molecule{{5., 5., 4.}, {0., 0., 0.}, 0};
   logicHandler.addParticle(p4);
 
-  emptyVec = logicHandler.updateContainer();
+  static_cast<void>(logicHandler.updateContainer());  // Discard the return vector
 
   // Expect p4 to stay in the buffers since we won't rebuild this iteration
   EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 1);
@@ -136,7 +132,7 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
   ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
 
-  emptyVec = logicHandler.updateContainer();
+  static_cast<void>(logicHandler.updateContainer());
 
   EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 1);
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(12);
@@ -147,7 +143,7 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
   ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
 
-  emptyVec = logicHandler.updateContainer();
+  static_cast<void>(logicHandler.updateContainer());
 
   EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 0);
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(12);
@@ -162,6 +158,5 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, RebuildNeighborListsTest,
-                         Combine(ValuesIn(RebuildNeighborListsTest::getPairwiseConfigs()),
-                                 ValuesIn(RebuildNeighborListsTest::getTriwiseConfigs())),
+                         Combine(ValuesIn(getPairwiseConfigs()), ValuesIn(getTriwiseConfigs())),
                          RebuildNeighborListsTest::configsToString);
