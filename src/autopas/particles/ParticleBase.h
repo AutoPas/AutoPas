@@ -283,12 +283,6 @@ class ParticleBase {
   enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
-   * Floating Point Type used for this particle
-   * TODO Remove
-   */
-  using ParticleSoAFloatPrecision = accuType;
-
-  /**
    * Floating Point Type used for calculations for this particle
    */
   using ParticleCalcPrecision = calcType;
