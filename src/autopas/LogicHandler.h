@@ -1337,29 +1337,6 @@ void LogicHandler<Particle>::remainderHelperBufferContainerAoS(
 
 template <class Particle>
 template <bool newton3, class PairwiseFunctor>
-void LogicHandler<Particle>::remainderHelperBufferBufferSoA(PairwiseFunctor *f,
-                                                            std::vector<FullParticleCell<Particle>> &particleBuffers) {
-  // we can not use collapse here without locks, otherwise races would occur.
-  AUTOPAS_OPENMP(parallel for)
-  for (size_t i = 0; i < particleBuffers.size(); ++i) {
-    for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
-      auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-      const auto j = (i + jj) % particleBuffers.size();
-      if (i == j) {
-        // For buffer interactions where bufferA == bufferB we can always enable newton3 if it is allowed.
-        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
-      } else {
-        // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
-        // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
-        // buffer. This saves expensive locks.
-        auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-        f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
-      }
-    }
-  }
-}
-template <class Particle>
-template <bool newton3, class PairwiseFunctor>
 void LogicHandler<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f,
                                                          std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                          bool useSoA) {
@@ -1410,6 +1387,30 @@ void LogicHandler<Particle>::remainderHelperBufferBufferAoS(PairwiseFunctor *f,
             f->AoSFunctor(p1, p2, false);
           }
         }
+      }
+    }
+  }
+}
+
+template <class Particle>
+template <bool newton3, class PairwiseFunctor>
+void LogicHandler<Particle>::remainderHelperBufferBufferSoA(PairwiseFunctor *f,
+                                                            std::vector<FullParticleCell<Particle>> &particleBuffers) {
+  // we can not use collapse here without locks, otherwise races would occur.
+  AUTOPAS_OPENMP(parallel for)
+  for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+      auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+      const auto j = (i + jj) % particleBuffers.size();
+      if (i == j) {
+        // For buffer interactions where bufferA == bufferB we can always enable newton3 if it is allowed.
+        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+      } else {
+        // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
+        // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
+        // buffer. This saves expensive locks.
+        auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+        f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
       }
     }
   }
