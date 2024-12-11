@@ -1207,7 +1207,7 @@ void LogicHandler<Particle>::computeRemainderInteractions2B(
   // steps 1 & 2.
   // particleBuffer with all particles close in container
   // and haloParticleBuffer with owned, close particles in container.
-  // This is always AoS based because the contaienr particles are found with region iterators,
+  // This is always AoS-based because the container particles are found with region iterators,
   // which don't have an SoA interface.
   remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
@@ -1389,15 +1389,17 @@ void LogicHandler<Particle>::remainderHelperBufferBufferAoS(PairwiseFunctor *f,
       if (bufferIdxI == bufferIdxJ) {
         // CASE Same buffer
         // Only use Newton3 if it is allowed, and we are working on only one buffer. This avoids data races.
-        const bool useNewton3 = newton3 and bufferIdxI == bufferIdxJ;
-        for (auto i = 0; i < particleBuffers[bufferIdxI].size(); ++i) {
-          auto &p1 = particleBuffers[bufferIdxI][i];
+        const bool useNewton3 = newton3;
+        auto &bufferRef = particleBuffers[bufferIdxI];
+        const auto bufferSize = bufferRef.size();
+        for (auto i = 0; i < bufferSize; ++i) {
+          auto &p1 = bufferRef[i];
           // If Newton3 is disabled run over the whole buffer, otherwise only what is ahead
-          for (auto j = useNewton3 ? i + 1 : 0; j < particleBuffers[bufferIdxJ].size(); ++j) {
+          for (auto j = useNewton3 ? i + 1 : 0; j < bufferSize; ++j) {
             if (i == j) {
               continue;
             }
-            auto &p2 = particleBuffers[bufferIdxJ][j];
+            auto &p2 = bufferRef[j];
             f->AoSFunctor(p1, p2, useNewton3);
           }
         }
