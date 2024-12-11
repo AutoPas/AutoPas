@@ -49,7 +49,13 @@ class LiveInfo {
    *
    * The gathered information should allow to estimate the performance of different configurations.
    *
+   * A lot of the information is based on a couple of different spatial bin resolutions:
+   * - cells: Bin dimensions are the same as cells in the Linked Cells container with CSF 1.
+   * - particleDependentBins: Bin dimensions are designed such that the are approximately 10 particles per bin.
+   * - blurredBins: The domain is divided equally into 3x3x3 "blurred" bins
+   *
    * Currently, it provides:
+   * ---- Bin Independent Statistics ----
    * - numOwnedParticles: The number of particles in the container that are marked as owned.
    * - numHaloParticles: The number of particles in the container that are marked as halo.
    * - cutoff: The configured cutoff radius.
@@ -60,20 +66,22 @@ class LiveInfo {
    * - particleSize: The number of bytes one particle in AoS layout needs.
    * - particleSizeNeededByFunctor: The number of bytes the information needed by the functor from each particle
    * occupies. Important for the SoA data layout, but irrelevant for the AoS data layout.
-   * - numCells: The number of cells in the domain if a cell has a side-length equal to the cutoff.
+   * - threadCount: The number of threads that can be used.
+   * - rebuildFrequency: The current verlet-rebuild-frequency of the simulation.
+   * ---- Cell Statistics ----
+   * - numCells: The number of cell-bins in the domain.
    * - numEmptyCells: The number of empty cells in the domain.
    * - minParticlesPerCell: The minimum number of particles a cell in the domain contains.
    * - maxParticlesPerCell: The maximum number of particles a cell in the domain contains.
-   * - avgParticlesPerCell: The average number of particles per cell. (Cells are small so we don't expect outliers
-   * that make the average useless).
+   * - avgParticlesPerCell: The average number of particles per cell.
    * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
    * cells contain roughly the same number of particles. Estimation does not work well if this is not the case.
    * - percentParticlesPerCellStdDev: The standard deviation of the number of particles in each cell from the
    * average number of particles per cell, divided by the avgParticlesPerCell.
+   * ---- Particle Dependent Bin Statistics ----
+   * ---- Blurred Bin Statistics ----
    * -percentParticlesPerBlurredCellStdDev: The standard deviation of the number of particles in each blurred cell,
    * divided by the average number of particles per blurred cell. A blurred cell is exactly 1/27th of the domain.
-   * - threadCount: The number of threads that can be used.
-   * - rebuildFrequency: The current verlet-rebuild-frequency of the simulation.
    *
    * @tparam Particle The type of particle the container stores.
    * @tparam PairwiseFunctor The type of functor.
