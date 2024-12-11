@@ -69,7 +69,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
     const auto &particleLocation = particleItr->getR();
 
     const auto binIndex3dUnsafe =
-        autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
+        autopas::utils::ArrayMath::castedFloor((particleLocation - container.getBoxMin()) / binDimensions);
 
     // It is possible that floating point errors result in out of bounds indices.
     // e.g. if there are 7 bins in the x dimension, and that particle is close to the right domain boundary, the

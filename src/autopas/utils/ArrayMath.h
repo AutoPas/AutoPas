@@ -322,33 +322,37 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Floors all array elements and converts them to integers.
- * @tparam T floating point type
+ * Floors all array elements and converts them to a different type. Useful to floor array elements and cast them to
+ * some integer type.
+ * @tparam floatType floating point type
+ * @tparam targetType target type. By default int.
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with floored elements of new type int.
+ * @return New array with floored elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <class targetType=int, class floatType, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<targetType, SIZE> castedFloor(const std::array<floatType, SIZE> &a) {
+  std::array<targetType, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::floor(a[d]));
+    result[d] = static_cast<targetType>(std::floor(a[d]));
   }
   return result;
 }
 
 /**
- * Ceils all array elements and converts them to integers.
- * @tparam T floating point type
+ * Ceils all array elements and converts them to a different type. Useful to ceil array elements and cast them to some
+ * integer type.
+ * @tparam floatType floating point type
+ * @tparam targetType target type. By default int.
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with ceiled elements of new type int.
+ * @return New array with ceiled elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <class targetType=int, class floatType, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<targetType, SIZE> castedCeil(const std::array<floatType, SIZE> &a) {
+  std::array<targetType, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::ceil(a[d]));
+    result[d] = static_cast<targetType>(std::ceil(a[d]));
   }
   return result;
 }

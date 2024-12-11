@@ -82,11 +82,12 @@ class LiveInfo {
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
    */
   template <class Particle, class PairwiseFunctor>
-  void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor,
+  void gather(const autopas::ParticleContainerInterface<Particle> &container, ContainerIterator<Particle, true, false> particleIter, const PairwiseFunctor &functor,
               unsigned int rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
-    using autopas::utils::ArrayMath::ceilToInt;
-    using autopas::utils::ArrayMath::floorToInt;
+    using autopas::utils::ArrayMath::castedCeil;
+
+    // Aliases and info of particle distribution independent information
 
     // Some aliases for quicker access
     const auto &boxMin = container.getBoxMin();
@@ -95,12 +96,6 @@ class LiveInfo {
     const auto skin = container.getVerletSkin();
     const auto interactionLength = cutoff + skin;
     const auto interactionLengthInv = 1. / interactionLength;
-
-    const auto numOwnedParticles = container.getNumberOfParticles(OwnershipState::owned);
-    const auto numHaloParticles = container.getNumberOfParticles(OwnershipState::halo);
-
-    infos["numOwnedParticles"] = numOwnedParticles;
-    infos["numHaloParticles"] = numHaloParticles;
 
     infos["cutoff"] = cutoff;
     infos["skin"] = container.getVerletSkin();
@@ -113,58 +108,65 @@ class LiveInfo {
 
     infos["particleSize"] = sizeof(Particle);
 
+    // We mimic a Linked Cells container to reduce particle distribution into quantities based on number of particles
+    // per cell
+
     // Calculate number of cells for a linked cells container, assuming cell size factor == 1
     const auto [numCells, cellsPerDim, cellLength, cellLengthReciprocal] = [&]() {
       size_t numCellsTmp = 1;
-      std::array<size_t, 3> cellsPerDimTmp;
-      std::array<double, 3> cellLengthTmp;
-      std::array<double, 3> cellLengthReciprocalTmp;
+      std::array<size_t, 3> cellsPerDimTmp{};
+      std::array<double, 3> cellLengthTmp{};
+      std::array<double, 3> cellLengthReciprocalTmp{};
       for (int d = 0; d < 3; ++d) {
         // The number of cells is rounded down because the cells will be stretched to fit.
         // std::max to ensure there is at least one cell.
         cellsPerDimTmp[d] = std::max(static_cast<size_t>(std::floor(domainSize[d] / interactionLength)), 1ul);
-
-//        const auto cellsPerDimWithHalo = cellsPerDimTmp[d] + 2;
-
         cellLengthTmp[d] = domainSize[d] / static_cast<double>(cellsPerDimTmp[d]);
-
-        cellLengthReciprocalTmp[d] = static_cast<double>(cellsPerDimTmp[d]) / domainSize;
-//
-//        _haloBoxMin[d] = _boxMin[d] - _cellsPerInteractionLength * _cellLength[d];
-//        _haloBoxMax[d] = _boxMax[d] + _cellsPerInteractionLength * _cellLength[d];
-
+        cellLengthReciprocalTmp[d] = static_cast<double>(cellsPerDimTmp[d]) / domainSize[d];
         numCellsTmp *= cellsPerDimTmp[d];
       }
-      return std::tuple{numCellsTmp, cellsPerDimTmp, cellLengthTmp, cellLengthReciprocalTmp};
+      return std::make_tuple(numCellsTmp, cellsPerDimTmp, cellLengthTmp, cellLengthReciprocalTmp);
     }();
 
     infos["numCells"] = numCells;
 
     const auto cellVolume = cellLength[0] * cellLength[1] * cellLength[2];
 
-    // Count how many particles are in each cell via bin counting
     std::vector<size_t> particleCells;
     particleCells.resize(numCells);
 
-    // Blurred bins divide the domain into 3x3x3 equivalent boxes.
+
+
+    // In addition to cells, consider blurred bins that divide the domain into 3x3x3 equivalent boxes.
     std::vector<size_t> particleBinsBlurred;
     particleBinsBlurred.resize(27);
     const auto blurredBinsDimsReciprocal = std::array<double, 3>{3.0, 3.0, 3.0} / domainSize;
 
-    for (const Particle &particle = container.begin(OwnershipState::owned) ; particle != container.end(); ++particle) {
-      if (utils::inBox(particle.getR(), boxMin, boxMax)) {
-        // find the "actual" cell
-        const auto offsetIntoBox = particle.getR() - boxMin;
-        const auto cellIndex3D = floorToInt(offsetIntoBox * cellLengthReciprocal);
-        const auto cellIndex1D = utils::ThreeDimensionalMapping::threeToOneD<size_t>(cellIndex3D, cellsPerDim);
-        particleCells[cellIndex1D]++;
+    // Count the number of particles per cell, bin, and total. Also include total count for halo particles.
+    size_t numOwnedParticles = 0;
+    size_t numHaloParticles = 0;
+    for (; particleIter.isValid(); ++particleIter) {
+      if (particleIter->isOwned()) {
+        numOwnedParticles++;
+        if (utils::inBox(particleIter->getR(), boxMin, boxMax)) {
+          // find the "actual" cell
+          const auto offsetIntoBox = particleIter->getR() - boxMin;
+          const auto cellIndex3D = utils::ArrayMath::castedFloor<size_t>(offsetIntoBox * cellLengthReciprocal);
+          const auto cellIndex1D = utils::ThreeDimensionalMapping::threeToOneD<size_t>(cellIndex3D, cellsPerDim);
+          particleCells[cellIndex1D]++;
 
-        // find the blurred bin
-        const auto blurredBinIndex3D = floorToInt(offsetIntoBox * blurredBinsDimsReciprocal);
-        const auto binIndexBlurred = utils::ThreeDimensionalMapping::threeToOneD<size_t>(blurredBinIndex3D, {3, 3, 3});
-        particleBinsBlurred[binIndexBlurred]++;
+          // find the blurred bin
+          const auto blurredBinIndex3D = utils::ArrayMath::castedFloor<size_t>(offsetIntoBox * blurredBinsDimsReciprocal);
+          const auto binIndexBlurred = utils::ThreeDimensionalMapping::threeToOneD<size_t>(blurredBinIndex3D, {3, 3, 3});
+          particleBinsBlurred[binIndexBlurred]++;
+        }
+      } else if (particleIter->isHalo()){
+        numHaloParticles++;
       }
     }
+
+    infos["numOwnedParticles"] = numOwnedParticles;
+    infos["numHaloParticles"] = numHaloParticles;
 
     // calculate statistics about particle distributions per cell
     const auto avgOwnedParticlesPerCell = numOwnedParticles == 0
@@ -212,7 +214,7 @@ class LiveInfo {
           // In a very sparse situation, with a large potentialInteractionVolume and small particlesInCell, this could
           // lead to a negative estimate, so just take 0.
           estimatedNumNeighborInteractionsLambda += std::max(
-              static_cast<double>(particlesInCell * (particlesInCell * 27)) * estimatedHitRate  - particlesInCell, 0);
+              static_cast<double>(particlesInCell * (particlesInCell * 27)) * estimatedHitRate  - particlesInCell, 0.);
 
         }
 

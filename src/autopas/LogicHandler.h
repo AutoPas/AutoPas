@@ -1562,7 +1562,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = autoTuner.prepareIteration();
 
     if (needsLiveInfo) {
-      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+      auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+      info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency);
       autoTuner.receiveLiveInfo(info);
     }
 
@@ -1585,7 +1586,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
-    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+    info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency);
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
