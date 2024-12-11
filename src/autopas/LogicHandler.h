@@ -294,7 +294,10 @@ class LogicHandler {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
+    // Only reserve memory if we rebuild afterward. Otherwise, we might invalidate any existing particle references.
+    if (not neighborListsAreValid()) {
+      _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
+    }
   }
 
   /**
@@ -1084,8 +1087,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
+  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
