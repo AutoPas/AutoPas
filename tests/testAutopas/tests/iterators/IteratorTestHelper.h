@@ -149,7 +149,7 @@ auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
       for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += sparsity * gridWidth3D[2]) {
         const std::array<double, 3> pos{x, y, z};
         Molecule p(pos, {0., 0., 0.}, id++, 0);
-        autoPas.addParticle(p);
+        autoPas.addParticle(p, true);
         particleIDs.push_back(p.getID());
       }
     }
