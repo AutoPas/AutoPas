@@ -253,7 +253,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
 #else
       ParticleType p(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, id++);
 #endif
-      autoPasContainer->addParticle(p);
+      autoPasContainer->addParticle(p, true);
     }
     autoPasContainer->forEach([&](auto &p) { p.setR(positionsOutsideSubdomain[p.getID()]); });
   }

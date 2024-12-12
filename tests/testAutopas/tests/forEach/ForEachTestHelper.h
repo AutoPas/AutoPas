@@ -76,14 +76,14 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
         Molecule p(pos, {0., 0., 0.}, id++, 0);
         // add the particle as actual or halo particle
         if (autopas::utils::inBox(pos, boxMin, boxMax)) {
-          autoPas.addParticle(p);
+          autoPas.addParticle(p, true);
           particleIDsOwned.push_back(p.getID());
           if (autopas::utils::inBox(pos, boxOfInterestMin, boxOfInterestMax)) {
             particleIDsInterestOwned.push_back(p.getID());
           }
         } else {
           // AutoPas should set the ownership state of this particle to halo
-          autoPas.addHaloParticle(p);
+          autoPas.addHaloParticle(p, true);
           particleIDsHalo.push_back(p.getID());
           if (autopas::utils::inBox(pos, boxOfInterestMin, boxOfInterestMax)) {
             particleIDsInterestHalo.push_back(p.getID());
