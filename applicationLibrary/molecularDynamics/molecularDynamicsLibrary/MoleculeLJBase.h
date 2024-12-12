@@ -1,5 +1,5 @@
 /**
- * @file MoleculeLJ.h
+ * @file MoleculeLJBase.h
  *
  * @date 17 Jan 2018
  * @author tchipevn
