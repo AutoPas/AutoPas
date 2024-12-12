@@ -107,7 +107,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(CalcPrecision cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctor(CalcPrecision cutoff, ParticlePropertiesLibrary<CalcPrecision, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
