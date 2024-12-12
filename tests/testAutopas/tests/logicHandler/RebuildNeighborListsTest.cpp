@@ -13,8 +13,6 @@
 #include "autopas/tuning/AutoTuner.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using ::testing::_;
-
 std::set<autopas::Configuration> getPairwiseConfigs() {
   constexpr double _cellSizeFactor{1.};
   constexpr autopas::Configuration _confVl_list_it_noN3{autopas::ContainerOption::verletLists,
@@ -56,7 +54,12 @@ std::set<autopas::Configuration> getTriwiseConfigs() {
   return {_confLc_c01_noN3_3B, _confVl_list_it_noN3_3B, _confVl_pairlist_noN3_3B};
 }
 
+/**
+ * This tests if the neighbor list rebuilding logic works as intended for pairwise + triwise interactions for different
+ * combinations of configurations, by making sure all the expected forces are being computed.
+ */
 TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
+  using ::testing::_;
   ::testing::Sequence seq;
 
   constexpr unsigned int verletRebuildFrequency = 3;
