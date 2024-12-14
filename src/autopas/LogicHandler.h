@@ -1176,6 +1176,16 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
 
       }
 
+    _containerSize = this->_containerSelector.getCurrentContainer().getNumberOfParticles();
+    _particleBufferSize = 0;
+    for(auto &th : _particleBuffer) {
+      _particleBufferSize += th.size();
+    }
+
+    if (_particleBufferSize > static_cast<long>(0.2 * _containerSize)) {
+      _neighborListInvalidDoDynamicRebuild = true;
+    }
+
     // _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
 
   }
