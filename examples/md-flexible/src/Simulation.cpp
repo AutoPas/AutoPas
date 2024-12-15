@@ -85,10 +85,12 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+      _totalEnergySensor(autopas::utils::EnergySensor(autopas::EnergySensorOption::rapl)) {
   _timers.total.start();
+  auto startEnergy = _totalEnergySensor.startMeasurement();
   _timers.initialization.start();
-
+  _totalEnergySensor.init(/* Irrelevant here */ false);
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
     _vtkWriter =
@@ -203,6 +205,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 void Simulation::finalize() {
   _timers.total.stop();
+  auto endEnergy = _totalEnergySensor.endMeasurement();
+  auto totalEnergyForRank = _totalEnergySensor.getJoules();
+  autopas::AutoPas_MPI_Allreduce(&totalEnergyForRank, &_totalEnergy, 1, autopas::AutoPas_MPI_Datatype::DOUBLE,
+                                 autopas::AutoPas_MPI_Op::SUM, autopas::AutoPas_MPI_Comm::COMM_WORLD);
 
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
@@ -646,6 +652,9 @@ void Simulation::logMeasurements() {
                                maximumNumberOfDigits, total);
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+    std::cout << "Total energy consumed: " << _totalEnergy << " Joules\n";
+#endif
     std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
