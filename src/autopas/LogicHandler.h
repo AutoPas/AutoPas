@@ -208,8 +208,8 @@ class LogicHandler {
         _particleBufferSize += th.size();
     }
 
-   // _containerSize = this->_containerSelector.getCurrentContainer().size(); //(owned + halo + dummy)
-    _containerSize = this->_containerSelector.getCurrentContainer().getNumberOfParticles();
+   _containerSize = this->_containerSelector.getCurrentContainer().size(); //(owned + halo + dummy)
+    // _containerSize = this->_containerSelector.getCurrentContainer().getNumberOfParticles();
 
     return leavingParticles;
   }
@@ -1176,7 +1176,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
 
       }
 
-    _containerSize = this->_containerSelector.getCurrentContainer().getNumberOfParticles();
+    _containerSize = this->_containerSelector.getCurrentContainer().size();
     _particleBufferSize = 0;
     for(auto &th : _particleBuffer) {
       _particleBufferSize += th.size();
