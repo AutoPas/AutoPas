@@ -59,7 +59,7 @@ class StatisticsCalculator {
    * @param particlePropertiesLib
    * @return
    */
-  std::tuple<double, double, double> calculateOverlapDistForceMagSum(
+  std::tuple<double, double, double, double> calculateOverlapDistForceRelVelNormal(
       const autopas::AutoPas<ParticleType> &autoPasContainer,
       const ParticlePropertiesLibraryType &particlePropertiesLib);
 

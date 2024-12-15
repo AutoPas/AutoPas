@@ -21,23 +21,21 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
       "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
   };
    **/
-  const std::vector<std::string> columnNames = {
-      "Iteration", "OverlapSum", "DistSum", "ForceMagSum"
-  };
+  const std::vector<std::string> columnNames = {"Iteration", "Overlap", "Dist", "ForceIX", "MinusRelVelDotNormalUnit"};
   generateOutputFile(columnNames);
 }
 
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
-
-  //const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib); TODO: change
-  const auto statistics = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
+  // const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ,
+  // particlePropertiesLib); TODO: change
+  const auto statistics = calculateOverlapDistForceRelVelNormal(autoPasContainer, particlePropertiesLib);
   StatisticsCalculator::writeRow(currentIteration, statistics);
-
 }
 
-std::tuple<double, double, double, double, double, double, double> StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
+std::tuple<double, double, double, double, double, double, double>
+StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -70,51 +68,50 @@ std::tuple<double, double, double, double, double, double, double> StatisticsCal
                          meanRotationalEnergy[0], meanRotationalEnergy[1], meanRotationalEnergy[2]);
 }
 
-std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistForceMagSum(
+std::tuple<double, double, double, double> StatisticsCalculator::calculateOverlapDistForceRelVelNormal(
     const autopas::AutoPas<ParticleType> &autoPasContainer,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas::utils::ArrayMath;
 
-  double overlapSum = 0.;
-  double distSum = 0.;
-  double forceMagSum = 0.;
+  // Force calculation for the linear normal contact force model in 2 particle setting.
+
+  demLib::GranularDEM particle_i;
+  demLib::GranularDEM particle_j;
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
-    for (auto j = autoPasContainer.begin(autopas::IteratorBehavior::owned); j.isValid(); ++j) {
-      if (i->getID() == j->getID()) {
-        continue;
-      }
-
-      const std::array<double, 3> x_i = i->getR();
-      const std::array<double, 3> x_j = j->getR();
-      const std::array<double, 3> displacement = x_i - x_j;
-      const double dist = L2Norm(displacement);
-
-      const double radius_i = particlePropertiesLib.getRadius(i->getTypeId());
-      const double radius_j = particlePropertiesLib.getRadius(j->getTypeId());
-      const double overlap = radius_i + radius_j - dist;
-
-      const std::array<double, 3> force_i = i->getF();
-      const std::array<double, 3> force_j = j->getF();
-      const double forceMag = L2Norm(force_i) + L2Norm(force_j);
-
-      overlapSum += (overlap > 0 ? overlap : 0);
-      distSum += dist;
-      forceMagSum += forceMag;
+    if (i->getID() == 1) {
+      particle_i = *i;
+    } else if (i->getID() == 0) {
+      particle_j = *i;
     }
   }
 
-    overlapSum /= 2.;
-    distSum /= 2.;
-    forceMagSum /= 2.;
+  const std::array<double, 3> x_i = particle_i.getR();
+  const std::array<double, 3> x_j = particle_j.getR();
+  const std::array<double, 3> displacement = x_i - x_j;
+  const double dist = L2Norm(displacement);
+  const std::array<double, 3> normalUnit = displacement / dist;
 
-    return std::make_tuple(overlapSum, distSum, forceMagSum);
+  const double radius_i = particlePropertiesLib.getRadius(particle_i.getTypeId());
+  const double radius_j = particlePropertiesLib.getRadius(particle_j.getTypeId());
+  double overlap = radius_i + radius_j - dist;
+  overlap = overlap > 0 ? overlap : 0;
+
+  const std::array<double, 3> force_i = particle_i.getF();
+  const double forceIX = force_i[0];
+
+  const std::array<double, 3> v_i = particle_i.getV();
+  const std::array<double, 3> v_j = particle_j.getV();
+  const std::array<double, 3> relVel = v_i - v_j;
+  const double relVelDotNormalUnit = dot(relVel, normalUnit);
+
+  return std::make_tuple(overlap, dist, forceIX, -relVelDotNormalUnit);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------
 
-void StatisticsCalculator::generateOutputFile(const std::vector<std::string>& columnNames) {
+void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &columnNames) {
   std::ostringstream filename;
   filename << _statisticsFolderPath << _sessionName << "_statistics.csv";
 

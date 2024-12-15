@@ -219,7 +219,7 @@ void Simulation::run() {
       _timers.updateContainer.stop();
 
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
-
+/*
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
@@ -241,31 +241,37 @@ void Simulation::run() {
           return false;
         });
 
+
         emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
                         emigrants.end());
 
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
       }
+**/
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
       _timers.migratingParticleExchange.stop();
 
+
       _timers.reflectParticlesAtBoundaries.start();
       // Reflect particles at the boundaries + strain-stress resizing
       double forceSumOnXUpperWall = _domainDecomposition->reflectParticlesAtBoundaries(
           *_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
-      const double pressureScalingFactor = 1e6;
-      const double pressure = 10 * pressureScalingFactor;
-      const double damping_coeff = 0.1;
+      std::cout << "Iteration : " << _iteration << "Force sum on upper wall X: " << forceSumOnXUpperWall << std::endl;
+      const double pressureScalingFactor = 1e-6;
+      const double pressure = 20;
+      const double damping_coeff = 1;
       const double finalBoxMaxY = _configuration.boxMax.value[1] * 0.9;
       applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, 50000, 0.5);
       _timers.reflectParticlesAtBoundaries.stop();
 
+
       _timers.haloParticleExchange.start();
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
+
 
       _timers.computationalLoad.start();
     }
@@ -558,7 +564,7 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
                                            const size_t starting_iteration, const double minRadius) {
   // Calculating values for strain-controlled movement
   const double initialBoxMaxY = _configuration.boxMax.value[1];
-  const double rate_of_deformation = M_PI / 8.;
+  const double rate_of_deformation = M_PI / 16.;
   const double delta_T = _configuration.deltaT.value;
   const double newBoxMaxY =
       _iteration < starting_iteration
@@ -568,14 +574,14 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
                                         delta_T));  // strain-controlled movement only after starting_iteration
 
   // Calculating values for stress-controlled movement
-  const double area_x_upper_wall = (_configuration.boxMax.value[0] - _configuration.boxMin.value[0]) *
-                                   (_configuration.boxMax.value[1] - _configuration.boxMin.value[1]);
+  const double area_x_upper_wall = (_domainDecomposition->getGlobalBoxMax()[0] - _domainDecomposition->getGlobalBoxMin()[0]) *
+                                   (_domainDecomposition->getGlobalBoxMax()[1] - _domainDecomposition->getGlobalBoxMin()[1]);
   const double force_from_outside = pressure * area_x_upper_wall;
   const double force_from_inside = SumOfForcesOnXUpperWall;
   const double a_x_wall = damping_coeff * (force_from_inside - force_from_outside);
   // Prevent particles to be pushed out of the box
   const double maxMovement = 0.25 * minRadius;
-  const double delta_x_abs_calculated = std::abs(0.5 * a_x_wall * delta_T * delta_T);
+  const double delta_x_abs_calculated = std::abs(.5 * a_x_wall * delta_T * delta_T);
   const double delta_x =
       a_x_wall > 0 ? std::min(delta_x_abs_calculated, maxMovement) : -std::min(delta_x_abs_calculated, maxMovement);
 
@@ -587,6 +593,10 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
             << " and Y-axis from " << currentBoxMax[1] << " to " << newBoxMax[1] << std::endl;
 
   _autoPasContainer->resizeBox(_autoPasContainer->getBoxMin(), newBoxMax);
+  _domainDecomposition->setLocalBoxMax(newBoxMax);
+  _domainDecomposition->setGlobalBoxMax(newBoxMax);
+
+
 }
 
 void Simulation::logSimulationState() {
