@@ -32,13 +32,13 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib,
-                                            const double initialVolume, const double finalBoxMaxY,
+                                            const double initialVolume, const double startBoxMaxY,
                                             const double spring_stiffness) {
   // const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ,
   // particlePropertiesLib); TODO: change
   // const auto statistics = calculateOverlapDistForceRelVelNormal(autoPasContainer, particlePropertiesLib);
   const auto statistics = calculateStrainStressStatistics(autoPasContainer, particlePropertiesLib, initialVolume,
-                                                          finalBoxMaxY, spring_stiffness);
+                                                          startBoxMaxY, spring_stiffness);
   StatisticsCalculator::writeRow(currentIteration, statistics);
 }
 
@@ -119,7 +119,7 @@ std::tuple<double, double, double, double> StatisticsCalculator::calculateOverla
 
 std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
-    const double initialVolume, const double finalBoxMaxY, const double spring_stiffness) {
+    const double initialVolume, const double startBoxMaxY, const double spring_stiffness) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas::utils::ArrayMath;
   // To calculate: DomainSize (x,y,z), Density, Volumetric Strain
@@ -127,7 +127,7 @@ std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
   const std::array<double, 3> currentDomain = autoPasContainer.getBoxMax();
 
   // E_yy
-  const double epsilon_yy = 1 - (currentDomain[1] / finalBoxMaxY);
+  const double epsilon_yy = 1 - (currentDomain[1] / startBoxMaxY);
 
   // Density
   const double currentVolume = currentDomain[0] * currentDomain[1] * currentDomain[2];

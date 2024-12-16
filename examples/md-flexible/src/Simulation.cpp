@@ -191,6 +191,7 @@ void Simulation::run() {
 
   double initialVolume = -1.;
   double finalBoxMaxY = _configuration.boxMax.value[1];
+  double startBoxMaxY = _configuration.boxMax.value[1];
   const size_t strainResizingStartingIteration = 25000;
   const double spring_stiffness = 50;
   const double pressure = 40;
@@ -205,7 +206,7 @@ void Simulation::run() {
 
     if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value == 0 and _iteration > strainResizingStartingIteration) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
-                                         *_configuration.getParticlePropertiesLibrary(), initialVolume, finalBoxMaxY, spring_stiffness);
+                                         *_configuration.getParticlePropertiesLibrary(), initialVolume, startBoxMaxY, spring_stiffness);
     }
 
     _timers.computationalLoad.start();
@@ -273,7 +274,8 @@ void Simulation::run() {
         const auto currentDomainMax = _autoPasContainer->getBoxMax();
         const auto currentDomainMin = _autoPasContainer->getBoxMin();
         initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) * (currentDomainMax[2] - currentDomainMin[2]);
-        finalBoxMaxY = currentDomainMax[1] * 0.8;
+        finalBoxMaxY = currentDomainMax[1] * 0.75;
+        startBoxMaxY = currentDomainMax[1];
       }
 
       applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, strainResizingStartingIteration, 0.5);

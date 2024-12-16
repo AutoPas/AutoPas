@@ -79,7 +79,7 @@ class StatisticsCalculator {
    */
   std::array<double, 9> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
                                                         const ParticlePropertiesLibraryType &particlePropertiesLib,
-                                                        const double initialVolume, const double finalBoxMaxY, const double spring_stiffness);
+                                                        const double initialVolume, const double startBoxMaxY, const double spring_stiffness);
 
   /**
    * Generates the output file (.csv) for the statistics.
