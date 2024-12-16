@@ -9,7 +9,7 @@
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "testingHelpers/NumThreadGuard.h"
@@ -46,10 +46,10 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   autopas::TraversalSelectorInfo tsi(cellsPerDim, cutoff, {1., 1., 1.}, clusterSize);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::lc_c01) {
-    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor>(
+    traversal = autopas::TraversalSelector<FPCell>::template generatePairwiseTraversal<TraversalTest::CountFunctor>(
         traversalOption, functor, tsi, autopas::DataLayoutOption::aos, true);
   } else {
-    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor>(
+    traversal = autopas::TraversalSelector<FPCell>::template generatePairwiseTraversal<TraversalTest::CountFunctor>(
         traversalOption, functor, tsi, autopas::DataLayoutOption::aos, false);
   }
 
@@ -71,8 +71,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
     }
   }
 
-  auto *traversalInterface = traversal.get();
-  linkedCells.iteratePairwise(traversalInterface);
+  linkedCells.computeInteractions(traversal.get());
 }
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {

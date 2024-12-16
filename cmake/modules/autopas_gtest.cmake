@@ -6,9 +6,9 @@ include(FetchContent)
 
 # Build GoogleTest and make the cmake targets available
 FetchContent_Declare(
-    autopas_gtest
-    URL ${AUTOPAS_SOURCE_DIR}/libs/googletest-1.11.0.zip
-    URL_HASH MD5=52943a59cefce0ae0491d4d2412c120b
+        autopas_gtest
+        URL ${AUTOPAS_SOURCE_DIR}/libs/googletest-1.15.2.zip
+        URL_HASH MD5=eb1c5c237d13ed12bf492d3997ca6b0d
 )
 
 option(INSTALL_GTEST "" OFF)

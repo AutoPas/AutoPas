@@ -5,6 +5,7 @@
  */
 #include "ParallelVtkWriter.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <ios>
 #include <limits>
@@ -42,7 +43,8 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
                                        const RegularGridDecomposition &decomposition) const {
   recordParticleStates(currentIteration, autoPasContainer);
-  recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
+  const auto currentConfig = autoPasContainer.getCurrentConfigs();
+  recordDomainSubdivision(currentIteration, currentConfig, decomposition);
 }
 
 /**
@@ -199,11 +201,18 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile.close();
 }
 
-void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
-                                                const autopas::Configuration &autoPasConfiguration,
-                                                const RegularGridDecomposition &decomposition) const {
+void ParallelVtkWriter::recordDomainSubdivision(
+    size_t currentIteration,
+    const std::unordered_map<autopas::InteractionTypeOption::Value,
+                             std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
+    const RegularGridDecomposition &decomposition) const {
+  // Extract active interaction types to print them to the .pvtu file.
+  std::unordered_set<autopas::InteractionTypeOption::Value> interactionTypes;
+  interactionTypes.reserve(autoPasConfigurations.size());
+  std::transform(autoPasConfigurations.begin(), autoPasConfigurations.end(),
+                 std::inserter(interactionTypes, interactionTypes.end()), [&](const auto &pair) { return pair.first; });
   if (_mpiRank == 0) {
-    createRanksPvtuFile(currentIteration, decomposition);
+    createRanksPvtuFile(currentIteration, decomposition, interactionTypes);
   }
 
   std::ostringstream timestepFileName;
@@ -231,12 +240,28 @@ void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
   timestepFile << "    <Piece NumberOfPoints=\"8\" NumberOfCells=\"1\">\n";
   timestepFile << "      <CellData>\n";
   printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
-  printDataArray(autoPasConfiguration.cellSizeFactor, "Float32", "CellSizeFactor");
-  printDataArray(static_cast<int>(autoPasConfiguration.container), "Int32", "Container");
-  printDataArray(static_cast<int>(autoPasConfiguration.dataLayout), "Int32", "DataLayout");
-  printDataArray(static_cast<int>(autoPasConfiguration.loadEstimator), "Int32", "LoadEstimator");
-  printDataArray(static_cast<int>(autoPasConfiguration.traversal), "Int32", "Traversal");
-  printDataArray(static_cast<int>(autoPasConfiguration.newton3), "Int32", "Newton3");
+
+  // General Configuration information
+  printDataArray(autoPasConfigurations.begin()->second.get().cellSizeFactor, "Float32", "CellSizeFactor");
+  printDataArray(static_cast<int>(autoPasConfigurations.begin()->second.get().container), "Int32", "Container");
+
+  // Pairwise Configuration
+  if (autoPasConfigurations.find(autopas::InteractionTypeOption::pairwise) != autoPasConfigurations.end()) {
+    auto pairwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::pairwise).get();
+    printDataArray(static_cast<int>(pairwiseConfig.dataLayout), "Int32", "DataLayout");
+    printDataArray(static_cast<int>(pairwiseConfig.loadEstimator), "Int32", "LoadEstimator");
+    printDataArray(static_cast<int>(pairwiseConfig.traversal), "Int32", "Traversal");
+    printDataArray(static_cast<int>(pairwiseConfig.newton3), "Int32", "Newton3");
+  }
+
+  // Triwise Configuration
+  if (autoPasConfigurations.find(autopas::InteractionTypeOption::triwise) != autoPasConfigurations.end()) {
+    auto triwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::triwise).get();
+    printDataArray(static_cast<int>(triwiseConfig.dataLayout), "Int32", "DataLayout-3B");
+    printDataArray(static_cast<int>(triwiseConfig.traversal), "Int32", "Traversal-3B");
+    printDataArray(static_cast<int>(triwiseConfig.newton3), "Int32", "Newton3-3B");
+  }
+
   printDataArray(_mpiRank, "Int32", "Rank");
   timestepFile << "      </CellData>\n";
   timestepFile << "      <Points>\n";
@@ -329,8 +354,9 @@ void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
   timestepFile.close();
 }
 
-void ParallelVtkWriter::createRanksPvtuFile(size_t currentIteration,
-                                            const RegularGridDecomposition &decomposition) const {
+void ParallelVtkWriter::createRanksPvtuFile(
+    size_t currentIteration, const RegularGridDecomposition &decomposition,
+    const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_Ranks_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
@@ -349,12 +375,26 @@ void ParallelVtkWriter::createRanksPvtuFile(size_t currentIteration,
   timestepFile << "    <PPointData/>\n";
   timestepFile << "    <PCellData>\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
+
+  // General configuration options
   timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Container\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"LoadEstimator\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3\" />\n";
+
+  // Pairwise configuration
+  if (interactionTypes.find(autopas::InteractionTypeOption::pairwise) != interactionTypes.end()) {
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"LoadEstimator\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3\" />\n";
+  }
+
+  // Triwise configuration
+  if (interactionTypes.find(autopas::InteractionTypeOption::triwise) != interactionTypes.end()) {
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout-3B\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal-3B\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3-3B\" />\n";
+  }
+
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
   timestepFile << "    </PCellData>\n";
   timestepFile << "    <PPoints>\n";

@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 
@@ -26,7 +26,7 @@ namespace autopas {
  * @tparam PairwiseFunctor
  */
 template <class Particle, class PairwiseFunctor>
-class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
+class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
   /**
@@ -39,13 +39,13 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
-        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
+      : CellTraversal<ParticleCell>({2, 1, 1}),
+        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
@@ -67,10 +67,10 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   }
 
   /**
-   * @copydoc TraversalInterface::traverseParticlePairs()
+   * @copydoc TraversalInterface::traverseParticles()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
 
     auto *haloWrapper = this->getHalo();
@@ -104,7 +104,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
