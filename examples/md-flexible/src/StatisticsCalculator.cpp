@@ -21,16 +21,20 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
       "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
   };
    **/
-  const std::vector<std::string> columnNames = {"Iteration", "Overlap", "Dist", "ForceIX", "MinusRelVelDotNormalUnit"};
-  generateOutputFile(columnNames);
+  // const std::vector<std::string> columnNames = {"Iteration", "Overlap", "Dist", "ForceIX",
+  // "MinusRelVelDotNormalUnit"};
+  const std::vector<std::string> strainStressColumnNames = {"Iteration", "DomainX", "DomainY",
+                                                            "DomainZ",   "Density", "VolumeStrain"};
+  generateOutputFile(strainStressColumnNames);
 }
 
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                            const ParticlePropertiesLibraryType &particlePropertiesLib) {
+                                            const ParticlePropertiesLibraryType &particlePropertiesLib, const double initialVolume) {
   // const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ,
   // particlePropertiesLib); TODO: change
-  const auto statistics = calculateOverlapDistForceRelVelNormal(autoPasContainer, particlePropertiesLib);
+  //const auto statistics = calculateOverlapDistForceRelVelNormal(autoPasContainer, particlePropertiesLib);
+  const auto statistics = calculateStrainStressStatistics(autoPasContainer, particlePropertiesLib, initialVolume);
   StatisticsCalculator::writeRow(currentIteration, statistics);
 }
 
@@ -151,4 +155,25 @@ void StatisticsCalculator::tryCreateFolder(const std::string &name, const std::s
     throw std::runtime_error("StatisticsCalculator::tryCreateFolder(): The output location " + location +
                              " passed to StatisticsCalculator is invalid: " + ex.what());
   }
+}
+std::array<double, 5> StatisticsCalculator::calculateStrainStressStatistics(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
+    const double initialVolume) {
+  // To calculate: DomainSize (x,y,z), Density, Volumetric Strain
+  // DomainSize
+  const std::array<double, 3> currentDomain = autoPasContainer.getBoxMax();
+
+  // Density
+  const double currentVolume = currentDomain[0] * currentDomain[1] * currentDomain[2];
+  double particleVolumeSum = 0.;
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
+    particleVolumeSum += 4. / 3. * M_PI * radius * radius * radius;
+  }
+  const double density = particleVolumeSum / currentVolume;
+
+  // Volumetric Strain
+  const double volumetricStrain = (currentVolume - initialVolume) / initialVolume;
+
+  return {currentDomain[0], currentDomain[1], currentDomain[2], density, volumetricStrain};
 }

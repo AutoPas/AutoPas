@@ -189,6 +189,8 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
+  double initialVolume = -1.;
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -198,7 +200,7 @@ void Simulation::run() {
 
     if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
-                                         *_configuration.getParticlePropertiesLibrary());
+                                         *_configuration.getParticlePropertiesLibrary(), initialVolume);
     }
 
     _timers.computationalLoad.start();
@@ -264,8 +266,15 @@ void Simulation::run() {
       const double pressure = 20;
       const double damping_coeff = 1;
       const double finalBoxMaxY = _configuration.boxMax.value[1] * 0.9;
-      applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, 50000, 0.5);
+      const size_t strainResizingStartingIteration = 25000;
+      applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, strainResizingStartingIteration, 0.5);
       _timers.reflectParticlesAtBoundaries.stop();
+
+      if (_iteration == strainResizingStartingIteration) {
+        const auto currentDomainMax = _autoPasContainer->getBoxMax();
+        const auto currentDomainMin = _autoPasContainer->getBoxMin();
+        initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) * (currentDomainMax[2] - currentDomainMin[2]);
+      }
 
 
       _timers.haloParticleExchange.start();

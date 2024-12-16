@@ -37,9 +37,11 @@ class StatisticsCalculator {
    * @param globalForceZ The global force in z-direction.
    * @param autopasContainer The AutoPas container.
    * @param particlePropertiesLib The particle properties library.
+   * @param initialVolume The initial volume of the container.
    */
-  void recordStatistics(size_t currentIteration, const double globalForceZ, const autopas::AutoPas<ParticleType> &autopasContainer,
-                        const ParticlePropertiesLibraryType &particlePropertiesLib);
+  void recordStatistics(size_t currentIteration, const double globalForceZ,
+                        const autopas::AutoPas<ParticleType> &autopasContainer,
+                        const ParticlePropertiesLibraryType &particlePropertiesLib, const double initialVolume);
 
  private:
   /**
@@ -50,8 +52,9 @@ class StatisticsCalculator {
    * @return tuple of doubles containing the statistics.
    */
   static std::tuple<double, double, double, double, double, double, double>
-  calculateMeanPotentialKineticRotationalEnergy(
-      const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
+  calculateMeanPotentialKineticRotationalEnergy(const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                                const double globalForceZ,
+                                                const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.
@@ -64,10 +67,19 @@ class StatisticsCalculator {
       const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
+   * Calculates statistics for the stress-strain-simulation
+   * @param autoPasContainer
+   * @return
+   */
+  std::array<double, 5> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                                        const ParticlePropertiesLibraryType &particlePropertiesLib,
+                                                        const double initialVolume);
+
+  /**
    * Generates the output file (.csv) for the statistics.
    * @param columnNames The names of the columns in the output file.
    */
-  void generateOutputFile(const std::vector<std::string>& columnNames);
+  void generateOutputFile(const std::vector<std::string> &columnNames);
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
@@ -129,6 +141,18 @@ class StatisticsCalculator {
   }
 
   /**
+   * Writes an array of statistics into the output file.
+   * @tparam T
+   * @tparam N
+   * @param os
+   * @param array
+   */
+  template <typename T, std::size_t N>
+  void writeValue(std::ostream &os, const std::array<T, N> &array) {
+    writeArray(os, array);
+  }
+
+  /**
    * Writes the elements of a tuple into the output file.
    * @tparam Tuple
    * @tparam Indices
@@ -138,6 +162,20 @@ class StatisticsCalculator {
   template <typename Tuple, std::size_t... Indices>
   void writeTupleElements(std::ostream &os, const Tuple &tuple, std::index_sequence<Indices...>) {
     ((os << (Indices == 0 ? "" : ",") << std::get<Indices>(tuple)), ...);
+  }
+
+  /**
+   * Writes the elements of an array into the output file.
+   * @tparam T
+   * @tparam N
+   * @param os
+   * @param array
+   */
+  template <typename T, std::size_t N>
+  void writeArray(std::ostream &os, const std::array<T, N> &array) {
+    for (std::size_t i = 0; i < N; ++i) {
+      os << (i == 0 ? "" : ",") << array[i];
+    }
   }
 
   template <typename... Args>
