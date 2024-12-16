@@ -1,13 +1,16 @@
 /**
-* @file DecisionTreeTuning.cpp
-* @author Abdulkadir Pazar
-* @date 20.06.24
-*/
+ * @file DecisionTreeTuning.cpp
+ * @author Abdulkadir Pazar
+ * @date 20.06.24
+ */
 
 #include "DecisionTreeTuning.h"
+
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
+
 #include <nlohmann/json.hpp>
+
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {

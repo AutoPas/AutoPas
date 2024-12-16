@@ -5,36 +5,36 @@
 //* @date 20.09.2024
 //*/
 //
-//#include "DecisionTreeTuningTest.h"
+// #include "DecisionTreeTuningTest.h"
 //
-//#include <gmock/gmock.h>
-//#include <gtest/gtest.h>
+// #include <gmock/gmock.h>
+// #include <gtest/gtest.h>
 //
-//#include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
-//#include "autopas/utils/ExceptionHandler.h"
-//#include <pybind11/embed.h>
-//#include <filesystem>  // For checking the existence of test files
+// #include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
+// #include "autopas/utils/ExceptionHandler.h"
+// #include <pybind11/embed.h>
+// #include <filesystem>  // For checking the existence of test files
 //
-//namespace autopas {
+// namespace autopas {
 //
-//namespace py = pybind11;
+// namespace py = pybind11;
 //
 //// Initialize the Python interpreter once for the entire test suite
-//struct PythonInterpreter {
-// PythonInterpreter() { py::initialize_interpreter(); }
-// ~PythonInterpreter() { py::finalize_interpreter(); }
-//};
+// struct PythonInterpreter {
+//  PythonInterpreter() { py::initialize_interpreter(); }
+//  ~PythonInterpreter() { py::finalize_interpreter(); }
+// };
 //
 //// Ensure the interpreter is initialized globally
-//static PythonInterpreter globalPythonInterpreter;
+// static PythonInterpreter globalPythonInterpreter;
 //
 ///**
 //* @class MockLiveInfo
 //*
 //* Mock class for LiveInfo to simulate system states for testing purposes.
 //*/
-//class MockLiveInfo : public LiveInfo {
-//public:
+// class MockLiveInfo : public LiveInfo {
+// public:
 // MOCK_METHOD((const std::map<std::string, InfoType> &), get, (), (const));
 //};
 //
@@ -43,7 +43,7 @@
 //*
 //* Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
 //*/
-//TEST(DecisionTreeTuningTest, TestScriptLoading) {
+// TEST(DecisionTreeTuningTest, TestScriptLoading) {
 // std::set<autopas::Configuration> searchSpace;
 //
 // EXPECT_THROW(
@@ -62,7 +62,7 @@
 //*
 //* Tests that a valid Python model response updates the configuration queue correctly.
 //*/
-//TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
+// TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
 // std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
 //     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
 //     autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)};
@@ -99,12 +99,13 @@
 //*
 //* Tests that a malformed Python response throws an exception during `reset()`.
 //*/
-//TEST(DecisionTreeTuningTest, TestInvalidPythonResponse) {
+// TEST(DecisionTreeTuningTest, TestInvalidPythonResponse) {
 // std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
 //     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
 //     autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)};
 //
-// ASSERT_TRUE(std::filesystem::exists("test_model_invalid_response.pkl")) << "Invalid response test model file does not exist.";
+// ASSERT_TRUE(std::filesystem::exists("test_model_invalid_response.pkl")) << "Invalid response test model file does not
+// exist.";
 //
 // autopas::DecisionTreeTuning tuningStrategy(searchSpace, "test_model_invalid_response.pkl", 0.8);
 //
@@ -129,7 +130,7 @@
 //*
 //* Tests that an empty live info map does not prevent the model from providing a valid configuration.
 //*/
-//TEST(DecisionTreeTuningTest, TestEmptyLiveInfo) {
+// TEST(DecisionTreeTuningTest, TestEmptyLiveInfo) {
 // std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
 //     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
 //     autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)};

@@ -1,10 +1,12 @@
 /**
-* @file DecisionTreeTuning.h
-* @author Abdulkadir Pazar
-* @date 20.06.24
-*/
+ * @file DecisionTreeTuning.h
+ * @author Abdulkadir Pazar
+ * @date 20.06.24
+ */
 
 #pragma once
+
+#include <pybind11/embed.h>
 
 #include <map>
 #include <set>
@@ -13,7 +15,6 @@
 
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
-#include <pybind11/embed.h>
 
 namespace autopas {
 
@@ -32,7 +33,8 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    * @param modelFileName Name of the file containing the decision tree model.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    */
-  DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName, double confidenceThreshold);
+  DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
+                     double confidenceThreshold);
 
   ~DecisionTreeTuning() override;
 

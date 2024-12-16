@@ -13,6 +13,7 @@ from sklearn.multioutput import MultiOutputClassifier
 import pickle
 import numpy as np
 
+
 def extract_identifier(filename: str, prefix: str) -> str:
     """
     Extract the timestamp from the filename, assuming it is the last part of the filename before the extension and
@@ -28,6 +29,7 @@ def extract_identifier(filename: str, prefix: str) -> str:
     if filename.startswith(prefix):
         return filename[len(prefix):].split('.')[0]
     return None
+
 
 def load_data_from_directory(live_info_dir: str, tuning_results_dir: str) -> pd.DataFrame:
     """
@@ -78,6 +80,7 @@ def load_data_from_directory(live_info_dir: str, tuning_results_dir: str) -> pd.
     final_merged_df = pd.concat(merged_dfs, ignore_index=True)
     return final_merged_df
 
+
 def preprocess_data(merged_df: pd.DataFrame, features: list, targets: list) -> tuple:
     """
     Preprocess the merged DataFrame for model training.
@@ -102,6 +105,7 @@ def preprocess_data(merged_df: pd.DataFrame, features: list, targets: list) -> t
     X = merged_df[features]
     y = merged_df[targets]
     return X, y, label_encoders
+
 
 def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_iterations: int) -> MultiOutputClassifier:
     """
@@ -132,6 +136,7 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_iterations
 
     return model
 
+
 def save_model_and_encoders(model: MultiOutputClassifier, label_encoders: dict, output_file: str) -> None:
     """
     Save the trained model and LabelEncoders to a file.
@@ -151,6 +156,7 @@ def save_model_and_encoders(model: MultiOutputClassifier, label_encoders: dict, 
     with open(output_file, 'wb') as f:
         pickle.dump(combined_data, f)
 
+
 def main():
     """
     Main execution function.
@@ -160,11 +166,16 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Train a RandomForestClassifier on merged AutoPas data.")
     parser.add_argument('--live-info-dir', type=str, required=True, help="Directory containing live info CSV files.")
-    parser.add_argument('--tuning-results-dir', type=str, required=True, help="Directory containing tuning results CSV files.")
-    parser.add_argument('--features', type=str, nargs='+', default=['avgParticlesPerCell', 'maxParticlesPerCell', 'homogeneity', 'maxDensity', 'particlesPerCellStdDev', 'threadCount'], help="List of feature columns for training.")
-    parser.add_argument('--targets', type=str, nargs='+', default=['Container', 'Traversal', 'Data Layout', 'Newton 3'], help="List of target columns to predict.")
+    parser.add_argument('--tuning-results-dir', type=str, required=True,
+                        help="Directory containing tuning results CSV files.")
+    parser.add_argument('--features', type=str, nargs='+',
+                        default=['avgParticlesPerCell', 'maxParticlesPerCell', 'homogeneity', 'maxDensity',
+                                 'particlesPerCellStdDev', 'threadCount'], help="List of feature columns for training.")
+    parser.add_argument('--targets', type=str, nargs='+', default=['Container', 'Traversal', 'Data Layout', 'Newton 3'],
+                        help="List of target columns to predict.")
     parser.add_argument('--test-size', type=float, default=0.2, help="Test set size as a fraction (default: 0.2).")
-    parser.add_argument('--n-iterations', type=int, default=100, help="Number of iterations for RandomForest (default: 100).")
+    parser.add_argument('--n-iterations', type=int, default=100,
+                        help="Number of iterations for RandomForest (default: 100).")
     parser.add_argument('--output-file', type=str, default='model.pkl', help="Output file to save models and encoders.")
     args = parser.parse_args()
 
@@ -181,6 +192,7 @@ def main():
     save_model_and_encoders(model, label_encoders, args.output_file)
 
     print("Model training and saving complete.")
+
 
 if __name__ == "__main__":
     main()
