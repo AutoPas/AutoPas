@@ -4,6 +4,8 @@
 
 import os
 import argparse
+from pyexpat import features
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -137,25 +139,27 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_iterations
     return model
 
 
-def save_model_and_encoders(model: MultiOutputClassifier, label_encoders: dict, output_file: str) -> None:
+def save_model_and_encoders(model: MultiOutputClassifier, label_encoders: dict, features: list, output_file: str) -> None:
     """
-    Save the trained model and LabelEncoders to a file.
+    Save the trained model, LabelEncoders, and feature list to a file.
 
-    This function saves the trained MultiOutputClassifier model and LabelEncoders as a dictionary in a pickle file
-    so they can be loaded together later for making predictions.
+    This function saves the trained MultiOutputClassifier model, LabelEncoders, and feature list as a dictionary
+    in a pickle file so they can be loaded together later for making predictions.
 
     Args:
         model (MultiOutputClassifier): The trained MultiOutputClassifier model.
         label_encoders (dict): The LabelEncoders used for encoding target variables.
-        output_file (str): Path to save the model and encoders.
+        features (list): The list of feature column names.
+        output_file (str): Path to save the model, encoders, and features.
     """
     combined_data = {
         'model': model,
-        'label_encoders': label_encoders
+        'label_encoders': label_encoders,
+        'features': features
     }
+    print(combined_data)
     with open(output_file, 'wb') as f:
         pickle.dump(combined_data, f)
-
 
 def main():
     """
@@ -189,7 +193,7 @@ def main():
     model = train_model(X, y, args.test_size, args.n_iterations)
 
     print(f"Saving model and encoders to {args.output_file}...")
-    save_model_and_encoders(model, label_encoders, args.output_file)
+    save_model_and_encoders(model, label_encoders, args.features, args.output_file)
 
     print("Model training and saving complete.")
 
