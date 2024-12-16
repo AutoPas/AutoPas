@@ -291,7 +291,15 @@ class MDFlexConfig {
    * modelFilename
    */
   MDFlexOption<std::string, __LINE__> modelFilename{
-      "", "model-filename", true, "Path to a .pkl file containing the model for the decision-tree tuning method."};
+      "", "model-filename", true, "Path to a .pkl file containing the model for the decision-tree tuning method. The path is relative to AUTOPAS_SOURCE_DIR"};
+
+  /**
+   * confidenceThreshold
+   */
+  MDFlexOption<double, __LINE__> confidenceThreshold{
+      0.0, "confidence-threshold", true,
+      "For decision-tree based tuning strategies: Threshold for the confidence of the prediction."};
+
   /**
    * MPITuningMaxDifferenceForBucket
    */

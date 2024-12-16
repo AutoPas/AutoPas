@@ -6,6 +6,7 @@ import pickle
 import pandas as pd
 import json
 import os
+import numpy as np
 
 
 def load_models_and_encoders(model_file: str) -> tuple:
@@ -30,7 +31,7 @@ def load_models_and_encoders(model_file: str) -> tuple:
     with open(model_file, 'rb') as f:
         combined_data = pickle.load(f)
     # Return the models and label encoders
-    return combined_data['models'], combined_data['label_encoders']
+    return combined_data['model'], combined_data['label_encoders']
 
 
 def preprocess_live_info(live_info: dict) -> pd.DataFrame:
@@ -47,6 +48,7 @@ def preprocess_live_info(live_info: dict) -> pd.DataFrame:
         pd.DataFrame: A DataFrame containing the processed features ready for prediction.
     """
     # Define the required features for the model input
+    # TODO: How to make these features consistent with the training data and dynamic?
     features = ['avgParticlesPerCell', 'maxParticlesPerCell', 'homogeneity', 'maxDensity', 'particlesPerCellStdDev',
                 'threadCount']
 
@@ -59,7 +61,7 @@ def preprocess_live_info(live_info: dict) -> pd.DataFrame:
     return live_info_df
 
 
-def predict(live_info: dict, models: dict, label_encoders: dict) -> dict:
+def predict(live_info: dict, model: dict, label_encoders: dict) -> dict:
     """
     Perform a forward pass through the trained models to predict the tuning configuration.
 
@@ -68,24 +70,34 @@ def predict(live_info: dict, models: dict, label_encoders: dict) -> dict:
 
     Args:
         live_info (dict): A dictionary of live info data from C++.
-        models (dict): A dictionary containing the trained models for each target variable.
+        model (dict): A dictionary containing the trained models for each target variable.
         label_encoders (dict): A dictionary containing LabelEncoders for decoding predictions.
 
     Returns:
         dict: A dictionary containing the predicted tuning configuration (Container, Traversal, etc.).
     """
+    # Preprocess the live info into a DataFrame
     live_info_df = preprocess_live_info(live_info)
 
-    predictions = {}
+    # Get encoded predictions and probabilities
+    prediction_encoded = model.predict(live_info_df)
+    prediction_proba = model.predict_proba(live_info_df)
 
-    # Perform prediction for each target
-    for target, model in models.items():
-        prediction_encoded = model.predict(live_info_df)
-        prediction = label_encoders[target].inverse_transform(prediction_encoded)
+    predictions = {}
+    total_confidence = 0
+    num_targets = len(label_encoders)
+
+    for i, target in enumerate(label_encoders.keys()):
+        prediction = label_encoders[target].inverse_transform([prediction_encoded[0, i]])
+
+        # Get the confidence score for the predicted label
+        confidence_score = np.max(prediction_proba[i][0])
+        total_confidence += confidence_score
+
         predictions[target] = prediction[0]
 
-    # Convert CellSizeFactor to string as a workaround as sending float values caused issues
-    predictions['CellSizeFactor'] = str(predictions['CellSizeFactor'])
+    predictions["confidence"] = round(total_confidence / num_targets, 2)
+
     return predictions
 
 
