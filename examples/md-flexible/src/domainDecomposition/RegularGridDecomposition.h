@@ -80,6 +80,14 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   [[nodiscard]] const std::array<double, 3> &getLocalBoxMax() const override { return _localBoxMax; }
 
+  void setGlobalBoxMax(const std::array<double, 3> &globalBoxMax) {
+    _globalBoxMax = globalBoxMax;
+  }
+
+  void setLocalBoxMax(const std::array<double, 3> &localBoxMax) {
+    _localBoxMax = localBoxMax;
+  }
+
   /**
    * Returns the number of domains in each dimension
    * @return vector containing the number of subdomains along each dimension
