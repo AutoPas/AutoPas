@@ -263,9 +263,9 @@ void Simulation::run() {
           *_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
       std::cout << "Iteration : " << _iteration << "Force sum on upper wall X: " << forceSumOnXUpperWall << std::endl;
       const double pressureScalingFactor = 1e-6;
-      const double pressure = 20;
+      const double pressure = 40;
       const double damping_coeff = 1;
-      const double finalBoxMaxY = _configuration.boxMax.value[1] * 0.9;
+      const double finalBoxMaxY = _configuration.boxMax.value[1] * 0.8;
       const size_t strainResizingStartingIteration = 25000;
       applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, strainResizingStartingIteration, 0.5);
       _timers.reflectParticlesAtBoundaries.stop();
