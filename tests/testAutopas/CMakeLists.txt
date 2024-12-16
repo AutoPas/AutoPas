@@ -18,12 +18,9 @@ target_link_libraries(
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
-        ${Python3_LIBRARIES}
+        pybind11::embed
 )
 
-# --- copy Python script to the build directory ---
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tests/tuning/tuningStrategy/decisionTreeTuning/predict.py
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are
