@@ -192,7 +192,7 @@ void Simulation::run() {
   double initialVolume = -1.;
   double finalBoxMaxY = _configuration.boxMax.value[1];
   double startBoxMaxY = _configuration.boxMax.value[1];
-  const size_t strainResizingStartingIteration = 25000;
+  const size_t strainResizingStartingIteration = 30000;
   const double spring_stiffness = 50;
   const double pressure = 40;
   const double damping_coeff = 1;
