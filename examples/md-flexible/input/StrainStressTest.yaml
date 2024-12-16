@@ -15,7 +15,7 @@ functor                          :  dem
 newton3                          :  [disabled, enabled]
 cutoff                           :  1.5
 box-min                          :  [0, 0, 0]
-box-max                          :  [15.75, 15.75, 5.75]
+box-max                          :  [16, 16, 16]
 cell-size                        :  [2]
 deltaT                           :  0.00001
 iterations                       :  400000
@@ -51,7 +51,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  strain_stress_pressure_40_strain_0.8
-vtk-write-frequency              :  50
+vtk-write-frequency              :  100
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
