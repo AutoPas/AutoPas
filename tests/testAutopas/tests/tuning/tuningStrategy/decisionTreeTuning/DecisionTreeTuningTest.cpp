@@ -75,10 +75,10 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
 
   tuningStrategy.receiveLiveInfo(mockLiveInfo);
   std::vector<autopas::Configuration> configQueue;
-  configQueue.push_back(autopas::Configuration(
-      autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
-      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-      autopas::InteractionTypeOption::pairwise));
+  configQueue.push_back(autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0,
+                                               autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
+                                               autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+                                               autopas::InteractionTypeOption::pairwise));
 
   autopas::EvidenceCollection evidenceCollection;
 
