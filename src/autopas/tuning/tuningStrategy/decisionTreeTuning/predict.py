@@ -28,8 +28,6 @@ def load_models_and_encoders(model_file: str) -> tuple:
     with open(model_file, 'rb') as f:
         combined_data = pickle.load(f)
 
-    print(combined_data['features'])
-
     return combined_data['model'], combined_data['label_encoders'], combined_data['features']
 
 

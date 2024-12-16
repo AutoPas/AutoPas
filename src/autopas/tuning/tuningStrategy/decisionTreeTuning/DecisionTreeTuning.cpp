@@ -20,10 +20,10 @@ namespace py = pybind11;
 DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
                                        double confidenceThreshold)
     : _configurations(searchSpace), _modelFileName(modelFileName), _confidenceThreshold(confidenceThreshold) {
-  // Initialize the Python interpreter
-  py::initialize_interpreter();
-
   try {
+    // Initialize the Python interpreter using scoped_interpreter
+    static py::scoped_interpreter guard{};
+
     // Add the script directory to Python's path
     py::module::import("sys").attr("path").attr("append")(std::string(AUTOPAS_SOURCE_DIR) +
                                                           "/src/autopas/tuning/tuningStrategy/decisionTreeTuning");
@@ -36,10 +36,7 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
   }
 }
 
-DecisionTreeTuning::~DecisionTreeTuning() {
-  // Finalize the Python interpreter
-  py::finalize_interpreter();
-}
+DecisionTreeTuning::~DecisionTreeTuning() {}
 
 bool DecisionTreeTuning::needsLiveInfo() const { return true; }
 
@@ -104,6 +101,7 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
     config.newton3 = Newton3Option::parseOptionExact(predictionJson["Newton 3"]);
     config.cellSizeFactor = configQueue.front().cellSizeFactor;
     config.loadEstimator = configQueue.front().loadEstimator;
+    config.interactionType = configQueue.front().interactionType;
 
     configQueue.clear();
     configQueue.push_back(config);
