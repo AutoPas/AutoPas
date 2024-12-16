@@ -50,7 +50,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  strain_stress
+vtk-filename                     :  strain_stress_pressure_40_strain_0.8
 vtk-write-frequency              :  50
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
