@@ -22,7 +22,6 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/ParticleBinStructure.h"
