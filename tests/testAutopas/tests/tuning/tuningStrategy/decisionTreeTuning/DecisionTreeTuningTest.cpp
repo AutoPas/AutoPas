@@ -40,12 +40,12 @@ TEST(DecisionTreeTuningTest, TestScriptLoading) {
 
   EXPECT_THROW(
       {
-        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "invalid_model.pkl", 0.8);
+        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      autopas::utils::ExceptionHandler::AutoPasException);
+      pybind11::error_already_set);
 }
 
 /**
@@ -55,9 +55,10 @@ TEST(DecisionTreeTuningTest, TestScriptLoading) {
  */
 TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   // Define the search space for configurations
-  std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
-      autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise)};
+  std::set<autopas::Configuration> searchSpace = {
+      autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise)};
 
   std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model.pkl";
 
@@ -65,7 +66,6 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
       << "Test model file does not exist.";
 
   autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
-
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -74,8 +74,12 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   EXPECT_CALL(mockLiveInfo, get()).WillRepeatedly(::testing::ReturnRef(liveInfoMap));
 
   tuningStrategy.receiveLiveInfo(mockLiveInfo);
-
   std::vector<autopas::Configuration> configQueue;
+  configQueue.push_back(autopas::Configuration(
+      autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
+      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+      autopas::InteractionTypeOption::pairwise));
+
   autopas::EvidenceCollection evidenceCollection;
 
   tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
@@ -100,7 +104,7 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
       autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise)};
 
-  std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model.pkl";
+  std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model_invalid.pkl";
   ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
       << "Invalid response test model file does not exist.";
   autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
@@ -115,6 +119,10 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
   EXPECT_THROW(
       {
         std::vector<autopas::Configuration> configQueue;
+        configQueue.push_back(
+            autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
+                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                   autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise));
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
