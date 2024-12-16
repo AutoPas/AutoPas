@@ -16,18 +16,23 @@ if (NOT ${pmt_ForceBundled})
     endif()
 endif()
 
-message(STATUS "pmt - using bundled version 1.3.1 (commit e93666bd)")
+message(STATUS "pmt - using bundled version (commit e84518f7) and patch")
 
 include(FetchContent)
 
 FetchContent_Declare(
     pmt
     URL
-        # pmt_stable_1.0.zip contains pmt_1.3.1 version with changes including
-        # removal of 100 ms minimum time interval for energy samples, and
-        # removing asynchronous energy measurement
-        ${AUTOPAS_SOURCE_DIR}/libs/pmt_stable_1.0.zip
-        URL_HASH MD5=9a3e1d5c73bb672ff93ce9ffb3f277b7
+        # pmt-master.zip contains commit e84518f7 (master as on Dec 16, 2024)
+        ${AUTOPAS_SOURCE_DIR}/libs/pmt-master.zip
+        URL_HASH MD5=79a6d8132db70bcd7151f70fdb17c50f
+    
+    # Applying patch with following changes:  
+    # removal of 100 ms minimum time interval for energy samples, and
+    # removing asynchronous energy measurement
+    PATCH_COMMAND
+        ${CMAKE_COMMAND} -E echo "Applying patch  ${CMAKE_BUILD_DIR} " &&
+        ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/_deps/pmt-build git apply ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
 )
 
 FetchContent_MakeAvailable(pmt)

@@ -1,0 +1,149 @@
+diff --git a/common/PMT.cpp b/common/PMT.cpp
+index 53dce49..d2db071 100644
+--- a/common/PMT.cpp
++++ b/common/PMT.cpp
+@@ -9,10 +9,7 @@
+ #include "common/PMT.h"
+ namespace pmt {
+ 
+-PMT::~PMT() {
+-  StopDump();
+-  StopThread();
+-};
++PMT::~PMT() {};
+ 
+ double PMT::seconds(const State &first, const State &second) {
+   return second.timestamp_ - first.timestamp_;
+@@ -47,44 +44,6 @@ float State::watts(int i) {
+   return watt_[i];
+ }
+ 
+-void PMT::StartThread() {
+-  thread_ = std::thread([&] {
+-    const State start = GetState();
+-    assert(start.nr_measurements_ > 0);
+-    State previous = start;
+-    state_latest_ = start;
+-
+-    if (dump_file_) {
+-      DumpHeader(start);
+-    }
+-
+-    const int measurement_interval =
+-        GetMeasurementInterval();  // in milliseconds
+-    assert(measurement_interval > 0);
+-    const float dumpInterval = GetDumpInterval();  // in seconds
+-    assert(dumpInterval > 0);
+-
+-    while (!thread_stop_) {
+-      std::this_thread::sleep_for(
+-          std::chrono::milliseconds(measurement_interval));
+-      state_latest_ = GetState();
+-
+-      const float duration = seconds(previous, state_latest_);
+-      if (dump_file_ && duration > dumpInterval) {
+-        Dump(start, previous, state_latest_);
+-        previous = state_latest_;
+-      }
+-    }
+-  });
+-}
+-
+-void PMT::StopThread() {
+-  thread_stop_ = true;
+-  if (thread_.joinable()) {
+-    thread_.join();
+-  }
+-}
+-
+ void PMT::StartDump(const char *filename) {
+   const char *filename_ = std::getenv(kDumpFilenameVariable.c_str());
+   if (filename_) {
+@@ -140,17 +99,13 @@ double PMT::GetTime() {
+ }
+ 
+ State PMT::Read() {
+-  const int measurement_interval = GetMeasurementInterval();
+-  if (!thread_started_) {
+-    StartThread();
+-    thread_started_ = true;
+-    std::this_thread::sleep_for(
+-        std::chrono::milliseconds(measurement_interval));
+-  }
+-  while (seconds(state_previous_, state_latest_) == 0) {
+-    std::this_thread::sleep_for(
+-        std::chrono::milliseconds(measurement_interval));
+-  }
++    if (!initialized_) {
++        // Initialize the first measurement
++        state_previous_ = GetState();
++        initialized_ = true;
++    }
++  // Get the latest measurement
++  state_latest_ = GetState();
+   state_previous_ = state_latest_;
+   return state_latest_;
+ }
+diff --git a/common/PMT.h b/common/PMT.h
+index 318e779..dee6f2b 100644
+--- a/common/PMT.h
++++ b/common/PMT.h
+@@ -81,19 +81,13 @@ class PMT {
+   // The last state set by the thread
+   State state_latest_;
+ 
+-  // This thread continuously call GetState to update state_latest_. It is
+-  // started automatically upon the first Read() call.
+-  std::thread thread_;
+-  volatile bool thread_started_ = false;
+-  volatile bool thread_stop_ = false;
+-
+-  void StartThread();
+-  void StopThread();
+-
+   void DumpHeader(const State &state);
+ 
+   std::unique_ptr<std::ofstream> dump_file_ = nullptr;
+   mutable std::mutex dump_file_mutex_;
++
++  // Bool to check if we got state_previous. If not, we intilize both states.
++  volatile bool initialized_ = false;
+ };
+ 
+ std::unique_ptr<PMT> Create(const std::string &name, int argument);
+diff --git a/rapl/RaplImpl.cpp b/rapl/RaplImpl.cpp
+index 70e2a7c..ffa3221 100644
+--- a/rapl/RaplImpl.cpp
++++ b/rapl/RaplImpl.cpp
+@@ -16,6 +16,7 @@
+ 
+ #include <sched.h>
+ #include <unistd.h>
++#include <cstdlib>
+ 
+ #include "RaplImpl.h"
+ 
+@@ -113,8 +114,9 @@ void RaplImpl::Init() {
+         message << "OS error: " << e.what();
+         std::cerr << message.str() << std::endl;
+         if (e.code().value() == EACCES) {
+-          std::cerr << "Please check the permission or try to run as 'root'"
++          std::cerr << "Please check the permission or try tommm run as 'root'"
+                     << std::endl;
++          std::exit(EXIT_FAILURE);
+         }
+       }
+     }
+diff --git a/rapl/RaplImpl.h b/rapl/RaplImpl.h
+index 824d2bb..0f2438a 100644
+--- a/rapl/RaplImpl.h
++++ b/rapl/RaplImpl.h
+@@ -27,7 +27,7 @@ class RaplImpl : public Rapl {
+   State GetState() override;
+ 
+   virtual const char *GetDumpFilename() override { return "/tmp/pmt_rapl.out"; }
+-  virtual int GetMeasurementInterval() override { return 100; }
++  virtual int GetMeasurementInterval() override { return 1; }
+ 
+  private:
+   void Init();
