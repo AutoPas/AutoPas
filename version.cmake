@@ -1,7 +1,7 @@
 # NOTE: copy-paste from cmake's configuration.
 
 # AutoPas version number components.
-set(AutoPas_VERSION_MAJOR 2)
+set(AutoPas_VERSION_MAJOR 3)
 set(AutoPas_VERSION_MINOR 0)
 set(AutoPas_VERSION_PATCH 0)
 #set(AutoPas_VERSION_RC 0)

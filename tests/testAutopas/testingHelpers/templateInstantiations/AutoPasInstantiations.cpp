@@ -7,7 +7,7 @@
 
 #include "autopas/AutoPasImpl.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/EmptyFunctor.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/NonConstructibleParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -15,14 +15,15 @@
 template class autopas::AutoPas<Molecule>;
 template class autopas::AutoPas<NonConstructibleParticle>;
 
-template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
+template bool autopas::AutoPas<Molecule>::computeInteractions(mdLib::LJFunctor<Molecule> *);
+template bool autopas::AutoPas<Molecule>::computeInteractions(
     LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                   /*globals*/ true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
+template bool autopas::AutoPas<Molecule>::computeInteractions(
     LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                   /*globals*/ false> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
-template bool autopas::AutoPas<NonConstructibleParticle>::iteratePairwise(MockFunctor<NonConstructibleParticle> *);
+template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
+template bool autopas::AutoPas<NonConstructibleParticle>::computeInteractions(
+    MockPairwiseFunctor<NonConstructibleParticle> *);
 
 //! @endcond

@@ -127,7 +127,7 @@ jobs:
             -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
             ..
-          entrypoint.sh cmake --build . --parallel 8 
+          entrypoint.sh cmake --build . --parallel 8
       - name: Run tests ${{ matrix.part }}/2
         run: |
           # If single-site & No MPI, run every other AutoPas and example tests

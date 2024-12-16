@@ -19,6 +19,9 @@ namespace autopas::utils {
  * homogeneity > 0.0, normally < 1.0, but for extreme scenarios > 1.0
  * maxDensity > 0.0, normally < 3.0, but for extreme scenarios > 3.0
  *
+ * A homogeneity of 0 describes a perfectly homogeneous scenario, and as the scenario becomes more heterogeneous, this
+ * becomes greater. If there are no particles, homogeneity is forced as 0 as this scenario is perfectly homogeneous.
+ *
  * These values are calculated by dividing the container's domain into bins of perfectly equal cuboid shapes.
  *
  * @note The bin shapes between different AutoPas containers will not match if the dimensions of their domains don't
@@ -119,8 +122,9 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
 
   const auto densityVariance = densityDifferenceSquaredSum / numberOfBins;
 
-  // finally calculate standard deviation
-  const double homogeneity = std::sqrt(densityVariance);
+  // finally calculate standard deviation. If there are no particles, the above calculation leads to nan. This should
+  // be forced to 0.
+  const double homogeneity = numberOfParticles == 0 ? 0. : std::sqrt(densityVariance);
   // normally between 0.0 and 1.5
   if (homogeneity < 0.0) {
     utils::ExceptionHandler::exception(

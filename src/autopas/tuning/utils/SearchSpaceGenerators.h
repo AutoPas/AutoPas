@@ -65,6 +65,7 @@ struct OptionSpace {
  * @param allowedDataLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
+ * @param interactionType
  * @return A set containing all valid configurations.
  */
 std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
@@ -72,7 +73,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
-                                         const NumberSet<double> *allowedCellSizeFactors);
+                                         const NumberSet<double> *allowedCellSizeFactors,
+                                         const InteractionTypeOption &interactionType);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.

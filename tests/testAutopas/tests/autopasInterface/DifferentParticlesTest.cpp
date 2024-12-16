@@ -11,8 +11,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<NonConstructibleParticle>;
-extern template bool autopas::AutoPas<NonConstructibleParticle>::iteratePairwise(
-    MockFunctor<NonConstructibleParticle> *);
+extern template bool autopas::AutoPas<NonConstructibleParticle>::computeInteractions(
+    MockPairwiseFunctor<NonConstructibleParticle> *);
 
 /**
  * Tests if AutoPas still compiles with a Particle that implements the normal interface, BUT no constructor.
@@ -22,8 +22,8 @@ TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.init();
 
-  // We also check if iteratePairwise can be instantiated.
-  MockFunctor<NonConstructibleParticle> functor;
+  // We also check if computeInteractions can be instantiated.
+  MockPairwiseFunctor<NonConstructibleParticle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
-  autoPas.iteratePairwise(&functor);
+  autoPas.computeInteractions(&functor);
 }

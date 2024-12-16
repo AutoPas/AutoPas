@@ -109,6 +109,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Go to [`TraversalOption`](/src/autopas/options/TraversalOption.h).
   * Add a new enum in `TraversalOption::Value`.
   * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
+  * If the new traversal is a triwise traversal, add it to `TraversalOption::getAllTriwiseTraversals()`.
 * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
 * Add a case for the new traversal in [`TraversalSelector::generateTraversal()`](/src/autopas/tuning/selectors/TraversalSelector.h).
 * Check that the new option is working in the md-flexible example.

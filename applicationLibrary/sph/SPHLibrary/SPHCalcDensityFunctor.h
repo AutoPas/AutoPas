@@ -7,7 +7,7 @@
 #pragma once
 
 #include "SPHKernels.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 
 namespace sphLib {
@@ -18,12 +18,14 @@ namespace sphLib {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFunctor<Particle>> {
+class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcDensityFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
-  SPHCalcDensityFunctor() : autopas::Functor<Particle, SPHCalcDensityFunctor<Particle>>(0.){};
+  SPHCalcDensityFunctor() : autopas::PairwiseFunctor<Particle, SPHCalcDensityFunctor<Particle>>(0.){};
+
+  virtual std::string getName() override { return "SPHDensityFunctor"; }
 
   bool isRelevantForTuning() override { return true; }
 
@@ -71,7 +73,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
@@ -126,7 +128,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
@@ -193,7 +195,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
