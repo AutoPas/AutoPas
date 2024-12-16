@@ -107,9 +107,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -344,8 +342,9 @@ class MDFlexConfig {
   /**
    * modelFilename
    */
-  MDFlexOption<std::string, __LINE__> modelFilename{
-      "", "model-filename", true, "Path to a .pkl file containing the model for the decision-tree tuning method. The path is relative to AUTOPAS_SOURCE_DIR"};
+  MDFlexOption<std::string, __LINE__> modelFilename{"", "model-filename", true,
+                                                    "Path to a .pkl file containing the model for the decision-tree "
+                                                    "tuning method. The path is relative to AUTOPAS_SOURCE_DIR"};
 
   /**
    * confidenceThreshold
