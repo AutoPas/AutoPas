@@ -47,7 +47,7 @@ class LiveInfo {
    * @param interactionLength interaction length (cutoff + skin)
    * @return
    */
-  utils::ParticleBinStructure buildCellBinStructure(const std::array<double, 3> &domainSize, const double interactionLength, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
+  static utils::ParticleBinStructure buildCellBinStructure(const std::array<double, 3> &domainSize, const double interactionLength, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
     std::array<size_t, 3> cellsPerDim{};
     std::array<double, 3> cellLength{};
 
@@ -58,7 +58,7 @@ class LiveInfo {
       cellLength[d] = domainSize[d] / static_cast<double>(cellsPerDim[d]);
     }
 
-    return utils::ParticleBinStructure(cellsPerDim, cellLength, boxMin, boxMax, cutoff);
+    return {cellsPerDim, cellLength, boxMin, boxMax, cutoff};
   }
 
   /**
@@ -71,7 +71,7 @@ class LiveInfo {
    * @param numParticles number of particles
    * @return
    */
-  utils::ParticleBinStructure buildParticleDependentBinStructure(const std::array<double, 3> &domainSize, const size_t numParticles, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
+  static utils::ParticleBinStructure buildParticleDependentBinStructure(const std::array<double, 3> &domainSize, const size_t numParticles, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto domainVolume = domainSize[0] * domainSize[1] * domainSize[2];
@@ -85,7 +85,7 @@ class LiveInfo {
 
     const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
 
-    return utils::ParticleBinStructure(numberOfBinsPerDim, binDimensions, boxMin, boxMax, cutoff);
+    return {numberOfBinsPerDim, binDimensions, boxMin, boxMax, cutoff};
   }
 
   /**
@@ -98,12 +98,12 @@ class LiveInfo {
    * @param numParticles number of particles
    * @return
    */
-  utils::ParticleBinStructure buildBlurredBinStructure(const std::array<double, 3> &domainSize, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
+  static utils::ParticleBinStructure buildBlurredBinStructure(const std::array<double, 3> &domainSize, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto binLength = domainSize / 3.;
 
-    return utils::ParticleBinStructure(3, binLength, boxMin, boxMax, cutoff);
+    return {3, binLength, boxMin, boxMax, cutoff};
   }
 
 
@@ -269,6 +269,30 @@ class LiveInfo {
   [[nodiscard]] const auto &get() const { return infos; }
 
   /**
+   * Gets a single value from the infos that corresponds to the given string.
+   * @tparam T return type
+   * @param key string key for the infos map
+   * @return
+   */
+  template <typename T>
+  T get(const std::string &key) const {
+    // Find the key in the map
+    const auto it = infos.find(key);
+
+    // If key is not found, log an error
+    if (it == infos.end()) {
+      AutoPasLog(ERROR, "Key '" + key + "' not found in infos map.");
+    }
+
+    // Use std::get<T> to extract the value of the desired type
+    try {
+      return std::get<T>(it->second);
+    } catch (const std::bad_variant_access &e) {
+      AutoPasLog(ERROR, "Type mismatch for key '" + key + "'. Requested type does not match the stored type.");
+    }
+  }
+
+  /**
    * Creates a string containing all live info gathered.
    * @return A string containing all live info gathered.
    */
@@ -418,6 +442,13 @@ class LiveInfo {
    */
   template <class Variant, size_t... Idx>
   static Variant readIndex(std::istream &in, size_t idx, std::index_sequence<Idx...>) {
+    Variant var;
+    (readIndexHelper<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
+    return var;
+  }
+
+  template <class Variant, size_t... Idx>
+  static Variant g(std::istream &in, size_t idx, std::index_sequence<Idx...>) {
     Variant var;
     (readIndexHelper<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
     return var;

@@ -1550,21 +1550,25 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
+    const auto needsDensityStatistics = autoTuner.needsDensityStatisticsBeforePrepare();
+    const auto needsLiveInfo = autoTuner.needsLiveInfo();
+    if (needsDensityStatistics or needsLiveInfo) {
+      // Gather Live Info
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
-      const auto &container = _containerSelector.getCurrentContainer();
-      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
-      timerCalculateHomogeneity.stop();
-      autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
-    }
-
-    const auto needsLiveInfo = autoTuner.prepareIteration();
-
-    if (needsLiveInfo) {
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency);
-      autoTuner.receiveLiveInfo(info);
+      timerCalculateHomogeneity.stop();
+      const auto particleDependentBinDensityStdDev = info.template get<double>("particleDependentBinDensityStdDev");
+      const auto maxParticleDensity = info.template get<double>("maxParticleDensity");
+      if (needsDensityStatistics) {
+        autoTuner.addHomogeneityAndMaxDensity(particleDependentBinDensityStdDev, maxParticleDensity,
+                                              timerCalculateHomogeneity.getTotalTime());
+        autoTuner.sendSmoothedDensityStatisticsAtStartOfTuningPhase();
+      }
+      if (needsLiveInfo) {
+        autoTuner.receiveLiveInfo(info);
+      }
     }
 
     std::tie(configuration, stillTuning) = autoTuner.getNextConfig();
