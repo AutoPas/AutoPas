@@ -193,6 +193,8 @@ void Simulation::run() {
   double finalBoxMaxY = _configuration.boxMax.value[1];
   const size_t strainResizingStartingIteration = 25000;
   const double spring_stiffness = 50;
+  const double pressure = 40;
+  const double damping_coeff = 1;
 
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -265,8 +267,6 @@ void Simulation::run() {
           *_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
       std::cout << "Iteration : " << _iteration << "Force sum on upper wall X: " << forceSumOnXUpperWall << std::endl;
       const double pressureScalingFactor = 1e-6;
-      const double pressure = 40;
-      const double damping_coeff = 1;
 
       // Set necessary initial values
       if (_iteration == strainResizingStartingIteration) {
