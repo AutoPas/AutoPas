@@ -150,13 +150,14 @@ std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
     const std::array<double, 3> v_i_squared = v_i * v_i;
     stress_tensor_diagonal += (v_i_squared * m_i);
 
+    const double radius_i = particlePropertiesLib.getRadius(i->getTypeId());  // Assume same radius for j
+    const std::array<double, 3> x_i = i->getR();
+
     auto j = i;
     ++j;  // Start `j` from the next particle after `i`.
     for (; j.isValid(); ++j) {
       // Process the pair (i, j)
       // Dynamic stress due to contacts
-      const double radius_i = particlePropertiesLib.getRadius(i->getTypeId());  // Assume same radius for j
-      const std::array<double, 3> x_i = i->getR();
       const std::array<double, 3> x_j = j->getR();
       const std::array<double, 3> displacement = x_i - x_j;
       const double dist = L2Norm(displacement);
