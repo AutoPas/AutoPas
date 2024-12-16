@@ -170,6 +170,11 @@ class AxilrodTellerFunctor
 
   bool isRelevantForTuning() final { return true; }
 
+  void setCutoff(double cutoff) override {
+    this->_cutoffSquared = cutoff * cutoff;
+    this->_cutoff = cutoff;
+  };
+
   bool allowsNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
   }
@@ -585,7 +590,7 @@ class AxilrodTellerFunctor
   static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
-  const double _cutoffSquared;
+  double _cutoffSquared;
 
   // Parameter of the Axilrod-Teller potential
   // not const because they might be reset through PPL

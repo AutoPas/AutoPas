@@ -595,6 +595,11 @@ class LJFunctor
     }
   }
 
+  void setCutoff(double cutoff) override {
+    this->_cutoff = cutoff;
+    _cutoffSquared = cutoff * cutoff;
+  }
+
   /**
    * @copydoc autopas::Functor::getNeededAttr()
    */
@@ -1192,7 +1197,7 @@ class LJFunctor
   static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
-  const double _cutoffSquared;
+  double _cutoffSquared;
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
 

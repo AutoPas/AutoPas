@@ -168,6 +168,15 @@ class Functor {
   [[nodiscard]] double getCutoff() const { return _cutoff; }
 
   /**
+   * setCutoff sets the cutoff of the Functor.
+   * It is needed for HierarchicalGrids to work correctly.
+   * It is defined as a virtual function so that every Functor needs to define it as
+   * some Functors use cutoffs differently (e.x.: some only use cutoffSquared instead of _cutoff directly)
+   * @param cutoff cutoff to set
+   */
+  virtual void setCutoff(double cutoff) = 0;
+
+  /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.
    *
    * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
@@ -262,7 +271,7 @@ class Functor {
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
     }
   }
-
+ protected:
   double _cutoff;
 };
 

@@ -29,6 +29,9 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
       : PairwiseFunctor(cutoff), _min(min), _max(max) {}
 
   void initTraversal() override { _pairs.clear(); }
+  void setCutoff(double cutoff) override {
+    this->_cutoff = cutoff;
+  };
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -69,6 +72,10 @@ class CollectParticlesPerThreadFunctor
     for (int i = 0; i < 8; i++) {
       _particlesPerThreadPerColor[i].resize(autopas::autopas_get_max_threads());
     }
+  }
+
+  void setCutoff(double cutoff) override {
+    this->_cutoff = cutoff;
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {

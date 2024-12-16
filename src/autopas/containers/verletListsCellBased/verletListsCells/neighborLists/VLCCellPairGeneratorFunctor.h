@@ -40,6 +40,11 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
 
   std::string getName() override { return "VLCCellPairGeneratorFunctor"; }
 
+  void setCutoff(double cutoff) override {
+    _cutoffskinsquared = cutoff * cutoff;
+    this->_cutoff = cutoff;
+  }
+
   bool isRelevantForTuning() override { return false; }
 
   bool allowsNewton3() override {

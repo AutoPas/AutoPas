@@ -64,4 +64,6 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle, MockPairwi
 
   //  std::string getName() { return "functorName"; }
   MOCK_METHOD(std::string, getName, (), (override));
+
+  MOCK_METHOD(void, setCutoff, (double cutoff), (override));
 };
