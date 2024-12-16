@@ -207,8 +207,8 @@ void Simulation::finalize() {
   _timers.total.stop();
   auto endEnergy = _totalEnergySensor.endMeasurement();
   auto totalEnergyForRank = _totalEnergySensor.getJoules();
-  autopas::AutoPas_MPI_Allreduce(&totalEnergyForRank, &_totalEnergy, 1, autopas::AutoPas_MPI_Datatype::DOUBLE,
-                                 autopas::AutoPas_MPI_Op::SUM, autopas::AutoPas_MPI_Comm::COMM_WORLD);
+  autopas::AutoPas_MPI_Allreduce(&totalEnergyForRank, &_totalEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
 
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
