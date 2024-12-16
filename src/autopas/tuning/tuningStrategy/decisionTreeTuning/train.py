@@ -1,4 +1,4 @@
-# @File: predict.py
+# @File: train.py
 # @Author Abdulkadir Pazar
 # @Date 10-08-2024
 
