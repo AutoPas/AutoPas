@@ -44,6 +44,16 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
                                                                     calculateGlobals, countFLOPs, relevantForTuning>> {
+  /**
+   * FloatType used for calculations
+   */
+  using CalcPrecision = typename Particle::ParticleCalcPrecision;
+
+  /**
+   * FloatType used for accumulations or more relevant calculations
+   */
+  using AccuPrecision = typename Particle::ParticleAccuPrecision;
+
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:

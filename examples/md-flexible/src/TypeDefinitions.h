@@ -50,11 +50,6 @@ using ParticleType = mdLib::MoleculeLJ;
  */
 using CalcPrecision = typename ParticleType::ParticleCalcPrecision;
 
-/**
- * FloatType used for accumulations or more relevant calculations
- */
-using AccuPrecision = typename ParticleType::ParticleAccuPrecision;
-
 namespace mdFlexibleTypeDefs {
 /**
  * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
