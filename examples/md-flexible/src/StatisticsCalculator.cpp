@@ -22,7 +22,7 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   };
    **/
   const std::vector<std::string> columnNames = {
-      "Iteration", "OverlapSum", "DistSum", "ForceMagSum"
+      "Iteration", "F_ji", "inv_d_ij_powered_7", "inv_d_cutoff_powered_7"
   };
   generateOutputFile(columnNames);
 }
@@ -32,8 +32,9 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
 
   //const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib); TODO: change
-  const auto statistics = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
-  StatisticsCalculator::writeRow(currentIteration, statistics);
+  // const auto statistics = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
+  const auto stats = calculateVdWRelatedTerms(autoPasContainer, particlePropertiesLib);
+  StatisticsCalculator::writeRow(currentIteration, stats);
 
 }
 
@@ -119,14 +120,14 @@ std::tuple<double, double, double> StatisticsCalculator::calculateVdWRelatedTerm
   using namespace autopas::utils::ArrayMath;
 
   double f_ji = 0.;
-  size_t particleCount = 0;
   double inv_d_ij_powered_7 = 0.;
   double inv_d_cutoff_powered_7 = 0.;
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
     const std::array<double, 3> force_i = i->getF();
-    f_ji += L2Norm(force_i);
-    ++particleCount;
+    if (i->getID() == 1) {
+      f_ji = i->getF()[0];
+    }
 
     const std::array<double, 3> x_i = i->getR();
 
@@ -138,10 +139,8 @@ std::tuple<double, double, double> StatisticsCalculator::calculateVdWRelatedTerm
 
           inv_d_ij_powered_7 += 1. / (dist * dist * dist * dist * dist * dist * dist);
           inv_d_cutoff_powered_7 += 1. / (dist * dist * dist * dist * dist * dist * dist);
-
-        }
-  }
-  f_ji /= particleCount;
+        } // end inner for loop
+  } // end outer for loop
 
   return std::make_tuple(f_ji, inv_d_ij_powered_7, inv_d_cutoff_powered_7);
 }

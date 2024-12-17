@@ -26,7 +26,7 @@ Sites:
     epsilon                      :  1.
     sigma                        :  1.
     mass                         :  1.
-    radius                       :  0.7
+    radius                       :  0.5
 Objects:
   CubeGrid:
     0:
@@ -38,7 +38,7 @@ Objects:
     1:
       particles-per-dimension: [ 1, 1, 1 ]
       particle-spacing: 1.1225
-      bottomLeftCorner: [ 2.7, 1, 1 ]
+      bottomLeftCorner: [ 3, 1, 1 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
 vtk-filename                     :  simple_vdw_force
