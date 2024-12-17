@@ -204,7 +204,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value == 0 and _iteration > strainResizingStartingIteration) {  // TODO: to change
+    if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value / 4 == 0 and _iteration > strainResizingStartingIteration) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary(), initialVolume, startBoxMaxY, spring_stiffness);
     }
