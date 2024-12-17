@@ -112,6 +112,40 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
     return std::make_tuple(overlapSum, distSum, forceMagSum);
 }
 
+std::tuple<double, double, double> StatisticsCalculator::calculateVdWRelatedTerms(
+    const autopas::AutoPas<ParticleType> &autoPasContainer,
+    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
+
+  double f_ji = 0.;
+  size_t particleCount = 0;
+  double inv_d_ij_powered_7 = 0.;
+  double inv_d_cutoff_powered_7 = 0.;
+
+  for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
+    const std::array<double, 3> force_i = i->getF();
+    f_ji += L2Norm(force_i);
+    ++particleCount;
+
+    const std::array<double, 3> x_i = i->getR();
+
+    auto j = i;
+        for (++j; j.isValid(); ++j) {
+          const std::array<double, 3> x_j = j->getR();
+          const std::array<double, 3> displacement = x_i - x_j;
+          const double dist = L2Norm(displacement);
+
+          inv_d_ij_powered_7 += 1. / (dist * dist * dist * dist * dist * dist * dist);
+          inv_d_cutoff_powered_7 += 1. / (dist * dist * dist * dist * dist * dist * dist);
+
+        }
+  }
+  f_ji /= particleCount;
+
+  return std::make_tuple(f_ji, inv_d_ij_powered_7, inv_d_cutoff_powered_7);
+}
+
 //---------------------------------------------Helper Methods-----------------------------------------------------
 
 void StatisticsCalculator::generateOutputFile(const std::vector<std::string>& columnNames) {

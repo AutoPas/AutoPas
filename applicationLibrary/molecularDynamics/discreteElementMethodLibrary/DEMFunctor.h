@@ -235,7 +235,7 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (overlapIsPositive and not newton3 ? 1 : 0);
     }
 
-    if (dist > cutoff || overlap <= 0) return;  // VdW deactivated
+    if (dist > cutoff) return;
 
     // (3 + 2 + 2 + 3 + 3 + 5 = 18 FLOPS)
     assert(dist != 0. && "Distance is zero, division by zero detected!");
@@ -250,6 +250,9 @@ class DEMFunctor
     // Compute Forces
     // Compute normal forces
     const double normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;  // 3 FLOPS
+    const double sigma = _PPLibrary->getMixingSigma(i.getTypeId(), j.getTypeId());
+    const double epsilon6 = _PPLibrary->getMixing6Epsilon(i.getTypeId(), j.getTypeId());
+    const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, _cutoff);
     const double normalFMag = normalContactFMag;
     const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
@@ -271,7 +274,7 @@ class DEMFunctor
     }
 
     // Compute total force
-    const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
+    const std::array<double, 3> totalF = normalF;  // 3 FLOPS
 
     // Apply forces
     i.addF(totalF);  // 3 FLOPS
@@ -314,9 +317,9 @@ class DEMFunctor
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 = 3 FLOPS
 
     // Apply torques
-    i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
+    // i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
+      //j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
     }
   }
 
@@ -1285,8 +1288,8 @@ class DEMFunctor
     if (!useMixing) {
       return {_radius, _radius};
     }
-    double radiusI = _PPLibrary->getRadius(i.getTypeId());
-    double radiusJ = _PPLibrary->getRadius(j.getTypeId());
+    const double radiusI = _PPLibrary->getRadius(i.getTypeId());
+    const double radiusJ = _PPLibrary->getRadius(j.getTypeId());
     return {radiusI, radiusJ};
   }
 

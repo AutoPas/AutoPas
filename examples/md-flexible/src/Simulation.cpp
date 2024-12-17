@@ -189,6 +189,8 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
+  // const size_t rotationalGlobalForceIterationFrom = 60000;
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -202,11 +204,10 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-          _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(globalForce);  // normal case parameter: _configuration.globalForce.value
+      //const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
+      //    _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
+      updatePositionsAndResetForces(_configuration.globalForce.value);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif

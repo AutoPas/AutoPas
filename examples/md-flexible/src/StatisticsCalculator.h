@@ -64,6 +64,16 @@ class StatisticsCalculator {
       const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
+   * Calculates the van der Waals related terms.
+   * @param autoPasContainer
+   * @param particlePropertiesLib
+   * @return
+   */
+  std::tuple<double, double, double> calculateVdWRelatedTerms(
+      const autopas::AutoPas<ParticleType> &autoPasContainer,
+      const ParticlePropertiesLibraryType &particlePropertiesLib);
+
+  /**
    * Generates the output file (.csv) for the statistics.
    * @param columnNames The names of the columns in the output file.
    */
