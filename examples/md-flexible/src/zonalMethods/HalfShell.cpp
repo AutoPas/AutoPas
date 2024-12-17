@@ -21,13 +21,16 @@ HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
     return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
   };
 
+  auto importCondition = [hsCondition](const int d[3]) { return !hsCondition(d); };
+
   auto identifyZone = [](const int d[3]) { return "A"; };
 
   // calculate exportRegions
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _exportRegions, hsCondition, identifyZone, false);
 
   // calculate importRegions
-  getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, hsCondition, identifyZone, true);
+  getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, importCondition, identifyZone,
+                            true);
 
   _interactionZones.push_back("A");
   _interactionSchedule.insert_or_assign("A", std::vector<std::string>{});
@@ -88,8 +91,9 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
     if (neighbourRank != _ownRank) {
       particleCommunicator.sendParticles(_importBuffers[bufferIndex], neighbourRank);
     } else {
+      _regionBuffers[bufferIndex].clear();
       // NOTE: We can only add the results inside the container if
-      // we do not have sent exported in to the home box from both directions
+      // we do not have sent results in to the home box from both directions
       // <- which is guaranteed no the case for HalfShell
       _regionBuffers[bufferIndex].insert(_regionBuffers[bufferIndex].end(), _importBuffers[bufferIndex].begin(),
                                          _importBuffers[bufferIndex].end());
@@ -97,7 +101,7 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
     ++bufferIndex;
   }
 
-  // receive reseults
+  // receive results
   bufferIndex = 0;
   for (auto &exRegion : _exportRegions) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
@@ -114,26 +118,28 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
 
   // save results to container
   using namespace autopas::utils::ArrayMath::literals;
-  bufferIndex = 0;
   // for all exported regions
   for (auto &exRegion : _exportRegions) {
     // go over all exported particles in the container
     for (auto particleIter = autoPasContainer.getRegionIterator(exRegion._origin, exRegion._origin + exRegion._size,
                                                                 autopas::IteratorBehavior::owned);
          particleIter.isValid(); ++particleIter) {
-      // find the corresponding result in the buffer
-      size_t result_index = 0;
-      for (auto &result : _regionBuffers[bufferIndex]) {
-        if (particleIter->getID() == result.getID()) {
-          // if found, add the result and delete from buffer
-          particleIter->addF(result.getF());
-          _regionBuffers[bufferIndex].erase(_regionBuffers[bufferIndex].begin() + result_index);
-          break;
+      bufferIndex = 0;
+      while (bufferIndex < _regionBuffers.size()) {
+        // find the corresponding result in the buffer
+        size_t result_index = 0;
+        for (auto &result : _regionBuffers[bufferIndex]) {
+          if (particleIter->getID() == result.getID()) {
+            // if found, add the result and delete from buffer
+            particleIter->addF(result.getF());
+            _regionBuffers[bufferIndex].erase(_regionBuffers[bufferIndex].begin() + result_index);
+            break;
+          }
+          ++result_index;
         }
-        ++result_index;
+        ++bufferIndex;
       }
     }
-    ++bufferIndex;
   }
 }
 
