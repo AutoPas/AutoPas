@@ -3,6 +3,7 @@
  * @date 29.11.2024
  * @author atacann
  */
+
 #pragma once
 
 #include <algorithm>
@@ -12,7 +13,6 @@
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/iterators/ContainerIterator.h"
-#include "autopas/utils/ArrayMath.h"
 #include "traversals/HGridTraversal.h"
 
 namespace autopas {
@@ -95,8 +95,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
                  _cutoffs.size());
       _numLevels = _cutoffs.size();
     }
-    // biggest interaction length
-    const double interactionLengthBiggest = _cutoffs.back() + _skin;
+    // largest interaction length
+    const double interactionLengthLargest = _cutoffs.back() + _skin;
     // generate LinkedCells for each hierarchy, with different cutoffs
     _levels.reserve(_numLevels);
     for (size_t i = 0; i < _numLevels; ++i) {
@@ -105,7 +105,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       // inside its own level a hacky way: make all LinkedCells interactionLength equal to the biggest one, adjust
       // cellSizeFactor for each LinkedCells so that the cellLength is equal to actual interaction length of that level
       const double interactionLengthLevel = _cutoffs[i] + _skin;
-      const double ratio = interactionLengthLevel / interactionLengthBiggest;
+      const double ratio = interactionLengthLevel / interactionLengthLargest;
       _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(
           _boxMin, _boxMax, _cutoffs.back(), skinPerTimestep, rebuildFrequency, cellSizeFactor * ratio));
     }
@@ -134,7 +134,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
-  [[nodiscard]] double getCutoff() const final { return _cutoffs.back(); }
+  [[nodiscard]] double getCutoff() const final { return _baseCutoff; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
@@ -276,16 +276,12 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   void computeInteractions(TraversalInterface *traversal) override {
-    // calculate only within individual levels first
-    for (size_t i = 0; i < _numLevels; i++) {
-      // TODO: unnecessary calculations in halo region fix
-      const auto cellTraversal = prepareTraversal(traversal, i);
-      _levels[i]->computeInteractions(cellTraversal.get());
-    }
-    // calculate cross hierarchy
-    computeCrossInteractions(traversal);
-    AutoPasLog(INFO, "After computeInteractions");
-    AutoPasLog(INFO, toString());
+    prepareTraversal(traversal);
+    traversal->initTraversal();
+    traversal->traverseParticles();
+    traversal->endTraversal();
+    // AutoPasLog(INFO, "After computeInteractions");
+    // AutoPasLog(INFO, toString());
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
@@ -303,21 +299,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    // return traversal info of hierarchy with biggest interactionLength
+    // return traversal info of hierarchy with biggest interactionLength for autoPas container
     return _levels.back()->getTraversalSelectorInfo();
-  }
-
-  /**
-   * Returns traversalSelectorInfo for the specific level
-   * @param level Which level to get info from
-   * @return TraversalSelectorInfo of level
-   */
-  [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo(int level) const {
-    if (level < 0 || level >= _numLevels) {
-      autopas::utils::ExceptionHandler::exception("Hierarchical grid level out of range: {}", level);
-    }
-    // return traversal info of hierarchy with biggest interactionLength
-    return _levels[level]->getTraversalSelectorInfo();
   }
 
   std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
@@ -539,37 +522,21 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       }
     }
     AutoPasLog(ERROR,
-               "Size of Particle times baseCutoff is bigger than biggest cutoff of HierarchicalGrid,"
+               "Size of Particle times baseCutoff is bigger than biggest cutoff of HierarchicalGrid, "
                "will result in wrong interaction calculation.");
     return _numLevels - 1;
   }
 
-  /**
-   * Computer interactions across hierachies.
-   * @param traversal Not used
-   */
-  void computeCrossInteractions(TraversalInterface *traversal) {
-    // TODO: implement
-    traversal->initTraversal();
-    traversal->traverseParticles();
-    traversal->endTraversal();
-  }
-
  protected:
   /**
-   * Checks if a given traversal is allowed for HierarchicalGrid and sets it up for the force interactions for the
-   * specified level.
+   * Checks if a given traversal is allowed for HierarchicalGrid and sends required data to HGridTraversal
    * @param traversal
-   * @param level which level to prepare traversal for
-   * @return traversal that was prepared for the specific level
    */
-  std::unique_ptr<CellTraversal<ParticleCell>> prepareTraversal(TraversalInterface *traversal, int level) const {
+  void prepareTraversal(TraversalInterface *traversal) {
     auto *traversalInterface = dynamic_cast<HGridTraversalInterface *>(traversal);
-    auto *traversalGenerator = dynamic_cast<HGridLevelTraversal<ParticleCell> *>(traversal);
-    if (traversalInterface && traversalGenerator) {
-      const auto traversalInfo = getTraversalSelectorInfo(level);
-      return traversalGenerator->generateNewTraversal(_cutoffs[level], traversalInfo.interactionLength,
-          traversalInfo.cellsPerDim, traversalInfo.cellsPerDim);
+    auto *hGridTraversal = dynamic_cast<HGridTraversalBase<ParticleCell> *>(traversal);
+    if (traversalInterface && hGridTraversal) {
+      hGridTraversal->setLevels(_levels, _cutoffs, _skin);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",

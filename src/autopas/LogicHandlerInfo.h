@@ -39,5 +39,9 @@ class LogicHandlerInfo {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t sortingThreshold{8};
+  /**
+   * Cutoff radius for each level of a HierarchicalGrid
+   */
+  std::vector<double> cutoffs{1.};
 };
 }  // namespace autopas

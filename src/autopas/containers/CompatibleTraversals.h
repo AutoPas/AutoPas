@@ -156,7 +156,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
           TraversalOption::vlc_c01,
-          TraversalOption::vlp_c01};
+          TraversalOption::vlp_c01,
+          TraversalOption::hgrid_test};
 };
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
@@ -171,7 +172,11 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
+  return {
+    TraversalOption::hgrid_test,
+  };
+};
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return

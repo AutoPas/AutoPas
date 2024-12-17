@@ -15,28 +15,31 @@ class HgridMoleculeLJ : public mdLib::MoleculeLJ {
   HgridMoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
                  unsigned long typeId = 0)
       : mdLib::MoleculeLJ(pos, v, moleculeId, typeId) {
-    std::mt19937 gen(std::random_device{}());
-    std::uniform_int_distribution<int> dist(1, 4);
-    _size = dist(gen);
+    generateSize();
   }
   HgridMoleculeLJ(): mdLib::MoleculeLJ() {
-    std::mt19937 gen(std::random_device{}());
-    std::uniform_int_distribution<int> dist(1, 4);
-    _size = dist(gen);
+    generateSize();
   };
   ~HgridMoleculeLJ() override = default;
 
   // Explicitly define copy constructor and assignment operator
   HgridMoleculeLJ(const HgridMoleculeLJ &other) : mdLib::MoleculeLJ(other) {
-    _size = other._size;
+    generateSize();
   }
+
 
   HgridMoleculeLJ &operator=(const HgridMoleculeLJ &other) {
     if (this != &other) {
       mdLib::MoleculeLJ::operator=(other);
-      _size = other._size;
+      generateSize();
     }
     return *this;
+  }
+
+  void generateSize() {
+    std::mt19937 gen(std::random_device{}());
+    std::uniform_int_distribution<int> dist(1, 4);
+    _size = dist(gen);
   }
 
   /**
