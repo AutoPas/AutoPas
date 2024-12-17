@@ -32,7 +32,7 @@ FetchContent_Declare(
     # removing asynchronous energy measurement
     PATCH_COMMAND
         ${CMAKE_COMMAND} -E echo "Applying patch  ${CMAKE_BUILD_DIR} " &&
-        ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/_deps/pmt-build git apply ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
+        ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/_deps/pmt-src git apply ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
 )
 
 FetchContent_MakeAvailable(pmt)
