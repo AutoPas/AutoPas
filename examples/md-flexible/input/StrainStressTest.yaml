@@ -15,7 +15,7 @@ functor                          :  dem
 newton3                          :  [disabled, enabled]
 cutoff                           :  1.5
 box-min                          :  [0, 0, 0]
-box-max                          :  [41, 41, 6]
+box-max                          :  [26, 26, 6]
 cell-size                        :  [2]
 deltaT                           :  0.00001
 iterations                       :  450000
@@ -41,7 +41,7 @@ Objects:
     0:
       particle-spacing           :  1
       bottomLeftCorner           :  [0.5, 0.5, 0.5]
-      box-length                 :  [40, 40, 5] # x, y, z
+      box-length                 :  [25, 25, 5] # x, y, z
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
 # thermostat:
