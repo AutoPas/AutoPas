@@ -57,7 +57,8 @@ void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContain
 void ZonalMethod::getRectRegionsConditional(RectRegion &homeBoxRegion, double cutoffRadius, double verletSkinWidth,
                                             std::vector<RectRegion> &regions,
                                             const std::function<bool(const int[3])> &condition,
-                                            const std::function<std::string(const int[3])> &identifyZone, bool calcImports) {
+                                            const std::function<std::string(const int[3])> &identifyZone,
+                                            bool calcImports) {
   // factor for calculating import or export regions
   double factor = 1.0;
   if (!calcImports) {
@@ -131,6 +132,9 @@ void ZonalMethod::wrapAroundPeriodicBoundary(std::array<int, 3> relNeighbour, st
 
   // if there is no wrapping todo, return
   if (overGlobalBoundary == std::array<double, 3>{0, 0, 0}) {
+    for (ParticleType &p : particles) {
+      p.setF({0, 0, 0});
+    }
     return;
   }
 
@@ -139,19 +143,21 @@ void ZonalMethod::wrapAroundPeriodicBoundary(std::array<int, 3> relNeighbour, st
     auto pos = p.getR();
     pos += overGlobalBoundary * _globalBoxRegion._size;
     p.setR(pos);
+    // reset forces: this is needed as we are going to add the resulting forces to these particles
+    // and communicate them back
+    p.setF({0, 0, 0});
   }
 }
 
 bool ZonalMethod::needToCollectParticles(std::array<int, 3> relNeighbour) {
-  bool allOverBorderArePeriodic = true;
   for (size_t i = 0; i < 3; i++) {
     // check if we are going over a global border
     bool overBoder = (relNeighbour.at(i) < 0 and _isAtGlobalBoundaryMin.at(i)) or
                      (relNeighbour.at(i) > 0 and _isAtGlobalBoundaryMax.at(i));
     // if overBorder and not periodic
     if (overBoder and _boundaryType.at(i) != options::BoundaryTypeOption::periodic) {
-      allOverBorderArePeriodic = false;
+      return false;
     }
   }
-  return allOverBorderArePeriodic;
+  return true;
 }
