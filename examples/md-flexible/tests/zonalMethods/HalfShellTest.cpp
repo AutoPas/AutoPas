@@ -104,15 +104,15 @@ TEST_F(HalfShellTest, testResultRecollection) {
           // set a random number of particles
           size_t numberOfParticles = rand() % 100 + 1;
           for (size_t i = 0; i < numberOfParticles; i++) {
-            double px = (x == -1) * (_boxMin[0] - 0.5) + (x == 0) * (_boxMin[0] + 5) + (x == 1) * (_boxMax[0] + 0.5);
-            double py = (y == -1) * (_boxMin[0] - 0.5) + (y == 0) * (_boxMin[0] + 5) + (y == 1) * (_boxMax[0] + 0.5);
-            double pz = (z == -1) * (_boxMin[0] - 0.5) + (z == 0) * (_boxMin[0] + 5) + (z == 1) * (_boxMax[0] + 0.5);
+            double px = (x == 1) * (_boxMin[0] - 0.5) + (x == 0) * (_boxMin[0] + 5) + (x == -1) * (_boxMax[0] + 0.5);
+            double py = (y == 1) * (_boxMin[0] - 0.5) + (y == 0) * (_boxMin[0] + 5) + (y == -1) * (_boxMax[0] + 0.5);
+            double pz = (z == 1) * (_boxMin[0] - 0.5) + (z == 0) * (_boxMin[0] + 5) + (z == -1) * (_boxMax[0] + 0.5);
             ParticleType p({px, py, pz}, {0, 0, 0}, id);
             indices.push_back(id++);
             particles.push_back(p);
           }
           _autopas.addHaloParticles(particles);
-          regionParticles.insert_or_assign(std::make_tuple(x, y, z), indices);
+          regionParticles.insert_or_assign(std::make_tuple(-x, -y, -z), indices);
         }
       }
     }
@@ -145,7 +145,7 @@ TEST_F(HalfShellTest, testResultRecollection) {
 }
 
 /**
- * Test if the SendAndReceiveResults() for a single domain.
+ * Test if the SendAndReceiveResults() inserts results as expected (in a single domain)
  */
 TEST_F(HalfShellTest, testSendAndReceiveResults) {
   auto hsCondition = [](const int d[3]) {
@@ -178,7 +178,7 @@ TEST_F(HalfShellTest, testSendAndReceiveResults) {
           p.setF({0, 0, 0});
           particles.push_back(p);
 
-          // corresponding export particle with same id but different position
+          // corresponding export particle with same id but different position (outside the domain)
           double ox = (x == -1) * (_boxMin[0] - 0.5) + (x == 0) * (_boxMin[0] + 5) + (x == 1) * (_boxMax[0] + 0.5);
           double oy = (y == -1) * (_boxMin[0] - 0.5) + (y == 0) * (_boxMin[0] + 5) + (y == 1) * (_boxMax[0] + 0.5);
           double oz = (z == -1) * (_boxMin[0] - 0.5) + (z == 0) * (_boxMin[0] + 5) + (z == 1) * (_boxMax[0] + 0.5);
@@ -186,7 +186,8 @@ TEST_F(HalfShellTest, testSendAndReceiveResults) {
           std::array<double, 3> force = {(double)(rand() % 100), (double)(rand() % 100), (double)(rand() % 100)};
           o.setF(force);
           expectedForce.insert_or_assign(id, force);
-          _regionBuffers[bufferIndex].push_back(o);
+          // save as if the particle was received as a result
+          _importBuffers[bufferIndex].push_back(o);
 
           ++id;
           ++bufferIndex;
@@ -198,6 +199,10 @@ TEST_F(HalfShellTest, testSendAndReceiveResults) {
   // initiate domain
   initContainer(_autopas, particles);
 
+  /*
+   * As there is only one node in this domain, all results should be saved internally from 
+   * _importBuffers to _regionBuffers.
+   */
   SendAndReceiveResults(_autopas);
 
   // check if all forces are correct
@@ -208,5 +213,10 @@ TEST_F(HalfShellTest, testSendAndReceiveResults) {
     EXPECT_DOUBLE_EQ(expectedF[0], actualF[0]);
     EXPECT_DOUBLE_EQ(expectedF[1], actualF[1]);
     EXPECT_DOUBLE_EQ(expectedF[2], actualF[2]);
+  }
+
+  // check if all export particles are correct
+  for (auto &buffer : _regionBuffers) {
+      EXPECT_EQ(buffer.size(), 0);
   }
 }
