@@ -17,7 +17,7 @@ cutoff                           :  1.5
 box-min                          :  [0, 0, 0]
 box-max                          :  [26, 26, 6]
 cell-size                        :  [2]
-deltaT                           :  0.00001
+deltaT                           :  0.00005
 iterations                       :  450000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,0]
