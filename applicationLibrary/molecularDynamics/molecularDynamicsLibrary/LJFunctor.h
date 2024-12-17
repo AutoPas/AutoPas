@@ -55,7 +55,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
   /**
    * Precision of SoA entries.
-   * TODO Remove
+   * TODO MP Remove
    */
   using SoAFloatPrecision = typename AccuPrecision;
 

@@ -24,7 +24,7 @@ class Object {
    * @param velocity
    * @param typeId
    */
-  Object(const std::array<double, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
+  Object(const std::array<CalcPrecision, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
 
   virtual ~Object() = default;
 
@@ -60,7 +60,7 @@ class Object {
    * Getter for Velocity
    * @return velocity
    */
-  [[nodiscard]] const std::array<double, 3> &getVelocity() const { return _velocity; }
+  [[nodiscard]] const std::array<CalcPrecision, 3> &getVelocity() const { return _velocity; }
 
   /**
    * Getter for typeId of Particles in Objet
@@ -72,13 +72,13 @@ class Object {
    * Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    */
-  [[nodiscard]] virtual std::array<double, 3> getBoxMin() const = 0;
+  [[nodiscard]] virtual std::array<CalcPrecision, 3> getBoxMin() const = 0;
 
   /**
    * Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    */
-  [[nodiscard]] virtual std::array<double, 3> getBoxMax() const = 0;
+  [[nodiscard]] virtual std::array<CalcPrecision, 3> getBoxMax() const = 0;
 
   /**
    * Returns the total amount of Particles in the Object
@@ -91,7 +91,7 @@ class Object {
    * Objects that are not based on a grid return 0 since this is the minimal guaranteed spacing.
    * @return particleSpacing
    */
-  [[nodiscard]] virtual double getParticleSpacing() const { return 0; }
+  [[nodiscard]] virtual CalcPrecision getParticleSpacing() const { return 0; }
 
   /**
    * String description string of the object.
@@ -121,7 +121,7 @@ class Object {
   /**
    * Velocity of every particle in the object.
    */
-  std::array<double, 3> _velocity;
+  std::array<CalcPrecision, 3> _velocity;
   /**
    * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For
    * multi-site simulations, this refers to the molId.
