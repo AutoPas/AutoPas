@@ -36,8 +36,7 @@ FetchContent_Declare(
         ${CMAKE_COMMAND} -E echo "Current working directory: $ENV{PWD}" &&
         ${CMAKE_COMMAND} -E echo "Source directory: ${CMAKE_SOURCE_DIR}" &&
         ${CMAKE_COMMAND} -E echo "Binary directory: ${CMAKE_BINARY_DIR}" &&
-        ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/libs/patches/ ls -a &&
-        patch -p2 ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
+        git -C ${CMAKE_CURRENT_SOURCE_DIR} apply --check ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
 )
 
 FetchContent_MakeAvailable(pmt)
