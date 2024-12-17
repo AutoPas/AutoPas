@@ -18,7 +18,7 @@ box-min                          :  [-1.75, -1.75, -1.75]
 box-max                          :  [13, 13, 13]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  10000
+iterations                       :  50000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,0]
 Sites:
