@@ -194,7 +194,7 @@ void Simulation::run() {
   double startBoxMaxY = _configuration.boxMax.value[1];
   const size_t strainResizingStartingIteration = 30000;
   const double spring_stiffness = 50;
-  const double pressure = 40;
+  const double pressure = 200;
   const double damping_coeff = 1;
 
   while (needsMoreIterations()) {
@@ -204,9 +204,11 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value / 4 == 0 and _iteration > strainResizingStartingIteration) {  // TODO: to change
+    if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value / 4 == 0 and
+        _iteration > strainResizingStartingIteration) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
-                                         *_configuration.getParticlePropertiesLibrary(), initialVolume, startBoxMaxY, spring_stiffness);
+                                         *_configuration.getParticlePropertiesLibrary(), initialVolume, startBoxMaxY,
+                                         spring_stiffness);
     }
 
     _timers.computationalLoad.start();
@@ -227,36 +229,37 @@ void Simulation::run() {
       _timers.updateContainer.stop();
 
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
-/*
-      // periodically resize box for MPI load balancing
-      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-        _timers.loadBalancing.start();
-        _domainDecomposition->update(computationalLoad);
-        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
-                                                                _domainDecomposition->getLocalBoxMax());
-        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
-        // container again.
-        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
-        // so that remove_if can erase them after.
-        const auto &boxMin = _autoPasContainer->getBoxMin();
-        const auto &boxMax = _autoPasContainer->getBoxMax();
-        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
-          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
-            // This only changes the ownership state in the emigrants vector, not in AutoPas
-            p.setOwnershipState(autopas::OwnershipState::dummy);
-            return true;
-          }
-          return false;
-        });
+      /*
+            // periodically resize box for MPI load balancing
+            if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+              _timers.loadBalancing.start();
+              _domainDecomposition->update(computationalLoad);
+              auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                      _domainDecomposition->getLocalBoxMax());
+              // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be
+      in the
+              // container again.
+              // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+              // so that remove_if can erase them after.
+              const auto &boxMin = _autoPasContainer->getBoxMin();
+              const auto &boxMax = _autoPasContainer->getBoxMax();
+              _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+                if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+                  // This only changes the ownership state in the emigrants vector, not in AutoPas
+                  p.setOwnershipState(autopas::OwnershipState::dummy);
+                  return true;
+                }
+                return false;
+              });
 
 
-        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
-                        emigrants.end());
+              emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return
+      p.isDummy(); }), emigrants.end());
 
-        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
-      }
-**/
+              emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+              _timers.loadBalancing.stop();
+            }
+      **/
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
@@ -273,19 +276,19 @@ void Simulation::run() {
       if (_iteration == strainResizingStartingIteration) {
         const auto currentDomainMax = _autoPasContainer->getBoxMax();
         const auto currentDomainMin = _autoPasContainer->getBoxMin();
-        initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) * (currentDomainMax[2] - currentDomainMin[2]);
+        initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) *
+                        (currentDomainMax[2] - currentDomainMin[2]);
         finalBoxMaxY = currentDomainMax[1] * 0.75;
         startBoxMaxY = currentDomainMax[1];
       }
 
-      applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY, strainResizingStartingIteration, 0.5);
+      applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY,
+                                strainResizingStartingIteration, 0.5);
       _timers.reflectParticlesAtBoundaries.stop();
-
 
       _timers.haloParticleExchange.start();
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
-
 
       _timers.computationalLoad.start();
     }
@@ -578,18 +581,22 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
                                            const size_t starting_iteration, const double minRadius) {
   // Calculating values for strain-controlled movement
   const double initialBoxMaxY = _configuration.boxMax.value[1];
-  const double rate_of_deformation = M_PI / 16.;
   const double delta_T = _configuration.deltaT.value;
+  const double rate_of_deformation_denom = 16.;
+  const double rate_of_deformation = M_PI / rate_of_deformation_denom;
+  const size_t stopping_iteration = (rate_of_deformation_denom / delta_T) + starting_iteration;
   const double newBoxMaxY =
-      _iteration < starting_iteration
-          ? initialBoxMaxY
+      _iteration < starting_iteration ? initialBoxMaxY
+      : _iteration > stopping_iteration
+          ? finalBoxMaxY
           : finalBoxMaxY + 0.5 * (initialBoxMaxY - finalBoxMaxY) *
                                (1 + cos(rate_of_deformation * (_iteration - starting_iteration) *
                                         delta_T));  // strain-controlled movement only after starting_iteration
 
   // Calculating values for stress-controlled movement
-  const double area_x_upper_wall = (_domainDecomposition->getGlobalBoxMax()[0] - _domainDecomposition->getGlobalBoxMin()[0]) *
-                                   (_domainDecomposition->getGlobalBoxMax()[1] - _domainDecomposition->getGlobalBoxMin()[1]);
+  const double area_x_upper_wall =
+      (_domainDecomposition->getGlobalBoxMax()[0] - _domainDecomposition->getGlobalBoxMin()[0]) *
+      (_domainDecomposition->getGlobalBoxMax()[1] - _domainDecomposition->getGlobalBoxMin()[1]);
   const double force_from_outside = pressure * area_x_upper_wall;
   const double force_from_inside = SumOfForcesOnXUpperWall;
   const double a_x_wall = damping_coeff * (force_from_inside - force_from_outside);
@@ -609,8 +616,6 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
   _autoPasContainer->resizeBox(_autoPasContainer->getBoxMin(), newBoxMax);
   _domainDecomposition->setLocalBoxMax(newBoxMax);
   _domainDecomposition->setGlobalBoxMax(newBoxMax);
-
-
 }
 
 void Simulation::logSimulationState() {
