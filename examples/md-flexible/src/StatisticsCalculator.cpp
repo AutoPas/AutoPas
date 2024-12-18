@@ -22,7 +22,7 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   };
    **/
   const std::vector<std::string> columnNames = {
-      "Iteration", "F_ji", "inv_d_ij_powered_7", "inv_d_cutoff_powered_7"
+      "Iteration", "Overlap", "Distance", "F_ji", "scaled_inv_d_ij_powered_7", "scaled_inv_d_cutoff_powered_7"
   };
   generateOutputFile(columnNames);
 }
@@ -113,7 +113,7 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
     return std::make_tuple(overlapSum, distSum, forceMagSum);
 }
 
-std::tuple<double, double, double> StatisticsCalculator::calculateVdWRelatedTerms(
+std::tuple<double, double, double, double, double> StatisticsCalculator::calculateVdWRelatedTerms(
     const autopas::AutoPas<ParticleType> &autoPasContainer,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -122,27 +122,35 @@ std::tuple<double, double, double> StatisticsCalculator::calculateVdWRelatedTerm
   double f_ji = 0.;
   double inv_d_ij_powered_7 = 0.;
   double inv_d_cutoff_powered_7 = 0.;
+  double overlap = 0.;
+  double dist = 0.;
+  const double cutoff = 10;
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
-    const std::array<double, 3> force_i = i->getF();
-    if (i->getID() == 1) {
+    if (i->getTypeId() == 1) {
       f_ji = i->getF()[0];
     }
 
     const std::array<double, 3> x_i = i->getR();
+    const double radius_i = particlePropertiesLib.getRadius(i->getTypeId());
 
     auto j = i;
         for (++j; j.isValid(); ++j) {
           const std::array<double, 3> x_j = j->getR();
           const std::array<double, 3> displacement = x_i - x_j;
-          const double dist = L2Norm(displacement);
+          dist = L2Norm(displacement);
+          overlap = (2 * radius_i - dist) > 0 ? 2. * radius_i - dist : 0; // Assume same radius
 
-          inv_d_ij_powered_7 += 1. / (dist * dist * dist * dist * dist * dist * dist);
-          inv_d_cutoff_powered_7 += 1. / (dist * dist * dist * dist * dist * dist * dist);
+          inv_d_ij_powered_7 += 1. / (pow(dist, 7));
+          inv_d_cutoff_powered_7 += 1. / (pow(cutoff, 7));
         } // end inner for loop
   } // end outer for loop
 
-  return std::make_tuple(f_ji, inv_d_ij_powered_7, inv_d_cutoff_powered_7);
+  const double sigma = particlePropertiesLib.getMixingSigma(0, 1);
+  const double epsilon6 = particlePropertiesLib.getMixing6Epsilon(0, 1);
+  const double scalar = epsilon6 * pow(sigma, 6);
+
+  return std::make_tuple(overlap, dist, f_ji, scalar * inv_d_ij_powered_7, scalar * inv_d_cutoff_powered_7);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------

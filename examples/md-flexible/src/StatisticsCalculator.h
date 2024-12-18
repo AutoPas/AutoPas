@@ -69,7 +69,7 @@ class StatisticsCalculator {
    * @param particlePropertiesLib
    * @return
    */
-  std::tuple<double, double, double> calculateVdWRelatedTerms(
+  std::tuple<double, double, double, double, double> calculateVdWRelatedTerms(
       const autopas::AutoPas<ParticleType> &autoPasContainer,
       const ParticlePropertiesLibraryType &particlePropertiesLib);
 

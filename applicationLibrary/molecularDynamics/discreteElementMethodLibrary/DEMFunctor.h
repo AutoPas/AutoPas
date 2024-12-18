@@ -253,7 +253,7 @@ class DEMFunctor
     const double sigma = _PPLibrary->getMixingSigma(i.getTypeId(), j.getTypeId());
     const double epsilon6 = _PPLibrary->getMixing6Epsilon(i.getTypeId(), j.getTypeId());
     const double normalVdWFMag = computeNormalVdWFMag(overlap, dist, sigma, epsilon6, _cutoff);
-    const double normalFMag = normalContactFMag;
+    const double normalFMag = normalVdWFMag;
     const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
     // Compute tangential force
