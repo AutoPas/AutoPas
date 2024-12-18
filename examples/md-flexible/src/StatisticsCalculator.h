@@ -38,12 +38,13 @@ class StatisticsCalculator {
    * @param autopasContainer The AutoPas container.
    * @param particlePropertiesLib The particle properties library.
    * @param initialVolume The initial volume of the container.
-   * @param finalBoxMaxY The final maximum y-coordinate of the box.
+   * @param startBoxMaxY The start maximum y-coordinate of the box.
    * @param spring_stiffness The spring stiffness of the DEM-functor.
    */
   void recordStatistics(size_t currentIteration, const double globalForceZ,
                         const autopas::AutoPas<ParticleType> &autopasContainer,
-                        const ParticlePropertiesLibraryType &particlePropertiesLib, const double initialVolume, const double finalBoxMaxY, const double spring_stiffness);
+                        const ParticlePropertiesLibraryType &particlePropertiesLib, const double initialVolume,
+                        const double startBoxMaxX, const double startBoxMaxY, const double spring_stiffness);
 
  private:
   /**
@@ -70,16 +71,12 @@ class StatisticsCalculator {
 
   /**
    * Calculates statistics for the stress-strain-simulation
-   * @param autoPasContainer
-   * @param particlePropertiesLib
-   * @param initialVolume
-   * @param finalBoxMaxY
-   * @param spring_stiffness
    * @return
    */
-  std::array<double, 19> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                                        const ParticlePropertiesLibraryType &particlePropertiesLib,
-                                                        const double initialVolume, const double startBoxMaxY, const double spring_stiffness);
+  std::array<double, 20> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                                         const ParticlePropertiesLibraryType &particlePropertiesLib,
+                                                         const double initialVolume, const double startBoxMaxX,
+                                                         const double startBoxMaxY, const double spring_stiffness);
 
   /**
    * Generates the output file (.csv) for the statistics.

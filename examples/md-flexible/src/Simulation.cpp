@@ -191,7 +191,9 @@ void Simulation::run() {
 
   double initialVolume = -1.;
   double finalBoxMaxY = _configuration.boxMax.value[1];
+  double startBoxMaxX = _configuration.boxMax.value[0];
   double startBoxMaxY = _configuration.boxMax.value[1];
+  const size_t statsWriteFrequency = _configuration.vtkWriteFrequency.value / 100;
   const size_t strainResizingStartingIteration = 30000;
   const double spring_stiffness = 50;
   const double pressure = 40;
@@ -204,10 +206,10 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value / 4 == 0 and
+    if (_calculateStatistics and _iteration % statsWriteFrequency == 0 and
         _iteration > strainResizingStartingIteration) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
-                                         *_configuration.getParticlePropertiesLibrary(), initialVolume, startBoxMaxY,
+                                         *_configuration.getParticlePropertiesLibrary(), initialVolume, startBoxMaxX, startBoxMaxY,
                                          spring_stiffness);
     }
 
@@ -279,6 +281,7 @@ void Simulation::run() {
         initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) *
                         (currentDomainMax[2] - currentDomainMin[2]);
         finalBoxMaxY = currentDomainMax[1] * 0.75;
+        startBoxMaxX = currentDomainMax[0];
         startBoxMaxY = currentDomainMax[1];
       }
 

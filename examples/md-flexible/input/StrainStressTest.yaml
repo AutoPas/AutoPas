@@ -51,7 +51,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  strain_stress_pressure_40_strain_0d75_slowed_down
-vtk-write-frequency              :  2000
+vtk-write-frequency              :  200000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info

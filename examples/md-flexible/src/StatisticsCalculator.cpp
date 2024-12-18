@@ -24,22 +24,22 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   // const std::vector<std::string> columnNames = {"Iteration", "Overlap", "Dist", "ForceIX",
   // "MinusRelVelDotNormalUnit"};
   const std::vector<std::string> strainStressColumnNames = {
-      "Iteration", "DomainX",   "DomainY",   "DomainZ",     "Epsilon_yy", "Density",   "VolumeStrain",
-      "Stress_xx", "Stress_yy", "Stress_zz", "numContacts", "Fabric_xx",  "Fabric_xy", "Fabric_xz",
-      "Fabric_yx", "Fabric_yy", "Fabric_yz", "Fabric_zx",   "Fabric_zy",  "Fabric_zz"};
+      "Iteration",    "DomainX",   "DomainY",   "DomainZ",   "Epsilon_xx",  "Epsilon_yy", "Density",
+      "VolumeStrain", "Stress_xx", "Stress_yy", "Stress_zz", "numContacts", "Fabric_xx",  "Fabric_xy",
+      "Fabric_xz",    "Fabric_yx", "Fabric_yy", "Fabric_yz", "Fabric_zx",   "Fabric_zy",  "Fabric_zz"};
   generateOutputFile(strainStressColumnNames);
 }
 
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib,
-                                            const double initialVolume, const double startBoxMaxY,
-                                            const double spring_stiffness) {
+                                            const double initialVolume, const double startBoxMaxX,
+                                            const double startBoxMaxY, const double spring_stiffness) {
   // const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ,
   // particlePropertiesLib); TODO: change
   // const auto statistics = calculateOverlapDistForceRelVelNormal(autoPasContainer, particlePropertiesLib);
   const auto statistics = calculateStrainStressStatistics(autoPasContainer, particlePropertiesLib, initialVolume,
-                                                          startBoxMaxY, spring_stiffness);
+                                                          startBoxMaxX, startBoxMaxY, spring_stiffness);
   StatisticsCalculator::writeRow(currentIteration, statistics);
 }
 
@@ -118,16 +118,17 @@ std::tuple<double, double, double, double> StatisticsCalculator::calculateOverla
   return std::make_tuple(overlap, dist, forceIX, -relVelDotNormalUnit);
 }
 
-std::array<double, 19> StatisticsCalculator::calculateStrainStressStatistics(
+std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
-    const double initialVolume, const double startBoxMaxY, const double spring_stiffness) {
+    const double initialVolume, const double startBoxX, const double startBoxMaxY, const double spring_stiffness) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas::utils::ArrayMath;
   // To calculate: DomainSize (x,y,z), Density, Volumetric Strain
   // DomainSize
   const std::array<double, 3> currentDomain = autoPasContainer.getBoxMax();
 
-  // E_yy
+  // E_xx, E_yy
+  const double epsilon_xx = 1 - (currentDomain[0] / startBoxX);
   const double epsilon_yy = 1 - (currentDomain[1] / startBoxMaxY);
 
   // Density
@@ -197,6 +198,7 @@ std::array<double, 19> StatisticsCalculator::calculateStrainStressStatistics(
   return {currentDomain[0],
           currentDomain[1],
           currentDomain[2],
+          epsilon_xx,
           epsilon_yy,
           density,
           volumetricStrain,
