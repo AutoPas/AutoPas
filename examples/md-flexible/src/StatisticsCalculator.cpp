@@ -23,9 +23,10 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
    **/
   // const std::vector<std::string> columnNames = {"Iteration", "Overlap", "Dist", "ForceIX",
   // "MinusRelVelDotNormalUnit"};
-  const std::vector<std::string> strainStressColumnNames = {"Iteration",  "DomainX",  "DomainY",      "DomainZ",
-                                                            "Epsilon_yy", "Density",  "VolumeStrain", "Stress_xx",
-                                                            "Stress_yy",  "Stress_zz"};
+  const std::vector<std::string> strainStressColumnNames = {
+      "Iteration", "DomainX",   "DomainY",   "DomainZ",     "Epsilon_yy", "Density",   "VolumeStrain",
+      "Stress_xx", "Stress_yy", "Stress_zz", "numContacts", "Fabric_xx",  "Fabric_xy", "Fabric_xz",
+      "Fabric_yx", "Fabric_yy", "Fabric_yz", "Fabric_zx",   "Fabric_zy",  "Fabric_zz"};
   generateOutputFile(strainStressColumnNames);
 }
 
@@ -117,7 +118,7 @@ std::tuple<double, double, double, double> StatisticsCalculator::calculateOverla
   return std::make_tuple(overlap, dist, forceIX, -relVelDotNormalUnit);
 }
 
-std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
+std::array<double, 19> StatisticsCalculator::calculateStrainStressStatistics(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
     const double initialVolume, const double startBoxMaxY, const double spring_stiffness) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -141,8 +142,10 @@ std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
   // Volumetric Strain
   const double volumetricStrain = (currentVolume - initialVolume) / initialVolume;
 
-  // Stress
+  // Stress & numContacts & Fabric
   std::array<double, 3> stress_tensor_diagonal = {0., 0., 0.};
+  std::array<double, 9> fabric_tensor = {0., 0., 0., 0., 0., 0., 0., 0., 0.};  // xx, xy, xz, yx, yy, yz, zx, zy, zz
+  size_t numContacts = 0;
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
     // static stress due to velocity
     const double m_i = particlePropertiesLib.getSiteMass(i->getTypeId());
@@ -152,6 +155,9 @@ std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
 
     const double radius_i = particlePropertiesLib.getRadius(i->getTypeId());  // Assume same radius for j
     const std::array<double, 3> x_i = i->getR();
+
+    // fabric tensor calculations
+    const double particleVolume_i = 4. / 3. * M_PI * radius_i * radius_i * radius_i;
 
     auto j = i;
     ++j;  // Start `j` from the next particle after `i`.
@@ -167,14 +173,26 @@ std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
         continue;
       }  // No contact between particles `i` and `j`.
 
+      ++numContacts;
+
       const std::array<double, 3> normalUnit = displacement / dist;
       const std::array<double, 3> overlap_vectorized = normalUnit * (2. * radius_i) - displacement;
 
       const std::array<double, 3> contact_force = overlap_vectorized * -spring_stiffness;
       stress_tensor_diagonal += (contact_force * displacement);
+
+      // Fabric tensor calculations
+      const std::array<double, 9> normalUnit_outerProduct_ij = {
+          normalUnit[0] * normalUnit[0], normalUnit[0] * normalUnit[1], normalUnit[0] * normalUnit[2],
+          normalUnit[1] * normalUnit[0], normalUnit[1] * normalUnit[1], normalUnit[1] * normalUnit[2],
+          normalUnit[2] * normalUnit[0], normalUnit[2] * normalUnit[1], normalUnit[2] * normalUnit[2]};
+      fabric_tensor += (normalUnit_outerProduct_ij * particleVolume_i);
+
     }  // End of `j` loop
+
   }  // End of `i` loop
   stress_tensor_diagonal = stress_tensor_diagonal / currentVolume;
+  fabric_tensor = fabric_tensor / currentVolume;
 
   return {currentDomain[0],
           currentDomain[1],
@@ -184,7 +202,17 @@ std::array<double, 9> StatisticsCalculator::calculateStrainStressStatistics(
           volumetricStrain,
           stress_tensor_diagonal[0],
           stress_tensor_diagonal[1],
-          stress_tensor_diagonal[2]};
+          stress_tensor_diagonal[2],
+          static_cast<double>(numContacts),
+          fabric_tensor[0],
+          fabric_tensor[1],
+          fabric_tensor[2],
+          fabric_tensor[3],
+          fabric_tensor[4],
+          fabric_tensor[5],
+          fabric_tensor[6],
+          fabric_tensor[7],
+          fabric_tensor[8]};
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------

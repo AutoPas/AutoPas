@@ -77,7 +77,7 @@ class StatisticsCalculator {
    * @param spring_stiffness
    * @return
    */
-  std::array<double, 9> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
+  std::array<double, 19> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
                                                         const ParticlePropertiesLibraryType &particlePropertiesLib,
                                                         const double initialVolume, const double startBoxMaxY, const double spring_stiffness);
 
