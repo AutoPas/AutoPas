@@ -1144,7 +1144,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(AccuPrecision)) / sizeof(double)];
   };
 
   /**

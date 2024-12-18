@@ -59,6 +59,8 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   // using SIMDCalcType = typename std::conditional_t<std::is_same<CalcPrecision, float>::value, __m256, __m256d>;
   // using SIMDAccuType = typename std::conditional_t<std::is_same<AccuPrecision, float>::value, __m256, __m256d>;
+  using SIMDCalcType = __m256d;
+  using SIMDAccuType = __m256d;
 
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -247,10 +249,10 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
 
     const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-    __m256d virialSumX = _mm256_setzero_pd();
-    __m256d virialSumY = _mm256_setzero_pd();
-    __m256d virialSumZ = _mm256_setzero_pd();
-    __m256d potentialEnergySum = _mm256_setzero_pd();
+    SIMDAccuType virialSumX = _mm256_setzero_pd();
+    SIMDAccuType virialSumY = _mm256_setzero_pd();
+    SIMDAccuType virialSumZ = _mm256_setzero_pd();
+    SIMDAccuType potentialEnergySum = _mm256_setzero_pd();
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
@@ -266,9 +268,9 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
       __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[i]));
 
-      __m256d fxacc = _mm256_setzero_pd();
-      __m256d fyacc = _mm256_setzero_pd();
-      __m256d fzacc = _mm256_setzero_pd();
+      SIMDAccuType fxacc = _mm256_setzero_pd();
+      SIMDAccuType fyacc = _mm256_setzero_pd();
+      SIMDAccuType fzacc = _mm256_setzero_pd();
 
       const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
       const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
@@ -1007,12 +1009,12 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
     }
 
     // variables
-    std::array<double, 3> virialSum;
-    double potentialEnergySum;
+    std::array<AccuPrecision, 3> virialSum;
+    AccuPrecision potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(AccuPrecision)) / sizeof(double)];
   };
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
