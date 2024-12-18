@@ -54,6 +54,12 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   using AccuPrecision = typename Particle::ParticleAccuPrecision;
 
+  /**
+   * Define the SIMD Types as either packed single or packed double
+   */
+  // using SIMDCalcType = typename std::conditional_t<std::is_same<CalcPrecision, float>::value, __m256, __m256d>;
+  // using SIMDAccuType = typename std::conditional_t<std::is_same<AccuPrecision, float>::value, __m256, __m256d>;
+
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -146,20 +152,26 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    std::array<CalcPrecision, 3> dr = i.getR() - j.getR();
+    CalcPrecision dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquaredAoS) {
       return;
     }
 
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquared * invdr2;
+    CalcPrecision invdr2 = 1. / dr2;
+    CalcPrecision lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
+    CalcPrecision lj12 = lj6 * lj6;
+    CalcPrecision lj12m6 = lj12 - lj6;
+    CalcPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    std::array<CalcPrecision, 3> f = dr * fac;
+    std::array<CalcPrecision, 3> convertedF;
+    if constexpr (std::is_same_v<CalcPrecision, AccuPrecision>) {
+      convertedF = f;
+    } else {
+      convertedF = std::copy(f.begin(), f.end(), convertedF.begin());
+    }
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
@@ -170,7 +182,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * f;
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+      CalcPrecision potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
@@ -1022,16 +1034,16 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   __m256d _sigmaSquared{};
 #endif
 
-  const double _cutoffSquaredAoS = 0;
-  double _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
+  const CalcPrecision _cutoffSquaredAoS = 0;
+  CalcPrecision _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
 
-  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
+  ParticlePropertiesLibrary<CalcPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _potentialEnergySum;
+  AccuPrecision _potentialEnergySum;
 
   // sum of the virial, only calculated if calculateGlobals is true
-  std::array<double, 3> _virialSum;
+  std::array<AccuPrecision, 3> _virialSum;
 
   // thread buffer for aos
   std::vector<AoSThreadData> _aosThreadData;
