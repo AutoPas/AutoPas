@@ -52,5 +52,15 @@ class TraversalSelectorInfo {
    * This specifies the size of verlet clusters.
    */
   const unsigned int clusterSize;
+
+  /**
+   * Lower corner of the container without halo.
+   */
+  std::array<double, 3> boxMin{0., 0., 0.};
+  /**
+   * Upper corner of the container without halo.
+   */
+  std::array<double, 3> boxMax{0., 0., 0.};
+
 };
 }  // namespace autopas

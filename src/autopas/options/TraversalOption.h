@@ -196,6 +196,12 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+    /**
+     * + LCC01MidpointTraversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
+     * parallel. Good load balancing and no overhead. Uses CellFunctorMidpoint to check for midpoint before interactions.
+     */
+    lc_c01_midpoint,
+
   };
 
   /**
@@ -292,6 +298,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
+        {TraversalOption::lc_c01_midpoint, "lc_c01_midpoint"},
         {TraversalOption::lc_c04, "lc_c04"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},

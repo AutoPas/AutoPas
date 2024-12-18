@@ -67,7 +67,9 @@ class LogicHandler {
                                                    [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
         _flopLogger(outputSuffix),
         _liveInfoLogger(outputSuffix),
-        _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
+        _bufferLocks(std::max(2, autopas::autopas_get_max_threads())),
+        _boxMin(logicHandlerInfo.boxMin),
+        _boxMax(logicHandlerInfo.boxMax) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // Initialize AutoPas with tuners for given interaction types
@@ -964,6 +966,16 @@ class LogicHandler {
    * Logger for FLOP count and hit rate.
    */
   FLOPLogger _flopLogger;
+
+  /**
+   * Lower corner of the container without halo.
+   */
+  std::array<double, 3> _boxMin{0., 0., 0.};
+
+  /**
+   * Upper corner of the container without halo.
+   */
+  std::array<double, 3> _boxMax{0., 0., 0.};
 };
 
 template <typename Particle>
@@ -1532,10 +1544,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     traversalPtrOpt = autopas::utils::withStaticCellType<Particle>(
         container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
           // Can't make this unique_ptr const otherwise we can't move it later.
+          auto traversalInfo = container.getTraversalSelectorInfo();
+          traversalInfo.boxMin = this->_boxMin;
+          traversalInfo.boxMax = this->_boxMax;
           auto traversalPtr =
               TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
-                  configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
-                  configuration.newton3);
+                  configuration.traversal, functor, traversalInfo, configuration.dataLayout, configuration.newton3);
 
           // set sortingThreshold of the traversal if it can be casted to a CellTraversal and uses the CellFunctor
           if (auto *cellTraversalPtr =
@@ -1698,7 +1712,9 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
                             _containerSelector.getCurrentContainer().getVerletSkin() / _neighborListRebuildFrequency,
                             _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator));
   const auto &container = _containerSelector.getCurrentContainer();
-  const auto traversalInfo = container.getTraversalSelectorInfo();
+  auto traversalInfo = container.getTraversalSelectorInfo();
+  traversalInfo.boxMin = _boxMin;
+  traversalInfo.boxMax = _boxMax;
 
   auto traversalPtrOpt = autopas::utils::withStaticCellType<Particle>(
       container.getParticleCellTypeEnum(),
