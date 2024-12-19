@@ -25,6 +25,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningStrategies(std::move(tuningStrategies)),
       _tuningInterval(autoTunerInfo.tuningInterval),
       _tuningMetric(autoTunerInfo.tuningMetric),
+      _useLOESSSmoothening(autoTunerInfo.useLOESSSmoothening),
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
@@ -46,6 +47,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
+  AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening {}.", _useLOESSSmoothening ? "enabled" : "disabled");
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
@@ -59,12 +61,12 @@ void AutoTuner::addHomogeneityAndMaxDensity(double homogeneity, double maxDensit
   _timerCalculateHomogeneity.addTime(time);
 }
 
-void AutoTuner::logIteration(const Configuration &conf, bool tuningIteration, long tuningTime) {
+void AutoTuner::logTuningResult(bool tuningIteration, long tuningTime) const {
   // only log if we are at the end of a tuning phase
   if (_endOfTuningPhase) {
     // This string is part of several older scripts, hence it is not recommended to change it.
-    AutoPasLog(DEBUG, "Selected Configuration {}", getCurrentConfig().toString());
-    const auto [_, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+    const auto [conf, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+    AutoPasLog(DEBUG, "Selected Configuration {}", conf.toString());
     _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime, optimalEvidence.value);
   }
 }
@@ -232,7 +234,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
     utils::ExceptionHandler::exception(
-        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough"
+        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough "
         "for this configuration!\n"
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
@@ -250,9 +252,12 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
     const long reducedValue = estimateRuntimeFromSamples();
     _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
 
-    // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
+    // If LOESS-based smoothening is enabled, use it to smooth evidence to remove high outliers. If smoothing results in
+    // a higher value or if LOESS-based smoothening is disabled, use the original value.
     const auto smoothedValue =
-        std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5));
+        _useLOESSSmoothening
+            ? std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5))
+            : reducedValue;
 
     // replace collected evidence with smoothed value to improve next smoothing
     _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
@@ -300,10 +305,14 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   }
 }
 
-void AutoTuner::bumpIterationCounters() {
-  ++_iteration;
+void AutoTuner::bumpIterationCounters(bool needToWait) {
+  // reset counter after all autotuners finished tuning
+  if (not(needToWait or inTuningPhase() or _iterationBaseline < _tuningInterval)) {
+    _iterationBaseline = 0;
+  }
   ++_iterationBaseline;
-
+  ++_iteration;
+  AutoPasLog(DEBUG, "Iteration: {}", _iteration);
   _endOfTuningPhase = false;
 
   if (_iteration % _tuningInterval == 0) {
@@ -319,7 +328,9 @@ void AutoTuner::bumpIterationCounters() {
 bool AutoTuner::willRebuildNeighborLists() const {
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : _rebuildFrequency;
-  return (_iterationBaseline % iterationsPerRebuild) == 0;
+  // _iterationBaseLine + 1 since we want to look ahead to the next iteration
+  const auto iterationBaselineNextStep = _forceRetune ? _iterationBaseline : _iterationBaseline + 1;
+  return (iterationBaselineNextStep % iterationsPerRebuild) == 0;
 }
 
 bool AutoTuner::initEnergy() {

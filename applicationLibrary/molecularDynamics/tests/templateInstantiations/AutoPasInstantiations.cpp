@@ -12,7 +12,7 @@
 //! @cond Doxygen_Suppress
 template class autopas::AutoPas<Molecule>;
 // clang-format off
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
+template bool autopas::AutoPas<Molecule>::computeInteractions(
     mdLib::LJFunctor<Molecule,
                      /* shifting */ false,
                      /*mixing*/ false,

@@ -35,5 +35,9 @@ struct AutoTunerInfo {
    * Maximum allowed slowdown factor for the auto-tuner.
    */
   double maxAllowedSlowdownFactor{std::numeric_limits<double>::infinity()};
+  /**
+   * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
+   */
+  bool useLOESSSmoothening{true};
 };
 }  // namespace autopas
