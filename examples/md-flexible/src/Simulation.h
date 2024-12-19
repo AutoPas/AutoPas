@@ -240,6 +240,16 @@ class Simulation {
   struct Timers _timers;
 
   /**
+   * Records the total energy required for the simulation.
+   */
+  autopas::utils::EnergySensor _totalEnergySensor;
+
+  /**
+   * Records the total energy in Joules required for the simulation.
+   */
+  double _totalEnergy{0.};
+
+  /**
    * Parallel VTK file writer.
    */
   std::shared_ptr<ParallelVtkWriter> _vtkWriter;

@@ -13,9 +13,8 @@ file(
 )
 
 option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-        "Enables energy measurements and tuning using Intel's RAPL (Running Average Power Limit) interface for x86 processors
-        running on Linux kernels."
-        OFF
+        "Enables energy measurements and tuning using PMT library and enables the RAPL interface, by default, allowing for energy measurement on Intel and AMD hardware."
+        ON
 )
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
@@ -38,6 +37,7 @@ target_link_libraries(
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
+        pmt
         Eigen3
     PRIVATE
         # harmony are only needed privately when building AutoPas.
@@ -58,7 +58,6 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         _USE_MATH_DEFINES
 )
-
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)

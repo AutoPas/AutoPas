@@ -54,12 +54,21 @@ cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON ..
 ### Energy Measurements and Tuning
 
 By default, AutoPas tunes for the best configuration according to runtime. For all Linux based systems, it is also possible to tune
-for the algorithm that consumes the least energy. This is implemented via [Intel's RAPL](https://www.intel.com/content/www/us/en/developer/articles/technical/software-security-guidance/advisory-guidance/running-average-power-limit-energy-reporting.html) 
-(Running Average Power Limit) interface.
+for the algorithm that consumes the least energy. This is implemented via [pmt-stable](https://github.com/MaxPraus23/pmt-stable) which is a customized version tuned for performance based on [PMT](https://git.astron.nl/RD/pmt). In the current version, energy consumption can be measured via Intel's RAPL or with LIKWID.
 
 To use energy tuning, energy measurements must be enabled using the CMake option:
 ```bash
 cmake -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON .. 
+```
+
+Additionally, an energy sensor used for measurement needs to be selected. By default, RAPL sensor is enabled by setting the default for `PMT_BUILD_RAPL` to `ON`. However, other available sensors like `LIKWID` can also be used by separately compiling them using the CMake option:
+```bash
+cmake -DPMT_BUILD_LIKWID=ON .. 
+```
+Note that user must have `LIKWID` installed before enabling this option.
+Similarly, RAPL can be disabled with
+```bash
+cmake -DPMT_BUILD_RAPL=OFF ..
 ```
 
 ### Select a Non-Default Compiler

@@ -1,0 +1,95 @@
+diff --git a/common/PMT.cpp b/common/PMT.cpp
+index 5b8a6ab..3368d11 100644
+--- a/common/PMT.cpp
++++ b/common/PMT.cpp
+@@ -24,8 +24,6 @@ bool isNumber(const std::string &s) {
+ namespace pmt {
+ 
+ PMT::~PMT() {
+-  StopDump();
+-  StopThread();
+ };
+ 
+ double PMT::seconds(const Timestamp &timestamp) {
+@@ -79,39 +77,6 @@ float State::watts(int i) {
+   return watt_[i];
+ }
+ 
+-void PMT::StartThread() {
+-  SetMeasurementInterval();
+-
+-  thread_ = std::thread([&] {
+-    State state_previous = GetState();
+-    assert(state_previous.nr_measurements_ > 0);
+-    state_latest_ = state_previous;
+-
+-    if (dump_file_) {
+-      DumpHeader(state_previous);
+-    }
+-
+-    while (!thread_stop_) {
+-      std::this_thread::sleep_for(
+-          std::chrono::milliseconds(GetMeasurementInterval()));
+-      state_latest_ = GetState();
+-
+-      if (dump_file_ &&
+-          (1e3 * seconds(state_previous, state_latest_)) > GetDumpInterval()) {
+-        Dump(state_latest_);
+-        state_previous = state_latest_;
+-      }
+-    }
+-  });
+-}
+-
+-void PMT::StopThread() {
+-  thread_stop_ = true;
+-  if (thread_.joinable()) {
+-    thread_.join();
+-  }
+-}
+-
+ void PMT::StartDump(const char *filename) {
+   const char *filename_ = std::getenv(kDumpFilenameVariable.c_str());
+   if (filename_) {
+@@ -187,13 +152,8 @@ void PMT::SetMeasurementInterval(unsigned int milliseconds) {
+ Timestamp PMT::GetTime() { return std::chrono::system_clock::now(); }
+ 
+ State PMT::Read() {
+-  const int measurement_interval = GetMeasurementInterval();
+-  if (!thread_started_) {
+-    StartThread();
+-    thread_started_ = true;
+-    std::this_thread::sleep_for(
+-        std::chrono::milliseconds(measurement_interval));
+-  }
++  // Get the latest measurement
++  state_latest_ = GetState();
+   return state_latest_;
+ }
+ 
+diff --git a/common/PMT.h b/common/PMT.h
+index 269d549..19028b8 100644
+--- a/common/PMT.h
++++ b/common/PMT.h
+@@ -85,20 +85,11 @@ class PMT {
+   Timestamp GetTime();
+ 
+  private:
+-  unsigned int measurement_interval_ = 100;  // milliseconds
++  unsigned int measurement_interval_ = 1;  // milliseconds
+ 
+   // The last state set by the thread
+   State state_latest_;
+ 
+-  // This thread continuously call GetState to update state_latest_. It is
+-  // started automatically upon the first Read() call.
+-  std::thread thread_;
+-  volatile bool thread_started_ = false;
+-  volatile bool thread_stop_ = false;
+-
+-  void StartThread();
+-  void StopThread();
+-
+   void DumpHeader(const State &state);
+ 
+  protected:
