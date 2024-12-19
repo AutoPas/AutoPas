@@ -16,27 +16,26 @@ if (NOT ${pmt_ForceBundled})
     endif()
 endif()
 
-message(STATUS "pmt - using bundled version (commit e84518f7) and patch")
+message(STATUS "pmt - using bundled version (commit 7a56fa3a) and patch")
 
 include(FetchContent)
+
+set(FETCHCONTENT_QUIET OFF)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 FetchContent_Declare(
     pmt
     URL
-        # pmt-master.zip contains commit e84518f7 (master as on Dec 16, 2024)
+        # pmt-master.zip contains commit 7a56fa3a (master as on Dec 19, 2024)
         ${AUTOPAS_SOURCE_DIR}/libs/pmt-master.zip
-        URL_HASH MD5=79a6d8132db70bcd7151f70fdb17c50f
+        URL_HASH MD5=2a80837cb6c514a67cf480d5f648ff86
     
     # Applying patch with following changes:  
     # removal of 100 ms minimum time interval for energy samples, and
     # removing asynchronous energy measurement
     PATCH_COMMAND
         ${CMAKE_COMMAND} -E echo "Applying patch  ${CMAKE_BUILD_DIR} " &&
-        ${CMAKE_COMMAND} -E echo "Patch file path: ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch" &&
-        ${CMAKE_COMMAND} -E echo "Current working directory: $ENV{PWD}" &&
-        ${CMAKE_COMMAND} -E echo "Source directory: ${CMAKE_SOURCE_DIR}" &&
-        ${CMAKE_COMMAND} -E echo "Binary directory: ${CMAKE_BINARY_DIR}" &&
-        git -C ${CMAKE_CURRENT_SOURCE_DIR} apply --check ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
+        ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/_deps/pmt-src/ git apply --verbose ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
 )
 
 FetchContent_MakeAvailable(pmt)
@@ -44,7 +43,7 @@ FetchContent_MakeAvailable(pmt)
 # sensors available in pmt that are not currently required in AutoPas
 mark_as_advanced(
     PMT_BUILD_CRAY
-    PMT_BUILD_NVML
+    PMT_BUILD_NVML  
     PMT_BUILD_POWERSENSOR2
     PMT_BUILD_POWERSENSOR3
     PMT_BUILD_PYTHON
