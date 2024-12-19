@@ -150,7 +150,7 @@ bool CellFunctorMidpoint<ParticleCell, ParticleFunctor, bidirectional>::isMidpoi
     if (dist.at(i) < 0) {
       return false;
     }
-    if (dist.at(i) >= boxMax.at(i)) {
+    if (dist.at(i) >= boxMax.at(i) - boxMin.at(i)) {
       return false;
     }
   }
