@@ -166,63 +166,70 @@ void Midpoint::calculateZonalInteractionPairwise(std::string zone1, std::string 
 void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[3])> identifyZone) {
   /**
    * See:
-   * The midpoint method for parallelization of particle
-   * simulations
-   * Kevin J. Bowers; Ron O. Dror; David E. Shaw
-   * Figure 4
+   * Evaluation of Zonal Methods for Small
+   * Molecular Systems
+   * Julian Spahl
+   * p.10
    */
-  std::map<std::pair<int, int>, std::vector<std::pair<int, int>>> interactionSchedule2D;
-  interactionSchedule2D.insert_or_assign({1, 0},
-                                         std::vector<std::pair<int, int>>{{0, -1}, {-1, 0}, {0, 1}, {-1, -1}, {-1, 1}});
-  interactionSchedule2D.insert_or_assign({0, -1}, std::vector<std::pair<int, int>>{{-1, 0}, {0, 1}, {1, 1}, {-1, 1}});
-  interactionSchedule2D.insert_or_assign({-1, 0}, std::vector<std::pair<int, int>>{{0, 1}, {1, 1}, {-1, 1}});
-  interactionSchedule2D.insert_or_assign({0, 1}, std::vector<std::pair<int, int>>{{-1, 1}, {-1, -1}});
-  interactionSchedule2D.insert_or_assign({1, 1}, std::vector<std::pair<int, int>>{{-1, -1}});
-  interactionSchedule2D.insert_or_assign({-1, 1}, std::vector<std::pair<int, int>>{{-1, 1}});
-
-  auto get2DCoord = [](int d[3], size_t dim) -> std::pair<int, int> {
-    if (dim == 0) {
-      return {d[1], d[2]};
-    } else if (dim == 1) {
-      return {d[0], d[2]};
-    }
-    return {d[0], d[1]};
-  };
-
-  auto restore3DCoord = [](std::pair<int, int> pair, size_t dim, int coord) -> std::array<int, 3> {
-    if (dim == 0) {
-      return {coord, pair.first, pair.second};
-    } else if (dim == 1) {
-      return {pair.first, coord, pair.second};
-    }
-    return {pair.first, pair.second, coord};
-  };
-
-  // reserve in advance
-  _interactionZones.reserve(_zoneCount);
-
-  // for each relative neighbour
   int d[3];
   for (d[0] = -1; d[0] <= 1; d[0]++) {
     for (d[1] = -1; d[1] <= 1; d[1]++) {
       for (d[2] = -1; d[2] <= 1; d[2]++) {
+        if (d[0] == 0 && d[1] == 0 && d[2] == 0) {
+          continue;
+        }
         auto zone = identifyZone(d);
         // add the zone to the zones vecotr
         _interactionZones.push_back(zone);
-        // apply the 2D interaction into each direction
-        for (size_t dim = 0; dim < 3; dim++) {
-          // if 
-          if (d[dim] == 0) {
-            auto coord = get2DCoord(d, dim);
-            auto interactions = interactionSchedule2D.at(coord);
-            // convert 2D interactions to respective 3D neighbours
-            std::vector<std::string> interactions3D;
-            for (auto inter : interactions) {
-              interactions3D.push_back(identifyZone(restore3DCoord(inter, dim, d[dim]).data()));
-            }
-            _interactionSchedule.at(zone).insert(_interactionSchedule.at(zone).end(), interactions3D.begin(),
-                                                 interactions3D.end());
+        _interactionSchedule.insert_or_assign(zone, std::vector<std::string>{});
+        // if neighbourIndex is smaller than 13, interact with opposite
+        if (convRelNeighboursToIndex({d[0], d[1], d[2]}) < 13) {
+          _interactionSchedule[zone].push_back(identifyZone(new int[3]{-d[0], -d[1], -d[2]}));
+        }
+        // distinguish neighbour types
+        std::vector<size_t> zeroIndices;
+        std::vector<size_t> nonZeroIndices;
+        for (size_t i = 0; i < 3; i++) {
+          if (d[i] == 0) {
+            zeroIndices.push_back(i);
+          } else {
+            nonZeroIndices.push_back(i);
           }
+        }
+        // center
+        if (zeroIndices.size() == 2) {
+          std::vector<std::string> oppositeRing;
+          oppositeRing.reserve(8);
+          int opp[3];
+          opp[nonZeroIndices[0]] = -d[nonZeroIndices[0]];
+          for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+              if (i == 0 && j == 0) {
+                continue;
+              }
+              opp[zeroIndices[0]] = i;
+              opp[zeroIndices[1]] = j;
+              oppositeRing.push_back(identifyZone(opp));
+            }
+          }
+          _interactionSchedule.at(zone).insert(_interactionSchedule.at(zone).end(), oppositeRing.begin(),
+                                               oppositeRing.end());
+        }
+        // edge
+        else if (zeroIndices.size() == 1) {
+          std::vector<std::string> oppositeWing;
+          oppositeWing.reserve(2);
+          int opp[3];
+          opp[nonZeroIndices[0]] = -d[nonZeroIndices[0]];
+          opp[nonZeroIndices[1]] = -d[nonZeroIndices[1]];
+          opp[zeroIndices[0]] = -1;
+          _interactionSchedule.at(zone).push_back(identifyZone(opp));
+          opp[zeroIndices[0]] = 1;
+          _interactionSchedule.at(zone).push_back(identifyZone(opp));
+        }
+        // corner
+        else {
+          // do nothing
         }
       }
     }
