@@ -9,6 +9,7 @@
 #include <spdlog/async.h>
 
 #include "IterationMeasurements.h"
+#include "AccumulatorMeasurements.h"
 #include "autopas/tuning/Configuration.h"
 
 namespace autopas {
@@ -49,6 +50,7 @@ class IterationLogger {
 
  private:
   std::string _loggerName;
+  mutable AccumulatorMeasurements _accumulatedMeasurements;
 };
 
 }  // namespace autopas

@@ -51,6 +51,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
 
 autopas::IterationLogger::~IterationLogger() {
 #ifdef AUTOPAS_LOG_ITERATIONS
+  spdlog::get(_loggerName)->info("{}", _accumulatedMeasurements.toString());
   spdlog::drop(_loggerName);
 #endif
 }
@@ -62,6 +63,7 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
                energyPsys, energyPkg, energyRam, energyTotal] = measurements;
   if (energyMeasurementsPossible) {
+    _accumulatedMeasurements.addEnergy(energyPsys, energyPkg, energyRam);
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
                configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
