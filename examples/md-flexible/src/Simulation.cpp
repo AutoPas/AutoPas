@@ -193,7 +193,7 @@ void Simulation::run() {
   double finalBoxMaxY = _configuration.boxMax.value[1];
   double startBoxMaxX = _configuration.boxMax.value[0];
   double startBoxMaxY = _configuration.boxMax.value[1];
-  const size_t statsWriteFrequency = _configuration.vtkWriteFrequency.value / 100;
+  const size_t statsWriteFrequency = 1000; // _configuration.vtkWriteFrequency.value / 100;
   const size_t strainResizingStartingIteration = 30000;
   const double spring_stiffness = 50;
   const double pressure = 40;
