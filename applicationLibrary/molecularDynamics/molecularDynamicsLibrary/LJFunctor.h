@@ -53,12 +53,6 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    */
   using SoAArraysType = typename Particle::SoAArraysType;
 
-  /**
-   * Precision of SoA entries.
-   * TODO MP Remove
-   */
-  using SoAFloatPrecision = typename AccuPrecision;
-
  public:
   /**
    * Deleted default constructor
@@ -229,7 +223,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     AccuPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    // the local redeclaration of the following values helps the CalcPrecision-generation of various compilers.
     const CalcPrecision cutoffSquared = _cutoffSquared;
 
     AccuPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
@@ -602,7 +596,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    * @param epsilon24
    * @param sigmaSquared
    */
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
+  void setParticleProperties(CalcPrecision epsilon24, CalcPrecision sigmaSquared) {
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
@@ -1214,7 +1208,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   // not const because they might be reset through PPL
   CalcPrecision _epsilon24, _sigmaSquared, _shift6 = 0;
 
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+  ParticlePropertiesLibrary<CalcPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   AccuPrecision _potentialEnergySum;
