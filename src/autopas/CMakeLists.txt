@@ -65,24 +65,21 @@ set(AUTOPAS_PRECISION_MODE
         CACHE
         STRING "Choose the mode of precision that autopas uses."
 )
-set_property(CACHE AUTOPAS_PRECISION_MODE PROPERTY STRINGS "DPDP;SPSP;DPSP;SPDP")
+set_property(CACHE AUTOPAS_PRECISION_MODE PROPERTY STRINGS "DPDP;SPDP;SPSP")
 
 # Define numerical values for different autopas precision modes
 target_compile_definitions(autopas PUBLIC DPDP=0)
-target_compile_definitions(autopas PUBLIC SPSP=1)
-target_compile_definitions(autopas PUBLIC DPSP=2)
-target_compile_definitions(autopas PUBLIC SPDP=3)
+target_compile_definitions(autopas PUBLIC SPDP=1)
+target_compile_definitions(autopas PUBLIC SPSP=2)
 
 string(TOLOWER "${AUTOPAS_PRECISION_MODE}" AUTOPAS_PRECISION_MODE_lower)
 
 if (AUTOPAS_PRECISION_MODE_lower MATCHES  "dpdp")
     target_compile_definitions(autopas PUBLIC AUTOPAS_PRECISION_MODE=0)
-elseif(AUTOPAS_PRECISION_MODE_lower MATCHES "spsp")
-    target_compile_definitions(autopas PUBLIC AUTOPAS_PRECISION_MODE=1)
-elseif(AUTOPAS_PRECISION_MODE_lower MATCHES "dpsp")
-    target_compile_definitions(autopas PUBLIC AUTOPAS_PRECISION_MODE=2)
 elseif(AUTOPAS_PRECISION_MODE_lower MATCHES "spdp")
-    target_compile_definitions(autopas PUBLIC AUTOPAS_PRECISION_MODE=3)
+    target_compile_definitions(autopas PUBLIC AUTOPAS_PRECISION_MODE=1)
+elseif(AUTOPAS_PRECISION_MODE_lower MATCHES "spsp")
+    target_compile_definitions(autopas PUBLIC AUTOPAS_PRECISION_MODE=2)
 endif()
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)

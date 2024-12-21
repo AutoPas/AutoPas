@@ -16,12 +16,12 @@ using MoleculeLJFP64 = MoleculeLJBase<double, double, unsigned long>;
  * MoleculeLJ with mixed precision for calculations and accumulation
  */
 using MoleculeLJMP = MoleculeLJBase<float, double, unsigned long>;
-/**
- * Alias for MoleculeLJ with all variables in 64 bit precision
- */
+
 #if AUTOPAS_PRECISION_MODE == SPSP
-using MoleculeLJ = MoleculeLJMP;
-#else
+using MoleculeLJ = MoleculeLJFP32;
+#elif AUTOPAS_PRECISION_MODE == DPDP
 using MoleculeLJ = MoleculeLJFP64;
+#else
+using MoleculeLJ = MoleculeLJMP;
 #endif
-}
+}  // namespace mdLib
