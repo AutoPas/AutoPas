@@ -11,12 +11,19 @@
 #include <iostream>
 
 namespace autopas {
+#if AUTOPAS_PRECISION_MODE == SPSP
+using OwnershipType = int32_t;
+#elif AUTOPAS_PRECISION_MODE == DPDP
+using OwnershipType = int64_t;
+#else
+using OwnershipType = int32_t;
+#endif
 /**
  * Enum that specifies the state of ownership.
- * @note this type has int64_t as an underlying type to be compatible with LJFunctorAVX. For that a size equal to the
- * precision of the particles is required.
+ * @note this type has either int32_t or int64_t depending on the precision selected as an underlying type to be
+ * compatible with LJFunctorAVX. For that a size equal to the precision of the particles is required.
  */
-enum class OwnershipState : int64_t {
+enum class OwnershipState : OwnershipType {
   /// Dummy or deleted state, a particle with this state is not an actual particle!
   /// @note LJFunctorAVX requires that the Dummy state should always be the integer zero and the state with the lowest
   /// value.
@@ -34,7 +41,7 @@ enum class OwnershipState : int64_t {
  * @return a & b
  */
 constexpr OwnershipState operator&(const OwnershipState a, const OwnershipState b) {
-  return static_cast<OwnershipState>(static_cast<int64_t>(a) & static_cast<int64_t>(b));
+  return static_cast<OwnershipState>(static_cast<OwnershipType>(a) & static_cast<OwnershipType>(b));
 }
 
 /**
@@ -44,16 +51,16 @@ constexpr OwnershipState operator&(const OwnershipState a, const OwnershipState 
  * @return a | b
  */
 constexpr OwnershipState operator|(const OwnershipState a, const OwnershipState b) {
-  return static_cast<OwnershipState>(static_cast<int64_t>(a) | static_cast<int64_t>(b));
+  return static_cast<OwnershipState>(static_cast<OwnershipType>(a) | static_cast<OwnershipType>(b));
 }
 
 /**
- * Returns the int64_t value of a given OwnershipState
+ * Returns the OwnershipType value of a given OwnershipState
  *
  * @param a OwnershipState
- * @return const int64_t value of a given OwnershipState
+ * @return const OwnershipType value of a given OwnershipState
  */
-constexpr int64_t toInt64(const OwnershipState a) { return static_cast<int64_t>(a); }
+constexpr OwnershipType toInt64(const OwnershipState a) { return static_cast<OwnershipType>(a); }
 
 /**
  * Insertion operator for OwnershipState.
