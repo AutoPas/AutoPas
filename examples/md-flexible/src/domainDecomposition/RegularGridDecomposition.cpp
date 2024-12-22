@@ -25,6 +25,7 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "src/zonalMethods/FullShell.h"
 #include "src/zonalMethods/HalfShell.h"
+#include "src/zonalMethods/Midpoint.h"
 #include "src/zonalMethods/ZonalMethod.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
@@ -199,6 +200,7 @@ void RegularGridDecomposition::initializeAllNeighborIndices() {
 
 void RegularGridDecomposition::initilaizeZonalMethod(options::ZonalMethodOption zonalMethodType) {
   using namespace autopas::utils::ArrayMath::literals;
+  _zonalMethodOption = zonalMethodType;
   RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
   RectRegion globalBoxRegion(_globalBoxMin, _globalBoxMax - _globalBoxMin);
   switch (zonalMethodType) {
@@ -212,6 +214,10 @@ void RegularGridDecomposition::initilaizeZonalMethod(options::ZonalMethodOption 
           std::make_unique<HalfShell>(HalfShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                                 _communicator, _allNeighborDomainIndices, _boundaryType));
       break;
+    case options::ZonalMethodOption::midpoint:
+      _zonalMethod =
+          std::make_unique<Midpoint>(Midpoint(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
+                                             _communicator, _allNeighborDomainIndices, _boundaryType));
     default:
       std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                             _communicator, _allNeighborDomainIndices, _boundaryType));

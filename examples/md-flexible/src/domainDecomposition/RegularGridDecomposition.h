@@ -101,6 +101,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   [[nodiscard]] const std::array<int, 3> &getDomainId() const { return _domainId; }
 
   /**
+   * Returns the zonal method.
+   * @return zonal method
+   */
+  [[nodiscard]] const std::unique_ptr<ZonalMethod> &getZonalMethod() const { return _zonalMethod; }
+
+  /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
@@ -166,6 +172,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @return
    */
   autopas::AutoPas_MPI_Comm getCommunicator() const;
+
+  /**
+   * Getter for the zonal method option.
+   * @return
+   */
+  inline options::ZonalMethodOption getZonalMethodOption() const { return _zonalMethodOption; }
 
  private:
   /**
@@ -316,6 +328,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The zonal method used for inter-node communication
    */
   std::unique_ptr<ZonalMethod> _zonalMethod;
+
+  /**
+   * The zonal method option
+   */
+  options::ZonalMethodOption _zonalMethodOption;
 
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
