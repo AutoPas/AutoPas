@@ -87,3 +87,7 @@ void FullShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {}
 
 void FullShell::calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
+
+const std::vector<RectRegion> FullShell::getExportRegions() { return _exportRegions; }
+
+const std::vector<RectRegion> FullShell::getImportRegions() { return _importRegions; }

@@ -1,9 +1,10 @@
 
 #pragma once
+#include "src/zonalMethods/RectRegionMethodInterface.h"
 #include "src/zonalMethods/ZonalMethod.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
-class FullShell : public ZonalMethod {
+class FullShell : public ZonalMethod, public RectRegionMethodInterface {
  public:
   /**
    * Constructor
@@ -63,6 +64,18 @@ class FullShell : public ZonalMethod {
    * @param autoPasContainer
    */
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
+
+  /**
+   * Get the export regions
+   * @return
+   */
+  const std::vector<RectRegion> getExportRegions() override;
+
+  /**
+   * Get the import regions
+   * @return
+   */
+  const std::vector<RectRegion> getImportRegions() override;
 
  protected:
   /**

@@ -74,8 +74,9 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     if (neighbourRank != _ownRank) {
       particleCommunicator.receiveParticles(_importBuffers.at(bufferIndex), neighbourRank);
     } else {
-      _importBuffers.at(bufferIndex).insert(_importBuffers.at(bufferIndex).end(), _regionBuffers.at(bufferIndex).begin(),
-                                         _regionBuffers.at(bufferIndex).end());
+      _importBuffers.at(bufferIndex)
+          .insert(_importBuffers.at(bufferIndex).end(), _regionBuffers.at(bufferIndex).begin(),
+                  _regionBuffers.at(bufferIndex).end());
     }
     autoPasContainer.addHaloParticles(_importBuffers.at(bufferIndex));
     ++bufferIndex;
@@ -97,8 +98,9 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       // NOTE: We can only add the results inside the container if
       // we do not have sent results in to the home box from both directions
       // <- which is guaranteed no the case for HalfShell
-      _regionBuffers.at(bufferIndex).insert(_regionBuffers.at(bufferIndex).end(), _importBuffers.at(bufferIndex).begin(),
-                                         _importBuffers.at(bufferIndex).end());
+      _regionBuffers.at(bufferIndex)
+          .insert(_regionBuffers.at(bufferIndex).end(), _importBuffers.at(bufferIndex).begin(),
+                  _importBuffers.at(bufferIndex).end());
     }
     ++bufferIndex;
   }
@@ -170,3 +172,7 @@ void HalfShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {
 
 void HalfShell::calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
+
+const std::vector<RectRegion> HalfShell::getExportRegions() { return _exportRegions; }
+
+const std::vector<RectRegion> HalfShell::getImportRegions() { return _importRegions; }

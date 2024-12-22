@@ -3,13 +3,14 @@
 #include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/ZonalMethod.h"
 #include "src/zonalMethods/region/RectRegion.h"
+#include "src/zonalMethods/RectRegionMethodInterface.h"
 
 /**
  * Class for the HalfShell ZonalMethod.
  * When initialized, it calculates the export and import regions of the
  * given home box.
  */
-class HalfShell : public ZonalMethod {
+class HalfShell : public ZonalMethod , public RectRegionMethodInterface {
  public:
   /**
    * Constructor
@@ -69,6 +70,18 @@ class HalfShell : public ZonalMethod {
    * @param autoPasContainer
    */
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
+
+  /**
+   * Get the export regions
+   * @return
+   */
+  const std::vector<RectRegion> getExportRegions() override;
+
+  /**
+   * Get the import regions
+   * @return
+   */
+  const std::vector<RectRegion> getImportRegions() override;
 
  protected:
   /**

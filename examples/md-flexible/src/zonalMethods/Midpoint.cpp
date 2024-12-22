@@ -32,6 +32,8 @@ Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegio
   getRectRegionsConditional(_homeBoxRegion, cutoff / 2, verletSkinWidth, _importRegions, hsCondition, identifyZone,
                             true);
 
+  std::reverse(_importRegions.begin(), _importRegions.end());
+
   // calculate interaction schedules
   calculateInteractionSchedule(identifyZone);
 }
@@ -42,10 +44,10 @@ void Midpoint::collectParticles(AutoPasType &autoPasContainer) {
   size_t index = 0;
   for (auto &region : _exportRegions) {
     // NOTE Optimization: Could reserve buffer in advance
-    _regionBuffers[index].clear();
+    _regionBuffers.at(index).clear();
     if (needToCollectParticles(region.getNeighbour())) {
-      region.collectParticles(autoPasContainer, _regionBuffers[index]);
-      wrapAroundPeriodicBoundary(region.getNeighbour(), _regionBuffers[index]);
+      region.collectParticles(autoPasContainer, _regionBuffers.at(index));
+      wrapAroundPeriodicBoundary(region.getNeighbour(), _regionBuffers.at(index));
     }
     ++index;
   }
@@ -58,7 +60,7 @@ void Midpoint::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.sendParticles(_regionBuffers[bufferIndex], neighbourRank);
+      particleCommunicator.sendParticles(_regionBuffers.at(bufferIndex), neighbourRank);
     }
     ++bufferIndex;
   }
@@ -66,16 +68,17 @@ void Midpoint::SendAndReceiveExports(AutoPasType &autoPasContainer) {
   // NOTE Optimization: Could reserve buffer in advance
   bufferIndex = 0;
   for (auto &imRegion : _importRegions) {
-    _importBuffers[bufferIndex].clear();
+    _importBuffers.at(bufferIndex).clear();
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.receiveParticles(_importBuffers[bufferIndex], neighbourRank);
+      particleCommunicator.receiveParticles(_importBuffers.at(bufferIndex), neighbourRank);
     } else {
-      _importBuffers[bufferIndex].insert(_importBuffers[bufferIndex].end(), _regionBuffers[bufferIndex].begin(),
-                                         _regionBuffers[bufferIndex].end());
+      _importBuffers.at(bufferIndex)
+          .insert(_importBuffers.at(bufferIndex).end(), _regionBuffers.at(bufferIndex).begin(),
+                  _regionBuffers.at(bufferIndex).end());
     }
-    autoPasContainer.addHaloParticles(_importBuffers[bufferIndex]);
+    autoPasContainer.addHaloParticles(_importBuffers.at(bufferIndex));
     ++bufferIndex;
   }
   particleCommunicator.waitForSendRequests();
@@ -89,13 +92,15 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.sendParticles(_importBuffers[bufferIndex], neighbourRank);
+      particleCommunicator.sendParticles(_importBuffers.at(bufferIndex), neighbourRank);
     } else {
+      _regionBuffers.at(bufferIndex).clear();
       // NOTE: We can only add the results inside the container if
       // we do not have sent exported in to the home box from both directions
       // <- which is guaranteed no the case for Midpoint
-      _regionBuffers[bufferIndex].insert(_regionBuffers[bufferIndex].end(), _importBuffers[bufferIndex].begin(),
-                                         _importBuffers[bufferIndex].end());
+      _regionBuffers.at(bufferIndex)
+          .insert(_regionBuffers.at(bufferIndex).end(), _importBuffers.at(bufferIndex).begin(),
+                  _importBuffers.at(bufferIndex).end());
     }
     ++bufferIndex;
   }
@@ -106,10 +111,10 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      auto size = _regionBuffers[bufferIndex].size();
-      _regionBuffers[bufferIndex].clear();
-      _regionBuffers[bufferIndex].reserve(size);
-      particleCommunicator.receiveParticles(_regionBuffers[bufferIndex], neighbourRank);
+      auto size = _regionBuffers.at(bufferIndex).size();
+      _regionBuffers.at(bufferIndex).clear();
+      _regionBuffers.at(bufferIndex).reserve(size);
+      particleCommunicator.receiveParticles(_regionBuffers.at(bufferIndex), neighbourRank);
     }
     ++bufferIndex;
   }
@@ -126,15 +131,19 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
          particleIter.isValid(); ++particleIter) {
       // find the corresponding result in the buffer
       size_t result_index = 0;
-      for (auto &result : _regionBuffers[bufferIndex]) {
+      for (auto &result : _regionBuffers.at(bufferIndex)) {
         if (particleIter->getID() == result.getID()) {
           // if found, add the result and delete from buffer
           particleIter->addF(result.getF());
-          _regionBuffers[bufferIndex].erase(_regionBuffers[bufferIndex].begin() + result_index);
+          _regionBuffers.at(bufferIndex).erase(_regionBuffers.at(bufferIndex).begin() + result_index);
           break;
         }
         ++result_index;
       }
+    }
+    // sanity check
+    if (_regionBuffers.at(bufferIndex).size()) {
+      throw std::runtime_error("Midpoint: Not all results were found in the container - Something went wrong!");
     }
     ++bufferIndex;
   }
@@ -152,7 +161,7 @@ void Midpoint::recollectResultsFromContainer(AutoPasType &autoPasContainer) {
     size_t bufferIndex = 0;
     for (auto &imRegion : _importRegions) {
       if (imRegion.contains(iter->getR())) {
-        _importBuffers[bufferIndex].push_back(*iter);
+        _importBuffers.at(bufferIndex).push_back(*iter);
         break;
       }
       ++bufferIndex;
@@ -161,7 +170,27 @@ void Midpoint::recollectResultsFromContainer(AutoPasType &autoPasContainer) {
 }
 
 void Midpoint::calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
-                                                 std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
+                                                 std::function<void(ParticleType &, ParticleType &)> aosFunctor) {
+  auto index1 = (_regionCount - std::stoi(zone1)) - 1;
+  auto index2 = (_regionCount - std::stoi(zone2)) - 1;
+  // calculate forces between the collected results
+  // sanity check
+  if (_importRegions.at(index1).getZoneID() != zone1 || _importRegions.at(index2).getZoneID() != zone2) {
+    throw std::runtime_error("Midpoint: zoneIDs do not match: got " + zone1 + " and " + zone2 + " instead of " +
+                             _importRegions.at(index1).getZoneID() + " and " + _importRegions.at(index2).getZoneID());
+  }
+  for (auto &p1 : _importBuffers.at(index1)) {
+    for (auto &p2 : _importBuffers.at(index2)) {
+      // check midpoint
+      using namespace autopas::utils::ArrayMath::literals;
+      auto midpoint = (p1.getR() + p2.getR()) * 0.5;
+      if (!_homeBoxRegion.contains(midpoint)) {
+        continue;
+      }
+      aosFunctor(p1, p2);
+    }
+  }
+}
 
 void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[3])> identifyZone) {
   /**
@@ -179,10 +208,12 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
           continue;
         }
         auto zone = identifyZone(d);
-        // add the zone to the zones vecotr
+        // add the zone to the zones vector
         _interactionZones.push_back(zone);
         _interactionSchedule.insert_or_assign(zone, std::vector<std::string>{});
-        // if neighbourIndex is smaller than 13, interact with opposite
+        /* if neighbourIndex is smaller than 13, interact with opposite box
+         * Fig 3.3
+         */
         if (convRelNeighboursToIndex({d[0], d[1], d[2]}) < 13) {
           _interactionSchedule[zone].push_back(identifyZone(new int[3]{-d[0], -d[1], -d[2]}));
         }
@@ -196,7 +227,10 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
             nonZeroIndices.push_back(i);
           }
         }
-        // center
+        /* neighbour type center:
+         * interact with opposite ring
+         * Fig 3.5
+         */
         if (zeroIndices.size() == 2) {
           std::vector<std::string> oppositeRing;
           oppositeRing.reserve(8);
@@ -215,7 +249,10 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
           _interactionSchedule.at(zone).insert(_interactionSchedule.at(zone).end(), oppositeRing.begin(),
                                                oppositeRing.end());
         }
-        // edge
+        /* neighbour type edge
+         * interact with opposite wing
+         * Fig 3.6
+         */
         else if (zeroIndices.size() == 1) {
           std::vector<std::string> oppositeWing;
           oppositeWing.reserve(2);
@@ -227,7 +264,7 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
           opp[zeroIndices[0]] = 1;
           _interactionSchedule.at(zone).push_back(identifyZone(opp));
         }
-        // corner
+        // neighbour type corner
         else {
           // do nothing
         }
@@ -235,3 +272,7 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
     }
   }
 }
+
+
+const std::vector<RectRegion> Midpoint::getExportRegions() { return _exportRegions; }
+const std::vector<RectRegion> Midpoint::getImportRegions() { return _importRegions; }

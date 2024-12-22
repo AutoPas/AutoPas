@@ -4,13 +4,14 @@
 #include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/ZonalMethod.h"
 #include "src/zonalMethods/region/RectRegion.h"
+#include "src/zonalMethods/RectRegionMethodInterface.h"
 
 /**
  * Class for the Midpoint ZonalMethod.
  * When initialized, it calculates the export and import regions of the
  * given home box.
  */
-class Midpoint : public ZonalMethod {
+class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
  public:
   /**
    * Constructor
@@ -24,11 +25,11 @@ class Midpoint : public ZonalMethod {
    * @param boundaryType (optional)
    * */
   Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
-            autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
-            std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
-            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>(
-                {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
-                 options::BoundaryTypeOption::periodic}));
+           autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
+           std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
+           std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>(
+               {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
+                options::BoundaryTypeOption::periodic}));
 
   /**
    * Destructor
@@ -71,6 +72,18 @@ class Midpoint : public ZonalMethod {
    */
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
 
+  /**
+   * Get the export regions
+   * @return
+   */
+  const std::vector<RectRegion> getExportRegions() override;
+
+  /**
+   * Get the import regions
+   * @return
+   */
+  const std::vector<RectRegion> getImportRegions() override;
+
  protected:
   /**
    * The number of export regions
@@ -99,7 +112,6 @@ class Midpoint : public ZonalMethod {
 
   void calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
-
 
   /**
    * Calculates the _interactionZones and _interactionSchedule
