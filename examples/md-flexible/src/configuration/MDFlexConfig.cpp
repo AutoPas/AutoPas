@@ -379,6 +379,7 @@ std::string MDFlexConfig::to_string() const {
   }
   printOption(backgroundForceFrictionCoeff);
   printOption(backgroundTorqueFrictionCoeff);
+  printOption(pressure);
 
   if (useThermostat.value) {
     os << useThermostat.name << ":" << endl;

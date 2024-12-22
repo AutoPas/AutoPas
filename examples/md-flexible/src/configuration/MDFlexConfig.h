@@ -725,6 +725,12 @@ class MDFlexConfig {
       "Brownian motion. Possible Values: (true false) Default: true"};
 
   /**
+   * pressure for strain-stress simulations
+   */
+  MDFlexOption<double, __LINE__> pressure{
+        0., "pressure", true, "Pressure of the system. Used for stress-strain simulation."};
+
+  /**
    * Global external force like e.g. gravity
    */
   MDFlexOption<std::array<double, 3>, __LINE__> globalForce{

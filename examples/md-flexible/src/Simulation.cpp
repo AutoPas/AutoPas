@@ -196,7 +196,7 @@ void Simulation::run() {
   const size_t statsWriteFrequency = 1000; // _configuration.vtkWriteFrequency.value / 100;
   const size_t strainResizingStartingIteration = 100000;
   const double spring_stiffness = 50;
-  const double pressure = 0.1;
+  const double pressure = _configuration.pressure.value;
   const double damping_coeff = 1;
 
   while (needsMoreIterations()) {

@@ -555,6 +555,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.backgroundTorqueFrictionCoeff.description;
 
         config.backgroundTorqueFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.pressure.name) {
+        expected = "Double Value";
+        description = config.pressure.description;
+
+        config.pressure.value = node[key].as<double>();
       } else if (key == MDFlexConfig::siteStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";
