@@ -28,6 +28,8 @@ FullShell::FullShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
   // calculate importRegions
   getRectRegionsConditional(_homeBoxRegion, cutoff, verletSkinWidth, _importRegions, fsCondition, identifyZone, true);
 
+  std::reverse(_importRegions.begin(), _importRegions.end());
+
   _interactionZones.push_back("A");
   _interactionSchedule.insert_or_assign("A", std::vector<std::string>{});
 }
@@ -71,6 +73,7 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
       _importParticles.insert(_importParticles.end(), _regionBuffers[bufferIndex].begin(),
                               _regionBuffers[bufferIndex].end());
     }
+
     ++bufferIndex;
   }
   particleCommunicator.waitForSendRequests();
