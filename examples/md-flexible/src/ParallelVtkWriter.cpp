@@ -13,6 +13,8 @@
 #include <utility>
 
 #include "autopas/utils/WrapMPI.h"
+#include "src/options/ZonalMethodOption.h"
+#include "src/zonalMethods/RectRegionMethodInterface.h"
 
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)
@@ -45,6 +47,10 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
   recordParticleStates(currentIteration, autoPasContainer);
   const auto currentConfig = autoPasContainer.getCurrentConfigs();
   recordDomainSubdivision(currentIteration, currentConfig, decomposition);
+
+  if (decomposition.getZonalMethodOption() != options::ZonalMethodOption::none) {
+    recordZonalRegions(currentIteration, currentConfig, decomposition);
+  }
 }
 
 /**
@@ -294,6 +300,170 @@ void ParallelVtkWriter::recordDomainSubdivision(
   timestepFile.close();
 }
 
+void ParallelVtkWriter::recordZonalRegions(
+    size_t currentIteration,
+    const std::unordered_map<autopas::InteractionTypeOption::Value,
+                             std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
+    const RegularGridDecomposition &decomposition) const {
+  // Extract active interaction types to print them to the .pvtu file.
+  std::unordered_set<autopas::InteractionTypeOption::Value> interactionTypes;
+  interactionTypes.reserve(autoPasConfigurations.size());
+  std::transform(autoPasConfigurations.begin(), autoPasConfigurations.end(),
+                 std::inserter(interactionTypes, interactionTypes.end()), [&](const auto &pair) { return pair.first; });
+  if (_mpiRank == 0) {
+    createZonalRegionPvtuFile(currentIteration, decomposition, interactionTypes);
+  }
+
+  std::ostringstream timestepFileName;
+  generateFilename("ZonalRegions", "vtu", currentIteration, timestepFileName);
+
+  std::ofstream timestepFile;
+  timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
+
+  if (not timestepFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + timestepFileName.str() + "\"");
+  }
+
+  const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
+  const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
+
+  auto printDataArray = [&](const auto &data, const std::string &type, const std::string &name) {
+    timestepFile << "        <DataArray type=\"" << type << "\" Name=\"" << name << "\" format=\"ascii\">\n";
+    timestepFile << "          " << data << "\n";
+    timestepFile << "        </DataArray>\n";
+  };
+
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"UnstructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <UnstructuredGrid>\n";
+  RectRegionMethodInterface *rectRegionInterface;
+  try {
+    rectRegionInterface = dynamic_cast<RectRegionMethodInterface *>(decomposition.getZonalMethod().get());
+  } catch (std::bad_cast &e) {
+    std::cout << e.what() << std::endl;
+    throw std::runtime_error("Simulation::writeVTKFile(): Zonal method is not a RectRegionMethodInterface.");
+  }
+
+  for (auto region : rectRegionInterface->getExportRegions()) {
+    using namespace autopas::utils::ArrayMath::literals;
+    auto regionMin = region._origin;
+    auto regionMax = region._origin + region._size;
+    timestepFile << "    <Piece NumberOfPoints=\"8\" NumberOfCells=\"1\">\n";
+    timestepFile << "      <CellData>\n";
+    printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
+
+    // General Configuration information
+    printDataArray(autoPasConfigurations.begin()->second.get().cellSizeFactor, "Float32", "CellSizeFactor");
+    printDataArray(static_cast<int>(autoPasConfigurations.begin()->second.get().container), "Int32", "Container");
+
+    // Pairwise Configuration
+    if (autoPasConfigurations.find(autopas::InteractionTypeOption::pairwise) != autoPasConfigurations.end()) {
+      auto pairwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::pairwise).get();
+      printDataArray(static_cast<int>(pairwiseConfig.dataLayout), "Int32", "DataLayout");
+      printDataArray(static_cast<int>(pairwiseConfig.loadEstimator), "Int32", "LoadEstimator");
+      printDataArray(static_cast<int>(pairwiseConfig.traversal), "Int32", "Traversal");
+      printDataArray(static_cast<int>(pairwiseConfig.newton3), "Int32", "Newton3");
+    }
+
+    // Triwise Configuration
+    if (autoPasConfigurations.find(autopas::InteractionTypeOption::triwise) != autoPasConfigurations.end()) {
+      auto triwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::triwise).get();
+      printDataArray(static_cast<int>(triwiseConfig.dataLayout), "Int32", "DataLayout-3B");
+      printDataArray(static_cast<int>(triwiseConfig.traversal), "Int32", "Traversal-3B");
+      printDataArray(static_cast<int>(triwiseConfig.newton3), "Int32", "Newton3-3B");
+    }
+    printDataArray(1, "Int32", "isExport");
+
+    printDataArray(_mpiRank, "Int32", "Rank");
+    timestepFile << "      </CellData>\n";
+    timestepFile << "      <Points>\n";
+    timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMin[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMin[1] << " " << regionMax[2] << "\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMax[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMax[1] << " " << regionMax[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMin[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMin[1] << " " << regionMax[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMax[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMax[1] << " " << regionMax[2] << "\n";
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "      </Points>\n";
+    timestepFile << "      <Cells>\n";
+    timestepFile << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+    timestepFile << "          0 1 2 3 4 5 6 7\n";  // These indices refer to the Points DataArray above.
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+    timestepFile << "          8\n";  // The cell is defined by 8 points
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+    timestepFile << "          11\n";  // = VTK_VOXEL
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "      </Cells>\n";
+    timestepFile << "    </Piece>\n";
+  }
+  for (auto region : rectRegionInterface->getImportRegions()) {
+    using namespace autopas::utils::ArrayMath::literals;
+    auto regionMin = region._origin;
+    auto regionMax = region._origin + region._size;
+    timestepFile << "    <Piece NumberOfPoints=\"8\" NumberOfCells=\"1\">\n";
+    timestepFile << "      <CellData>\n";
+    printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
+
+    // General Configuration information
+    printDataArray(autoPasConfigurations.begin()->second.get().cellSizeFactor, "Float32", "CellSizeFactor");
+    printDataArray(static_cast<int>(autoPasConfigurations.begin()->second.get().container), "Int32", "Container");
+
+    // Pairwise Configuration
+    if (autoPasConfigurations.find(autopas::InteractionTypeOption::pairwise) != autoPasConfigurations.end()) {
+      auto pairwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::pairwise).get();
+      printDataArray(static_cast<int>(pairwiseConfig.dataLayout), "Int32", "DataLayout");
+      printDataArray(static_cast<int>(pairwiseConfig.loadEstimator), "Int32", "LoadEstimator");
+      printDataArray(static_cast<int>(pairwiseConfig.traversal), "Int32", "Traversal");
+      printDataArray(static_cast<int>(pairwiseConfig.newton3), "Int32", "Newton3");
+    }
+
+    // Triwise Configuration
+    if (autoPasConfigurations.find(autopas::InteractionTypeOption::triwise) != autoPasConfigurations.end()) {
+      auto triwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::triwise).get();
+      printDataArray(static_cast<int>(triwiseConfig.dataLayout), "Int32", "DataLayout-3B");
+      printDataArray(static_cast<int>(triwiseConfig.traversal), "Int32", "Traversal-3B");
+      printDataArray(static_cast<int>(triwiseConfig.newton3), "Int32", "Newton3-3B");
+    }
+    printDataArray(0, "Int32", "isExport");
+
+    printDataArray(_mpiRank, "Int32", "Rank");
+    timestepFile << "      </CellData>\n";
+    timestepFile << "      <Points>\n";
+    timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMin[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMin[1] << " " << regionMax[2] << "\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMax[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMin[0] << " " << regionMax[1] << " " << regionMax[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMin[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMin[1] << " " << regionMax[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMax[1] << " " << regionMin[2] << "\n";
+    timestepFile << "          " << regionMax[0] << " " << regionMax[1] << " " << regionMax[2] << "\n";
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "      </Points>\n";
+    timestepFile << "      <Cells>\n";
+    timestepFile << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+    timestepFile << "          0 1 2 3 4 5 6 7\n";  // These indices refer to the Points DataArray above.
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+    timestepFile << "          8\n";  // The cell is defined by 8 points
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+    timestepFile << "          11\n";  // = VTK_VOXEL
+    timestepFile << "        </DataArray>\n";
+    timestepFile << "      </Cells>\n";
+    timestepFile << "    </Piece>\n";
+  }
+  timestepFile << "  </UnstructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
+
+  timestepFile.close();
+}
+
 void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, const std::string &location) {
   if (not checkFileExists(location)) {
     tryCreateFolder(location, "./");
@@ -421,6 +591,77 @@ void ParallelVtkWriter::createRanksPvtuFile(
 
   timestepFile.close();
 }
+
+
+void ParallelVtkWriter::createZonalRegionPvtuFile(
+    size_t currentIteration, const RegularGridDecomposition &decomposition,
+    const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const {
+  std::ostringstream filename;
+  filename << _sessionFolderPath << _sessionName << "_ZonalRegions_" << std::setfill('0')
+           << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
+
+  std::ofstream timestepFile;
+  timestepFile.open(filename.str(), std::ios::out | std::ios::binary);
+
+  if (not timestepFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + filename.str() + "\"");
+  }
+  const auto &globalBoxMin = decomposition.getGlobalBoxMin();
+  const auto &globalBoxMax = decomposition.getGlobalBoxMax();
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PUnstructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <PUnstructuredGrid GhostLevel=\"0\">\n";
+  timestepFile << "    <PPointData/>\n";
+  timestepFile << "    <PCellData>\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
+
+  // General configuration options
+  timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Container\" />\n";
+
+  // Pairwise configuration
+  if (interactionTypes.find(autopas::InteractionTypeOption::pairwise) != interactionTypes.end()) {
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"LoadEstimator\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3\" />\n";
+  }
+
+  // Triwise configuration
+  if (interactionTypes.find(autopas::InteractionTypeOption::triwise) != interactionTypes.end()) {
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout-3B\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal-3B\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3-3B\" />\n";
+  }
+
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"isExport\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
+  timestepFile << "    </PCellData>\n";
+  timestepFile << "    <PPoints>\n";
+  timestepFile << "      <DataArray NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMin[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMin[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMax[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMax[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMin[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMin[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMax[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMax[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "      </DataArray>\n";
+  timestepFile << "    </PPoints>\n";
+
+  for (int i = 0; i < _numberOfRanks; ++i) {
+    timestepFile << "    <Piece "
+                 << "Source=\"./data/" << _sessionName << "_ZonalRegions_" << i << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
+  }
+
+  timestepFile << "  </PUnstructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
+
+  timestepFile.close();
+}
+
 
 void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {
   try {

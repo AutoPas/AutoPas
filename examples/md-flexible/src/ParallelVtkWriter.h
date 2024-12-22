@@ -114,6 +114,18 @@ class ParallelVtkWriter {
       const RegularGridDecomposition &decomposition) const;
 
   /**
+   * Writes the current zonal export / import regions into vtk files.
+   * @param currentIteration: The simulations current iteration.
+   * @param autoPasConfigurations: All current configuration of an autopas container (pairwise, triwise).
+   * @param decomposition: The simulations domain decomposition.
+   */
+  void recordZonalRegions(
+      size_t currentIteration,
+      const std::unordered_map<autopas::InteractionTypeOption::Value,
+                               std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
+      const RegularGridDecomposition &decomposition) const;
+
+  /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
    */
   void tryCreateSessionAndDataFolders(const std::string &name, const std::string &location);
@@ -139,6 +151,17 @@ class ParallelVtkWriter {
   void createRanksPvtuFile(size_t currentIteration, const RegularGridDecomposition &decomposition,
                            const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const;
 
+  /**
+   * Creates the .pvtu file for rank data that references all rank data vtu files from this timestep
+   *
+   * @note For visualization in ParaView the .pvtu files need to be loaded.
+   *
+   * @param currentIteration: The simulation's current iteration.
+   * @param decomposition: The decomposition of the domain.
+   * @param interactionTypes: Interaction types that are considered in the current simulation.
+   */
+  void createZonalRegionPvtuFile(size_t currentIteration, const RegularGridDecomposition &decomposition,
+                           const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const;
   /**
    * Tries to create a folder at a location.
    * If the location does not exist this function will throw an error.
