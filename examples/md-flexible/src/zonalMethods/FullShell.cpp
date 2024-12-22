@@ -40,10 +40,10 @@ void FullShell::collectParticles(AutoPasType &autoPasContainer) {
   size_t index = 0;
   for (auto &region : _exportRegions) {
     // NOTE Optimization: Could reserve buffer in advance
-    _regionBuffers[index].clear();
+    _regionBuffers.at(index).clear();
     if (needToCollectParticles(region.getNeighbour())) {
-      region.collectParticles(autoPasContainer, _regionBuffers[index]);
-      wrapAroundPeriodicBoundary(region.getNeighbour(), _regionBuffers[index]);
+      region.collectParticles(autoPasContainer, _regionBuffers.at(index));
+      wrapAroundPeriodicBoundary(region.getNeighbour(), _regionBuffers.at(index));
     }
     ++index;
   }
@@ -56,7 +56,7 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.sendParticles(_regionBuffers[bufferIndex], neighbourRank);
+      particleCommunicator.sendParticles(_regionBuffers.at(bufferIndex), neighbourRank);
     }
     ++bufferIndex;
   }
@@ -70,8 +70,8 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     if (neighbourRank != _ownRank) {
       particleCommunicator.receiveParticles(_importParticles, neighbourRank);
     } else {
-      _importParticles.insert(_importParticles.end(), _regionBuffers[bufferIndex].begin(),
-                              _regionBuffers[bufferIndex].end());
+      _importParticles.insert(_importParticles.end(), _regionBuffers.at(bufferIndex).begin(),
+                              _regionBuffers.at(bufferIndex).end());
     }
 
     ++bufferIndex;
