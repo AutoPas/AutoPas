@@ -277,7 +277,8 @@ void Simulation::run() {
       const double pressureScalingFactor = 1e-6;
 
       // Set necessary initial values
-      if (_iteration == strainResizingStartingIteration) {
+      if (strainResizingStartingIteration == std::numeric_limits<size_t>::max() and _autoPasContainer->getBoxMax()[0] < strainResizingDomainXMax) {
+        strainResizingStartingIteration = _iteration;
         const auto currentDomainMax = _autoPasContainer->getBoxMax();
         const auto currentDomainMin = _autoPasContainer->getBoxMin();
         initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) *
@@ -286,12 +287,8 @@ void Simulation::run() {
         startBoxMaxX = currentDomainMax[0];
         startBoxMaxY = currentDomainMax[1];
       }
-
       applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY,
                                 strainResizingStartingIteration, 0.5);
-      if (strainResizingStartingIteration == std::numeric_limits<size_t>::max() and _autoPasContainer->getBoxMax()[0] < strainResizingDomainXMax) {
-        strainResizingStartingIteration = _iteration;
-      }
 
       _timers.reflectParticlesAtBoundaries.stop();
 
