@@ -34,12 +34,14 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib,
                                             const double initialVolume, const double startBoxMaxX,
-                                            const double startBoxMaxY, const double spring_stiffness) {
+                                            const double startBoxMaxY, const double spring_stiffness,
+                                            const double normal_viscosity) {
   // const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ,
   // particlePropertiesLib); TODO: change
   // const auto statistics = calculateOverlapDistForceRelVelNormal(autoPasContainer, particlePropertiesLib);
-  const auto statistics = calculateStrainStressStatistics(autoPasContainer, particlePropertiesLib, initialVolume,
-                                                          startBoxMaxX, startBoxMaxY, spring_stiffness);
+  const auto statistics =
+      calculateStrainStressStatistics(autoPasContainer, particlePropertiesLib, initialVolume, startBoxMaxX,
+                                      startBoxMaxY, spring_stiffness, normal_viscosity);
   StatisticsCalculator::writeRow(currentIteration, statistics);
 }
 
@@ -120,7 +122,8 @@ std::tuple<double, double, double, double> StatisticsCalculator::calculateOverla
 
 std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
-    const double initialVolume, const double startBoxX, const double startBoxMaxY, const double spring_stiffness) {
+    const double initialVolume, const double startBoxX, const double startBoxMaxY, const double spring_stiffness,
+    const double normal_viscosity) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas::utils::ArrayMath;
   // To calculate: DomainSize (x,y,z), Density, Volumetric Strain
@@ -177,10 +180,12 @@ std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
       ++numContacts;
 
       const std::array<double, 3> normalUnit = displacement / dist;
-      const std::array<double, 3> overlap_vectorized = normalUnit * (2. * radius_i) - displacement;
+      const std::array<double, 3> relVel = i->getV() - j->getV();
+      const double relVelDotNormalUnit = dot(relVel, normalUnit);
 
-      const std::array<double, 3> contact_force = overlap_vectorized * -spring_stiffness;
-      stress_tensor_diagonal += (contact_force * displacement);
+      const std::array<double, 3> minus_contact_force =
+          mulScalar(normalUnit, overlap * spring_stiffness - normal_viscosity * relVelDotNormalUnit) * (-1.);  // Assume linear spring model
+      stress_tensor_diagonal += (minus_contact_force * displacement);
 
       // Fabric tensor calculations
       const std::array<double, 9> normalUnit_outerProduct_ij = {

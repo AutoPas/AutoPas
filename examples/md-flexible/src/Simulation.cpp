@@ -194,8 +194,10 @@ void Simulation::run() {
   double startBoxMaxX = _configuration.boxMax.value[0];
   double startBoxMaxY = _configuration.boxMax.value[1];
   const size_t statsWriteFrequency = 1000; // _configuration.vtkWriteFrequency.value / 100;
-  const size_t strainResizingStartingIteration = 500000;
+  const double strainResizingDomainXMax = _configuration.strainResizingDomainXMax.value;
+  size_t strainResizingStartingIteration = std::numeric_limits<size_t>::max();
   const double spring_stiffness = 50;
+  const double normal_viscosity = 5e-5;
   const double pressure = _configuration.pressure.value;
   const double damping_coeff = 1;
 
@@ -210,7 +212,7 @@ void Simulation::run() {
         _iteration > strainResizingStartingIteration) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary(), initialVolume, startBoxMaxX, startBoxMaxY,
-                                         spring_stiffness);
+                                         spring_stiffness, normal_viscosity);
     }
 
     _timers.computationalLoad.start();
@@ -287,6 +289,10 @@ void Simulation::run() {
 
       applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY,
                                 strainResizingStartingIteration, 0.5);
+      if (strainResizingStartingIteration == std::numeric_limits<size_t>::max() and _autoPasContainer->getBoxMax()[0] < strainResizingDomainXMax) {
+        strainResizingStartingIteration = _iteration;
+      }
+
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();

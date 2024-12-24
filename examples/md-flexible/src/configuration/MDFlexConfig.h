@@ -731,6 +731,12 @@ class MDFlexConfig {
         0., "pressure", true, "Pressure of the system. Used for stress-strain simulation."};
 
   /**
+   * pressure for strain-stress simulations
+   */
+  MDFlexOption<double, __LINE__> strainResizingDomainXMax{
+      0, "strainResizingDomainXMax", true, "strainResizingDomainXMax, used for stress-strain simulation"};
+
+  /**
    * Global external force like e.g. gravity
    */
   MDFlexOption<std::array<double, 3>, __LINE__> globalForce{

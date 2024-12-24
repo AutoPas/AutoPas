@@ -40,11 +40,13 @@ class StatisticsCalculator {
    * @param initialVolume The initial volume of the container.
    * @param startBoxMaxY The start maximum y-coordinate of the box.
    * @param spring_stiffness The spring stiffness of the DEM-functor.
+   * @param normal_viscosity The normal viscosity of the DEM-functor.
    */
   void recordStatistics(size_t currentIteration, const double globalForceZ,
                         const autopas::AutoPas<ParticleType> &autopasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLib, const double initialVolume,
-                        const double startBoxMaxX, const double startBoxMaxY, const double spring_stiffness);
+                        const double startBoxMaxX, const double startBoxMaxY, const double spring_stiffness,
+                        const double normal_viscosity);
 
  private:
   /**
@@ -76,7 +78,8 @@ class StatisticsCalculator {
   std::array<double, 20> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
                                                          const ParticlePropertiesLibraryType &particlePropertiesLib,
                                                          const double initialVolume, const double startBoxMaxX,
-                                                         const double startBoxMaxY, const double spring_stiffness);
+                                                         const double startBoxMaxY, const double spring_stiffness,
+                                                         const double normal_viscosity);
 
   /**
    * Generates the output file (.csv) for the statistics.

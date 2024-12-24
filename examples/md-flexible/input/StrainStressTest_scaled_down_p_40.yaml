@@ -23,7 +23,7 @@ boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,0]
 backgroundForceFrictionCoeff      :  0.0
 backgroundTorqueFrictionCoeff     :  0.0
-pressure                         :  20
+pressure                         :  40
 strainResizingDomainXMax  : 15.9075
 Sites:
   0:
@@ -52,7 +52,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  ss_scaled_down_p_20_s_0d75
+vtk-filename                     :  ss_scaled_down_p_40_s_0d75
 vtk-write-frequency              :  40000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true

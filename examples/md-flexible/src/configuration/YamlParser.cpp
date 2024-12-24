@@ -560,6 +560,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.pressure.description;
 
         config.pressure.value = node[key].as<double>();
+      } else if (key == config.strainResizingDomainXMax.name) {
+        expected = "Double";
+        description = config.strainResizingDomainXMax.description;
+
+        config.strainResizingDomainXMax.value = node[key].as<double>();
       } else if (key == MDFlexConfig::siteStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";
