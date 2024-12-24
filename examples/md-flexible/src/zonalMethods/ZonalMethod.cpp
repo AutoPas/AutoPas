@@ -36,14 +36,14 @@ ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBox
 
 ZonalMethod::~ZonalMethod() = default;
 
-void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config) {
+void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContainer,
+                                                     std::shared_ptr<ParticlePropertiesLibraryType> particleProperties,
+                                                     double cutoff) {
   using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
   // NOTE: Need to change functor depending on pairwise / triwise
-  auto &particlePropertiesLibrary = *config.getParticlePropertiesLibrary();
-  const double cutoff = config.cutoff.value;
-  auto ljFunc = LJFunctorTypeAVX{cutoff, particlePropertiesLibrary};
+  auto ljFunc = LJFunctorTypeAVX{cutoff, *particleProperties.get()};
   auto AoSFunc = [&ljFunc](ParticleType &p1, ParticleType &p2) { return ljFunc.AoSFunctor(p1, p2, false); };
   for (auto &zone : _interactionZones) {
     auto schedule = _interactionSchedule.at(zone);

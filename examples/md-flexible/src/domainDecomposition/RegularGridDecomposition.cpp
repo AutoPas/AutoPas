@@ -326,7 +326,7 @@ void RegularGridDecomposition::calculateZonalInteractions(AutoPasType &autoPasCo
   _zonalMethod->recollectResultsFromContainer(autoPasContainer);
 
   // calculate interactions
-  _zonalMethod->calculateExternalZonalInteractions(autoPasContainer, config);
+  _zonalMethod->calculateExternalZonalInteractions(autoPasContainer, config.getParticlePropertiesLibrary(), config.cutoff.value);
 }
 
 void RegularGridDecomposition::exchangeZonalHaloParticlesResults(AutoPasType &autoPasContainer) {

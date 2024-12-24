@@ -5,7 +5,6 @@
 #include "autopas/AutoPas.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/TypeDefinitions.h"
-#include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/region/RectRegion.h"
 
@@ -67,7 +66,9 @@ class ZonalMethod {
    * This function should be called after recollectResultsFromContainer().
    * @param autoPasContainer
    */
-  virtual void calculateExternalZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config);
+  virtual void calculateExternalZonalInteractions(AutoPasType &autoPasContainer,
+                                                  std::shared_ptr<ParticlePropertiesLibraryType> particleProperties,
+                                                  double cutoff);
 
   /**
    * Recollect the halo particles from the AutoPas container and
