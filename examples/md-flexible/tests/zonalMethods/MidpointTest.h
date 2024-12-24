@@ -44,4 +44,6 @@ class MidpointTest : public AutoPasTestBase, public Midpoint {
   constexpr static std::array<int, 26> _allNeighbourIndices = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   inline const static RectRegion _homeBoxRegion{_boxMin, _boxMax - _boxMin};
+
+  std::shared_ptr<ParticlePropertiesLibraryType> initializeParticlePropertiesLibrary();
 };
