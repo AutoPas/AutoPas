@@ -373,6 +373,14 @@ void ParallelVtkWriter::recordZonalRegions(
       printDataArray(static_cast<int>(triwiseConfig.newton3), "Int32", "Newton3-3B");
     }
     printDataArray(1, "Int32", "isExport");
+    std::string zone = region.getZoneID();
+    int zoneID;
+    try {
+      zoneID = std::stoi(zone);
+    } catch (std::invalid_argument &e) {
+      zoneID = 0;
+    }
+    printDataArray(zoneID, "Int32", "zoneID");
 
     printDataArray(_mpiRank, "Int32", "Rank");
     timestepFile << "      </CellData>\n";
@@ -430,6 +438,15 @@ void ParallelVtkWriter::recordZonalRegions(
       printDataArray(static_cast<int>(triwiseConfig.newton3), "Int32", "Newton3-3B");
     }
     printDataArray(0, "Int32", "isExport");
+
+    std::string zone = region.getZoneID();
+    int zoneID;
+    try {
+      zoneID = std::stoi(zone);
+    } catch (std::invalid_argument &e) {
+      zoneID = 0;
+    }
+    printDataArray(zoneID, "Int32", "zoneID");
 
     printDataArray(_mpiRank, "Int32", "Rank");
     timestepFile << "      </CellData>\n";
@@ -592,7 +609,6 @@ void ParallelVtkWriter::createRanksPvtuFile(
   timestepFile.close();
 }
 
-
 void ParallelVtkWriter::createZonalRegionPvtuFile(
     size_t currentIteration, const RegularGridDecomposition &decomposition,
     const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const {
@@ -635,6 +651,7 @@ void ParallelVtkWriter::createZonalRegionPvtuFile(
   }
 
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"isExport\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"zoneID\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
   timestepFile << "    </PCellData>\n";
   timestepFile << "    <PPoints>\n";
@@ -661,7 +678,6 @@ void ParallelVtkWriter::createZonalRegionPvtuFile(
 
   timestepFile.close();
 }
-
 
 void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {
   try {
