@@ -54,12 +54,6 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   using AccuPrecision = typename Particle::ParticleAccuPrecision;
 
-  /**
-   * Define the SIMD Types as either packed single or packed double
-   */
-  using SIMDCalcType = typename std::conditional_t<std::is_same<CalcPrecision, float>::value, __m256, __m256d>;
-  using SIMDAccuType = typename std::conditional_t<std::is_same<AccuPrecision, float>::value, __m256, __m256d>;
-
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -185,7 +179,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
-      CalcPrecision virial = dr * f;
+      std::array<CalcPrecision, 3> virial = dr * f;
       CalcPrecision potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas::autopas_get_thread_num();
@@ -251,106 +245,17 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
 
     const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-#if AUTOPAS_PRECISION_MODE == DPDP
+#if AUTOPAS_PRECISION_MODE == SPDP || AUTOPAS_PRECISION_MODE == DPDP
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d potentialEnergySum = _mm256_setzero_pd();
-
-    // reverse outer loop s.th. inner loop always beginns at aligned array start
-    // typecast to detect underflow
-    for (size_t i = soa.size() - 1; (long)i >= 0; --i) {
-      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
-        // If the i-th particle is a dummy, skip this loop iteration.
-        continue;
-      }
-
-      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
-                    "OwnershipStates underlying type should be int64_t!");
-      // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
-      // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-      __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[i]));
-
-      __m256d fxacc = _mm256_setzero_pd();
-      __m256d fyacc = _mm256_setzero_pd();
-      __m256d fzacc = _mm256_setzero_pd();
-
-      const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
-      const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
-      const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
-
-      size_t j = 0;
-      // floor soa numParticles to multiple of vecLength
-      // If b is a power of 2 the following holds:
-      // a & ~(b -1) == a - (a mod b)
-      for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc,
-                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
-      }
-      // If b is a power of 2 the following holds:
-      // a & (b -1) == a mod b
-      const int rest = (int)(i & (vecLength - 1));
-      if (rest > 0) {
-        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc, &virialSumX,
-                              &virialSumY, &virialSumZ, &potentialEnergySum, rest);
-      }
-
-      // horizontally reduce fDacc to sumfD
-      const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
-      const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
-
-      const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-      const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
-
-      const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-      const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
-
-      const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-      const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
-
-      const double sumfx = sumfxfyVEC[0];
-      const double sumfy = sumfxfyVEC[1];
-      const double sumfz = _mm_cvtsd_f64(sumfzVEC);
-
-      fxptr[i] += sumfx;
-      fyptr[i] += sumfy;
-      fzptr[i] += sumfz;
-    }
-
-    if constexpr (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_thread_num();
-
-      // horizontally reduce virialSumX and virialSumY
-      const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
-      const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
-      const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
-
-      // horizontally reduce virialSumZ and potentialEnergySum
-      const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
-      const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
-      const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
-      const __m128d hSumVirialzPotentialEnergyVec =
-          _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
-
-      // globals = {virialX, virialY, virialZ, potentialEnergy}
-      double globals[4];
-      _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
-
-      _aosThreadData[threadnum].virialSum[0] += globals[0];
-      _aosThreadData[threadnum].virialSum[1] += globals[1];
-      _aosThreadData[threadnum].virialSum[2] += globals[2];
-      _aosThreadData[threadnum].potentialEnergySum += globals[3];
-    }
 #else
-    // TODO MP: SP or DP?
-    __m256d virialSumX = _mm256_setzero_pd();
-    __m256d virialSumY = _mm256_setzero_pd();
-    __m256d virialSumZ = _mm256_setzero_pd();
-    __m256d potentialEnergySum = _mm256_setzero_pd();
+    __m256 virialSumX = _mm256_setzero_ps();
+    __m256 virialSumY = _mm256_setzero_ps();
+    __m256 virialSumZ = _mm256_setzero_ps();
+    __m256 potentialEnergySum = _mm256_setzero_ps();
+#endif
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
@@ -360,6 +265,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
         continue;
       }
 
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int32_t>,
                     "OwnershipStates underlying type should be int32_t!");
       // ownedStatePtr contains int32_t, so we broadcast these to make an __m256i.
@@ -373,25 +279,62 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       const __m256 x1 = _mm256_broadcast_ss(&xptr[i]);
       const __m256 y1 = _mm256_broadcast_ss(&yptr[i]);
       const __m256 z1 = _mm256_broadcast_ss(&zptr[i]);
+#else
+      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
+                    "OwnershipStates underlying type should be int64_t!");
+      // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
+      // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
+      __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[i]));
 
+      __m256d fxacc = _mm256_setzero_pd();
+      __m256d fyacc = _mm256_setzero_pd();
+      __m256d fzacc = _mm256_setzero_pd();
+
+      const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
+      const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
+      const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
+#endif
       size_t j = 0;
       // floor soa numParticles to multiple of vecLength
       // If b is a power of 2 the following holds:
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int32_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc,
-                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+        SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr), x1, y1,
+                               z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc,
+                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
-        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int32_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc, &virialSumX,
-                              &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr), x1, y1,
+                              z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc,
+                              fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
+#if AUTOPAS_PRECISION_MODE == DPSP || AUTOPAS_PRECISION_MODE == DPDP
+      // horizontally reduce fDacc to sumfD
+      const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
+      const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
+
+      const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
+      const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
+
+      const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
+      const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
+
+      const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
+      const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
+
+      // here implicit casts are possible
+      const AccuPrecision sumfx = sumfxfyVEC[0];
+      const AccuPrecision sumfy = sumfxfyVEC[1];
+      const AccuPrecision sumfz = _mm_cvtsd_f64(sumfzVEC);
+
+      fxptr[i] += sumfx;
+      fyptr[i] += sumfy;
+      fzptr[i] += sumfz;
+#else
       // horizontally reduce fDacc to sumfD
       const __m256 hSumfxfy = _mm256_hadd_ps(fxacc, fyacc);
       const __m256 hSumfz = _mm256_hadd_ps(fzacc, fzacc);
@@ -408,23 +351,26 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       const __m128 hsumfxfyVEC = _mm_hadd_ps(sumfxfyVEC, sumfxfyVEC);
       const __m128 hsumfzVEC = _mm_hadd_ps(sumfzVEC, sumfzVEC);
 
-      const float sumfx = hsumfxfyVEC[0];
-      const float sumfy = hsumfxfyVEC[1];
-      const float sumfz = _mm_cvtsd_f64(hsumfzVEC);
+      // here implicit casts are possible
+      const AccuPrecision sumfx = hsumfxfyVEC[0];
+      const AccuPrecision sumfy = hsumfxfyVEC[1];
+      const AccuPrecision sumfz = _mm_cvtss_f32(hsumfzVEC);
 
       fxptr[i] += sumfx;
       fyptr[i] += sumfy;
       fzptr[i] += sumfz;
+#endif
     }
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
 
+#if AUTOPAS_PRECISION_MODE == SPDP || AUTOPAS_PRECISION_MODE == DPDP
       // horizontally reduce virialSumX and virialSumY
       const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
       const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
       const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+      const __m128d sumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
       // horizontally reduce virialSumZ and potentialEnergySum
       const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
@@ -435,15 +381,37 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
 
       // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
+      _mm_store_pd(&globals[0], sumVirialxyVec);
+      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
+#else
+      // horizontally reduce virialSumX and virialSumY
+      const __m256 hSumVirialxy = _mm256_hadd_ps(virialSumX, virialSumY);
+      const __m128 hSumVirialxyLow = _mm256_extractf128_ps(hSumVirialxy, 0);
+      const __m128 hSumVirialxyHigh = _mm256_extractf128_ps(hSumVirialxy, 1);
+      const __m128 sumVirialxyVec = _mm_add_ps(hSumVirialxyHigh, hSumVirialxyLow);
+      const __m128 hSumVirialxyVec = _mm_hadd_ps(sumVirialxyVec, sumVirialxyVec);
+
+      // horizontally reduce virialSumZ and potentialEnergySum
+      const __m256 hSumVirialzPotentialEnergy = _mm256_hadd_ps(virialSumZ, potentialEnergySum);
+      const __m128 hSumVirialzPotentialEnergyLow = _mm256_extractf128_ps(hSumVirialzPotentialEnergy, 0);
+      const __m128 hSumVirialzPotentialEnergyHigh = _mm256_extractf128_ps(hSumVirialzPotentialEnergy, 1);
+      const __m128 sumVirialzPotentialEnergyVec =
+          _mm_add_ps(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
+      const __m128 hSumVirialzPotentialEnergyVec =
+          _mm_hadd_ps(sumVirialzPotentialEnergyVec, sumVirialzPotentialEnergyVec);
+
+      // globals = {virialX, virialY, virialZ, potentialEnergy}
+      double globals[4];
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
+#endif
 
+      // here implicit casts are possible
       _aosThreadData[threadnum].virialSum[0] += globals[0];
       _aosThreadData[threadnum].virialSum[1] += globals[1];
       _aosThreadData[threadnum].virialSum[2] += globals[2];
       _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
-#endif
 #endif
   }
 
@@ -592,8 +560,9 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    * @param rest
    */
   template <bool newton3, bool remainderIsMasked>
-  inline void SoAKernel(const size_t j, const __m256i ownedStateI, const int64_t *const __restrict ownedStatePtr2,
-                        const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
+  inline void SoAKernel(const size_t j, const __m256i ownedStateI,
+                        const autopas::OwnershipType *const __restrict ownedStatePtr2, const __m256d &x1,
+                        const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
                         const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                         double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
