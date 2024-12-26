@@ -102,7 +102,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_c06,
     /**
-     * VCLClusterIterationTraversal : Dynamically schedule ClusterTower to threads.
+     * + VCLClusterIterationTraversal : Dynamically schedule ClusterTower to threads.
      * Does not support Newton3.
      */
     vcl_cluster_iteration,
@@ -261,6 +261,7 @@ class TraversalOption : public Option<TraversalOption> {
   static std::set<TraversalOption> getAllTriwiseOptions() {
     return {Value::ds_sequential,
             Value::lc_c01,
+            Value::vcl_cluster_iteration,
             Value::vl_list_iteration,
             Value::vl_list_intersection_sorted_3b,
             Value::vl_list_intersection_hashing_3b,
