@@ -463,7 +463,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
                     "OwnershipStates underlying type should be int32_t!");
       // ownedStatePtr contains int32_t, so we broadcast these to make an __m256i.
       // _mm256_set1_epi32 broadcasts a 32-bit integer, we use this instruction to have 8 values!
-      __m256i ownedStateI = _mm256_set1_epi32(static_cast<int32_t>(ownedStatePtr[i]));
+      __m256i ownedStateI = _mm256_set1_epi32(static_cast<int32_t>(ownedStatePtr1[i]));
 
       __m256 fxacc = _mm256_setzero_ps();
       __m256 fyacc = _mm256_setzero_ps();
@@ -522,9 +522,9 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       const AccuPrecision sumfy = sumfxfyVEC[1];
       const AccuPrecision sumfz = _mm_cvtsd_f64(sumfzVEC);
 
-      fxptr[i] += sumfx;
-      fyptr[i] += sumfy;
-      fzptr[i] += sumfz;
+      fx1ptr[i] += sumfx;
+      fy1ptr[i] += sumfy;
+      fz1ptr[i] += sumfz;
 #else
       // horizontally reduce fDacc to sumfD
       const __m256 hSumfxfy = _mm256_hadd_ps(fxacc, fyacc);
@@ -547,9 +547,9 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       const AccuPrecision sumfy = hsumfxfyVEC[1];
       const AccuPrecision sumfz = _mm_cvtss_f32(hsumfzVEC);
 
-      fxptr[i] += sumfx;
-      fyptr[i] += sumfy;
-      fzptr[i] += sumfz;
+      fx1ptr[i] += sumfx;
+      fy1ptr[i] += sumfy;
+      fz1ptr[i] += sumfz;
 #endif
     }
 
