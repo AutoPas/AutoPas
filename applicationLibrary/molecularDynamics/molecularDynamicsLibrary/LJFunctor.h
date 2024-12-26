@@ -156,7 +156,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     CalcPrecision lj12m6 = lj12 - lj6;
     CalcPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     std::array<CalcPrecision, 3> f = dr * fac;
-    std::array<CalcPrecision, 3> convertedF;
+    std::array<AccuPrecision, 3> convertedF;
     if constexpr (std::is_same_v<CalcPrecision, AccuPrecision>) {
       convertedF = f;
     } else {

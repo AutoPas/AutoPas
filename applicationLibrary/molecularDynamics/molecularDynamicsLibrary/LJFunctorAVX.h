@@ -57,10 +57,8 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   /**
    * Define the SIMD Types as either packed single or packed double
    */
-  // using SIMDCalcType = typename std::conditional_t<std::is_same<CalcPrecision, float>::value, __m256, __m256d>;
-  // using SIMDAccuType = typename std::conditional_t<std::is_same<AccuPrecision, float>::value, __m256, __m256d>;
-  using SIMDCalcType = __m256d;
-  using SIMDAccuType = __m256d;
+  using SIMDCalcType = typename std::conditional_t<std::is_same<CalcPrecision, float>::value, __m256, __m256d>;
+  using SIMDAccuType = typename std::conditional_t<std::is_same<AccuPrecision, float>::value, __m256, __m256d>;
 
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -80,7 +78,11 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
 #ifdef __AVX__
       : autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                 countFLOPs, relevantForTuning>>(cutoff),
+#if AUTOPAS_PRECISION_MODE == DPDP
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
+#else
+        _cutoffSquared{_mm256_set1_ps(cutoff * cutoff)},
+#endif
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -168,7 +170,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
     CalcPrecision lj12m6 = lj12 - lj6;
     CalcPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     std::array<CalcPrecision, 3> f = dr * fac;
-    std::array<CalcPrecision, 3> convertedF;
+    std::array<AccuPrecision, 3> convertedF;
     if constexpr (std::is_same_v<CalcPrecision, AccuPrecision>) {
       convertedF = f;
     } else {
@@ -183,7 +185,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
-      auto virial = dr * f;
+      CalcPrecision virial = dr * f;
       CalcPrecision potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas::autopas_get_thread_num();
@@ -249,10 +251,11 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
 
     const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-    SIMDAccuType virialSumX = _mm256_setzero_pd();
-    SIMDAccuType virialSumY = _mm256_setzero_pd();
-    SIMDAccuType virialSumZ = _mm256_setzero_pd();
-    SIMDAccuType potentialEnergySum = _mm256_setzero_pd();
+#if AUTOPAS_PRECISION_MODE == DPDP
+    __m256d virialSumX = _mm256_setzero_pd();
+    __m256d virialSumY = _mm256_setzero_pd();
+    __m256d virialSumZ = _mm256_setzero_pd();
+    __m256d potentialEnergySum = _mm256_setzero_pd();
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
@@ -268,9 +271,9 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
       __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[i]));
 
-      SIMDAccuType fxacc = _mm256_setzero_pd();
-      SIMDAccuType fyacc = _mm256_setzero_pd();
-      SIMDAccuType fzacc = _mm256_setzero_pd();
+      __m256d fxacc = _mm256_setzero_pd();
+      __m256d fyacc = _mm256_setzero_pd();
+      __m256d fzacc = _mm256_setzero_pd();
 
       const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
       const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
@@ -342,6 +345,105 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       _aosThreadData[threadnum].virialSum[2] += globals[2];
       _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
+#else
+    // TODO MP: SP or DP?
+    __m256d virialSumX = _mm256_setzero_pd();
+    __m256d virialSumY = _mm256_setzero_pd();
+    __m256d virialSumZ = _mm256_setzero_pd();
+    __m256d potentialEnergySum = _mm256_setzero_pd();
+
+    // reverse outer loop s.th. inner loop always beginns at aligned array start
+    // typecast to detect underflow
+    for (size_t i = soa.size() - 1; (long)i >= 0; --i) {
+      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+        // If the i-th particle is a dummy, skip this loop iteration.
+        continue;
+      }
+
+      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int32_t>,
+                    "OwnershipStates underlying type should be int32_t!");
+      // ownedStatePtr contains int32_t, so we broadcast these to make an __m256i.
+      // _mm256_set1_epi32 broadcasts a 32-bit integer, we use this instruction to have 8 values!
+      __m256i ownedStateI = _mm256_set1_epi32(static_cast<int32_t>(ownedStatePtr[i]));
+
+      __m256 fxacc = _mm256_setzero_ps();
+      __m256 fyacc = _mm256_setzero_ps();
+      __m256 fzacc = _mm256_setzero_ps();
+
+      const __m256 x1 = _mm256_broadcast_ss(&xptr[i]);
+      const __m256 y1 = _mm256_broadcast_ss(&yptr[i]);
+      const __m256 z1 = _mm256_broadcast_ss(&zptr[i]);
+
+      size_t j = 0;
+      // floor soa numParticles to multiple of vecLength
+      // If b is a power of 2 the following holds:
+      // a & ~(b -1) == a - (a mod b)
+      for (; j < (i & ~(vecLength - 1)); j += 4) {
+        SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int32_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
+                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc,
+                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+      }
+      // If b is a power of 2 the following holds:
+      // a & (b -1) == a mod b
+      const int rest = (int)(i & (vecLength - 1));
+      if (rest > 0) {
+        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int32_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
+                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc, &virialSumX,
+                              &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+      }
+
+      // horizontally reduce fDacc to sumfD
+      const __m256 hSumfxfy = _mm256_hadd_ps(fxacc, fyacc);
+      const __m256 hSumfz = _mm256_hadd_ps(fzacc, fzacc);
+
+      const __m128 hSumfxfyLow = _mm256_extractf128_ps(hSumfxfy, 0);
+      const __m128 hSumfzLow = _mm256_extractf128_ps(hSumfz, 0);
+
+      const __m128 hSumfxfyHigh = _mm256_extractf128_ps(hSumfxfy, 1);
+      const __m128 hSumfzHigh = _mm256_extractf128_ps(hSumfz, 1);
+
+      const __m128 sumfxfyVEC = _mm_add_ps(hSumfxfyLow, hSumfxfyHigh);
+      const __m128 sumfzVEC = _mm_add_ps(hSumfzLow, hSumfzHigh);
+
+      const __m128 hsumfxfyVEC = _mm_hadd_ps(sumfxfyVEC, sumfxfyVEC);
+      const __m128 hsumfzVEC = _mm_hadd_ps(sumfzVEC, sumfzVEC);
+
+      const float sumfx = hsumfxfyVEC[0];
+      const float sumfy = hsumfxfyVEC[1];
+      const float sumfz = _mm_cvtsd_f64(hsumfzVEC);
+
+      fxptr[i] += sumfx;
+      fyptr[i] += sumfy;
+      fzptr[i] += sumfz;
+    }
+
+    if constexpr (calculateGlobals) {
+      const int threadnum = autopas::autopas_get_thread_num();
+
+      // horizontally reduce virialSumX and virialSumY
+      const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
+      const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
+      const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
+      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+
+      // horizontally reduce virialSumZ and potentialEnergySum
+      const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
+      const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
+      const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
+      const __m128d hSumVirialzPotentialEnergyVec =
+          _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
+
+      // globals = {virialX, virialY, virialZ, potentialEnergy}
+      double globals[4];
+      _mm_store_pd(&globals[0], hSumVirialxyVec);
+      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
+
+      _aosThreadData[threadnum].virialSum[0] += globals[0];
+      _aosThreadData[threadnum].virialSum[1] += globals[1];
+      _aosThreadData[threadnum].virialSum[2] += globals[2];
+      _aosThreadData[threadnum].potentialEnergySum += globals[3];
+    }
+#endif
 #endif
   }
 

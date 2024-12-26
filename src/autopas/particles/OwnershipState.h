@@ -11,9 +11,7 @@
 #include <iostream>
 
 namespace autopas {
-#if AUTOPAS_PRECISION_MODE == SPSP
-using OwnershipType = int32_t;
-#elif AUTOPAS_PRECISION_MODE == DPDP
+#if AUTOPAS_PRECISION_MODE == DPDP
 using OwnershipType = int64_t;
 #else
 using OwnershipType = int32_t;
