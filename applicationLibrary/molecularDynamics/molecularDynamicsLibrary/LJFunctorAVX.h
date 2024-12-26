@@ -54,6 +54,10 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   using AccuPrecision = typename Particle::ParticleAccuPrecision;
 
+  using SIMDCalcType = typename std::conditional_t<std::is_same<CalcPrecision, float>::value, __m256, __m256d>;
+  using SIMDAccuType = typename std::conditional_t<std::is_same<AccuPrecision, float>::value, __m256, __m256d>;
+  // using SIMDOwnershipType = typename std::conditional_t<std::is_same<CalcPrecision, float>::value, __m256, __m256d>;
+
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -638,13 +642,14 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   template <bool newton3, bool remainderIsMasked>
   inline void SoAKernel(const size_t j, const __m256i ownedStateI,
-                        const autopas::OwnershipType *const __restrict ownedStatePtr2, const __m256d &x1,
-                        const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
-                        const double *const __restrict y2ptr, const double *const __restrict z2ptr,
-                        double *const __restrict fx2ptr, double *const __restrict fy2ptr,
-                        double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
-                        __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
-                        __m256d *virialSumZ, __m256d *potentialEnergySum, const unsigned int rest = 0) {
+                        const autopas::OwnershipType *const __restrict ownedStatePtr2, const SIMDCalcType &x1,
+                        const SIMDCalcType &y1, const SIMDCalcType &z1, const CalcPrecision *const __restrict x2ptr,
+                        const CalcPrecision *const __restrict y2ptr, const CalcPrecision *const __restrict z2ptr,
+                        AcuuPrecision *const __restrict fx2ptr, AcuuPrecision *const __restrict fy2ptr,
+                        AcuuPrecision *const __restrict fz2ptr, const size_t *const typeID1ptr,
+                        const size_t *const typeID2ptr, SIMDAccuType &fxacc, SIMDAccuType &fyacc, SIMDAccuType &fzacc,
+                        SIMDAccuType *virialSumX, SIMDAccuType *virialSumY, SIMDAccuType *virialSumZ,
+                        SIMDAccuType *potentialEnergySum, const unsigned int rest = 0) {
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
@@ -1187,6 +1192,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 #ifdef __AVX__
+#if AUTOPAS_PRECISION_MODE == DPSP || AUTOPAS_PRECISION_MODE == DPDP
   const __m256d _zero{_mm256_set1_pd(0.)};
   const __m256d _one{_mm256_set1_pd(1.)};
   const __m256i _vindex = _mm256_set_epi64x(0, 1, 3, 4);
@@ -1201,6 +1207,24 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};
   __m256d _sigmaSquared{};
+#else
+  const __m256 _zero{_mm256_set1_ps(0.)};
+  const __m256 _one{_mm256_set1_ps(1.)};
+  // TODO MP: What does this do?
+  const __m256i _vindex = _mm256_set_epi64x(0, 1, 3, 4);
+  // TODO MP: What does this do?
+  const __m256i _masks[3]{
+      _mm256_set_epi64x(0, 0, 0, -1),
+      _mm256_set_epi64x(0, 0, -1, -1),
+      _mm256_set_epi64x(0, -1, -1, -1),
+  };
+  const __m256i _ownedStateDummyMM256i{0x0};
+  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi32(static_cast<int64_t>(autopas::OwnershipState::owned))};
+  const __m256 _cutoffSquared{};
+  __m256 _shift6 = _mm256_setzero_ps();
+  __m256 _epsilon24{};
+  __m256 _sigmaSquared{};
+#endif
 #endif
 
   const CalcPrecision _cutoffSquaredAoS = 0;
