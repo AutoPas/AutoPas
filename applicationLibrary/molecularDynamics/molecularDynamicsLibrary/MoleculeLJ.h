@@ -1,3 +1,10 @@
+/**
+ * @file MoleculeLJ.h
+ *
+ * @date 30 Nov 24
+ * @author huberf
+ */
+
 #pragma once
 
 #include "MoleculeLJBase.h"

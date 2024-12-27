@@ -645,15 +645,15 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
                         const autopas::OwnershipType *const __restrict ownedStatePtr2, const SIMDCalcType &x1,
                         const SIMDCalcType &y1, const SIMDCalcType &z1, const CalcPrecision *const __restrict x2ptr,
                         const CalcPrecision *const __restrict y2ptr, const CalcPrecision *const __restrict z2ptr,
-                        AcuuPrecision *const __restrict fx2ptr, AcuuPrecision *const __restrict fy2ptr,
-                        AcuuPrecision *const __restrict fz2ptr, const size_t *const typeID1ptr,
+                        AccuPrecision *const __restrict fx2ptr, AccuPrecision *const __restrict fy2ptr,
+                        AccuPrecision *const __restrict fz2ptr, const size_t *const typeID1ptr,
                         const size_t *const typeID2ptr, SIMDAccuType &fxacc, SIMDAccuType &fyacc, SIMDAccuType &fzacc,
                         SIMDAccuType *virialSumX, SIMDAccuType *virialSumY, SIMDAccuType *virialSumZ,
                         SIMDAccuType *potentialEnergySum, const unsigned int rest = 0) {
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
-    if (useMixing) {
+    if constexpr (useMixing) {
       // the first argument for set lands in the last bits of the register
       epsilon24s = _mm256_set_pd(
           not remainderIsMasked or rest > 3 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
