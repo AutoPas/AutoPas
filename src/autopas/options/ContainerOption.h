@@ -106,7 +106,7 @@ class ContainerOption : public Option<ContainerOption> {
    * @return
    */
   static std::set<ContainerOption> getAllTriwiseOptions() {
-    return {Value::directSum, Value::linkedCells, Value::verletLists};
+    return {Value::directSum, Value::linkedCells, Value::verletLists, Value::verletClusterLists};
   }
 
   /**

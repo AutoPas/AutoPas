@@ -345,6 +345,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
       return std::make_unique<VLPairListIterationTraversal3B<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, dataLayout,
                                                                                             useNewton3);
     }
+      // VerletClusterLists
+    case TraversalOption::vcl_cluster_iteration: {
+      return std::make_unique<VCLClusterIterationTraversal<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, traversalInfo.clusterSize, dataLayout,
+                                                                                      useNewton3);
+    }
+
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
                                                   traversalType.to_string());

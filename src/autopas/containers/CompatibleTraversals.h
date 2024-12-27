@@ -109,6 +109,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all triwise traversal options applicable for the Verlet Cluster Lists container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allVCLCompatibleTraversals3B() {
+  static const auto s = filterAllOptions("vcl_", InteractionTypeOption::triwise);
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the Verlet Lists Cells container.
  * @return set of all applicable traversal options.
  */
@@ -244,6 +253,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::verletLists: {
           return allVLCompatibleTraversals3B();
+        }
+        case ContainerOption::verletClusterLists: {
+          return allVCLCompatibleTraversals3B();
         }
         default: {
           static const std::set<TraversalOption> s{};
