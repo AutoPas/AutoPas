@@ -1212,15 +1212,15 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   }
 
 
-  // _containerSize = this->_containerSelector.getCurrentContainer().size();
-  //   _particleBufferSize = 0;
-  //   for(auto &th : _particleBuffer) {
-  //     _particleBufferSize += th.size();
-  //   }
+    _containerSize = this->_containerSelector.getCurrentContainer().size();
+    _particleBufferSize = 0;
+    for(auto &th : _particleBuffer) {
+      _particleBufferSize += th.size();
+    }
 
-    // if (_particleBufferSize > static_cast<long>(0.10 * _containerSize)) {
-    //   _neighborListInvalidDoDynamicRebuild = true;
-    // }
+    if (_particleBufferSize > static_cast<long>(0.10 * _containerSize)) {
+      _neighborListInvalidDoDynamicRebuild = true;
+    }
 
     // _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
 
