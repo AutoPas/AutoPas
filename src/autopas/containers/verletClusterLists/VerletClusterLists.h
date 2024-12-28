@@ -356,6 +356,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return false;
   }
 
+  bool deleteParticle(int id, size_t cellIndex) override {
+    auto &clusterTower = _towerBlock[cellIndex]._particles;
+    for (auto &particle : clusterTower) {
+      if (particle.getID() == id) {
+        internal::markParticleAsDeleted(particle);
+        return false;
+      }
+    }
+    throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
+  }
+
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);

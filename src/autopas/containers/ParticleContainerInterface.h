@@ -420,6 +420,8 @@ class ParticleContainerInterface {
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
+  virtual bool deleteParticle(int id, size_t cellIndex) = 0;
+
  protected:
   /**
    * Stores the number of time-steps since last neighbor list rebuild

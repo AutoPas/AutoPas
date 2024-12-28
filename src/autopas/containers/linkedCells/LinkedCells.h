@@ -303,6 +303,23 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     return particleIndex < particleVec.size();
   }
 
+  bool deleteParticle(int id, size_t cellIndex) override {
+    auto &particleVec = this->_cells[cellIndex]._particles;
+
+    for (auto &particle : particleVec) {
+      if (particle.getID() == id) {
+        const bool isRearParticle = &particle == &particleVec.back();
+
+        particle = particleVec.back();
+        particleVec.pop_back();
+
+        return !isRearParticle;
+      }
+    }
+
+    throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
+  }
+
   [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {

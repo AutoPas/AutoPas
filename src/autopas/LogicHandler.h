@@ -647,6 +647,8 @@ class LogicHandler {
   bool checkNan();
 
   bool hasDuplicates();
+  using R = std::array<double, 3>;
+  bool hasDuplicates(std::vector<std::vector<std::tuple<int, R>>> v);
 
   /**
    * Checks if any particle has moved more than skin/2.
@@ -1139,6 +1141,24 @@ bool LogicHandler<Particle>::hasDuplicates() {
   return flag;
 }
 
+using R = std::array<double, 3>;
+template <typename Particle>
+bool LogicHandler<Particle>::hasDuplicates(std::vector<std::vector<std::tuple<int, R>>> v) {
+  std::unordered_set<int> seenIds;
+
+  for (const auto& outerVec : v) {
+    for (const auto& particle : outerVec) {
+      int id = std::get<0>(particle);
+      if (seenIds.find(id) != seenIds.end()) {
+        return true;
+      }
+      seenIds.insert(id);
+    }
+  }
+
+  return false;
+}
+
 //TODO here instead of triggering a rebuild save particles to buffer
 // these will then be automatically considered by the diff containers since they also consider the particles that go outside the container
 // Owned state, a particle with this state is an actual particle and owned by the current AutoPas object!
@@ -1148,11 +1168,16 @@ bool LogicHandler<Particle>::hasDuplicates() {
 template <typename Particle>
 void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
 
-  unsigned long _particleNumber = 0;
+  //if (_iteration == 0) return;
+  long _particleNumber = 0;
 
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
+
+  using R = std::array<double, 3>;
+  // std::vector<std::vector<std::tuple<int, R>>> toDelete(autopas_get_max_threads());
+  std::vector<std::vector<std::tuple<int, size_t>>> toDelete(autopas_get_max_threads());
 
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
@@ -1162,31 +1187,40 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
-
-
       if (distanceSquare >= halfSkinSquare) {
 
-      Particle& particle = *iter;
-      Particle particleCopy = particle;
+        Particle& particle = *iter;
+        Particle particleCopy = particle;
 
        _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-        internal::markParticleAsDeleted(particle);
+        // internal::markParticleAsDeleted(particle);
+
+        size_t cellIndex = iter.getVectorIndex();
+        toDelete[autopas_get_thread_num()].push_back(std::make_tuple(particle.getID(), cellIndex));
 
         _particleNumber ++;
 
       }
-
   }
 
-  _containerSize = this->_containerSelector.getCurrentContainer().size();
-    _particleBufferSize = 0;
-    for(auto &th : _particleBuffer) {
-      _particleBufferSize += th.size();
+  for (const auto& t : toDelete) {
+    for (auto p : t) {
+      int id = std::get<0>(p);
+      size_t cellIndex = std::get<1>(p);
+      _containerSelector.getCurrentContainer().deleteParticle(id, cellIndex);
     }
+  }
 
-    if (_particleBufferSize > static_cast<long>(0.10 * _containerSize)) {
-      _neighborListInvalidDoDynamicRebuild = true;
-    }
+
+  // _containerSize = this->_containerSelector.getCurrentContainer().size();
+  //   _particleBufferSize = 0;
+  //   for(auto &th : _particleBuffer) {
+  //     _particleBufferSize += th.size();
+  //   }
+
+    // if (_particleBufferSize > static_cast<long>(0.10 * _containerSize)) {
+    //   _neighborListInvalidDoDynamicRebuild = true;
+    // }
 
     // _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
 

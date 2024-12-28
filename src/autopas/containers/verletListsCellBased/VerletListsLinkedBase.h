@@ -165,6 +165,17 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     return false;
   }
 
+  bool deleteParticle(int id, size_t cellIndex) override {
+    auto &particleVec = _linkedCells.getCells()[cellIndex]._particles;
+    for (auto &particle : particleVec) {
+      if (particle.getID() == id) {
+        internal::markParticleAsDeleted(particle);
+        return false;
+      }
+    }
+   throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
+  }
+
   /**
    * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.
