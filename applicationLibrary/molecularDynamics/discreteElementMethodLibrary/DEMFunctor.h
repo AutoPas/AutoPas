@@ -102,7 +102,8 @@ class DEMFunctor
 
  public:
   /**
-   * Minimal Constructor for Functor with mixing disabled. Other Parameters are set with default values.
+   * Minimal Constructor for Functor with mixing disa
+   * bled. Other Parameters are set with default values.
    * Values taken from https://www2.msm.ctw.utwente.nl/sluding/PAPERS/Alert_Luding2008.pdf page 15.
    *
    * @note Only to be used with mixing == false;
@@ -110,7 +111,7 @@ class DEMFunctor
    * @param cutoff
    */
   explicit DEMFunctor(double cutoff)
-      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 125, 25, 25, nullptr) {
+      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 25, 25, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -126,7 +127,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 125, 25, 25, nullptr) {
+      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 25, 25, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -255,23 +256,19 @@ class DEMFunctor
 
     // Compute tangential force
     const std::array<double, 3> tanRelVel = relVel + cross(normalUnit * radiusIReduced, i.getAngularVel()) +
-                                            cross(normalUnit * radiusJReduced, j.getAngularVel());          // 30 FLOPS
-    const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                            // 3 FLOPS
-    const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                          // 3 FLOPS
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
-    std::array<double, 3> tanF = tanVel * (-_frictionViscosity);                                            // 3 FLOPS
-    const double tanFMag = L2Norm(tanF);                                                                    // 6 FLOPS
+                                            cross(normalUnit * radiusJReduced, j.getAngularVel());  // 30 FLOPS
+    const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
+    const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                  // 3 FLOPS
+    const double coulombLimit =
+        _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS// 3 FLOPS// 6 FLOPS
 
-    if (tanFMag > coulombLimit) {
-      // 3 + 3 + 3 = 9 FLOPS
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;
-      const std::array<double, 3> tanFUnit = tanF / tanFMag;
-      const double scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
-      tanF = tanFUnit * scale;
-    }
+    // 3 + 3 + 3 = 9 FLOPS
+    ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;
+    const std::array<double, 3> tanFUnit = ((tanVel) / (L2Norm(tanVel) + 1e-5) * (-1.));
+    const std::array<double, 3> tanF = tanFUnit * (_dynamicFrictionCoeff * normalContactFMag);
 
     // Compute total force
-    const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
+    const std::array<double, 3> totalF = tanF;  // 3 FLOPS
 
     // Apply forces
     i.addF(totalF);  // 3 FLOPS
@@ -314,9 +311,11 @@ class DEMFunctor
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 = 3 FLOPS
 
     // Apply torques
-    i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
+    // i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
+     i.addTorque(frictionQI);
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
+      //   j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
+      j.addTorque(frictionQI * (radiusJReduced / radiusIReduced));
     }
   }
 
@@ -765,10 +764,8 @@ class DEMFunctor
     /**
      * FLOP count:
      * DistCall: 11
-     * KernelNoN3: 24 (NormalF) + 48 (TanF) + 6 (ApplyF) + 12 (FrictionQ) + 45 (RollingQ) + 27 (TorsionQ) + 9 (ApplyQ) = 171
-     * KernelN3: KernelNoN3 + 3 (ApplyF) + 10 (ApplyQ) = 184
-     * InnerIfTanFCall: 9
-     * InnerIfRollingQCall: 9
+     * KernelNoN3: 24 (NormalF) + 48 (TanF) + 6 (ApplyF) + 12 (FrictionQ) + 45 (RollingQ) + 27 (TorsionQ) + 9 (ApplyQ) =
+     * 171 KernelN3: KernelNoN3 + 3 (ApplyF) + 10 (ApplyQ) = 184 InnerIfTanFCall: 9 InnerIfRollingQCall: 9
      * InnerIfTorsionQCall: 9
      */
     if constexpr (countFLOPs) {
@@ -802,7 +799,8 @@ class DEMFunctor
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
              numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numInnerIfTanFCallsAcc * numFLOPsPerInnerIfTanFCall +
-             numInnerIfRollingQCallsAcc * numFLOPsPerInnerIfRollingQCall + numInnerIfTorsionQCallsAcc * numFLOPsPerInnerIfTorsionQCall;
+             numInnerIfRollingQCallsAcc * numFLOPsPerInnerIfRollingQCall +
+             numInnerIfTorsionQCallsAcc * numFLOPsPerInnerIfTorsionQCall;
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();

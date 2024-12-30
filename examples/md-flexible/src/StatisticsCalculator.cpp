@@ -15,29 +15,143 @@
 StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::string &outputFolder)
     : _sessionName(std::move(sessionName)) {
   tryCreateStatisticsFolders(_sessionName, outputFolder);
-  /**
-  std::vector<std::string> columnNames = {
-      "Iteration", "MeanPotentialEnergyZ", "MeanKineticEnergyX", "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
-  };
-   **/
+
+  // std::vector<std::string> columnNames = {
+  //     "Iteration", "MeanPotentialEnergyZ", "MeanKineticEnergyX", "MeanKineticEnergyY",
+  //     "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
+  // };
+
+  // const std::vector<std::string> columnNames = {
+  //     "Iteration", "OverlapSum", "DistSum", "ForceMagSum"
+  // };
+
+  // const std::vector<std::string> columnNames = {"Iteration",    "AngularVelIX", "AngularVelIY", "AngularVelIZ",
+  //                                               "AngularVelJX", "AngularVelJY", "AngularVelJZ"};
+
+  // const std::vector<std::string> columnNames = {
+  //     "Iteration",    "TorqueIX",     "TorqueIY",     "TorqueIZ",     "TorqueJX",     "TorqueJY",    "TorqueJZ",
+  //     "AngularVelIX", "AngularVelIY", "AngularVelIZ", "AngularVelJX", "AngularVelJY", "AngularVelJZ"};
+  // const std::vector<std::string> columnNames = {"Iteration", "ForceX",    "ForceY",   "ForceZ",
+  //                                              "VelocityX", "VelocityY", "VelocityZ"};
   const std::vector<std::string> columnNames = {
-      "Iteration", "OverlapSum", "DistSum", "ForceMagSum"
-  };
+      "Iteration", "TorqueIX", "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
+      "TorqueJX",  "TorqueJY", "TorqueJZ",   "AngularVelJX", "AngularVelJY", "AngularVelJZ", "ForceIX",
+      "ForceIY",   "ForceIZ",  "VelocityIX", "VelocityIY",   "VelocityIZ", "ForceJX",     "ForceJY",
+      "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ"};
   generateOutputFile(columnNames);
 }
 
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
+  // const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ,
+  // particlePropertiesLib);
+  //  const auto statistics = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
+  // const auto statistics = calculateAngularVelocities(autoPasContainer);
+  // const auto statistics = calculateTorquesAndAngularVel(autoPasContainer);
+  const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
+  const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
+  const auto statisticsIForceVel = calculateForceAndVelocity(autoPasContainer, 1L);
+  const auto statisticsJForceVel = calculateForceAndVelocity(autoPasContainer, 0L);
 
-  //const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib); TODO: change
-  const auto statistics = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
-  StatisticsCalculator::writeRow(currentIteration, statistics);
-
+  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel);
+  StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 }
 
-std::tuple<double, double, double, double, double, double, double> StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
+std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateForceAndVelocity(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId) {
+  double forceX = 0.;
+  double forceY = 0.;
+  double forceZ = 0.;
+  double velocityX = 0.;
+  double velocityY = 0.;
+  double velocityZ = 0.;
+
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() == typeId) {  // particle i
+      auto force = particle->getF();
+      forceX = force[0];
+      forceY = force[1];
+      forceZ = force[2];
+      auto velocity = particle->getV();
+      velocityX = velocity[0];
+      velocityY = velocity[1];
+      velocityZ = velocity[2];
+    }
+  }
+  return std::make_tuple(forceX, forceY, forceZ, velocityX, velocityY, velocityZ);
+}
+
+std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateAngularVelocities(
+    const autopas::AutoPas<ParticleType> &autoPasContainer) {
+  double angularVelIX = 0.;
+  double angularVelIY = 0.;
+  double angularVelIZ = 0.;
+  double angularVelJX = 0.;
+  double angularVelJY = 0.;
+  double angularVelJZ = 0.;
+
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() == 1) {  // particle i
+      auto angularVelI = particle->getAngularVel();
+      angularVelIX = angularVelI[0];
+      angularVelIY = angularVelI[1];
+      angularVelIZ = angularVelI[2];
+    } else {  // particle j
+      auto angularVelJ = particle->getAngularVel();
+      angularVelJX = angularVelJ[0];
+      angularVelJY = angularVelJ[1];
+      angularVelJZ = angularVelJ[2];
+    }
+  }
+
+  return std::make_tuple(angularVelIX, angularVelIY, angularVelIZ, angularVelJX, angularVelJY, angularVelJZ);
+}
+
+std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateTorquesAndAngularVel(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId) {
+  double torqueIX = 0.;
+  double torqueIY = 0.;
+  double torqueIZ = 0.;
+  // double torqueJX = 0.;
+  // double torqueJY = 0.;
+  // double torqueJZ = 0.;
+
+  double angularVelIX = 0.;
+  double angularVelIY = 0.;
+  double angularVelIZ = 0.;
+  // double angularVelJX = 0.;
+  // double angularVelJY = 0.;
+  // double angularVelJZ = 0.;
+
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() == typeId) {  // particle i
+      auto torqueI = particle->getTorque();
+      torqueIX = torqueI[0];
+      torqueIY = torqueI[1];
+      torqueIZ = torqueI[2];
+      auto angularVelI = particle->getAngularVel();
+      angularVelIX = angularVelI[0];
+      angularVelIY = angularVelI[1];
+      angularVelIZ = angularVelI[2];
+    }
+    //} else {  // particle j
+    //  auto torqueJ = particle->getTorque();
+    //  torqueJX = torqueJ[0];
+    //  torqueJY = torqueJ[1];
+    //  torqueJZ = torqueJ[2];
+    //  auto angularVelJ = particle->getAngularVel();
+    //  angularVelJX = angularVelJ[0];
+    //  angularVelJY = angularVelJ[1];
+    //  angularVelJZ = angularVelJ[2];
+    //}
+  }
+
+  return std::make_tuple(torqueIX, torqueIY, torqueIZ, angularVelIX, angularVelIY, angularVelIZ);
+}
+
+std::tuple<double, double, double, double, double, double, double>
+StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -105,16 +219,16 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
     }
   }
 
-    overlapSum /= 2.;
-    distSum /= 2.;
-    forceMagSum /= 2.;
+  overlapSum /= 2.;
+  distSum /= 2.;
+  forceMagSum /= 2.;
 
-    return std::make_tuple(overlapSum, distSum, forceMagSum);
+  return std::make_tuple(overlapSum, distSum, forceMagSum);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------
 
-void StatisticsCalculator::generateOutputFile(const std::vector<std::string>& columnNames) {
+void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &columnNames) {
   std::ostringstream filename;
   filename << _statisticsFolderPath << _sessionName << "_statistics.csv";
 

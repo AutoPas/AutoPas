@@ -132,7 +132,12 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
       }
     }
   }
-
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    // Reset torque
+    iter->setTorque({0., 0., 0.});
+  }
 #else
   autopas::utils::ExceptionHandler::exception(
       "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");

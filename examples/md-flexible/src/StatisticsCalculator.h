@@ -38,7 +38,8 @@ class StatisticsCalculator {
    * @param autopasContainer The AutoPas container.
    * @param particlePropertiesLib The particle properties library.
    */
-  void recordStatistics(size_t currentIteration, const double globalForceZ, const autopas::AutoPas<ParticleType> &autopasContainer,
+  void recordStatistics(size_t currentIteration, const double globalForceZ,
+                        const autopas::AutoPas<ParticleType> &autopasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLib);
 
  private:
@@ -50,8 +51,9 @@ class StatisticsCalculator {
    * @return tuple of doubles containing the statistics.
    */
   static std::tuple<double, double, double, double, double, double, double>
-  calculateMeanPotentialKineticRotationalEnergy(
-      const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
+  calculateMeanPotentialKineticRotationalEnergy(const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                                const double globalForceZ,
+                                                const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.
@@ -63,11 +65,19 @@ class StatisticsCalculator {
       const autopas::AutoPas<ParticleType> &autoPasContainer,
       const ParticlePropertiesLibraryType &particlePropertiesLib);
 
+  static std::tuple<double, double, double, double, double, double> calculateAngularVelocities(
+      const autopas::AutoPas<ParticleType> &autoPasContainer);
+
+  static std::tuple<double, double, double, double, double, double>
+  calculateTorquesAndAngularVel(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
+
+  static std::tuple<double, double, double, double, double, double>
+      calculateForceAndVelocity(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
   /**
    * Generates the output file (.csv) for the statistics.
    * @param columnNames The names of the columns in the output file.
    */
-  void generateOutputFile(const std::vector<std::string>& columnNames);
+  void generateOutputFile(const std::vector<std::string> &columnNames);
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.

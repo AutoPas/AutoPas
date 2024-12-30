@@ -196,17 +196,18 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % _configuration.vtkWriteFrequency.value == 0) {  // TODO: to change
+    if (_calculateStatistics and _iteration % 5 == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
 
     _timers.computationalLoad.start();
-    const size_t rotationalGlobalForceIterationFrom = 60000;
+    // const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-          _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(globalForce);  // normal case parameter: _configuration.globalForce.value
+      // const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
+      //     _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
+      updatePositionsAndResetForces(_configuration.globalForce.value);  // normal case parameter: _configuration.globalForce.value
+      resetTorques();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -262,7 +263,7 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
-#if DEM_MODE == ON
+#if DEM_MODE == ON/**
     if (_iteration < rotationalGlobalForceIterationFrom) {
       calculateBackgroundFriction(0.5,
                                   0.75,
@@ -272,7 +273,7 @@ void Simulation::run() {
                                   _configuration.backgroundTorqueFrictionCoeff.value,
                                   *_configuration.getParticlePropertiesLibrary());
     }
-
+**/
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
@@ -426,6 +427,12 @@ void Simulation::updateQuaternions() {
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value);
   _timers.quaternionUpdate.stop();
+}
+
+void Simulation::resetTorques() {
+  TimeDiscretization::calculateQuaternionsAndResetTorques(
+      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
+      _configuration.globalForce.value);
 }
 
 void Simulation::updateInteractionForces() {
