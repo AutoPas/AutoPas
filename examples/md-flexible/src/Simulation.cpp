@@ -202,15 +202,15 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    const size_t rotationalGlobalForceIterationFrom = 60000;
+    //const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-          _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(globalForce);  // normal case parameter: _configuration.globalForce.value
+      //const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
+      //    _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
+      updatePositionsAndResetForces(_configuration.globalForce.value);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
-
+      resetTorques();
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
@@ -427,6 +427,13 @@ void Simulation::updateQuaternions() {
       _configuration.globalForce.value);
   _timers.quaternionUpdate.stop();
 }
+
+void Simulation::resetTorques() {
+  _timers.quaternionUpdate.start();
+  TimeDiscretization::resetTorques(*_autoPasContainer);
+  _timers.quaternionUpdate.stop();
+}
+
 
 void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();
