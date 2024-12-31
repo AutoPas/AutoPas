@@ -14,6 +14,7 @@
 
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Math.h"
@@ -73,7 +74,9 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // initialize _allNeighborDomainIndices
   initializeAllNeighborIndices();
   // initialize _zonalMethod
-  initilaizeZonalMethod(configuration.zonalMethodOption.value);
+  initializeZonalMethod(configuration.zonalMethodOption.value);
+  // check if configuration is valid for zonal method
+  checkZonalMethodConfiguration(configuration);
 
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
@@ -198,7 +201,7 @@ void RegularGridDecomposition::initializeAllNeighborIndices() {
   }
 }
 
-void RegularGridDecomposition::initilaizeZonalMethod(options::ZonalMethodOption zonalMethodType) {
+void RegularGridDecomposition::initializeZonalMethod(options::ZonalMethodOption zonalMethodType) {
   using namespace autopas::utils::ArrayMath::literals;
   _zonalMethodOption = zonalMethodType;
   RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
@@ -221,6 +224,80 @@ void RegularGridDecomposition::initilaizeZonalMethod(options::ZonalMethodOption 
     default:
       std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                             _communicator, _allNeighborDomainIndices, _boundaryType));
+      break;
+  }
+}
+
+void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig &config) const {
+  auto checkLoadBalancerTurnedOff = [](const MDFlexConfig &config) {
+    if (config.loadBalancer.value != LoadBalancerOption::none)
+      throw std::invalid_argument(
+          "This zonal method can not be used with a load balancer: we do not support box resizing yet.\nTurn it off "
+          "using the load-balancer option.");
+  };
+  auto checkLCC01Traversal = [](const MDFlexConfig &config) {
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+      if (config.traversalOptions.value.find(autopas::TraversalOption::lc_c01) == config.traversalOptions.value.end()) {
+        throw std::invalid_argument("This zonal method can only be used with LCC01 traversal.");
+      }
+    }
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+      if (config.traversalOptions3B.value.find(autopas::TraversalOption::lc_c01) ==
+          config.traversalOptions3B.value.end()) {
+        throw std::invalid_argument("This zonal method can only be used with LCC01 traversal.");
+      }
+    }
+  };
+  auto checkLCC01MidpointTraversal = [](const MDFlexConfig &config) {
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+      if (config.traversalOptions.value.find(autopas::TraversalOption::lc_c01_midpoint) ==
+          config.traversalOptions.value.end()) {
+        throw std::invalid_argument("This zonal method can only be used with LCC01 midpoint traversal.");
+      }
+    }
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+      if (config.traversalOptions3B.value.find(autopas::TraversalOption::lc_c01_midpoint) ==
+          config.traversalOptions3B.value.end()) {
+        throw std::invalid_argument("This zonal method can only be used with LCC01 midpoint traversal.");
+      }
+    }
+  };
+  auto checkAllowedFunctors = [](const MDFlexConfig &config) {
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+      if (config.functorOption.value != MDFlexConfig::FunctorOption::lj12_6 &&
+          config.functorOption.value != MDFlexConfig::FunctorOption::lj12_6_AVX) {
+        throw std::invalid_argument("This zonal method can only be used with functor of type LJ12_6 or LJ12_6_AVX.");
+      }
+    }
+  };
+  auto checkDataType = [](const MDFlexConfig &config) {
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+      if (config.dataLayoutOptions.value.find(autopas::DataLayoutOption::aos) == config.dataLayoutOptions.value.end())
+        throw std::invalid_argument("This zonal method can only be used with AoS data layout.");
+    }
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+      if (config.dataLayoutOptions3B.value.find(autopas::DataLayoutOption::aos) ==
+          config.dataLayoutOptions3B.value.end())
+        throw std::invalid_argument("This zonal method can only be used with AoS data layout.");
+    }
+  };
+
+  switch (_zonalMethodOption) {
+    case options::ZonalMethodOption::none:
+      // noting to check
+      break;
+    case options::ZonalMethodOption::midpoint:
+      checkLoadBalancerTurnedOff(config);
+      checkLCC01MidpointTraversal(config);
+      checkAllowedFunctors(config);
+      checkDataType(config);
+      break;
+    case options::ZonalMethodOption::fullshell:
+    case options::ZonalMethodOption::halfshell:
+      checkLoadBalancerTurnedOff(config);
+      checkLCC01Traversal(config);
+      checkAllowedFunctors(config);
+      checkDataType(config);
       break;
   }
 }
@@ -326,7 +403,8 @@ void RegularGridDecomposition::calculateZonalInteractions(AutoPasType &autoPasCo
   _zonalMethod->recollectResultsFromContainer(autoPasContainer);
 
   // calculate interactions
-  _zonalMethod->calculateExternalZonalInteractions(autoPasContainer, config.getParticlePropertiesLibrary(), config.cutoff.value);
+  _zonalMethod->calculateExternalZonalInteractions(autoPasContainer, config.getParticlePropertiesLibrary(),
+                                                   config.cutoff.value);
 }
 
 void RegularGridDecomposition::exchangeZonalHaloParticlesResults(AutoPasType &autoPasContainer) {

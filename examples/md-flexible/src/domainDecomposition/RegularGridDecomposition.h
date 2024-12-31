@@ -377,7 +377,13 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Initializes _zonalMethod
    * This needs to be called after initializeLocalDomain.
    */
-  void initilaizeZonalMethod(options::ZonalMethodOption);
+  void initializeZonalMethod(options::ZonalMethodOption);
+
+  /**
+   * Checks if the zonal method configuration is valid and throws an exception if not.
+   * @param configuration
+   */
+  void checkZonalMethodConfiguration(const MDFlexConfig &configuration) const;
 
   /**
    * Sends and also receives particles to and from the left and right neighbours.
