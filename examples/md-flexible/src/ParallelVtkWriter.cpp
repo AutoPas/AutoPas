@@ -40,8 +40,9 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 }
 
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const RegularGridDecomposition &decomposition) const {
-  recordParticleStates(currentIteration, autoPasContainer);
+                                       const RegularGridDecomposition &decomposition,
+                                       const ParticlePropertiesLibraryType &particlePropertiesLib) const {
+  recordParticleStates(currentIteration, autoPasContainer, particlePropertiesLib);
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
 
@@ -51,7 +52,8 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
 void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
-                                             const autopas::AutoPas<ParticleType> &autoPasContainer) const {
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                             const ParticlePropertiesLibraryType &particlePropertiesLib) const {
   if (_mpiRank == 0) {
     createParticlesPvtuFile(currentIteration);
   }
@@ -136,6 +138,13 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile << "        </DataArray>\n";
 #endif
 
+  // print radii
+  timestepFile << "        <DataArray Name=\"radii\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto radius = particlePropertiesLib.getRadius(particle->getTypeId());
+    timestepFile << "        " << radius << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";

@@ -34,10 +34,10 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   // const std::vector<std::string> columnNames = {"Iteration", "ForceX",    "ForceY",   "ForceZ",
   //                                              "VelocityX", "VelocityY", "VelocityZ"};
   const std::vector<std::string> columnNames = {
-      "Iteration", "TorqueIX", "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
-      "TorqueJX",  "TorqueJY", "TorqueJZ",   "AngularVelJX", "AngularVelJY", "AngularVelJZ", "ForceIX",
-      "ForceIY",   "ForceIZ",  "VelocityIX", "VelocityIY",   "VelocityIZ", "ForceJX",     "ForceJY",
-      "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ"};
+      "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
+      "TorqueJX",  "TorqueJY",   "TorqueJZ",   "AngularVelJX", "AngularVelJY", "AngularVelJZ", "ForceIX",
+      "ForceIY",   "ForceIZ",    "VelocityIX", "VelocityIY",   "VelocityIZ",   "ForceJX",      "ForceJY",
+      "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ", "DistanceBetweenCenters", "Overlap", "NotNeeded"};
   generateOutputFile(columnNames);
 }
 
@@ -53,8 +53,9 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
   const auto statisticsIForceVel = calculateForceAndVelocity(autoPasContainer, 1L);
   const auto statisticsJForceVel = calculateForceAndVelocity(autoPasContainer, 0L);
+  const auto statisticsDistanceOverlap = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
 
-  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel);
+  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel, statisticsDistanceOverlap);
   StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 }
 
@@ -223,7 +224,7 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
   distSum /= 2.;
   forceMagSum /= 2.;
 
-  return std::make_tuple(overlapSum, distSum, forceMagSum);
+  return std::make_tuple(distSum, overlapSum, forceMagSum);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------
