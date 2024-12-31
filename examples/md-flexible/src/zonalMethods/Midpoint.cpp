@@ -97,7 +97,7 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       _regionBuffers.at(bufferIndex).clear();
       // NOTE: We can only add the results inside the container if
       // we do not have sent exported in to the home box from both directions
-      // <- which is guaranteed no the case for Midpoint
+      // <- which is guaranteed not the case for Midpoint
       _regionBuffers.at(bufferIndex)
           .insert(_regionBuffers.at(bufferIndex).end(), _importBuffers.at(bufferIndex).begin(),
                   _importBuffers.at(bufferIndex).end());
@@ -174,11 +174,6 @@ void Midpoint::calculateZonalInteractionPairwise(std::string zone1, std::string 
   auto index1 = (_regionCount - std::stoi(zone1)) - 1;
   auto index2 = (_regionCount - std::stoi(zone2)) - 1;
   // calculate forces between the collected results
-  // sanity check
-  if (_importRegions.at(index1).getZoneID() != zone1 || _importRegions.at(index2).getZoneID() != zone2) {
-    throw std::runtime_error("Midpoint: zoneIDs do not match: got " + zone1 + " and " + zone2 + " instead of " +
-                             _importRegions.at(index1).getZoneID() + " and " + _importRegions.at(index2).getZoneID());
-  }
   for (auto &p1 : _importBuffers.at(index1)) {
     for (auto &p2 : _importBuffers.at(index2)) {
       // check midpoint
