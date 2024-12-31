@@ -236,32 +236,31 @@ void Simulation::run() {
 
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-        /* _timers.loadBalancing.start(); */
-        /* _domainDecomposition->update(computationalLoad); */
-        /* auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(), */
-        /*                                                         _domainDecomposition->getLocalBoxMax()); */
-        /* // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in
-         * the */
-        /* // container again. */
-        /* // Reinsert emigrants if they are now inside the domain and mark local copies as dummy, */
-        /* // so that remove_if can erase them after. */
-        /* const auto &boxMin = _autoPasContainer->getBoxMin(); */
-        /* const auto &boxMax = _autoPasContainer->getBoxMax(); */
-        /* _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) { */
-        /*   if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) { */
-        /*     // This only changes the ownership state in the emigrants vector, not in AutoPas */
-        /*     p.setOwnershipState(autopas::OwnershipState::dummy); */
-        /*     return true; */
-        /*   } */
-        /*   return false; */
-        /* }); */
+        _timers.loadBalancing.start();
+        _domainDecomposition->update(computationalLoad);
+        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                _domainDecomposition->getLocalBoxMax());
+        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in
+        //  the
+        // container again.
+        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+        // so that remove_if can erase them after.
+        const auto &boxMin = _autoPasContainer->getBoxMin();
+        const auto &boxMax = _autoPasContainer->getBoxMax();
+        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+            // This only changes the ownership state in the emigrants vector, not in AutoPas
+            p.setOwnershipState(autopas::OwnershipState::dummy);
+            return true;
+          }
+          return false;
+        });
 
-        /* emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy();
-         * }), */
-        /*                 emigrants.end()); */
+        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+                        emigrants.end());
 
-        /* emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end()); */
-        /* _timers.loadBalancing.stop(); */
+        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+        _timers.loadBalancing.stop();
       }
 
       _timers.migratingParticleExchange.start();
@@ -293,8 +292,13 @@ void Simulation::run() {
 
     // NOTE: calculate zonal interactions and them exchange results between ranks
     if (_configuration.zonalMethodOption.value != options::ZonalMethodOption::none) {
+      _timers.calculatingZonalInteractions.start();
       _domainDecomposition->calculateZonalInteractions(*_autoPasContainer, _configuration);
+      _timers.calculatingZonalInteractions.stop();
+
+      _timers.exchangeZonalParticleResults.start();
       _domainDecomposition->exchangeZonalHaloParticlesResults(*_autoPasContainer);
+      _timers.exchangeZonalParticleResults.stop();
     }
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
@@ -616,7 +620,13 @@ void Simulation::logMeasurements() {
   const long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
+  const long zonalInteractions = accumulateTime(_timers.calculatingZonalInteractions.getTotalTime());
+  const long zonalResultExchange = accumulateTime(_timers.exchangeZonalParticleResults.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+
+  const long boundariesTotalTime =
+      haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange + zonalResultExchange;
+  const long forceUpdateTotalTime = forceUpdateTotal + zonalInteractions;
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const long wallClockTime = _timers.total.getTotalTime();
@@ -632,22 +642,25 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
 #endif
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("    Boundaries                    ", haloParticleExchange + migratingParticleExchange,
+    std::cout << timerToString("    Boundaries                    ", boundariesTotalTime,
                                maximumNumberOfDigits, simulate);
     std::cout << timerToString("      HaloParticleExchange        ", haloParticleExchange, maximumNumberOfDigits,
-                               haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
+                               boundariesTotalTime);
     std::cout << timerToString("      ReflectParticlesAtBoundaries", reflectParticlesAtBoundaries,
-                               maximumNumberOfDigits,
-                               haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
+                               maximumNumberOfDigits, boundariesTotalTime);
     std::cout << timerToString("      MigratingParticleExchange   ", migratingParticleExchange, maximumNumberOfDigits,
-                               haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
-    std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotal, maximumNumberOfDigits, simulate);
+                               boundariesTotalTime);
+    std::cout << timerToString("      ZonalResultsExchange        ", zonalResultExchange, maximumNumberOfDigits,
+                               boundariesTotalTime);
+    std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotalTime, maximumNumberOfDigits, simulate);
     std::cout << timerToString("      Tuning                      ", forceUpdateTuning, maximumNumberOfDigits,
-                               forceUpdateTotal);
+                               forceUpdateTotalTime);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
-                               forceUpdateTotal);
+                               forceUpdateTotalTime);
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
-                               forceUpdateTotal);
+                               forceUpdateTotalTime);
+    std::cout << timerToString("      ForceUpdateZonel            ", zonalInteractions, maximumNumberOfDigits,
+                               forceUpdateTotalTime);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
 #if MD_FLEXIBLE_MODE == MULTISITE
     std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits,

@@ -232,6 +232,16 @@ class Simulation {
      * Records the time required for the update of the AutoPas container.
      */
     autopas::utils::Timer updateContainer;
+
+    /**
+     * Records the time required for calculating the zonal interactions.
+     */
+    autopas::utils::Timer calculatingZonalInteractions;
+
+    /**
+     * Records the time required for exchanging zonal particle results.
+     */
+    autopas::utils::Timer exchangeZonalParticleResults;
   };
 
   /**
