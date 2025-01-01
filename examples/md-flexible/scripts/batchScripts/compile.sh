@@ -8,5 +8,5 @@ else
     git pull
 fi
 mkdir -p build && cd build
-cmake .. -DMD_FLEXIBLE_USE_MPI=ON
+cmake .. -DMD_FLEXIBLE_USE_MPI=ON -DCMAKE_BUILD_TYPE=Release
 make md-flexible -j 5
