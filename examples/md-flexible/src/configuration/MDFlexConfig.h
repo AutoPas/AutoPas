@@ -817,7 +817,7 @@ class MDFlexConfig {
    * zonalMethodOption
    */
   MDFlexOption<options::ZonalMethodOption, __LINE__> zonalMethodOption{
-      options::ZonalMethodOption::fullshell, "zonalMethod", true,
+      options::ZonalMethodOption::none, "zonalMethod", true,
       "Method to use for zonal method. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(options::ZonalMethodOption::getAllOptions(), " ", {"(", ")"})};
   /**
