@@ -4,6 +4,7 @@
 
 #include "autopas/AutoPas.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/options/InteractionTypeOption.h"
 #include "src/TypeDefinitions.h"
 #include "src/options/BoundaryTypeOption.h"
 #include "src/zonalMethods/region/RectRegion.h"
@@ -65,10 +66,13 @@ class ZonalMethod {
    * Calculate the interaction between the external zones.
    * This function should be called after recollectResultsFromContainer().
    * @param autoPasContainer
+   * @param particleProperties
+   * @param cutoff
    */
   virtual void calculateExternalZonalInteractions(AutoPasType &autoPasContainer,
                                                   std::shared_ptr<ParticlePropertiesLibraryType> particleProperties,
-                                                  double cutoff);
+                                                  double cutoff,
+                                                  std::set<autopas::InteractionTypeOption> interactionTypes);
 
   /**
    * Recollect the halo particles from the AutoPas container and
@@ -188,4 +192,14 @@ class ZonalMethod {
    */
   virtual void calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                                  std::function<void(ParticleType &, ParticleType &)> aosFunctor) = 0;
+
+  /*
+   * Calculate the zonal triwise interactions of a given zone and a AoS functor
+   * This is method dependant and should be implemented by each respective subclass.
+   * The function is called by calculateExternalZonalInteractions().
+   * @param zone
+   * @param aosFunctor
+   */
+  virtual void calculateZonalInteractionTriwise(
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) = 0;
 };

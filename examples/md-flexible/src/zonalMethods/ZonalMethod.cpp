@@ -38,18 +38,31 @@ ZonalMethod::~ZonalMethod() = default;
 
 void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContainer,
                                                      std::shared_ptr<ParticlePropertiesLibraryType> particleProperties,
-                                                     double cutoff) {
-  using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+                                                     double cutoff,
+                                                     std::set<autopas::InteractionTypeOption> interactionTypes) {
+  if (interactionTypes.find(autopas::InteractionTypeOption::pairwise) != interactionTypes.end()) {
+    using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                                 mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
-  // NOTE: Need to change functor depending on pairwise / triwise
-  auto ljFunc = LJFunctorTypeAVX{cutoff, *particleProperties.get()};
-  auto AoSFunc = [&ljFunc](ParticleType &p1, ParticleType &p2) { return ljFunc.AoSFunctor(p1, p2, false); };
-  for (auto &zone : _interactionZones) {
-    auto schedule = _interactionSchedule.at(zone);
-    for (auto interactZone : schedule) {
-      // interact using functor
-      calculateZonalInteractionPairwise(zone, interactZone, AoSFunc);
+    auto ljFunc = LJFunctorTypeAVX{cutoff, *particleProperties};
+    auto AoSFunc = [&ljFunc](ParticleType &p1, ParticleType &p2) { return ljFunc.AoSFunctor(p1, p2, false); };
+    for (auto &zone : _interactionZones) {
+      auto schedule = _interactionSchedule.at(zone);
+      for (auto interactZone : schedule) {
+        // interact using functor
+        calculateZonalInteractionPairwise(zone, interactZone, AoSFunc);
+      }
+    }
+  }
+  if (interactionTypes.find(autopas::InteractionTypeOption::triwise) != interactionTypes.end()) {
+    using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
+                                                  mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+    auto atFunc = ATFunctor{cutoff, *particleProperties};
+    auto AoSFunct = [&atFunc](ParticleType &p1, ParticleType &p2, ParticleType &p3) {
+      return atFunc.AoSFunctor(p1, p2, p3, false);
+    };
+    for (auto &zone : _interactionZones) {
+      calculateZonalInteractionTriwise(zone, AoSFunct);
     }
   }
 }
