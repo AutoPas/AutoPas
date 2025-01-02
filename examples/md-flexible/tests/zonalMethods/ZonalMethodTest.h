@@ -25,6 +25,8 @@ class ZonalMethodTest : public ZonalMethod, public AutoPasTestBase {
 
   void calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
+  void calculateZonalInteractionTriwise(
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) override;
 
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
 };

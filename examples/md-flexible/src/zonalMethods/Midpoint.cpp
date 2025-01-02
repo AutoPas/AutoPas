@@ -268,6 +268,10 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
   }
 }
 
+void Midpoint::calculateZonalInteractionTriwise(
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {
+  throw std::runtime_error("Midpoint: calculateZonalInteractionTriwise not implemented yet.");
+}
 
 const std::vector<RectRegion> Midpoint::getExportRegions() { return _exportRegions; }
 const std::vector<RectRegion> Midpoint::getImportRegions() { return _importRegions; }

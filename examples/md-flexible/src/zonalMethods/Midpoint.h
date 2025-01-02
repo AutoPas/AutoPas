@@ -2,9 +2,9 @@
 
 #pragma once
 #include "src/options/BoundaryTypeOption.h"
+#include "src/zonalMethods/RectRegionMethodInterface.h"
 #include "src/zonalMethods/ZonalMethod.h"
 #include "src/zonalMethods/region/RectRegion.h"
-#include "src/zonalMethods/RectRegionMethodInterface.h"
 
 /**
  * Class for the Midpoint ZonalMethod.
@@ -112,6 +112,9 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
 
   void calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
+
+  void calculateZonalInteractionTriwise(
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) override;
 
   /**
    * Calculates the _interactionZones and _interactionSchedule

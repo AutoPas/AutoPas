@@ -173,6 +173,9 @@ void HalfShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {
 void HalfShell::calculateZonalInteractionPairwise(std::string zone1, std::string zone2,
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
 
+void HalfShell::calculateZonalInteractionTriwise(
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {}
+
 const std::vector<RectRegion> HalfShell::getExportRegions() { return _exportRegions; }
 
 const std::vector<RectRegion> HalfShell::getImportRegions() { return _importRegions; }
