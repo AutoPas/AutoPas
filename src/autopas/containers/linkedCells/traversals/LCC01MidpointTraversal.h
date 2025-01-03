@@ -7,7 +7,7 @@
 #pragma once
 
 #include "LCTraversalInterface.h"
-#include "autopas/baseFunctors/CellFunctor3B.h"
+#include "autopas/baseFunctors/CellFunctor3BMidpoint.h"
 #include "autopas/baseFunctors/CellFunctorMidpoint.h"
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -150,7 +150,7 @@ class LCC01MidpointTraversal : public C01BasedTraversal<ParticleCell, Functor, (
   using CellFunctorType =
       std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
                          internal::CellFunctorMidpoint<ParticleCell, Functor, /*bidirectional*/ false>,
-                         internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>;
+                         internal::CellFunctor3BMidpoint<ParticleCell, Functor, /*bidirectional*/ false>>;
 
   /**
    * Computes all interactions between the base
@@ -503,13 +503,13 @@ inline void LCC01MidpointTraversal<ParticleCell, Functor, combineSoA>::processBa
     if (baseIndex == otherIndex1 and baseIndex == otherIndex2) {
       this->_cellFunctor.processCell(baseCell);
     } else if (baseIndex == otherIndex1 and baseIndex != otherIndex2) {
-      this->_cellFunctor.processCellPair(baseCell, otherCell2);
+      this->_cellFunctor.processCellPair(baseCell, otherCell2, _boxMin, _boxMax);
     } else if (baseIndex != otherIndex1 and baseIndex == otherIndex2) {
-      this->_cellFunctor.processCellPair(baseCell, otherCell1);
+      this->_cellFunctor.processCellPair(baseCell, otherCell1, _boxMin, _boxMax);
     } else if (baseIndex != otherIndex1 and otherIndex1 == otherIndex2) {
-      this->_cellFunctor.processCellPair(baseCell, otherCell1);
+      this->_cellFunctor.processCellPair(baseCell, otherCell1, _boxMin, _boxMax);
     } else {
-      this->_cellFunctor.processCellTriple(baseCell, otherCell1, otherCell2, r);
+      this->_cellFunctor.processCellTriple(baseCell, otherCell1, otherCell2, _boxMin, _boxMax, r);
     }
   }
 }
