@@ -331,6 +331,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
     }
+    case TraversalOption::lc_c01_midpoint: {
+      return std::make_unique<LCC01MidpointTraversal<ParticleCell, TriwiseFunctor>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, traversalInfo.boxMin, traversalInfo.boxMax);
+    }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
                                                   traversalType.to_string());

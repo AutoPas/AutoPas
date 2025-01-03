@@ -239,7 +239,7 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for triwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential, Value::lc_c01}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential, Value::lc_c01, Value::lc_c01_midpoint}; }
 
   /**
    * Set of all pairwise traversals without discouraged options.
