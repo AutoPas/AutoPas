@@ -259,8 +259,7 @@ class DEMFunctor
     const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                  // 3 FLOPS
 
-    //++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;
-    const std::array<double, 3> tanFUnit = (tanVel / L2Norm(tanVel)) * (-1.);
+    const std::array<double, 3> tanFUnit = (tanVel / (L2Norm(tanVel) + preventDivisionByZero)) * (-1.);
     const std::array<double, 3> tanF = tanFUnit * _dynamicFrictionCoeff * (normalContactFMag);
 
     // Compute total force
@@ -280,9 +279,7 @@ class DEMFunctor
     const std::array<double, 3> rollingRelVel =
         (cross(normalUnit, i.getAngularVel()) - cross(normalUnit, j.getAngularVel())) *
         (-radiusReduced);  // 9 + 9 + 3 + 3 = 24 FLOPS
-
-    ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;
-    const std::array<double, 3> rollingFUnit = (rollingRelVel / L2Norm(rollingRelVel)) * (-1.);
+    const std::array<double, 3> rollingFUnit = (rollingRelVel / (L2Norm(rollingRelVel) + preventDivisionByZero)) * (-1.);
     const std::array<double, 3> rollingF = rollingFUnit * _rollingFrictionCoeff * (normalContactFMag);
 
     const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
@@ -291,8 +288,7 @@ class DEMFunctor
     const std::array<double, 3> torsionRelVel =
         normalUnit * (dot(normalUnit, i.getAngularVel()) - dot(normalUnit, j.getAngularVel())) *
         radiusReduced;  // 5 + 5 + 1 + 1 + 3 = 15 FLOPS
-    ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;
-    const std::array<double, 3> torsionFUnit = (torsionRelVel / L2Norm(torsionRelVel)) * (-1.);
+    const std::array<double, 3> torsionFUnit = (torsionRelVel / (L2Norm(torsionRelVel) + preventDivisionByZero)) * (-1.);
     const std::array<double, 3> torsionF = torsionFUnit * _torsionFrictionCoeff * (normalContactFMag);;
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 = 3 FLOPS
 
@@ -370,8 +366,7 @@ class DEMFunctor
       }
 
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum,                \
-                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum, numInnerIfTanFCallsSum, \
-                               numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
+                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         // Compute necessary values for computations of forces
         const auto ownedStateJ = ownedStatePtr[j];
@@ -453,7 +448,8 @@ class DEMFunctor
         // Compute tangential force
         const SoAFloatPrecision tanFUnitMag = std::sqrt(
             tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY + tanRelVelTotalZ * tanRelVelTotalZ);
-        const SoAFloatPrecision tanFScale = _dynamicFrictionCoeff * (normalContactFMag) / tanFUnitMag;
+        const SoAFloatPrecision tanFScale = _dynamicFrictionCoeff * (normalContactFMag) / (tanFUnitMag + preventDivisionByZero);
+
         SoAFloatPrecision tanFX = -tanRelVelTotalX * tanFScale;
         SoAFloatPrecision tanFY = -tanRelVelTotalY * tanFScale;
         SoAFloatPrecision tanFZ = -tanRelVelTotalZ * tanFScale;
@@ -493,7 +489,7 @@ class DEMFunctor
 
         const SoAFloatPrecision rollingFUnitMag = std::sqrt(
             rollingRelVelX * rollingRelVelX + rollingRelVelY * rollingRelVelY + rollingRelVelZ * rollingRelVelZ);
-        const SoAFloatPrecision rollingFScale = _rollingFrictionCoeff * (normalContactFMag) / rollingFUnitMag;
+        const SoAFloatPrecision rollingFScale = _rollingFrictionCoeff * (normalContactFMag) / (rollingFUnitMag + preventDivisionByZero);
         SoAFloatPrecision rollingFX = -rollingRelVelX * rollingFScale;
         SoAFloatPrecision rollingFY = -rollingRelVelY * rollingFScale;
         SoAFloatPrecision rollingFZ = -rollingRelVelZ * rollingFScale;
@@ -513,7 +509,8 @@ class DEMFunctor
 
         const SoAFloatPrecision torsionFUnitMag = std::sqrt(
             torsionRelVelX * torsionRelVelX + torsionRelVelY * torsionRelVelY + torsionRelVelZ * torsionRelVelZ);
-        const SoAFloatPrecision torsionFScale = _torsionFrictionCoeff * (normalContactFMag) / torsionFUnitMag;
+        const SoAFloatPrecision torsionFScale = _torsionFrictionCoeff * (normalContactFMag) / (torsionFUnitMag + preventDivisionByZero);
+
         SoAFloatPrecision torsionFX = -torsionRelVelX * torsionFScale;
         SoAFloatPrecision torsionFY = -torsionRelVelY * torsionFScale;
         SoAFloatPrecision torsionFZ = -torsionRelVelZ * torsionFScale;
@@ -547,9 +544,6 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
       _aosThreadDataFLOPs[threadnum].numContacts += numContactsSum;
-      _aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls += numInnerIfTanFCallsSum;
-      _aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls += numInnerIfRollingQCallsSum;
-      _aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls += numInnerIfTorsionQCallsSum;
     }
   }
 
@@ -863,8 +857,7 @@ class DEMFunctor
 
       // Loop over Particles in soa2
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum,                \
-                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum, numInnerIfTanFCallsSum, \
-                               numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
+                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
 
@@ -947,7 +940,8 @@ class DEMFunctor
         // Compute tangential force
         const SoAFloatPrecision tanFUnitMag = std::sqrt(
             tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY + tanRelVelTotalZ * tanRelVelTotalZ);
-        const SoAFloatPrecision tanFScale = _dynamicFrictionCoeff * normalContactFMag / tanFUnitMag;
+        const SoAFloatPrecision tanFScale = _dynamicFrictionCoeff * normalContactFMag / (tanFUnitMag + preventDivisionByZero);
+
         SoAFloatPrecision tanFX = -tanRelVelTotalX * tanFScale;
         SoAFloatPrecision tanFY = -tanRelVelTotalY * tanFScale;
         SoAFloatPrecision tanFZ = -tanRelVelTotalZ * tanFScale;
@@ -988,7 +982,8 @@ class DEMFunctor
 
         const SoAFloatPrecision rollingFUnitMag =
             std::sqrt(rollingRelVelX * rollingRelVelX + rollingRelVelY * rollingRelVelY + rollingRelVelZ * rollingRelVelZ);
-        const SoAFloatPrecision rollingFScale = _rollingFrictionCoeff * normalContactFMag / rollingFUnitMag;
+        const SoAFloatPrecision rollingFScale = _rollingFrictionCoeff * normalContactFMag / (rollingFUnitMag + preventDivisionByZero);
+
         SoAFloatPrecision rollingFX = -rollingRelVelX * rollingFScale;
         SoAFloatPrecision rollingFY = -rollingRelVelY * rollingFScale;
         SoAFloatPrecision rollingFZ = -rollingRelVelZ * rollingFScale;
@@ -1008,7 +1003,8 @@ class DEMFunctor
 
         const SoAFloatPrecision torsionFUnitMag =
             std::sqrt(torsionRelVelX * torsionRelVelX + torsionRelVelY * torsionRelVelY + torsionRelVelZ * torsionRelVelZ);
-        const SoAFloatPrecision torsionFScale = _torsionFrictionCoeff * normalContactFMag / torsionFUnitMag;
+        const SoAFloatPrecision torsionFScale = _torsionFrictionCoeff * normalContactFMag / (torsionFUnitMag + preventDivisionByZero);
+
         SoAFloatPrecision torsionFX = -torsionRelVelX * torsionFScale;
         SoAFloatPrecision torsionFY = -torsionRelVelY * torsionFScale;
         SoAFloatPrecision torsionFZ = -torsionRelVelZ * torsionFScale;
@@ -1043,9 +1039,6 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
       _aosThreadDataFLOPs[threadnum].numContacts += numContactsSum;
-      _aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls += numInnerIfTanFCallsSum;
-      _aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls += numInnerIfRollingQCallsSum;
-      _aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls += numInnerIfTorsionQCallsSum;
     }
   }
 
@@ -1177,6 +1170,7 @@ class DEMFunctor
   const double _torsionFrictionCoeff;
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
+  const double preventDivisionByZero = 1e-5;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

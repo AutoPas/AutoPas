@@ -192,7 +192,7 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition, *_configuration.getParticlePropertiesLibrary());
       _timers.vtk.stop();
     }
 
@@ -262,16 +262,16 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
-#if DEM_MODE == ON
+#if DEM_MODE == ON/**
     if (_iteration < rotationalGlobalForceIterationFrom) {
       calculateBackgroundFriction(0.5,
                                   0.75,
                                   *_configuration.getParticlePropertiesLibrary());
     } else {
+    **/
       calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
                                   _configuration.backgroundTorqueFrictionCoeff.value,
                                   *_configuration.getParticlePropertiesLibrary());
-    }
 
 #endif
 
@@ -309,7 +309,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition, *_configuration.getParticlePropertiesLibrary());
   }
 }
 
