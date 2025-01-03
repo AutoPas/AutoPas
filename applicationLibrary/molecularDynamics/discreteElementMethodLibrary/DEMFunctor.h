@@ -224,18 +224,24 @@ class DEMFunctor
     const std::array<double, 3> displacement = i.getR() - j.getR();
     const double dist = autopas::utils::ArrayMath::L2Norm(displacement);
 
+    if (dist > cutoff) return;
+
+    if constexpr (countFLOPs) {
+      ++_aosThreadDataFLOPs[threadnum].numOverlapCalls;
+    }
+
     // Retrieve particle-specific parameters, calculate generally necessary values (2 FlOPS)
     const auto [radiusI, radiusJ] = retrieveRadii(i, j);
     const double overlap = radiusI + radiusJ - dist;
     const bool overlapIsPositive = overlap > 0;
 
-    if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numContacts += (overlapIsPositive ? 1 : 0);
-      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += (overlapIsPositive and newton3 ? 1 : 0);
-      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (overlapIsPositive and not newton3 ? 1 : 0);
-    }
+    if (not overlapIsPositive) return;  // VdW deactivated
 
-    if (dist > cutoff || overlap <= 0) return;  // VdW deactivated
+    if constexpr (countFLOPs) {
+      ++_aosThreadDataFLOPs[threadnum].numContacts;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += (newton3 ? 1 : 0);
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (not newton3 ? 1 : 0);
+    }
 
     // (3 + 2 + 2 + 3 + 3 + 5 = 18 FLOPS)
     assert(dist != 0. && "Distance is zero, division by zero detected!");
@@ -287,9 +293,9 @@ class DEMFunctor
     const std::array<double, 3> torsionRelVel = normalUnit * dot(normalUnit, (i.getAngularVel() - j.getAngularVel())) *
                                                 radiusReduced;  // 1 + 3 + 5 + 2 = 11 FLOPS
     const std::array<double, 3> torsionFUnit =
-        (torsionRelVel / ((L2Norm(torsionRelVel) + preventDivisionByZero) * (-1.))); // 10 FLOPS
-    const std::array<double, 3> torsionF = torsionFUnit * (_torsionFrictionCoeff * normalContactFMag); // 4 FLOPS;
-    const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
+        (torsionRelVel / ((L2Norm(torsionRelVel) + preventDivisionByZero) * (-1.)));                    // 10 FLOPS
+    const std::array<double, 3> torsionF = torsionFUnit * (_torsionFrictionCoeff * normalContactFMag);  // 4 FLOPS;
+    const std::array<double, 3> torsionQI = torsionF * radiusReduced;                                   // 3 FLOPS
 
     // Apply torques (if newton3: 19 FLOPS, if not: 9 FLOPS)
     i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
@@ -336,6 +342,7 @@ class DEMFunctor
 
     // Count FLOPS variables
     size_t numDistanceCalculationSum = 0;
+    size_t numOverlapCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
     size_t numContactsSum = 0;
@@ -362,7 +369,7 @@ class DEMFunctor
       }
 
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum, \
-                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum)
+                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         // Compute necessary values for computations of forces
         const auto ownedStateJ = ownedStatePtr[j];
@@ -386,8 +393,9 @@ class DEMFunctor
         const bool overlapIsPositive = overlap > 0;
 
         if constexpr (countFLOPs) {
-          numContactsSum += overlapIsPositive ? 1 : 0;
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+          numOverlapCalculationSum += (cutOffMask and not overlapIsPositive ? 1 : 0);
+          numContactsSum += overlapIsPositive ? 1 : 0;
           numKernelCallsN3Sum += (cutOffMask and overlapIsPositive ? 1 : 0);
         }
 
@@ -706,15 +714,17 @@ class DEMFunctor
   [[nodiscard]] size_t getNumFLOPs() const override {
     /**
      * FLOP count:
-     * DistCall: 11
-     * KernelNoN3: 24 (NormalF) + 48 (TanF) + 6 (ApplyF) + 12 (FrictionQ) + 45 (RollingQ) + 27 (TorsionQ) + 9 (ApplyQ) =
-     * 171 KernelN3: KernelNoN3 + 3 (ApplyF) + 10 (ApplyQ) = 184 InnerIfTanFCall: 9 InnerIfRollingQCall: 9
-     * InnerIfTorsionQCall: 9
+     * Common: 18 + 6 + 50 + 3 + 12 + 41 + 28 = 158;
+     * KernelNoN3: Common + 3 + 9 = 170;
+     * 171 KernelN3: Common + 6 + 19 = 183;
      */
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numOverlapCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numOverlapCalls; });
       const size_t numKernelCallsN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
@@ -722,28 +732,13 @@ class DEMFunctor
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
-      // Inner-If calls
-      const size_t numInnerIfTanFCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numInnerIfTanFCalls; });
-      const size_t numInnerIfRollingQCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numInnerIfRollingQCalls; });
-      const size_t numInnerIfTorsionQCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numInnerIfTorsionQCalls; });
+      constexpr size_t numFLOPsPerDistanceCall = 9;
+      constexpr size_t numFLOPsPerOverlapCall = 2;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 170;
+      constexpr size_t numFLOPsPerN3KernelCall = 183;
 
-      constexpr size_t numFLOPsPerDistanceCall = 11;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 171;
-      constexpr size_t numFLOPsPerN3KernelCall = 184;
-      constexpr size_t numFLOPsPerInnerIfTanFCall = 9;
-      constexpr size_t numFLOPsPerInnerIfRollingQCall = 9;
-      constexpr size_t numFLOPsPerInnerIfTorsionQCall = 9;
-
-      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
-             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numInnerIfTanFCallsAcc * numFLOPsPerInnerIfTanFCall +
-             numInnerIfRollingQCallsAcc * numFLOPsPerInnerIfRollingQCall +
-             numInnerIfTorsionQCallsAcc * numFLOPsPerInnerIfTorsionQCall;
+      return numDistCallsAcc * numFLOPsPerDistanceCall + numOverlapCallsAcc * numFLOPsPerOverlapCall +
+             numKernelCallsN3Acc * numFLOPsPerN3KernelCall + numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall;
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();
@@ -829,6 +824,7 @@ class DEMFunctor
 
     // Variables for counting FLOPS
     size_t numDistanceCalculationSum = 0;
+    size_t numOverlapCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
     size_t numContactsSum = 0;
@@ -853,7 +849,7 @@ class DEMFunctor
 
       // Loop over Particles in soa2
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum, \
-                               numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum)
+                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
 
@@ -876,6 +872,7 @@ class DEMFunctor
         if constexpr (countFLOPs) {
           numContactsSum += overlapIsPositive ? 1 : 0;
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+          numOverlapCalculationSum += (cutOffMask and not overlapIsPositive ? 1 : 0);
           if constexpr (newton3) {
             numKernelCallsN3Sum += (cutOffMask and overlapIsPositive ? 1 : 0);
           } else {
@@ -1087,11 +1084,11 @@ class DEMFunctor
       numKernelCallsNoN3 = 0;
       numKernelCallsN3 = 0;
       numDistCalls = 0;
-      numInnerIfTanFCalls = 0;
-      numInnerIfRollingQCalls = 0;
-      numInnerIfTorsionQCalls = 0;
-      // numGlobalCalcsNoN3 = 0;
-      // numGlobalCalcsN3 = 0;
+      numOverlapCalls = 0;
+      // numInnerIfRollingQCalls = 0;
+      // numInnerIfTorsionQCalls = 0;
+      //  numGlobalCalcsNoN3 = 0;
+      //  numGlobalCalcsN3 = 0;
     }
 
     /**
@@ -1118,9 +1115,9 @@ class DEMFunctor
     size_t numDistCalls = 0;
 
     /**
-     * Number of inner if tanF calls.
+     * Number of Overlap calls.
      */
-    size_t numInnerIfTanFCalls = 0;
+    size_t numOverlapCalls = 0;
 
     /**
      * Number of inner if rollingQ calls.
@@ -1248,7 +1245,7 @@ class DEMFunctor
     const double tanFMag = autopas::utils::ArrayMath::L2Norm(tanF);     // 6 FLOPS
     if (tanFMag > coulombLimit) {
       // 3 + 3 + 3 = 9 FLOPS
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;
+      //++_aosThreadDataFLOPs[threadnum].numOverlapCalls;
       const std::array<double, 3> tanFUnit = tanF / tanFMag;
       const double scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
       return tanFUnit * scale;
