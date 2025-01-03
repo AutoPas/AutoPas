@@ -111,7 +111,7 @@ class DEMFunctor
    * @param cutoff
    */
   explicit DEMFunctor(double cutoff)
-      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 25, 25, nullptr) {
+      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 5, 5, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -127,7 +127,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 25, 25, nullptr) {
+      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 5, 5, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -264,16 +264,16 @@ class DEMFunctor
 
     // 3 + 3 + 3 = 9 FLOPS
     ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;
-    const std::array<double, 3> tanFUnit = ((tanVel) / (L2Norm(tanVel) + 1e-5) * (-1.));
+    const std::array<double, 3> tanFUnit = ((tanVel) / (L2Norm(tanVel) + 1e-5)) * (-1.);
     const std::array<double, 3> tanF = tanFUnit * (_dynamicFrictionCoeff * normalContactFMag);
 
     // Compute total force
-    const std::array<double, 3> totalF = tanF;  // 3 FLOPS
+    const std::array<double, 3> totalF = {0,0,0};  // 3 FLOPS
 
     // Apply forces
-    i.addF(totalF);  // 3 FLOPS
+    //i.addF(totalF);  // 3 FLOPS
     if (newton3) {
-      j.subF(totalF);  // 3 FLOPS
+      //j.subF(totalF);  // 3 FLOPS
     }
 
     // Compute Torques
@@ -284,38 +284,24 @@ class DEMFunctor
     const std::array<double, 3> rollingRelVel =
         (cross(normalUnit, i.getAngularVel()) - cross(normalUnit, j.getAngularVel())) *
         (-radiusReduced);                                                   // 9 + 9 + 3 + 3 = 24 FLOPS
-    std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);  // 3 FLOPS
-    const double rollingFMag = L2Norm(rollingF);                            // 6 FLOPS
-
-    if (rollingFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;
-      const std::array<double, 3> rollingFUnit = rollingF / rollingFMag;
-      const double scale = _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
-      rollingF = rollingFUnit * scale;
-    }
+    const std::array<double, 3> rollingFUnit = (rollingRelVel / (L2Norm(rollingRelVel) + 1e-5)) * (-1.);
+    const std::array<double, 3> rollingF = rollingFUnit * _rollingFrictionCoeff * (normalContactFMag);
     const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
 
     // Compute torsional torque
     const std::array<double, 3> torsionRelVel =
         normalUnit * (dot(normalUnit, i.getAngularVel()) - dot(normalUnit, j.getAngularVel())) *
         radiusReduced;                                                      // 5 + 5 + 1 + 1 + 3 = 15 FLOPS
-    std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
-    const double torsionFMag = L2Norm(torsionF);                            // 6 FLOPS
-
-    if (torsionFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;
-      const std::array<double, 3> torsionFUnit = torsionF / torsionFMag;
-      const double scale = _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
-      torsionF = torsionFUnit * scale;
-    }
+    std::array<double, 3> torsionFUnit = (torsionRelVel / (L2Norm(torsionRelVel) + 1e-5)) * (-1.);  // 3 FLOPS// 6 FLOPS
+    const std::array<double, 3> torsionF = torsionFUnit * _torsionFrictionCoeff * (normalContactFMag);
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 = 3 FLOPS
 
     // Apply torques
     // i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
-     i.addTorque(frictionQI);
+     //i.addTorque(torsionQI);
     if (newton3) {
       //   j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
-      j.addTorque(frictionQI * (radiusJReduced / radiusIReduced));
+      //j.addTorque(torsionQI * (-1.));
     }
   }
 

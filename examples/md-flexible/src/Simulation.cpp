@@ -196,7 +196,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % 5 == 0) {  // TODO: to change
+    if (_calculateStatistics and _iteration % 1 == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
@@ -263,8 +263,8 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
-#if DEM_MODE == ON/**
-    if (_iteration < rotationalGlobalForceIterationFrom) {
+#if DEM_MODE == ON
+    if (false) {
       calculateBackgroundFriction(0.5,
                                   0.75,
                                   *_configuration.getParticlePropertiesLibrary());
@@ -273,7 +273,7 @@ void Simulation::run() {
                                   _configuration.backgroundTorqueFrictionCoeff.value,
                                   *_configuration.getParticlePropertiesLibrary());
     }
-**/
+
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
@@ -286,7 +286,7 @@ void Simulation::run() {
 #if MD_FLEXIBLE_MODE == MULTISITE || defined(MD_FLEXIBLE_FUNCTOR_DEM)
       updateAngularVelocities();
 #endif
-      updateThermostat();
+      //updateThermostat();
     }
     _timers.computationalLoad.stop();
 
