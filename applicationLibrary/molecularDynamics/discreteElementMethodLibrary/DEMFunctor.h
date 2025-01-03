@@ -57,16 +57,16 @@ class DEMFunctor
    * Internal, actual constructor.
    * @param cutoff
    * @param elasticStiffness
-   * @param adhesiveStiffness
-   * @param frictionStiffness
+   * @param adhesiveStiffness (not used)
+   * @param frictionStiffness (not used)
    * @param normalViscosity
-   * @param frictionViscosity
-   * @param rollingViscosity
-   * @param torsionViscosity
-   * @param staticFrictionCoeff
+   * @param frictionViscosity (not used)
+   * @param rollingViscosity (not used)
+   * @param torsionViscosity (not used)
+   * @param staticFrictionCoeff (not used)
    * @param dynamicFrictionCoeff
    * @param rollingFrictionCoeff
-   * @param torsionFrictionCo
+   * @param torsionFrictionCoeff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
