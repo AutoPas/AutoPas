@@ -109,8 +109,7 @@ class DEMFunctor
    *
    * @param cutoff
    */
-  explicit DEMFunctor(double cutoff)
-      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 125, 25, 25, nullptr) {
+  explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 5, 5, 5, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -126,7 +125,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 125, 25, 25, nullptr) {
+      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 5, 5, 5, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -282,7 +281,7 @@ class DEMFunctor
     const std::array<double, 3> frictionQI = cross(normalUnit * (-radiusIReduced), tanF);  // 3 + 9 = 12 FLOPS
 
     // Compute rolling torque (15 + 10 + 4 + 12 = 41 FLOPS)
-    const std::array<double, 3> rollingRelVel = rollingRelVel =
+    const std::array<double, 3> rollingRelVel =
         cross(normalUnit, (i.getAngularVel() - j.getAngularVel())) * (-radiusReduced);  // 15 FLOPS
     const std::array<double, 3> rollingFUnit =
         (rollingRelVel / ((L2Norm(rollingRelVel) + preventDivisionByZero) * (-1.)));                    // 10 FLOPS
@@ -562,6 +561,24 @@ class DEMFunctor
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
       SoAFunctorPairImpl<false>(soa1, soa2);
+    }
+  }
+
+  // clang-format off
+  /**
+   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @note If you want to parallelize this by openmp, please ensure that there
+   * are no dependencies, i.e. introduce colors!
+   */
+  // clang-format on
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) final {
+    if (soa.size() == 0 or neighborList.empty()) return;
+    if (newton3) {
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+    } else {
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -1041,7 +1058,168 @@ class DEMFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    autopas::utils::ExceptionHandler::exception("DEMFunctor::SoAFunctorVerletImpl() is not implemented.");
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const auto *const __restrict vxptr = soa.template begin<Particle::AttributeNames::velocityX>();
+    const auto *const __restrict vyptr = soa.template begin<Particle::AttributeNames::velocityY>();
+    const auto *const __restrict vzptr = soa.template begin<Particle::AttributeNames::velocityZ>();
+
+    const auto *const __restrict wxptr = soa.template begin<Particle::AttributeNames::angularVelX>();
+    const auto *const __restrict wyptr = soa.template begin<Particle::AttributeNames::angularVelY>();
+    const auto *const __restrict wzptr = soa.template begin<Particle::AttributeNames::angularVelZ>();
+
+    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    auto *const __restrict qxptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    auto *const __restrict qyptr = soa.template begin<Particle::AttributeNames::torqueY>();
+    auto *const __restrict qzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
+    auto *const __restrict typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
+
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // countFLOPs counters
+    size_t numDistanceCalculationSum = 0;
+    size_t numOverlapCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numContactsSum = 0;
+
+    SoAFloatPrecision fxacc = 0;
+    SoAFloatPrecision fyacc = 0;
+    SoAFloatPrecision fzacc = 0;
+
+    SoAFloatPrecision qxacc = 0;
+    SoAFloatPrecision qyacc = 0;
+    SoAFloatPrecision qzacc = 0;
+
+    const size_t neighborListSize = neighborList.size();
+    const size_t *const __restrict neighborListPtr = neighborList.data();
+
+    // checks whether particle i is owned.
+    const auto ownedStateI = ownedStatePtr[indexFirst];
+    if (ownedStateI == autopas::OwnershipState::dummy) {
+      return;
+    }
+
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    constexpr size_t vecsize = 12;  // hyper-parameter
+
+    size_t joff = 0;
+
+    // if the size of the verlet list is larger than the given size vecsize,
+    // we will use a vectorized version.
+    if (neighborListSize >= vecsize) {
+      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, vxtmp, vytmp, vztmp, wxtmp, wytmp, wztmp,
+          xArr, yArr, zArr, vxArr, vyArr, vzArr, wxArr, wyArr, wzArr, fxArr, fyArr, fzArr, qxArr, qyArr, qzArr;
+      alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
+
+      // broadcast of the values of particle i
+      for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+        xtmp[tmpj] = xptr[indexFirst];
+        ytmp[tmpj] = yptr[indexFirst];
+        ztmp[tmpj] = zptr[indexFirst];
+
+        vxtmp[tmpj] = vxptr[indexFirst];
+        vytmp[tmpj] = vyptr[indexFirst];
+        vztmp[tmpj] = vzptr[indexFirst];
+
+        wxtmp[tmpj] = wxptr[indexFirst];
+        wytmp[tmpj] = wyptr[indexFirst];
+        wztmp[tmpj] = wzptr[indexFirst];
+      }
+
+      // loop over the verlet list from 0 to x*vecsize
+      for (; joff < neighborListSize - vecsize + 1; joff += vecsize) {
+        // in each iteration we calculate the interactions of particle i with
+        // vecsize particles in the neighborlist of particle i starting at
+        // particle joff
+
+        // gather values of particle j
+#pragma omp simd safelen(vecsize)
+        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+          xArr[tmpj] = xptr[neighborListPtr[joff + tmpj]];
+          yArr[tmpj] = yptr[neighborListPtr[joff + tmpj]];
+          zArr[tmpj] = zptr[neighborListPtr[joff + tmpj]];
+
+          vxArr[tmpj] = vxptr[neighborListPtr[joff + tmpj]];
+          vyArr[tmpj] = vyptr[neighborListPtr[joff + tmpj]];
+          vzArr[tmpj] = vzptr[neighborListPtr[joff + tmpj]];
+
+          wxArr[tmpj] = wxptr[neighborListPtr[joff + tmpj]];
+          wyArr[tmpj] = wyptr[neighborListPtr[joff + tmpj]];
+          wzArr[tmpj] = wzptr[neighborListPtr[joff + tmpj]];
+
+          ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
+        }
+
+        // do omp simd with reduction of the interaction
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qxacc, qyacc, qzacc, numDistanceCalculationSum,                  \
+                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum) \
+    safelen(vecsize)
+        for (size_t j = 0; j < vecsize; j++) {
+
+          // Do the interaction here.
+
+          if (newton3) {
+          }
+
+          if constexpr (countFLOPs) {
+            if constexpr (newton3) {
+            } else {
+            }
+          }
+
+        } // end of j loop
+
+        // scatter the forces to where they belong, this is only needed for newton3
+        if (newton3) {
+#pragma omp simd safelen(vecsize)
+          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+            const size_t j = neighborListPtr[joff + tmpj];
+            fxptr[j] -= fxArr[tmpj];
+            fyptr[j] -= fyArr[tmpj];
+            fzptr[j] -= fzArr[tmpj];
+
+            // Caution: plus!
+            qxptr[j] += qxArr[tmpj];
+            qyptr[j] += qyArr[tmpj];
+            qzptr[j] += qzArr[tmpj];
+          }
+        }
+
+      } // end of joff loop
+    } // end of vectorized part
+
+    // loop over the remaining particles in the verlet list (without optimization)
+    for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
+      size_t j = neighborList[jNeighIndex];
+      if (indexFirst == j) continue;
+
+      const auto ownedStateJ = ownedStatePtr[j];
+      if (ownedStateJ == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+
+    } // end of jNeighIndex loop
+
+    if (fxacc != 0 or fyacc != 0 or fzacc != 0) {
+      fxptr[indexFirst] += fxacc;
+      fyptr[indexFirst] += fyacc;
+      fzptr[indexFirst] += fzacc;
+
+      qxptr[indexFirst] += qxacc;
+      qyptr[indexFirst] += qyacc;
+      qzptr[indexFirst] += qzacc;
+    }
+
   }
 
   /**
