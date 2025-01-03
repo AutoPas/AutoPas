@@ -339,9 +339,6 @@ class DEMFunctor
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
     size_t numContactsSum = 0;
-    size_t numInnerIfTanFCallsSum = 0;
-    size_t numInnerIfRollingQCallsSum = 0;
-    size_t numInnerIfTorsionQCallsSum = 0;
 
     // Loop over Particles
     for (unsigned int i = 0; i < soa.size(); i++) {
@@ -835,9 +832,6 @@ class DEMFunctor
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
     size_t numContactsSum = 0;
-    size_t numInnerIfTanFCallsSum = 0;
-    size_t numInnerIfRollingQCallsSum = 0;
-    size_t numInnerIfTorsionQCallsSum = 0;
 
     // Loop over Particles in soa1
     for (unsigned int i = 0; i < soa1.size(); ++i) {
