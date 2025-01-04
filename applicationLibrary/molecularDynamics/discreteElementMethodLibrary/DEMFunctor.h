@@ -361,11 +361,7 @@ class DEMFunctor
       SoAFloatPrecision qYacc = 0.;
       SoAFloatPrecision qZacc = 0.;
 
-      double radiusI = constRadius;
-
-      if constexpr (useMixing) {
-        radiusI = _PPLibrary->getRadius(typeptr[i]);
-      }
+      const double radiusI = _PPLibrary->getRadius(typeptr[i]);
 
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum, \
                                numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum)
@@ -377,11 +373,7 @@ class DEMFunctor
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
         const SoAFloatPrecision drz = zptr[i] - zptr[j];
 
-        double radiusJ = constRadius;
-
-        if (useMixing) {
-          radiusJ = _PPLibrary->getRadius(typeptr[j]);
-        }
+        const double radiusJ = _PPLibrary->getRadius(typeptr[j]);
 
         const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
         const SoAFloatPrecision dist = std::sqrt(distSquared);
@@ -433,7 +425,7 @@ class DEMFunctor
 
         const SoAFloatPrecision tanRelVelX = relVelX + relVelAngularIX + relVelAngularJX;
         const SoAFloatPrecision tanRelVelY = relVelY + relVelAngularIY + relVelAngularJY;
-        const SoAFloatPrecision tanRelVelZ = relVelY + relVelAngularIZ + relVelAngularJZ;
+        const SoAFloatPrecision tanRelVelZ = relVelZ + relVelAngularIZ + relVelAngularJZ;
 
         const SoAFloatPrecision tanRelVelTotalX = tanRelVelX - relVelDotNormalUnit * normalUnitX;
         const SoAFloatPrecision tanRelVelTotalY = tanRelVelY - relVelDotNormalUnit * normalUnitY;
@@ -1232,7 +1224,7 @@ class DEMFunctor
 
           const SoAFloatPrecision tanRelVelX = relVelX + relVelAngularIX + relVelAngularJX;
           const SoAFloatPrecision tanRelVelY = relVelY + relVelAngularIY + relVelAngularJY;
-          const SoAFloatPrecision tanRelVelZ = relVelY + relVelAngularIZ + relVelAngularJZ;
+          const SoAFloatPrecision tanRelVelZ = relVelZ + relVelAngularIZ + relVelAngularJZ;
 
           const SoAFloatPrecision tanRelVelTotalX = tanRelVelX - relVelDotNormalUnit * normalUnitX;
           const SoAFloatPrecision tanRelVelTotalY = tanRelVelY - relVelDotNormalUnit * normalUnitY;
@@ -1428,7 +1420,7 @@ class DEMFunctor
 
       const SoAFloatPrecision tanRelVelX = relVelX + relVelAngularIX + relVelAngularJX;
       const SoAFloatPrecision tanRelVelY = relVelY + relVelAngularIY + relVelAngularJY;
-      const SoAFloatPrecision tanRelVelZ = relVelY + relVelAngularIZ + relVelAngularJZ;
+      const SoAFloatPrecision tanRelVelZ = relVelZ + relVelAngularIZ + relVelAngularJZ;
 
       const SoAFloatPrecision tanRelVelTotalX = tanRelVelX - relVelDotNormalUnit * normalUnitX;
       const SoAFloatPrecision tanRelVelTotalY = tanRelVelY - relVelDotNormalUnit * normalUnitY;
@@ -1538,11 +1530,10 @@ class DEMFunctor
     }
 
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numDistanceCalculationSum += numDistanceCalculationSum;
-      _aosThreadDataFLOPs[threadnum].numOverlapCalculationSum += numOverlapCalculationSum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsN3Sum += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3Sum += numKernelCallsNoN3Sum;
-      _aosThreadDataFLOPs[threadnum].numContactsSum += numContactsSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numContacts += numContactsSum;
     }
   }
 

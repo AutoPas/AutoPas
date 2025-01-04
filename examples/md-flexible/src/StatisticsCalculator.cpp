@@ -22,8 +22,10 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   };
    **/
   const std::vector<std::string> columnNames = {
-      "Iteration", "OverlapSum", "DistSum", "ForceMagSum"
-  };
+      "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
+      "TorqueJX",  "TorqueJY",   "TorqueJZ",   "AngularVelJX", "AngularVelJY", "AngularVelJZ", "ForceIX",
+      "ForceIY",   "ForceIZ",    "VelocityIX", "VelocityIY",   "VelocityIZ",   "ForceJX",      "ForceJY",
+      "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ", "Overlap", "DistanceBetweenCenters", "NotNeeded"};
   generateOutputFile(columnNames);
 }
 
@@ -32,10 +34,84 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
 
   //const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib); TODO: change
-  const auto statistics = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
-  StatisticsCalculator::writeRow(currentIteration, statistics);
+  const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
+  const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
+  const auto statisticsIForceVel = calculateForceAndVelocity(autoPasContainer, 1L);
+  const auto statisticsJForceVel = calculateForceAndVelocity(autoPasContainer, 0L);
+  const auto statisticsDistanceOverlap = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
+
+  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel, statisticsDistanceOverlap);
+  StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 
 }
+
+std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateTorquesAndAngularVel(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId) {
+  double torqueIX = 0.;
+  double torqueIY = 0.;
+  double torqueIZ = 0.;
+  // double torqueJX = 0.;
+  // double torqueJY = 0.;
+  // double torqueJZ = 0.;
+
+  double angularVelIX = 0.;
+  double angularVelIY = 0.;
+  double angularVelIZ = 0.;
+  // double angularVelJX = 0.;
+  // double angularVelJY = 0.;
+  // double angularVelJZ = 0.;
+
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() == typeId) {  // particle i
+      auto torqueI = particle->getTorque();
+      torqueIX = torqueI[0];
+      torqueIY = torqueI[1];
+      torqueIZ = torqueI[2];
+      auto angularVelI = particle->getAngularVel();
+      angularVelIX = angularVelI[0];
+      angularVelIY = angularVelI[1];
+      angularVelIZ = angularVelI[2];
+    }
+    //} else {  // particle j
+    //  auto torqueJ = particle->getTorque();
+    //  torqueJX = torqueJ[0];
+    //  torqueJY = torqueJ[1];
+    //  torqueJZ = torqueJ[2];
+    //  auto angularVelJ = particle->getAngularVel();
+    //  angularVelJX = angularVelJ[0];
+    //  angularVelJY = angularVelJ[1];
+    //  angularVelJZ = angularVelJ[2];
+    //}
+  }
+
+  return std::make_tuple(torqueIX, torqueIY, torqueIZ, angularVelIX, angularVelIY, angularVelIZ);
+}
+
+std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateForceAndVelocity(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId) {
+  double forceX = 0.;
+  double forceY = 0.;
+  double forceZ = 0.;
+  double velocityX = 0.;
+  double velocityY = 0.;
+  double velocityZ = 0.;
+
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() == typeId) {  // particle i
+      auto force = particle->getF();
+      forceX = force[0];
+      forceY = force[1];
+      forceZ = force[2];
+      auto velocity = particle->getV();
+      velocityX = velocity[0];
+      velocityY = velocity[1];
+      velocityZ = velocity[2];
+    }
+  }
+  return std::make_tuple(forceX, forceY, forceZ, velocityX, velocityY, velocityZ);
+}
+
+
 
 std::tuple<double, double, double, double, double, double, double> StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
