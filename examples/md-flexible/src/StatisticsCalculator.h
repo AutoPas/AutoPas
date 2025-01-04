@@ -71,6 +71,13 @@ class StatisticsCalculator {
       const autopas::AutoPas<ParticleType> &autoPasContainer,
       const ParticlePropertiesLibraryType &particlePropertiesLib);
 
+  static std::tuple<double, double, double, double, double, double>
+  calculateTorquesAndAngularVel(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
+
+  static std::tuple<double, double, double, double, double, double>
+  calculateForceAndVelocity(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
+
+
   /**
    * Calculates statistics for the stress-strain-simulation
    * @return

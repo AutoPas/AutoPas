@@ -204,7 +204,7 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition, *_configuration.getParticlePropertiesLibrary());
       _timers.vtk.stop();
     }
 
@@ -227,7 +227,7 @@ void Simulation::run() {
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
-
+      resetTorques();
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
@@ -347,7 +347,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition, *_configuration.getParticlePropertiesLibrary());
   }
 }
 
@@ -465,6 +465,13 @@ void Simulation::updateQuaternions() {
       _configuration.globalForce.value);
   _timers.quaternionUpdate.stop();
 }
+
+void Simulation::resetTorques() {
+  _timers.quaternionUpdate.start();
+  TimeDiscretization::resetTorques(*_autoPasContainer);
+  _timers.quaternionUpdate.stop();
+}
+
 
 void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();

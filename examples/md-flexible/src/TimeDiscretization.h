@@ -36,6 +36,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
                                       const double &deltaT, const std::array<double, 3> &globalForce,
                                       bool fastParticlesThrow);
 
+void resetTorques(autopas::AutoPas<ParticleType> &autoPasContainer);
+
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
  * Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods (https://doi.org/10.1103/PhysRevE.81.056706)
