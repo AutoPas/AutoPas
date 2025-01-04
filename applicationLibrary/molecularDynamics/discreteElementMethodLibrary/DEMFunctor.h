@@ -1070,8 +1070,7 @@ class DEMFunctor
     auto *const __restrict qyptr = soa.template begin<Particle::AttributeNames::torqueY>();
     auto *const __restrict qzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 
-    auto *const __restrict typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
-    auto *const __restrict typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
@@ -1106,13 +1105,13 @@ class DEMFunctor
     size_t joff = 0;
 
     // retrieve the radius of particle i
-    SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr1[indexFirst]);
+    SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr[indexFirst]);
 
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
-      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, vxtmp, vytmp, vztmp, wxtmp, wytmp, wztmp,
-          xArr, yArr, zArr, vxArr, vyArr, vzArr, wxArr, wyArr, wzArr, fxArr, fyArr, fzArr, qxArr, qyArr, qzArr;
+      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, vxtmp, vytmp, vztmp, wxtmp, wytmp, wztmp, rtmp,
+          xArr, yArr, zArr, vxArr, vyArr, vzArr, wxArr, wyArr, wzArr, fxArr{0}, fyArr{0}, fzArr{0}, qxArr{0}, qyArr{0}, qzArr{0}, rArr;
       alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
 
       // broadcast of the values of particle i
@@ -1128,6 +1127,8 @@ class DEMFunctor
         wxtmp[tmpj] = wxptr[indexFirst];
         wytmp[tmpj] = wyptr[indexFirst];
         wztmp[tmpj] = wzptr[indexFirst];
+
+        rtmp[tmpj] = radiusI;
       }
 
       // loop over the verlet list from 0 to x*vecsize
@@ -1151,13 +1152,9 @@ class DEMFunctor
           wyArr[tmpj] = wyptr[neighborListPtr[joff + tmpj]];
           wzArr[tmpj] = wzptr[neighborListPtr[joff + tmpj]];
 
-          ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
-        }
+          rArr[tmpj] = _PPLibrary->getRadius(typeptr[neighborListPtr[joff + tmpj]]);
 
-        // retrieve radii of joff to joff+vecsize
-        alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> radiusJArr;
-        for (size_t j = 0; j < vecsize; j++) {
-          radiusJArr[j] = _PPLibrary->getRadius(typeptr2[neighborListPtr[joff + j]]);
+          ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
 
         // do omp simd with reduction of the interaction
@@ -1165,7 +1162,7 @@ class DEMFunctor
                                numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum) \
     safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
-          // main - calculation ------------------------------
+          // --------------------------------- main - calculation ------------------------------
           const auto ownedStateJ = ownedStateArr[j];
 
           const SoAFloatPrecision drx = xtmp[j] - xArr[j];
@@ -1178,7 +1175,7 @@ class DEMFunctor
 
           const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
           const SoAFloatPrecision dist = std::sqrt(dr2);
-          SoAFloatPrecision overlap = (radiusI + radiusJArr[j]) - dist;
+          const SoAFloatPrecision overlap = (rtmp[j] + rArr[j]) - dist;
 
           // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
           const bool cutOffMask = dist <= _cutoff and ownedStateJ != autopas::OwnershipState::dummy;
@@ -1204,8 +1201,8 @@ class DEMFunctor
           const SoAFloatPrecision normalUnitY = dry * invDist;
           const SoAFloatPrecision normalUnitZ = drz * invDist;
 
-          const SoAFloatPrecision radiusIReduced = radiusI - overlap / 2.;
-          const SoAFloatPrecision radiusJReduced = radiusJArr[j] - overlap / 2.;
+          const SoAFloatPrecision radiusIReduced = rtmp[j] - overlap / 2.;
+          const SoAFloatPrecision radiusJReduced = rArr[j] - overlap / 2.;
 
           const SoAFloatPrecision relVelX = vxtmp[j] - vxArr[j];
           const SoAFloatPrecision relVelY = vytmp[j] - vyArr[j];
@@ -1260,9 +1257,9 @@ class DEMFunctor
           fyacc += totalFY;
           fzacc += totalFZ;
           if (newton3) {  // Only assignments here, as they will be subtracted later
-            fxArr[j] = totalFX;
-            fyArr[j] = totalFY;
-            fzArr[j] = totalFZ;
+            fxArr[j] += totalFX;
+            fyArr[j] += totalFY;
+            fzArr[j] += totalFZ;
           }
 
           // Compute torques
@@ -1318,9 +1315,9 @@ class DEMFunctor
           qyacc += (frictionQIY + rollingQIY + torsionQIY);
           qzacc += (frictionQIZ + rollingQIZ + torsionQIZ);
           if (newton3) {
-            qxArr[j] = (radiusJReduced / radiusIReduced) * frictionQIX - rollingQIX - torsionQIX;
-            qyArr[j] = (radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY;
-            qzArr[j] = (radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ;
+            qxArr[j] += (radiusJReduced / radiusIReduced) * frictionQIX - rollingQIX - torsionQIX;
+            qyArr[j] += (radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY;
+            qzArr[j] += (radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ;
           }
         }  // end of j loop
 
@@ -1371,7 +1368,7 @@ class DEMFunctor
         continue;
       }
 
-      const SoAFloatPrecision radiusJ = _PPLibrary->getRadius(typeptr2[j]);
+      const SoAFloatPrecision radiusJ = _PPLibrary->getRadius(typeptr[j]);
       SoAFloatPrecision overlap = (radiusI + radiusJ) - dist;
       const bool overlapIsPositive = overlap > 0;
 
@@ -1519,7 +1516,7 @@ class DEMFunctor
       }
     }  // end of jNeighIndex loop
 
-    if (fxacc != 0 or fyacc != 0 or fzacc != 0) {
+    if (fxacc != 0 or fyacc != 0 or fzacc != 0 or qxacc != 0 or qyacc != 0 or qzacc != 0) {
       fxptr[indexFirst] += fxacc;
       fyptr[indexFirst] += fyacc;
       fzptr[indexFirst] += fzacc;
