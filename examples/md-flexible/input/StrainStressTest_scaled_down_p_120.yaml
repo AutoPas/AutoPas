@@ -7,10 +7,11 @@ verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
 traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
-tuning-strategies                :  []
-tuning-interval                  :  2500
-tuning-samples                   :  3
-tuning-max-evidence              :  10
+tuning-metric                        :  time
+tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
+tuning-interval                      :  5000
+tuning-samples                       :  3
+tuning-max-evidence                  :  10
 functor                          :  dem
 newton3                          :  [disabled, enabled]
 cutoff                           :  1.5
