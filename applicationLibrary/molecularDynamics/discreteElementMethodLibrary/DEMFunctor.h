@@ -1070,7 +1070,8 @@ class DEMFunctor
     auto *const __restrict qyptr = soa.template begin<Particle::AttributeNames::torqueY>();
     auto *const __restrict qzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 
-    auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
@@ -1105,7 +1106,7 @@ class DEMFunctor
     size_t joff = 0;
 
     // retrieve the radius of particle i
-    SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr[indexFirst]);
+    SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr1[indexFirst]);
 
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
@@ -1152,7 +1153,7 @@ class DEMFunctor
           wyArr[tmpj] = wyptr[neighborListPtr[joff + tmpj]];
           wzArr[tmpj] = wzptr[neighborListPtr[joff + tmpj]];
 
-          rArr[tmpj] = _PPLibrary->getRadius(typeptr[neighborListPtr[joff + tmpj]]);
+          rArr[tmpj] = _PPLibrary->getRadius(typeptr2[neighborListPtr[joff + tmpj]]);
 
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
@@ -1368,7 +1369,7 @@ class DEMFunctor
         continue;
       }
 
-      const SoAFloatPrecision radiusJ = _PPLibrary->getRadius(typeptr[j]);
+      const SoAFloatPrecision radiusJ = _PPLibrary->getRadius(typeptr2[j]);
       SoAFloatPrecision overlap = (radiusI + radiusJ) - dist;
       const bool overlapIsPositive = overlap > 0;
 
