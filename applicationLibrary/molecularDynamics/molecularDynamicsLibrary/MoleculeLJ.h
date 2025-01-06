@@ -189,6 +189,8 @@ class MoleculeLJ : public autopas::Particle {
    */
   void setTypeId(size_t typeId);
 
+  double getSize() const override;
+
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.

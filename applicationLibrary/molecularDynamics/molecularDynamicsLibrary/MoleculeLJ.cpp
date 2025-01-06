@@ -17,6 +17,15 @@ void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldFor
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 
+double MoleculeLJ::getSize() const {
+  if (_typeId == 0) {
+    return 1;
+  }
+  else {
+    return 0.5;
+  }
+}
+
 std::string MoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;
