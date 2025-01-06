@@ -7,31 +7,28 @@
 #pragma once
 
 #include <gmock/gmock-function-mocker.h>
+
 #include <random>
+
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 class HgridMoleculeLJ : public mdLib::MoleculeLJ {
  public:
   HgridMoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-                 unsigned long typeId = 0)
+                  unsigned long typeId = 0)
       : mdLib::MoleculeLJ(pos, v, moleculeId, typeId) {
     generateSize();
   }
-  HgridMoleculeLJ(): mdLib::MoleculeLJ() {
-    generateSize();
-  };
+  HgridMoleculeLJ() : mdLib::MoleculeLJ() { generateSize(); };
   ~HgridMoleculeLJ() override = default;
 
   // Explicitly define copy constructor and assignment operator
-  HgridMoleculeLJ(const HgridMoleculeLJ &other) : mdLib::MoleculeLJ(other) {
-    generateSize();
-  }
-
+  HgridMoleculeLJ(const HgridMoleculeLJ &other) : mdLib::MoleculeLJ(other) { _size = other._size; }
 
   HgridMoleculeLJ &operator=(const HgridMoleculeLJ &other) {
     if (this != &other) {
       mdLib::MoleculeLJ::operator=(other);
-      generateSize();
+      _size = other._size;
     }
     return *this;
   }
@@ -43,8 +40,8 @@ class HgridMoleculeLJ : public mdLib::MoleculeLJ {
   }
 
   /**
- * Enums used as ids for accessing and creating a dynamically sized SoA.
- */
+   * Enums used as ids for accessing and creating a dynamically sized SoA.
+   */
   enum AttributeNames : int {
     ptr,
     id,
@@ -64,9 +61,7 @@ class HgridMoleculeLJ : public mdLib::MoleculeLJ {
     ownershipState
   };
 
-  double getSize() const override {
-    return _size;
-  }
+  double getSize() const override { return _size; }
 
   /**
    * The type for the SoA storage.
@@ -81,7 +76,7 @@ class HgridMoleculeLJ : public mdLib::MoleculeLJ {
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
                                        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
-    /**
+  /**
    * Non-const getter for the pointer of this object.
    * @tparam attribute Attribute name.
    * @return this.
@@ -179,9 +174,9 @@ class HgridMoleculeLJ : public mdLib::MoleculeLJ {
   }
 
   /**
- * Creates a string containing all data of the particle.
- * @return String representation.
- */
+   * Creates a string containing all data of the particle.
+   * @return String representation.
+   */
   std::string toString() const override {
     using autopas::utils::ArrayUtils::operator<<;
     std::ostringstream text;
@@ -193,5 +188,4 @@ class HgridMoleculeLJ : public mdLib::MoleculeLJ {
   }
 
   double _size;
-
 };
