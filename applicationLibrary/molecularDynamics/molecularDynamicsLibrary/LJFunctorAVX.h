@@ -925,6 +925,14 @@ class LJFunctorAVX
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
+  void setCutoff(double cutoff) override {
+    this->_cutoff = cutoff;
+    this->_cutoffSquaredAoS = cutoff * cutoff;
+#ifdef __AVX__
+    this->_cutoffSquared = _mm256_set1_pd(cutoff * cutoff);
+#endif
+  }
+
   /**
    * Sets the particle properties constants for this functor.
    *
@@ -1009,13 +1017,13 @@ class LJFunctorAVX
   };
   const __m256i _ownedStateDummyMM256i{0x0};
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
-  const __m256d _cutoffSquared{};
+   __m256d _cutoffSquared{};
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};
   __m256d _sigmaSquared{};
 #endif
 
-  const double _cutoffSquaredAoS = 0;
+  double _cutoffSquaredAoS = 0;
   double _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;

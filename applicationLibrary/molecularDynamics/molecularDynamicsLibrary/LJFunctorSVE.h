@@ -821,6 +821,14 @@ class LJFunctorSVE
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
+  void setCutoff(double cutoff) override {
+    this->_cutoff = cutoff;
+    this->_cutoffSquaredAoS = cutoff * cutoff;
+#ifdef __ARM_FEATURE_SVE
+    this->_cutoffSquared = cutoff * cutoff;
+#endif
+  }
+
   /**
    * Sets the particle properties constants for this functor.
    *
@@ -879,7 +887,7 @@ class LJFunctorSVE
   double _sigmaSquared{0.};
 #endif
 
-  const double _cutoffSquaredAoS;
+  double _cutoffSquaredAoS;
   double _epsilon24AoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
