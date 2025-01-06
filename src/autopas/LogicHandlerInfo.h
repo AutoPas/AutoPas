@@ -8,6 +8,7 @@
 
 #include "array"
 #include "string"
+#include "vector"
 
 namespace autopas {
 /**
@@ -42,6 +43,6 @@ class LogicHandlerInfo {
   /**
    * Cutoff radius for each level of a HierarchicalGrid
    */
-  std::vector<double> cutoffs{1.};
+  std::vector<double> cutoffs{};
 };
 }  // namespace autopas
