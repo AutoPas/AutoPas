@@ -13,7 +13,7 @@
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/iterators/ContainerIterator.h"
-#include "traversals/HGridTraversal.h"
+#include "traversals/HGC01Traversal.h"
 
 namespace autopas {
 
@@ -192,11 +192,11 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
            << "\nCellsPerInteractionLength: " << cellBlock.getCellsPerInteractionLength()
            << " NumCells: " << cellBlock.getNumCells() << "\n"
            << "CellsPerDimensionWithHalo: " << cellBlock.getCellsPerDimensionWithHalo() << "\n";
-      _levels[i]->forEach(
-          [&](Particle &p) {
-            text << "Cell index: " << cellBlock.get3DIndexOfPosition(p.getR()) << "\n" << p.toString() << "\n\n";
-          },
-          IteratorBehavior::ownedOrHaloOrDummy);
+      // _levels[i]->forEach(
+      //     [&](Particle &p) {
+      //       text << "Cell index: " << cellBlock.get3DIndexOfPosition(p.getR()) << "\n" << p.toString() << "\n\n";
+      //     },
+      //     IteratorBehavior::ownedOrHaloOrDummy);
     }
     return text.str();
   }
@@ -533,10 +533,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @param traversal
    */
   void prepareTraversal(TraversalInterface *traversal) {
-    auto *traversalInterface = dynamic_cast<HGridTraversalInterface *>(traversal);
-    auto *hGridTraversal = dynamic_cast<HGridTraversalBase<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
+    auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
-      hGridTraversal->setLevels(_levels, _cutoffs, _skin);
+      hGridTraversal->setLevels(&_levels, _cutoffs, _skin);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",

@@ -1,12 +1,12 @@
 /**
- * @file HGridTraversalBase.h
+ * @file HGTraversalBase.h
  * @author atacann
  * @date 09.12.2024
  */
 
 #pragma once
 
-#include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
@@ -16,11 +16,11 @@ namespace autopas {
  * @tparam ParticleCell type of Particle cell
  */
 template <class ParticleCell>
-class HGridTraversalBase : public TraversalInterface {
+class HGTraversalBase : public TraversalInterface {
  public:
   using Particle = typename ParticleCell::ParticleType;
 
-  explicit HGridTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0) {}
 
   /**
@@ -29,11 +29,11 @@ class HGridTraversalBase : public TraversalInterface {
    * @param cutoffs cutoffs of each HGrid level
    * @param skin verlet skin of HGrid container
    */
-  void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> &levels, std::vector<double> &cutoffs,
+  void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>>* levels, std::vector<double> &cutoffs,
                  double skin) {
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
-    _levels = &levels;
+    _levels = levels;
     _skin = skin;
   }
 

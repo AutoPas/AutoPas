@@ -13,6 +13,8 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
+#include "autopas/containers/linkedCells/traversals/HGC01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/HGColorTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -22,7 +24,6 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGridTraversal.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
@@ -298,11 +299,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
       return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor>>(
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
     }
-
-    case TraversalOption::hgrid_test: {
-      return std::make_unique<HGridTraversal<ParticleCell, PairwiseFunctor>>(
-          &pairwiseFunctor,
-          dataLayout, useNewton3);
+    // Hierarchical Grid
+    case TraversalOption::hgrid_c01: {
+      return std::make_unique<HGC01Traversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_color: {
+      return std::make_unique<HGColorTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",

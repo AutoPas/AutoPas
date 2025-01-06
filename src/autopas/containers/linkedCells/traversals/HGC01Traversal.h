@@ -1,13 +1,13 @@
 /**
- * @file HGridTraversal.h
+ * @file HGC01Traversal.h
  * @author atacann
  * @date 09.12.2024
  */
 
 #pragma once
 
-#include "HGridTraversalBase.h"
-#include "HGridTraversalInterface.h"
+#include "HGTraversalBase.h"
+#include "HGTraversalInterface.h"
 #include "LCC01Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
@@ -15,30 +15,30 @@
 namespace autopas {
 
 template <class ParticleCell, class Functor>
-class HGridTraversal : public HGridTraversalBase<ParticleCell>, public HGridTraversalInterface {
+class HGC01Traversal : public HGTraversalBase<ParticleCell>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCell::ParticleType;
 
-  explicit HGridTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
-      : HGridTraversalBase<ParticleCell>(dataLayout, useNewton3), _functor(functor) {};
+  explicit HGC01Traversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
+      : HGTraversalBase<ParticleCell>(dataLayout, useNewton3), _functor(functor){};
 
   /**
- * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
- * @param level which HGrid level to generate a traversal for
- * @param traversalInfo traversal info to generate the new traversal
- * @return A new traversal that is applicable to a specific LinkedCells level
- */
+   * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
+   * @param level which HGrid level to generate a traversal for
+   * @param traversalInfo traversal info to generate the new traversal
+   * @return A new traversal that is applicable to a specific LinkedCells level
+   */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    //_functor->setCutoff(this->_cutoffs[level]);
+    _functor->setCutoff(this->_cutoffs[level]);
     return std::make_unique<LCC01Traversal<ParticleCell, Functor>>(
-        traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength,
-        traversalInfo.cellLength, this->_dataLayout, this->_useNewton3);
+        traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
+        this->_dataLayout, this->_useNewton3);
   };
 
   void traverseParticles() override {
     if (not this->isApplicable()) {
-      utils::ExceptionHandler::exception("Currently only AoS and No Newton3 is supported");
+      utils::ExceptionHandler::exception("Currently only AoS and No Newton3 is supported on hgrid_c01 traversal.");
     }
     // computeInteractions for each level independently first
     for (size_t level = 0; level < this->_numLevels; level++) {
@@ -51,39 +51,37 @@ class HGridTraversal : public HGridTraversalBase<ParticleCell>, public HGridTrav
         if (level == innerLevel) {
           continue;
         }
+        // calculate cutoff for level pair
         const double cutoff = (this->_cutoffs[level] + this->_cutoffs[innerLevel]) / 2;
-        //_functor->setCutoff(cutoff);
+        _functor->setCutoff(cutoff);
+        const double interactionLength = cutoff + this->_skin;
         AUTOPAS_OPENMP(parallel) {
           using utils::ArrayMath::operator-;
           using utils::ArrayMath::operator+;
           auto it = this->_levels->at(level)->begin(IteratorBehavior::owned);
           for (; it.isValid(); ++it) {
             const std::array<double, 3> &pos = it->getR();
-            const std::array<double, 3> dir = {cutoff, cutoff, cutoff};
+            const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
             const auto posMin = pos - dir, posMax = pos + dir;
-            this->_levels->at(innerLevel)->forEachInRegion(
-                [&it, &functor = this->_functor, &useNewton3 = this->_useNewton3](Particle &j) {
-                  functor->AoSFunctor(*it, j, useNewton3);
-                }, posMin, posMax, IteratorBehavior::ownedOrHalo);
+            this->_levels->at(innerLevel)
+                ->forEachInRegion([&it, &functor = this->_functor, &useNewton3 = this->_useNewton3](
+                                      Particle &j) { functor->AoSFunctor(*it, j, useNewton3); },
+                                  posMin, posMax, IteratorBehavior::ownedOrHalo);
           }
         }
       }
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_c01; };
 
   [[nodiscard]] bool isApplicable() const override {
     return this->_useNewton3 == false && this->_dataLayout == DataLayoutOption::aos;
   };
 
-  void initTraversal() override {
-    _storedCutoff = _functor->getCutoff();
-  };
+  void initTraversal() override { _storedCutoff = _functor->getCutoff(); };
 
-  void endTraversal() override {
-    _functor->setCutoff(_storedCutoff);
-  };
+  void endTraversal() override { _functor->setCutoff(_storedCutoff); };
 
  protected:
   Functor *_functor;

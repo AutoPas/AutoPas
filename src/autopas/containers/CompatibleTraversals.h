@@ -140,7 +140,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allHGCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::hgrid_test};
+  static const std::set<TraversalOption> s{TraversalOption::hgrid_c01, TraversalOption::hgrid_color};
   return s;
 }
 
@@ -157,7 +157,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vl_list_iteration,
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01,
-          TraversalOption::hgrid_test};
+          TraversalOption::hgrid_c01};
 };
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
@@ -166,6 +166,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Enabled() {
   return {
       TraversalOption::ot_c18,
+      TraversalOption::hgrid_color,
   };
 };
 /**
@@ -174,7 +175,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
   return {
-    TraversalOption::hgrid_test,
+      TraversalOption::hgrid_c01,
+      TraversalOption::hgrid_color,
   };
 };
 /**

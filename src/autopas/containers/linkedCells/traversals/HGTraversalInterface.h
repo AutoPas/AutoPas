@@ -1,11 +1,10 @@
 /**
- * @file HGridTraversalInterface.h
+ * @file HGTraversalInterface.h
  * @author atacann
  * @date 09.12.2024
  */
 
 #pragma once
-
 
 namespace autopas {
 
@@ -14,6 +13,6 @@ namespace autopas {
  *
  * The container only accepts traversals that implement this interface.
  */
-class HGridTraversalInterface {};
+class HGTraversalInterface {};
 
 }  // namespace autopas
