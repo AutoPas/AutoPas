@@ -349,6 +349,7 @@ std::string MDFlexConfig::to_string() const {
   }
 
   printOption(cutoff);
+  printOption(cutoffs);
   printOption(boxMin);
   printOption(boxMax);
   printOption(cellSizeFactors);

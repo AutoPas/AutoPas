@@ -143,6 +143,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
+  _autoPasContainer->setCutoffs(_configuration.cutoffs.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
   _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
