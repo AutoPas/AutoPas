@@ -9,7 +9,7 @@
 namespace autopas::tuningLogEntry {
 
 std::string writeEvidence(long time, size_t iteration, const autopas::Configuration &config) {
-  return toString(std::string{"evidence"}, time, iteration, config);
+  return toString(std::string{"evidence"}, time / 1'000'000'000.0, iteration, config);
 }
 
 std::tuple<long, size_t, Configuration> readEvidence(std::stringstream &str) {
