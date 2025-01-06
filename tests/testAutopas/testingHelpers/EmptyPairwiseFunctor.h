@@ -29,7 +29,7 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPair
    */
   EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>>(0.){};
 
-  void setCutoff(double cutoff) override {};
+  void setCutoff(double cutoff) override{};
 
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()

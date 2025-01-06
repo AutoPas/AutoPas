@@ -105,18 +105,16 @@ class ContainerOption : public Option<ContainerOption> {
    * @return map option -> string representation
    */
   static std::map<ContainerOption, std::string> getOptionNames() {
-    return {
-        {ContainerOption::directSum, "DirectSum"},
-        {ContainerOption::linkedCells, "LinkedCells"},
-        {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
-        {ContainerOption::verletLists, "VerletLists"},
-        {ContainerOption::verletListsCells, "VerletListsCells"},
-        {ContainerOption::verletClusterLists, "VerletClusterLists"},
-        {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
-        {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
-        {ContainerOption::octree, "Octree"},
-        {ContainerOption::hierarchicalGrid, "HierarchicalGrid"}
-    };
+    return {{ContainerOption::directSum, "DirectSum"},
+            {ContainerOption::linkedCells, "LinkedCells"},
+            {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
+            {ContainerOption::verletLists, "VerletLists"},
+            {ContainerOption::verletListsCells, "VerletListsCells"},
+            {ContainerOption::verletClusterLists, "VerletClusterLists"},
+            {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
+            {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
+            {ContainerOption::octree, "Octree"},
+            {ContainerOption::hierarchicalGrid, "HierarchicalGrid"}};
   };
 
  private:
