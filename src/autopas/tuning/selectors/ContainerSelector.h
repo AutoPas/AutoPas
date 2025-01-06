@@ -46,8 +46,14 @@ class ContainerSelector {
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
    */
-  ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff)
-      : _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _currentContainer(nullptr), _currentInfo() {}
+  ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
+                    const std::vector<double> cutoffs = {})
+      : _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cutoff(cutoff),
+        _currentContainer(nullptr),
+        _cutoffs(cutoffs),
+        _currentInfo() {}
 
   /**
    * Sets the container to the given option.
@@ -93,6 +99,7 @@ class ContainerSelector {
   std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> _currentContainer;
+  const std::vector<double> _cutoffs;
   ContainerSelectorInfo _currentInfo;
 };
 
@@ -157,12 +164,14 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::hierarchicalGrid: {
-      container =
-          std::make_unique<HierarchicalGrid<Particle>>(_boxMin, _boxMax, _cutoff,
-                                                       std::vector<double>{_cutoff, _cutoff * 2, _cutoff * 3, _cutoff * 4, _cutoff * 5},
-                                                       containerInfo.verletSkinPerTimestep,
-                                                       containerInfo.verletRebuildFrequency,
-                                                       containerInfo.cellSizeFactor);
+      std::vector<double> cutoffs(_cutoffs);
+      if (cutoffs.empty()) {
+        //cutoffs = {_cutoff / 4, _cutoff / 3, _cutoff / 2, _cutoff};
+        cutoffs = {_cutoff / 1.99999, _cutoff};
+      }
+      container = std::make_unique<HierarchicalGrid<Particle>>(
+          _boxMin, _boxMax, _cutoff, cutoffs, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          containerInfo.cellSizeFactor);
       break;
     }
     default: {
