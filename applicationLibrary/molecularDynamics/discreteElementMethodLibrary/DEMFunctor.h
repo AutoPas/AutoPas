@@ -109,7 +109,7 @@ class DEMFunctor
    *
    * @param cutoff
    */
-  explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 50, 50, 50, nullptr) {
+  explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 100, 25, 25, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -125,7 +125,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 50, 50, 50, nullptr) {
+      : DEMFunctor(cutoff, 50., 5, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 25, 100, 25, 25, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
