@@ -55,6 +55,8 @@ class HGTraversalBase : public TraversalInterface {
     // return traversal info of hierarchy with biggest interactionLength
     const auto temp = _levels->at(level)->getTraversalSelectorInfo();
     // adjust interactionLength to actual value
+    // TODO: _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual interactionlength
+    // TODO: so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo cells
     const TraversalSelectorInfo ret{temp.cellsPerDim, _cutoffs[level] + _skin, temp.cellLength, temp.clusterSize};
     return ret;
   }

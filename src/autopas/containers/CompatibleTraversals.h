@@ -166,7 +166,6 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Enabled() {
   return {
       TraversalOption::ot_c18,
-      TraversalOption::hgrid_color,
   };
 };
 /**
@@ -176,7 +175,6 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
   return {
       TraversalOption::hgrid_c01,
-      TraversalOption::hgrid_color,
   };
 };
 /**

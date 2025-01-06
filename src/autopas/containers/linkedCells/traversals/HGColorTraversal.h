@@ -42,13 +42,20 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
       utils::ExceptionHandler::exception("Currently only AoS and newton3 is supported on hgrid_color traversal.");
     }
     // computeInteractions for each level independently first
+    // TODO: For SoA, do not call endTraversal() here (do not load SoA to Particle), do them all together after cross level interactions
+    // TODO: If cross level SoA is implemented only, otherwise not needed
     for (size_t level = 0; level < this->_numLevels; level++) {
       auto traversal = generateNewTraversal(level);
       this->_levels->at(level)->computeInteractions(traversal.get());
     }
     // computeInteractions across different levels
     for (size_t upperLevel = 1; upperLevel < this->_numLevels; upperLevel++) {
-      for (size_t lowerLevel = 0; lowerLevel < upperLevel; lowerLevel++) {
+      // only look top-down if newton3 is enabled, both ways otherwise
+      size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
+      for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
+        if (lowerLevel == upperLevel) {
+          continue;
+        }
         // calculate cutoff for level pair
         const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
         const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
@@ -60,7 +67,13 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
         std::array<unsigned long, 3> stride{};
         for (size_t i = 0; i < 3; i++) {
           //stride[i] = 1 + std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 * lowerLength[i] / upperLength[i]);
-          stride[i] = 1 + std::ceil(interactionLength  * 2 / upperLength[i]);
+          if (this->_useNewton3) {
+            stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength  * 2 / upperLength[i]));
+          }
+          else {
+            // do c01 traversal if newton3 is disabled
+            stride[i] = 1;
+          }
         }
         using utils::ArrayUtils::operator<<;
         // std::ostringstream text;
@@ -70,7 +83,8 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
 
         const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
 
-        const auto traverse = [&lowerLevel = *(this->_levels->at(lowerLevel)), &interactionLength, &dir, &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock(),
+        // TODO: SoAView?
+        const auto traverse = [&lowerLevel = *(this->_levels->at(lowerLevel)), &dir, &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock(),
           &functor = this->_functor, &useNewton3 = this->_useNewton3](unsigned long x, unsigned long y, unsigned long z) {
           auto &cell = upperLevelCB.getCell({x, y, z});
           for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
@@ -109,7 +123,7 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_color; };
 
   [[nodiscard]] bool isApplicable() const override {
-    return this->_useNewton3 == true && this->_dataLayout == DataLayoutOption::aos;
+    return true;
   };
 
   void initTraversal() override {
