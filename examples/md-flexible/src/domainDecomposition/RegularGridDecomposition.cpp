@@ -75,7 +75,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // initialize _allNeighborDomainIndices
   initializeAllNeighborIndices();
   // initialize _zonalMethod
-  initializeZonalMethod(configuration.zonalMethodOption.value);
+  initializeZonalMethod(configuration);
   // check if configuration is valid for zonal method
   checkZonalMethodConfiguration(configuration);
 
@@ -202,12 +202,22 @@ void RegularGridDecomposition::initializeAllNeighborIndices() {
   }
 }
 
-void RegularGridDecomposition::initializeZonalMethod(options::ZonalMethodOption zonalMethodType) {
+void RegularGridDecomposition::initializeZonalMethod(const MDFlexConfig &config) {
   using namespace autopas::utils::ArrayMath::literals;
-  _zonalMethodOption = zonalMethodType;
+  _zonalMethodOption = config.zonalMethodOption.value;
   RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
   RectRegion globalBoxRegion(_globalBoxMin, _globalBoxMax - _globalBoxMin);
-  switch (zonalMethodType) {
+
+  // NOTE: This is not very clean, but suffices for now
+  bool pairwiseInteraction = config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise);
+  bool useNewton3;
+  // NOTE: We assume that we only use the first option
+  if (pairwiseInteraction)
+    useNewton3 = config.newton3Options.value.begin()->to_string() == "enabled";
+  else
+    useNewton3 = config.newton3Options3B.value.begin()->to_string() == "enabled";
+
+  switch (_zonalMethodOption) {
     case options::ZonalMethodOption::fullshell:
       _zonalMethod =
           std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
@@ -221,7 +231,7 @@ void RegularGridDecomposition::initializeZonalMethod(options::ZonalMethodOption 
     case options::ZonalMethodOption::midpoint:
       _zonalMethod =
           std::make_unique<Midpoint>(Midpoint(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
-                                             _communicator, _allNeighborDomainIndices, _boundaryType));
+                                              _communicator, _allNeighborDomainIndices, _boundaryType));
     default:
       std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                             _communicator, _allNeighborDomainIndices, _boundaryType));
@@ -299,6 +309,15 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
     }
   };
 
+  auto checkMultipleNewton = [](const MDFlexConfig &config) {
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) and
+        config.newton3Options3B.value.size() > 1) {
+      throw std::invalid_argument(
+          "This zonal method assumes that we only use one Newton3 option when using triwise forces: please limit to "
+          "one.");
+    }
+  };
+
   switch (_zonalMethodOption) {
     case options::ZonalMethodOption::none:
       // noting to check
@@ -311,9 +330,11 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
       break;
     case options::ZonalMethodOption::halfshell:
       checkLoadBalancerTurnedOff(config);
-      checkTraversal(config, {autopas::TraversalOption::lc_c01}, {autopas::TraversalOption::ds_sequential});
+      checkTraversal(config, {autopas::TraversalOption::lc_c01},
+                     {autopas::TraversalOption::lc_c01, autopas::TraversalOption::ds_sequential});
       checkAllowedFunctors(config);
       checkDataType(config);
+      checkMultipleNewton(config);
       break;
     case options::ZonalMethodOption::fullshell:
       checkLoadBalancerTurnedOff(config);
