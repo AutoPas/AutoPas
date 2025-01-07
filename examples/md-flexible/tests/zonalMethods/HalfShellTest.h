@@ -25,7 +25,7 @@ class HalfShellTest : public AutoPasTestBase, public HalfShell {
    */
   HalfShellTest()
       : AutoPasTestBase(),
-        HalfShell(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion, autopas::AutoPas_MPI_Comm(),
+        HalfShell(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion, false, true, autopas::AutoPas_MPI_Comm(),
                   _allNeighbourIndices)
 
   {}
