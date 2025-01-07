@@ -1,3 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 426b10f..68b5eba 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -13,7 +13,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+ endif()
+ 
+ # Set CXX Standard
+-set(CMAKE_CXX_STANDARD 20)
++set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_CXX_EXTENSIONS OFF)
+ 
 diff --git a/common/PMT.cpp b/common/PMT.cpp
 index 5b8a6ab..3368d11 100644
 --- a/common/PMT.cpp
@@ -93,3 +106,82 @@ index 269d549..19028b8 100644
    void DumpHeader(const State &state);
  
   protected:
+diff --git a/common/io.h b/common/io.h
+index 2794e2a..10696de 100644
+--- a/common/io.h
++++ b/common/io.h
+@@ -2,7 +2,6 @@
+ #define PMT_COMMON_IO_H_
+ 
+ #include <memory>
+-#include <span>
+ #include <sstream>
+ 
+ #include <sys/types.h>
+@@ -74,16 +73,14 @@ inline file_descriptor openat(int dirfd, const std::string& filename) {
+   }
+ }
+ 
+-inline size_t pread(int fd, const std::span<std::byte>& byte,
+-                    std::int64_t offset) {
++inline size_t pread(int fd, void* buffer, std::size_t size, std::int64_t offset) {
+   while (true) {
+     const ::ssize_t data_read =
+-        ::pread(fd, static_cast<void*>(byte.data()), byte.size(),
+-                static_cast<::off_t>(offset));
++        ::pread(fd, buffer, size, static_cast<::off_t>(offset));
+     if (data_read < 0) {
+-      const int errcode = take_and_reset_errno();
+-      if (errno == EINTR) {
+-        // interrupted system call
++      const int errcode = errno; // Capture the error code
++      if (errcode == EINTR) {
++        // interrupted system call, retry
+         continue;
+       }
+       throw std::system_error(
+diff --git a/rapl/RaplImpl.cpp b/rapl/RaplImpl.cpp
+index 369502c..8803e20 100644
+--- a/rapl/RaplImpl.cpp
++++ b/rapl/RaplImpl.cpp
+@@ -52,7 +52,7 @@ std::string GetBasename(int package_id) {
+ std::string read_string(int fd) {
+   std::string result;
+   std::array<std::byte, 256> buffer;
+-  const std::size_t read_size = os::pread(fd, buffer, 0);
++  const std::size_t read_size = os::pread(fd, buffer.data(), buffer.size(), 0);
+   result.reserve(read_size);
+   for (std::size_t i = 0; i < read_size; ++i) {
+     const char c = static_cast<char>(buffer[i]);
+@@ -67,7 +67,7 @@ template <typename Numeric>
+ Numeric read_numerical_value(int fd) {
+   Numeric value = 0;
+   std::array<std::byte, 256> buffer;
+-  const std::size_t read_size = os::pread(fd, buffer, 0);
++  const std::size_t read_size = os::pread(fd, buffer.data(), buffer.size(), 0);
+   std::from_chars_result res = std::from_chars(
+       static_cast<const char*>(static_cast<void*>(buffer.data())),
+       static_cast<const char*>(static_cast<void*>(buffer.data() + read_size)),
+@@ -113,8 +113,7 @@ void RaplImpl::Init() {
+         message << "OS error: " << e.what();
+         std::cerr << message.str() << std::endl;
+         if (e.code().value() == EACCES) {
+-          std::cerr << "Please check the permission or try to run as 'root'"
+-                    << std::endl;
++          throw std::runtime_error("Please check the permission or try to run as 'root'");
+         }
+       }
+     }
+@@ -131,10 +130,11 @@ void RaplImpl::Init() {
+       uj_offset_[i] = 0;
+     }
+ 
+-  } catch (std::exception& e) {
++  } catch (const std::runtime_error& e) {
+     std::stringstream message;
+     message << "Unable to init rapl plugin: " << e.what();
+     std::cerr << message.str() << std::endl;
++    std::abort();
+   }
+ }
+ 
