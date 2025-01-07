@@ -596,12 +596,11 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
           _mm_hadd_ps(sumVirialzPotentialEnergyVec, sumVirialzPotentialEnergyVec);
 
       // globals = {virialX, virialY, virialZ, potentialEnergy}
-      double globals[4];
-      _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
+      float globals[4];
+      _mm_storel_pi((__m64 *)&globals[0], hSumVirialxyVec);
+      _mm_storel_pi((__m64 *)&globals[2], hSumVirialzPotentialEnergyVec);
 #endif
 
-      // here implicit casts are possible
       _aosThreadData[threadnum].virialSum[0] += globals[0];
       _aosThreadData[threadnum].virialSum[1] += globals[1];
       _aosThreadData[threadnum].virialSum[2] += globals[2];
@@ -650,9 +649,155 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
                         const size_t *const typeID2ptr, SIMDAccuType &fxacc, SIMDAccuType &fyacc, SIMDAccuType &fzacc,
                         SIMDAccuType *virialSumX, SIMDAccuType *virialSumY, SIMDAccuType *virialSumZ,
                         SIMDAccuType *potentialEnergySum, const unsigned int rest = 0) {
-    __m256d epsilon24s = _epsilon24;
-    __m256d sigmaSquareds = _sigmaSquared;
-    __m256d shift6s = _shift6;
+    SIMDCalcType epsilon24s = _epsilon24;
+    SIMDCalcType sigmaSquareds = _sigmaSquared;
+    SIMDCalcType shift6s = _shift6;
+
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+    if constexpr (useMixing) {
+      // the first argument for set lands in the last bits of the register
+      epsilon24s = _mm256_set_ps(
+          not remainderIsMasked or rest > 7 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 7)) : 0,
+          not remainderIsMasked or rest > 6 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 6)) : 0,
+          not remainderIsMasked or rest > 5 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 5)) : 0,
+          not remainderIsMasked or rest > 4 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 4)) : 0,
+          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+          _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
+      sigmaSquareds = _mm256_set_ps(
+          not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 7)) : 0,
+          not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 6)) : 0,
+          not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 5)) : 0,
+          not remainderIsMasked or rest > 4 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 4)) : 0,
+          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+          _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
+      if constexpr (applyShift) {
+        shift6s = _mm256_set_ps(
+            (not remainderIsMasked or rest > 7) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 7)) : 0,
+            (not remainderIsMasked or rest > 6) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 6)) : 0,
+            (not remainderIsMasked or rest > 5) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 5)) : 0,
+            (not remainderIsMasked or rest > 4) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 4)) : 0,
+            (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+            (not remainderIsMasked or rest > 2) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+            (not remainderIsMasked or rest > 1) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+            _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
+      }
+    }
+
+    const __m256 x2 = remainderIsMasked ? _mm256_maskload_ps(&x2ptr[j], _masks[rest - 1]) : _mm256_loadu_ps(&x2ptr[j]);
+    const __m256 y2 = remainderIsMasked ? _mm256_maskload_ps(&y2ptr[j], _masks[rest - 1]) : _mm256_loadu_ps(&y2ptr[j]);
+    const __m256 z2 = remainderIsMasked ? _mm256_maskload_ps(&z2ptr[j], _masks[rest - 1]) : _mm256_loadu_ps(&z2ptr[j]);
+
+    const __m256 drx = _mm256_sub_ps(x1, x2);
+    const __m256 dry = _mm256_sub_ps(y1, y2);
+    const __m256 drz = _mm256_sub_ps(z1, z2);
+
+    const __m256 drx2 = _mm256_mul_ps(drx, drx);
+    const __m256 dry2 = _mm256_mul_ps(dry, dry);
+    const __m256 drz2 = _mm256_mul_ps(drz, drz);
+
+    const __m256 dr2PART = _mm256_add_ps(drx2, dry2);
+    const __m256 dr2 = _mm256_add_ps(dr2PART, drz2);
+
+    // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
+    // signaling = throw error if NaN is encountered
+    // dr2 <= _cutoffSquared ? 0xFFFFFFFFFFFFFFFF : 0
+    const __m256 cutoffMask = _mm256_cmp_ps(dr2, _cutoffSquared, _CMP_LE_OS);
+
+    // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
+    // Uses _mm256_maskload_ps because _mm256_maskload_epi32 requires AVX2, this is a workaround
+    const __m256i ownedStateJ = remainderIsMasked
+                                    ? _mm256_castps_si256(_mm256_maskload_ps(
+                                          reinterpret_cast<float const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
+                                    : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
+
+    // This requires that dummy is the first entry in OwnershipState!
+    const __m256 dummyMask = _mm256_cmp_ps(_mm256_castsi256_ps(ownedStateJ), _zero, _CMP_NEQ_UQ);
+    const __m256 cutoffDummyMask = _mm256_and_ps(cutoffMask, dummyMask);
+
+    // if everything is masked away return from this function.
+    if (_mm256_movemask_ps(cutoffDummyMask) == 0) {
+      return;
+    }
+
+    const __m256 invdr2 = _mm256_div_ps(_one, dr2);
+    const __m256 lj2 = _mm256_mul_ps(sigmaSquareds, invdr2);
+    const __m256 lj4 = _mm256_mul_ps(lj2, lj2);
+    const __m256 lj6 = _mm256_mul_ps(lj2, lj4);
+    const __m256 lj12 = _mm256_mul_ps(lj6, lj6);
+    const __m256 lj12m6 = _mm256_sub_ps(lj12, lj6);
+    const __m256 lj12m6alj12 = _mm256_add_ps(lj12m6, lj12);
+    const __m256 lj12m6alj12e = _mm256_mul_ps(lj12m6alj12, epsilon24s);
+    const __m256 fac = _mm256_mul_ps(lj12m6alj12e, invdr2);
+
+    const __m256 facMasked =
+        remainderIsMasked ? _mm256_and_ps(fac, _mm256_and_ps(cutoffDummyMask, _mm256_castsi256_ps(_masks[rest - 1])))
+                          : _mm256_and_ps(fac, cutoffDummyMask);
+
+    const __m256 fx = _mm256_mul_ps(drx, facMasked);
+    const __m256 fy = _mm256_mul_ps(dry, facMasked);
+    const __m256 fz = _mm256_mul_ps(drz, facMasked);
+
+    fxacc = _mm256_add_ps(fxacc, fx);
+    fyacc = _mm256_add_ps(fyacc, fy);
+    fzacc = _mm256_add_ps(fzacc, fz);
+
+    // if newton 3 is used subtract fD from particle j
+    if constexpr (newton3) {
+      const __m256 fx2 =
+          remainderIsMasked ? _mm256_maskload_ps(&fx2ptr[j], _masks[rest - 1]) : _mm256_loadu_ps(&fx2ptr[j]);
+      const __m256 fy2 =
+          remainderIsMasked ? _mm256_maskload_ps(&fy2ptr[j], _masks[rest - 1]) : _mm256_loadu_ps(&fy2ptr[j]);
+      const __m256 fz2 =
+          remainderIsMasked ? _mm256_maskload_ps(&fz2ptr[j], _masks[rest - 1]) : _mm256_loadu_ps(&fz2ptr[j]);
+
+      const __m256 fx2new = _mm256_sub_ps(fx2, fx);
+      const __m256 fy2new = _mm256_sub_ps(fy2, fy);
+      const __m256 fz2new = _mm256_sub_ps(fz2, fz);
+
+      if (remainderIsMasked) {
+        _mm256_maskstore_ps(&fx2ptr[j], _masks[rest - 1], fx2new);
+        _mm256_maskstore_ps(&fy2ptr[j], _masks[rest - 1], fy2new);
+        _mm256_maskstore_ps(&fz2ptr[j], _masks[rest - 1], fz2new);
+      } else {
+        _mm256_storeu_ps(&fx2ptr[j], fx2new);
+        _mm256_storeu_ps(&fy2ptr[j], fy2new);
+        _mm256_storeu_ps(&fz2ptr[j], fz2new);
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      // Global Virial
+      const __m256 virialX = _mm256_mul_ps(fx, drx);
+      const __m256 virialY = _mm256_mul_ps(fy, dry);
+      const __m256 virialZ = _mm256_mul_ps(fz, drz);
+
+      // Global Potential
+      const __m256 potentialEnergy = wrapperFMA(epsilon24s, lj12m6, shift6s);
+
+      const __m256 potentialEnergyMasked =
+          remainderIsMasked
+              ? _mm256_and_ps(potentialEnergy, _mm256_and_ps(cutoffDummyMask, _mm256_castsi256_ps(_masks[rest - 1])))
+              : _mm256_and_ps(potentialEnergy, cutoffDummyMask);
+
+      __m256 ownedMaskI =
+          _mm256_cmp_ps(_mm256_castsi256_ps(ownedStateI), _mm256_castsi256_ps(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+      __m256 energyFactor = _mm256_blendv_ps(_zero, _one, ownedMaskI);
+
+      if constexpr (newton3) {
+        __m256 ownedMaskJ =
+            _mm256_cmp_ps(_mm256_castsi256_ps(ownedStateJ), _mm256_castsi256_ps(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+        energyFactor = _mm256_add_ps(energyFactor, _mm256_blendv_ps(_zero, _one, ownedMaskJ));
+      }
+      *potentialEnergySum = wrapperFMA(energyFactor, potentialEnergyMasked, *potentialEnergySum);
+      *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
+      *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
+      *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
+    }
+#else
     if constexpr (useMixing) {
       // the first argument for set lands in the last bits of the register
       epsilon24s = _mm256_set_pd(
@@ -695,10 +840,12 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
     const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffSquared, _CMP_LE_OS);
 
     // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
+    // Uses _mm256_maskload_pd because _mm256_maskload_epi64 requires AVX2, this is a workaround
     const __m256i ownedStateJ = remainderIsMasked
                                     ? _mm256_castpd_si256(_mm256_maskload_pd(
                                           reinterpret_cast<double const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
                                     : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
+
     // This requires that dummy is the first entry in OwnershipState!
     const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
     const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
@@ -721,7 +868,6 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
     const __m256d facMasked =
         remainderIsMasked ? _mm256_and_pd(fac, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
                           : _mm256_and_pd(fac, cutoffDummyMask);
-
     const __m256d fx = _mm256_mul_pd(drx, facMasked);
     const __m256d fy = _mm256_mul_pd(dry, facMasked);
     const __m256d fz = _mm256_mul_pd(drz, facMasked);
@@ -743,41 +889,46 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       const __m256d fy2new = _mm256_sub_pd(fy2, fy);
       const __m256d fz2new = _mm256_sub_pd(fz2, fz);
 
-      remainderIsMasked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new)
-                        : _mm256_storeu_pd(&fx2ptr[j], fx2new);
-      remainderIsMasked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new)
-                        : _mm256_storeu_pd(&fy2ptr[j], fy2new);
-      remainderIsMasked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new)
-                        : _mm256_storeu_pd(&fz2ptr[j], fz2new);
-    }
-
-    if constexpr (calculateGlobals) {
-      // Global Virial
-      const __m256d virialX = _mm256_mul_pd(fx, drx);
-      const __m256d virialY = _mm256_mul_pd(fy, dry);
-      const __m256d virialZ = _mm256_mul_pd(fz, drz);
-
-      // Global Potential
-      const __m256d potentialEnergy = wrapperFMA(epsilon24s, lj12m6, shift6s);
-
-      const __m256d potentialEnergyMasked =
-          remainderIsMasked
-              ? _mm256_and_pd(potentialEnergy, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-              : _mm256_and_pd(potentialEnergy, cutoffDummyMask);
-
-      __m256d ownedMaskI =
-          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-      __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskI);
-      if constexpr (newton3) {
-        __m256d ownedMaskJ =
-            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-        energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskJ));
+      if (remainderIsMasked) {
+        _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new);
+        _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new);
+        _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new);
+      } else {
+        _mm256_storeu_pd(&fx2ptr[j], fx2new);
+        _mm256_storeu_pd(&fy2ptr[j], fy2new);
+        _mm256_storeu_pd(&fz2ptr[j], fz2new);
       }
-      *potentialEnergySum = wrapperFMA(energyFactor, potentialEnergyMasked, *potentialEnergySum);
-      *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
-      *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
-      *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
+
+      if constexpr (calculateGlobals) {
+        // Global Virial
+        const __m256d virialX = _mm256_mul_pd(fx, drx);
+        const __m256d virialY = _mm256_mul_pd(fy, dry);
+        const __m256d virialZ = _mm256_mul_pd(fz, drz);
+
+        // Global Potential
+        const __m256d potentialEnergy = wrapperFMA(epsilon24s, lj12m6, shift6s);
+
+        const __m256d potentialEnergyMasked =
+            remainderIsMasked
+                ? _mm256_and_pd(potentialEnergy, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                : _mm256_and_pd(potentialEnergy, cutoffDummyMask);
+
+        __m256d ownedMaskI =
+            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+        __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskI);
+
+        if constexpr (newton3) {
+          __m256d ownedMaskJ =
+              _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+          energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskJ));
+        }
+        *potentialEnergySum = wrapperFMA(energyFactor, potentialEnergyMasked, *potentialEnergySum);
+        *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
+        *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
+        *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
+      }
     }
+#endif
   }
 #endif
 
@@ -1192,7 +1343,23 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 #ifdef __AVX__
-#if AUTOPAS_PRECISION_MODE == DPSP || AUTOPAS_PRECISION_MODE == DPDP
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+  const __m256 _zero{_mm256_set1_ps(0.)};
+  const __m256 _one{_mm256_set1_ps(1.)};
+  const __m256i _vindex = _mm256_set_epi64x(0, 1, 3, 4);
+  const __m256i _masks[7]{
+      _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, -1),      _mm256_set_epi32(0, 0, 0, 0, 0, 0, -1, -1),
+      _mm256_set_epi32(0, 0, 0, 0, 0, -1, -1, -1),    _mm256_set_epi32(0, 0, 0, 0, -1, -1, -1, -1),
+      _mm256_set_epi32(0, 0, 0, -1, -1, -1, -1, -1),  _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1),
+      _mm256_set_epi32(0, -1, -1, -1, -1, -1, -1, -1)};
+
+  const __m256i _ownedStateDummyMM256i{0x0};
+  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi32(static_cast<int32_t>(autopas::OwnershipState::owned))};
+  const __m256 _cutoffSquared{};
+  __m256 _shift6 = _mm256_setzero_ps();
+  __m256 _epsilon24{};
+  __m256 _sigmaSquared{};
+#else
   const __m256d _zero{_mm256_set1_pd(0.)};
   const __m256d _one{_mm256_set1_pd(1.)};
   const __m256i _vindex = _mm256_set_epi64x(0, 1, 3, 4);
@@ -1207,23 +1374,6 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};
   __m256d _sigmaSquared{};
-#else
-  const __m256 _zero{_mm256_set1_ps(0.)};
-  const __m256 _one{_mm256_set1_ps(1.)};
-  // TODO MP: What does this do?
-  const __m256i _vindex = _mm256_set_epi64x(0, 1, 3, 4);
-  // TODO MP: What does this do?
-  const __m256i _masks[3]{
-      _mm256_set_epi64x(0, 0, 0, -1),
-      _mm256_set_epi64x(0, 0, -1, -1),
-      _mm256_set_epi64x(0, -1, -1, -1),
-  };
-  const __m256i _ownedStateDummyMM256i{0x0};
-  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi32(static_cast<int64_t>(autopas::OwnershipState::owned))};
-  const __m256 _cutoffSquared{};
-  __m256 _shift6 = _mm256_setzero_ps();
-  __m256 _epsilon24{};
-  __m256 _sigmaSquared{};
 #endif
 #endif
 
