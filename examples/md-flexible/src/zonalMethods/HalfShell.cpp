@@ -5,9 +5,12 @@
 #include "src/ParticleCommunicator.h"
 
 HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
-                     RectRegion globalBoxRegion, autopas::AutoPas_MPI_Comm comm,
-                     std::array<int, 26> allNeighbourIndices, std::array<options::BoundaryTypeOption, 3> boundaryType)
-    : ZonalMethod(1, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType) {
+                     RectRegion globalBoxRegion, bool useNewton3, bool pairwiseInteraction,
+                     autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
+                     std::array<options::BoundaryTypeOption, 3> boundaryType)
+    : ZonalMethod(1, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType),
+      _useNewton3(useNewton3),
+      _pairwiseInteraction(pairwiseInteraction) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
@@ -123,8 +126,10 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
 
   // save results to container
   using namespace autopas::utils::ArrayMath::literals;
-  // for all exported regions
   bufferIndex = 0;
+  // divide results by half if we are not using Newton3 for triwise
+  double divider = !_useNewton3 && !_pairwiseInteraction ? 2. : 1.;
+  // for all exported regions
   for (auto &exRegion : _exportRegions) {
     // go over all exported particles in the container
     for (auto particleIter = autoPasContainer.getRegionIterator(exRegion._origin, exRegion._origin + exRegion._size,
@@ -135,7 +140,7 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       for (auto &result : _regionBuffers.at(bufferIndex)) {
         if (particleIter->getID() == result.getID()) {
           // if found, add the result and delete from buffer
-          particleIter->addF(result.getF());
+          particleIter->addF(result.getF() / divider);
           _regionBuffers.at(bufferIndex).erase(_regionBuffers.at(bufferIndex).begin() + result_index);
           break;
         }

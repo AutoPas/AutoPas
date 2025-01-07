@@ -19,11 +19,13 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
    * @param ownRank
    * @param homeBoxRegion
    * @param globalBoxRegion
+   * @param useNewton3
    * @param comm (optional)
    * @param allNeighbourIndices (optional)
    * @param boundaryType (optional)
    * */
   HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
+            bool useNewton3 = false, bool pairwiseInteraction = true,
             autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
             std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
             std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>(
@@ -114,4 +116,10 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
 
   void calculateZonalInteractionTriwise(
       std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) override;
+
+  // stores is newton3 is used in the node
+  bool _useNewton3;
+
+  // stores if pairwise interaction is used
+  bool _pairwiseInteraction;
 };
