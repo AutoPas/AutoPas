@@ -76,6 +76,14 @@ inline std::array<double, 3> tricircumcenter3d(std::array<double, 3> a, std::arr
   return circumcenter;
 }
 
+inline bool isMidpointInsideDomain(std::array<double, 3> a, std::array<double, 3> b, std::array<double, 3> c,
+                                   std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
+  auto css = tricircumcenter3d(a, b, c);
+  std::array<double, 3> midpoint = {a.at(0) + css.at(0), a.at(1) + css.at(1), a.at(2) + css.at(2)};
+  return (midpoint.at(0) >= boxMin.at(0) and midpoint.at(0) < boxMax.at(0) and midpoint.at(1) >= boxMin.at(1) and
+          midpoint.at(1) < boxMax.at(1) and midpoint.at(2) >= boxMin.at(2) and midpoint.at(2) < boxMax.at(2));
+}
+
 namespace autopas::internal {
 /**
  * A cell functor. This functor is built from the normal Functor of the template
@@ -130,17 +138,6 @@ class CellFunctor3BMidpoint {
    */
   void processCellTriple(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3, std::array<double, 3> boxMin,
                          std::array<double, 3> boxMax, const std::array<double, 3> &sortingDirection = {0., 0., 0.});
-
-  /**
-   * Checks if the midpoint of a triple is inside the box
-   * @param a
-   * @param b
-   * @param c
-   * @param boxMin
-   * @param boxMax
-   */
-  bool isMidpointInsideDomain(std::array<double, 3> a, std::array<double, 3> b, std::array<double, 3> c,
-                              std::array<double, 3> boxMin, std::array<double, 3> boxMax);
 
   /**
    * Getter
@@ -256,16 +253,6 @@ class CellFunctor3BMidpoint {
 
   bool _useNewton3;
 };
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-bool CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::isMidpointInsideDomain(
-    std::array<double, 3> a, std::array<double, 3> b, std::array<double, 3> c, std::array<double, 3> boxMin,
-    std::array<double, 3> boxMax) {
-  auto css = tricircumcenter3d(a, b, c);
-  std::array<double, 3> midpoint = {a.at(0) + css.at(0), a.at(1) + css.at(1), a.at(2) + css.at(2)};
-  return (midpoint.at(0) >= boxMin.at(0) and midpoint.at(0) < boxMax.at(0) and midpoint.at(1) >= boxMin.at(1) and
-          midpoint.at(1) < boxMax.at(1) and midpoint.at(2) >= boxMin.at(2) and midpoint.at(2) < boxMax.at(2));
-}
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
