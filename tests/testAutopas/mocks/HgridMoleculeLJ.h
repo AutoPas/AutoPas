@@ -35,7 +35,7 @@ class HgridMoleculeLJ : public mdLib::MoleculeLJ {
 
   void generateSize() {
     std::mt19937 gen(std::random_device{}());
-    std::uniform_int_distribution<int> dist(1, 4);
+    std::uniform_int_distribution<int> dist(1, 2);
     _size = dist(gen);
   }
 

@@ -107,7 +107,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       const double interactionLengthLevel = _cutoffs[i] + _skin;
       const double ratio = interactionLengthLevel / interactionLengthLargest;
       _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(
-          _boxMin, _boxMax, _cutoffs.back(), skinPerTimestep, rebuildFrequency, cellSizeFactor * ratio));
+          _boxMin, _boxMax, _cutoffs.back(), skinPerTimestep, rebuildFrequency, _cellSizeFactor * ratio));
     }
   }
 

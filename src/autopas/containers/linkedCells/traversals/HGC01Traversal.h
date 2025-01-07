@@ -30,7 +30,7 @@ class HGC01Traversal : public HGTraversalBase<ParticleCell>, public HGTraversalI
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    _functor->setCutoff(this->_cutoffs[level]);
+    //_functor->setCutoff(this->_cutoffs[level]);
     return std::make_unique<LCC01Traversal<ParticleCell, Functor>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
@@ -53,7 +53,7 @@ class HGC01Traversal : public HGTraversalBase<ParticleCell>, public HGTraversalI
         }
         // calculate cutoff for level pair
         const double cutoff = (this->_cutoffs[level] + this->_cutoffs[innerLevel]) / 2;
-        _functor->setCutoff(cutoff);
+        //_functor->setCutoff(cutoff);
         const double interactionLength = cutoff + this->_skin;
         AUTOPAS_OPENMP(parallel) {
           using utils::ArrayMath::operator-;
@@ -61,7 +61,7 @@ class HGC01Traversal : public HGTraversalBase<ParticleCell>, public HGTraversalI
           auto it = this->_levels->at(level)->begin(IteratorBehavior::owned);
           for (; it.isValid(); ++it) {
             const std::array<double, 3> &pos = it->getR();
-            const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
+            const std::array<double, 3> dir = {cutoff, cutoff, cutoff};
             const auto posMin = pos - dir, posMax = pos + dir;
             this->_levels->at(innerLevel)
                 ->forEachInRegion([&it, &functor = this->_functor, &useNewton3 = this->_useNewton3](
