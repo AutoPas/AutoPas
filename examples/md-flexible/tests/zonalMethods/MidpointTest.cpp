@@ -168,7 +168,8 @@ TEST_F(MidpointTest, testMidpointInteractionSchedule) {
   initContainer(_autopas, {});
   _autopas.addHaloParticles(particles);
 
-  calculateExternalZonalInteractions(_autopas, particlePropertiesLibrary, _cutoff);
+  calculateExternalZonalInteractions(_autopas, particlePropertiesLibrary, _cutoff,
+                                     {autopas::InteractionTypeOption::pairwise});
 
   for (auto iter = _autopas.begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
     EXPECT_EQ(iter->getF(), expectedForce.at(iter->getID()));
