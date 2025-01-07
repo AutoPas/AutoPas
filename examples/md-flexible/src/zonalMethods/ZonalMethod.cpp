@@ -3,6 +3,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Math.h"
+#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
 ZonalMethod::ZonalMethod(unsigned int zoneCount, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
