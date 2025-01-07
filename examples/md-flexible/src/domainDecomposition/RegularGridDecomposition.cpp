@@ -15,6 +15,7 @@
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Option.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Math.h"
@@ -235,16 +236,26 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
           "This zonal method can not be used with a load balancer: we do not support box resizing yet.\nTurn it off "
           "using the load-balancer option.");
   };
-  auto checkLCC01Traversal = [](const MDFlexConfig &config) {
+  auto checkTraversal = [](const MDFlexConfig &config, std::vector<autopas::TraversalOption> pTraversals,
+                           std::vector<autopas::TraversalOption> tTraversals) {
     if (config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
-      if (config.traversalOptions.value.find(autopas::TraversalOption::lc_c01) == config.traversalOptions.value.end()) {
-        throw std::invalid_argument("This zonal method can only be used with LCC01 traversal.");
+      if (std::find_first_of(pTraversals.begin(), pTraversals.end(), config.traversalOptions.value.begin(),
+                             config.traversalOptions.value.end()) == pTraversals.end()) {
+        std::string possibleTraversals = std::accumulate<std::vector<autopas::TraversalOption>::iterator, std::string>(
+            pTraversals.begin(), pTraversals.end(), "",
+            [](std::string a, autopas::TraversalOption b) { return a + " " + b.to_string(); });
+        throw std::invalid_argument("This zonal method allows the following traversals for pairwise:" +
+                                    possibleTraversals);
       }
     }
     if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
-      if (config.traversalOptions3B.value.find(autopas::TraversalOption::lc_c01) ==
-          config.traversalOptions3B.value.end()) {
-        throw std::invalid_argument("This zonal method can only be used with LCC01 traversal.");
+      if (std::find_first_of(tTraversals.begin(), tTraversals.end(), config.traversalOptions3B.value.begin(),
+                             config.traversalOptions3B.value.end()) == tTraversals.end()) {
+        std::string possibleTraversals = std::accumulate<std::vector<autopas::TraversalOption>::iterator, std::string>(
+            tTraversals.begin(), tTraversals.end(), "",
+            [](std::string a, autopas::TraversalOption b) { return a + " " + b.to_string(); });
+        throw std::invalid_argument("This zonal method allows the following traversals for triwise:" +
+                                    possibleTraversals);
       }
     }
   };
@@ -282,6 +293,12 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
     }
   };
 
+  auto checkNo3BInteraction = [](const MDFlexConfig &config) {
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+      throw std::invalid_argument("This zonal method can not be used with 3B interactions.");
+    }
+  };
+
   switch (_zonalMethodOption) {
     case options::ZonalMethodOption::none:
       // noting to check
@@ -292,10 +309,16 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
       checkAllowedFunctors(config);
       checkDataType(config);
       break;
-    case options::ZonalMethodOption::fullshell:
     case options::ZonalMethodOption::halfshell:
       checkLoadBalancerTurnedOff(config);
-      checkLCC01Traversal(config);
+      checkTraversal(config, {autopas::TraversalOption::lc_c01}, {autopas::TraversalOption::ds_sequential});
+      checkAllowedFunctors(config);
+      checkDataType(config);
+      break;
+    case options::ZonalMethodOption::fullshell:
+      checkLoadBalancerTurnedOff(config);
+      checkTraversal(config, {autopas::TraversalOption::lc_c01},
+                     {autopas::TraversalOption::lc_c01, autopas::TraversalOption::ds_sequential});
       checkAllowedFunctors(config);
       checkDataType(config);
       break;
