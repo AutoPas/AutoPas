@@ -29,7 +29,8 @@ class VLCCellPairC08CellHandler {
   VLCCellPairC08CellHandler(const std::array<unsigned long, 3> &dims, double interactionLength,
                             const std::array<double, 3> &cellLength)
       : _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
-            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairs>(dims, cellLength, interactionLength)}, _dims{dims} {}
+            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairs>(dims, cellLength, interactionLength)},
+        _dims{dims} {}
 
   /**
    * Executes a c08 base step for the cell at cellIndex.
@@ -66,41 +67,41 @@ class VLCCellPairC08CellHandler {
       const auto offsetCellB = cellIndex + offsetB;
       const auto [offsetCell1, offsetCell2] = std::minmax(offsetCellA, offsetCellB);
 
-      //const auto cell2Local = globalToLocalIndex[offsetCell1].find(offsetCell2);
+      // const auto cell2Local = globalToLocalIndex[offsetCell1].find(offsetCell2);
       const auto cell2Local = relIdx(offsetCell1, offsetCell2);
 
       // check if cell2 exists (in cell1's neighbor list)
-      //if (cell2Local != globalToLocalIndex[offsetCell1].end()) {
-        // if aos, send every pair of interacting particles to functor
-        if (layout == DataLayoutOption::aos) {
-          // vector of pairs {particle, list}
-          const auto &currentList = aosNeighborList[offsetCell1][cell2Local];
-          for (auto &[particleBasePtr, particleList] : currentList) {
-            for (auto *particlePartnerPtr : particleList) {
-              pairwiseFunctor->AoSFunctor(*particleBasePtr, *particlePartnerPtr, useNewton3);
-            }
+      // if (cell2Local != globalToLocalIndex[offsetCell1].end()) {
+      // if aos, send every pair of interacting particles to functor
+      if (layout == DataLayoutOption::aos) {
+        // vector of pairs {particle, list}
+        const auto &currentList = aosNeighborList[offsetCell1][cell2Local];
+        for (auto &[particleBasePtr, particleList] : currentList) {
+          for (auto *particlePartnerPtr : particleList) {
+            pairwiseFunctor->AoSFunctor(*particleBasePtr, *particlePartnerPtr, useNewton3);
           }
         }
+      }
 
-        // if soa, send particle and corresponding neighbor list to the functor
-        else if (layout == DataLayoutOption::soa) {
-          // vector of pairs {particle, list}
-          const auto &currentList = soaNeighborList[offsetCell1][cell2Local];
-          for (const auto &[particleIndex, particleList] : currentList) {
-            if (not particleList.empty()) {
-              pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, useNewton3);
-            }
+      // if soa, send particle and corresponding neighbor list to the functor
+      else if (layout == DataLayoutOption::soa) {
+        // vector of pairs {particle, list}
+        const auto &currentList = soaNeighborList[offsetCell1][cell2Local];
+        for (const auto &[particleIndex, particleList] : currentList) {
+          if (not particleList.empty()) {
+            pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, useNewton3);
           }
         }
+      }
       //}
 
       // if newton3 is off, find cell1 in cell2's neighbor list ("switch" the pair from above) and repeat the
       // interaction from above
       if (not useNewton3) {
-        //const auto cell2LocalNoN3 = globalToLocalIndex[offsetCell2].find(offsetCell1);
+        // const auto cell2LocalNoN3 = globalToLocalIndex[offsetCell2].find(offsetCell1);
         const auto cell2LocalNoN3 = relIdx(offsetCell2, offsetCell1);
         // exclude interaction within same cell - already handled in
-        if (/*cell2LocalNoN3 != globalToLocalIndex[offsetCell2].end() and */offsetCell1 != offsetCell2) {
+        if (/*cell2LocalNoN3 != globalToLocalIndex[offsetCell2].end() and */ offsetCell1 != offsetCell2) {
           // if aos, send every pair of interacting particles to functor
           if (layout == DataLayoutOption::aos) {
             // vector of pairs {particle, list}
