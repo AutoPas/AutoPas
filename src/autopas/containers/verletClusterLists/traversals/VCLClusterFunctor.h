@@ -1,6 +1,6 @@
 /**
  * @file VCLClusterFunctor.h
- * @author humig
+ * @author humig, mueller
  * @date 12.08.19
  */
 
@@ -53,9 +53,13 @@ class VCLClusterFunctor {
         traverseClusterTriwise(cluster);
       }
       if (*(cluster.getNeighbors()->data())) {
-        for (auto *neighborClusterPtr1 : *(cluster.getNeighbors())) {
-          for (auto *neighborClusterPtr2 : neighborClusterPtr1++) {
-            traverseClusterTriplet(cluster, *neighborClusterPtr1, *neighborClusterPtr2);
+        auto &neighborClusters = *(cluster.getNeighbors());
+        auto neighborClustersEnd = neighborClusters.end();
+        for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
+          for (auto neighborClusterIter2 = neighborClusterIter1 + 1; neighborClusterIter2 != neighborClustersEnd; ++neighborClusterIter2) {
+            Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
+            Cluster<Particle> &neighbor2 = **(neighborClusterIter2);
+            traverseClusterTriplet(cluster, neighbor1, neighbor2);
           }
         }
       }
@@ -159,7 +163,7 @@ class VCLClusterFunctor {
       }
     }
     else {
-      _functor->SOAFunctorTriple(cluster.getSoAView(), neighborCluster1.getSoAView(), neighborCluster2.getSoAView(), _useNewton3);
+      _functor->SoAFunctorTriple(cluster.getSoAView(), neighborCluster1.getSoAView(), neighborCluster2.getSoAView(), _useNewton3);
     }
   }
 

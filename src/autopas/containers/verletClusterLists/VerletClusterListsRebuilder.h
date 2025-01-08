@@ -359,7 +359,7 @@ class VerletClusterListsRebuilder {
    * @param towerA The given tower.
    * @param towerB The given neighbor tower.
    * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
-   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
+   * interaction lists of the clusters (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
    * false)
    */
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
@@ -391,6 +391,7 @@ class VerletClusterListsRebuilder {
             continue;
           }
           // never do halo-halo interactions
+          //TODO: probably necessary to change this for 3B interactions
           if (isHaloCluster(clusterIterA, towerA) and isHaloCluster(clusterIterB, towerB)) {
             continue;
           }

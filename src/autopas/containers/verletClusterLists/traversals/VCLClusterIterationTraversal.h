@@ -1,6 +1,6 @@
 /**
  * @file VCLClusterIterationTraversal.h
- * @author humig
+ * @author humig, mueller
  * @date 20.06.19
  */
 
@@ -56,36 +56,20 @@ class VCLClusterIterationTraversal : public TraversalInterface,
   }
 
   void traverseParticles() override {
-    if constexpr (utils::isPairwiseFunctor<Functor>()) {
-      traverseParticlePairs();
-    } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-      traverseParticleTriplets();
-    } else {
+    if constexpr (utils::isPairwiseFunctor<Functor>() || utils::isTriwiseFunctor<Functor>()) {
+      auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+
+      const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
+        _clusterFunctor.processCluster(cluster, false);
+      };
+
+      clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
+    }
+    else {
       utils::ExceptionHandler::exception(
           "VCLClusterIterationTraversal::traverseParticles(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
           _functor->getName());
     }
-  }
-
-  void traverseParticlePairs() {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
-
-    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
-      _clusterFunctor.processCluster(cluster, false);
-    };
-
-    clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
-  }
-
-  //unnecessary method, combine with traverseParticlePairs() in traverseParticles()
-  void traverseParticleTriplets() {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
-
-    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
-      _clusterFunctor.processCluster(cluster, false);
-    };
-
-    clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
   }
 
  private:
