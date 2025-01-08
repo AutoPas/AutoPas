@@ -320,7 +320,7 @@ class LJFunctorAVX
                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
-#if AUTOPAS_PRECISION_MODE == DPSP || AUTOPAS_PRECISION_MODE == DPDP
+#if AUTOPAS_PRECISION_MODE == DPDP
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
       const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
@@ -510,7 +510,7 @@ class LJFunctorAVX
                                  y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j],
                                  fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
-#if AUTOPAS_PRECISION_MODE == DPSP || AUTOPAS_PRECISION_MODE == DPDP
+#if AUTOPAS_PRECISION_MODE == DPDP
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
       const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
