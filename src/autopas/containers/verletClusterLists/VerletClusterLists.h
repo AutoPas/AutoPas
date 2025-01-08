@@ -433,9 +433,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
-    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd if
       // the status is not invalid
       if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(
@@ -558,7 +558,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
-    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
       // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd
       // if the status is not invalid
@@ -587,7 +587,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
-    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
       // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
       // the status is not invalid
@@ -763,19 +763,37 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
-    // when rebuildTowersAndClusters() was not called explicitly.
-    if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
-      // clear the lists buffer because clusters will be recreated
-      _neighborLists.clear();
-      rebuildTowersAndClusters(traversal->getUseNewton3());
-    }
-    _builder->rebuildNeighborListsAndFillClusters();
-
     auto *clusterTraversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
+
     if (clusterTraversalInterface) {
-      if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
-        calculateClusterThreadPartition();
+      switch(traversal->getTraversalType()) {
+        case(TraversalOption::vcl_cluster_iteration):
+          //switch depending on pairwise or triwise functor
+          //or change pairwise traversal methods as well
+          if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
+            // clear the lists buffer because clusters will be recreated
+            _neighborLists.clear();
+            //rebuildTowersAndClusters(traversal->getUseNewton3(), true);
+            rebuildTowersAndClusters(traversal->getUseNewton3());
+          }
+          _builder->rebuildNeighborListsAndFillClusters();
+          break;
+        case(TraversalOption::vcl_list_intersection_3b):
+          //sort and intersect pair neighbor lists (halo clusters included)
+        case(TraversalOption::vcl_triplet_list_iteration_3b):
+          //special 3b neighbor lists
+        default:
+          // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
+          // when rebuildTowersAndClusters() was not called explicitly.
+          if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
+            // clear the lists buffer because clusters will be recreated
+            _neighborLists.clear();
+            rebuildTowersAndClusters(traversal->getUseNewton3());
+          }
+          _builder->rebuildNeighborListsAndFillClusters();
+          if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
+            calculateClusterThreadPartition();
+          }
       }
     } else {
       autopas::utils::ExceptionHandler::exception(
@@ -979,8 +997,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * Initializes a new VerletClusterListsRebuilder and uses it to rebuild the towers and the clusters.
    * This function sets the container structure to valid.
    * @param newton3 Indicate whether the VerletClusterRebuilder should consider newton3 or not.
+   * @param haloClusterNeighborLists Indicates whether the VerletClusterRebuilder should build neighbor lists for halo
+   * clusters as well
    */
-  void rebuildTowersAndClusters(bool newton3) {
+  void rebuildTowersAndClusters(bool newton3, bool haloClusterNeighborLists = false) {
     using namespace utils::ArrayMath::literals;
     // collect all particles to add from across the thread buffers
     typename decltype(_particlesToAdd)::value_type particlesToAdd;
@@ -995,7 +1015,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     const double interactionLength = _cutoff + this->_skinPerTimestep * _rebuildFrequency;
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(
-        _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3);
+        _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3, haloClusterNeighborLists);
 
     _numClusters = _builder->rebuildTowersAndClusters();
 
