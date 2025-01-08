@@ -9,9 +9,10 @@
 #include "autopas/utils/StringUtils.h"
 
 std::string autopas::Configuration::toString() const {
-  return "{Container: " + container.to_string() + " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
-         " , Traversal: " + traversal.to_string() + " , Load Estimator: " + loadEstimator.to_string() +
-         " , Data Layout: " + dataLayout.to_string() + " , Newton 3: " + newton3.to_string() + "}";
+  return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
+         " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
+         " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
+         " , Newton 3: " + newton3.to_string() + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -20,7 +21,8 @@ std::string autopas::Configuration::getCSVLine() const { return getCSVRepresenta
 
 bool autopas::Configuration::hasValidValues() const {
   return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
-         loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option();
+         loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
+         interactionType != InteractionTypeOption();
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {
@@ -49,7 +51,7 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
 
 bool autopas::Configuration::hasCompatibleValues() const {
   // Check if container and traversal fit together
-  const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container);
+  const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container, interactionType);
   if (allContainerTraversals.find(traversal) == allContainerTraversals.end()) {
     return false;
   }
@@ -96,7 +98,7 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 
 bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
   return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
-         dataLayout == rhs.dataLayout and newton3 == rhs.newton3;
+         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType;
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
@@ -112,12 +114,15 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 }
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3) <
-         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3);
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
+                  lhs.interactionType) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator,
+                                                  rhs.dataLayout, rhs.newton3, rhs.interactionType);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
   constexpr auto max = std::numeric_limits<std::streamsize>::max();
+  in.ignore(max, ':');
+  in >> configuration.interactionType;
   in.ignore(max, ':');
   in >> configuration.container;
   in.ignore(max, ':');

@@ -133,6 +133,7 @@ do
                             --box-length 10 \
                             --cell-size ${cellSizeFactor} \
                             --container ${container} \
+                            --functor ljAVX \
                             --cutoff 1 \
                             --data-layout ${dataLayout} \
                             --deltaT 0. \

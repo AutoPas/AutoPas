@@ -47,16 +47,36 @@ class ParticlePropertiesLibrary {
   ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
 
   /**
-   * Adds the properties of a type of a single LJ site type to the library.
+   * Registers a new single site type to the library with a given mass.
+   * @note New sites must be registered with consecutive siteIds.
+   * @note This only registers the site. Potential specific parameters must be added afterwards by calling e.g.
+   * `addLJParametersToSite()` for a Lennard-Jones Site.
    *
-   * This function also precomputes all possible mixed values with already known particle types.
-   * If the type id already exists the values will be overwritten.
+   * @param siteId
+   * @param mass
+   */
+  void addSiteType(const intType siteId, const floatType mass);
+
+  /**
+   * Adds the LJ properties of a single site type to the library.
+   *
+   * Checks if a site with given siteId was already registered.
+   * Old values will be overwritten.
    * @param siteId
    * @param epsilon
    * @param sigma
-   * @param mass
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
+  void addLJParametersToSite(const intType siteId, const floatType epsilon, const floatType sigma);
+
+  /**
+   * Adds the AT properties of a single site type to the library.
+   *
+   * Checks if a site with given siteId was already registered.
+   * Old values will be overwritten.
+   * @param siteId
+   * @param nu
+   */
+  void addATParametersToSite(const intType siteId, const floatType nu);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -117,6 +137,13 @@ class ParticlePropertiesLibrary {
    * @return sigma_i
    */
   floatType getSigma(intType i) const;
+
+  /**
+   * Getter for the site's nu.
+   * @param i Type Id of the site or single-site molecule.
+   * @return nu_i
+   */
+  floatType getNu(intType i) const;
 
   /**
    * Getter for the site's mass.
@@ -194,26 +221,26 @@ class ParticlePropertiesLibrary {
    * @param  j Id of site two.
    * @return 24*epsilon_ij
    */
-  inline floatType getMixing24Epsilon(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
+  floatType getMixing24Epsilon(intType i, intType j) const {
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
   }
 
   /**
-   * Get complete mixing data for one pair of site types.
+   * Get complete mixing data for one pair of LJ site types.
    * @param i Id of site one.
    * @param j Id of site two.
    * @return
    */
-  inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredSiteTypes + j]; }
+  auto getLJMixingData(intType i, intType j) const { return _computedLJMixingData[i * _numRegisteredSiteTypes + j]; }
 
   /**
-   * Get a pointer to Mixing Data for one pair of site types.
+   * Get a pointer to Mixing Data for one pair of LJ site types.
    * @param i Id of site one.
    * @param j Id of site two.
    * @return
    */
-  inline const double *getMixingDataPtr(intType i, intType j) {
-    return reinterpret_cast<const double *>(&_computedMixingData[i * _numRegisteredSiteTypes + j]);
+  const double *getLJMixingDataPtr(intType i, intType j) {
+    return reinterpret_cast<const double *>(&_computedLJMixingData[i * _numRegisteredSiteTypes + j]);
   }
 
   /**
@@ -222,8 +249,8 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return sigma_ij²
    */
-  inline floatType getMixingSigmaSquared(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
+  floatType getMixingSigmaSquared(intType i, intType j) const {
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
   }
 
   /**
@@ -232,8 +259,8 @@ class ParticlePropertiesLibrary {
    * @param j siteId of site two.
    * @return shift * 6
    */
-  inline floatType getMixingShift6(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].shift6;
+  floatType getMixingShift6(intType i, intType j) const {
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
   /**
@@ -246,6 +273,31 @@ class ParticlePropertiesLibrary {
    */
   static floatType calcShift6(floatType epsilon24, floatType sigmaSquared, floatType cutoffSquared);
 
+  /**
+   * Returns the precomputed mixed epsilon * 24.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @param  k Id of site three.
+   * @return nu_ijk
+   */
+  floatType getMixingNu(intType i, intType j, intType k) const {
+    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
+                                 k]
+        .nu;
+  }
+
+  /**
+   * Get complete mixing data for one triplet of AT site types.
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @param k Id of site three.
+   * @return
+   */
+  auto getATMixingData(intType i, intType j, intType k) const {
+    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
+                                 k];
+  }
+
  private:
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
@@ -254,6 +306,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
+  std::vector<floatType> _nus;  // Factor for AxilrodTeller potential
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -264,28 +317,79 @@ class ParticlePropertiesLibrary {
   std::vector<size_t> _numSites;
   std::vector<floatType> _moleculesLargestSigma;
 
-  struct PackedMixingData {
+  // Allocate memory for the respective parameters
+  bool _storeLJData{false};
+  bool _storeATData{false};
+
+  struct PackedLJMixingData {
     floatType epsilon24;
     floatType sigmaSquared;
     floatType shift6;
   };
 
-  std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
+  struct PackedATMixingData {
+    floatType nu;
+  };
+
+  std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
+  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
 };
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType mass) {
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
+        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please "
+        "register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }
   ++_numRegisteredSiteTypes;
-  _epsilons.emplace_back(epsilon);
-  _sigmas.emplace_back(sigma);
   _siteMasses.emplace_back(mass);
+
+  // Allocate memory for all parameters of used models
+  if (_storeLJData) {
+    _sigmas.emplace_back(0.0);
+    _epsilons.emplace_back(0.0);
+  }
+  if (_storeATData) {
+    _nus.emplace_back(0.0);
+  }
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addLJParametersToSite(intType siteID, floatType epsilon,
+                                                                          floatType sigma) {
+  if (siteID >= _numRegisteredSiteTypes) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addLJParametersToSite(): Trying to set lennard-jones parameters for a site type "
+        "with id {},"
+        " which has not been registered yet. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  _storeLJData = true;
+  if (_epsilons.size() != _numRegisteredSiteTypes) {
+    _epsilons.resize(_numRegisteredSiteTypes);
+    _sigmas.resize(_numRegisteredSiteTypes);
+  }
+  _epsilons[siteID] = epsilon;
+  _sigmas[siteID] = sigma;
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addATParametersToSite(intType siteID, floatType nu) {
+  if (siteID >= _numRegisteredSiteTypes) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addATParametersToSite(): Trying to set the axilrod-teller parameter for a site "
+        "type with id {},"
+        " which has not been registered yet. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  _storeATData = true;
+  if (_nus.size() != _numRegisteredSiteTypes) {
+    _nus.resize(_numRegisteredSiteTypes);
+  }
+  _nus[siteID] = nu;
 }
 
 template <typename floatType, typename intType>
@@ -342,26 +446,43 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
   }
 
-  _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
+  // There are Lennard-Jones Sites
+  if (_storeLJData) {
+    const auto cutoffSquared = _cutoff * _cutoff;
+    _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
-  const auto cutoffSquared = _cutoff * _cutoff;
+    for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
+      for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
+        auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
-  for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
-    for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
-      auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
+        // epsilon
+        const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+        _computedLJMixingData[globalIndex].epsilon24 = epsilon24;
 
-      // epsilon
-      const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
-      _computedMixingData[globalIndex].epsilon24 = epsilon24;
+        // sigma
+        const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
+        const floatType sigmaSquared = sigma * sigma;
+        _computedLJMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
-      // sigma
-      const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
-      const floatType sigmaSquared = sigma * sigma;
-      _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
+        // shift6
+        const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+        _computedLJMixingData[globalIndex].shift6 = shift6;
+      }
+    }
+  }
 
-      // shift6
-      const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
-      _computedMixingData[globalIndex].shift6 = shift6;
+  if (_storeATData) {
+    _computedATMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes * _numRegisteredSiteTypes);
+    for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
+      for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
+        for (size_t thirdIndex = 0ul; thirdIndex < _numRegisteredSiteTypes; ++thirdIndex) {
+          const auto globalIndex3B = _numRegisteredSiteTypes * _numRegisteredSiteTypes * firstIndex +
+                                     _numRegisteredSiteTypes * secondIndex + thirdIndex;
+          // geometric mixing as used in e.g. https://doi.org/10.1063/1.3567308
+          const floatType mixedNu = cbrt(_nus[firstIndex] * _nus[secondIndex] * _nus[thirdIndex]);
+          _computedATMixingData[globalIndex3B].nu = mixedNu;
+        }
+      }
     }
   }
 }
@@ -421,6 +542,11 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getEpsilon(intType i) c
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) const {
   return _sigmas[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getNu(intType i) const {
+  return _nus[i];
 }
 
 template <typename floatType, typename intType>

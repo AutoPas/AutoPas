@@ -40,6 +40,7 @@ class BayesianSearch final : public TuningStrategyInterface {
  public:
   /**
    * Constructor
+   * @param interactionType
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
    * @param allowedLoadEstimatorOptions
@@ -52,6 +53,7 @@ class BayesianSearch final : public TuningStrategyInterface {
    * @param seed seed of random number generator (should only be used for tests)
    */
   explicit BayesianSearch(
+      const InteractionTypeOption &interactionType,
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
       const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
@@ -89,6 +91,8 @@ class BayesianSearch final : public TuningStrategyInterface {
    * @param af acquisition function
    */
   std::vector<FeatureVector> sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
+
+  const InteractionTypeOption _interactionType;
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
