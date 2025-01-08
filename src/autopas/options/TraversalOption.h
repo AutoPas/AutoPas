@@ -107,6 +107,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_cluster_iteration,
     /**
+     * VCLListIntersectionTraversal3B : ...
+     * Does not support Newton3.
+     */
+    vcl_list_intersection_3b,
+    /**
      * VCLSlicedTraversal : Equivalent to lc_sliced with slicing applied to the tower grid.
      */
     vcl_sliced,
@@ -120,6 +125,11 @@ class TraversalOption : public Option<TraversalOption> {
      * coloring of slices.
      */
     vcl_sliced_c02,
+    /**
+     * VCLTripletListIterationTraversal3B : ...
+     * Does not support Newton3.
+     */
+    vcl_triplet_list_iteration_3b,
 
     // VerletList Traversals:
     /**

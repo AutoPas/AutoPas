@@ -70,6 +70,36 @@ class VCLClusterFunctor {
     }
   }
 
+  /**
+   * Invokes the calculations of all interactions within the cluster and, if they exist, it's neighbors using list
+   * intersection
+   * @param cluster
+   * @param isHaloCluster
+   */
+  void processClusterListIntersection(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
+    if (not isHaloCluster) {
+      traverseClusterTriwise(cluster);
+    }
+    if (*(cluster.getNeighbors()->data())) {
+      auto &neighborClusters = *(cluster.getNeighbors());
+      //sorting first neighbor list necessary?
+      auto neighborClustersEnd = neighborClusters.end();
+      for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
+        Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
+        auto &neighborClusters1 = *(neighbor1.getNeighbors());
+        //sorting second neighbor list necessary?
+        //intersect them
+        auto intersectedNeighborsIter = neighborClusterIter1;
+        auto intersectedNeighborsEnd = std::set_intersection(++intersectedNeighborsIter, neighborClustersEnd, neighborClusters1.begin(), neighborClusters1.end());
+        //iterate over intersected list
+        for (auto neighborClusterIter2 = intersectedNeighborsIter; neighborClusterIter2 != intersectedNeighborsEnd; ++neighborClusterIter2) {
+          Cluster<Particle> &neighbor2 = **(neighborClusterIter1);
+          traverseClusterTriplet(cluster, neighbor1, neighbor2);
+        }
+      }
+    }
+  }
+
  private:
   /**
    * Traverses pairs of all particles in the given cluster. Always uses newton 3 in the AoS data layout.

@@ -175,7 +175,7 @@ class VerletClusterListsRebuilder {
       tower.setDummyParticlesToLastActualParticle();
       // Clear neighbor lists of halo clusters as well when enabled
       for (auto clusterIter = _haloClusterNeighborLists? tower.getClusters().begin() : tower.getFirstOwnedCluster();
-           clusterIter < _haloClusterNeighborLists? tower.getClusters().end() : tower.getFirstTailHaloCluster();
+           clusterIter < (_haloClusterNeighborLists ? tower.getClusters().end() : tower.getFirstTailHaloCluster());
            ++clusterIter) {
         clusterIter->clearNeighbors();
       }
