@@ -92,7 +92,7 @@ void ConfigurationAndRankIteratorHandler::reset(const int numConfigs, const int 
 void ConfigurationAndRankIteratorHandler::selectTraversalsForCurrentContainer() {
   // get all traversals of the container and restrict them to the allowed ones
   const std::set<TraversalOption> &allContainerTraversals =
-      compatibleTraversals::allCompatibleTraversals(*_containerIt);
+      compatibleTraversals::allCompatibleTraversals(*_containerIt, _interactionType);
   _allowedAndApplicableTraversalOptions.clear();
   std::set_intersection(
       _allowedTraversalOptions.begin(), _allowedTraversalOptions.end(), allContainerTraversals.begin(),

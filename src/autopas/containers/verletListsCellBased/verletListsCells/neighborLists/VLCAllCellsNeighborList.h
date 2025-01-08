@@ -464,7 +464,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       // Build the AoS list using the AoS or SoA functor depending on buildType
       auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
           lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3);
-      linkedCells.iteratePairwise(buildTraversal.get());
+      linkedCells.computeInteractions(buildTraversal.get());
     } else {
       VLCAllCellsGeneratorFunctor<Particle, TraversalOption::vlc_c18> f(
           _aosNeighborList, _particleToCellMap, cutoff + skin, listLengthEstimate,
@@ -472,7 +472,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       // Build the AoS list using the AoS or SoA functor depending on buildType
       auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
           lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3);
-      linkedCells.iteratePairwise(buildTraversal.get());
+      linkedCells.computeInteractions(buildTraversal.get());
     }
   }
 
