@@ -50,7 +50,7 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
 
     // Count number of non-aligned dimensions
     const auto factor = estimatorFactors[std::abs(x) + std::abs(y) + std::abs(z)];
-    if (traversal != TraversalOption::vlc_c01) {
+    if (traversal != TraversalOption::vlc_c01 and traversal != TraversalOption::vlp_c01) {
       const auto &[smallerIndex, biggerIndex] = std::minmax(baseCell, partnerCell);
       // Check if this offset tuple is already in the offsets list and if not add it.
       if (auto tuple = BaseStepOffsets{smallerIndex, biggerIndex, factor};
@@ -123,6 +123,9 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
       buildC08Offsets();
       break;
     case TraversalOption::vlc_c01:
+      buildC01Offsets();
+      break;
+    case TraversalOption::vlp_c01:
       buildC01Offsets();
       break;
     default:

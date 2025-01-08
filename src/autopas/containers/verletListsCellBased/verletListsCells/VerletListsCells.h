@@ -318,15 +318,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
-    // VLP needs constexpr special case because the types and thus interfaces are slightly different
-    if constexpr (std::is_same_v<NeighborList, VLCCellPairNeighborList<Particle>>) {
-      _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
-                                         this->getVerletSkin(), this->getInteractionLength(),
-                                         traversal->getTraversalType(), _dataLayoutDuringListRebuild);
-
-    } else {
-      rebuildNeighborListsVLC(traversal->getTraversalType());
-    }
+    _neighborList.rebuildNeighborListsVLC(traversal->getTraversalType(), this->_linkedCells, this->_verletBuiltNewton3);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
