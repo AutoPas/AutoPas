@@ -27,29 +27,30 @@ namespace autopasTools::generators::ClosestPackingGenerator {
  * @param spacing Distance between all neighboring particles
  */
 template <class Container>
-void fillWithParticles(Container &container, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+void fillWithParticles(Container &container, const std::array<CalcPrecision, 3> &boxMin,
+                       const std::array<CalcPrecision, 3> &boxMax,
                        const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
                            typename autopas::utils::ParticleTypeTrait<Container>::value(),
-                       const double spacing = 1.) {
+                       const CalcPrecision spacing = 1.) {
   // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
-  const double spacingRow = spacing * sqrt(3. / 4.);
+  const CalcPrecision spacingRow = spacing * sqrt(3. / 4.);
   // Spacing in z direction. Height in an equilateral tetraeder.
-  const double spacingLayer = spacing * sqrt(2. / 3.);
+  const CalcPrecision spacingLayer = spacing * sqrt(2. / 3.);
   // Shorter part of the bisectrix when split at the intersection of all bisectrices.
-  const double xOffset = spacing * 1. / 2.;
+  const CalcPrecision xOffset = spacing * 1. / 2.;
   // Shorter part of the bisectrix when split at the intersection of all bisectrices.
-  const double yOffset = spacing * sqrt(1. / 12.);
+  const CalcPrecision yOffset = spacing * sqrt(1. / 12.);
 
   // The packing alternates between odd and even layers and rows
   bool evenLayer = true;
 
   size_t id = defaultParticle.getID();
-  for (double z = boxMin[2]; z < boxMax[2]; z += spacingLayer) {
-    double starty = evenLayer ? boxMin[1] : boxMin[1] + yOffset;
+  for (CalcPrecision z = boxMin[2]; z < boxMax[2]; z += spacingLayer) {
+    CalcPrecision starty = evenLayer ? boxMin[1] : boxMin[1] + yOffset;
     bool evenRow = evenLayer;  // To ensure layers are alternating as for hexagonal close packed.
-    for (double y = starty; y < boxMax[1]; y += spacingRow) {
-      double startx = evenRow ? boxMin[0] : boxMin[0] + xOffset;
-      for (double x = startx; x < boxMax[0]; x += spacing) {
+    for (CalcPrecision y = starty; y < boxMax[1]; y += spacingRow) {
+      CalcPrecision startx = evenRow ? boxMin[0] : boxMin[0] + xOffset;
+      for (CalcPrecision x = startx; x < boxMax[0]; x += spacing) {
         auto p = defaultParticle;
         p.setR({x, y, z});
         p.setID(id++);
