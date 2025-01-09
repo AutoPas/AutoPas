@@ -37,7 +37,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
         ",energyPsys[J],"
         "energyPkg[J],"
         "energyRam[J],"
-        "numFLOPs,"
+        "numFLOP,"
         "energyPerFLOP[J/#Flops],"
         "energyDelayProduct[J*ns]");
   }
@@ -68,7 +68,7 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
                configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, energyPsys, energyPkg, energyRam, numFLOPs, energyPerFLOP, energyDelayProduct);
+               timeTuning, energyPsys, energyPkg, energyRam, numFLOP, energyPerFLOP, energyDelayProduct);
   } else {
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
