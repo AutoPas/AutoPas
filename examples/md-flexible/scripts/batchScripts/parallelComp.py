@@ -34,6 +34,7 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
 #SBATCH --export=NONE
 #SBATCH --mail-user=ge42joq@mytum.de
 #SBATCH --time={time}
+module load openmpi/4.1.5-gcc11
 OMP_NUM_THREADS={num_threads} mpirun -np {num_tasks} {executable} --yaml-filename {input_file}
 """
     return SCRIPT
