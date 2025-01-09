@@ -64,8 +64,8 @@ if __name__ == "__main__":
     num_threads = int(sys.argv[2])
     if (stepUp):
         # check if num_threads is power of 2
-        if (num_threads & (num_threads - 1)):
-            print("num_threads must be power of 2")
+        if (num_tasks & (num_tasks - 1)):
+            print("num_tasks must be power of 2")
             sys.exit(1)
 
     executable = os.path.abspath(sys.argv[3])
