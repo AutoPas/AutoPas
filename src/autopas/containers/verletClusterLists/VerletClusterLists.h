@@ -780,7 +780,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           break;
         case(TraversalOption::vcl_list_intersection_3b):
           //sort and intersect pair neighbor lists (halo clusters included)
-        case(TraversalOption::vcl_triplet_list_iteration_3b):
+        case(TraversalOption::vcl_pair_list_iteration_3b):
           //special 3b neighbor lists
         default:
           // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests

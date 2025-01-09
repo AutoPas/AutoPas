@@ -20,24 +20,24 @@ namespace autopas{
 */
 
 template <class ParticleCell, class TriwiseFunctor>
-class VCLTripletListIterationTraversal3B : public TraversalInterface, public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+class VCLPairListIterationTraversal3B : public TraversalInterface, public VCLTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
   /**
-   * Constructor of the VCLTripletListIterationTraversal3B.
+   * Constructor of the VCLPairListIterationTraversal3B.
    * @param functor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
    * @param dataLayout The data layout to use. Currently, only AoS is supported.
    * @param useNewton3 If newton 3 should be used. Currently, only false is supported.
    */
-  explicit VCLTripletListIterationTraversal3B(TriwiseFunctor *functor, size_t clusterSize,
+  explicit VCLPairListIterationTraversal3B(TriwiseFunctor *functor, size_t clusterSize,
                                           DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
         _functor(functor),
         _clusterFunctor(functor, clusterSize, dataLayout, useNewton3) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_triplet_list_iteration_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_pair_list_iteration_3b; }
 
   [[nodiscard]] bool isApplicable() const override {
     return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
