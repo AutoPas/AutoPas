@@ -1556,7 +1556,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-      info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency);
+      info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency,
+        getNumberOfParticlesOwned());
       timerCalculateHomogeneity.stop();
       const auto particleDependentBinDensityStdDev = info.template get<double>("particleDependentBinDensityStdDev");
       const auto maxParticleDensity = info.template get<double>("maxParticleDensity");
@@ -1590,7 +1591,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
     auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-    info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency);
+    info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency,
+      getNumberOfParticlesOwned());
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif

@@ -200,16 +200,16 @@ class LiveInfo {
 
 
     // ---- Build Cell-Bin Structure ----
-    auto cellBinStruct = buildCellBinStructure(domainSize, interactionLength, boxMin, boxMax);
+    auto cellBinStruct = buildCellBinStructure(domainSize, interactionLength, boxMin, boxMax, cutoff);
 
     infos["numCells"] = cellBinStruct.getNumberOfBins();
     const auto cellVolume = cellBinStruct.getBinVolume();
 
     // ---- Build Particle Dependent Bin Structure ----
-    auto particleDependentBinStruct = buildParticleDependentBinStructure(domainSize, numOwnedParticles, boxMin, boxMax);
+    auto particleDependentBinStruct = buildParticleDependentBinStructure(domainSize, numOwnedParticles, boxMin, boxMax, cutoff);
 
     // ---- Build Blurred Bin Structure ----
-    auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax);
+    auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax, cutoff);
 
     // Count the number of owned particles per bin for each bin structure. Also include total count for halo particles.
     size_t numOwnedParticlesCount = 0;
