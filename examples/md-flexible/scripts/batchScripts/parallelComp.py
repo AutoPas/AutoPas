@@ -27,7 +27,6 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
 #SBATCH --get-user-env
 #SBATCH --clusters={clusters}
 #SBATCH --partition={partition}
-#SBATCH --qos={partition}
 #SBATCH --mem={memory}mb
 #SBATCH --nodes={num_nodes}
 #SBATCH --ntasks-per-node={num_tasks_per_node}
