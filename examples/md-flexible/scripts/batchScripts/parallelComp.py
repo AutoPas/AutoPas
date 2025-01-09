@@ -18,7 +18,7 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
     clusters, partition, min_nodes, max_nodes = get_according_cluster_and_nodes(
         num_tasks * num_threads)
     num_nodes = min_nodes
-    num_tasks_per_node = num_tasks / num_nodes
+    num_tasks_per_node = int(num_tasks / num_nodes)
     SCRIPT = f"""#!/bin/bash
 #SBATCH -J {name}
 #SBATCH -o ./%x.%j.%N.out
