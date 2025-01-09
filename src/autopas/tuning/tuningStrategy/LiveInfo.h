@@ -249,16 +249,16 @@ class LiveInfo {
     infos["medianParticlesPerCell"] = cellBinStruct.getMedianParticlesPerBin();
     infos["lowerQuartileParticlesPerCell"] = cellBinStruct.getLowerQuartileParticlesPerBin();
     infos["upperQuartileParticlesPerCell"] = cellBinStruct.getUpperQuartileParticlesPerBin();
-    infos["relativeParticlesPerCellStdDev"] = cellBinStruct.getRelativeStdDevOfParticlesPerBin();
+    infos["relativeParticlesPerCellStdDev"] = cellBinStruct.getRelStdDevParticlesPerBin();
     infos["meanParticlesPerCell"] = cellBinStruct.getMeanParticlesPerBin();
-    infos["estimatedNumNeighborInteractions"] = cellBinStruct.getEstimatedNumNeighborInteractions();
+    infos["estimatedNumNeighborInteractions"] = cellBinStruct.getEstimatedNumberOfNeighborInteractions();
 
     // write particle dependent bin statistics to live info
     infos["particleDependentBinMaxDensity"] = particleDependentBinStruct.getMaxDensity();
-    infos["particleDependentBinDensityStdDev"] = particleDependentBinStruct.getDensityStdDev();
+    infos["particleDependentBinDensityStdDev"] = particleDependentBinStruct.getStdDevDensity();
 
     // write blurred bin statistics to live info
-    infos["relativeParticlesPerBlurredCellStdDev"] = blurredBinStruct.getRelativeStdDevOfParticlesPerBin();
+    infos["relativeParticlesPerBlurredCellStdDev"] = blurredBinStruct.getRelStdDevParticlesPerBin();
   }
 
   /**

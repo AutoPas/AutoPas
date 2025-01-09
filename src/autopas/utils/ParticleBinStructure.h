@@ -143,7 +143,7 @@ class ParticleBinStructure{
    * Getter for the number of bins.
    * @return
    */
-  std::size_t getNumberOfBins();
+  std::size_t getNumberOfBins() const;
 
   /**
    * Resizes the particle count structure.
@@ -154,31 +154,31 @@ class ParticleBinStructure{
    * Getter for the volume of each bin.
    * @return
    */
-  double getBinVolume();
+  double getBinVolume() const;
 
   /**
    * Returns the mean number of particles per bins.
    * Logs a warning if statistics have not been calculated yet.
    *
-   * @return The mean number of particles.
+   * @return The mean number of particles per bin.
    */
-  double getMeanNumberOfParticles();
+  [[nodiscard]] double getMeanParticlesPerBin() const;
 
   /**
    * Returns the standard deviation of the number of particles per bins.
    * Logs a warning if statistics have not been calculated yet.
    *
-   * @return The standard deviation of the number of particles.
+   * @return The standard deviation of the number of particles per bin.
    */
-  double getStandardDeviationNumberOfParticles();
+  [[nodiscard]] double getStdDevParticlesPerBin() const;
 
   /**
    * Returns the standard deviation of the number of particles per bins relative to the mean.
    * Logs a warning if statistics have not been calculated yet.
    *
-   * @return The relative standard deviation of the number of particles.
+   * @return The relative standard deviation of the number of particles per bin.
    */
-  double getRelativeStandardDeviationNumberOfParticles();
+  [[nodiscard]] double getRelStdDevParticlesPerBin() const;
 
   /**
    * Returns the mean density of particles per bins.
@@ -186,7 +186,7 @@ class ParticleBinStructure{
    *
    * @return The mean density of particles.
    */
-  double getMeanDensity();
+  [[nodiscard]] double getMeanDensity() const;
 
   /**
    * Returns the standard deviation of the density per bins.
@@ -194,13 +194,13 @@ class ParticleBinStructure{
    *
    * @return The standard deviation of densities.
    */
-  double getStandardDeviationDensity();
+  [[nodiscard]] double getStdDevDensity() const;
 
   /**
    * Returns the maximum density of any bin.
    * @return
    */
-  double getMaxDensity();
+  [[nodiscard]] double getMaxDensity() const;
 
   /**
    * Returns the maximum number of particles in a single bin.
@@ -208,7 +208,7 @@ class ParticleBinStructure{
    *
    * @return The maximum number of particles in any bin.
    */
-  size_t getMaximumNumberOfParticles();
+  [[nodiscard]] size_t getMaxParticlesPerBin() const;
 
   /**
    * Returns the minimum number of particles in a single bin.
@@ -216,7 +216,7 @@ class ParticleBinStructure{
    *
    * @return The minimum number of particles in any bin.
    */
-  size_t getMinimumNumberOfParticles();
+  [[nodiscard]] size_t getMinParticlesPerBin() const;
 
   /**
    * Returns the median number of particles across all bins.
@@ -224,23 +224,23 @@ class ParticleBinStructure{
    *
    * @return The median number of particles per bin.
    */
-  size_t getMedianNumberOfParticles();
+  [[nodiscard]] size_t getMedianParticlesPerBin() const;
 
   /**
    * Returns the lower quartile (25th percentile) number of particles across all bins.
    * Logs a warning if statistics have not been calculated yet.
    *
-   * @return The lower quartile of the number of particles.
+   * @return The lower quartile of the number of particles per bin.
    */
-  size_t getLowerQuartileNumberOfParticles();
+  [[nodiscard]] size_t getLowerQuartileParticlesPerBin() const;
 
   /**
    * Returns the upper quartile (75th percentile) number of particles across all bins.
    * Logs a warning if statistics have not been calculated yet.
    *
-   * @return The upper quartile of the number of particles.
+   * @return The upper quartile of the number of particles per bin.
    */
-  size_t getUpperQuartileNumberOfParticles();
+  [[nodiscard]] size_t getUpperQuartileParticlesPerBin() const;
 
   /**
    * Returns the number of empty bins.
@@ -248,7 +248,7 @@ class ParticleBinStructure{
    *
    * @return The empty bin ratio.
    */
-  size_t getNumEmptyBins();
+  [[nodiscard]] size_t getNumEmptyBins() const;
 
   /**
    * Returns the estimated number of neighbor interactions across all bins. This takes the assumption that particles are
@@ -258,7 +258,7 @@ class ParticleBinStructure{
    *
    * @return The estimated number of neighbor interactions.
    */
-  double getEstimatedNumberOfNeighborInteractions();
+  [[nodiscard]] double getEstimatedNumberOfNeighborInteractions() const;
 
  private:
   /**
@@ -314,7 +314,7 @@ class ParticleBinStructure{
   /**
    * Mean number of particles per bin.
    */
-  double _meanNumberOfParticles{};
+  double _meanParticlesPerBin{};
 
   /**
    * Mean density (#particles in a bin / bin volume) per bin.
@@ -324,17 +324,17 @@ class ParticleBinStructure{
   /**
    * Standard deviation in the number of particles per bin.
    */
-  double _standardDeviationNumberOfParticles{};
+  double _stdDevParticlesPerBin{};
 
   /**
    * Standard deviation in the number of particles per bin relative to the number of particles.
    */
-  double _relativeStandardDeviationNumberOfParticles{};
+  double _relStdDevParticlesPerBin{};
 
   /**
    * Standard deviation in the bin density per bin.
    */
-  double _standardDeviationDensity{};
+  double _stdDevDensity{};
 
   /**
    * Maximum density in any bin.
@@ -344,27 +344,27 @@ class ParticleBinStructure{
   /**
    * Maximum number of particles that any bin has.
    */
-  size_t _maximumNumberOfParticles{};
+  size_t _maxParticlesPerBin{};
 
   /**
    * Minimum number of particles that any bin has.
    */
-  size_t _minimumNumberOfParticles{};
+  size_t _minimumParticlesPerBin{};
 
   /**
    * Median number of particles that any bin has.
    */
-  size_t _medianNumberOfParticles{};
+  size_t _medianParticlesPerBin{};
 
   /**
    * Lower quartile number of particles that any bin has.
    */
-  size_t _lowerQuartileNumberOfParticles{};
+  size_t _lowerQuartileParticlesPerBin{};
 
   /**
    * Upper quartile number of particles that any bin has.
    */
-  size_t _upperQuartileNumberOfParticles{};
+  size_t _upperQuartileParticlesPerBin{};
 
   /**
    * Number of bins which are empty.

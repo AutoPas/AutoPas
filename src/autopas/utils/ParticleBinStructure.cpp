@@ -76,15 +76,15 @@ void ParticleBinStructure::calculateStatistics() {
   std::sort(sortedParticleCounts.begin(), sortedParticleCounts.end());
 
   // Get the minimum, maximum, median, and quartile particle counts
-  _minimumNumberOfParticles = sortedParticleCounts.front();
-  _maximumNumberOfParticles = sortedParticleCounts.back();
-  _medianNumberOfParticles = sortedParticleCounts[sortedParticleCounts.size() / 2];
-  _lowerQuartileNumberOfParticles = sortedParticleCounts[sortedParticleCounts.size() / 4];
-  _upperQuartileNumberOfParticles = sortedParticleCounts[3 * sortedParticleCounts.size() / 4];
+  _minimumParticlesPerBin = sortedParticleCounts.front();
+  _maxParticlesPerBin = sortedParticleCounts.back();
+  _medianParticlesPerBin = sortedParticleCounts[sortedParticleCounts.size() / 2];
+  _lowerQuartileParticlesPerBin = sortedParticleCounts[sortedParticleCounts.size() / 4];
+  _upperQuartileParticlesPerBin = sortedParticleCounts[3 * sortedParticleCounts.size() / 4];
 
   // Determine the mean number of particles and density
-  _meanNumberOfParticles = static_cast<double>(_totalParticleCount) / static_cast<double>(getNumberOfBins());
-  _meanDensity = _meanNumberOfParticles / getBinVolume();
+  _meanParticlesPerBin = static_cast<double>(_totalParticleCount) / static_cast<double>(getNumberOfBins());
+  _meanDensity = _meanParticlesPerBin / getBinVolume();
 
 
   // For the estimated number of neighbor interactions calculations, determine the estimated hit rate if the Linked
@@ -120,7 +120,7 @@ void ParticleBinStructure::calculateStatistics() {
           static_cast<double>(particleCount * (particleCount * 27)) * estimatedHitRate  - particleCount, 0.);
     }
 
-    const auto numParticlesDiffFromMean = particleCount - _meanNumberOfParticles;
+    const auto numParticlesDiffFromMean = particleCount - _meanParticlesPerBin;
     numParticlesVarianceSum += numParticlesDiffFromMean * numParticlesDiffFromMean;
 
     const auto density = particleCount / getBinVolume();
@@ -131,9 +131,9 @@ void ParticleBinStructure::calculateStatistics() {
   }
 
   _estimatedNumberOfNeighborInteractions = estimatedNumNeighborInteractionsSum;
-  _standardDeviationNumberOfParticles = std::sqrt(numParticlesVarianceSum / static_cast<double>(getNumberOfBins()));
-  _relativeStandardDeviationNumberOfParticles = _standardDeviationNumberOfParticles / _meanNumberOfParticles;
-  _standardDeviationDensity = std::sqrt(densityVarianceSum / static_cast<double>(getNumberOfBins()));
+  _stdDevParticlesPerBin = std::sqrt(numParticlesVarianceSum / static_cast<double>(getNumberOfBins()));
+  _relStdDevParticlesPerBin = _stdDevParticlesPerBin / _meanParticlesPerBin;
+  _stdDevDensity = std::sqrt(densityVarianceSum / static_cast<double>(getNumberOfBins()));
   _numEmptyBins = emptyBinCount;
   _maxDensity = maximumDensity;
 
@@ -190,97 +190,97 @@ void ParticleBinStructure::setBoxMax(const std::array<double, 3> &boxMax) {
   _boxMax = boxMax;
 }
 
-std::size_t ParticleBinStructure::getNumberOfBins() { return _particleCounts.size(); }
+std::size_t ParticleBinStructure::getNumberOfBins() const { return _particleCounts.size(); }
 
 void ParticleBinStructure::resize() {_particleCounts.resize(getNumberOfBins());}
 
-double ParticleBinStructure::getBinVolume() { return _binLength[0] * _binLength[1] * _binLength[2]; }
+double ParticleBinStructure::getBinVolume() const { return _binLength[0] * _binLength[1] * _binLength[2]; }
 
-double ParticleBinStructure::getMeanNumberOfParticles() {
+double ParticleBinStructure::getMeanParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _meanNumberOfParticles;
+  return _meanParticlesPerBin;
 }
 
-double ParticleBinStructure::getStandardDeviationNumberOfParticles() {
+double ParticleBinStructure::getStdDevParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _standardDeviationNumberOfParticles;
+  return _stdDevParticlesPerBin;
 }
 
-double ParticleBinStructure::getRelativeStandardDeviationNumberOfParticles() {
+double ParticleBinStructure::getRelStdDevParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _relativeStandardDeviationNumberOfParticles;
+  return _relStdDevParticlesPerBin;
 }
 
-double ParticleBinStructure::getMeanDensity() {
+double ParticleBinStructure::getMeanDensity() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
   return _meanDensity;
 }
 
-double ParticleBinStructure::getStandardDeviationDensity() {
+double ParticleBinStructure::getStdDevDensity() const {
   if (!_statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _standardDeviationDensity;
+  return _stdDevDensity;
 }
 
-double ParticleBinStructure::getMaxDensity() {
+double ParticleBinStructure::getMaxDensity() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
   return _maxDensity;
 }
 
-size_t ParticleBinStructure::getMaximumNumberOfParticles() {
+size_t ParticleBinStructure::getMaxParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _maximumNumberOfParticles;
+  return _maxParticlesPerBin;
 }
 
-size_t ParticleBinStructure::getMinimumNumberOfParticles() {
+size_t ParticleBinStructure::getMinParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _minimumNumberOfParticles;
+  return _minimumParticlesPerBin;
 }
 
-size_t ParticleBinStructure::getMedianNumberOfParticles() {
+size_t ParticleBinStructure::getMedianParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _medianNumberOfParticles;
+  return _medianParticlesPerBin;
 }
 
-size_t ParticleBinStructure::getLowerQuartileNumberOfParticles() {
+size_t ParticleBinStructure::getLowerQuartileParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _lowerQuartileNumberOfParticles;
+  return _lowerQuartileParticlesPerBin;
 }
 
-size_t ParticleBinStructure::getUpperQuartileNumberOfParticles() {
+size_t ParticleBinStructure::getUpperQuartileParticlesPerBin() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
-  return _upperQuartileNumberOfParticles;
+  return _upperQuartileParticlesPerBin;
 }
 
-size_t ParticleBinStructure::getNumEmptyBins() {
+size_t ParticleBinStructure::getNumEmptyBins() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet. Returning default/stored value for _emptyBinRatio.");
   }
   return _numEmptyBins;
 }
 
-double ParticleBinStructure::getEstimatedNumberOfNeighborInteractions() {
+double ParticleBinStructure::getEstimatedNumberOfNeighborInteractions() const {
   if (not _statisticsCalculated) {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
