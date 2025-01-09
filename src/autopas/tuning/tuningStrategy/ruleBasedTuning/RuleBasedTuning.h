@@ -19,6 +19,7 @@
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
+#include "autopas/utils/WrapMPI.h"
 #endif
 
 #include "autopas/tuning/Configuration.h"
