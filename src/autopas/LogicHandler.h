@@ -1647,7 +1647,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                measurements.energyPkg, measurements.energyRam);
   }
   _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(),
-                                measurements, functor->getNumFLOPs());
+                                measurements);
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
