@@ -1,0 +1,60 @@
+# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
+## md-flexible compiled for multi-site molecules.
+container                        :  [DirectSum, LinkedCells, LinkedCellsReferences]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius-per-timestep  :  0.1
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS, SoA]
+traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18]
+tuning-metric                        :  time
+tuning-strategies                    :  [slow-config-filter, predictive-tuning]
+tuning-interval                      :  5000
+tuning-samples                       :  3
+tuning-max-evidence                  :  10
+functor                          :  dem
+newton3                          :  [disabled, enabled]
+cutoff                           :  1.5
+box-min                          :  [0, 0, 0]
+box-max                          :  [15.75, 15.75, 5.75]
+cell-size                        :  [2]
+deltaT                           :  0.00001
+iterations                       :  7500000
+boundary-type                    :  [reflective,reflective,reflective]
+globalForce                      :  [0,0,0]
+backgroundForceFrictionCoeff      :  0.0
+backgroundTorqueFrictionCoeff     :  0.0
+pressure                         :  1
+strainResizingDomainXMax  : 15.85
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+    radius                       :  0.5
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    site-types                   :  [ 0 ]
+#    relative-site-positions      :  [ [0, 0, 0 ] ]
+#    moment-of-inertia            :  [ 1., 1., 1. ]
+Objects:
+  # "water"
+  CubeClosestPacked:
+    0:
+      particle-spacing           :  1
+      bottomLeftCorner           :  [0.5, 0.5, 0.5]
+      box-length                 :  [15, 15, 5] # x, y, z
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+# thermostat:
+#   initialTemperature             :  1
+#   targetTemperature              :  4
+#   deltaTemperature               :  0.1
+#   thermostatInterval             :  10
+#   addBrownianMotion              :  false
+vtk-filename                     :  ss_shortened_p_1_s_0d75
+vtk-write-frequency              :  40000
+vtk-output-folder                :  vtkOutputFolder
+no-end-config                    :  true
+log-level                        :  info
