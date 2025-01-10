@@ -282,7 +282,7 @@ void Simulation::run() {
         const auto currentDomainMin = _autoPasContainer->getBoxMin();
         initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) *
                         (currentDomainMax[2] - currentDomainMin[2]);
-        finalBoxMaxY = currentDomainMax[1] * 0.5;
+        finalBoxMaxY = currentDomainMax[1] * 0.75;
         startBoxMaxX = currentDomainMax[0];
         startBoxMaxY = currentDomainMax[1];
       }
@@ -597,7 +597,7 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
   // Calculating values for strain-controlled movement
   const double initialBoxMaxY = _configuration.boxMax.value[1];
   const double delta_T = _configuration.deltaT.value;
-  const double rate_of_deformation_denom = 32.;
+  const double rate_of_deformation_denom = 16.;
   const double rate_of_deformation = M_PI / rate_of_deformation_denom;
   const size_t stopping_iteration = (rate_of_deformation_denom / delta_T) + starting_iteration;
   const double newBoxMaxY =
