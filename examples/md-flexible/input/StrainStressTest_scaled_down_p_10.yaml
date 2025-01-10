@@ -25,7 +25,7 @@ globalForce                      :  [0,0,0]
 backgroundForceFrictionCoeff      :  0.0
 backgroundTorqueFrictionCoeff     :  0.0
 pressure                         :  10
-strainResizingDomainXMax  : 15.9075
+strainResizingDomainXMax  : 15.875
 Sites:
   0:
     epsilon                      :  1.
