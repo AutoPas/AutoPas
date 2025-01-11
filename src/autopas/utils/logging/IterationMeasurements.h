@@ -65,7 +65,7 @@ struct IterationMeasurements {
   /**
    * Energy consumed per FLOP.
    */
-  long energyPerFLOP{};
+  double energyPerFLOP{};
 
   /**
    * Energy Delay Product.

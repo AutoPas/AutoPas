@@ -1086,7 +1086,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   functor.endTraversal(newton3);
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
   const auto numFLOP = functor.getNumFLOPs();
-  const auto energyPerFLOP = energyTotal / numFLOP;
+  double energyPerFLOP = static_cast<double>(energyTotal) / static_cast<double>(numFLOP);
   timerTotal.stop();
   double energyDelayProduct = static_cast<double>(energyTotal) * static_cast<double>(timerTotal.getTotalTime());
 
@@ -1102,7 +1102,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
           energyMeasurementsPossible ? energyRam : nanD,
           energyMeasurementsPossible ? energyTotal : nanL,
           energyMeasurementsPossible ? static_cast<long>(numFLOP) : nanL,
-          energyMeasurementsPossible ? static_cast<long>(energyPerFLOP) : nanL,
+          energyMeasurementsPossible ? energyPerFLOP : nanD,
           energyMeasurementsPossible ? energyDelayProduct : nanD};
 }
 
@@ -1663,7 +1663,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
           case TuningMetricOption::energy:
             return measurements.energyTotal;
          case TuningMetricOption::energyPerFLOP:
-            return static_cast<long>(measurements.energyTotal / functor->getNumFLOPs());
+            return static_cast<long>(static_cast<double>(measurements.energyTotal) / static_cast<double>(functor->getNumFLOPs()));
           case TuningMetricOption::energyDelayProduct:
             return static_cast<long>(static_cast<double>(measurements.energyTotal) * static_cast<double>(measurements.timeTotal));
           default:
