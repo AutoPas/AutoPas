@@ -53,7 +53,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  ss_shortened_p_1_s_0d75
+vtk-filename                     :  ss_p_1em9_s_0d5_no_vl
 vtk-write-frequency              :  40000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
