@@ -196,7 +196,7 @@ void Simulation::run() {
   const size_t statsWriteFrequency = 1000; // _configuration.vtkWriteFrequency.value / 100;
   const double strainResizingDomainXMax = _configuration.strainResizingDomainXMax.value;
   size_t strainResizingStartingIteration = std::numeric_limits<size_t>::max();
-  const double spring_stiffness = 50;
+  const double spring_stiffness = 100;
   const double normal_viscosity = 5e-5;
   const double pressure = _configuration.pressure.value;
   const double damping_coeff = 1;
@@ -282,11 +282,12 @@ void Simulation::run() {
         const auto currentDomainMin = _autoPasContainer->getBoxMin();
         initialVolume = (currentDomainMax[0] - currentDomainMin[0]) * (currentDomainMax[1] - currentDomainMin[1]) *
                         (currentDomainMax[2] - currentDomainMin[2]);
-        finalBoxMaxY = currentDomainMax[1] * 0.75;
+        finalBoxMaxY = currentDomainMax[1] * 0.5;
         startBoxMaxX = currentDomainMax[0];
         startBoxMaxY = currentDomainMax[1];
+        std::cout << "------------------------Iteration : " << _iteration << "----Strain-Stress-Resizing-Start------------------------------------" << std::endl;
       }
-      applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, finalBoxMaxY,
+      applyStrainStressResizing(forceSumOnXUpperWall, pressure, damping_coeff, startBoxMaxY, finalBoxMaxY,
                                 strainResizingStartingIteration, 0.5);
 
       _timers.reflectParticlesAtBoundaries.stop();
@@ -592,21 +593,11 @@ void Simulation::calculateBackgroundFriction(const double forceDampingCoeff, con
 }
 
 void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall, const double pressure,
-                                           const double damping_coeff, const double finalBoxMaxY,
+                                           const double damping_coeff, const double initialBoxMaxY, const double finalBoxMaxY,
                                            const size_t starting_iteration, const double minRadius) {
-  // Calculating values for strain-controlled movement
-  const double initialBoxMaxY = _configuration.boxMax.value[1];
+
   const double delta_T = _configuration.deltaT.value;
-  const double rate_of_deformation_denom = 16.;
-  const double rate_of_deformation = M_PI / rate_of_deformation_denom;
-  const size_t stopping_iteration = (rate_of_deformation_denom / delta_T) + starting_iteration;
-  const double newBoxMaxY =
-      _iteration < starting_iteration ? initialBoxMaxY
-      : _iteration > stopping_iteration
-          ? finalBoxMaxY
-          : finalBoxMaxY + 0.5 * (initialBoxMaxY - finalBoxMaxY) *
-                               (1 + cos(rate_of_deformation * (_iteration - starting_iteration) *
-                                        delta_T));  // strain-controlled movement only after starting_iteration
+  const std::array<double, 3> currentBoxMax = _autoPasContainer->getBoxMax();
 
   // Calculating values for stress-controlled movement
   const double area_x_upper_wall =
@@ -617,12 +608,28 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
   const double a_x_wall = damping_coeff * (force_from_inside - force_from_outside);
   // Prevent particles to be pushed out of the box
   const double maxMovement = 0.25 * minRadius;
-  const double delta_x_abs_calculated = std::abs(.5 * a_x_wall * delta_T * delta_T);
-  const double delta_x =
+  const double delta_x_abs_calculated = std::abs(100 * a_x_wall * delta_T * delta_T);
+  double delta_x =
       a_x_wall > 0 ? std::min(delta_x_abs_calculated, maxMovement) : -std::min(delta_x_abs_calculated, maxMovement);
+  if (_iteration < starting_iteration) {
+    delta_x = -maxMovement;
+  }
+
+  // Calculating values for strain-controlled movement
+  const double rate_of_deformation_denom = 32.;
+  const double rate_of_deformation = M_PI / rate_of_deformation_denom;
+  const size_t stopping_iteration = (rate_of_deformation_denom / delta_T) + starting_iteration;
+  const double newBoxMaxY =
+      _iteration < starting_iteration ? currentBoxMax[1] - maxMovement
+      : _iteration > stopping_iteration
+          ? finalBoxMaxY
+          : finalBoxMaxY + 0.5 * (initialBoxMaxY - finalBoxMaxY) *
+                               (1 + cos(rate_of_deformation * (_iteration - starting_iteration) *
+                                        delta_T));  // strain-controlled movement only after starting_iteration
+
+
 
   // Resizing box
-  const std::array<double, 3> currentBoxMax = _autoPasContainer->getBoxMax();
   const std::array<double, 3> newBoxMax = {currentBoxMax[0] + delta_x, newBoxMaxY, currentBoxMax[2]};
 
   std::cout << "Iteration " << _iteration << ": Resizing X-axis from " << currentBoxMax[0] << " to " << newBoxMax[0]

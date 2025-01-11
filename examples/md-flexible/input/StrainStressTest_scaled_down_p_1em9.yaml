@@ -24,8 +24,8 @@ boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,0]
 backgroundForceFrictionCoeff      :  0.0
 backgroundTorqueFrictionCoeff     :  0.0
-pressure                         :  1
-strainResizingDomainXMax  : 15.85
+pressure                         :  1e-9
+strainResizingDomainXMax  : 15.55
 Sites:
   0:
     epsilon                      :  1.
