@@ -39,7 +39,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
         "energyRam[J],"
         "numFLOP,"
         "energyPerFLOP[J/#Flops],"
-        "energyDelayProduct[J*ns]");
+        "energyDelayProduct[J*s]");
   }
   headerLogger->info(csvHeader, Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);

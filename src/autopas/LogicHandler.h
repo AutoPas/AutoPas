@@ -1085,10 +1085,10 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   functor.endTraversal(newton3);
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
-  const auto numFLOP = functor.getNumFLOPs();
-  double energyPerFLOP = static_cast<double>(energyTotal) / static_cast<double>(numFLOP);
+  long numFLOP = static_cast<long>(functor.getNumFLOPs());
+  double energyPerFLOP = static_cast<double>(energyTotal/1e6) / static_cast<double>(numFLOP);
   timerTotal.stop();
-  double energyDelayProduct = static_cast<double>(energyTotal) * static_cast<double>(timerTotal.getTotalTime());
+  double energyDelayProduct = static_cast<double>((energyTotal/1e6) * (timerTotal.getTotalTime()/1e6));
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
@@ -1663,9 +1663,9 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
           case TuningMetricOption::energy:
             return measurements.energyTotal;
          case TuningMetricOption::energyPerFLOP:
-            return static_cast<long>(static_cast<double>(measurements.energyTotal) / static_cast<double>(functor->getNumFLOPs()));
+            return static_cast<long>(measurements.energyPerFLOP);
           case TuningMetricOption::energyDelayProduct:
-            return static_cast<long>(static_cast<double>(measurements.energyTotal) * static_cast<double>(measurements.timeTotal));
+            return static_cast<long>(measurements.energyDelayProduct);
           default:
             autopas::utils::ExceptionHandler::exception(
                 "LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
