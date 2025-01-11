@@ -318,7 +318,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
-    _neighborList.rebuildNeighborListsVLC(traversal->getTraversalType(), this->_linkedCells, this->_verletBuiltNewton3);
+    _neighborList.buildAoSNeighborList(traversal->getTraversalType(), this->_linkedCells, this->_verletBuiltNewton3);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
