@@ -70,7 +70,7 @@ struct IterationMeasurements {
   /**
    * Energy Delay Product.
    */
-  long energyDelayProduct{};
+  double energyDelayProduct{};
 
 
 

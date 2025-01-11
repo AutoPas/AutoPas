@@ -1088,7 +1088,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   const auto numFLOP = functor.getNumFLOPs();
   const auto energyPerFLOP = energyTotal / numFLOP;
   timerTotal.stop();
-  const auto energyDelayProduct = energyTotal * timerTotal.getTotalTime();
+  double energyDelayProduct = static_cast<double>(energyTotal) * static_cast<double>(timerTotal.getTotalTime());
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
@@ -1103,7 +1103,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
           energyMeasurementsPossible ? energyTotal : nanL,
           energyMeasurementsPossible ? static_cast<long>(numFLOP) : nanL,
           energyMeasurementsPossible ? static_cast<long>(energyPerFLOP) : nanL,
-          energyMeasurementsPossible ? energyDelayProduct : nanL};
+          energyMeasurementsPossible ? energyDelayProduct : nanD};
 }
 
 template <typename Particle>
@@ -1665,7 +1665,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
          case TuningMetricOption::energyPerFLOP:
             return static_cast<long>(measurements.energyTotal / functor->getNumFLOPs());
           case TuningMetricOption::energyDelayProduct:
-            return measurements.energyTotal * measurements.timeTotal;
+            return static_cast<long>(static_cast<double>(measurements.energyTotal) * static_cast<double>(measurements.timeTotal));
           default:
             autopas::utils::ExceptionHandler::exception(
                 "LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
