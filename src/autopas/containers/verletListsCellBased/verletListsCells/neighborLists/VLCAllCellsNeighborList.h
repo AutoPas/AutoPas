@@ -58,11 +58,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   /**
-   * Special case of building the neighbor lists in c08 and c18 style where all lists that belong to one base step are
-   * stored together.
-   * @param traversal The TraversalOption with which the function is called.
-   * @param linkedCells A reference to the linked cells container.
-   * @param verletBuiltNewton3 Boolean to specify if newton3 is enabled or not.
+   * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    */
   void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle> &linkedCells, bool useNewton3) {
     using namespace utils::ArrayMath::literals;

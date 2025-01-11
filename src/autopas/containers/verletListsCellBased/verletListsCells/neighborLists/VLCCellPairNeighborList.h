@@ -89,13 +89,9 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   auto &getSoANeighborList() { return _soaNeighborList; }
 
   /**
-   * Special case of building the neighbor lists in c08 and c18 style where all lists that belong to one base step are
-   * stored together.
-   * @param traversal The TraversalOption with which the function is called.
-   * @param linkedCells A reference to the linked cells container.
-   * @param verletBuiltNewton3 Boolean to specify if newton3 is enabled or not.
+   * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    */
-  void buildAoSNeighborList(TraversalOption traversal, LinkedCells<Particle> &linkedCells, bool verletBuiltNewton3) {
+  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle> &linkedCells, bool useNewton3) {
     using namespace utils::ArrayMath::literals;
     // Sanity check.
     if (linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
@@ -205,7 +201,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
         utils::ArrayUtils::static_cast_copy_array<int>(linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
     // Vector of offsets from the base cell for the c08 base step
     // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
-    const auto offsets = VerletListsCellsHelpers::buildBaseStep(cellsPerDim, traversal);
+    const auto offsets = VerletListsCellsHelpers::buildBaseStep(cellsPerDim, vlcTraversalOpt);
 
     int xEnd{};
     int yEnd{};
@@ -241,7 +237,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           // baseCellsLists.resize(27);
 
           // baseCellsLists.resize(VerletListsCellsHelpers::estimateNumLists(
-          //     cellIndexBase, verletBuiltNewton3, cells, offsets,
+          //     cellIndexBase, useNewton3, cells, offsets,
           //     utils::ArrayUtils::static_cast_copy_array<size_t>(cellsPerDim)));
 
           // Re-initialize a neighbor list for all particles in the cell but at most for as many as there are lists
@@ -288,7 +284,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
               // For vlc_c01 we have to iterate over all pairs like p1<->p2 and p2<->p1 because we do not make use of
               // newton3
               size_t startIndexCell2 = 0;
-              if (cellIndex1 == cellIndex2 and traversal != TraversalOption::vlp_c01) {
+              if (cellIndex1 == cellIndex2 and vlcTraversalOpt != TraversalOption::vlp_c01) {
                 startIndexCell2 = particleIndexCell1 + 1;
               }
 
@@ -310,7 +306,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
                            cell1List[relIdx(cellIndex1, cellIndex2)]);
                   }
                   // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
-                  if (not verletBuiltNewton3 and not(traversal == TraversalOption::vlp_c01)) {
+                  if (not useNewton3 and not(vlcTraversalOpt == TraversalOption::vlp_c01)) {
                     {
                       size_t secondCellIndexInFirst;
                       insert(p2, particleIndexCell2, p1, cellIndex2, cellIndex2,

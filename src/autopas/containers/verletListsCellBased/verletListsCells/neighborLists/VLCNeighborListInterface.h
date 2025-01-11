@@ -25,13 +25,9 @@ class VLCNeighborListInterface {
 
   /**
    * Builds AoS neighbor list from underlying linked cells object.
+   * @param vlcTraversalOpt Traversal for which this neighbor list is built.
    * @param linkedCells Linked Cells object used to build the neighbor list.
    * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
-   * @param cutoff Cutoff radius.
-   * @param skin Skin of the verlet list.
-   * @param interactionLength Interaction length of the underlying linked cells object.
-   * @param vlcTraversalOpt Traversal for which this neighbor list is built.
-   * @param buildType Type of build functor to be used for the generation of the neighbor list.
    */
   virtual void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle> &linkedCells,
                                     bool useNewton3) = 0;
