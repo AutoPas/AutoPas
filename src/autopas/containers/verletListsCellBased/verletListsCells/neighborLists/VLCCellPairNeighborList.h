@@ -207,7 +207,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     int yEnd{};
     int zEnd{};
 
-    switch (traversal) {
+    switch (vlcTraversalOpt) {
       case TraversalOption::vlc_c08:
         // Go over all cells except the very last layer and create lists per base step.
         xEnd = cellsPerDim[0] - 1;
