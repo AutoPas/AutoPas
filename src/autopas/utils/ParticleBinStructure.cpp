@@ -4,8 +4,6 @@
 * @date 13/12/2024
  */
 
-//#include <array>
-//#include <vector>
 
 #include "ParticleBinStructure.h"
 
@@ -76,12 +74,14 @@ void ParticleBinStructure::calculateStatistics() {
   std::vector<std::size_t> sortedParticleCounts(_particleCounts);
   std::sort(sortedParticleCounts.begin(), sortedParticleCounts.end());
 
+  const bool noParticles = _particleCounts.empty();
+
   // Get the minimum, maximum, median, and quartile particle counts
-  _minimumParticlesPerBin = sortedParticleCounts.front();
-  _maxParticlesPerBin = sortedParticleCounts.back();
-  _medianParticlesPerBin = sortedParticleCounts[sortedParticleCounts.size() / 2];
-  _lowerQuartileParticlesPerBin = sortedParticleCounts[sortedParticleCounts.size() / 4];
-  _upperQuartileParticlesPerBin = sortedParticleCounts[3 * sortedParticleCounts.size() / 4];
+  _minimumParticlesPerBin = noParticles ? 0 : sortedParticleCounts.front();
+  _maxParticlesPerBin = noParticles ? 0 : sortedParticleCounts.back();
+  _medianParticlesPerBin = noParticles ? 0 : sortedParticleCounts[sortedParticleCounts.size() / 2];
+  _lowerQuartileParticlesPerBin = noParticles ? 0 : sortedParticleCounts[sortedParticleCounts.size() / 4];
+  _upperQuartileParticlesPerBin = noParticles ? 0 : sortedParticleCounts[3 * sortedParticleCounts.size() / 4];
 
   // Determine the mean number of particles and density
   _meanParticlesPerBin = static_cast<double>(_totalParticleCount) / static_cast<double>(getNumberOfBins());
@@ -133,7 +133,7 @@ void ParticleBinStructure::calculateStatistics() {
 
   _estimatedNumberOfNeighborInteractions = estimatedNumNeighborInteractionsSum;
   _stdDevParticlesPerBin = std::sqrt(numParticlesVarianceSum / static_cast<double>(getNumberOfBins()));
-  _relStdDevParticlesPerBin = _stdDevParticlesPerBin / _meanParticlesPerBin;
+  _relStdDevParticlesPerBin = noParticles ? 0 : _stdDevParticlesPerBin / _meanParticlesPerBin;
   _stdDevDensity = std::sqrt(densityVarianceSum / static_cast<double>(getNumberOfBins()));
   _numEmptyBins = emptyBinCount;
   _maxDensity = maximumDensity;
