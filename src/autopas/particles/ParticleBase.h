@@ -26,10 +26,11 @@ namespace autopas {
  *
  * If a different Particle class should be used with AutoPas this class must be used as a base to build your own
  * Particle class.
- * @tparam floatType Floating point type to be used for the SoAs.
+ * @tparam calcType Floating point type to be used for most calculations.
+ * @tparam accuType Floating point type to be used for accumulation values.
  * @tparam idType Integer type to be used for IDs.
  */
-template <typename floatType, typename idType>
+template <typename calcType, typename accuType, typename idType>
 class ParticleBase {
  public:
   ParticleBase()
@@ -42,7 +43,7 @@ class ParticleBase {
    * @param id Id of the particle.
    * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
-  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
+  ParticleBase(const std::array<calcType, 3> &r, const std::array<calcType, 3> &v, idType id,
                OwnershipState ownershipState = OwnershipState::owned)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _ownershipState(ownershipState) {}
 
@@ -55,17 +56,17 @@ class ParticleBase {
   /**
    * Particle position as 3D coordinates.
    */
-  std::array<floatType, 3> _r;
+  std::array<calcType, 3> _r;
 
   /**
    * Particle velocity as 3D vector.
    */
-  std::array<floatType, 3> _v;
+  std::array<calcType, 3> _v;
 
   /**
    * Force the particle experiences as 3D vector.
    */
-  std::array<floatType, 3> _f;
+  std::array<accuType, 3> _f;
 
   /**
    * Particle id.
@@ -82,8 +83,8 @@ class ParticleBase {
    * Stream operator for instances of ParticleBase class.
    * @return String representation.
    */
-  template <typename T, typename P>
-  friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
+  template <typename C, typename A, typename P>
+  friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<C, A, P> &D);
 
   /**
    * Equality operator for ParticleBase class.
@@ -105,19 +106,19 @@ class ParticleBase {
    * get the force acting on the particle
    * @return force
    */
-  [[nodiscard]] const std::array<double, 3> &getF() const { return _f; }
+  [[nodiscard]] const std::array<accuType, 3> &getF() const { return _f; }
 
   /**
    * Set the force acting on the particle
    * @param f force
    */
-  void setF(const std::array<double, 3> &f) { _f = f; }
+  void setF(const std::array<accuType, 3> &f) { _f = f; }
 
   /**
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<double, 3> &f) {
+  void addF(const std::array<accuType, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
     _f += f;
   }
@@ -126,7 +127,7 @@ class ParticleBase {
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<double, 3> &f) {
+  void subF(const std::array<accuType, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
     _f -= f;
   }
@@ -147,13 +148,13 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  [[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
+  [[nodiscard]] const std::array<calcType, 3> &getR() const { return _r; }
 
   /**
    * Set the position of the particle
    * @param r new position
    */
-  void setR(const std::array<double, 3> &r) { _r = r; }
+  void setR(const std::array<calcType, 3> &r) { _r = r; }
 
   /**
    * Add a distance vector to the position of the particle and check if the distance between the old and new position
@@ -164,10 +165,10 @@ class ParticleBase {
    * @param maxDistSquared The maximum expected movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool setRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+  bool setRDistanceCheck(const std::array<calcType, 3> &r, calcType maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto distanceVec = r - _r;
-    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
+    const calcType distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
     setR(r);
     const bool distanceIsFine =
         distanceSquared < maxDistSquared or autopas::utils::Math::isNearAbs(maxDistSquared, 0., 1e-12);
@@ -182,7 +183,7 @@ class ParticleBase {
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
-  void addR(const std::array<double, 3> &r) {
+  void addR(const std::array<calcType, 3> &r) {
     using namespace autopas::utils::ArrayMath::literals;
     _r += r;
   }
@@ -198,7 +199,7 @@ class ParticleBase {
    * @param maxDistSquared The maximum expected movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool addRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+  bool addRDistanceCheck(const std::array<calcType, 3> &r, calcType maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto newR = _r + r;
     return setRDistanceCheck(newR, maxDistSquared);
@@ -208,19 +209,19 @@ class ParticleBase {
    * Get the velocity of the particle
    * @return current velocity
    */
-  [[nodiscard]] const std::array<double, 3> &getV() const { return _v; }
+  [[nodiscard]] const std::array<calcType, 3> &getV() const { return _v; }
 
   /**
    * Set the velocity of the particle
    * @param v new velocity
    */
-  void setV(const std::array<double, 3> &v) { _v = v; }
+  void setV(const std::array<calcType, 3> &v) { _v = v; }
 
   /**
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
-  void addV(const std::array<double, 3> &v) {
+  void addV(const std::array<calcType, 3> &v) {
     using namespace autopas::utils::ArrayMath::literals;
     _v += v;
   }
@@ -282,9 +283,14 @@ class ParticleBase {
   enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
-   * Floating Point Type used for this particle
+   * Floating Point Type used for calculations for this particle
    */
-  using ParticleSoAFloatPrecision = floatType;
+  using ParticleCalcPrecision = calcType;
+
+  /**
+   * Floating Point Type used for accumulations for this particle
+   */
+  using ParticleAccuPrecision = accuType;
 
   /**
    * Id Type used for this particle
@@ -296,9 +302,9 @@ class ParticleBase {
    * owned is currently used as a floatType to ease calculations within the functors.
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
-                                       floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+      typename autopas::utils::SoAType<ParticleBase<calcType, accuType, idType> *, idType /*id*/, calcType /*x*/,
+                                       calcType /*y*/, calcType /*z*/, accuType /*fx*/, accuType /*fy*/,
+                                       accuType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -396,8 +402,8 @@ class ParticleBase {
  * @param particle
  * @return String representation.
  */
-template <typename floatType, typename idType>
-std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &particle) {
+template <typename calcType, typename accuType, typename idType>
+std::ostream &operator<<(std::ostream &os, const ParticleBase<calcType, accuType, idType> &particle) {
   using utils::ArrayUtils::operator<<;
   os << "Particle"
      << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
