@@ -20,11 +20,14 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
    * @param ownRank
    * @param homeBoxRegion
    * @param globalBoxRegion
+   * @param useNewton3
+   * @param pairwiseInteraction
    * @param comm (optional)
    * @param allNeighbourIndices (optional)
    * @param boundaryType (optional)
    * */
   Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
+           bool useNewton3 = false, bool pairwiseInteraction = true,
            autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
            std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>(
@@ -121,4 +124,45 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
    * @param identifyZone
    */
   void calculateInteractionSchedule(std::function<std::string(const int[3])> identifyZone);
+
+  /*
+   * Class for combining multiple buffers
+   */
+  class CombinedBuffer {
+   public:
+    void add_buffer(std::vector<ParticleType> &buffer) { _buffers.push_back(buffer); }
+
+    ParticleType &at(int index) {
+      int accSize = _buffers.at(0).get().size();
+      size_t bufferIndex = 0;
+      while (accSize - 1 < index) {
+        ++bufferIndex;
+        accSize += _buffers.at(bufferIndex).get().size();
+      }
+      auto newIndex = index - (accSize - _buffers.at(bufferIndex).get().size());
+      if (newIndex >= _buffers.at(bufferIndex).get().size()) {
+        throw std::runtime_error("Index out of bounds: " + std::to_string(newIndex) + " from " + std::to_string(index) +
+                                 " for buffer of size " + std::to_string(_buffers.at(bufferIndex).get().size()) +
+                                 " at buffer index " + std::to_string(bufferIndex) + " of total " +
+                                 std::to_string(_buffers.size()) + " with accumulated size " + std::to_string(accSize));
+      }
+      return _buffers.at(bufferIndex).get().at(newIndex);
+    }
+
+    size_t size() {
+      return std::accumulate(_buffers.begin(), _buffers.end(), 0, [](auto a, auto b) { return a + b.get().size(); });
+    }
+
+   private:
+    std::vector<std::reference_wrapper<std::vector<ParticleType>>> _buffers;
+  };
+
+  // stores is newton3 is used in the node
+  bool _useNewton3;
+
+  // stores if pairwise interaction is used
+  bool _pairwiseInteraction;
+
+  // stores cutoff
+  double _cutoff;
 };

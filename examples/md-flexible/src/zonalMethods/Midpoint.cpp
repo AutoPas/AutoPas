@@ -3,12 +3,17 @@
 #include "src/zonalMethods/Midpoint.h"
 
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/logging/Logger.h"
 #include "src/ParticleCommunicator.h"
 
 Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
-                   RectRegion globalBoxRegion, autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
+                   RectRegion globalBoxRegion, bool useNewton3, bool pairwiseInteraction,
+                   autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
                    std::array<options::BoundaryTypeOption, 3> boundaryType)
-    : ZonalMethod(26, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType) {
+    : ZonalMethod(26, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType),
+      _cutoff(cutoff),
+      _useNewton3(useNewton3),
+      _pairwiseInteraction(pairwiseInteraction) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
@@ -36,6 +41,7 @@ Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegio
 
   // calculate interaction schedules
   calculateInteractionSchedule(identifyZone);
+
 }
 
 Midpoint::~Midpoint() = default;
@@ -123,6 +129,8 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
   // save results to container
   using namespace autopas::utils::ArrayMath::literals;
   bufferIndex = 0;
+  // divide results by half if we are not using Newton3 for triwise
+  double divider = !_useNewton3 && !_pairwiseInteraction ? 2. : 1.;
   // for all exported regions
   for (auto &exRegion : _exportRegions) {
     // go over all exported particles in the container
@@ -134,7 +142,7 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       for (auto &result : _regionBuffers.at(bufferIndex)) {
         if (particleIter->getID() == result.getID()) {
           // if found, add the result and delete from buffer
-          particleIter->addF(result.getF());
+          particleIter->addF(result.getF() / divider);
           _regionBuffers.at(bufferIndex).erase(_regionBuffers.at(bufferIndex).begin() + result_index);
           break;
         }
@@ -188,13 +196,46 @@ void Midpoint::calculateZonalInteractionPairwise(std::string zone1, std::string 
 }
 
 void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[3])> identifyZone) {
+  if (!_pairwiseInteraction) {
+    int d[3];
+    for (d[0] = -1; d[0] <= 1; d[0]++) {
+      for (d[1] = -1; d[1] <= 1; d[1]++) {
+        for (d[2] = -1; d[2] <= 1; d[2]++) {
+          if (d[0] == 0 && d[1] == 0 && d[2] == 0) {
+            continue;
+          }
+          auto zone = identifyZone(d);
+          _interactionZones.push_back(zone);
+          for (int i = 0; i < 26; i++) {
+            if (std::stoi(zone) == i) continue;
+            _interactionSchedule[zone].push_back(std::to_string(i));
+          }
+        }
+      }
+    }
+    return;
+  }
   /**
    * See:
    * Evaluation of Zonal Methods for Small
    * Molecular Systems
    * Julian Spahl
    * p.10
+   * NOTE: Actually, there are some interactions missing in this paper, which are
+   * the interactions between two center neighbours
+   * NOTE: Almost all of these interactions can be skipped, if the dimensions of the
+   * interaction boxes are greater equal than the cutoff
    */
+  bool optimize = true;
+  for (size_t i = 0; i < 3; i++) {
+    if (_homeBoxRegion._size[i] < _cutoff) {
+      optimize = false;
+      break;
+    }
+  }
+  std::cout << std::string("Midpoint interaction schedule optimization: ") +
+                   std::string(optimize ? "enabled" : "disabled")
+            << std::endl;
   int d[3];
   for (d[0] = -1; d[0] <= 1; d[0]++) {
     for (d[1] = -1; d[1] <= 1; d[1]++) {
@@ -209,7 +250,7 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
         /* if neighbourIndex is smaller than 13, interact with opposite box
          * Fig 3.3
          */
-        if (convRelNeighboursToIndex({d[0], d[1], d[2]}) < 13) {
+        if (!optimize && convRelNeighboursToIndex({d[0], d[1], d[2]}) < 13) {
           _interactionSchedule[zone].push_back(identifyZone(new int[3]{-d[0], -d[1], -d[2]}));
         }
         // distinguish neighbour types
@@ -223,7 +264,7 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
           }
         }
         /* neighbour type center:
-         * interact with opposite ring
+         * interact with opposite ring + with the "next" center neighbour for two directions
          * Fig 3.5
          */
         if (zeroIndices.size() == 2) {
@@ -241,14 +282,36 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
               oppositeRing.push_back(identifyZone(opp));
             }
           }
-          _interactionSchedule.at(zone).insert(_interactionSchedule.at(zone).end(), oppositeRing.begin(),
-                                               oppositeRing.end());
+          if (!optimize) {
+            _interactionSchedule.at(zone).insert(_interactionSchedule.at(zone).end(), oppositeRing.begin(),
+                                                 oppositeRing.end());
+          }
+
+          // for two directions
+          for (size_t i = 0; i < 2; i++) {
+            int opp[3] = {d[0], d[1], d[2]};
+            if (nonZeroIndices[0] > zeroIndices[i]) {
+              if (opp[nonZeroIndices[0]] == 1) {
+                opp[zeroIndices[i]] = 1;
+              } else {
+                opp[zeroIndices[i]] = -1;
+              }
+            } else {
+              if (opp[nonZeroIndices[0]] == 1) {
+                opp[zeroIndices[i]] = -1;
+              } else {
+                opp[zeroIndices[i]] = 1;
+              }
+            }
+            opp[nonZeroIndices[0]] = 0;
+            _interactionSchedule.at(zone).push_back(identifyZone(opp));
+          }
         }
         /* neighbour type edge
          * interact with opposite wing
          * Fig 3.6
          */
-        else if (zeroIndices.size() == 1) {
+        else if (!optimize && zeroIndices.size() == 1) {
           std::vector<std::string> oppositeWing;
           oppositeWing.reserve(2);
           int opp[3];
@@ -270,7 +333,52 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
 
 void Midpoint::calculateZonalInteractionTriwise(
     std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {
-  throw std::runtime_error("Midpoint: calculateZonalInteractionTriwise not implemented yet.");
+  CombinedBuffer combinedBuffer;
+  auto zoneIndex = (_regionCount - std::stoi(zone)) - 1;
+  auto &zoneBuffer = _regionBuffers.at(zoneIndex);
+
+  // initiate combined buffer
+  for (auto otherZone : _interactionSchedule.at(zone)) {
+    auto otherIndex = (_regionCount - std::stoi(otherZone)) - 1;
+    combinedBuffer.add_buffer(_importBuffers.at(otherIndex));
+  }
+
+  // calculate interaction of triples
+  // for triples with 1 particle in original zone
+  for (auto p1 : zoneBuffer) {
+    for (size_t i = 0; i < combinedBuffer.size(); i++) {
+      for (size_t j = i + 1; j < combinedBuffer.size(); j++) {
+        ParticleType &p2 = combinedBuffer.at(i);
+        ParticleType &p3 = combinedBuffer.at(j);
+        using namespace autopas::utils::ArrayMath::literals;
+        if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
+                                    _homeBoxRegion._origin + _homeBoxRegion._size, _globalBoxRegion._origin,
+                                    _globalBoxRegion._origin + _globalBoxRegion._size, p1.getID(), p2.getID(),
+                                    p3.getID())) {
+          continue;
+        }
+        aosFunctor(p1, p2, p3);
+      }
+    }
+  }
+  // for triples with 2 particles in original zone
+  for (size_t i = 0; i < zoneBuffer.size(); i++) {
+    for (size_t j = i + 1; j < zoneBuffer.size(); j++) {
+      ParticleType &p1 = zoneBuffer.at(i);
+      ParticleType &p2 = zoneBuffer.at(j);
+      for (size_t k = 0; k < combinedBuffer.size(); k++) {
+        ParticleType &p3 = combinedBuffer.at(k);
+        using namespace autopas::utils::ArrayMath::literals;
+        if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
+                                    _homeBoxRegion._origin + _homeBoxRegion._size, _globalBoxRegion._origin,
+                                    _globalBoxRegion._origin + _globalBoxRegion._size, p1.getID(), p2.getID(),
+                                    p3.getID())) {
+          continue;
+        }
+        aosFunctor(p1, p2, p3);
+      }
+    }
+  }
 }
 
 const std::vector<RectRegion> Midpoint::getExportRegions() { return _exportRegions; }
