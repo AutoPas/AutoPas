@@ -608,7 +608,7 @@ void Simulation::applyStrainStressResizing(const double SumOfForcesOnXUpperWall,
   const double a_x_wall = damping_coeff * (force_from_inside - force_from_outside);
   // Prevent particles to be pushed out of the box
   const double maxMovement = 0.25 * minRadius;
-  const double delta_x_abs_calculated = std::abs(750 * a_x_wall * delta_T * delta_T);
+  const double delta_x_abs_calculated = std::abs(1500 * a_x_wall * delta_T * delta_T);
   double delta_x =
       a_x_wall > 0 ? std::min(delta_x_abs_calculated, maxMovement) : -std::min(delta_x_abs_calculated, maxMovement);
   if (_iteration < starting_iteration) {

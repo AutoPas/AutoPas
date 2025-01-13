@@ -82,7 +82,7 @@ class StatisticsCalculator {
    * Calculates statistics for the stress-strain-simulation
    * @return
    */
-  std::array<double, 20> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
+  std::array<double, 23> calculateStrainStressStatistics(const autopas::AutoPas<ParticleType> &autoPasContainer,
                                                          const ParticlePropertiesLibraryType &particlePropertiesLib,
                                                          const double initialVolume, const double startBoxMaxX,
                                                          const double startBoxMaxY, const double spring_stiffness,

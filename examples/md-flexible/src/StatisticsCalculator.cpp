@@ -25,7 +25,7 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   // "MinusRelVelDotNormalUnit"};
   const std::vector<std::string> strainStressColumnNames = {
       "Iteration",    "DomainX",   "DomainY",   "DomainZ",   "Epsilon_xx",  "Epsilon_yy", "Density",
-      "VolumeStrain", "Stress_xx", "Stress_yy", "Stress_zz", "numContacts", "Fabric_xx",  "Fabric_xy",
+      "VolumeStrain", "Stress_Static_xx", "Stress_Static_yy", "Stress_Static_zz", "Stress_Dynamic_xx", "Stress_Dynamic_yy", "Stress_Dynamic_zz", "numContacts", "Fabric_xx",  "Fabric_xy",
       "Fabric_xz",    "Fabric_yx", "Fabric_yy", "Fabric_yz", "Fabric_zx",   "Fabric_zy",  "Fabric_zz"};
   generateOutputFile(strainStressColumnNames);
 }
@@ -120,7 +120,7 @@ std::tuple<double, double, double, double> StatisticsCalculator::calculateOverla
   return std::make_tuple(overlap, dist, forceIX, -relVelDotNormalUnit);
 }
 
-std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
+std::array<double, 23> StatisticsCalculator::calculateStrainStressStatistics(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
     const double initialVolume, const double startBoxX, const double startBoxMaxY, const double spring_stiffness,
     const double normal_viscosity) {
@@ -147,7 +147,8 @@ std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
   const double volumetricStrain = (currentVolume - initialVolume) / initialVolume;
 
   // Stress & numContacts & Fabric
-  std::array<double, 3> stress_tensor_diagonal = {0., 0., 0.};
+  std::array<double, 3> stress_tensor_diagonal_static = {0., 0., 0.};
+  std::array<double, 3> stress_tensor_diagonal_dynamic = {0., 0., 0.};
   std::array<double, 9> fabric_tensor = {0., 0., 0., 0., 0., 0., 0., 0., 0.};  // xx, xy, xz, yx, yy, yz, zx, zy, zz
   size_t numContacts = 0;
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
@@ -155,7 +156,7 @@ std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
     const double m_i = particlePropertiesLib.getSiteMass(i->getTypeId());
     const std::array<double, 3> v_i = i->getV();
     const std::array<double, 3> v_i_squared = v_i * v_i;
-    stress_tensor_diagonal += (v_i_squared * m_i);
+    stress_tensor_diagonal_static += (v_i_squared * m_i);
 
     const double radius_i = particlePropertiesLib.getRadius(i->getTypeId());  // Assume same radius for j
     const std::array<double, 3> x_i = i->getR();
@@ -183,9 +184,9 @@ std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
       const std::array<double, 3> relVel = i->getV() - j->getV();
       const double relVelDotNormalUnit = dot(relVel, normalUnit);
 
-      const std::array<double, 3> minus_contact_force =
-          mulScalar(normalUnit, overlap * spring_stiffness - normal_viscosity * relVelDotNormalUnit) * (-1.);  // Assume linear spring model
-      stress_tensor_diagonal += (minus_contact_force * displacement);
+      const std::array<double, 3> contact_force =
+          mulScalar(normalUnit, overlap * spring_stiffness - normal_viscosity * relVelDotNormalUnit);  // Assume linear spring model
+      stress_tensor_diagonal_dynamic += (contact_force * displacement);
 
       // Fabric tensor calculations
       const std::array<double, 9> normalUnit_outerProduct_ij = {
@@ -197,7 +198,8 @@ std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
     }  // End of `j` loop
 
   }  // End of `i` loop
-  stress_tensor_diagonal = stress_tensor_diagonal / currentVolume;
+  stress_tensor_diagonal_static = stress_tensor_diagonal_static / currentVolume;
+  stress_tensor_diagonal_dynamic = stress_tensor_diagonal_dynamic / currentVolume;
   fabric_tensor = fabric_tensor / currentVolume;
 
   return {currentDomain[0],
@@ -207,9 +209,12 @@ std::array<double, 20> StatisticsCalculator::calculateStrainStressStatistics(
           epsilon_yy,
           density,
           volumetricStrain,
-          stress_tensor_diagonal[0],
-          stress_tensor_diagonal[1],
-          stress_tensor_diagonal[2],
+          stress_tensor_diagonal_static[0],
+          stress_tensor_diagonal_static[1],
+          stress_tensor_diagonal_static[2],
+          stress_tensor_diagonal_dynamic[0],
+          stress_tensor_diagonal_dynamic[1],
+          stress_tensor_diagonal_dynamic[2],
           static_cast<double>(numContacts),
           fabric_tensor[0],
           fabric_tensor[1],
