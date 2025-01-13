@@ -49,7 +49,8 @@ class ParticleBinStructure{
    * @param binLength
    * @param cutoff Not needed for particle counting, but needed for estimatedNumberOfNeighborInteractions statistic.
    */
-  ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff);
+  ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff)
+   : ParticleBinStructure({numBinsPerDim, numBinsPerDim, numBinsPerDim}, binLength, boxMin, boxMax, cutoff) {};
 
   /**
    * Adds to the counter for the bin the particle falls into.
