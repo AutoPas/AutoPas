@@ -26,16 +26,14 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 FetchContent_Declare(
     pmt
     URL
-        # pmt-master.zip contains commit 7a56fa3a (master as on Dec 19, 2024)
+        # pmt-master.zip contains commit 7a56fa3a (master as on Dec 19, 2024) with patch applied
+        # The patch applies the following changes:
+        # removal of 100 ms minimum time interval for energy samples, and
+        # removing asynchronous energy measurement
+        # better error handling
+        # the patch can found under AutoPas/libs/patches/patch-file-pmt-for-autopas.patch
         ${AUTOPAS_SOURCE_DIR}/libs/pmt-master.zip
-        URL_HASH MD5=2a80837cb6c514a67cf480d5f648ff86
-    
-    # Applying patch with following changes:  
-    # removal of 100 ms minimum time interval for energy samples, and
-    # removing asynchronous energy measurement
-    PATCH_COMMAND
-        ${CMAKE_COMMAND} -E echo "Applying patch  ${CMAKE_BUILD_DIR} " &&
-        ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/_deps/pmt-src/ git apply --verbose ${CMAKE_SOURCE_DIR}/libs/patches/patch-file-pmt-for-autopas.patch
+        URL_HASH MD5=3c60096bf151e11cde6efc6e5ede1195
 )
 
 FetchContent_MakeAvailable(pmt)
@@ -58,6 +56,6 @@ if (IS_DIRECTORY "${pmt_SOURCE_DIR}")
     set_property(DIRECTORY ${pmt_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
 endif()
 
-target_compile_options(pmt PUBLIC -DCMAKE_INSTALL_PREFIX="./build")
+target_compile_options(pmt PUBLIC -w -DCMAKE_INSTALL_PREFIX="./build")
 
 target_include_directories(pmt SYSTEM PUBLIC "${pmt_SOURCE_DIR}")

@@ -648,12 +648,12 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
+    std::cout << timerToString("    One iteration                 ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-    std::cout << "Total energy consumed: " << _totalEnergy << " Joules\n";
+    std::cout << "Total energy consumed              : " << _totalEnergy << " Joules\n";
 #endif
     std::cout << "\n";
 

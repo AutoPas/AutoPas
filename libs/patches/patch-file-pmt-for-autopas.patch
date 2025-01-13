@@ -141,7 +141,7 @@ index 2794e2a..10696de 100644
        }
        throw std::system_error(
 diff --git a/rapl/RaplImpl.cpp b/rapl/RaplImpl.cpp
-index 369502c..8803e20 100644
+index 369502c..ff000e4 100644
 --- a/rapl/RaplImpl.cpp
 +++ b/rapl/RaplImpl.cpp
 @@ -52,7 +52,7 @@ std::string GetBasename(int package_id) {
@@ -162,17 +162,19 @@ index 369502c..8803e20 100644
    std::from_chars_result res = std::from_chars(
        static_cast<const char*>(static_cast<void*>(buffer.data())),
        static_cast<const char*>(static_cast<void*>(buffer.data() + read_size)),
-@@ -113,8 +113,7 @@ void RaplImpl::Init() {
+@@ -113,8 +113,9 @@ void RaplImpl::Init() {
          message << "OS error: " << e.what();
          std::cerr << message.str() << std::endl;
          if (e.code().value() == EACCES) {
 -          std::cerr << "Please check the permission or try to run as 'root'"
 -                    << std::endl;
-+          throw std::runtime_error("Please check the permission or try to run as 'root'");
++          std::cerr<< "Please check the permission or try to run as 'root'"
++                   << std::endl;
++          std::abort();
          }
        }
      }
-@@ -131,10 +130,11 @@ void RaplImpl::Init() {
+@@ -131,10 +132,11 @@ void RaplImpl::Init() {
        uj_offset_[i] = 0;
      }
  
@@ -185,3 +187,15 @@ index 369502c..8803e20 100644
    }
  }
  
+diff --git a/rapl/RaplImpl.h b/rapl/RaplImpl.h
+index a13e32d..fb0bf25 100644
+--- a/rapl/RaplImpl.h
++++ b/rapl/RaplImpl.h
+@@ -5,6 +5,7 @@
+ #include <mutex>
+ #include <string>
+ #include <vector>
++#include <array>
+ 
+ #include "Rapl.h"
+ #include "common/PMT.h"
