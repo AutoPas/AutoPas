@@ -302,6 +302,11 @@ class Simulation {
   void resetTorques();
 
   /**
+   * Resets the torques of the particles in the local AutoPas container.et
+   */
+  void resetTorques();
+
+  /**
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */

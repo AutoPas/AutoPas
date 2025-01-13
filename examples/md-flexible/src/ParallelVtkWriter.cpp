@@ -136,7 +136,6 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
-#endif
 
   // print radii
   timestepFile << "        <DataArray Name=\"radii\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
@@ -145,6 +144,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << radius << "\n";
   }
   timestepFile << "        </DataArray>\n";
+#endif
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
