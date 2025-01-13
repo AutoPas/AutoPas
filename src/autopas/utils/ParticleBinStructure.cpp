@@ -74,7 +74,7 @@ void ParticleBinStructure::calculateStatistics() {
   std::vector<std::size_t> sortedParticleCounts(_particleCounts);
   std::sort(sortedParticleCounts.begin(), sortedParticleCounts.end());
 
-  const bool noParticles = _particleCounts.empty();
+  const bool noParticles = std::all_of(sortedParticleCounts.begin(), sortedParticleCounts.end(), [](auto count) { return count == 0; });
 
   // Get the minimum, maximum, median, and quartile particle counts
   _minimumParticlesPerBin = noParticles ? 0 : sortedParticleCounts.front();
