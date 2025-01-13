@@ -62,7 +62,7 @@ class LiveInfo {
 
   /**
    * Returns a bin structure where there are, on average, roughly ten particles per bin, and the bin dimensions are
-   * simply a scaling of the domain dimensions.
+   * simply a scaling of the domain dimensions. Forces there to be at least one bin, e.g. in the case of no particles.
    *
    * Todo The choice of 10 is arbitrary and probably can be optimized.
    *
@@ -76,8 +76,8 @@ class LiveInfo {
     const auto domainVolume = domainSize[0] * domainSize[1] * domainSize[2];
 
     // Todo The choice of 10 is arbitrary and probably can be optimized
-    const auto targetNumberOfBins = std::ceil(numParticles / 10.);
-    const auto targetNumberOfBinsPerDim = std::cbrt(static_cast<double>(targetNumberOfBins));
+    const auto targetNumberOfBins = std::max(std::ceil(static_cast<double>(numParticles) / 10.), 1.);
+    const auto targetNumberOfBinsPerDim = std::cbrt(targetNumberOfBins);
     // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
     const auto numberOfBinsPerDim = static_cast<size_t>(std::floor(targetNumberOfBinsPerDim));
     const auto binDimensions = domainSize / static_cast<double>(numberOfBinsPerDim);
