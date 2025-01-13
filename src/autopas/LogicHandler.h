@@ -1559,10 +1559,10 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency,
         getNumberOfParticlesOwned());
       timerCalculateHomogeneity.stop();
-      const auto particleDependentBinDensityStdDev = info.template get<double>("particleDependentBinDensityStdDev");
-      const auto maxParticleDensity = info.template get<double>("maxParticleDensity");
       if (needsDensityStatistics) {
-        autoTuner.addHomogeneityAndMaxDensity(particleDependentBinDensityStdDev, maxParticleDensity,
+        const auto particleDependentBinDensityStdDev = info.template get<double>("particleDependentBinDensityStdDev");
+        const auto particleDependentBinMaxDensity = info.template get<double>("particleDependentBinMaxDensity");
+        autoTuner.addHomogeneityAndMaxDensity(particleDependentBinDensityStdDev, particleDependentBinMaxDensity,
                                               timerCalculateHomogeneity.getTotalTime());
         autoTuner.sendSmoothedDensityStatisticsAtStartOfTuningPhase();
       }
