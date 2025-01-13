@@ -19,7 +19,7 @@ namespace mdLib {
  * mass and angular direction.
  *
  */
-class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
+class MultisiteMoleculeLJ : public mdLib::MoleculeLJBase<double, double, unsigned long> {
   using idType = size_t;
 
  public:
