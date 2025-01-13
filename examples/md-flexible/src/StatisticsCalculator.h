@@ -69,6 +69,8 @@ class StatisticsCalculator {
   static std::tuple<double, double, double, double, double, double>
   calculateForceAndVelocity(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
 
+  static std::tuple<size_t, double>
+  calculateIsStatic(const autopas::AutoPas<ParticleType> &autoPasContainer);
 
   /**
    * Generates the output file (.csv) for the statistics.

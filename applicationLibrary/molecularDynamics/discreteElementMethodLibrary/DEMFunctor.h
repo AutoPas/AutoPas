@@ -110,7 +110,7 @@ class DEMFunctor
    * @param cutoff
    */
   explicit DEMFunctor(double cutoff)
-      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 5, 5, nullptr) {
+      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 1e-1, 0.75, 0.5, 25, 5, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -126,7 +126,7 @@ class DEMFunctor
    * @param particlePropertiesLibrary
    */
   explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 2.5e-6, 1, 0.5, 5, 5, nullptr) {
+      : DEMFunctor(cutoff, 5., 0, 5, 5e-5, 1e-1, 2.5e-6, 1e-1, 0.75, 0.5, 5, 5, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -274,7 +274,7 @@ class DEMFunctor
     }
 
     // Compute total force (3 FLOPS)
-    const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
+    const std::array<double, 3> totalF = tanF;  // 3 FLOPS
 
     // Apply forces (if newton3: 6 FLOPS, if not: 3 FLOPS)
     i.addF(totalF);  // 3 FLOPS
@@ -313,9 +313,9 @@ class DEMFunctor
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
 
     // Apply torques (if newton3: 19 FLOPS, if not: 9 FLOPS)
-    i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
+    //i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
+      //j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
     }
   }
 

@@ -15,37 +15,43 @@
 StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::string &outputFolder)
     : _sessionName(std::move(sessionName)) {
   tryCreateStatisticsFolders(_sessionName, outputFolder);
-
-  std::vector<std::string> columnNames = {
-      "Iteration", "MeanPotentialEnergyZ", "MeanKineticEnergyX", "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
-  };
   /**
-  const std::vector<std::string> columnNames = {
-      "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
-      "TorqueJX",  "TorqueJY",   "TorqueJZ",   "AngularVelJX", "AngularVelJY", "AngularVelJZ", "ForceIX",
-      "ForceIY",   "ForceIZ",    "VelocityIX", "VelocityIY",   "VelocityIZ",   "ForceJX",      "ForceJY",
-      "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ", "Overlap", "DistanceBetweenCenters", "NotNeeded"};
-      **/
+    std::vector<std::string> columnNames = {
+        "Iteration", "MeanPotentialEnergyZ", "MeanKineticEnergyX", "MeanKineticEnergyY",
+        "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
+    };
+  **/
+  const std::vector<std::string> columnNames = {"Iteration",    "TorqueIX",     "TorqueIY",
+                                                "TorqueIZ",     "AngularVelIX", "AngularVelIY",
+                                                "AngularVelIZ", "TorqueJX",     "TorqueJY",
+                                                "TorqueJZ",     "AngularVelJX", "AngularVelJY",
+                                                "AngularVelJZ", "ForceIX",      "ForceIY",
+                                                "ForceIZ",      "VelocityIX",   "VelocityIY",
+                                                "VelocityIZ",   "ForceJX",      "ForceJY",
+                                                "ForceJZ",      "VelocityJX",   "VelocityJY",
+                                                "VelocityJZ",   "Overlap",      "DistanceBetweenCenters",
+                                                "NotNeeded",    "IsStatic",     "coulombLimit"};
+
   generateOutputFile(columnNames);
 }
 
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
+  // const auto combinedStatistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ,
+  // particlePropertiesLib);
 
-  const auto combinedStatistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
-  /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
   const auto statisticsIForceVel = calculateForceAndVelocity(autoPasContainer, 1L);
   const auto statisticsJForceVel = calculateForceAndVelocity(autoPasContainer, 0L);
   const auto statisticsDistanceOverlap = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
+  const auto statisticsIsStatic = calculateIsStatic(autoPasContainer);
 
-  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel, statisticsDistanceOverlap);
-   **/
+  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel,
+                                           statisticsDistanceOverlap, statisticsIsStatic);
+
   StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
-
 }
 
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateTorquesAndAngularVel(
@@ -114,9 +120,61 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
   return std::make_tuple(forceX, forceY, forceZ, velocityX, velocityY, velocityZ);
 }
 
+std::tuple<size_t, double> StatisticsCalculator::calculateIsStatic(
+    const autopas::AutoPas<ParticleType> &autoPasContainer) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
+  size_t isStatic = 0;
+  std::array<double, 3> x_i = {0., 0., 0.};
+  std::array<double, 3> x_j = {0., 0., 0.};
+  std::array<double, 3> v_i = {0., 0., 0.};
+  std::array<double, 3> v_j = {0., 0., 0.};
+  std::array<double, 3> w_i = {0., 0., 0.};
+  std::array<double, 3> w_j = {0., 0., 0.};
+  double radius = 1.;
+  double coulombLimit = 0.;
 
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() == 1) {  // particle i
+      x_i = particle->getR();
+      v_i = particle->getV();
+      w_i = particle->getAngularVel();
+    } else {
+      x_j = particle->getR();
+      v_j = particle->getV();
+      w_j = particle->getAngularVel();
+    }
 
-std::tuple<double, double, double, double, double, double, double> StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
+    const std::array<double, 3> displacement = x_i - x_j;
+    const double dist = L2Norm(displacement);
+    const double overlap = radius + radius - dist;
+
+    if (overlap <= 0) {
+      isStatic = 0;
+    } else {
+      const std::array<double, 3> normalUnit = displacement / (dist + 1e-6);
+      const std::array<double, 3> relVel = v_i - v_j;
+      const double relVelDotNormalUnit = dot(normalUnit, relVel);
+      const double normalContactFMag = 5. * overlap - 5e-5 * relVelDotNormalUnit;
+      const std::array<double, 3> tanRelVel =
+          relVel + cross(normalUnit * radius, w_i) + cross(normalUnit * radius, w_j);
+      const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;
+      const std::array<double, 3> tanVel = tanRelVel - normalRelVel;
+      coulombLimit = 0.75 * (normalContactFMag);
+      std::array<double, 3> tanF = tanVel * (-1e-1);
+      const double tanFMag = L2Norm(tanF);
+      if (tanFMag > coulombLimit) {
+        isStatic = 2;
+      } else {
+        isStatic = 1;
+      }
+    }
+  }
+  return std::make_tuple(isStatic, coulombLimit);
+}
+
+std::tuple<double, double, double, double, double, double, double>
+StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -184,16 +242,16 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
     }
   }
 
-    overlapSum /= 2.;
-    distSum /= 2.;
-    forceMagSum /= 2.;
+  overlapSum /= 2.;
+  distSum /= 2.;
+  forceMagSum /= 2.;
 
-    return std::make_tuple(overlapSum, distSum, forceMagSum);
+  return std::make_tuple(overlapSum, distSum, forceMagSum);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------
 
-void StatisticsCalculator::generateOutputFile(const std::vector<std::string>& columnNames) {
+void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &columnNames) {
   std::ostringstream filename;
   filename << _statisticsFolderPath << _sessionName << "_statistics.csv";
 

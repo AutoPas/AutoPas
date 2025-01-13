@@ -299,8 +299,6 @@ class Simulation {
    */
   void updateQuaternions();
 
-  void resetTorques();
-
   /**
    * Resets the torques of the particles in the local AutoPas container.et
    */
