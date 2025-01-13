@@ -75,14 +75,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   /**
-   * Returns a map of each cell's global index to its local index in another cell's neighbor list. More specifically,
-   * for each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
-   * index in cell1's neighbors.
-   * @return a map of each cell's global index to its local index in another cell's neighbor list
-   */
-  auto &getGlobalToLocalMap() { return _globalToLocalIndex; }
-
-  /**
    * Returns the neighbor list in SoA layout.
    * @return Neighbor list in SoA layout.
    */
@@ -100,7 +92,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
     // Define some aliases
     auto &neighborLists = getAoSNeighborList();
-    auto &globalToLocalIndex = _globalToLocalIndex;
     auto &cells = linkedCells.getCells();
     const auto interactionLength = linkedCells.getInteractionLength();
     const auto interactionLengthSquared = interactionLength * interactionLength;
@@ -122,15 +113,15 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     neighborLists.clear();
     neighborLists.resize(cells.size());
 
-    globalToLocalIndex.clear();
-    globalToLocalIndex.resize(cells.size());
+    // global to local index is now replaced by relIdx lambda
+    // globalToLocalIndex.clear();
+    // globalToLocalIndex.resize(cells.size());
 
     // Todo: Create an estimate for the average length of a neighbor list.
     // This assumes homogeneous distribution and some overestimation.
     const auto listLengthEstimate = VerletListsCellsHelpers::estimateListLength(
         linkedCells.getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, interactionLength, 1.3);
 
-    // Todo reuse old neighbour lists
     // Reset lists. Don't free any memory, only mark as unused.
     this->setLinkedCellsPointer(&linkedCells);
     for (auto &neighborCellLists : neighborLists) {
@@ -142,6 +133,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
     neighborLists.resize(cells.size());
+    // each cell hast 27 neighbors including itself
     for (auto &neighborList : neighborLists) {
       neighborList.resize(27);
     }
@@ -403,19 +395,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    */
   typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> _aosNeighborList =
       std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>();
-
-  /**
-   * Mapping of each particle to its corresponding cell and id within this cell.
-   */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap =
-      std::unordered_map<Particle *, std::pair<size_t, size_t>>();
-
-  /**
-   * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
-   * index in cell1's neighbors.
-   */
-  std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex =
-      std::vector<std::unordered_map<size_t, size_t>>();
 
   /**
    * Internal neighbor list structure in SoA format - Verlet lists for each particle for each cell pair.
