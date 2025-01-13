@@ -15,17 +15,18 @@
 StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::string &outputFolder)
     : _sessionName(std::move(sessionName)) {
   tryCreateStatisticsFolders(_sessionName, outputFolder);
-  /**
+
   std::vector<std::string> columnNames = {
       "Iteration", "MeanPotentialEnergyZ", "MeanKineticEnergyX", "MeanKineticEnergyY",
       "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
   };
-   **/
+  /**
   const std::vector<std::string> columnNames = {
       "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
       "TorqueJX",  "TorqueJY",   "TorqueJZ",   "AngularVelJX", "AngularVelJY", "AngularVelJZ", "ForceIX",
       "ForceIY",   "ForceIZ",    "VelocityIX", "VelocityIY",   "VelocityIZ",   "ForceJX",      "ForceJY",
       "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ", "Overlap", "DistanceBetweenCenters", "NotNeeded"};
+      **/
   generateOutputFile(columnNames);
 }
 
@@ -33,7 +34,8 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
 
-  //const auto statistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib); TODO: change
+  const auto combinedStatistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
+  /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
   const auto statisticsIForceVel = calculateForceAndVelocity(autoPasContainer, 1L);
@@ -41,6 +43,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   const auto statisticsDistanceOverlap = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
 
   auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel, statisticsDistanceOverlap);
+   **/
   StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 
 }
