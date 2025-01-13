@@ -13,6 +13,17 @@ namespace autopas::utils {
 ParticleBinStructure::ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff) {
   using namespace ArrayMath::literals;
   const auto numBins = numBinsPerDim[0] * numBinsPerDim[1] * numBinsPerDim[2];
+  // Some error checking
+  if (numBins < 1) {
+    AutoPasLog(ERROR, "There must be at least one bin in the particle bin structure!");
+  }
+  if (std::any_of(binLength.begin(), binLength.end(), [](auto length) { return length <= 0; })) {
+    AutoPasLog(ERROR, "Bin lengths must be positive!");
+  }
+  const auto boxDimensions = boxMax - boxMin;
+  if (std::any_of(boxDimensions.begin(), boxDimensions.end(), [](auto length) { return length <= 0; })) {
+    AutoPasLog(ERROR, "boxMax must be to the right/above boxMin!");
+  }
   _particleCounts.resize(numBins);
   _numBinsPerDim = numBinsPerDim;
   _binLength = binLength;
@@ -21,16 +32,6 @@ ParticleBinStructure::ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, 
   _boxMax = boxMax;
 }
 
-ParticleBinStructure::ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff) {
-  using namespace ArrayMath::literals;
-  const auto numBins = numBinsPerDim * numBinsPerDim * numBinsPerDim;
-  _particleCounts.resize(numBins);
-  _numBinsPerDim = {numBinsPerDim, numBinsPerDim, numBinsPerDim};
-  _binLength = binLength;
-  _binLengthReciprocal = 1. / binLength;
-  _boxMin = boxMin;
-  _boxMax = boxMax;
-}
 
 void ParticleBinStructure::countParticle(const std::array<double, 3> &particlePosition) {
   using namespace ArrayMath::literals;
