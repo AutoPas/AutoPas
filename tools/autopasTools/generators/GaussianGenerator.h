@@ -16,6 +16,11 @@
  * Generator class for gaussian distributions
  */
 namespace autopasTools::generators::GaussianGenerator {
+#if AUTOPAS_PRECISION_MODE == DPDP
+using CalcPrecision = double;
+#else
+using CalcPrecision = float;
+#endif
 /**
  * Maximum number of attempts the random generator gets to find a valid position before considering the input to be
  * bad

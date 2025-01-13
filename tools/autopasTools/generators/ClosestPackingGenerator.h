@@ -16,6 +16,11 @@
  * Generator for grids of particles.
  */
 namespace autopasTools::generators::ClosestPackingGenerator {
+#if AUTOPAS_PRECISION_MODE == DPDP
+using CalcPrecision = double;
+#else
+using CalcPrecision = float;
+#endif
 /**
  * Fills any container (also AutoPas object) with a hexagonally closest packed particles.
  * Particle properties will be used from the default particle. Particle IDs start from the default particle.

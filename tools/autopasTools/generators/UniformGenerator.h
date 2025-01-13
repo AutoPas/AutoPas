@@ -17,6 +17,11 @@ namespace autopasTools::generators {
  * Generator class for uniform distributions
  */
 namespace UniformGenerator {
+#if AUTOPAS_PRECISION_MODE == DPDP
+using CalcPrecision = double;
+#else
+using CalcPrecision = float;
+#endif
 /**
  * Generate a random position within a given box.
  * @tparam Floating-point type that is used

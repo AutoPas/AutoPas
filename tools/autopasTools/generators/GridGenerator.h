@@ -15,6 +15,11 @@ namespace autopasTools::generators {
  * Generator for grids of particles.
  */
 namespace GridGenerator {
+#if AUTOPAS_PRECISION_MODE == DPDP
+using CalcPrecision = double;
+#else
+using CalcPrecision = float;
+#endif
 /**
  * Fills a cell vector with a cuboid mesh of particles.
  *

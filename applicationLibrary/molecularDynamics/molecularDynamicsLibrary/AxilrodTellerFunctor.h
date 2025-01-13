@@ -106,7 +106,7 @@ class AxilrodTellerFunctor
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename Particle::ParticleCalcPrecision;
 
  public:
   /**
