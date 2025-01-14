@@ -40,7 +40,7 @@ Objects:
         velocity: [ 0, 0, 0 ]
         particle-type-id               :  0
 vtk-filename                     :  settling_1500
-vtk-write-frequency              :  10
+vtk-write-frequency              :  25000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  trace
