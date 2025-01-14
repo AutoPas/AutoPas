@@ -1088,7 +1088,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   long numFLOP = static_cast<long>(functor.getNumFLOPs());
   double energyPerFLOP = static_cast<double>(energyTotal/1e6) / static_cast<double>(numFLOP);
   timerTotal.stop();
-  double energyDelayProduct = static_cast<double>((energyTotal/1e6) * (timerTotal.getTotalTime()/1e6));
+  double energyDelayProduct = static_cast<double>((energyTotal/1e9) * (timerComputeInteractions.getTotalTime()/1e9));
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
