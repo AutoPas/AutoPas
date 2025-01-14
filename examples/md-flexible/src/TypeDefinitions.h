@@ -39,11 +39,6 @@
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
- * Precision used for particle representations. If you want to test other precisions change it here.
- */
-using FloatPrecision = double;
-
-/**
  * Type of the Particles used in md-flexible.
  * Switches between autopas::MoleculeLJ and autopas::MultisiteMoleculeLJ as determined by CMake flag
  * MD_FLEXIBLE_MODE.
@@ -53,6 +48,11 @@ using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
 using ParticleType = mdLib::MoleculeLJ;
 #endif
+
+/**
+ * FloatType used for calculations
+ */
+using CalcPrecision = typename ParticleType::ParticleCalcPrecision;
 
 namespace mdFlexibleTypeDefs {
 /**
@@ -141,4 +141,4 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
  */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<CalcPrecision, size_t>;
