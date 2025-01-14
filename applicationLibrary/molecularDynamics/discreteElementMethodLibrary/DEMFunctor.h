@@ -888,8 +888,8 @@ class DEMFunctor
     SoAFloatPrecision *const __restrict qYptr2 = soa2.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict qZptr2 = soa2.template begin<Particle::AttributeNames::torqueZ>();
 
-    [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
 
     // Initialize local variables for constants
     const SoAFloatPrecision cutoff = _cutoff;
@@ -918,10 +918,7 @@ class DEMFunctor
       SoAFloatPrecision qYacc = 0.;
       SoAFloatPrecision qZacc = 0.;
 
-      SoAFloatPrecision radiusI = radius;
-      if constexpr (useMixing) {
-        radiusI = _PPLibrary->getRadius(typeptr1[i]);
-      }
+      SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr1[i]);
 
       // Loop over Particles in soa2
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum,                  \
@@ -936,10 +933,7 @@ class DEMFunctor
 
         const SoAFloatPrecision distSquared = drx * drx + dry * dry + drz * drz;
         const SoAFloatPrecision dist = std::sqrt(distSquared);
-        SoAFloatPrecision radiusJ = radius;
-        if (useMixing) {
-          radiusJ = _PPLibrary->getRadius(typeptr2[j]);
-        }
+        SoAFloatPrecision radiusJ = _PPLibrary->getRadius(typeptr2[j]);
         const SoAFloatPrecision overlap = (radiusI + radiusJ) - dist;
 
         // Mask away if distance is too large or overlap is non-positive or any particle is a dummy
@@ -1018,8 +1012,7 @@ class DEMFunctor
         SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
 
         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
-        const SoAFloatPrecision coulombLimit =
-            _staticFrictionCoeff * (normalContactFMag);
+        const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * (normalContactFMag);
 
         if (tanFMag > coulombLimit) {
           if constexpr (countFLOPs) {
@@ -1065,11 +1058,6 @@ class DEMFunctor
         const SoAFloatPrecision rollingRelVelZ =
             -radiusReduced * (normalUnitX * (angularVelYptr1[i] - angularVelYptr2[j]) -
                               normalUnitY * (angularVelXptr1[i] - angularVelXptr2[j]));
-
-        const SoAFloatPrecision rollingFUnitMag = std::sqrt(
-            rollingRelVelX * rollingRelVelX + rollingRelVelY * rollingRelVelY + rollingRelVelZ * rollingRelVelZ);
-        const SoAFloatPrecision rollingFScale =
-            _rollingFrictionCoeff * normalContactFMag / (rollingFUnitMag + preventDivisionByZero);
 
         SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
         SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
@@ -1380,9 +1368,9 @@ class DEMFunctor
           fyacc += totalFY;
           fzacc += totalFZ;
           if (newton3) {  // Only assignments here, as they will be subtracted later
-            fxArr[j] += totalFX;
-            fyArr[j] += totalFY;
-            fzArr[j] += totalFZ;
+            fxArr[j] = totalFX;
+            fyArr[j] = totalFY;
+            fzArr[j] = totalFZ;
           }
 
           // Compute torques
@@ -1457,9 +1445,9 @@ class DEMFunctor
           qyacc += (frictionQIY + rollingQIY + torsionQIY);
           qzacc += (frictionQIZ + rollingQIZ + torsionQIZ);
           if (newton3) {
-            qxArr[j] += (radiusJReduced / radiusIReduced) * frictionQIX - rollingQIX - torsionQIX;
-            qyArr[j] += (radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY;
-            qzArr[j] += (radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ;
+            qxArr[j] = ((radiusJReduced / radiusIReduced) * frictionQIX - rollingQIX - torsionQIX);
+            qyArr[j] = ((radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY);
+            qzArr[j] = ((radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ);
           }
         }  // end of j loop
 
