@@ -242,11 +242,12 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (not newton3 ? 1 : 0);
     }
 
-    // (3 + 2 + 2 + 3 + 3 + 5 = 18 FLOPS)
+    // (3 + 1 + 1 + 1 + 3 + 3 + 5 = 17 FLOPS)
     assert(dist != 0. && "Distance is zero, division by zero detected!");
     const std::array<double, 3> normalUnit = displacement / (dist + preventDivisionByZero);
-    const double radiusIReduced = radiusI - overlap / 2.;
-    const double radiusJReduced = radiusJ - overlap / 2.;
+    const double overlapHalf = overlap / 2.;
+    const double radiusIReduced = radiusI - overlapHalf;
+    const double radiusJReduced = radiusJ - overlapHalf;
     assert((radiusIReduced + radiusJReduced) != 0. && "Distance is zero, division by zero detected!");
     const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
     const std::array<double, 3> relVel = i.getV() - j.getV();
@@ -258,7 +259,7 @@ class DEMFunctor
     const double normalFMag = normalContactFMag;
     const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
-    // Compute tangential force (30 + 3 + 3 + 10 + 4 = 50 FLOPS)
+    // Compute tangential force (30 + 3 + 3 + 1 + 3 + 6 = 46 FLOPS)
     const std::array<double, 3> tanRelVel = relVel + cross(normalUnit * radiusIReduced, i.getAngularVel()) +
                                             cross(normalUnit * radiusJReduced, j.getAngularVel());  // 30 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
@@ -285,7 +286,7 @@ class DEMFunctor
     // Compute frictional torque (12 FLOPS)
     const std::array<double, 3> frictionQI = cross(normalUnit * (-radiusIReduced), tanF);  // 3 + 9 = 12 FLOPS
 
-    // Compute rolling torque (15 + 10 + 4 + 12 = 41 FLOPS)
+    // Compute rolling torque (15 + 3 + 6 + 12 = 36 FLOPS)
     const std::array<double, 3> rollingRelVel =
         cross(normalUnit, (i.getAngularVel() - j.getAngularVel())) * (-radiusReduced);  // 15 FLOPS
     std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);              // 3 FLOPS
@@ -298,7 +299,7 @@ class DEMFunctor
     }
     const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
 
-    // Compute torsional torque (11 + 10 + 4 + 3 = 28 FLOPS)
+    // Compute torsional torque (11 + 3 + 6 + 3 = 23 FLOPS)
     const std::array<double, 3> torsionRelVel = normalUnit * dot(normalUnit, (i.getAngularVel() - j.getAngularVel())) *
                                                 radiusReduced;              // 1 + 3 + 5 + 2 = 11 FLOPS
     std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
@@ -778,9 +779,8 @@ class DEMFunctor
   [[nodiscard]] size_t getNumFLOPs() const override {
     /**
      * FLOP count:
-     * Common: 18 + 6 + 50 + 3 + 12 + 41 + 28 = 158;
-     * KernelNoN3: Common + 3 + 9 = 170;
-     * 171 KernelN3: Common + 6 + 19 = 183;
+     * KernelNoN3: 155;
+     * 171 KernelN3: 155 + 13 = 168;
      */
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc =
@@ -795,14 +795,28 @@ class DEMFunctor
       const size_t numKernelCallsNoN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+      const size_t numInnerIfTanFCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numInnerIfTanFCalls; });
+      const size_t numInnerIfRollingQCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numInnerIfRollingQCalls; });
+      const size_t numInnerIfTorsionQCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numInnerIfTorsionQCalls; });
 
       constexpr size_t numFLOPsPerDistanceCall = 9;
       constexpr size_t numFLOPsPerOverlapCall = 2;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 170;
-      constexpr size_t numFLOPsPerN3KernelCall = 183;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 155;
+      constexpr size_t numFLOPsPerN3KernelCall = 168;
+      constexpr size_t numFLOPsPerInnerIfTanF = 5;
+      constexpr size_t numFLOPsPerInnerIfRollingQ = 5;
+      constexpr size_t numFLOPsPerInnerIfTorsionQ = 5;
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numOverlapCallsAcc * numFLOPsPerOverlapCall +
-             numKernelCallsN3Acc * numFLOPsPerN3KernelCall + numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall;
+             numKernelCallsN3Acc * numFLOPsPerN3KernelCall + numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall +
+             numInnerIfTanFCallsAcc * numFLOPsPerInnerIfTanF + numInnerIfRollingQCallsAcc * numFLOPsPerInnerIfRollingQ +
+             numInnerIfTorsionQCallsAcc * numFLOPsPerInnerIfTorsionQ;
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();
