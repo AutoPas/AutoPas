@@ -542,11 +542,6 @@ class DEMFunctor
         const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
         const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
 
-        const SoAFloatPrecision torsionFUnitMag = std::sqrt(
-            torsionRelVelX * torsionRelVelX + torsionRelVelY * torsionRelVelY + torsionRelVelZ * torsionRelVelZ);
-        const SoAFloatPrecision torsionFScale =
-            _torsionFrictionCoeff * (normalContactFMag) / (torsionFUnitMag + preventDivisionByZero);
-
         SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
         SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
         SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
@@ -1024,7 +1019,7 @@ class DEMFunctor
 
         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
         const SoAFloatPrecision coulombLimit =
-            _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+            _staticFrictionCoeff * (normalContactFMag);
 
         if (tanFMag > coulombLimit) {
           if constexpr (countFLOPs) {
@@ -1106,11 +1101,6 @@ class DEMFunctor
         const SoAFloatPrecision torsionRelVelX = torsionRelVelScalar * normalUnitX;
         const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
         const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
-
-        const SoAFloatPrecision torsionFUnitMag = std::sqrt(
-            torsionRelVelX * torsionRelVelX + torsionRelVelY * torsionRelVelY + torsionRelVelZ * torsionRelVelZ);
-        const SoAFloatPrecision torsionFScale =
-            _torsionFrictionCoeff * normalContactFMag / (torsionFUnitMag + preventDivisionByZero);
 
         SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
         SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
