@@ -63,7 +63,8 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             const IterationMeasurements &measurements) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyPsys, energyPkg, energyRam, energyTotal, numFLOP, energyPerFLOP,energyDelayProduct] = measurements;
+               energyPsys, energyPkg, energyRam, energyTotal, numFLOP, energyPerFLOP, energyDelayProduct] =
+      measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",

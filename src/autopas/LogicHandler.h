@@ -1086,9 +1086,9 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   functor.endTraversal(newton3);
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
   long numFLOP = static_cast<long>(functor.getNumFLOPs());
-  double energyPerFLOP = static_cast<double>(energyTotal/1e6) / static_cast<double>(numFLOP);
+  double energyPerFLOP = static_cast<double>(energyTotal / 1e6) / static_cast<double>(numFLOP);
   timerTotal.stop();
-  double energyDelayProduct = static_cast<double>((energyTotal/1e9) * (timerComputeInteractions.getTotalTime()/1e9));
+  double energyDelayProduct = static_cast<double>((energyTotal / 1e9) * (timerTotal.getTotalTime() / 1e9));
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
@@ -1662,7 +1662,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
             return measurements.timeTotal;
           case TuningMetricOption::energy:
             return measurements.energyTotal;
-         case TuningMetricOption::energyPerFLOP:
+          case TuningMetricOption::energyPerFLOP:
             return static_cast<long>(measurements.energyPerFLOP);
           case TuningMetricOption::energyDelayProduct:
             return static_cast<long>(measurements.energyDelayProduct);

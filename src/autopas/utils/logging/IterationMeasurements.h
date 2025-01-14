@@ -71,8 +71,5 @@ struct IterationMeasurements {
    * Energy Delay Product.
    */
   double energyDelayProduct{};
-
-
-
 };
 }  // namespace autopas

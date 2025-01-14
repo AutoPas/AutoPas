@@ -1,17 +1,19 @@
-# This file contains all possible options that a yaml input file for md-flexible can have. For the meaning of individual options ./md-flexible --help can be called, or MDFlexConfig.h can be looked up.
+#This file contains all possible options that a yaml input file for md -                          \
+    flexible can have.For the meaning of individual options./ md - flexible-- help can be called, \
+    or MDFlexConfig.h can be looked up.
 container                            :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
-# Configuration options for pairwise interactions
+#Configuration options for pairwise interactions
 functor                              :  Lennard-Jones (12-6) avx
 traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
 newton3                              :  [disabled, enabled]
 data-layout                          :  [AoS, SoA]
-# Configuration options for triwise interactions
+#Configuration options for triwise interactions
 functor-3b                           :  axilrod-teller
 traversal-3b                         :  [ds_sequential, lc_c01]
 newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS, SoA]
 
-# General options
+#General options
 verlet-rebuild-frequency             :  20
 verlet-skin-radius-per-timestep      :  0.01
 verlet-cluster-size                  :  4
@@ -51,16 +53,18 @@ Sites:
     epsilon                          :  1.
     sigma                            :  1.
     mass                             :  0.5
-# Uncomment below to run a multi-site simulation.
+#Uncomment below to run a multi - site simulation.
 #Molecules:
-#  0:
-#    # Multi-site molecules have LJ sites, with site-types that correspond to specific site LJ information given above
-#    # and respective relative unrotated site positions. Moment-of-inertia is given as the 3 non-zero elements of a diagonal
-#    # 3x3 Moment-of-inertia matrix. It is the user's responsibility that the site masses, positions, and Moment of Inertia
-#    # match.
-#    site-types                       : [ 0, 0, 0 ]
-#    relative-site-positions          : [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
-#    moment-of-inertia                : [ 5.23606798, 0.76393202, 6. ]
+# 0:
+# #Multi - site molecules have LJ sites, with site - types that correspond to specific site LJ information given above
+# #and respective relative unrotated site positions.Moment - of - inertia is given as the 3 non - \
+    zero elements of a diagonal
+# #3x3 Moment - of - inertia matrix.It is the user's responsibility that the site masses, positions, and Moment of Inertia
+# #match.
+#site - types : [0, 0, 0]
+#relative - site - \
+    positions : [[0.74349607, 1.20300191, 0.], [0.3249197, -1.37638192, 0.], [-1.37638192, -0.3249197, 0.]]
+#moment - of - inertia : [5.23606798, 0.76393202, 6.]
 Objects:                         
   CubeGrid:
     0:
@@ -68,10 +72,12 @@ Objects:
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
-      # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
-      # given for site-0. For multi-site simulations, this fills the object with multi-site molecules with the multi-site
-      # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
-      # information.
+#For single - site simulations, \
+    particle - type - id fills the object with single - site LJ molecules with the LJ parameters
+#given for site - 0. For multi - site simulations, \
+    this fills the object with multi - site molecules with the multi - site
+#parameters given above for Molecule - 0. See particleTypeStr in the documentation for MDFlexConfig.h for more
+#information.
       particle-type-id               :  0
   CubeGauss:
     0:
@@ -115,5 +121,5 @@ no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim
 vtk-output-folder                    :  allOptionsOutput
 vtk-write-frequency                  :  1
-#checkpoint                          : AllOptionsSim_10.vtk
-#log-file                            : log.txt
+#checkpoint : AllOptionsSim_10.vtk
+#log - file : log.txt
