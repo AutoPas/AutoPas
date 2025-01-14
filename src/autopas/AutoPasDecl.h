@@ -1105,7 +1105,8 @@ class AutoPas {
    */
   bool _useTuningStrategyLoggerProxy{false};
   /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild, if a rebuild is not triggered
+   * earlier by the dynamic rebuild mechanic.
    */
   unsigned int _verletRebuildFrequency{100};
   /**

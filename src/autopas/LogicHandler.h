@@ -69,7 +69,8 @@ class LogicHandler {
         _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
-
+    // Reserve some memory for the _rebuildIntervals to avoid reallocations
+    _rebuildIntervals.reserve(1000);
     // Initialize AutoPas with tuners for given interaction types
     for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
