@@ -86,19 +86,23 @@ class AutoTuner {
   void receiveLiveInfo(const LiveInfo &liveInfo);
 
   /**
-   * Indicator whether tuner needs homogeneity and max density information before the next call to prepareIteration().
+   * Indicator whether tuner needs homogeneity and max density information. This occurs if any strategy requires these
+   * and AutoPas is within 10 iterations of the start of the next tuning phase.
    * @return
    */
-  bool needsHomogeneityAndMaxDensityBeforePrepare() const;
+  [[nodiscard]] bool needsDensityStatisticsBeforePrepare() const;
 
   /**
-   * Determines what live infos are needed and passes collected live info to the tuning strategies.
-   *
-   * @note The live info is not gathered here because then we would need the container.
-   *
-   * @return Bool indicating if live Infos are needed before the next call to tune
+   * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
+   * a tuning phase.
    */
-  bool prepareIteration();
+  [[nodiscard]] bool needsLiveInfo() const;
+
+  /**
+   * Sends smoothed particle dependent bin max density and standard deviation (a metric of homogeneity) to tuning
+   * strategies if it is the start of a tuning phase.
+   */
+  void sendSmoothedDensityStatisticsAtStartOfTuningPhase();
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
