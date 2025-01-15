@@ -23,15 +23,14 @@ TEST_F(LeavingParticleCollectorTest, testCalculateHaloBoxes) {
   using autopas::utils::ArrayUtils::to_string;
 
   constexpr double cutoff = 4;
-  constexpr double skinPerTimestep = .1;
+  constexpr double skin = 2.;
   constexpr size_t rebuildFrequency = 20;
-  constexpr double skin = skinPerTimestep * rebuildFrequency;  // = 2
-  constexpr double interactionLength = cutoff + skin;          // = 6
+  constexpr double interactionLength = cutoff + skin;  // = 6
   const std::array<double, 3> boxMin = {0.0, 0.0, 0.0};
   // 3x3x3 cells without halo
   const std::array<double, 3> boxMax = {1 * interactionLength, 1 * interactionLength, 1 * interactionLength};  // = 60
 
-  const autopas::LinkedCells<Molecule> linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
+  const autopas::LinkedCells<Molecule> linkedCells(boxMin, boxMax, cutoff, skin, rebuildFrequency);
   const auto haloBoxes = autopas::LeavingParticleCollector::calculateHaloVolumes(linkedCells);
   // Sanity check that box corner coordinates are good:
   for (const auto &[lowerCorner, upperCorner] : haloBoxes) {

@@ -18,6 +18,8 @@ option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
         OFF
 )
 
+option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
+
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
 if (NOT AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
@@ -56,6 +58,7 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
+        $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
         _USE_MATH_DEFINES
 )
 

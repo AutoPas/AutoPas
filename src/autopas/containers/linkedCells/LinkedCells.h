@@ -54,17 +54,17 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skinPerTimestep
+   * @param skin
    * @param rebuildFrequency
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
+              const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
@@ -235,8 +235,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
-      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMinWithSafetyMargin -= this->getVerletSkin();
+      boxMaxWithSafetyMargin += this->getVerletSkin();
     }
 
     // first and last relevant cell index
@@ -478,8 +478,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param iteratorBehavior
    * @param boxMin The actual search box min
    * @param boxMax The actual search box max
-   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
-   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skin
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skin
    * @param endCellIndex Last relevant cell index
    * @return tuple<cellIndex, particleIndex>
    */
