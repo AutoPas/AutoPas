@@ -774,7 +774,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
             // clear the lists buffer because clusters will be recreated
             _neighborLists.clear();
             //rebuildTowersAndClusters(traversal->getUseNewton3(), true);
-            rebuildTowersAndClusters(traversal->getUseNewton3());
+            rebuildTowersAndClusters(traversal->getUseNewton3(), true);
           }
           _builder->rebuildNeighborListsAndFillClusters();
           break;

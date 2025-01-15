@@ -62,7 +62,6 @@ class VCLClusterIterationTraversal : public TraversalInterface,
       const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
         _clusterFunctor.processCluster(cluster, false);
       };
-
       clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
     }
     else {

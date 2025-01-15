@@ -56,10 +56,18 @@ class VCLClusterFunctor {
         auto &neighborClusters = *(cluster.getNeighbors());
         auto neighborClustersEnd = neighborClusters.end();
         for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
+          Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
+          // 2 options involving 2 clusters:
+          // - 1 particle in cluster + 2 particles in neighbor cluster
+          // - 2 particles in cluster + 1 particle in neighbor cluster
+          traverseClusterPairTriwise(cluster, neighbor1);
           for (auto neighborClusterIter2 = neighborClusterIter1 + 1; neighborClusterIter2 != neighborClustersEnd; ++neighborClusterIter2) {
-            Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
             Cluster<Particle> &neighbor2 = **(neighborClusterIter2);
-            traverseClusterTriplet(cluster, neighbor1, neighbor2);
+            if (&cluster != &neighbor2){
+              // 1 option involving all 3 clusters:
+              // - one particle in cluster, neighbor cluster 1 and neighbor cluster 2 each
+              traverseClusterTriplet(cluster, neighbor1, neighbor2);
+            }
           }
         }
       }
@@ -165,27 +173,40 @@ class VCLClusterFunctor {
   }
 
   /**
-   * Traverses all triplets of particles between three clusters.
+   * Traverses all triplets of particles between two clusters.
+   * @param cluster The first cluster.
+   * @param neighborCluster The second cluster.
+   */
+  void traverseClusterPairTriwise(internal::Cluster<Particle> &cluster, internal::Cluster<Particle> &neighborCluster) {
+    if (_dataLayout == DataLayoutOption::aos) {
+      for (size_t i = 0; i < _clusterSize; i++) {
+        for (size_t j = 0; j < _clusterSize; j++) {
+          for (size_t k = j + 1; k < _clusterSize; k++) {
+            // 2 particles in cluster + 1 particle in neighbourCluster
+            _functor->AoSFunctor(cluster[j], cluster[k], neighborCluster[i], _useNewton3);
+            _functor->AoSFunctor(cluster[k], cluster[j], neighborCluster[i], _useNewton3);
+            // 1 particle in cluster + 2 particles in neighbourCluster
+            _functor->AoSFunctor(cluster[i], neighborCluster[j], neighborCluster[k], _useNewton3);
+          }
+        }
+      }
+    } else {
+      _functor->SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), _useNewton3);
+    }
+  }
+
+  /**
+   * Traverses all triplets of particles between three clusters. All clusters must be part of triplet
+   * (Does not work with N3 yet)
    * @param cluster The first cluster.
    * @param neighborCluster1 The first neighbor cluster.
    * @param neighborCluster2 The second neighbor cluster.
    */
   void traverseClusterTriplet(internal::Cluster<Particle> &cluster, internal::Cluster<Particle> &neighborCluster1, internal::Cluster<Particle> &neighborCluster2) {
     if (_dataLayout == DataLayoutOption::aos){
-      // 3 remaining options for particle triplets:
       for (size_t i = 0; i < _clusterSize; i++) {
         for (size_t j = 0; j < _clusterSize; j++) {
           for (size_t k = 0; k < _clusterSize; k++) {
-            // 2 particles in cluster + 1 particle in neighbourCluster1 OR neighbourCluster2
-            if ((!_useNewton3 && i != j) || i < j) {
-              _functor->AoSFunctor(cluster[i], cluster[j], neighborCluster1[k], _useNewton3);
-              _functor->AoSFunctor(cluster[i], cluster[j], neighborCluster2[k], _useNewton3);
-            }
-            // 1 particle in cluster + 2 particles both in neighbourCluster1 OR both in neighbourCluster2
-            if (j < k){
-              _functor->AoSFunctor(cluster[i], neighborCluster1[j], neighborCluster1[k], _useNewton3);
-              _functor->AoSFunctor(cluster[i], neighborCluster2[j], neighborCluster2[k], _useNewton3);
-            }
             // 1 particle in cluster + 1 particle in neighbourCluster1 AND neighbourCluster2 each
             _functor->AoSFunctor(cluster[i], neighborCluster1[j], neighborCluster2[k], _useNewton3);
           }

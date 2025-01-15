@@ -48,7 +48,7 @@ class VerletClusterListsRebuilder {
    * @param clusterSize Size of the clusters in particles.
    * @param interactionLengthSqr Squared interaction length (cutoff + skin)^2
    * @param newton3 If the current configuration uses newton3
-   * @param haloClusterNeighborLists If the current configuration allows halo clusters to have neighbor lists
+   * @param haloClusterNeighborLists If the current configuration needs halo clusters to have neighbor lists
    */
   VerletClusterListsRebuilder(ClusterTowerBlock2D<Particle> &towerBlock, std::vector<Particle> &particlesToAdd,
                               NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize,
@@ -128,14 +128,14 @@ class VerletClusterListsRebuilder {
     sortParticlesIntoTowers(invalidParticles);
 
     // estimate the number of clusters by particles divided by cluster size + one extra per tower.
+    //TODO: Needs to be changed for better estimation when halo cluster neighbor lists are enabled
     _neighborListsBuffer.reserveNeighborLists(numParticles / _clusterSize + numTowersNew);
     // generate clusters and count them
-    //TODO: Needs to be changed to allow halo cluster neighbor lists
     size_t numClusters = 0;
     for (auto &tower : _towerBlock) {
       numClusters += tower.generateClusters();
-      for (auto clusterIter = _newton3 ? tower.getClusters().begin() : tower.getFirstOwnedCluster();
-           clusterIter < (_newton3 ? tower.getClusters().end() : tower.getFirstTailHaloCluster()); ++clusterIter) {
+      for (auto clusterIter = (_newton3 || _haloClusterNeighborLists) ? tower.getClusters().begin() : tower.getFirstOwnedCluster();
+           clusterIter < ((_newton3 || _haloClusterNeighborLists) ? tower.getClusters().end() : tower.getFirstTailHaloCluster()); ++clusterIter) {
         // VCL stores the references to the lists in the clusters, therefore there is no need to create a
         // cluster -> list lookup structure in the buffer structure
         const auto listID = _neighborListsBuffer.getNewNeighborList();
@@ -383,8 +383,8 @@ class VerletClusterListsRebuilder {
       return clusterIter < tower.getFirstOwnedCluster() or clusterIter >= tower.getFirstTailHaloCluster();
     };
     // iterate over all clusters from tower A. In newton3 mode go over all of them, otherwise only owned.
-    for (auto clusterIterA = _newton3 || _haloClusterNeighborLists ? towerA.getClusters().begin() : towerA.getFirstOwnedCluster();
-         clusterIterA < (_newton3 || _haloClusterNeighborLists ? towerA.getClusters().end() : towerA.getFirstTailHaloCluster()); ++clusterIterA) {
+    for (auto clusterIterA = (_newton3 || _haloClusterNeighborLists) ? towerA.getClusters().begin() : towerA.getFirstOwnedCluster();
+         clusterIterA < ((_newton3 || _haloClusterNeighborLists) ? towerA.getClusters().end() : towerA.getFirstTailHaloCluster()); ++clusterIterA) {
       if (not clusterIterA->empty()) {
         clusterIterA->getNeighbors()->reserve((towerA.getNumActualParticles() + 8 * towerB.getNumActualParticles()) *
                                               neighborListReserveHeuristicFactor);
@@ -397,7 +397,7 @@ class VerletClusterListsRebuilder {
           if (&*clusterIterA == &*clusterIterB) {
             continue;
           }
-          // never do halo-halo interactions (except when explicitly needed)
+          // never do halo-halo interactions (except when haloCLusterNeighborLists is enabled )
           if (!_haloClusterNeighborLists and isHaloCluster(clusterIterA, towerA) and isHaloCluster(clusterIterB, towerB)) {
             continue;
           }
