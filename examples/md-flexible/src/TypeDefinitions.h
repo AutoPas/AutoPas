@@ -52,7 +52,7 @@ using ParticleType = mdLib::MoleculeLJ;
 /**
  * FloatType used for calculations
  */
-using CalcPrecision = typename ParticleType::ParticleCalcPrecision;
+using CalcType = typename ParticleType::ParticleCalcType;
 
 namespace mdFlexibleTypeDefs {
 /**
@@ -141,4 +141,4 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
  */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<CalcPrecision, size_t>;
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<CalcType, size_t>;

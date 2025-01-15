@@ -55,7 +55,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   void addParticleReference(Particle *p) {
     // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
     // dummy-cell, only dummies can be added, otherwise dummies can always be added
-    if ((not toInt64(p->getOwnershipState() & this->_ownershipState)) and
+    if ((not toIntType(p->getOwnershipState() & this->_ownershipState)) and
         p->getOwnershipState() != OwnershipState::dummy) {
       autopas::utils::ExceptionHandler::exception(
           "ReferenceParticleCell::addParticleReference() can not add a particle with OwnershipState {} to a cell with "
