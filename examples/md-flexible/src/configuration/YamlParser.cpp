@@ -529,11 +529,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.verletRebuildFrequency.value < 1) {
           throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
-      } else if (key == config.verletSkinRadiusPerTimestep.name) {
+      } else if (key == config.verletSkinRadius.name) {
         expected = "Positive floating-point value.";
-        description = config.verletSkinRadiusPerTimestep.description;
+        description = config.verletSkinRadius.description;
 
-        config.verletSkinRadiusPerTimestep.value = node[key].as<double>();
+        config.verletSkinRadius.value = node[key].as<double>();
       } else if (key == config.fastParticlesThrow.name) {
         expected = "Boolean Value";
         description = config.fastParticlesThrow.description;
