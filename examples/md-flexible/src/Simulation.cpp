@@ -202,11 +202,12 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    //const size_t rotationalGlobalForceIterationFrom = 60000;
+    const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      //const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-      //    _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(_configuration.globalForce.value);  // normal case parameter: _configuration.globalForce.value
+      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
+          _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
+      //std::cout << "Global force: " << globalForce[0] << " " << globalForce[1] << " " << globalForce[2] << std::endl;
+      updatePositionsAndResetForces(globalForce);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -262,16 +263,15 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
-#if DEM_MODE == ON/**
+#if DEM_MODE == ON
     if (_iteration < rotationalGlobalForceIterationFrom) {
       calculateBackgroundFriction(0.5,
                                   0.75,
                                   *_configuration.getParticlePropertiesLibrary());
     } else {
-    **/
       calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
                                   _configuration.backgroundTorqueFrictionCoeff.value,
-                                  *_configuration.getParticlePropertiesLibrary());
+                                  *_configuration.getParticlePropertiesLibrary());}
 
 #endif
 
