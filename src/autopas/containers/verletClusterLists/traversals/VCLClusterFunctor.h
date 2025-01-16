@@ -85,25 +85,38 @@ class VCLClusterFunctor {
    * @param isHaloCluster
    */
   void processClusterListIntersection(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
+    //TODO: switch depending on data layout
     if (not isHaloCluster) {
       traverseClusterTriwise(cluster);
     }
     if (*(cluster.getNeighbors()->data())) {
-      auto &neighborClusters = *(cluster.getNeighbors());
-      //sorting first neighbor list necessary?
-      auto neighborClustersEnd = neighborClusters.end();
-      for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
+      auto intersectingNeighbors = std::vector<internal::Cluster<Particle>*>();
+
+      auto &neighborClusters1 = *(cluster.getNeighbors());
+      std::sort(neighborClusters1.begin(), neighborClusters1.end());
+      auto neighborClusters1End = neighborClusters1.end();
+
+      for (auto neighborClusterIter1 = neighborClusters1.begin(); neighborClusterIter1 != neighborClusters1End; ++neighborClusterIter1) {
         Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
-        auto &neighborClusters1 = *(neighbor1.getNeighbors());
-        //sorting second neighbor list necessary?
-        //intersect them
-        auto intersectedNeighborsIter = neighborClusterIter1;
-        auto intersectedNeighborsEnd = std::set_intersection(++intersectedNeighborsIter, neighborClustersEnd, neighborClusters1.begin(), neighborClusters1.end());
+        //take care of all neighbor pairs first
+        traverseClusterPairTriwise(cluster, neighbor1);
+        auto &neighborClusters2 = *(neighbor1.getNeighbors());
+        std::sort(neighborClusters2.begin(), neighborClusters2.end());
+        //reserve space in buffer
+        std::size_t maxIntersectionSize = std::min(neighborClusters1.size(), neighborClusters2.size());
+        intersectingNeighbors.reserve(maxIntersectionSize);
+        //intersect the neighbors of cluster and neighbor1
+        auto intersectingNeighborsIter = neighborClusterIter1;
+        auto intersectingNeighborsEnd = std::set_intersection(++intersectingNeighborsIter, neighborClusters1End,
+                                                             neighborClusters2.begin(), neighborClusters2.end(),
+                                                             std::back_inserter(intersectingNeighbors));
         //iterate over intersected list
-        for (auto neighborClusterIter2 = intersectedNeighborsIter; neighborClusterIter2 != intersectedNeighborsEnd; ++neighborClusterIter2) {
-          Cluster<Particle> &neighbor2 = **(neighborClusterIter1);
+        for (auto neighborClusterIter2 = intersectingNeighbors.begin(); neighborClusterIter2 != intersectingNeighbors.end(); ++neighborClusterIter2) {
+          Cluster<Particle> &neighbor2 = **(neighborClusterIter2);
           traverseClusterTriplet(cluster, neighbor1, neighbor2);
         }
+        //clear buffer
+        intersectingNeighbors.clear();
       }
     }
   }

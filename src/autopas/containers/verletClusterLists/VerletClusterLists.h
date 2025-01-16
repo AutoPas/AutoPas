@@ -768,18 +768,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (clusterTraversalInterface) {
       switch(traversal->getTraversalType()) {
         case(TraversalOption::vcl_cluster_iteration):
-          //switch depending on pairwise or triwise functor
-          //or change pairwise traversal methods as well
+        case(TraversalOption::vcl_list_intersection_3b):
+          //TODO: switch for vcl_cluster_iteration depending on pairwise or triwise functor
           if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
-            // clear the lists buffer because clusters will be recreated
             _neighborLists.clear();
-            //rebuildTowersAndClusters(traversal->getUseNewton3(), true);
             rebuildTowersAndClusters(traversal->getUseNewton3(), true);
           }
           _builder->rebuildNeighborListsAndFillClusters();
           break;
-        case(TraversalOption::vcl_list_intersection_3b):
-          //sort and intersect pair neighbor lists (halo clusters included)
         case(TraversalOption::vcl_pair_list_iteration_3b):
           //special 3b neighbor lists
         default:

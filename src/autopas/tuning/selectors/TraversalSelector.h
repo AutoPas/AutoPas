@@ -27,6 +27,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLListIntersectionTraversal3B.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedBalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
@@ -347,9 +348,16 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
     }
       // VerletClusterLists
     case TraversalOption::vcl_cluster_iteration: {
-      return std::make_unique<VCLClusterIterationTraversal<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, traversalInfo.clusterSize, dataLayout,
-                                                                                      useNewton3);
+      return std::make_unique<VCLClusterIterationTraversal<ParticleCell, TriwiseFunctor>>(&triwiseFunctor,
+                                                                                          traversalInfo.clusterSize,
+                                                                                          dataLayout, useNewton3);
     }
+    case TraversalOption::vcl_list_intersection_3b: {
+      return std::make_unique<VCLListIntersectionTraversal3B<ParticleCell, TriwiseFunctor>>(&triwiseFunctor,
+                                                                                            traversalInfo.clusterSize,
+                                                                                            dataLayout, useNewton3);
+    }
+
 
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
