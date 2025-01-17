@@ -111,7 +111,7 @@ def preprocess_data(merged_df: pd.DataFrame) -> tuple:
         label_encoders (dict): A dictionary of LabelEncoders used for encoding the target variables.
     """
     # Select the features for training
-    features = ['avgParticlesPerCell', 'maxParticlesPerCell', 'particlesPerCellStdDev', 'threadCount', 'particlesPerBlurredCellStdDev', 'skin']
+    features = ['meanParticlesPerCell', 'maxParticlesPerCell', 'relativeParticlesPerCellStdDev', 'threadCount', 'relativeParticlesPerBlurredCellStdDev', 'skin']
 
     # Select the target
     targets = ['combined']
