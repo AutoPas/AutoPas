@@ -22,8 +22,8 @@ class CubeUniform : public Object {
    * @param boxLength
    * @param bottomLeftCorner
    */
-  CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
-              const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+  CubeUniform(const std::array<CalcType, 3> &velocity, unsigned long typeId, size_t numParticles,
+              const std::array<CalcType, 3> &boxLength, const std::array<CalcType, 3> &bottomLeftCorner)
       : Object(velocity, typeId),
         _numParticles(numParticles),
         _boxLength(boxLength),
@@ -39,13 +39,13 @@ class CubeUniform : public Object {
    * Returns the coordinates of the bottom left front corner.
    * @return bottom left front corner of the cube.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
+  [[nodiscard]] std::array<CalcType, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
    * Returns the coordinates of the top right back corner.
    * @return top right back corner of the cube.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMax() const override {
+  [[nodiscard]] std::array<CalcType, 3> getBoxMax() const override {
     using namespace autopas::utils::ArrayMath::literals;
     return _bottomLeftCorner + _boxLength;
   }
@@ -94,10 +94,10 @@ class CubeUniform : public Object {
   /**
    * The lenght of the box in each direction.
    */
-  std::array<double, 3> _boxLength;
+  std::array<CalcType, 3> _boxLength;
 
   /**
    * The Coordinates of the bottom left front corner.
    */
-  std::array<double, 3> _bottomLeftCorner;
+  std::array<CalcType, 3> _bottomLeftCorner;
 };

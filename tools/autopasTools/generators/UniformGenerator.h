@@ -17,6 +17,11 @@ namespace autopasTools::generators {
  * Generator class for uniform distributions
  */
 namespace UniformGenerator {
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+using CalcType = float;
+#else
+using CalcType = double;
+#endif
 /**
  * Generate a random position within a given box.
  * @param generator Random engine
@@ -24,8 +29,19 @@ namespace UniformGenerator {
  * @param boxMax
  * @return 3D array with random values
  */
-std::array<double, 3> randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
-                                     const std::array<double, 3> &boxMax);
+inline std::array<CalcType, 3> randomPosition(std::mt19937 &generator, const std::array<CalcType, 3> &boxMin,
+                                              const std::array<CalcType, 3> &boxMax) {
+  std::array<std::uniform_real_distribution<CalcType>, 3> distributions = {
+      std::uniform_real_distribution<CalcType>{boxMin[0], boxMax[0]},
+      std::uniform_real_distribution<CalcType>{boxMin[1], boxMax[1]},
+      std::uniform_real_distribution<CalcType>{boxMin[2], boxMax[2]},
+  };
+  std::array<CalcType, 3> r{};
+  for (int d = 0; d < 3; ++d) {
+    r[d] = distributions[d](generator);
+  }
+  return r;
+}
 
 /**
  * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
@@ -40,8 +56,9 @@ std::array<double, 3> randomPosition(std::mt19937 &generator, const std::array<d
  * @param seed
  */
 template <class Container, class Particle>
-void fillWithParticles(Container &container, const Particle &defaultParticle, const std::array<double, 3> &boxMin,
-                       const std::array<double, 3> &boxMax, unsigned long numParticles = 100ul, unsigned int seed = 42);
+void fillWithParticles(Container &container, const Particle &defaultParticle, const std::array<CalcType, 3> &boxMin,
+                       const std::array<CalcType, 3> &boxMax, unsigned long numParticles = 100ul,
+                       unsigned int seed = 42);
 
 /**
  * Fills the halo of a container (also AutoPas object) with randomly uniformly distributed particles.
@@ -57,7 +74,7 @@ void fillWithParticles(Container &container, const Particle &defaultParticle, co
  * @param seed
  */
 template <class Container, class Particle, class HaloAddFunction>
-void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+void fillWithHaloParticles(Container &container, const Particle &defaultParticle, CalcType haloWidth,
                            unsigned long numParticles, const HaloAddFunction &haloAddFunction, unsigned int seed = 42);
 
 /**
@@ -72,7 +89,7 @@ void fillWithHaloParticles(Container &container, const Particle &defaultParticle
  * @param seed
  */
 template <class Container, class Particle>
-void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+void fillWithHaloParticles(Container &container, const Particle &defaultParticle, CalcType haloWidth,
                            unsigned long numParticles, unsigned int seed = 42) {
   fillWithHaloParticles(
       container, defaultParticle, haloWidth, numParticles,
@@ -86,7 +103,7 @@ void fillWithHaloParticles(Container &container, const Particle &defaultParticle
 
 template <class Container, class Particle>
 void UniformGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
-                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                                         const std::array<CalcType, 3> &boxMin, const std::array<CalcType, 3> &boxMax,
                                          unsigned long numParticles, unsigned int seed) {
   std::mt19937 generator(seed);
 
@@ -100,7 +117,7 @@ void UniformGenerator::fillWithParticles(Container &container, const Particle &d
 }
 
 template <class Container, class Particle, class HaloAddFunction>
-void UniformGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+void UniformGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, CalcType haloWidth,
                                              unsigned long numParticles, const HaloAddFunction &haloAddFunction,
                                              unsigned int seed) {
   std::mt19937 generator(seed);

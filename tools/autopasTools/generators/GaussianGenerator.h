@@ -16,6 +16,11 @@
  * Generator class for gaussian distributions
  */
 namespace autopasTools::generators::GaussianGenerator {
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+using CalcType = float;
+#else
+using CalcType = double;
+#endif
 /**
  * Maximum number of attempts the random generator gets to find a valid position before considering the input to be
  * bad
@@ -35,21 +40,21 @@ constexpr size_t _maxAttempts = 100;
  * @param distributionStdDev standard deviation
  */
 template <class Container>
-void fillWithParticles(Container &container, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                       size_t numParticles,
+void fillWithParticles(Container &container, const std::array<CalcType, 3> &boxMin,
+                       const std::array<CalcType, 3> &boxMax, size_t numParticles,
                        const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
                            typename autopas::utils::ParticleTypeTrait<Container>::value(),
-                       const std::array<double, 3> &distributionMean = {5., 5., 5.},
-                       const std::array<double, 3> &distributionStdDev = {2., 2., 2.}) {
+                       const std::array<CalcType, 3> &distributionMean = {5., 5., 5.},
+                       const std::array<CalcType, 3> &distributionStdDev = {2., 2., 2.}) {
   std::default_random_engine generator(42);
-  std::array<std::normal_distribution<double>, 3> distributions = {
-      std::normal_distribution<double>{distributionMean[0], distributionStdDev[0]},
-      std::normal_distribution<double>{distributionMean[1], distributionStdDev[1]},
-      std::normal_distribution<double>{distributionMean[2], distributionStdDev[2]}};
+  std::array<std::normal_distribution<CalcType>, 3> distributions = {
+      std::normal_distribution<CalcType>{distributionMean[0], distributionStdDev[0]},
+      std::normal_distribution<CalcType>{distributionMean[1], distributionStdDev[1]},
+      std::normal_distribution<CalcType>{distributionMean[2], distributionStdDev[2]}};
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
-    std::array<double, 3> position = {distributions[0](generator), distributions[1](generator),
-                                      distributions[2](generator)};
+    std::array<CalcType, 3> position = {distributions[0](generator), distributions[1](generator),
+                                        distributions[2](generator)};
     // verifies that position is valid
     for (size_t attempts = 1; attempts <= _maxAttempts and (not autopas::utils::inBox(position, boxMin, boxMax));
          ++attempts) {

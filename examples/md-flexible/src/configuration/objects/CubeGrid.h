@@ -25,8 +25,8 @@ class CubeGrid : public Object {
    * @param particleSpacing
    * @param bottomLeftCorner
    */
-  CubeGrid(const std::array<double, 3> &velocity, unsigned long typeId, const std::array<size_t, 3> &particlesPerDim,
-           double particleSpacing, const std::array<double, 3> &bottomLeftCorner)
+  CubeGrid(const std::array<CalcType, 3> &velocity, unsigned long typeId, const std::array<size_t, 3> &particlesPerDim,
+           CalcType particleSpacing, const std::array<CalcType, 3> &bottomLeftCorner)
       : Object(velocity, typeId),
         _particlesPerDim(particlesPerDim),
         _particleSpacing(particleSpacing),
@@ -36,7 +36,7 @@ class CubeGrid : public Object {
    * Returns the particle spacing.
    * @return spacing between particles.
    */
-  [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
+  [[nodiscard]] CalcType getParticleSpacing() const override { return _particleSpacing; }
 
   /**
    * Getter for ParticlesPerDim
@@ -49,25 +49,25 @@ class CubeGrid : public Object {
    * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
-    return std::accumulate(std::begin(_particlesPerDim), std::end(_particlesPerDim), 1, std::multiplies<double>());
+    return std::accumulate(std::begin(_particlesPerDim), std::end(_particlesPerDim), 1, std::multiplies<CalcType>());
   }
 
   /**
    * Returns the coordinates of the bottom left front corner.
    * @return bottom left front corner.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
+  [[nodiscard]] std::array<CalcType, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
    * Returns the coordinates of the top right back corner.
    * @return top right back corner.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMax() const override {
+  [[nodiscard]] std::array<CalcType, 3> getBoxMax() const override {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_copy_array<double>(_particlesPerDim);
+    const auto particlesPerDimCalcType = autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(_particlesPerDim);
     // subtract one because the first particle is at bottomLeftCorner
-    const auto particlesPerDimSubOne = particlesPerDimDouble - 1.;
+    const auto particlesPerDimSubOne = particlesPerDimCalcType - static_cast<CalcType>(1.);
     const auto lastParticleRelative = particlesPerDimSubOne * _particleSpacing;
     auto lastParticleAbsolute = _bottomLeftCorner + lastParticleRelative;
 
@@ -116,10 +116,10 @@ class CubeGrid : public Object {
   /**
    * Defines the amount of space between particles.
    */
-  double _particleSpacing;
+  CalcType _particleSpacing;
 
   /**
    * Stores the coordinates of the bottom left front corner.
    */
-  std::array<double, 3> _bottomLeftCorner;
+  std::array<CalcType, 3> _bottomLeftCorner;
 };

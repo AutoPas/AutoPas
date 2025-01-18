@@ -21,15 +21,15 @@ class Sphere : public Object {
    * @param radius
    * @param particleSpacing
    */
-  Sphere(const std::array<double, 3> &velocity, unsigned long typeId, const std::array<double, 3> &center, int radius,
-         double particleSpacing)
+  Sphere(const std::array<CalcType, 3> &velocity, unsigned long typeId, const std::array<CalcType, 3> &center,
+         int radius, CalcType particleSpacing)
       : Object(velocity, typeId), _center(center), _radius(radius), _particleSpacing(particleSpacing) {}
 
   /**
    * Getter for center of Sphere
    * @return center
    */
-  [[nodiscard]] const std::array<double, 3> &getCenter() const { return _center; }
+  [[nodiscard]] const std::array<CalcType, 3> &getCenter() const { return _center; }
 
   /**
    * Getter for radius in number of Particles of Sphere
@@ -41,13 +41,13 @@ class Sphere : public Object {
    * Returns the amount of space between each particle.
    * @return spacing of the particles.
    */
-  [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
+  [[nodiscard]] CalcType getParticleSpacing() const override { return _particleSpacing; }
 
   /**
    * Call f for every point on the sphere where a particle should be.
    * @param f Function called for every point.
    */
-  void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
+  void iteratePositions(const std::function<void(std::array<CalcType, 3>)> &f) const {
     using namespace autopas::utils::ArrayMath::literals;
 
     // generate regular grid for 1/8th of the sphere
@@ -55,17 +55,18 @@ class Sphere : public Object {
       for (int y = 0; y <= _radius; ++y) {
         for (int x = 0; x <= _radius; ++x) {
           // position relative to the center
-          const std::array<double, 3> relativePos = {(double)x, (double)y, (double)z};
+          const std::array<CalcType, 3> relativePos = {(CalcType)x, (CalcType)y, (CalcType)z};
           // mirror to rest of sphere
           for (int i = -1; i <= 1; i += 2) {
             for (int k = -1; k <= 1; k += 2) {
               for (int l = -1; l <= 1; l += 2) {
-                const std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
+                const std::array<CalcType, 3> mirrorMultipliers = {(CalcType)i, (CalcType)k, (CalcType)l};
                 // position mirrored, scaled and absolute
-                const std::array<double, 3> posVector =
+                const std::array<CalcType, 3> posVector =
                     _center + ((relativePos * mirrorMultipliers) * _particleSpacing);
 
-                double distFromCentersSquare = autopas::utils::ArrayMath::dot(posVector - _center, posVector - _center);
+                CalcType distFromCentersSquare =
+                    autopas::utils::ArrayMath::dot(posVector - _center, posVector - _center);
                 const auto r = (_radius + 1) * _particleSpacing;
                 const auto rSquare = r * r;
                 // since the loops create a cubic grid only apply f for positions inside the sphere
@@ -99,18 +100,18 @@ class Sphere : public Object {
    * Returns the coordinates of box's the bottom left front corner.
    * @return the bottom left front corner of the sphere's box domain.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override {
-    return {_center[0] - ((double)_radius) * _particleSpacing, _center[1] - ((double)_radius) * _particleSpacing,
-            _center[2] - ((double)_radius) * _particleSpacing};
+  [[nodiscard]] std::array<CalcType, 3> getBoxMin() const override {
+    return {_center[0] - ((CalcType)_radius) * _particleSpacing, _center[1] - ((CalcType)_radius) * _particleSpacing,
+            _center[2] - ((CalcType)_radius) * _particleSpacing};
   }
 
   /**
    * Returns the coordinates of box's the top right back corner.
    * @return the top right back corner of the sphere's box domain.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return {_center[0] + ((double)_radius) * _particleSpacing, _center[1] + ((double)_radius) * _particleSpacing,
-            _center[2] + ((double)_radius) * _particleSpacing};
+  [[nodiscard]] std::array<CalcType, 3> getBoxMax() const override {
+    return {_center[0] + ((CalcType)_radius) * _particleSpacing, _center[1] + ((CalcType)_radius) * _particleSpacing,
+            _center[2] + ((CalcType)_radius) * _particleSpacing};
   }
 
   /**
@@ -147,7 +148,7 @@ class Sphere : public Object {
   /**
    * coordinates of the sphere's center.
    */
-  std::array<double, 3> _center;
+  std::array<CalcType, 3> _center;
 
   /**
    * radius of the sphere in number of particles.
@@ -157,5 +158,5 @@ class Sphere : public Object {
   /**
    * The amount of space between each particle.
    */
-  double _particleSpacing;
+  CalcType _particleSpacing;
 };

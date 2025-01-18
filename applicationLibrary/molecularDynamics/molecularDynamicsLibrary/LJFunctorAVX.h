@@ -653,9 +653,6 @@ class LJFunctorAVX
     SIMDCalcType sigmaSquareds = _sigmaSquared;
     SIMDCalcType shift6s = _shift6;
 
-    //! ------------------------------ Tested until here ------------------------------
-    //! ------------------------------- Done until here -------------------------------
-
 #if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
     // code for calculations in single precision
 
@@ -909,12 +906,12 @@ class LJFunctorAVX
     // if newton 3 is used subtract fD from particle j
     if constexpr (newton3) {
       // we need to load and store double the number of particles in this case
-      const __m256d fx2first;
-      const __m256d fx2second;
-      const __m256d fy2first;
-      const __m256d fy2second;
-      const __m256d fz2first;
-      const __m256d fz2second;
+      __m256d fx2first;
+      __m256d fx2second;
+      __m256d fy2first;
+      __m256d fy2second;
+      __m256d fz2first;
+      __m256d fz2second;
 
       // TODO MP Think about this
       if (remainderIsMasked) {
@@ -1311,8 +1308,6 @@ class LJFunctorAVX
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
-
-  //! ------------------------------- Done from here -------------------------------
 
   /**
    * Sets the particle properties constants for this functor.
