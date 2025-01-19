@@ -29,14 +29,16 @@ using CalcType = double;
  * @param boxMax
  * @return 3D array with random values
  */
-inline std::array<CalcType, 3> randomPosition(std::mt19937 &generator, const std::array<CalcType, 3> &boxMin,
-                                              const std::array<CalcType, 3> &boxMax) {
-  std::array<std::uniform_real_distribution<CalcType>, 3> distributions = {
-      std::uniform_real_distribution<CalcType>{boxMin[0], boxMax[0]},
-      std::uniform_real_distribution<CalcType>{boxMin[1], boxMax[1]},
-      std::uniform_real_distribution<CalcType>{boxMin[2], boxMax[2]},
+
+template <typename FloatType>
+std::array<FloatType, 3> randomPosition(std::mt19937 &generator, const std::array<FloatType, 3> &boxMin,
+                                        const std::array<FloatType, 3> &boxMax) {
+  std::array<std::uniform_real_distribution<FloatType>, 3> distributions = {
+      std::uniform_real_distribution<FloatType>{static_cast<FloatType>(boxMin[0]), static_cast<FloatType>(boxMax[0])},
+      std::uniform_real_distribution<FloatType>{static_cast<FloatType>(boxMin[1]), static_cast<FloatType>(boxMax[1])},
+      std::uniform_real_distribution<FloatType>{static_cast<FloatType>(boxMin[2]), static_cast<FloatType>(boxMax[2])},
   };
-  std::array<CalcType, 3> r{};
+  std::array<FloatType, 3> r{};
   for (int d = 0; d < 3; ++d) {
     r[d] = distributions[d](generator);
   }

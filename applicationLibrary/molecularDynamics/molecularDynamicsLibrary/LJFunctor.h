@@ -191,12 +191,23 @@ class LJFunctor
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadDataGlobals[threadnum].virialSum += virial;
+
+        if constexpr (std::is_same_v<CalcType, AccuType>) {
+          _aosThreadDataGlobals[threadnum].virialSum += virial;
+        } else {
+          _aosThreadDataGlobals[threadnum].virialSum +=
+              autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(virial);
+        }
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadDataGlobals[threadnum].virialSum += virial;
+        if constexpr (std::is_same_v<CalcType, AccuType>) {
+          _aosThreadDataGlobals[threadnum].virialSum += virial;
+        } else {
+          _aosThreadDataGlobals[threadnum].virialSum +=
+              autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(virial);
+        }
       }
       if constexpr (countFLOPs) {
         if (newton3) {
