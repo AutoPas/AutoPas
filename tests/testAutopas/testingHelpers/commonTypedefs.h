@@ -27,7 +27,7 @@ using FPCell = autopas::FullParticleCell<autopas::Particle>;
  * Short for types used for (mixed) precision
  */
 using CalcType = Particle::ParticleCalcType;
-using AccuType = Particle::ParticleCalcType;
+using AccuType = Particle::ParticleAccuType;
 
 /**
  * Short for the AutoPas single site Lennard-Jones molecule
