@@ -1524,14 +1524,14 @@ void LogicHandler<Particle>::remainderHelperBufferBufferSoA(PairwiseFunctor *f,
   for (size_t i = 0; i < particleBuffers.size(); ++i) {
     for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
       auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+      // instead of starting every (parallel) iteration i at j == 0 offset them by i to minimize waiting times at locks
       const auto j = (i + jj) % particleBuffers.size();
       if (i == j) {
         // For buffer interactions where bufferA == bufferB we can always enable newton3 if it is allowed.
         f->SoAFunctorSingle(*particleBufferSoAA, newton3);
       } else {
-        // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
-        // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
-        // buffer. This saves expensive locks.
+        // For all interactions between different buffers we turn newton3 always off,
+        // which ensures that only one thread at a time is writing to a buffer. This saves expensive locks.
         auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
         f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
       }
