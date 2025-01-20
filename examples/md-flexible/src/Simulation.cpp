@@ -189,7 +189,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
-  const size_t settlingEndingIteration = 20000;
+  const size_t settlingEndingIteration = 50000;
 
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -198,7 +198,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % 1000 == 0) {  // TODO: to change
+    if (_calculateStatistics and _iteration % 100 == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
