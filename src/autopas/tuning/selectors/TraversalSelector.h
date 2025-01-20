@@ -14,6 +14,7 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGC01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/HGColorSoACellToCell.h"
 #include "autopas/containers/linkedCells/traversals/HGColorTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
@@ -305,6 +306,9 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     }
     case TraversalOption::hgrid_color: {
       return std::make_unique<HGColorTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_color_soa_cell: {
+      return std::make_unique<HGColorSoACellToCell<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",

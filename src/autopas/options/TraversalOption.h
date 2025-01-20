@@ -210,6 +210,7 @@ class TraversalOption : public Option<TraversalOption> {
      * that are considered for each cell on level x do not intersect.
      */
     hgrid_color,
+    hgrid_color_soa_cell,
   };
 
   /**
@@ -347,7 +348,9 @@ class TraversalOption : public Option<TraversalOption> {
 
             // HierarchicalGrid Traversals:
             {TraversalOption::hgrid_c01, "hgrid_c01"},
-            {TraversalOption::hgrid_color, "hgrid_color"}};
+            {TraversalOption::hgrid_color, "hgrid_color"},
+            {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
+    };
   };
 
  private:

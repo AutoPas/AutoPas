@@ -516,6 +516,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     // binary search not worth if there are small amount of levels
     // scale size by baseCutoff
     const double cutoff = p.getSize() * _baseCutoff;
+    //AutoPasLog(INFO, "Adding particle with size {}\n{}", ParticleType::getSizeFunctor(&p), p.toString());
     for (size_t i = 0; i < _numLevels; ++i) {
       if (_cutoffs[i] >= cutoff) {
         return i;

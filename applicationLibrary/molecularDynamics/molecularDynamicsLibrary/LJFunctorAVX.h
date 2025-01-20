@@ -129,11 +129,13 @@ class LJFunctorAVX
     if (i.isDummy() or j.isDummy()) {
       return;
     }
+    auto cutoffSquared = _cutoffSquaredAoS;
     auto sigmaSquared = _sigmaSquaredAoS;
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      cutoffSquared = _cutoffSquaredAoS * sigmaSquared;
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
@@ -142,7 +144,7 @@ class LJFunctorAVX
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffSquaredAoS) {
+    if (dr2 > cutoffSquared) {
       return;
     }
 
@@ -479,6 +481,7 @@ class LJFunctorAVX
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
+    __m256d cutoffSquared = _cutoffSquared;
     if (useMixing) {
       // the first argument for set lands in the last bits of the register
       epsilon24s = _mm256_set_pd(
@@ -491,6 +494,7 @@ class LJFunctorAVX
           not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
           not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
           _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
+      cutoffSquared = _mm256_mul_pd(_cutoffSquared, sigmaSquareds);
       if constexpr (applyShift) {
         shift6s = _mm256_set_pd(
             (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
@@ -518,7 +522,7 @@ class LJFunctorAVX
     // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
     // signaling = throw error if NaN is encountered
     // dr2 <= _cutoffSquared ? 0xFFFFFFFFFFFFFFFF : 0
-    const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffSquared, _CMP_LE_OS);
+    const __m256d cutoffMask = _mm256_cmp_pd(dr2, cutoffSquared, _CMP_LE_OS);
 
     // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
     const __m256i ownedStateJ = remainderIsMasked

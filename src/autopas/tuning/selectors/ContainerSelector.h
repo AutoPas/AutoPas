@@ -45,9 +45,10 @@ class ContainerSelector {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
+   * @param cutoffs Cutoffs for the different levels of the hierarchical grid.
    */
   ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                    const std::vector<double> cutoffs = {})
+                    const std::vector<double> &cutoffs = {})
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
@@ -166,7 +167,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     case ContainerOption::hierarchicalGrid: {
       if (_cutoffs.empty() && _cutoff > 0) {
         // placeholder cutoffs if not provided by user
-        _cutoffs = {_cutoff / 4, _cutoff / 3, _cutoff / 2, _cutoff, _cutoff * 2};
+        _cutoffs = {_cutoff / 4, _cutoff / 3, _cutoff / 2, _cutoff};
       }
       container = std::make_unique<HierarchicalGrid<Particle>>(
           _boxMin, _boxMax, _cutoff, _cutoffs, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,

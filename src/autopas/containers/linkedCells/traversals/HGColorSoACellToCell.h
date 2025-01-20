@@ -1,7 +1,7 @@
 /**
- * @file HGColorTraversal.h
+ * @file HGColorSoACellToCell.h
  * @author atacann
- * @date 02.01.2025
+ * @date 17.01.2025
  */
 
 #pragma once
@@ -15,11 +15,11 @@
 namespace autopas {
 
 template <class ParticleCell, class Functor>
-class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversalInterface {
+class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCell::ParticleType;
 
-  explicit HGColorTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGColorSoACellToCell(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCell>(dataLayout, useNewton3), _functor(functor){}
 
   /**
@@ -70,7 +70,6 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
         const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
         const std::array<double, 3> lowerLength = this->_levels->at(lowerLevel)->getTraversalSelectorInfo().cellLength;
         //_functor->setCutoff(cutoff);
-        // TODO: scale verlet skin by how long passed till last rebuild???
         const double interactionLength = cutoff + this->_skin;
 
         std::array<unsigned long, 3> stride{};
@@ -123,52 +122,24 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
                 }
                 // variable to determine if we are only interested in owned particles in the lower level
                 const bool containToOwnedOnly = isHalo && this->_useNewton3;
-                if (this->_dataLayout == DataLayoutOption::aos) {
-                  for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
-                    const std::array<double, 3> &pos = p1Ptr->getR();
-                    auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
-                    auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
-                    // skip halo cells if we need to consider only owned particles
-                    if (containToOwnedOnly) {
-                      startIndex3D = this->getMax(startIndex3D, lowerBound);
-                      stopIndex3D = this->getMin(stopIndex3D, upperBound);
-                    }
-                    for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
-                      for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
-                          auto &lowerCell = lowerLevelCB.getCell({xl, yl, zl});
-                          for (auto &p : lowerCell) {
-                            this->_functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
-                          }
-                        }
-                      }
-                    }
-                  }
+                auto &soa = cell._particleSoABuffer;
+                auto [posMin, posMax] = upperLevelCB.getCellBoundingBox({x, y, z});
+                auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(posMin - dir);
+                auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(posMax + dir);
+                // skip halo cells if we need to consider only owned particles
+                if (containToOwnedOnly) {
+                  startIndex3D = this->getMax(startIndex3D, lowerBound);
+                  stopIndex3D = this->getMin(stopIndex3D, upperBound);
                 }
-                else {
-                  auto &soa = cell._particleSoABuffer;
-                  const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-                  const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-                  const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-                  for (int idx = 0; idx < cell.size(); ++idx) {
-                    const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
-                    auto soaView = soa.constructView(idx, idx + 1);
-                    auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
-                    auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
-                    if (containToOwnedOnly) {
-                      startIndex3D = this->getMax(startIndex3D, lowerBound);
-                      stopIndex3D = this->getMin(stopIndex3D, upperBound);
-                    }
-                    for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
-                      for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl)  {
-                          // TODO: you don't need to check every cell in 3D cubic region, actual region will be like a sphere
-                          // TODO: if (shortest dist between particle and cube) ^ 2 > cutoff ^ 2, can skip this cell
-                          // 1 to n SoAFunctorPair
-                          this->_functor->SoAFunctorPair(soaView,
-                            lowerLevelCB.getCell({xl, yl, zl})._particleSoABuffer, this->_useNewton3);
-                        }
-                      }
+
+                for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+                  for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+                    for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
+                      // TODO: you don't need to check every cell in 3D cubic region, actual region will be like a sphere
+                      // TODO: if (shortest dist between particle and cube) ^ 2 > cutoff ^ 2, can skip this cell
+                      // n to n SoAFunctorPair
+                      this->_functor->SoAFunctorPair(cell._particleSoABuffer,
+                        lowerLevelCB.getCell({xl, yl, zl})._particleSoABuffer, this->_useNewton3);
                     }
                   }
                 }
@@ -184,10 +155,10 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_color; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_color_soa_cell; };
 
   [[nodiscard]] bool isApplicable() const override {
-    return true;
+    return this->_dataLayout == DataLayoutOption::soa;
   }
 
   void initTraversal() override {

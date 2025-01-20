@@ -175,6 +175,9 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                      _configuration.outputSuffix.value + fillerAfterSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
+  // set particlePropertiesLibrary of MoleculeLJ
+  ParticleType::particlePropertiesLibrary = _configuration.getParticlePropertiesLibrary();
+
   _autoPasContainer->init();
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning

@@ -126,8 +126,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        ot_c18                      (AoS <=> SoA, newton3)                               = 2
   configsPerContainer[autopas::ContainerOption::octree] = 4;
   // HierarchicalGrid       hgrid_c01                   (AoS, noNewton3)                                     = 1
-  //                        hgrid_color                 (AoS, newton3)                                       = 1
-  configsPerContainer[autopas::ContainerOption::hierarchicalGrid] = 2;
+  //                        hgrid_color                 (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        hgrid_color_soa_cell        (SoA, newton3 <=> noNewton3)                         = 2
+  configsPerContainer[autopas::ContainerOption::hierarchicalGrid] = 7;
 
   // check that there is an entry for every container.
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
