@@ -44,11 +44,11 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel,
   statisticsDistanceOverlap);
    **/
-  StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
+  StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
 
   const std::vector<std::tuple<size_t, double>> binIndex_to_rdf = calculateRDF(autoPasContainer, particlePropertiesLib);
   for (const auto &pair : binIndex_to_rdf) {
-    writeRow(currentIteration, pair);
+    writeRow(outputFile_rdf, currentIteration, pair);
   }
 }
 
@@ -214,6 +214,17 @@ void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &co
     outputFile << "\n";
   } else {
     throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " + filename.str());
+  }
+  // ---------------------------------------------------------------------------------------------------------
+  std::ostringstream filename_rdf;
+  filename_rdf << _statisticsFolderPath << _sessionName << "_statistics_rdf.csv";
+
+  outputFile_rdf.open(filename_rdf.str(), std::ios::out);
+
+  if (outputFile_rdf.is_open()) {
+    outputFile_rdf << "Iteration, Distance, RDF\n";
+  } else {
+    throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " + filename_rdf.str());
   }
 }
 

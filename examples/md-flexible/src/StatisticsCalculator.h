@@ -157,10 +157,10 @@ class StatisticsCalculator {
   }
 
   template <typename... Args>
-  void writeRow(const Args &...args) {
-    if (outputFile.is_open()) {
-      writeValue(outputFile, args...);
-      outputFile << "\n";
+  void writeRow(std::ofstream &customOutputFile, const Args &...args) {
+    if (customOutputFile.is_open()) {
+      writeValue(customOutputFile, args...);
+      customOutputFile << "\n";
     } else {
       throw std::runtime_error("StatisticsCalculator::writeRow(): Could not open file " + _outputFileName);
     }
@@ -170,6 +170,8 @@ class StatisticsCalculator {
    * The file stream to write the statistics to.
    */
   std::ofstream outputFile;
+
+  std::ofstream outputFile_rdf;
 
   /**
    * Stores the session name.

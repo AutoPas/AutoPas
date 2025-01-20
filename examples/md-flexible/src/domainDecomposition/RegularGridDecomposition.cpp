@@ -298,7 +298,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
-    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
+    //if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective and
+     //   _boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic)
+    //  continue;
 
     auto reflect = [&](bool isUpper) {
       const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
@@ -306,6 +308,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma
+        if (dimensionIndex == 1 and p->getTypeId() != 0) continue;  // only for solid particles
+
         const auto position = p->getR();
         const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
 
