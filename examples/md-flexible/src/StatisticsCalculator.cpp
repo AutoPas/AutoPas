@@ -45,7 +45,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   statisticsDistanceOverlap);
    **/
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
-  if (currentIteration % 2000 == 0) {
+  if (currentIteration % 10000 == 0) {
     const std::vector<std::tuple<size_t, double>> binIndex_to_rdf = calculateRDF(autoPasContainer, particlePropertiesLib);
     for (const auto &pair : binIndex_to_rdf) {
       writeRow(outputFile_rdf, currentIteration, pair);
