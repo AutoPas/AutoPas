@@ -90,7 +90,6 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 
   const double cutoff = 0.3;
   const double sigma = 1.;
-
   // initialise AutoPas container & domainDecomposition
   MDFlexConfig config(0, nullptr);
   config.epsilonMap.value.clear();
@@ -122,10 +121,9 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 #endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
-  const auto &[expectedPositions, expectedHaloPositions, expectedForces] = setUpExpectations(
-      particlePositions, config.boxMin.value, config.boxMax.value, sigma,
-      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value,
-      config.boundaryOption.value);
+  const auto &[expectedPositions, expectedHaloPositions, expectedForces] =
+      setUpExpectations(particlePositions, config.boxMin.value, config.boxMax.value, sigma,
+                        config.cutoff.value + config.verletSkinRadius.value, config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
   // but also close to their designated positions, so they end up in the correct MPI rank
