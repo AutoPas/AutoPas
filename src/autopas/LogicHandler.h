@@ -174,6 +174,7 @@ class LogicHandler {
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+
         _rebuildIntervals.push_back(_stepsSinceLastListRebuild);
 #endif
         _stepsSinceLastListRebuild = 0;
@@ -605,15 +606,10 @@ class LogicHandler {
    */
   [[nodiscard]] double getMeanRebuildFrequency() const {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    if (_rebuildIntervals.empty()) {
+    if (_numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
-      // Neglecting the first entry in the vector as _stepsSinceLastListRebuild is initialized to a very large value,
-      // to trigger the first rebuild when starting the simulation,
-      // which gets stored in the vector on the very first rebuild.
-      // This large value is ignored when calculating the mean value below.
-      return std::accumulate(_rebuildIntervals.begin() + 1, _rebuildIntervals.end(), 0.) /
-             static_cast<double>(_rebuildIntervals.size() - 1);
+      return static_cast<double>(_iteration) / _numRebuilds;
     }
 #else
     return static_cast<double>(_neighborListRebuildFrequency);
@@ -940,6 +936,16 @@ class LogicHandler {
   std::vector<int> _rebuildIntervals;
 
   /**
+   * This is used to store the total number of neighbour lists rebuild.
+   */
+  size_t _numRebuilds{0};
+
+  /**
+   * This is used to store the number of neighbour lists rebuild in simulation phase.
+   */
+  size_t _numRebuildsInSimulationPhase{0};
+
+  /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t _sortingThreshold;
@@ -1174,6 +1180,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   auto &autoTuner = *_autoTunerRefs[interactionType];
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
+  // auto isTuning = autoTuner.inTuningPhase();
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
@@ -1193,6 +1200,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     container.rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->resetNeighborListsInvalidDoDynamicRebuild();
+    _numRebuilds++;
 #endif
     timerRebuild.stop();
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
