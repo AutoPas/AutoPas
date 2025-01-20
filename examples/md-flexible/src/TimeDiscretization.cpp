@@ -17,7 +17,7 @@ namespace TimeDiscretization {
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow) {
+                                      bool fastParticlesThrow, bool isSettling) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
@@ -33,7 +33,20 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     auto v = iter->getV();
     auto f = iter->getF();
     iter->setOldF(f);
-    iter->setF(globalForce);
+    if (isSettling) {
+      // Set the force
+      if (iter->getTypeId() == 0) {
+        iter->setF(globalForce);
+      } else {
+        iter->setF({0., 0., 0.});
+      }
+    } else {
+      if (iter->getTypeId() == 0) {
+        iter->setF(globalForce);
+      } else {
+        iter->setF(globalForce * (-2.));
+      }
+    }
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;

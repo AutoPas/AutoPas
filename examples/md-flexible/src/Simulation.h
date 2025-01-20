@@ -292,7 +292,7 @@ class Simulation {
    * Updates the position of particles in the local AutoPas container. In addition, the oldForce is set to the value of
    * the current forces and the force buffers of the particles are reset to the global force.
    */
-  void updatePositionsAndResetForces(const std::array<double, 3> &globalForce);
+  void updatePositionsAndResetForces(const std::array<double, 3> &globalForce, const bool isSettling);
 
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.

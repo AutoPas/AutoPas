@@ -17,9 +17,8 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   tryCreateStatisticsFolders(_sessionName, outputFolder);
 
   std::vector<std::string> columnNames = {
-      "Iteration", "MeanPotentialEnergyZ", "MeanKineticEnergyX", "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"
-  };
+      "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
+      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"};
   /**
   const std::vector<std::string> columnNames = {
       "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
@@ -33,8 +32,8 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
-
-  const auto combinedStatistics = calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
+  const auto combinedStatistics =
+      calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
   /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
@@ -42,10 +41,15 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   const auto statisticsJForceVel = calculateForceAndVelocity(autoPasContainer, 0L);
   const auto statisticsDistanceOverlap = calculateOverlapDistForceMagSum(autoPasContainer, particlePropertiesLib);
 
-  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel, statisticsDistanceOverlap);
+  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel,
+  statisticsDistanceOverlap);
    **/
   StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 
+  const std::vector<std::tuple<size_t, double>> binIndex_to_rdf = calculateRDF(autoPasContainer, particlePropertiesLib);
+  for (const auto &pair : binIndex_to_rdf) {
+    writeRow(currentIteration, pair);
+  }
 }
 
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateTorquesAndAngularVel(
@@ -114,9 +118,8 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
   return std::make_tuple(forceX, forceY, forceZ, velocityX, velocityY, velocityZ);
 }
 
-
-
-std::tuple<double, double, double, double, double, double, double> StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
+std::tuple<double, double, double, double, double, double, double>
+StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -127,6 +130,8 @@ std::tuple<double, double, double, double, double, double, double> StatisticsCal
   std::array<double, 3> meanRotationalEnergy = {0., 0., 0.};
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() != 0) continue;
+
     const double mass = particlePropertiesLib.getSiteMass(particle->getTypeId());
     const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
     const std::array<double, 3> v = particle->getV();
@@ -184,16 +189,16 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
     }
   }
 
-    overlapSum /= 2.;
-    distSum /= 2.;
-    forceMagSum /= 2.;
+  overlapSum /= 2.;
+  distSum /= 2.;
+  forceMagSum /= 2.;
 
-    return std::make_tuple(overlapSum, distSum, forceMagSum);
+  return std::make_tuple(overlapSum, distSum, forceMagSum);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------
 
-void StatisticsCalculator::generateOutputFile(const std::vector<std::string>& columnNames) {
+void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &columnNames) {
   std::ostringstream filename;
   filename << _statisticsFolderPath << _sessionName << "_statistics.csv";
 
@@ -233,4 +238,47 @@ void StatisticsCalculator::tryCreateFolder(const std::string &name, const std::s
     throw std::runtime_error("StatisticsCalculator::tryCreateFolder(): The output location " + location +
                              " passed to StatisticsCalculator is invalid: " + ex.what());
   }
+}
+std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateRDF(
+    const autopas::AutoPas<ParticleType> &autoPasContainer,
+    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
+
+  std::map<size_t, size_t> binIndex_to_counts;
+  const double distance_unit = 1.;
+  std::vector<std::tuple<size_t, double>> binIndex_to_rdf;
+
+  for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
+    if (i->getTypeId() != 0) {  // Only consider solid particles
+      continue;
+    }
+    auto j = i;
+    ++j;  // Start `j` from the next particle after `i`.
+    for (; j.isValid(); ++j) {
+      if (j->getTypeId() != 0) {  // Only consider solid particles
+        continue;
+      }
+
+      // No need to consider periodically imaged positions as for grain particles, only reflective BD are active.
+      const std::array<double, 3> r_i = i->getR();
+      const std::array<double, 3> r_j = j->getR();
+      const double dist = L2Norm(r_i - r_j);
+      const size_t binindex = std::floor(dist / distance_unit);
+      binIndex_to_counts[binindex]++;
+    }  // End of `j` loop
+  }  // End of 'i' loop
+
+  for (auto &pair : binIndex_to_counts) {
+    const double dist_interval_start_casted = static_cast<double>(pair.first);
+    const double counts_casted = static_cast<double>(pair.second);
+    const double localDensity_Denominator =
+        (4. / 3.) * M_PI *
+        (std::pow(dist_interval_start_casted + distance_unit, 3) - std::pow(dist_interval_start_casted, 3));
+    const double localDensity = counts_casted / localDensity_Denominator;
+
+      binIndex_to_rdf.emplace_back(pair.first, localDensity);
+  }
+
+  return binIndex_to_rdf;
 }

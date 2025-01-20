@@ -54,6 +54,15 @@ class StatisticsCalculator {
       const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
+   *
+   * @param autoPasContainer
+   * @param particlePropertiesLib
+   * @return <Bin_Index, Local_Density>
+   */
+  static std::vector<std::tuple<size_t, double>>
+      calculateRDF(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
+
+  /**
    * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.
    * @param autoPasContainer
    * @param particlePropertiesLib

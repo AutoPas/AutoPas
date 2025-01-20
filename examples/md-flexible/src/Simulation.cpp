@@ -189,6 +189,8 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
+  const size_t settlingEndingIteration = 1000;
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -196,7 +198,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % 10 == 0) {  // TODO: to change
+    if (_calculateStatistics and _iteration % 100 == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
@@ -206,7 +208,7 @@ void Simulation::run() {
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       //const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
       //    _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(_configuration.globalForce.value);  // normal case parameter: _configuration.globalForce.value
+      updatePositionsAndResetForces(_configuration.globalForce.value, _iteration > settlingEndingIteration);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -218,6 +220,7 @@ void Simulation::run() {
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing
+      /**
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
         _domainDecomposition->update(computationalLoad);
@@ -238,12 +241,14 @@ void Simulation::run() {
           return false;
         });
 
+
         emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
                         emigrants.end());
 
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
       }
+       **/
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
@@ -412,11 +417,11 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
   return ss.str();
 }
 
-void Simulation::updatePositionsAndResetForces(const std::array<double, 3> &globalForce) {
+void Simulation::updatePositionsAndResetForces(const std::array<double, 3> &globalForce, const bool isSettling) {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value, globalForce,
-      _configuration.fastParticlesThrow.value);
+      _configuration.fastParticlesThrow.value, isSettling);
   _timers.positionUpdate.stop();
 }
 
