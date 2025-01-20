@@ -15,14 +15,14 @@ tuning-max-evidence              :  10
 functor                          :  dem
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
-box-max                          :  [25.25, 50.25, 25.25]
+box-max                          :  [25.25, 20.25, 25.25]
 cell-size                        :  [1]
 deltaT                           :  0.00005
-iterations                       :  250000
+iterations                       :  750000
 boundary-type                    :  [reflective,periodic,reflective]
-globalForce                      :  [0,-10.0,0]
-backgroundForceFrictionCoeff      :  0.0
-backgroundTorqueFrictionCoeff     :  0.0
+globalForce                      :  [0,-17.5,0]
+backgroundForceFrictionCoeff      :  0.01
+backgroundTorqueFrictionCoeff     :  0.01
 Sites:
   0:
     epsilon                      :  1.
@@ -51,7 +51,7 @@ Objects:
       particle-type-id           :  0
     1:
       particle-spacing: 1
-      bottomLeftCorner: [ 0., 20., 0. ]
+      bottomLeftCorner: [ 0., 10., 0. ]
       box-length                 :  [23, 5, 23]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
