@@ -297,59 +297,60 @@ class TraversalOption : public Option<TraversalOption> {
    * @return map option -> string representation
    */
   static std::map<TraversalOption, std::string> getOptionNames() {
-    return {// DirectSum Traversals:
-            {TraversalOption::ds_sequential, "ds_sequential"},
+    return {
+        // DirectSum Traversals:
+        {TraversalOption::ds_sequential, "ds_sequential"},
 
-            // LinkedCell Traversals:
-            {TraversalOption::lc_sliced, "lc_sliced"},
-            {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
-            {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
-            {TraversalOption::lc_c01, "lc_c01"},
-            {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
-            {TraversalOption::lc_c04, "lc_c04"},
-            {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
-            {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
-            {TraversalOption::lc_c08, "lc_c08"},
-            {TraversalOption::lc_c18, "lc_c18"},
+        // LinkedCell Traversals:
+        {TraversalOption::lc_sliced, "lc_sliced"},
+        {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
+        {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
+        {TraversalOption::lc_c01, "lc_c01"},
+        {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
+        {TraversalOption::lc_c04, "lc_c04"},
+        {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
+        {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
+        {TraversalOption::lc_c08, "lc_c08"},
+        {TraversalOption::lc_c18, "lc_c18"},
 
-            // VerletClusterLists Traversals:
-            {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
-            {TraversalOption::vcl_c06, "vcl_c06"},
-            {TraversalOption::vcl_c01_balanced, "vcl_c01_balanced"},
-            {TraversalOption::vcl_sliced, "vcl_sliced"},
-            {TraversalOption::vcl_sliced_c02, "vcl_sliced_c02"},
-            {TraversalOption::vcl_sliced_balanced, "vcl_sliced_balanced"},
+        // VerletClusterLists Traversals:
+        {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
+        {TraversalOption::vcl_c06, "vcl_c06"},
+        {TraversalOption::vcl_c01_balanced, "vcl_c01_balanced"},
+        {TraversalOption::vcl_sliced, "vcl_sliced"},
+        {TraversalOption::vcl_sliced_c02, "vcl_sliced_c02"},
+        {TraversalOption::vcl_sliced_balanced, "vcl_sliced_balanced"},
 
-            // VerletList Traversals:
-            {TraversalOption::vl_list_iteration, "vl_list_iteration"},
+        // VerletList Traversals:
+        {TraversalOption::vl_list_iteration, "vl_list_iteration"},
 
-            // VerletListCells Traversals:
-            {TraversalOption::vlc_sliced, "vlc_sliced"},
-            {TraversalOption::vlc_sliced_c02, "vlc_sliced_c02"},
-            {TraversalOption::vlc_c18, "vlc_c18"},
-            {TraversalOption::vlc_c01, "vlc_c01"},
-            {TraversalOption::vlc_c08, "vlc_c08"},
-            {TraversalOption::vlc_sliced_balanced, "vlc_sliced_balanced"},
+        // VerletListCells Traversals:
+        {TraversalOption::vlc_sliced, "vlc_sliced"},
+        {TraversalOption::vlc_sliced_c02, "vlc_sliced_c02"},
+        {TraversalOption::vlc_c18, "vlc_c18"},
+        {TraversalOption::vlc_c01, "vlc_c01"},
+        {TraversalOption::vlc_c08, "vlc_c08"},
+        {TraversalOption::vlc_sliced_balanced, "vlc_sliced_balanced"},
 
-            // VarVerlet Traversals:
-            {TraversalOption::vvl_as_built, "vvl_as_built"},
+        // VarVerlet Traversals:
+        {TraversalOption::vvl_as_built, "vvl_as_built"},
 
-            // PairwiseVerlet Traversals:
-            {TraversalOption::vlp_sliced, "vlp_sliced"},
-            {TraversalOption::vlp_sliced_c02, "vlp_sliced_c02"},
-            {TraversalOption::vlp_c18, "vlp_c18"},
-            {TraversalOption::vlp_c01, "vlp_c01"},
-            {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
-            {TraversalOption::vlp_c08, "vlp_c08"},
+        // PairwiseVerlet Traversals:
+        {TraversalOption::vlp_sliced, "vlp_sliced"},
+        {TraversalOption::vlp_sliced_c02, "vlp_sliced_c02"},
+        {TraversalOption::vlp_c18, "vlp_c18"},
+        {TraversalOption::vlp_c01, "vlp_c01"},
+        {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
+        {TraversalOption::vlp_c08, "vlp_c08"},
 
-            // Octree Traversals:
-            {TraversalOption::ot_c18, "ot_c18"},
-            {TraversalOption::ot_c01, "ot_c01"},
+        // Octree Traversals:
+        {TraversalOption::ot_c18, "ot_c18"},
+        {TraversalOption::ot_c01, "ot_c01"},
 
-            // HierarchicalGrid Traversals:
-            {TraversalOption::hgrid_c01, "hgrid_c01"},
-            {TraversalOption::hgrid_color, "hgrid_color"},
-            {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
+        // HierarchicalGrid Traversals:
+        {TraversalOption::hgrid_c01, "hgrid_c01"},
+        {TraversalOption::hgrid_color, "hgrid_color"},
+        {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
     };
   };
 

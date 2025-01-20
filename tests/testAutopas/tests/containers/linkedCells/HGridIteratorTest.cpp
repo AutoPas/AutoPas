@@ -6,7 +6,6 @@
 
 #include "HGridIteratorTest.h"
 
-#include "tests/iterators/IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/IteratorBehavior.h"
@@ -14,6 +13,7 @@
 #include "autopasTools/generators/UniformGenerator.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "tests/iterators/IteratorTestHelper.h"
 
 // extern template class autopas::AutoPas<MockMolecule>;
 // extern template bool autopas::AutoPas<MockMolecule>::computeInteractions(EmptyPairwiseFunctor<MockMolecule> *);
@@ -22,7 +22,7 @@ using ::testing::_;
 
 template <typename AutoPasT>
 auto HGridIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
-                                            double cellSizeFactor) {
+                                        double cellSizeFactor) {
   using namespace autopas::utils::ArrayMath::literals;
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
@@ -45,7 +45,7 @@ auto HGridIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::Contai
 
 template <bool constIter, class AutoPasT, class F>
 auto HGridIteratorTestBase::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
-                                                const autopas::IteratorBehavior &behavior) {
+                                            const autopas::IteratorBehavior &behavior) {
   if constexpr (not constIter) {
     IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
       AUTOPAS_OPENMP(parallel) {
@@ -318,21 +318,24 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTest,
-                         Combine(Values(autopas::ContainerOption::hierarchicalGrid), /*cell size factor*/ Values(0.5, 1., 1.5),
+                         Combine(Values(autopas::ContainerOption::hierarchicalGrid),
+                                 /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          HGridIteratorTestBase::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTestNonConst,
-                         Combine(Values(autopas::ContainerOption::hierarchicalGrid), /*cell size factor*/ Values(0.5, 1., 1.5),
+                         Combine(Values(autopas::ContainerOption::hierarchicalGrid),
+                                 /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          HGridIteratorTestBase::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTestNonConstOwned,
-                         Combine(Values(autopas::ContainerOption::hierarchicalGrid), /*cell size factor*/ Values(0.5, 1., 1.5),
+                         Combine(Values(autopas::ContainerOption::hierarchicalGrid),
+                                 /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(false), /*prior force calc*/ Values(true, false),
                                  Values(autopas::IteratorBehavior::owned)),

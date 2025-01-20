@@ -29,7 +29,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param cutoffs cutoffs of each HGrid level
    * @param skin verlet skin of HGrid container
    */
-  void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>>* levels, std::vector<double> &cutoffs,
+  void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs,
                  double skin) {
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
@@ -43,8 +43,10 @@ class HGTraversalBase : public TraversalInterface {
   std::vector<double> _cutoffs;
   double _skin;
 
-  // double getMinDistBetweenCellsSquared(const internal::CellBlock3D<ParticleCell> &upperCB, std::array<size_t, 3> &upperCell,
-  //                                      const internal::CellBlock3D<ParticleCell> &lowerCB, std::array<size_t, 3> &lowerCell) {
+  // double getMinDistBetweenCellsSquared(const internal::CellBlock3D<ParticleCell> &upperCB, std::array<size_t, 3>
+  // &upperCell,
+  //                                      const internal::CellBlock3D<ParticleCell> &lowerCB, std::array<size_t, 3>
+  //                                      &lowerCell) {
   //   const auto posX = upperCB.getCellBoundingBox(upperCell);
   //   const auto posY = lowerCB.getCellBoundingBox(lowerCell);
   //   double sum = 0;
@@ -97,7 +99,8 @@ class HGTraversalBase : public TraversalInterface {
     // return traversal info of hierarchy with biggest interactionLength
     const auto temp = _levels->at(level)->getTraversalSelectorInfo();
     // adjust interactionLength to actual value
-    // TODO: _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual interactionlength
+    // TODO: _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual
+    // interactionlength
     // TODO: so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo cells
     const TraversalSelectorInfo ret{temp.cellsPerDim, _cutoffs[level] + _skin, temp.cellLength, temp.clusterSize};
     return ret;

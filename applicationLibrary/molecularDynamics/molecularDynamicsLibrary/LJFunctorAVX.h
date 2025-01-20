@@ -1021,7 +1021,7 @@ class LJFunctorAVX
   };
   const __m256i _ownedStateDummyMM256i{0x0};
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
-   __m256d _cutoffSquared{};
+  __m256d _cutoffSquared{};
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};
   __m256d _sigmaSquared{};

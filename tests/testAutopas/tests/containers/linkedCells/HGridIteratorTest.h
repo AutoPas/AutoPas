@@ -63,8 +63,7 @@ using testingTuple =
                bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 class HGridIteratorTest : public HGridIteratorTestBase, public ::testing::WithParamInterface<testingTuple> {};
 
-class HGridIteratorTestNonConst : public HGridIteratorTestBase,
-                                      public ::testing::WithParamInterface<testingTuple> {};
+class HGridIteratorTestNonConst : public HGridIteratorTestBase, public ::testing::WithParamInterface<testingTuple> {};
 
 class HGridIteratorTestNonConstOwned : public HGridIteratorTestBase,
-                                           public ::testing::WithParamInterface<testingTuple> {};
+                                       public ::testing::WithParamInterface<testingTuple> {};

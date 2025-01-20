@@ -20,7 +20,7 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
   using Particle = typename ParticleCell::ParticleType;
 
   explicit HGColorSoACellToCell(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
-      : HGTraversalBase<ParticleCell>(dataLayout, useNewton3), _functor(functor){}
+      : HGTraversalBase<ParticleCell>(dataLayout, useNewton3), _functor(functor) {}
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
@@ -52,7 +52,7 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
       traversals[level]->initTraversal();
       traversals[level]->traverseParticles();
       // do not call endTraversal as it will store SoA
-      //this->_levels->at(level)->computeInteractions(traversals[level].get());
+      // this->_levels->at(level)->computeInteractions(traversals[level].get());
     }
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
@@ -65,7 +65,8 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
         // calculate cutoff for level pair
         // if there are multiple different sizes in each level, it might make sense to directly get size of the particle
         // on the upper level (but get _cutoff of lowerLevel as it is the upper bound of the cutoff in a level)
-        // because currently here interactions between single particle in upper level <-> cells in lower level are calculated
+        // because currently here interactions between single particle in upper level <-> cells in lower level are
+        // calculated
         const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
         const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
         const std::array<double, 3> lowerLength = this->_levels->at(lowerLevel)->getTraversalSelectorInfo().cellLength;
@@ -76,11 +77,10 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
         for (size_t i = 0; i < 3; i++) {
           if (this->_useNewton3) {
             // find out the stride so that cells we check on lowerLevel do not intersect
-            stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i])
-                * 2 * lowerLength[i] / upperLength[i]));
-            //stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength  * 2 / upperLength[i]));
-          }
-          else {
+            stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
+                                                                 lowerLength[i] / upperLength[i]));
+            // stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength  * 2 / upperLength[i]));
+          } else {
             // do c01 traversal if newton3 is disabled
             stride[i] = 1;
           }
@@ -104,7 +104,6 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
         // do the colored traversal
         const unsigned long numColors = stride[0] * stride[1] * stride[2];
         for (unsigned long col = 0; col < numColors; ++col) {
-
           const std::array<unsigned long, 3> start(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
 
           const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
@@ -117,7 +116,7 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
                 auto &cell = upperLevelCB.getCell({x, y, z});
                 // skip if cell is a halo cell and newton3 is disabled
                 auto isHalo = cell.getPossibleParticleOwnerships() == OwnershipState::halo;
-                if(isHalo && !this->_useNewton3) {
+                if (isHalo && !this->_useNewton3) {
                   continue;
                 }
                 // variable to determine if we are only interested in owned particles in the lower level
@@ -135,11 +134,13 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
                 for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
                   for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
                     for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
-                      // TODO: you don't need to check every cell in 3D cubic region, actual region will be like a sphere
+                      // TODO: you don't need to check every cell in 3D cubic region, actual region will be like a
+                      // sphere
                       // TODO: if (shortest dist between particle and cube) ^ 2 > cutoff ^ 2, can skip this cell
                       // n to n SoAFunctorPair
                       this->_functor->SoAFunctorPair(cell._particleSoABuffer,
-                        lowerLevelCB.getCell({xl, yl, zl})._particleSoABuffer, this->_useNewton3);
+                                                     lowerLevelCB.getCell({xl, yl, zl})._particleSoABuffer,
+                                                     this->_useNewton3);
                     }
                   }
                 }
@@ -157,15 +158,11 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_color_soa_cell; };
 
-  [[nodiscard]] bool isApplicable() const override {
-    return this->_dataLayout == DataLayoutOption::soa;
-  }
+  [[nodiscard]] bool isApplicable() const override { return this->_dataLayout == DataLayoutOption::soa; }
 
-  void initTraversal() override {
-  }
+  void initTraversal() override {}
 
-  void endTraversal() override {
-  }
+  void endTraversal() override {}
 
  protected:
   Functor *_functor;

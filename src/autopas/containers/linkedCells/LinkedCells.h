@@ -469,10 +469,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   std::vector<ParticleCell> &getCells() { return this->_cells; }
 
   /**
- * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
- * @tparam Traversal Traversal type. E.g. pairwise, triwise
- * @param traversal
- */
+   * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
+   * @tparam Traversal Traversal type. E.g. pairwise, triwise
+   * @param traversal
+   */
   template <typename Traversal>
   void prepareTraversal(Traversal &traversal) {
     auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);

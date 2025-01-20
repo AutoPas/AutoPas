@@ -271,6 +271,7 @@ class Functor {
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
     }
   }
+
  protected:
   double _cutoff;
 };
