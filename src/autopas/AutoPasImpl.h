@@ -227,8 +227,8 @@ std::vector<Particle> AutoPas<Particle>::updateContainer() {
 }
 
 template <class Particle>
-std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &boxMin,
-                                                   const std::array<double, 3> &boxMax) {
+std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<typename Particle::ParticleCalcType, 3> &boxMin,
+                                                   const std::array<typename Particle::ParticleCalcType, 3> &boxMax) {
   if (_allowedCellSizeFactors->isInterval()) {
     AutoPasLog(WARN,
                "The allowed Cell Size Factors are a continuous interval but internally only those values that "

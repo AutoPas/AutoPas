@@ -104,7 +104,8 @@ class AutoPas {
    * @param boxMax
    * @return Vector of particles that are outside the box after the resize.
    */
-  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
+  std::vector<Particle> resizeBox(const std::array<typename Particle::ParticleCalcType, 3> &boxMin,
+                                  const std::array<typename Particle::ParticleCalcType, 3> &boxMax);
 
   /**
    * Force the internal tuner to enter a new tuning phase upon the next call to computeInteractions().
@@ -577,13 +578,17 @@ class AutoPas {
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) { _logicHandlerInfo.boxMin = boxMin; }
+  void setBoxMin(const std::array<typename Particle::ParticleCalcType, 3> &boxMin) {
+    _logicHandlerInfo.boxMin = boxMin;
+  }
 
   /**
    * Set coordinates of the upper corner of the domain.
    * @param boxMax
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) { _logicHandlerInfo.boxMax = boxMax; }
+  void setBoxMax(const std::array<typename Particle::ParticleCalcType, 3> &boxMax) {
+    _logicHandlerInfo.boxMax = boxMax;
+  }
 
   /**
    * Get cutoff radius.
