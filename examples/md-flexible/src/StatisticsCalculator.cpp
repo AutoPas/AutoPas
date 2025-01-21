@@ -215,7 +215,7 @@ std::tuple<double, double, double, size_t> StatisticsCalculator::calculateVolume
     if (i->getTypeId() != 1) {  // Only consider gas particles
       continue;
     }
-    if (i->getR()[1] < (currentDomain[1] / 3.) && i->getR()[1] > 0) {
+    if (i->getR()[1] < (currentDomain[1] / 3.)) {
       flowVelYSum += i->getV()[1];
       gasParticleCount++;
     }
