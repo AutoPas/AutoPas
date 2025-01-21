@@ -44,7 +44,11 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
       if (iter->getTypeId() == 0) {
         iter->setF(globalForce);
       } else {
-        iter->setF(globalForce * (-2.));
+        if (dot(v, v) > 10) {
+          iter->setF(globalForce * (-1.5));
+        } else {
+          iter->setF({0., 0., 0.});
+        }
       }
     }
     v *= deltaT;

@@ -78,6 +78,8 @@ class StatisticsCalculator {
   static std::tuple<double, double, double, double, double, double>
   calculateForceAndVelocity(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
 
+  static std::tuple<double, double, double>
+  calculateVolumetricFlowRate(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Generates the output file (.csv) for the statistics.

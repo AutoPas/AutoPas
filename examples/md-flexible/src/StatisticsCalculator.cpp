@@ -18,7 +18,7 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 
   std::vector<std::string> columnNames = {
       "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"};
+      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ", "FlowVelocityY", "CrossSectionArea", "VolumetricFlowRate"};
   /**
   const std::vector<std::string> columnNames = {
       "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
@@ -32,8 +32,9 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
-  const auto combinedStatistics =
+  const auto energyStatistics =
       calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
+  const auto flowRateStatistics = calculateVolumetricFlowRate(autoPasContainer, particlePropertiesLib);
   /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
@@ -44,6 +45,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel,
   statisticsDistanceOverlap);
    **/
+  auto combinedStatistics = std::tuple_cat(energyStatistics, flowRateStatistics);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
   if (currentIteration % 10000 == 0) {
     const std::vector<std::tuple<size_t, double>> binIndex_to_rdf = calculateRDF(autoPasContainer, particlePropertiesLib);
@@ -195,6 +197,34 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
   forceMagSum /= 2.;
 
   return std::make_tuple(overlapSum, distSum, forceMagSum);
+}
+
+std::tuple<double, double, double> StatisticsCalculator::calculateVolumetricFlowRate(
+    const autopas::AutoPas<ParticleType> &autoPasContainer,
+    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
+
+  const std::array<double, 3> currentDomain = autoPasContainer.getBoxMax();
+  const double crossSectionArea = currentDomain[0] * currentDomain[2];
+
+  double flowVelYSum = 0.;
+  size_t gasParticleCount = 0;
+
+  for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
+    if (i->getTypeId() != 1) {  // Only consider gas particles
+      continue;
+    }
+    if (i->getR()[1] < (currentDomain[1] / 3.) && i->getR()[1] > 0) {
+      flowVelYSum += i->getV()[1];
+      gasParticleCount++;
+    }
+  }
+
+  const double flowVelocityY = flowVelYSum / static_cast<double>(gasParticleCount);
+  const double volumetricFlowRate = flowVelocityY * crossSectionArea;
+
+  return std::make_tuple(flowVelocityY, crossSectionArea, volumetricFlowRate);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------
