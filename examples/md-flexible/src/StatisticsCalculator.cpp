@@ -18,7 +18,7 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 
   std::vector<std::string> columnNames = {
       "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ", "FlowVelocityY", "CrossSectionArea", "VolumetricFlowRate"};
+      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ", "FlowVelocityY", "CrossSectionArea", "VolumetricFlowRate", "numConsideredGasParticles"};
   /**
   const std::vector<std::string> columnNames = {
       "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
@@ -199,7 +199,7 @@ std::tuple<double, double, double> StatisticsCalculator::calculateOverlapDistFor
   return std::make_tuple(overlapSum, distSum, forceMagSum);
 }
 
-std::tuple<double, double, double> StatisticsCalculator::calculateVolumetricFlowRate(
+std::tuple<double, double, double, size_t> StatisticsCalculator::calculateVolumetricFlowRate(
     const autopas::AutoPas<ParticleType> &autoPasContainer,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -221,10 +221,11 @@ std::tuple<double, double, double> StatisticsCalculator::calculateVolumetricFlow
     }
   }
 
-  const double flowVelocityY = flowVelYSum / static_cast<double>(gasParticleCount);
+  const double preventDivisionByZero = 1e-6;
+  const double flowVelocityY = flowVelYSum / (static_cast<double>(gasParticleCount) + preventDivisionByZero);
   const double volumetricFlowRate = flowVelocityY * crossSectionArea;
 
-  return std::make_tuple(flowVelocityY, crossSectionArea, volumetricFlowRate);
+  return std::make_tuple(flowVelocityY, crossSectionArea, volumetricFlowRate, gasParticleCount);
 }
 
 //---------------------------------------------Helper Methods-----------------------------------------------------

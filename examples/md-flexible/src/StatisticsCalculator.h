@@ -78,7 +78,7 @@ class StatisticsCalculator {
   static std::tuple<double, double, double, double, double, double>
   calculateForceAndVelocity(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
 
-  static std::tuple<double, double, double>
+  static std::tuple<double, double, double, size_t>
   calculateVolumetricFlowRate(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
