@@ -8,6 +8,16 @@
 #include <array>
 #include <cstddef>
 
+#if AUTOPAS_PRECISION_MODE == SPSP
+using CalcType = float;
+using AccuType = float;
+#elif AUTOPAS_PRECISION_MODE == SPDP
+using CalcType = float;
+using AccuType = double;
+#else
+using CalcType = double;
+using AccuType = double;
+#endif
 /**
  * Provides some functionality commonly used around rectangular domains.
  */
@@ -19,8 +29,8 @@ namespace DomainTools {
  * @param boxMax the maximum boundaries of the box domain.
  * @return true if the coordinates lie within the provided box.
  */
-bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<double, 3> &boxMin,
-                    const std::array<double, 3> &boxMax);
+bool isInsideDomain(const std::array<CalcType, 3> &coordinates, const std::array<CalcType, 3> &boxMin,
+                    const std::array<CalcType, 3> &boxMax);
 
 /**
  * Generates a decomposition with a specific number of subdomains.

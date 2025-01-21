@@ -53,6 +53,10 @@ using ParticleType = mdLib::MoleculeLJ;
  * FloatType used for calculations
  */
 using CalcType = typename ParticleType::ParticleCalcType;
+/**
+ * FloatType used for accumulations
+ */
+using AccuType = typename ParticleType::ParticleAccuType;
 
 namespace mdFlexibleTypeDefs {
 /**

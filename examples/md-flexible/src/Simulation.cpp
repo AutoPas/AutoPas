@@ -783,7 +783,7 @@ void Simulation::loadParticles() {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value;
+  const CalcType cutoff = static_cast<CalcType>(_configuration.cutoff.value);
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
