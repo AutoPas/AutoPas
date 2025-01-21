@@ -275,7 +275,7 @@ void Simulation::run() {
     } else {
       calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
                                   _configuration.backgroundTorqueFrictionCoeff.value,
-                                  *_configuration.getParticlePropertiesLibrary());
+                                  *_configuration.getParticlePropertiesLibrary());}
 
 #endif
 
