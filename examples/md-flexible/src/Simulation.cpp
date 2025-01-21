@@ -189,7 +189,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
-  const size_t settlingEndingIteration = 50000;
+  const size_t settlingEndingIteration = 20000;
 
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
