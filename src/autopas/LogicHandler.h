@@ -69,8 +69,6 @@ class LogicHandler {
         _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
-    // Reserve some memory for the _rebuildIntervals to avoid reallocations
-    _rebuildIntervals.reserve(1000);
     // Initialize AutoPas with tuners for given interaction types
     for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
@@ -173,10 +171,6 @@ class LogicHandler {
 
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-
-        _rebuildIntervals.push_back(_stepsSinceLastListRebuild);
-#endif
         _stepsSinceLastListRebuild = 0;
       }
       ++_stepsSinceLastListRebuild;
@@ -930,20 +924,14 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * Array of int which contains the iteration number when a rebuild occurs.
-   * This is used to calculate the mean rebuild frequency.
-   */
-  std::vector<int> _rebuildIntervals;
-
-  /**
    * This is used to store the total number of neighbour lists rebuild.
    */
   size_t _numRebuilds{0};
 
   /**
-   * This is used to store the number of neighbour lists rebuild in simulation phase.
+   * This is used to store the square of maximum distance travelled by a particle in the current step.
    */
-  size_t _numRebuildsInSimulationPhase{0};
+  size_t _maxDistanceSquaredInCurrentStep{0};
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
