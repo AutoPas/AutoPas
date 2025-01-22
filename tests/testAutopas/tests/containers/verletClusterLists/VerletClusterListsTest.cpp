@@ -300,7 +300,7 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
     verletLists.addParticle(pDummy);
   }
 
-  verletLists.rebuildTowersAndClusters(false);
+  verletLists.rebuildTowersAndClusters(false, false, false);
 
   const int expectedTowersPerInteractionLength = 2;
   EXPECT_EQ(verletLists.getNumTowersPerInteractionLength(), expectedTowersPerInteractionLength);

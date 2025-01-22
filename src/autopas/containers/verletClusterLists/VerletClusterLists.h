@@ -766,31 +766,34 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     auto *clusterTraversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
 
     if (clusterTraversalInterface) {
-      switch(traversal->getTraversalType()) {
-        case(TraversalOption::vcl_cluster_iteration):
-        case(TraversalOption::vcl_list_intersection_3b):
-          //TODO: switch for vcl_cluster_iteration depending on pairwise or triwise functor
-          if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
-            _neighborLists.clear();
-            rebuildTowersAndClusters(traversal->getUseNewton3(), true);
-          }
-          _builder->rebuildNeighborListsAndFillClusters();
-          break;
-        case(TraversalOption::vcl_pair_list_iteration_3b):
-          //special 3b neighbor lists
-        default:
-          // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
-          // when rebuildTowersAndClusters() was not called explicitly.
-          if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
-            // clear the lists buffer because clusters will be recreated
-            _neighborLists.clear();
-            rebuildTowersAndClusters(traversal->getUseNewton3());
-          }
-          _builder->rebuildNeighborListsAndFillClusters();
-          if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
-            calculateClusterThreadPartition();
-          }
+      TraversalOption traversalType = traversal->getTraversalType();
+      bool enableHaloClusterNeighborLists = false;
+      bool enablePairNeighborLists= false;
+
+      //TODO: split up vcl_cluster_iteration depending on 2B or 3B
+      if (traversalType == TraversalOption::vcl_cluster_iteration ||
+          traversalType == TraversalOption::vcl_list_intersection_3b) {
+        enableHaloClusterNeighborLists = true;
       }
+      if (traversalType == TraversalOption::vcl_pair_list_iteration_3b) {
+        enableHaloClusterNeighborLists = true;
+        enablePairNeighborLists = true;
+      }
+
+      // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
+      // when rebuildTowersAndClusters() was not called explicitly.
+      if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
+        // clear the lists buffer because clusters will be recreated
+        _neighborLists.clear();
+        _pairNeighborLists.clear();
+        rebuildTowersAndClusters(traversal->getUseNewton3(), enableHaloClusterNeighborLists,
+                                 enablePairNeighborLists);
+      }
+      _builder->rebuildNeighborListsAndFillClusters();
+      if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
+        calculateClusterThreadPartition();
+      }
+
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
@@ -990,13 +993,21 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
+   * Get the pair neighbor lists buffer object.
+   * @return
+   */
+  const typename internal::VerletClusterListsRebuilder<Particle>::PairNeighborListsBuffer_T &getPairNeighborLists() const {
+    return _pairNeighborLists;
+  }
+
+  /**
    * Initializes a new VerletClusterListsRebuilder and uses it to rebuild the towers and the clusters.
    * This function sets the container structure to valid.
    * @param newton3 Indicate whether the VerletClusterRebuilder should consider newton3 or not.
    * @param haloClusterNeighborLists Indicates whether the VerletClusterRebuilder should build neighbor lists for halo
    * clusters as well
    */
-  void rebuildTowersAndClusters(bool newton3, bool haloClusterNeighborLists = false) {
+  void rebuildTowersAndClusters(bool newton3, bool haloClusterNeighborLists, bool pairNeighborLists) {
     using namespace utils::ArrayMath::literals;
     // collect all particles to add from across the thread buffers
     typename decltype(_particlesToAdd)::value_type particlesToAdd;
@@ -1011,7 +1022,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     const double interactionLength = _cutoff + this->_skinPerTimestep * _rebuildFrequency;
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(
-        _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3, haloClusterNeighborLists);
+        _towerBlock, particlesToAdd, _neighborLists, _pairNeighborLists, _clusterSize,
+        interactionLength * interactionLength, newton3, haloClusterNeighborLists, pairNeighborLists);
 
     _numClusters = _builder->rebuildTowersAndClusters();
 
@@ -1335,6 +1347,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * Structure to provide persistent memory for neighbor lists. Will be filled by the builder.
    */
   typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T _neighborLists{};
+
+  /**
+   * Structure to provide persistent memory for pair neighbor lists. Will be filled by the builder.
+   */
+  typename internal::VerletClusterListsRebuilder<Particle>::PairNeighborListsBuffer_T _pairNeighborLists{};
 };
 
 }  // namespace autopas

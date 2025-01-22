@@ -28,14 +28,21 @@ class VerletClusterListsRebuilder {
    */
   using NeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<Particle> *, internal::Cluster<Particle> *>;
 
+  /**
+   * Type alias for the pair neighbor list buffer.
+   */
+  using PairNeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<Particle> *, std::pair<internal::Cluster<Particle> *, internal::Cluster<Particle> *>>;
+
  private:
   size_t _clusterSize;
   NeighborListsBuffer_T &_neighborListsBuffer;
+  PairNeighborListsBuffer_T &_pairNeighborListsBuffer;
   std::vector<Particle> &_particlesToAdd;
   ClusterTowerBlock2D<Particle> &_towerBlock;
   double _interactionLengthSqr;
   bool _newton3;
   bool _haloClusterNeighborLists;
+  bool _pairNeighborLists;
 
 
  public:
@@ -45,21 +52,30 @@ class VerletClusterListsRebuilder {
    * @param towerBlock The towers from the cluster list to rebuild.
    * @param particlesToAdd New particles to add.
    * @param neighborListsBuffer Buffer structure to hold all neighbor lists.
+   * @param pairNeighborListsBuffer Buffer structure to hold an optional pair neighbor list
    * @param clusterSize Size of the clusters in particles.
    * @param interactionLengthSqr Squared interaction length (cutoff + skin)^2
    * @param newton3 If the current configuration uses newton3
-   * @param haloClusterNeighborLists If the current configuration needs halo clusters to have neighbor lists
+   * @param haloClusterNeighborLists If the current configuration needs halo clusters to always have neighbor lists as
+   *                                 well. Needs to be enabled for 3b-traversals.
+   * @param pairNeighborLists If the current configuration needs an additional pair neighbor list (only necessary for
+   *                          specific 3b-traversals). If enabled, haloClusterNeighborLists should usually be enabled as well.
    */
   VerletClusterListsRebuilder(ClusterTowerBlock2D<Particle> &towerBlock, std::vector<Particle> &particlesToAdd,
-                              NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize,
-                              double interactionLengthSqr, bool newton3, bool haloClusterNeighborLists = false)
+                              NeighborListsBuffer_T &neighborListsBuffer,
+                              PairNeighborListsBuffer_T &pairNeighborListsBuffer, size_t clusterSize,
+                              double interactionLengthSqr, bool newton3, bool haloClusterNeighborLists,
+                              bool pairNeighborLists)
+
       : _clusterSize(clusterSize),
         _neighborListsBuffer(neighborListsBuffer),
+        _pairNeighborListsBuffer(pairNeighborListsBuffer),
         _particlesToAdd(particlesToAdd),
         _towerBlock(towerBlock),
         _interactionLengthSqr(interactionLengthSqr),
         _newton3(newton3),
-        _haloClusterNeighborLists(haloClusterNeighborLists) {}
+        _haloClusterNeighborLists(haloClusterNeighborLists),
+        _pairNeighborLists(pairNeighborLists) {}
 
   /**
    * Rebuilds the towers, sorts the particles into them and creates the clusters with a reference to an uninitialized
@@ -128,8 +144,11 @@ class VerletClusterListsRebuilder {
     sortParticlesIntoTowers(invalidParticles);
 
     // estimate the number of clusters by particles divided by cluster size + one extra per tower.
-    //TODO: Needs to be changed for better estimation when halo cluster neighbor lists are enabled
+    //TODO: Needs to be changed for better estimation when halo cluster neighbor lists are enabled + for pair lists
     _neighborListsBuffer.reserveNeighborLists(numParticles / _clusterSize + numTowersNew);
+    if (_pairNeighborLists) {
+      _pairNeighborListsBuffer.reserveNeighborLists(numParticles / _clusterSize + numTowersNew);
+    }
     // generate clusters and count them
     size_t numClusters = 0;
     for (auto &tower : _towerBlock) {
@@ -140,6 +159,10 @@ class VerletClusterListsRebuilder {
         // cluster -> list lookup structure in the buffer structure
         const auto listID = _neighborListsBuffer.getNewNeighborList();
         clusterIter->setNeighborList(&(_neighborListsBuffer.template getNeighborListRef<false>(listID)));
+        if (_pairNeighborLists) {
+          const auto pairlistID = _pairNeighborListsBuffer.getNewNeighborList();
+          clusterIter->setPairNeighborList(&(_pairNeighborListsBuffer.template getNeighborListRef<false>(pairlistID)));
+        }
       }
     }
 
@@ -157,6 +180,9 @@ class VerletClusterListsRebuilder {
   void rebuildNeighborListsAndFillClusters() {
     clearNeighborListsAndMoveDummiesIntoClusters();
     updateNeighborLists();
+    if (_pairNeighborLists){
+      updatePairNeighborLists();
+    }
 
     double dummyParticleDistance = _towerBlock.getInteractionLength() * 2;
     double startDummiesX = 1000 * _towerBlock.getHaloBoxMax()[0];
@@ -178,6 +204,9 @@ class VerletClusterListsRebuilder {
            clusterIter < (_haloClusterNeighborLists ? tower.getClusters().end() : tower.getFirstTailHaloCluster());
            ++clusterIter) {
         clusterIter->clearNeighbors();
+        if (_pairNeighborLists){
+          clusterIter->clearPairNeighbors();
+        }
       }
     }
   }
@@ -407,6 +436,31 @@ class VerletClusterListsRebuilder {
             const auto boxDistSquared = boxDistanceSquared(aMin, aMax, bMin, bMax);
             if (boxDistSquared <= _interactionLengthSqr) {
               clusterIterA->addNeighbor(*clusterIterB);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void updatePairNeighborLists() {
+    for (size_t x = 0; x < _towerBlock.getTowersPerDim()[0]; x++) {
+      for (size_t y = 0; y < _towerBlock.getTowersPerDim()[1]; y++) {
+        auto &tower = _towerBlock.getTowerByIndex2D(x, y);
+        for (auto clusterIter = tower.getFirstOwnedCluster(); clusterIter < tower.getFirstTailHaloCluster();
+             ++clusterIter) {
+          auto cluster = *clusterIter;
+          if (*(cluster.getNeighbors()->data())) {
+            auto &neighborClusters = *(cluster.getNeighbors());
+            auto neighborClustersEnd = neighborClusters.end();
+            for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
+              for (auto neighborClusterIter2 = neighborClusterIter1 + 1; neighborClusterIter2 != neighborClustersEnd; ++neighborClusterIter2) {
+                Cluster<Particle> *neighbor1 = *(neighborClusterIter1);
+                Cluster<Particle> *neighbor2 = *(neighborClusterIter2);
+                if (&cluster != &(*neighbor2)){
+                  cluster.addNeighborPair(neighbor1, neighbor2);
+                }
+              }
             }
           }
         }

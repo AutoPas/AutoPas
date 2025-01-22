@@ -273,6 +273,7 @@ class TraversalOption : public Option<TraversalOption> {
             Value::lc_c01,
             Value::vcl_cluster_iteration,
             Value::vcl_list_intersection_3b,
+            Value::vcl_pair_list_iteration_3b,
             Value::vl_list_iteration,
             Value::vl_list_intersection_sorted_3b,
             Value::vl_list_intersection_hashing_3b,
@@ -284,7 +285,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOnlyOptions() {
-    return {Value::vcl_list_intersection_3b, Value::vl_list_intersection_sorted_3b, Value::vl_list_intersection_hashing_3b,
+    return {Value::vcl_list_intersection_3b, Value::vcl_pair_list_iteration_3b, Value::vl_list_intersection_sorted_3b, Value::vl_list_intersection_hashing_3b,
             Value::vl_pair_list_iteration_3b};
   }
 
@@ -354,6 +355,7 @@ class TraversalOption : public Option<TraversalOption> {
         // VerletClusterLists Traversals:
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
         {TraversalOption::vcl_list_intersection_3b, "vcl_list_intersection_3b"},
+        {TraversalOption::vcl_pair_list_iteration_3b, "vcl_pair_list_iteration_3b"},
         {TraversalOption::vcl_c06, "vcl_c06"},
         {TraversalOption::vcl_c01_balanced, "vcl_c01_balanced"},
         {TraversalOption::vcl_sliced, "vcl_sliced"},

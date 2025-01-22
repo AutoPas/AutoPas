@@ -102,10 +102,22 @@ class Cluster {
   void setNeighborList(std::vector<Cluster<Particle> *> *neighborList) { _neighborClusters = neighborList; }
 
   /**
+   * Set the internal pair neighbor list pointer to an allocated, but not necessarily complete, existing list.
+   * @param pairNeighborList Allocated pair neighbor list.
+   */
+  void setPairNeighborList(std::vector<std::pair<Cluster<Particle> *, Cluster<Particle> *>> *pairNeighborList) { _pairNeighborClusters = pairNeighborList; }
+
+  /**
    * Returns the reference to the neighbor list for this cluster.
    * @return reference to the neighbor list.
    */
   std::vector<Cluster<Particle> *> *getNeighbors() { return _neighborClusters; }
+
+  /**
+   * Returns the reference to the pair neighbor list for this cluster.
+   * @return reference to the pair neighbor list.
+   */
+  std::vector<std::pair<Cluster *, Cluster *>> *getNeighborPairs() { return _pairNeighborClusters; }
 
   /**
    * Adds the given cluster to the neighbor list of this cluster.
@@ -114,11 +126,30 @@ class Cluster {
   void addNeighbor(Cluster<Particle> &neighbor) { _neighborClusters->push_back(&neighbor); }
 
   /**
+   * Adds the two neighbor clusters to the neighbor list of this cluster as a pair.
+   * @param neighbor1 First cluster of the neighbor pair
+   * @param neighbor2 Second cluster of the neighbor pair
+   */
+  void addNeighborPair(Cluster<Particle> *neighbor1, Cluster<Particle> *neighbor2) {
+    const auto neighborPair = std::make_pair(neighbor1, neighbor2);
+    _pairNeighborClusters->push_back(neighborPair);
+  }
+
+  /**
    * Remove all neighbors.
    */
   void clearNeighbors() {
     if (_neighborClusters) {
       _neighborClusters->clear();
+    }
+  }
+
+  /**
+   * Remove all pair neighbors.
+   */
+  void clearPairNeighbors() {
+    if (_pairNeighborClusters) {
+      _pairNeighborClusters->clear();
     }
   }
 
@@ -166,6 +197,10 @@ class Cluster {
    * The list of neighbor clusters of this cluster.
    */
   std::vector<Cluster *> *_neighborClusters = nullptr;
+  /**
+   * The list of pair neighbor clusters of this cluster. Only needed for specific 3b-traversals.
+   */
+  std::vector<std::pair<Cluster *, Cluster *>> *_pairNeighborClusters = nullptr;
 };
 
 }  // namespace autopas::internal

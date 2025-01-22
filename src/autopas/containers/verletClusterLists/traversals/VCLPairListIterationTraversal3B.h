@@ -57,6 +57,12 @@ class VCLPairListIterationTraversal3B : public TraversalInterface, public VCLTra
 
   void traverseParticles() override {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+
+    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
+      _clusterFunctor.processClusterPairListInteration(cluster, false);
+    };
+
+    clusterList.template traverseClusters<true>(_clusterTraverseFunctor);
   }
 
  private:

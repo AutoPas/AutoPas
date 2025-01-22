@@ -121,6 +121,43 @@ class VCLClusterFunctor {
     }
   }
 
+  /**
+   * Invokes the calculations of all interactions within the cluster and, if they exist, it's neighbors using pair lists
+   * @param cluster
+   * @param isHaloCluster
+   */
+  void processClusterPairListInteration(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
+    //TODO: switch depending on data layout
+    if (not isHaloCluster) {
+      traverseClusterTriwise(cluster);
+    }
+    if (*(cluster.getNeighbors()->data())) {
+      auto &neighborClusters = *(cluster.getNeighbors());
+      auto neighborClustersEnd = neighborClusters.end();
+      for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
+        Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
+        // 2 options involving 2 clusters:
+        // - 1 particle in cluster + 2 particles in neighbor cluster
+        // - 2 particles in cluster + 1 particle in neighbor cluster
+        traverseClusterPairTriwise(cluster, neighbor1);
+      }
+    }
+    if (cluster.getNeighborPairs()->data()) {
+      //traverse pair neighbor list for interactions involving 3 clusters
+      auto &neighborClusterPairs = *(cluster.getNeighborPairs());
+      auto neighborClusterPairsEnd = neighborClusterPairs.end();
+      for (auto neighborClusterPairIter = neighborClusterPairs.begin();
+           neighborClusterPairIter != neighborClusterPairsEnd; ++neighborClusterPairIter) {
+        Cluster<Particle> &neighbor1 = *((*neighborClusterPairIter).first);
+        Cluster<Particle> &neighbor2 = *((*neighborClusterPairIter).second);
+        // 1 option involving all 3 clusters:
+        // - one particle in cluster, neighbor cluster 1 and neighbor cluster 2 each
+        traverseClusterTriplet(cluster, neighbor1, neighbor2);
+      }
+    }
+
+  }
+
  private:
   /**
    * Traverses pairs of all particles in the given cluster. Always uses newton 3 in the AoS data layout.
