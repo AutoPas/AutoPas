@@ -78,7 +78,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 
   // print velocities
   timestepFile
-      << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+      << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float64\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto v = particle->getV();
     timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
@@ -86,7 +86,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile << "        </DataArray>\n";
 
   // print forces
-  timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float64\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto f = particle->getF();
     timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
@@ -122,7 +122,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 #elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
   // print angular velocities
   timestepFile
-      << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+      << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float64\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto angVel = particle->getAngularVel();
     timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
@@ -130,7 +130,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile << "        </DataArray>\n";
 
   // print torques
-  timestepFile << "        <DataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float64\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto torque = particle->getTorque();
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";

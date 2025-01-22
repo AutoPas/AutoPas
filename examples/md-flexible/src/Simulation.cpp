@@ -189,7 +189,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
-  const size_t settlingEndingIteration = 300000;
+  const size_t settlingEndingIteration = 400000;
 
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -269,7 +269,7 @@ void Simulation::run() {
     updateInteractionForces();
 #if DEM_MODE == ON
     if (_iteration < settlingEndingIteration) {
-      calculateBackgroundFriction(0.95,
+      calculateBackgroundFriction(0.9,
                                   0.975,
                                   *_configuration.getParticlePropertiesLibrary());
     } else {
