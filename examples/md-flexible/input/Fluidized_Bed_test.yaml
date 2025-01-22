@@ -62,7 +62,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Fluidized_Bed_increased_gas_interactive
+vtk-filename                     :  Fluidized_Bed_increased_gas
 vtk-write-frequency              :  2000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
