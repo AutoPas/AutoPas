@@ -603,7 +603,8 @@ class LogicHandler {
     if (_numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
-      return static_cast<double>(_iteration) / _numRebuilds;
+      // The total number of iterations is _iteration + 1
+      return static_cast<double>(_iteration + 1) / _numRebuilds;
     }
 #else
     return static_cast<double>(_neighborListRebuildFrequency);
@@ -927,11 +928,6 @@ class LogicHandler {
    * This is used to store the total number of neighbour lists rebuild.
    */
   size_t _numRebuilds{0};
-
-  /**
-   * This is used to store the square of maximum distance travelled by a particle in the current step.
-   */
-  size_t _maxDistanceSquaredInCurrentStep{0};
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
