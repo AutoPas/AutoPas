@@ -36,16 +36,16 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     if (isSettling) {
       // Set the force
       if (iter->getTypeId() == 0) {
-        iter->setF(globalForce * 50.);
+        iter->setF(globalForce * 2.);
       } else {
         iter->setF({0., 0., 0.});
       }
     } else {
       if (iter->getTypeId() == 0) {
-        iter->setF(globalForce * 25.);
+        iter->setF(globalForce);
       } else {
         if (dot(v, v) < 100) {
-          iter->setF(globalForce * (-2.));
+          iter->setF(globalForce * (-1.5));
         } else {
           iter->setF({0., 0., 0.});
         }

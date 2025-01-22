@@ -16,10 +16,10 @@ functor                          :  dem
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [-0.75, -0.75, -0.75]
-box-max                          :  [25.25, 50.75, 25.25]
+box-max                          :  [25.25, 25.75, 25.25]
 cell-size                        :  [1]
 deltaT                           :  0.00005
-iterations                       :  1000000
+iterations                       :  500000
 boundary-type                    :  [reflective,periodic,reflective]
 globalForce                      :  [0,-9.8,0]
 backgroundForceFrictionCoeff      :  0.
@@ -28,13 +28,13 @@ Sites:
   0:
     epsilon                      :  1.
     sigma                        :  1.
-    mass                         :  25.
+    mass                         :  1.
     radius                       :  0.75
   1:
     epsilon: 1.
     sigma: 1.
-    mass: 0.025
-    radius: 0.1
+    mass: 0.001
+    radius: 0.05
 # Uncomment below to run a multi-site simulation.
 #Molecules:
 #  0:
@@ -52,7 +52,7 @@ Objects:
       particle-type-id           :  0
     1:
       particle-spacing: 1
-      bottomLeftCorner: [ 0., 5., 0. ]
+      bottomLeftCorner: [ 0., 10., 0. ]
       box-length                 :  [23, 15, 23]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
@@ -62,8 +62,8 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Fluidized_Bed
-vtk-write-frequency              :  1500
+vtk-filename                     :  Fluidized_Bed_usual_params
+vtk-write-frequency              :  2000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
