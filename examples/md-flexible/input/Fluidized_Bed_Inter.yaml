@@ -34,7 +34,7 @@ Sites:
     epsilon: 1.
     sigma: 1.
     mass: 0.001
-    radius: 0.2
+    radius: 0.1
 # Uncomment below to run a multi-site simulation.
 #Molecules:
 #  0:
@@ -62,7 +62,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Fluidized_Bed_increased_gas_inter
+vtk-filename                     :  Fluidized_Bed_inter_radius_decreased
 vtk-write-frequency              :  2000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
