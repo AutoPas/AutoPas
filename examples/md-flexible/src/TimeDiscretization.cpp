@@ -16,7 +16,7 @@ namespace TimeDiscretization {
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      const double &deltaT, const std::array<AccuType, 3> &globalForce,
                                       bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
@@ -60,7 +60,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                         const double &deltaT, const std::array<double, 3> &globalForce) {
+                                         const double &deltaT, const std::array<AccuType, 3> &globalForce) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayMath::cross;
   using autopas::utils::ArrayMath::div;

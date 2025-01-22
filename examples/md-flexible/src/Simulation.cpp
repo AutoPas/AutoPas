@@ -529,7 +529,7 @@ bool Simulation::calculateTriwiseForces() {
   return wasTuningIteration;
 }
 
-void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
+void Simulation::calculateGlobalForces(const std::array<AccuType, 3> &globalForce) {
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);

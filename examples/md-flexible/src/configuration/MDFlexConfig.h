@@ -87,6 +87,11 @@ class MDFlexConfig {
     /**
      * Member to access the template parameter.
      */
+    using value_type = T;
+
+    /**
+     * Member to access the template parameter.
+     */
     constexpr static int getoptChar{getOptChar};
 
     /**
@@ -456,12 +461,12 @@ class MDFlexConfig {
   /**
    * boxMin
    */
-  MDFlexOption<std::array<double, 3>, 0> boxMin{
+  MDFlexOption<std::array<CalcType, 3>, 0> boxMin{
       {0, 0, 0}, "box-min", true, "Lower front left corner of the simulation box."};
   /**
    * boxMax
    */
-  MDFlexOption<std::array<double, 3>, 0> boxMax{
+  MDFlexOption<std::array<CalcType, 3>, 0> boxMax{
       {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
 
   /**
@@ -564,16 +569,16 @@ class MDFlexConfig {
   /**
    * boxLength
    */
-  MDFlexOption<double, __LINE__> boxLength{10, "box-length", true, "Length of the simulation box as a cuboid."};
+  MDFlexOption<CalcType, __LINE__> boxLength{10, "box-length", true, "Length of the simulation box as a cuboid."};
   /**
    * distributionMean
    */
-  MDFlexOption<std::array<double, 3>, __LINE__> distributionMean{
+  MDFlexOption<std::array<CalcType, 3>, __LINE__> distributionMean{
       {5., 5., 5.}, "distribution-mean", true, "Mean of the gaussian distribution for random particle initialization."};
   /**
    * distributionStdDev
    */
-  MDFlexOption<std::array<double, 3>, __LINE__> distributionStdDev{
+  MDFlexOption<std::array<CalcType, 3>, __LINE__> distributionStdDev{
       {2., 2., 2.},
       "distribution-stddeviation",
       true,
@@ -768,7 +773,7 @@ class MDFlexConfig {
   /**
    * Global external force like e.g. gravity
    */
-  MDFlexOption<std::array<double, 3>, __LINE__> globalForce{
+  MDFlexOption<std::array<AccuType, 3>, __LINE__> globalForce{
       {0, 0, 0},
       "globalForce",
       true,

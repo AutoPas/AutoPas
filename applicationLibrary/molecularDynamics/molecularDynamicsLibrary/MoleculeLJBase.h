@@ -171,13 +171,13 @@ class MoleculeLJBase : public autopas::ParticleBase<CalcType, AccuType, idType> 
    * Get the old force.
    * @return
    */
-  [[nodiscard]] const std::array<double, 3> &getOldF() const { return _oldF; };
+  [[nodiscard]] const std::array<AccuType, 3> &getOldF() const { return _oldF; };
 
   /**
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; };
+  void setOldF(const std::array<AccuType, 3> &oldForce) { _oldF = oldForce; };
 
   /**
    * Get TypeId.
@@ -224,7 +224,7 @@ class MoleculeLJBase : public autopas::ParticleBase<CalcType, AccuType, idType> 
   /**
    * Old Force of the particle experiences as 3D vector.
    */
-  std::array<double, 3> _oldF = {0., 0., 0.};
+  std::array<AccuType, 3> _oldF = {0., 0., 0.};
 };
 
 }  // namespace mdLib

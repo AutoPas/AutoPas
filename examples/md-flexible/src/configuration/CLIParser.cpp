@@ -10,6 +10,7 @@
 
 #include <any>
 #include <fstream>
+#include <type_traits>
 
 // anonymous namespace to hide helper function
 namespace {
@@ -24,6 +25,15 @@ bool checkFileExists(const std::string &filename) {
   return (stat(filename.c_str(), &buffer) == 0);
 }
 
+template <typename floatType>
+floatType stot(const std::string &strArg) {
+  static_assert(std::is_floating_point_v<floatType>);
+  if constexpr (std::is_same_v<floatType, float>) {
+    return std::stof(strArg);
+  } else {
+    return std::stod(strArg);
+  }
+}
 }  // namespace
 
 MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
@@ -188,7 +198,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.boxLength)::getoptChar: {
         try {
-          config.boxLength.value = stod(strArg);
+          config.boxLength.value = stot<decltype(config.boxLength)::value_type>(strArg);
           if (config.boxLength.value < 0) {
             cerr << "Box length has to be a positive (floating point) number!" << endl;
             displayHelp = true;
@@ -209,7 +219,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.cutoff)::getoptChar: {
         try {
-          config.cutoff.value = stod(strArg);
+          config.cutoff.value = stot<decltype(config.cutoff)::value_type>(strArg);
         } catch (const exception &) {
           cerr << "Error parsing cutoff Radius: " << optarg << endl;
           displayHelp = true;
@@ -419,7 +429,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.distributionMean)::getoptChar: {
         try {
-          auto mean = stod(strArg);
+          auto mean = stot<decltype(config.distributionMean)::value_type::value_type>(strArg);
           config.distributionMean.value = {mean, mean, mean};
         } catch (const exception &) {
           cerr << "Error parsing distribution mean: " << strArg << endl;
@@ -661,7 +671,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.distributionStdDev)::getoptChar: {
         try {
-          auto stdDev = stod(strArg);
+          auto stdDev = stot<decltype(config.distributionStdDev)::value_type::value_type>(strArg);
           config.distributionStdDev.value = {stdDev, stdDev, stdDev};
         } catch (const exception &) {
           cerr << "Error parsing distribution standard deviation: " << optarg << endl;
@@ -672,11 +682,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.globalForce)::getoptChar: {
         // when passing via cli global force can only be in z-direction. For fancier forces use yaml input.
         try {
-          auto force = stod(strArg);
+          auto force = stot<decltype(config.globalForce)::value_type::value_type>(strArg);
           config.globalForce.value = {0, 0, force};
         } catch (const exception &) {
           cerr << "Error parsing global force: " << optarg << endl;
-          cerr << "Expecting one double as force along the z-axis." << endl;
+          cerr << "Expecting one float/double as force along the z-axis." << endl;
           displayHelp = true;
         }
         break;
@@ -740,8 +750,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
-    std::array<double, 3> bottomLeftCorner = {0, 0, 0};
-    std::array<double, 3> velocity = {0, 0, 0};
+    std::array<CalcType, 3> bottomLeftCorner = {0, 0, 0};
+    std::array<CalcType, 3> velocity = {0, 0, 0};
 
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
@@ -767,10 +777,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(
-            velocity, typeID,
-            {static_cast<double>(centerOfBox), static_cast<double>(centerOfBox), static_cast<double>(centerOfBox)},
-            static_cast<int>(centerOfBox), config.particleSpacing.value);
+        Sphere sphere(velocity, typeID,
+                      {static_cast<CalcType>(centerOfBox), static_cast<CalcType>(centerOfBox),
+                       static_cast<CalcType>(centerOfBox)},
+                      static_cast<int>(centerOfBox), config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
         break;
       }
