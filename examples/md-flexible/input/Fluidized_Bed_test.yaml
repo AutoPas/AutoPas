@@ -28,7 +28,7 @@ Sites:
   0:
     epsilon                      :  1.
     sigma                        :  1.
-    mass                         :  200.
+    mass                         :  150.
     radius                       :  0.75
   1:
     epsilon: 1.
