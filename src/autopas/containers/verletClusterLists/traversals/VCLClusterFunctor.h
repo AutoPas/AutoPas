@@ -63,11 +63,9 @@ class VCLClusterFunctor {
           traverseClusterPairTriwise(cluster, neighbor1);
           for (auto neighborClusterIter2 = neighborClusterIter1 + 1; neighborClusterIter2 != neighborClustersEnd; ++neighborClusterIter2) {
             Cluster<Particle> &neighbor2 = **(neighborClusterIter2);
-            if (&cluster != &neighbor2){
-              // 1 option involving all 3 clusters:
-              // - one particle in cluster, neighbor cluster 1 and neighbor cluster 2 each
-              traverseClusterTriplet(cluster, neighbor1, neighbor2);
-            }
+            // 1 option involving all 3 clusters:
+            // - one particle in cluster, neighbor cluster 1 and neighbor cluster 2 each
+            traverseClusterTriplet(cluster, neighbor1, neighbor2);
           }
         }
       }

@@ -444,6 +444,7 @@ class VerletClusterListsRebuilder {
   }
 
   void updatePairNeighborLists() {
+    using autopas::utils::ArrayMath::boxDistanceSquared;
     for (size_t x = 0; x < _towerBlock.getTowersPerDim()[0]; x++) {
       for (size_t y = 0; y < _towerBlock.getTowersPerDim()[1]; y++) {
         auto &tower = _towerBlock.getTowerByIndex2D(x, y);
@@ -455,9 +456,12 @@ class VerletClusterListsRebuilder {
             auto neighborClustersEnd = neighborClusters.end();
             for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
               for (auto neighborClusterIter2 = neighborClusterIter1 + 1; neighborClusterIter2 != neighborClustersEnd; ++neighborClusterIter2) {
-                Cluster<Particle> *neighbor1 = *(neighborClusterIter1);
-                Cluster<Particle> *neighbor2 = *(neighborClusterIter2);
-                if (&cluster != &(*neighbor2)){
+                const auto [n1Min, n1Max] = (*neighborClusterIter1)->getBoundingBox();
+                const auto [n2Min, n2Max] = (*neighborClusterIter2)->getBoundingBox();
+                const auto boxDistSquared = boxDistanceSquared(n1Min, n1Max, n2Min, n2Max);
+                if (boxDistSquared <= _interactionLengthSqr) {
+                  Cluster<Particle> *neighbor1 = *(neighborClusterIter1);
+                  Cluster<Particle> *neighbor2 = *(neighborClusterIter2);
                   cluster.addNeighborPair(neighbor1, neighbor2);
                 }
               }

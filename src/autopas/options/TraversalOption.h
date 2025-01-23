@@ -102,17 +102,24 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_c06,
     /**
-     * + VCLClusterIterationTraversal : Dynamically schedule ClusterTower to threads.
+     * VCLClusterIterationTraversal : Dynamically schedule ClusterTower to threads.
      * Does not support Newton3.
      */
     vcl_cluster_iteration,
     /**
-     * VCLListIntersectionTraversal3B : ...
+     * VCLClusterIterationTraversal3B : Variation of vcl_cluster_iteration for 3b-traversals.
+     * Does not support Newton3.
+     */
+    vcl_cluster_iteration_3b,
+    /**
+     * VCLListIntersectionTraversal3B : Sorts and intersects the neighbor lists of two clusters during traversal to find
+     * common neighbors for 3b-interactions.
      * Does not support Newton3.
      */
     vcl_list_intersection_3b,
     /**
-     * VCLPairListIterationTraversal3B : ...
+     * VCLPairListIterationTraversal3B : Uses additionally constructed neighbor lists containing neighbor pairs for each
+     * cluster to calculate 3b-interactions. Needs significantly more memory.
      * Does not support Newton3.
      */
     vcl_pair_list_iteration_3b,
@@ -271,7 +278,7 @@ class TraversalOption : public Option<TraversalOption> {
   static std::set<TraversalOption> getAllTriwiseOptions() {
     return {Value::ds_sequential,
             Value::lc_c01,
-            Value::vcl_cluster_iteration,
+            Value::vcl_cluster_iteration_3b,
             Value::vcl_list_intersection_3b,
             Value::vcl_pair_list_iteration_3b,
             Value::vl_list_iteration,
@@ -285,7 +292,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOnlyOptions() {
-    return {Value::vcl_list_intersection_3b, Value::vcl_pair_list_iteration_3b, Value::vl_list_intersection_sorted_3b, Value::vl_list_intersection_hashing_3b,
+    return {Value::vcl_cluster_iteration_3b, Value::vcl_list_intersection_3b, Value::vcl_pair_list_iteration_3b, Value::vl_list_intersection_sorted_3b, Value::vl_list_intersection_hashing_3b,
             Value::vl_pair_list_iteration_3b};
   }
 
@@ -354,6 +361,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletClusterLists Traversals:
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
+        {TraversalOption::vcl_cluster_iteration_3b, "vcl_cluster_iteration_3b"},
         {TraversalOption::vcl_list_intersection_3b, "vcl_list_intersection_3b"},
         {TraversalOption::vcl_pair_list_iteration_3b, "vcl_pair_list_iteration_3b"},
         {TraversalOption::vcl_c06, "vcl_c06"},

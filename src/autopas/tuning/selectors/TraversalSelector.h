@@ -27,6 +27,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal3B.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLListIntersectionTraversal3B.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLPairListIterationTraversal3B.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedBalancedTraversal.h"
@@ -348,8 +349,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
                                                                                             useNewton3);
     }
       // VerletClusterLists
-    case TraversalOption::vcl_cluster_iteration: {
-      return std::make_unique<VCLClusterIterationTraversal<ParticleCell, TriwiseFunctor>>(&triwiseFunctor,
+    case TraversalOption::vcl_cluster_iteration_3b: {
+      return std::make_unique<VCLClusterIterationTraversal3B<ParticleCell, TriwiseFunctor>>(&triwiseFunctor,
                                                                                           traversalInfo.clusterSize,
                                                                                           dataLayout, useNewton3);
     }

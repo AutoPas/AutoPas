@@ -1,7 +1,7 @@
 /**
- * @file VCLClusterIterationTraversal.h
- * @author humig
- * @date 20.06.19
+ * @file VCLClusterIterationTraversal3B.h
+ * @author mueller
+ * @date 22.01.25
  */
 
 #pragma once
@@ -13,13 +13,13 @@
 namespace autopas {
 
 /**
- * Traversal for VerletClusterLists. Does not support newton 3.
+ * 3-body Traversal for VerletClusterLists. Does not support newton 3.
  * @tparam ParticleCell
  * @tparam Functor The type of the functor.
 
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VCLClusterIterationTraversal : public TraversalInterface,
+template <class ParticleCell, class TriwiseFunctor>
+class VCLClusterIterationTraversal3B : public TraversalInterface,
                                      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -31,13 +31,13 @@ class VCLClusterIterationTraversal : public TraversalInterface,
    * @param dataLayout The data layout to use. Currently, only AoS is supported.
    * @param useNewton3 If newton 3 should be used. Currently, only false is supported.
    */
-  explicit VCLClusterIterationTraversal(PairwiseFunctor *functor, size_t clusterSize,
+  explicit VCLClusterIterationTraversal3B(TriwiseFunctor *functor, size_t clusterSize,
                                         DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
         _functor(functor),
         _clusterFunctor(functor, clusterSize, dataLayout, useNewton3) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration_3b; }
 
   [[nodiscard]] bool isApplicable() const override {
     return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
@@ -65,7 +65,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
   }
 
  private:
-  PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
+  TriwiseFunctor *_functor;
+  internal::VCLClusterFunctor<Particle, TriwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas

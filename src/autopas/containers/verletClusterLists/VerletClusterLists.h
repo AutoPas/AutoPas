@@ -770,8 +770,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       bool enableHaloClusterNeighborLists = false;
       bool enablePairNeighborLists= false;
 
-      //TODO: split up vcl_cluster_iteration depending on 2B or 3B
-      if (traversalType == TraversalOption::vcl_cluster_iteration ||
+      if (traversalType == TraversalOption::vcl_cluster_iteration_3b ||
           traversalType == TraversalOption::vcl_list_intersection_3b) {
         enableHaloClusterNeighborLists = true;
       }
