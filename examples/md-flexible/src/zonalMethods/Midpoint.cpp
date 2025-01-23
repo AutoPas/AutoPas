@@ -41,7 +41,6 @@ Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegio
 
   // calculate interaction schedules
   calculateInteractionSchedule(identifyZone);
-
 }
 
 Midpoint::~Midpoint() = default;
@@ -352,8 +351,7 @@ void Midpoint::calculateZonalInteractionTriwise(
         ParticleType &p3 = combinedBuffer.at(j);
         using namespace autopas::utils::ArrayMath::literals;
         if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
-                                    _homeBoxRegion._origin + _homeBoxRegion._size, _globalBoxRegion._origin,
-                                    _globalBoxRegion._origin + _globalBoxRegion._size, p1.getID(), p2.getID(),
+                                    _homeBoxRegion._origin + _homeBoxRegion._size, p1.getID(), p2.getID(),
                                     p3.getID())) {
           continue;
         }
@@ -370,8 +368,7 @@ void Midpoint::calculateZonalInteractionTriwise(
         ParticleType &p3 = combinedBuffer.at(k);
         using namespace autopas::utils::ArrayMath::literals;
         if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
-                                    _homeBoxRegion._origin + _homeBoxRegion._size, _globalBoxRegion._origin,
-                                    _globalBoxRegion._origin + _globalBoxRegion._size, p1.getID(), p2.getID(),
+                                    _homeBoxRegion._origin + _homeBoxRegion._size, p1.getID(), p2.getID(),
                                     p3.getID())) {
           continue;
         }
