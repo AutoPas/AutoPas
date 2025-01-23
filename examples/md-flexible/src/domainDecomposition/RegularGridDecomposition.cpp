@@ -14,6 +14,7 @@
 
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
+#include "autopas/containers/linkedCells/traversals/LCC01MidpointTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Option.h"
 #include "autopas/utils/ArrayMath.h"
@@ -224,14 +225,14 @@ void RegularGridDecomposition::initializeZonalMethod(const MDFlexConfig &config)
                                                 _communicator, _allNeighborDomainIndices, _boundaryType));
       break;
     case options::ZonalMethodOption::halfshell:
-      _zonalMethod =
-          std::make_unique<HalfShell>(HalfShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
-                                                _communicator, _allNeighborDomainIndices, _boundaryType));
+      _zonalMethod = std::make_unique<HalfShell>(HalfShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion,
+                                                           globalBoxRegion, useNewton3, pairwiseInteraction,
+                                                           _communicator, _allNeighborDomainIndices, _boundaryType));
       break;
     case options::ZonalMethodOption::midpoint:
-      _zonalMethod =
-          std::make_unique<Midpoint>(Midpoint(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
-                                              _communicator, _allNeighborDomainIndices, _boundaryType));
+      _zonalMethod = std::make_unique<Midpoint>(Midpoint(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion,
+                                                         globalBoxRegion, useNewton3, pairwiseInteraction,
+                                                         _communicator, _allNeighborDomainIndices, _boundaryType));
     default:
       std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                             _communicator, _allNeighborDomainIndices, _boundaryType));
@@ -269,7 +270,7 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
       }
     }
   };
-  auto checkLCC01MidpointTraversal = [](const MDFlexConfig &config) {
+  auto checkLCC01MidpointTraversal = [this](const MDFlexConfig &config) {
     if (config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
       if (config.traversalOptions.value.find(autopas::TraversalOption::lc_c01_midpoint) ==
           config.traversalOptions.value.end()) {
