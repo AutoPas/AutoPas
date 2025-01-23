@@ -28,6 +28,9 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
     except OSError:
         print("Could not create the output directory: " + basename)
         exit(2)
+    qos = f"\n#SBATCH --qos={partition}\n"
+    if clusters == "serial":
+        qos = ""
     SCRIPT = f"""#!/bin/bash
 #SBATCH -J {name}
 #SBATCH -o ./%x.%j.%N.out
@@ -35,8 +38,7 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
 #SBATCH --mail-type=ALL
 #SBATCH --get-user-env
 #SBATCH --clusters={clusters}
-#SBATCH --partition={partition}
-#SBATCH --qos={partition}
+#SBATCH --partition={partition}{qos}
 #SBATCH --mem={mem_per_node}mb
 #SBATCH --nodes={num_nodes}
 #SBATCH --ntasks-per-node={num_tasks_per_node}
