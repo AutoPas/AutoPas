@@ -15,7 +15,13 @@ def get_according_cluster_and_nodes(num_cpus: int) -> [str, str, int, int]:
     return "cm4", "cm4_std", 2, 4
 
 
-def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str, input_file: str, memory_per_task: int, time: str) -> str:
+# pessimistic parallel portion
+optimized_portion = 0.3
+
+
+def get_run_script(name: str, num_tasks: int, num_threads: int,
+                   executable: str, input_file: str, memory_per_task: int,
+                   time: int, adapt_time: bool) -> str:
     clusters, partition, min_nodes, max_nodes = get_according_cluster_and_nodes(
         num_tasks * num_threads)
     num_nodes = min_nodes
@@ -31,6 +37,15 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
     qos = f"\n#SBATCH --qos={partition}\n"
     if clusters == "serial":
         qos = ""
+    # adapt time if needed with Amdahl's law
+    if adapt_time:
+        timeOptimized = time * optimized_portion
+        timeSerial = time - timeOptimized
+        time = timeSerial + timeOptimized / num_tasks
+    # put time into HH:MM:SS
+    hours = int(time / 60)
+    minutes = int(time % 60)
+    time_str = f"{hours:02d}:{minutes:02d}:00"
     SCRIPT = f"""#!/bin/bash
 #SBATCH -J {name}
 #SBATCH -o ./%x.%j.%N.out
@@ -45,7 +60,7 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
 #SBATCH --cpus-per-task={num_threads}
 #SBATCH --export=NONE
 #SBATCH --mail-user=ge42joq@mytum.de
-#SBATCH --time={time}
+#SBATCH --time={time_str}
 module load gcc/13.2.0
 module load openmpi/4.1.5-gcc11
 OMP_NUM_THREADS={num_threads} mpirun -np {num_tasks} {executable} --yaml-filename {input_file}
@@ -64,9 +79,10 @@ if __name__ == "__main__":
         print(" - executable : executable to use")
         print(" - input_file : input file")
         print(" - mem        : memory to use per task in MB")
-        print(" - time       : time to use in HH:MM:SS")
+        print(" - time       : expected time in minutes (longest time if with stepup)")
         print(" - true/false : Step up the number of threads up until num_tasks")
         print("                (if true num_tasks must be power of 2, default: false)")
+        print("                This will also adapt the expected time heuristically.")
         sys.exit(1)
 
     stepUp = False
@@ -84,11 +100,7 @@ if __name__ == "__main__":
     executable = os.path.abspath(sys.argv[3])
     input_file = os.path.abspath(sys.argv[4])
     mem = int(sys.argv[5])
-    time = sys.argv[6]
-    # check time format
-    if (len(time.split(":")) != 3):
-        print("time format must be HH:MM:SS")
-        sys.exit(1)
+    time = int(sys.argv[6])
 
     current_tasks = 1
     if (not stepUp):
@@ -96,10 +108,12 @@ if __name__ == "__main__":
 
     base_name = input_file.split("/")[-1].split(".")[0]
 
+    adaptTime = False
+
     while current_tasks <= num_tasks:
         name = f"{base_name}_{current_tasks}"
         run_script = get_run_script(
-            name, current_tasks, num_threads, executable, input_file, mem, time)
+            name, current_tasks, num_threads, executable, input_file, mem, time, adaptTime)
 
         with open(f"{name}.sh", "w") as f:
             f.write(run_script)
@@ -108,3 +122,4 @@ if __name__ == "__main__":
         subprocess.call(["sbatch", f"{name}.sh"])
 
         current_tasks *= 2
+        adaptTime = True
