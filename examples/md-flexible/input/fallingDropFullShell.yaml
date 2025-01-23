@@ -59,5 +59,6 @@ vtk-filename                     :  fallingDrop
 vtk-write-frequency              :  1000
 vtk-output-folder                :  fallingDropFullshell
 no-end-config                    :  true
+no-progress-bar                      :  true
 log-level                        :  info
 load-balancer                    :  None
