@@ -4,5 +4,6 @@ include(autopas_harmony)
 include(autopas_eigen)
 
 add_subdirectory(fake-dlclose)
+add_subdirectory(flop-routines)
 
 # the other libraries in this folder are needed from elsewhere (examples, test, ...)

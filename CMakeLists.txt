@@ -83,6 +83,9 @@ include(autopas_mpi)
 
 include(version.cmake)
 
+# headers
+include_directories(include)
+
 # libraries
 add_subdirectory(libs)
 

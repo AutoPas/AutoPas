@@ -8,6 +8,7 @@
 
 #include "Simulation.h"
 #include "autopas/utils/WrapMPI.h"
+#include "predicates.h"
 
 // Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
 extern template class autopas::AutoPas<ParticleType>;
@@ -41,6 +42,8 @@ int main(int argc, char **argv) {
       std::cout << "MPI is disabled." << std::endl;
 #endif
     }
+
+    exactinit();
 
     Simulation simulation(configuration, domainDecomposition);
     simulation.run();
