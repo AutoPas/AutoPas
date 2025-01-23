@@ -2,6 +2,7 @@
 import subprocess
 import sys
 import os
+import time as t
 
 
 def get_according_cluster_and_nodes(num_cpus: int) -> [str, str, int, int]:
@@ -19,14 +20,22 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
         num_tasks * num_threads)
     num_nodes = min_nodes
     num_tasks_per_node = int(num_tasks / num_nodes)
+    # create output directory
+    basename = name.split('.')[0] + t.strftime("%Y%m%d-%H%M%S")
+    try:
+        os.mkdir(basename)
+    except OSError:
+        print("Could not create the output directory: " + basename)
+        exit(2)
     SCRIPT = f"""#!/bin/bash
 #SBATCH -J {name}
 #SBATCH -o ./%x.%j.%N.out
-#SBATCH -D .
+#SBATCH -D {basename}
 #SBATCH --mail-type=ALL
 #SBATCH --get-user-env
 #SBATCH --clusters={clusters}
 #SBATCH --partition={partition}
+#SBATCH --qos={partition}
 #SBATCH --mem={memory}mb
 #SBATCH --nodes={num_nodes}
 #SBATCH --ntasks-per-node={num_tasks_per_node}
@@ -92,6 +101,7 @@ if __name__ == "__main__":
         with open(f"{name}.sh", "w") as f:
             f.write(run_script)
 
+        print(f"Running {name}.sh")
         subprocess.call(["sbatch", f"{name}.sh"])
 
         current_tasks *= 2
