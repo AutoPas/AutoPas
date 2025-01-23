@@ -41,8 +41,8 @@ class CubeGrid : public Object {
    * @param bottomLeftCorner
    */
   CubeGrid(const std::array<double, 3> &velocity, const std::array<double, 3> &angularVelocity, unsigned long typeId, const std::array<size_t, 3> &particlesPerDim,
-           double particleSpacing, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, angularVelocity, typeId),
+           double particleSpacing, const std::array<double, 3> &bottomLeftCorner, const double temperature = 0.)
+      : Object(velocity, angularVelocity, typeId, temperature),
         _particlesPerDim(particlesPerDim),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner) {}

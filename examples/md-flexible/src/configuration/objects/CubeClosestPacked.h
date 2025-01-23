@@ -46,8 +46,8 @@ class CubeClosestPacked : public Object {
    * @param bottomLeftCorner
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, const std::array<double, 3> &angularVelocity, unsigned long typeId, double particleSpacing,
-                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity,angularVelocity, typeId),
+                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner, const double temperature =0.)
+      : Object(velocity,angularVelocity, typeId, temperature),
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),

@@ -9,8 +9,8 @@
 
 namespace demLib {
 GranularDEM::GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v,
-                         std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId)
-    : autopas::Particle(pos, v, particleId), _angularVel(angularVel), _torque({0., 0., 0.}), _typeId(typeId) {}
+                         std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId, const double temperature = 0.)
+    : autopas::Particle(pos, v, particleId), _angularVel(angularVel), _torque({0., 0., 0.}), _typeId(typeId), _temperature(temperature), _heatFlux(0.) {}
 
 const std::array<double, 3> &GranularDEM::getOldF() const { return _oldF; }
 void GranularDEM::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
@@ -33,11 +33,20 @@ void GranularDEM::subTorque(const std::array<double, 3> &torque) {
   _torque = autopas::utils::ArrayMath::sub(_torque, torque);
 }
 
+double GranularDEM::getTemperature() const { return _temperature; }
+void GranularDEM::setTemperature(double temperature) { _temperature = temperature; }
+void GranularDEM::addTemperature(double temperature) { _temperature += temperature; }
+
+double GranularDEM::getHeatFlux() const { return _heatFlux; }
+void GranularDEM::setHeatFlux(double heatFlux) { _heatFlux = heatFlux; }
+void GranularDEM::addHeatFlux(double heatFlux) { _heatFlux += heatFlux; }
+void GranularDEM::subHeatFlux(double heatFlux) { _heatFlux -= heatFlux; }
+
 std::string GranularDEM::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;
   // clang-format off
-      text << "MultisiteMoleculeLJ"
+      text << "GranularDEM"
          << "\nID                 : " << _id
          << "\nPosition           : " << _r
          << "\nVelocity           : " << _v
@@ -46,7 +55,9 @@ std::string GranularDEM::toString() const {
          << "\nAngular Velocity   : " << _angularVel
          << "\nTorque             : " << _torque
          << "\nType ID            : " << _typeId
-         << "\nOwnershipState     : " << _ownershipState;
+         << "\nOwnershipState     : " << _ownershipState
+         << "\nTemperature        : " << _temperature
+         << "\nHeat Flux          : " << _heatFlux;
   // clang-format on
   return text.str();
 }

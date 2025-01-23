@@ -37,6 +37,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
                                       bool fastParticlesThrow, bool isSettling = false);
 
 void resetTorques(autopas::AutoPas<ParticleType> &autoPasContainer);
+void resetHeatFluxes(autopas::AutoPas<ParticleType> &autoPasContainer);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
@@ -81,5 +82,8 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  */
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+
+void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
+                           const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 }  // namespace TimeDiscretization

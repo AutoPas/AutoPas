@@ -305,6 +305,11 @@ class Simulation {
   void resetTorques();
 
   /**
+   * Resets the heat fluxes of the particles in the local AutoPas container.
+   */
+  void resetHeatFluxes();
+
+  /**
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
@@ -319,6 +324,11 @@ class Simulation {
    * Updates the angular velocities of the particles in the local AutoPas container.
    */
   void updateAngularVelocities();
+
+  /**
+   * Updates the temperatures of the particles in the local AutoPas container.
+   */
+  void updateTemperatures();
 
   /**
    * Updates the thermostat of for the local domain.

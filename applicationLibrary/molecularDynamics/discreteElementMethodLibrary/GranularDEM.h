@@ -31,7 +31,7 @@ class GranularDEM : public autopas::Particle {
    * @param typeId TypeId of the particle.
    */
   GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v, const std::array<double, 3> angularVel,
-              unsigned long particleId, unsigned long typeId = 0);
+              unsigned long particleId, unsigned long typeId = 0, const double temperature = 0.);
 
   ~GranularDEM() override = default;
 
@@ -59,6 +59,8 @@ class GranularDEM : public autopas::Particle {
     torqueX,
     torqueY,
     torqueZ,
+    temperature,
+    heatFlux,
     typeId,
     ownershipState
   };
@@ -92,6 +94,8 @@ class GranularDEM : public autopas::Particle {
       double, // tx
       double, // ty
       double, // tz
+      double, // temperature
+      double, // heatFlux
       size_t, // typeid
       autopas::OwnershipState //ownerState
   >::Type;
@@ -154,6 +158,10 @@ class GranularDEM : public autopas::Particle {
       return getTorque()[1];
     } else if constexpr (attribute == AttributeNames::torqueZ) {
       return getTorque()[2];
+    } else if constexpr (attribute == AttributeNames::temperature) {
+      return getTemperature();
+    } else if constexpr (attribute == AttributeNames::heatFlux) {
+      return getHeatFlux();
     } else if constexpr (attribute == AttributeNames::typeId) {
       return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -210,6 +218,10 @@ class GranularDEM : public autopas::Particle {
       _torque[1] = value;
     } else if constexpr (attribute == AttributeNames::torqueZ) {
       _torque[2] = value;
+    } else if constexpr (attribute == AttributeNames::temperature) {
+      _temperature = value;
+    } else if constexpr (attribute == AttributeNames::heatFlux) {
+      _heatFlux = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       _typeId = value;
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -286,6 +298,41 @@ class GranularDEM : public autopas::Particle {
   void subTorque(const std::array<double, 3> &torque);
 
   /**
+   * Get the temperature.
+   * @return temperature
+   */
+  [[nodiscard]] double getTemperature() const;
+
+  void setTemperature(double temperature);
+
+  void addTemperature(double temperature);
+
+  /**
+   * Get the heat flux.
+   * @return heat flux
+   */
+  [[nodiscard]] double getHeatFlux() const;
+
+  /**
+   * Set the heat flux.
+   * @param heatFlux
+   */
+  void setHeatFlux(double heatFlux);
+
+  /**
+   * Adds given heat flux to the particle's heat flux.
+   * @param heatFlux
+   */
+  void addHeatFlux(double heatFlux);
+
+  /**
+   * Subtracts given heat flux to the particle's heat flux.
+   * @param heatFlux
+   */
+  void subHeatFlux(double heatFlux);
+
+
+  /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
@@ -311,5 +358,9 @@ class GranularDEM : public autopas::Particle {
    * Torque applied to particle.
    */
   std::array<double, 3> _torque{};
+
+  double _temperature;
+
+  double _heatFlux;
 };
 }  // namespace demLib

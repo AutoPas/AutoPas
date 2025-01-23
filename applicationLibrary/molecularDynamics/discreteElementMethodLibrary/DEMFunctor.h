@@ -277,9 +277,9 @@ class DEMFunctor
     const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
 
     // Apply forces (if newton3: 6 FLOPS, if not: 3 FLOPS)
-    i.addF(totalF);  // 3 FLOPS
+    //i.addF(totalF);  // 3 FLOPS
     if (newton3) {
-      j.subF(totalF);  // 3 FLOPS
+    //  j.subF(totalF);  // 3 FLOPS
     }
 
     // Compute Torques
@@ -313,9 +313,18 @@ class DEMFunctor
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
 
     // Apply torques (if newton3: 19 FLOPS, if not: 9 FLOPS)
-    i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
+    //i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
     if (newton3) {
-      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
+    //  j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
+    }
+
+    // Heat Transfer
+    const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
+    const double conductance = 2. * _conductivity * std::pow((3. * normalFMag * geometricMeanRadius) / 4., 1./3.);
+    const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
+    i.addHeatFlux(heatFluxI);
+    if (newton3) {
+      j.subHeatFlux(heatFluxI);
     }
   }
 
@@ -652,6 +661,7 @@ class DEMFunctor
         Particle::AttributeNames::angularVelX, Particle::AttributeNames::angularVelY,
         Particle::AttributeNames::angularVelZ, Particle::AttributeNames::torqueX,
         Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
+        Particle::AttributeNames::temperature, Particle::AttributeNames::heatFlux,
         Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
   }
 
@@ -668,6 +678,7 @@ class DEMFunctor
         Particle::AttributeNames::angularVelX, Particle::AttributeNames::angularVelY,
         Particle::AttributeNames::angularVelZ, Particle::AttributeNames::torqueX,
         Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
+        Particle::AttributeNames::temperature, Particle::AttributeNames::heatFlux,
         Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
   }
 
@@ -677,7 +688,8 @@ class DEMFunctor
   constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
-        Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ};
+        Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ,
+        Particle::AttributeNames::heatFlux};
   }
 
   /**
@@ -1816,6 +1828,7 @@ class DEMFunctor
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
+  const double _conductivity = 1;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

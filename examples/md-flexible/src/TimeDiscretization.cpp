@@ -163,6 +163,13 @@ void resetTorques(autopas::AutoPas<ParticleType> &autoPasContainer) {
   }
 }
 
+void resetHeatFluxes(autopas::AutoPas<ParticleType> &autoPasContainer) {
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->setHeatFlux(0.);
+  }
+}
+
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
@@ -221,6 +228,18 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
   autopas::utils::ExceptionHandler::exception(
       "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
 #endif
+}
+void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
+                           const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const double mass = particlePropertiesLibrary.getSiteMass(iter->getTypeId());
+    const double thermalCapacity = mass * 1.; // TODO: consider Specific heat capacity
+    const double heatFlux = iter->getHeatFlux();
+    const double deltaTemperature = (heatFlux / thermalCapacity) * deltaT;
+
+    iter->addTemperature(deltaTemperature);
+  }
 }
 
 }  // namespace TimeDiscretization

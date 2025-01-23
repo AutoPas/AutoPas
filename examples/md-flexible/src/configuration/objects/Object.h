@@ -32,8 +32,8 @@ class Object {
    * @param angVelocity
    * @param typeId
    */
-  Object(const std::array<double, 3> &velocity, const std::array<double, 3> &angularVelocity, unsigned long typeId)
-      : _velocity(velocity), _angularVelocity(angularVelocity), _typeId(typeId) {}
+  Object(const std::array<double, 3> &velocity, const std::array<double, 3> &angularVelocity, unsigned long typeId, const double temperature = 0.)
+      : _velocity(velocity), _angularVelocity(angularVelocity), _typeId(typeId), _temperature(temperature) {}
 
   virtual ~Object() = default;
 
@@ -63,6 +63,7 @@ class Object {
 #elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
     particle.setTorque({0.0, 0.0, 0.0});
     particle.setAngularVel(_angularVelocity);
+    particle.setTemperature(_temperature);
 #endif
 
     return particle;
@@ -145,6 +146,8 @@ class Object {
    * Angular velocity of every particle in the object.
    */
    std::array<double, 3> _angularVelocity;
+
+   double _temperature;
 
   /**
    * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For

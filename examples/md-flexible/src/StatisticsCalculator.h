@@ -81,6 +81,9 @@ class StatisticsCalculator {
   static std::tuple<double, double, double, size_t>
   calculateVolumetricFlowRate(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
+  static std::tuple<double>
+    calculateTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
+
   /**
    * Generates the output file (.csv) for the statistics.
    * @param columnNames The names of the columns in the output file.

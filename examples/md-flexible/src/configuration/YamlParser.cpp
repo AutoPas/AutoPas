@@ -42,9 +42,11 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
       parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+  const auto temperature =
+      parseComplexTypeValueSingle<double>(node, MDFlexConfig::temperatureStr, objectErrors);
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
   const std::array<double, 3> angularVelocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::angularVelocityStr, objectErrors);
-  const CubeGrid cubeGrid(velocity, angularVelocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner);
+  const CubeGrid cubeGrid(velocity, angularVelocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner, temperature);
   return cubeGrid;
 #else
   const CubeGrid cubeGrid(velocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner);
@@ -112,9 +114,10 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+  const auto temperature = parseComplexTypeValueSingle<double>(node, MDFlexConfig::temperatureStr, objectErrors);
 
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-  const CubeClosestPacked cubeClosestPacked(velocity, {0., 0., 0.}, particleType, particleSpacing, boxLength, bottomLeftCorner);
+  const CubeClosestPacked cubeClosestPacked(velocity, {0., 0., 0.}, particleType, particleSpacing, boxLength, bottomLeftCorner, temperature);
 #else
   const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner);
 #endif

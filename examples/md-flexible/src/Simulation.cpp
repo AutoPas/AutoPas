@@ -189,7 +189,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
-  const size_t settlingEndingIteration = 150000;
+  const size_t settlingEndingIteration = 0;
 
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -213,6 +213,7 @@ void Simulation::run() {
       updateQuaternions();
 #endif
       resetTorques();
+      resetHeatFluxes();
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
@@ -288,6 +289,7 @@ void Simulation::run() {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE || defined(MD_FLEXIBLE_FUNCTOR_DEM)
       updateAngularVelocities();
+      updateTemperatures();
 #endif
       updateThermostat();
     }
@@ -433,9 +435,11 @@ void Simulation::updateQuaternions() {
 }
 
 void Simulation::resetTorques() {
-  _timers.quaternionUpdate.start();
   TimeDiscretization::resetTorques(*_autoPasContainer);
-  _timers.quaternionUpdate.stop();
+}
+
+void Simulation::resetHeatFluxes() {
+  TimeDiscretization::resetHeatFluxes(*_autoPasContainer);
 }
 
 
@@ -481,6 +485,13 @@ void Simulation::updateAngularVelocities() {
   TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                  deltaT);
   _timers.angularVelocityUpdate.stop();
+}
+
+void Simulation::updateTemperatures() {
+  const double deltaT = _configuration.deltaT.value;
+
+  TimeDiscretization::calculateTemperatures(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                                 deltaT);
 }
 
 void Simulation::updateThermostat() {

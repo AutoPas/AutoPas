@@ -35,6 +35,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   const auto energyStatistics =
       calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
   const auto flowRateStatistics = calculateVolumetricFlowRate(autoPasContainer, particlePropertiesLib);
+  //const auto temperatureStatistics = calculateTemperature(autoPasContainer, particlePropertiesLib);
   /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
@@ -324,4 +325,9 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateRDF(
   }
 
   return binIndex_to_rdf;
+}
+std::tuple<double> StatisticsCalculator::calculateTemperature(
+    const autopas::AutoPas<ParticleType> &autoPasContainer,
+    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+  return std::tuple<double>();
 }
