@@ -34,7 +34,7 @@ Sites:
     epsilon: 1.
     sigma: 1.
     mass: 0.001
-    radius: 0.1
+    radius: 0.05
 # Uncomment below to run a multi-site simulation.
 #Molecules:
 #  0:
