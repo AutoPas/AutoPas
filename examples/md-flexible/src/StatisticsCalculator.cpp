@@ -318,7 +318,7 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateRDF(
     const double localDensity_Denominator =
         (4. / 3.) * M_PI *
         (std::pow(dist_interval_start_casted + distance_unit, 3) - std::pow(dist_interval_start_casted, 3));
-    const double localDensity = counts_casted / localDensity_Denominator;
+    const double localDensity = counts_casted / (localDensity_Denominator + 1e-6);
 
       binIndex_to_rdf.emplace_back(pair.first, localDensity);
   }
