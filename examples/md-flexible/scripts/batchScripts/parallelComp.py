@@ -22,7 +22,7 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
     num_tasks_per_node = int(num_tasks / num_nodes)
     mem_per_node = memory_per_task * num_tasks_per_node
     # create output directory
-    basename = name.split('.')[0] + t.strftime("%Y%m%d-%H%M%S")
+    basename = name.split('.')[0] + t.strftime("-%Y%m%d-%H%M%S")
     try:
         os.mkdir(basename)
     except OSError:
