@@ -15,11 +15,12 @@ def get_according_cluster_and_nodes(num_cpus: int) -> [str, str, int, int]:
     return "cm4", "cm4_std", 2, 4
 
 
-def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str, input_file: str, memory: int, time: str) -> str:
+def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str, input_file: str, memory_per_task: int, time: str) -> str:
     clusters, partition, min_nodes, max_nodes = get_according_cluster_and_nodes(
         num_tasks * num_threads)
     num_nodes = min_nodes
     num_tasks_per_node = int(num_tasks / num_nodes)
+    mem_per_node = memory_per_task * num_tasks_per_node
     # create output directory
     basename = name.split('.')[0] + t.strftime("%Y%m%d-%H%M%S")
     try:
@@ -36,7 +37,7 @@ def get_run_script(name: str, num_tasks: int, num_threads: int, executable: str,
 #SBATCH --clusters={clusters}
 #SBATCH --partition={partition}
 #SBATCH --qos={partition}
-#SBATCH --mem={memory}mb
+#SBATCH --mem={mem_per_node}mb
 #SBATCH --nodes={num_nodes}
 #SBATCH --ntasks-per-node={num_tasks_per_node}
 #SBATCH --cpus-per-task={num_threads}
@@ -60,7 +61,7 @@ if __name__ == "__main__":
         print(" - num_threads: number of threads to use per rank")
         print(" - executable : executable to use")
         print(" - input_file : input file")
-        print(" - mem        : memory to use in MB")
+        print(" - mem        : memory to use per task in MB")
         print(" - time       : time to use in HH:MM:SS")
         print(" - true/false : Step up the number of threads up until num_tasks")
         print("                (if true num_tasks must be power of 2, default: false)")
