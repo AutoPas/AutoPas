@@ -1,6 +1,5 @@
 
 
-
 #pragma once
 
 #include <gtest/gtest.h>
@@ -26,8 +25,8 @@ class MidpointTest : public AutoPasTestBase, public Midpoint {
    */
   MidpointTest()
       : AutoPasTestBase(),
-        Midpoint(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion, autopas::AutoPas_MPI_Comm(),
-                  _allNeighbourIndices)
+        Midpoint(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion, false, true, autopas::AutoPas_MPI_Comm(),
+                 _allNeighbourIndices)
 
   {}
 
@@ -37,7 +36,7 @@ class MidpointTest : public AutoPasTestBase, public Midpoint {
 
   AutoPasType _autopas;
 
-  constexpr static double _cutoff = 0.9;
+  static double _cutoff;
   constexpr static double _verletSkinWidth = 0.1;
   constexpr static std::array<double, 3> _boxMin = {0, 0, 0};
   constexpr static std::array<double, 3> _boxMax = {10, 10, 10};
