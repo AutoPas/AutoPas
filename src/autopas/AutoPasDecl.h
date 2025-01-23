@@ -396,14 +396,15 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  RegionIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+  RegionIteratorT getRegionIterator(const std::array<CalcType, 3> &lowerCorner,
+                                    const std::array<CalcType, 3> &higherCorner,
                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
   /**
    * @copydoc getRegionIterator()
    * @note const version
    */
-  RegionConstIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                         const std::array<double, 3> &higherCorner,
+  RegionConstIteratorT getRegionIterator(const std::array<CalcType, 3> &lowerCorner,
+                                         const std::array<CalcType, 3> &higherCorner,
                                          IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
@@ -416,8 +417,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                               const std::array<double, 3> &higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<CalcType, 3> &lowerCorner,
+                               const std::array<CalcType, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -430,8 +431,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                               const std::array<double, 3> &higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<CalcType, 3> &lowerCorner,
+                               const std::array<CalcType, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -448,8 +449,8 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<CalcType, 3> &lowerCorner,
+                       const std::array<CalcType, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -461,8 +462,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<CalcType, 3> &lowerCorner,
+                       const std::array<CalcType, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -481,8 +482,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                              const std::array<double, 3> &higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<CalcType, 3> &lowerCorner,
+                              const std::array<CalcType, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -495,8 +496,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                              const std::array<double, 3> &higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<CalcType, 3> &lowerCorner,
+                              const std::array<CalcType, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -515,8 +516,8 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                      const std::array<double, 3> &higherCorner,
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<CalcType, 3> &lowerCorner,
+                      const std::array<CalcType, 3> &higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
@@ -528,8 +529,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                      const std::array<double, 3> &higherCorner,
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<CalcType, 3> &lowerCorner,
+                      const std::array<CalcType, 3> &higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
@@ -560,13 +561,13 @@ class AutoPas {
    * Get the lower corner of the container without the halo.
    * @return lower corner of the container.
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
+  [[nodiscard]] const std::array<CalcType, 3> &getBoxMin() const;
 
   /**
    * Get the upper corner of the container without the halo.
    * @return upper corner of the container.
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
+  [[nodiscard]] const std::array<CalcType, 3> &getBoxMax() const;
 
   /**
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
@@ -594,7 +595,7 @@ class AutoPas {
    * Get cutoff radius.
    * @return
    */
-  [[nodiscard]] double getCutoff() const { return _logicHandlerInfo.cutoff; }
+  [[nodiscard]] CalcType getCutoff() const { return _logicHandlerInfo.cutoff; }
 
   /**
    * Set cutoff radius.

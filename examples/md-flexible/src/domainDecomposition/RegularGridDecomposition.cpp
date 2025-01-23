@@ -148,7 +148,7 @@ void RegularGridDecomposition::initializeNeighborIndices() {
   }
 }
 
-bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
+bool RegularGridDecomposition::isInsideLocalDomain(const std::array<CalcType, 3> &coordinates) const {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
 
@@ -162,7 +162,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
 
   _haloParticles.clear();
   const double skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const double haloWidth = _cutoffWidth + skinWidth;
+  const CalcType haloWidth = _cutoffWidth + skinWidth;
 
   // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add 10%
   const auto localBoxDimensions = _localBoxMax - _localBoxMin;
@@ -203,7 +203,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     const double rightHaloMax = _localBoxMax[dimensionIndex] + skinWidth;
 
     for (const auto &particle : _haloParticles) {
-      std::array<double, _dimensionCount> position = particle.getR();
+      std::array<CalcType, _dimensionCount> position = particle.getR();
       if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
         _particlesForLeftNeighbor.push_back(particle);
 
@@ -304,7 +304,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   using autopas::utils::Math::isNearRel;
-  std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
+  std::array<CalcType, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
@@ -341,13 +341,13 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // mirror particle for use with the actual functor.
 
         // Calculates force acting on site from another site
-        const auto LJKernel = [](const std::array<double, 3> sitePosition,
-                                 const std::array<double, 3> mirrorSitePosition, const double sigmaSquared,
-                                 const double epsilon24) {
+        const auto LJKernel = [](const std::array<CalcType, 3> sitePosition,
+                                 const std::array<CalcType, 3> mirrorSitePosition, const CalcType sigmaSquared,
+                                 const CalcType epsilon24) {
           const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
           const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-          const auto inverseDistanceSquared = 1. / distanceSquared;
+          const auto inverseDistanceSquared = static_cast<CalcType>(1.) / distanceSquared;
           const auto lj2 = sigmaSquared * inverseDistanceSquared;
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
@@ -420,7 +420,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
           const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF(force);
+          p->addF(autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(force));
 #endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -478,8 +478,8 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::ve
 }
 
 void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
-                                                       const std::array<double, _dimensionCount> &boxMin,
-                                                       const std::array<double, _dimensionCount> &boxMax,
+                                                       const std::array<CalcType, _dimensionCount> &boxMin,
+                                                       const std::array<CalcType, _dimensionCount> &boxMax,
                                                        bool atGlobalBoundary, double wrapAroundDistance,
                                                        std::vector<ParticleType> &haloParticlesBuffer) {
   using autopas::utils::Math::isNearRel;
@@ -515,8 +515,8 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMin = _localBoxMin;
-  const std::array<double, _dimensionCount> boxMax = [&]() {
+  const std::array<CalcType, _dimensionCount> boxMin = _localBoxMin;
+  const std::array<CalcType, _dimensionCount> boxMax = [&]() {
     auto boxMax = _localBoxMax;
     boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + skinWidth;
     return boxMax;
@@ -533,8 +533,8 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMax = _localBoxMax;
-  const std::array<double, _dimensionCount> boxMin = [&]() {
+  const std::array<CalcType, _dimensionCount> boxMax = _localBoxMax;
+  const std::array<CalcType, _dimensionCount> boxMin = [&]() {
     auto boxMin = _localBoxMin;
     boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - skinWidth;
     return boxMin;
@@ -550,7 +550,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
                                                                       size_t direction) {
   using autopas::utils::Math::isNearRel;
   using namespace autopas::utils::ArrayMath::literals;
-  const std::array<double, _dimensionCount> globalBoxDimensions = _globalBoxMax - _globalBoxMin;
+  const std::array<CalcType, _dimensionCount> globalBoxDimensions = _globalBoxMax - _globalBoxMin;
 
   // The chosen size is the best guess based on the particles vector being distributed into three other vectors.
   const auto sizeEstimate = particles.size() / 3;

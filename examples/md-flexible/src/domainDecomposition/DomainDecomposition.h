@@ -42,30 +42,30 @@ class DomainDecomposition {
    * Returns the minimum coordinates of the global domain.
    * @return bottom left front corner of the global domain.
    */
-  [[nodiscard]] virtual const std::array<double, 3> &getGlobalBoxMin() const = 0;
+  [[nodiscard]] virtual const std::array<CalcType, 3> &getGlobalBoxMin() const = 0;
 
   /**
    * Returns the maximum coordinates of the global domain.
    * @return top right back corner of the global domain.
    */
-  [[nodiscard]] virtual const std::array<double, 3> &getGlobalBoxMax() const = 0;
+  [[nodiscard]] virtual const std::array<CalcType, 3> &getGlobalBoxMax() const = 0;
 
   /**
    * Returns the minimum coordinates of the local domain.
    * @return bottom left front corner of the local domain.
    */
-  [[nodiscard]] virtual const std::array<double, 3> &getLocalBoxMin() const = 0;
+  [[nodiscard]] virtual const std::array<CalcType, 3> &getLocalBoxMin() const = 0;
 
   /**
    * Returns the maximum coordinates of the local domain.
    * @return top right back corner of the local domain.
    */
-  [[nodiscard]] virtual const std::array<double, 3> &getLocalBoxMax() const = 0;
+  [[nodiscard]] virtual const std::array<CalcType, 3> &getLocalBoxMax() const = 0;
 
   /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  [[nodiscard]] virtual bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const = 0;
+  [[nodiscard]] virtual bool isInsideLocalDomain(const std::array<CalcType, 3> &coordinates) const = 0;
 };

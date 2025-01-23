@@ -11,6 +11,8 @@
 #include "autopas/AutoPas.h"
 #include "autopasTools/generators/UniformGenerator.h"
 
+using CalcType = autopas::CalcType;
+using AccuType = autopas::AccuType;
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
@@ -22,7 +24,7 @@ void addParticles(AutoPasContainer &sph_system, int numParticles) {
 
   std::mt19937 generator(42);
 
-  std::array<double, 3> boxMin(sph_system.getBoxMin()), boxMax(sph_system.getBoxMax());
+  std::array<CalcType, 3> boxMin(sph_system.getBoxMin()), boxMax(sph_system.getBoxMax());
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
@@ -40,10 +42,10 @@ void addParticles(AutoPasContainer &sph_system, int numParticles) {
 
 int main(int argc, char *argv[]) {
   autopas::Logger::create();
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
+  std::array<CalcType, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 0.15;
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
-  double cutoff = .03;
+  CalcType cutoff = .03;
 
   sphLib::SPHCalcDensityFunctor<Particle> densfunc;
   sphLib::SPHCalcHydroForceFunctor<Particle> hydrofunc;

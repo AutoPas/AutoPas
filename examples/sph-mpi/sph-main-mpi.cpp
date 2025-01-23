@@ -13,17 +13,25 @@
 #include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
 
+#if AUTOPAS_PRECISION_MODE == SPDP
+#define MPI_FLOAT_TYPE MPI_FLOAT
+#else
+#define MPI_FLOAT_TYPE MPI_DOUBLE
+#endif
+
+using CalcType = autopas::CalcType;
+using AccuType = autopas::AccuType;
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
-void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
+void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<CalcType, 3> &bBoxMax) {
   // Place SPH particles
   std::cout << "setup... started" << std::endl;
-  const double dx = 1.0 / 128.0;
+  const CalcType dx = 1.0 / 128.0;
   unsigned int i = 0;
-  for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
-    for (double y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
-      for (double z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
+  for (CalcType x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
+    for (CalcType y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
+      for (CalcType z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
         Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(1.0);
         ith.setEnergy(2.5);
@@ -33,9 +41,9 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
       }
     }
   }
-  for (double x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {  // NOLINT
-    for (double y = 0; y < bBoxMax[1]; y += dx) {                          // NOLINT
-      for (double z = 0; z < bBoxMax[2]; z += dx) {                        // NOLINT
+  for (CalcType x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {  // NOLINT
+    for (CalcType y = 0; y < bBoxMax[1]; y += dx) {                          // NOLINT
+      for (CalcType z = 0; z < bBoxMax[2]; z += dx) {                        // NOLINT
         Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(0.5);
         ith.setEnergy(2.5);
@@ -95,7 +103,8 @@ void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->setVel_half(part->getV() + (part->getAcceleration() * (0.5 * dt)));
+    part->setVel_half(part->getV() + autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(
+                                         part->getAcceleration() * (0.5 * dt)));
     part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -105,7 +114,7 @@ void leapfrogFullDrift(AutoPasContainer &sphSystem, const double dt) {
 
   // time becomes t + dt;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->addR(part->getVel_half() * dt);
+    part->addR(part->getVel_half() * static_cast<CalcType>(dt));
   }
 }
 
@@ -113,7 +122,7 @@ void leapfrogPredict(AutoPasContainer &sphSystem, const double dt) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->addV(part->getAcceleration() * dt);
+    part->addV(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(part->getAcceleration() * dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
@@ -122,7 +131,8 @@ void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->setV(part->getVel_half() + (part->getAcceleration() * (0.5 * dt)));
+    part->setV(part->getVel_half() +
+               autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(part->getAcceleration() * (0.5 * dt)));
     part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -160,7 +170,7 @@ void issueSend(std::vector<Particle> &sendParticles, const std::array<int, 3> di
     std::vector<double> serialized = p.serialize();
     buffer.insert(std::end(buffer), std::begin(serialized), std::end(serialized));
   }
-  MPI_Isend(buffer.data(), buffer.size(), MPI_DOUBLE, neighbor, 3, comm, &sendRequest);
+  MPI_Isend(buffer.data(), buffer.size(), MPI_FLOAT_TYPE, neighbor, 3, comm, &sendRequest);
 }
 
 void receive(std::vector<Particle> &receiveParticles, const std::array<int, 3> diff, MPI_Comm &comm) {
@@ -169,9 +179,9 @@ void receive(std::vector<Particle> &receiveParticles, const std::array<int, 3> d
   int length;
   MPI_Status status;
   MPI_Probe(neighbor, 3, comm, &status);
-  MPI_Get_count(&status, MPI_DOUBLE, &length);
+  MPI_Get_count(&status, MPI_FLOAT_TYPE, &length);
   std::vector<double> recvBuffer(length);
-  MPI_Recv(recvBuffer.data(), length, MPI_DOUBLE, neighbor, 3, comm, MPI_STATUS_IGNORE);
+  MPI_Recv(recvBuffer.data(), length, MPI_FLOAT_TYPE, neighbor, 3, comm, MPI_STATUS_IGNORE);
 
   for (size_t i = 0; i < (size_t)length;) {
     auto p = Particle::deserialize(recvBuffer.data(), i);
@@ -195,8 +205,8 @@ void waitSend(MPI_Request &sendRequest) { MPI_Wait(&sendRequest, MPI_STATUS_IGNO
  * @param globalBoxMin
  * @param globalBoxMax
  */
-void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff, double &shift,
-                 const double globalBoxMin, const double globalBoxMax) {
+void getSendHalo(CalcType boxMin, CalcType boxMax, int diff, CalcType &sendMin, CalcType &sendMax, CalcType cutoff,
+                 CalcType &shift, const CalcType globalBoxMin, const CalcType globalBoxMax) {
   if (diff == 0) {
     sendMin = boxMin;
     sendMax = boxMax;
@@ -234,8 +244,8 @@ void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double
  * @param globalBoxMin
  * @param globalBoxMax
  */
-void getSendLeaving(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff,
-                    double &shift, const double globalBoxMin, const double globalBoxMax) {
+void getSendLeaving(CalcType boxMin, CalcType boxMax, int diff, CalcType &sendMin, CalcType &sendMax, CalcType cutoff,
+                    CalcType &shift, const CalcType globalBoxMin, const CalcType globalBoxMax) {
   if (diff == 0) {
     sendMin = boxMin;
     sendMax = boxMax;
@@ -268,14 +278,14 @@ void getSendLeaving(double boxMin, double boxMax, int diff, double &sendMin, dou
  * @param globalBoxMin
  * @param globalBoxMax
  */
-void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<double, 3> &globalBoxMin,
-                         const std::array<double, 3> &globalBoxMax) {
-  std::array<double, 3> boxMin = sphSystem.getBoxMin();
-  std::array<double, 3> boxMax = sphSystem.getBoxMax();
-  std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
+void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<CalcType, 3> &globalBoxMin,
+                         const std::array<CalcType, 3> &globalBoxMax) {
+  std::array<CalcType, 3> boxMin = sphSystem.getBoxMin();
+  std::array<CalcType, 3> boxMax = sphSystem.getBoxMax();
+  std::array<CalcType, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
   std::array<int, 3> diff{0, 0, 0};
-  std::array<double, 3> shift{0, 0, 0};
-  double cutoff = sphSystem.getCutoff();
+  std::array<CalcType, 3> shift{0, 0, 0};
+  CalcType cutoff = sphSystem.getCutoff();
   double skin = sphSystem.getVerletSkin();
   std::vector<double> buffer;
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
@@ -315,13 +325,13 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
 }
 
 void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::vector<Particle> &invalidParticles,
-                            std::array<double, 3> globalBoxMin, std::array<double, 3> globalBoxMax) {
-  std::array<double, 3> boxMin = sphSystem.getBoxMin();
-  std::array<double, 3> boxMax = sphSystem.getBoxMax();
-  std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
+                            std::array<CalcType, 3> globalBoxMin, std::array<CalcType, 3> globalBoxMax) {
+  std::array<CalcType, 3> boxMin = sphSystem.getBoxMin();
+  std::array<CalcType, 3> boxMax = sphSystem.getBoxMax();
+  std::array<CalcType, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
   std::array<int, 3> diff{0, 0, 0};
-  std::array<double, 3> shift{0, 0, 0};
-  double cutoff = sphSystem.getCutoff();
+  std::array<CalcType, 3> shift{0, 0, 0};
+  CalcType cutoff = sphSystem.getCutoff();
 
   std::vector<double> buffer;
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
@@ -370,8 +380,8 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
   }
 }
 
-void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<double, 3> &globalBoxMin,
-                               const std::array<double, 3> &globalBoxMax) {
+void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<CalcType, 3> &globalBoxMin,
+                               const std::array<CalcType, 3> &globalBoxMax) {
   // declare the used functors
   sphLib::SPHCalcDensityFunctor<Particle> densityFunctor;
   sphLib::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
@@ -417,10 +427,10 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
 void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
-  double energySum = 0.;                        // total energy
+  std::array<AccuType, 3> momSum = {0., 0., 0.};  // total momentum
+  AccuType energySum = 0.;                        // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
-    momSum += (it->getV() * it->getMass());
+    momSum += autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(it->getV() * it->getMass());
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
 
@@ -428,8 +438,8 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   int myrank;
   MPI_Comm_rank(comm, &myrank);
   if (myrank == 0) {
-    MPI_Reduce(MPI_IN_PLACE, &energySum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-    MPI_Reduce(MPI_IN_PLACE, momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(MPI_IN_PLACE, &energySum, 1, MPI_FLOAT_TYPE, MPI_SUM, 0, comm);
+    MPI_Reduce(MPI_IN_PLACE, momSum.data(), 3, MPI_FLOAT_TYPE, MPI_SUM, 0, comm);
     printf("Energy     : %.16e\n", energySum);
     for (int i = 0; i < 3; ++i) {
       printf("Momentum[%d]: %.16e\n", i, momSum[i]);
@@ -441,13 +451,13 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
       }
     }
   } else {
-    MPI_Reduce(&energySum, &energySum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-    MPI_Reduce(momSum.data(), momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(&energySum, &energySum, 1, MPI_FLOAT_TYPE, MPI_SUM, 0, comm);
+    MPI_Reduce(momSum.data(), momSum.data(), 3, MPI_FLOAT_TYPE, MPI_SUM, 0, comm);
   }
 }
 
-MPI_Comm getDecomposition(const std::array<double, 3> &globalMin, const std::array<double, 3> &globalMax,
-                          std::array<double, 3> &localMin, std::array<double, 3> &localMax) {
+MPI_Comm getDecomposition(const std::array<CalcType, 3> &globalMin, const std::array<CalcType, 3> &globalMax,
+                          std::array<CalcType, 3> &localMin, std::array<CalcType, 3> &localMax) {
   int numProcs;
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
   std::array<int, 3> gridSize{0, 0, 0};
@@ -481,14 +491,14 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   autopas::Logger::create();
 
-  std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
+  std::array<CalcType, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
   globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
-  double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
+  CalcType cutoff = 0.03;             // 0.012*2.5=0.03; where 2.5 = kernel support radius
   unsigned int rebuildFrequency = 6;  // has to be multiple of 2
   double skinToCutoffRatio = 0.1;
 
-  std::array<double, 3> localBoxMin{}, localBoxMax{};
+  std::array<CalcType, 3> localBoxMin{}, localBoxMax{};
 
   // get the decomposition -- get the local box of the current process from the
   // global box

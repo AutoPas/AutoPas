@@ -225,8 +225,8 @@ void ParallelVtkWriter::recordDomainSubdivision(
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + timestepFileName.str() + "\"");
   }
 
-  const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
-  const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
+  const std::array<CalcType, 3> localBoxMin = decomposition.getLocalBoxMin();
+  const std::array<CalcType, 3> localBoxMax = decomposition.getLocalBoxMax();
 
   auto printDataArray = [&](const auto &data, const std::string &type, const std::string &name) {
     timestepFile << "        <DataArray type=\"" << type << "\" Name=\"" << name << "\" format=\"ascii\">\n";

@@ -320,13 +320,14 @@ typename AutoPas<Particle>::ConstIteratorT AutoPas<Particle>::begin(IteratorBeha
 
 template <class Particle>
 typename AutoPas<Particle>::RegionIteratorT AutoPas<Particle>::getRegionIterator(
-    const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    const std::array<CalcType, 3> &lowerCorner, const std::array<CalcType, 3> &higherCorner,
+    IteratorBehavior behavior) {
   return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
 }
 
 template <class Particle>
 typename AutoPas<Particle>::RegionConstIteratorT AutoPas<Particle>::getRegionIterator(
-    const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+    const std::array<CalcType, 3> &lowerCorner, const std::array<CalcType, 3> &higherCorner,
     IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
 }
@@ -337,12 +338,12 @@ unsigned long AutoPas<Particle>::getContainerType() const {
 }
 
 template <class Particle>
-const std::array<double, 3> &AutoPas<Particle>::getBoxMin() const {
+const std::array<CalcType, 3> &AutoPas<Particle>::getBoxMin() const {
   return _logicHandler->getContainer().getBoxMin();
 }
 
 template <class Particle>
-const std::array<double, 3> &AutoPas<Particle>::getBoxMax() const {
+const std::array<CalcType, 3> &AutoPas<Particle>::getBoxMax() const {
   return _logicHandler->getContainer().getBoxMax();
 }
 

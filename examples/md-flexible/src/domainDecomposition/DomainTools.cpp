@@ -11,8 +11,8 @@
 #include "autopas/utils/ArrayMath.h"
 
 namespace DomainTools {
-bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<double, 3> &boxMin,
-                    const std::array<double, 3> &boxMax) {
+bool isInsideDomain(const std::array<CalcType, 3> &coordinates, const std::array<CalcType, 3> &boxMin,
+                    const std::array<CalcType, 3> &boxMax) {
   bool isInsideLocalDomain = true;
   for (int i = 0; i < coordinates.size(); ++i) {
     if (not isInsideLocalDomain) {

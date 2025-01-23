@@ -12,17 +12,19 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
 
+using CalcType = autopas::CalcType;
+using AccuType = autopas::AccuType;
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
-void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
+void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<CalcType, 3> &bBoxMax) {
   // Place SPH particles
   std::cout << "setup... started" << std::endl;
-  const double dx = 1.0 / 128.0;
+  const CalcType dx = 1.0 / 128.0;
   unsigned int i = 0;
-  for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
-    for (double y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
-      for (double z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
+  for (CalcType x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
+    for (CalcType y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
+      for (CalcType z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
         Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(1.0);
         ith.setEnergy(2.5);
@@ -30,9 +32,9 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
       }
     }
   }
-  for (double x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {  // NOLINT
-    for (double y = 0; y < bBoxMax[1]; y += dx) {                          // NOLINT
-      for (double z = 0; z < bBoxMax[2]; z += dx) {                        // NOLINT
+  for (CalcType x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {  // NOLINT
+    for (CalcType y = 0; y < bBoxMax[1]; y += dx) {                          // NOLINT
+      for (CalcType z = 0; z < bBoxMax[2]; z += dx) {                        // NOLINT
         Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(0.5);
         ith.setEnergy(2.5);
@@ -41,7 +43,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
     }
   }
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->setMass(part->getMass() * bBoxMax[0] * bBoxMax[1] * bBoxMax[2] / (double)(i));
+    part->setMass(part->getMass() * bBoxMax[0] * bBoxMax[1] * bBoxMax[2] / (CalcType)(i));
   }
   std::cout << "# of particles is... " << i << std::endl;
 
@@ -79,7 +81,8 @@ void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->setVel_half(part->getV() + (part->getAcceleration() * (0.5 * dt)));
+    part->setVel_half(part->getV() + autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(
+                                         part->getAcceleration() * (0.5 * dt)));
     part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -89,7 +92,7 @@ void leapfrogFullDrift(AutoPasContainer &sphSystem, const double dt) {
 
   // time becomes t + dt;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->addR(part->getVel_half() * dt);
+    part->addR(part->getVel_half() * static_cast<CalcType>(dt));
   }
 }
 
@@ -97,7 +100,7 @@ void leapfrogPredict(AutoPasContainer &sphSystem, const double dt) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->addV(part->getAcceleration() * dt);
+    part->addV(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(part->getAcceleration() * dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
@@ -106,7 +109,8 @@ void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->setV(part->getVel_half() + (part->getAcceleration() * (0.5 * dt)));
+    part->setV(part->getVel_half() +
+               autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(part->getAcceleration() * (0.5 * dt)));
     part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -118,16 +122,17 @@ void setPressure(AutoPasContainer &sphSystem) {
 }
 
 void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<Particle> &invalidParticles) {
-  std::array<double, 3> boxMin = sphSystem.getBoxMin();
-  std::array<double, 3> boxMax = sphSystem.getBoxMax();
+  std::array<CalcType, 3> boxMin = sphSystem.getBoxMin();
+  std::array<CalcType, 3> boxMax = sphSystem.getBoxMax();
 
   for (auto &p : invalidParticles) {
     // first we have to correct the position of the particles, s.t. they lie inside of the box.
-    auto pos = p.getR();
+    std::array<CalcType, 3> pos = p.getR();
     for (auto dim = 0; dim < 3; dim++) {
       if (pos[dim] < boxMin[dim]) {
         // has to be smaller than boxMax
-        pos[dim] = std::min(std::nextafter(boxMax[dim], -1), pos[dim] + (boxMax[dim] - boxMin[dim]));
+        pos[dim] =
+            std::min(std::nextafter(boxMax[dim], static_cast<CalcType>(-1.0)), pos[dim] + (boxMax[dim] - boxMin[dim]));
       } else if (pos[dim] >= boxMax[dim]) {
         // should at least be boxMin
         pos[dim] = std::max(boxMin[dim], pos[dim] - (boxMax[dim] - boxMin[dim]));
@@ -149,8 +154,8 @@ void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<Particle> &in
  * @param cutoff
  * @param shift
  */
-void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, double &reqMax, double cutoff,
-                     double &shift) {
+void getRequiredHalo(CalcType boxMin, CalcType boxMax, int diff, CalcType &reqMin, CalcType &reqMax, CalcType cutoff,
+                     CalcType &shift) {
   if (diff == 0) {
     reqMin = boxMin;
     reqMax = boxMax;
@@ -173,12 +178,12 @@ void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, dou
  * @param sphSystem
  */
 void updateHaloParticles(AutoPasContainer &sphSystem) {
-  std::array<double, 3> boxMin = sphSystem.getBoxMin();
-  std::array<double, 3> boxMax = sphSystem.getBoxMax();
-  std::array<double, 3> requiredHaloMin{0., 0., 0.}, requiredHaloMax{0., 0., 0.};
+  std::array<CalcType, 3> boxMin = sphSystem.getBoxMin();
+  std::array<CalcType, 3> boxMax = sphSystem.getBoxMax();
+  std::array<CalcType, 3> requiredHaloMin{0., 0., 0.}, requiredHaloMax{0., 0., 0.};
   std::array<int, 3> diff{0, 0, 0};
-  std::array<double, 3> shift{0., 0., 0.};
-  double cutoff = sphSystem.getCutoff();
+  std::array<CalcType, 3> shift{0., 0., 0.};
+  CalcType cutoff = sphSystem.getCutoff();
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
@@ -281,10 +286,10 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
 void printConservativeVariables(AutoPasContainer &sphSystem) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
-  double energySum = 0.0;                       // total energy
+  std::array<AccuType, 3> momSum = {0., 0., 0.};  // total momentum
+  AccuType energySum = 0.0;                       // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
-    momSum += (it->getV() * it->getMass());
+    momSum += autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(it->getV() * it->getMass());
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
   printf("Energy     : %.16e\n", energySum);
@@ -300,10 +305,10 @@ void printConservativeVariables(AutoPasContainer &sphSystem) {
 }
 
 int main() {
-  std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
+  std::array<CalcType, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 1.;
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
-  double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
+  CalcType cutoff = 0.03;             // 0.012*2.5=0.03; where 2.5 = kernel support radius
   unsigned int rebuildFrequency = 6;  // has to be multiple of two, as there are two functor calls per iteration.
   double skinToCutoffRatio = 0.15;
 

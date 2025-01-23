@@ -197,7 +197,7 @@ class LogicHandler {
    * @param boxMax
    * @return Vector of particles that are outside the box after the resize.
    */
-  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+  std::vector<Particle> resizeBox(const std::array<CalcType, 3> &boxMin, const std::array<CalcType, 3> &boxMax) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto &oldMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &oldMax = _containerSelector.getCurrentContainer().getBoxMax();
@@ -478,8 +478,8 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ContainerIterator<Particle, true, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                     const std::array<double, 3> &higherCorner,
+  autopas::ContainerIterator<Particle, true, true> getRegionIterator(const std::array<CalcType, 3> &lowerCorner,
+                                                                     const std::array<CalcType, 3> &higherCorner,
                                                                      IteratorBehavior behavior) {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
@@ -500,8 +500,8 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ContainerIterator<Particle, false, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                      const std::array<double, 3> &higherCorner,
+  autopas::ContainerIterator<Particle, false, true> getRegionIterator(const std::array<CalcType, 3> &lowerCorner,
+                                                                      const std::array<CalcType, 3> &higherCorner,
                                                                       IteratorBehavior behavior) const {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
@@ -600,7 +600,7 @@ class LogicHandler {
    * @param interactionLengthInv Inverse of the side length of the virtual boxes one lock is responsible for.
    *
    */
-  void initSpacialLocks(const std::array<double, 3> &boxLength, double interactionLengthInv) {
+  void initSpacialLocks(const std::array<CalcType, 3> &boxLength, CalcType interactionLengthInv) {
     using namespace autopas::utils::ArrayMath::literals;
     using autopas::utils::ArrayMath::ceil;
     using autopas::utils::ArrayUtils::static_cast_copy_array;
@@ -627,7 +627,7 @@ class LogicHandler {
       } else {
         // If the number of locks grows too large, calculate the locks per dimension proportionally to the side lengths.
         // Calculate side length relative to dimension 0.
-        const std::array<double, 3> boxSideProportions = {
+        const std::array<CalcType, 3> boxSideProportions = {
             1.,
             boxLength[0] / boxLength[1],
             boxLength[0] / boxLength[2],
@@ -1087,7 +1087,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
-  constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
+  constexpr auto nanD = std::numeric_limits<CalcType>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
   return {timerComputeInteractions.getTotalTime(),
           timerComputeRemainder.getTotalTime(),
@@ -1209,12 +1209,12 @@ void LogicHandler<Particle>::remainderHelperBufferContainer(
 
   // Helper function to obtain the lock responsible for a given position.
   // Implemented as lambda because it can reuse a lot of information that is known in this context.
-  const auto getSpacialLock = [&](const std::array<double, 3> &pos) -> std::mutex & {
+  const auto getSpacialLock = [&](const std::array<CalcType, 3> &pos) -> std::mutex & {
     const auto posDistFromLowerCorner = pos - haloBoxMin;
     const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
     // Lock coordinates are the position scaled by the number of locks
     const auto lockCoords =
-        static_cast_copy_array<size_t>(static_cast_copy_array<double>(spacialLocksPerDim) * relativePos);
+        static_cast_copy_array<size_t>(static_cast_copy_array<CalcType>(spacialLocksPerDim) * relativePos);
     return *_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]];
   };
 
@@ -1429,7 +1429,7 @@ void LogicHandler<Particle>::remainderHelper3bBufferBufferContainer(const std::v
 
   const auto haloBoxMin = container.getBoxMin() - container.getInteractionLength();
   const auto interactionLengthInv = 1. / container.getInteractionLength();
-  const double cutoff = container.getCutoff();
+  const CalcType cutoff = container.getCutoff();
 
   AUTOPAS_OPENMP(parallel for)
   for (auto i = 0; i < bufferParticles.size(); ++i) {
@@ -1465,7 +1465,7 @@ void LogicHandler<Particle>::remainderHelper3bBufferContainerContainer(const std
   using autopas::utils::ArrayUtils::static_cast_copy_array;
   using namespace autopas::utils::ArrayMath::literals;
 
-  const double cutoff = container.getCutoff();
+  const CalcType cutoff = container.getCutoff();
 
   for (auto i = 0; i < bufferParticles.size(); ++i) {
     Particle &p1 = *bufferParticles[i];

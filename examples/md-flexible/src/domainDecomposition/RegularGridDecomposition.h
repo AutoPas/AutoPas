@@ -60,25 +60,25 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the minimum coordinates of global domain.
    * @return bottom left front corner of the global domain.
    */
-  [[nodiscard]] const std::array<double, 3> &getGlobalBoxMin() const override { return _globalBoxMin; }
+  [[nodiscard]] const std::array<CalcType, 3> &getGlobalBoxMin() const override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    * @return top right back corner of the global domain.
    */
-  [[nodiscard]] const std::array<double, 3> &getGlobalBoxMax() const override { return _globalBoxMax; }
+  [[nodiscard]] const std::array<CalcType, 3> &getGlobalBoxMax() const override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    * @return bottom left front corner of the local domain.
    */
-  [[nodiscard]] const std::array<double, 3> &getLocalBoxMin() const override { return _localBoxMin; }
+  [[nodiscard]] const std::array<CalcType, 3> &getLocalBoxMin() const override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    * @return top right back corner of the local domain.
    */
-  [[nodiscard]] const std::array<double, 3> &getLocalBoxMax() const override { return _localBoxMax; }
+  [[nodiscard]] const std::array<CalcType, 3> &getLocalBoxMax() const override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
@@ -103,7 +103,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  [[nodiscard]] bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
+  [[nodiscard]] bool isInsideLocalDomain(const std::array<CalcType, 3> &coordinates) const override;
 
   /**
    * Calculates and returns the extent of the subdomain with inde subdomainIndex.
@@ -180,12 +180,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * The minimum coordinates of the global domain.
    */
-  std::array<double, _dimensionCount> _globalBoxMin;
+  std::array<CalcType, _dimensionCount> _globalBoxMin;
 
   /**
    * The maximum coordinates of the global domain.
    */
-  std::array<double, _dimensionCount> _globalBoxMax;
+  std::array<CalcType, _dimensionCount> _globalBoxMax;
 
   /**
    * Boundary condition types of all dimensions.
@@ -246,12 +246,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * The minimum coordinates of the local domain.
    */
-  std::array<double, _dimensionCount> _localBoxMin{};
+  std::array<CalcType, _dimensionCount> _localBoxMin{};
 
   /**
    * The maximum coordinates of the local domain.
    */
-  std::array<double, _dimensionCount> _localBoxMax{};
+  std::array<CalcType, _dimensionCount> _localBoxMax{};
 
   /**
    * Buffer for particles to be sent to the left neighbor.
@@ -333,8 +333,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param haloParticlesBuffer in-out buffer for haloParticles#
    */
   void collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
-                               const std::array<double, _dimensionCount> &boxMin,
-                               const std::array<double, _dimensionCount> &boxMax, bool atGlobalBoundary,
+                               const std::array<CalcType, _dimensionCount> &boxMin,
+                               const std::array<CalcType, _dimensionCount> &boxMax, bool atGlobalBoundary,
                                double wrapAroundDistance, std::vector<ParticleType> &haloParticlesBuffer);
   /**
    * Collects the halo particles for the left neighbour.
