@@ -304,7 +304,7 @@ class LogicHandler {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
-    if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+    if (utils::notInBox(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p.getR()), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
           "Box Min {}\n"
@@ -331,7 +331,7 @@ class LogicHandler {
     auto &container = _containerSelector.getCurrentContainer();
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
-    if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
+    if (utils::inBox(autopas::utils::ArrayUtils::static_cast_copy_array<double>(haloParticle.getR()), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
           "Box Min {}\n"

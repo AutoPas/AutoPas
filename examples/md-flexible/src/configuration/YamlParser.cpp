@@ -33,7 +33,7 @@ const std::string MDFlexParser::YamlParser::makeErrorMsg(const YAML::Mark &mark,
 
 const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, const YAML::Node node,
                                                              std::vector<std::string> &objectErrors) {
-  const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto velocity = parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::velocityStr, objectErrors);
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto particlesPerDim =
@@ -41,7 +41,7 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
   const auto particleSpacing =
       parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto bottomLeftCorner =
-      parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+      parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeGrid cubeGrid(velocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner);
   return cubeGrid;
@@ -49,14 +49,14 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
 
 const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config, const YAML::Node node,
                                                                    std::vector<std::string> &objectErrors) {
-  const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto velocity = parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::velocityStr, objectErrors);
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto numParticles =
       parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
-  const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto boxLength = parseComplexTypeValueSequence<CalcType, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
-      parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+      parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeUniform cubeUniform(velocity, particleType, numParticles, boxLength, bottomLeftCorner);
   return cubeUniform;
@@ -64,18 +64,18 @@ const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexC
 
 const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, const YAML::Node node,
                                                                std::vector<std::string> &objectErrors) {
-  const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto velocity = parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::velocityStr, objectErrors);
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto numParticles =
       parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
-  const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto boxLength = parseComplexTypeValueSequence<CalcType, 3>(node, config.boxLength.name, objectErrors);
   const auto distributionMean =
-      parseComplexTypeValueSequence<double, 3>(node, config.distributionMean.name, objectErrors);
+      parseComplexTypeValueSequence<CalcType, 3>(node, config.distributionMean.name, objectErrors);
   const auto distributionStdDev =
-      parseComplexTypeValueSequence<double, 3>(node, config.distributionStdDev.name, objectErrors);
+      parseComplexTypeValueSequence<CalcType, 3>(node, config.distributionStdDev.name, objectErrors);
   const auto bottomLeftCorner =
-      parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+      parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeGauss cubeGauss(velocity, particleType, numParticles, boxLength, distributionMean, distributionStdDev,
                             bottomLeftCorner);
@@ -84,10 +84,10 @@ const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfi
 
 const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, const YAML::Node node,
                                                          std::vector<std::string> &objectErrors) {
-  const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto velocity = parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::velocityStr, objectErrors);
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
-  const auto sphereCenter = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::sphereCenterStr, objectErrors);
+  const auto sphereCenter = parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::sphereCenterStr, objectErrors);
   const auto sphereRadius = parseComplexTypeValueSingle<double>(node, MDFlexConfig::sphereRadiusStr, objectErrors);
   const auto particleSpacing =
       parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
@@ -99,14 +99,14 @@ const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &con
 const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexConfig &config,
                                                                          const YAML::Node node,
                                                                          std::vector<std::string> &objectErrors) {
-  const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto velocity = parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::velocityStr, objectErrors);
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto particleSpacing =
       parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
-  const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto boxLength = parseComplexTypeValueSequence<CalcType, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
-      parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+      parseComplexTypeValueSequence<CalcType, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner);
 

@@ -131,7 +131,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
 
   findWord(inputStream, "velocities");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  const auto velocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto velocities = readPayload<std::array<CalcType, 3>, 3>(inputStream, numParticles);
 
   findWord(inputStream, "forces");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -161,7 +161,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
 
   findWord(inputStream, "positions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  const auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto positions = readPayload<std::array<CalcType, 3>, 3>(inputStream, numParticles);
 
   // creating Particles from checkpoint:
   particles.reserve(particles.size() + numParticles);

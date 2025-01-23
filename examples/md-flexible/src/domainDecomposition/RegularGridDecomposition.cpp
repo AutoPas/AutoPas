@@ -12,6 +12,7 @@
 #include <numeric>
 
 #include "DomainTools.h"
+// #include "../../../../tests/testAutopas/testingHelpers/commonTypedefs.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
@@ -20,6 +21,17 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
+
+#if AUTOPAS_PRECISION_MODE == SPSP
+using CalcType = float;
+using AccuType = float;
+#elif AUTOPAS_PRECISION_MODE == DPDP
+using CalcType = double;
+using AccuType = double;
+#else
+using CalcType = float;
+using AccuType = double;
+#endif
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
     : _loadBalancerOption(configuration.loadBalancer.value),
@@ -203,7 +215,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     const double rightHaloMax = _localBoxMax[dimensionIndex] + skinWidth;
 
     for (const auto &particle : _haloParticles) {
-      std::array<double, _dimensionCount> position = particle.getR();
+      std::array<CalcType, _dimensionCount> position = particle.getR();
       if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
         _particlesForLeftNeighbor.push_back(particle);
 
@@ -275,7 +287,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       // we can't use range based for loops here because clang accepts this only starting with version 11
       for (size_t i = 0; i < _receivedParticlesBuffer.size(); ++i) {
         const auto &particle = _receivedParticlesBuffer[i];
-        if (isInsideLocalDomain(particle.getR())) {
+        if (isInsideLocalDomain(autopas::utils::ArrayUtils::static_cast_copy_array<double>(particle.getR()))) {
           autoPasContainer.addParticle(particle);
         } else {
           emigrants.push_back(particle);
@@ -341,8 +353,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // mirror particle for use with the actual functor.
 
         // Calculates force acting on site from another site
-        const auto LJKernel = [](const std::array<double, 3> sitePosition,
-                                 const std::array<double, 3> mirrorSitePosition, const double sigmaSquared,
+        const auto LJKernel = [](const std::array<CalcType, 3> sitePosition,
+                                 const std::array<CalcType, 3> mirrorSitePosition, const double sigmaSquared,
                                  const double epsilon24) {
           const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
           const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
@@ -352,9 +364,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
-          const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
+          const AccuType scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
 
-          return autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
+          return autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(displacement), scalarMultiple);
         };
 
         const bool reflectMoleculeFlag =

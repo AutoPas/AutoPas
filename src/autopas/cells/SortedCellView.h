@@ -13,6 +13,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
+// #include "testingHelpers/commonTypedefs.h"
 
 namespace autopas {
 
@@ -31,6 +32,7 @@ class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleTy
    * The particle type for this view is the particle type from the cell.
    */
   using ParticleType = typename ParticleCellType::ParticleType;
+  using CalcType = typename ParticleType::ParticleCalcType;
   /**
    * Type that holds or refers to the actual particles.
    */
