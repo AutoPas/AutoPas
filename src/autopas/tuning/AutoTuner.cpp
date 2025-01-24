@@ -444,4 +444,6 @@ bool AutoTuner::inTuningPhase() const {
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
 bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
+
+void AutoTuner::setRebuildFrequency(unsigned int rebuildFrequency) {_rebuildFrequency = rebuildFrequency;}
 }  // namespace autopas

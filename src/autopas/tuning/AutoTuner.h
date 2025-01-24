@@ -228,6 +228,12 @@ class AutoTuner {
    */
   bool canMeasureEnergy() const;
 
+  /**
+  * Sets the _rebuildFrequency.
+  * This is used to dynamically change the _rebuildFrequency based on estimate in case of dynamic containers.
+  */
+  void setRebuildFrequency(unsigned int rebuildFrequency);
+
  private:
   /**
    * Measures consumed energy for tuning
@@ -308,6 +314,8 @@ class AutoTuner {
 
   /**
    * The rebuild frequency this instance of AutoPas uses.
+   * In case of dynamic containers, this reflects the current estimate of rebuild frequency.
+   * In static containers, this is set to user-defined rebuild frequency.
    */
   unsigned int _rebuildFrequency;
 
