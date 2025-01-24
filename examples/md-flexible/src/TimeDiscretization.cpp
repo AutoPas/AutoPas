@@ -33,6 +33,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     auto v = iter->getV();
     auto f = iter->getF();
     iter->setOldF(f);
+    /**
     if (isSettling) {
       // Set the force
       if (iter->getTypeId() == 0) {
@@ -51,6 +52,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
         }
       }
     }
+    **/
+    iter->setF(globalForce);
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
@@ -233,10 +236,10 @@ void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
                            const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const double mass = particlePropertiesLibrary.getSiteMass(iter->getTypeId());
+    const double mass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const double thermalCapacity = mass * 1.; // TODO: consider Specific heat capacity
     const double heatFlux = iter->getHeatFlux();
-    const double deltaTemperature = (heatFlux / thermalCapacity) * deltaT;
+    const double deltaTemperature = (heatFlux / (thermalCapacity + 1e-6)) * deltaT;
 
     iter->addTemperature(deltaTemperature);
   }

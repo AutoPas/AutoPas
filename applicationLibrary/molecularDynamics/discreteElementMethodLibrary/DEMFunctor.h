@@ -320,7 +320,7 @@ class DEMFunctor
 
     // Heat Transfer
     const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
-    const double conductance = 2. * _conductivity * std::pow((3. * normalFMag * geometricMeanRadius) / 4., 1. / 3.);
+    const double conductance = 2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
     const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
     i.addHeatFlux(heatFluxI);
     if (newton3) {
@@ -591,7 +591,7 @@ class DEMFunctor
         // Compute Heat Transfer (2 + 3 + 2 + 2 = 9 FLOPS)
         const SoAFloatPrecision geometricMeanRadius = std::sqrt(radiusI * radiusJ);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * normalFMag * geometricMeanRadius) / 4., 1. / 3.);
+            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geometricMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[i]);
 
         // Apply Heat Flux
@@ -1162,7 +1162,7 @@ class DEMFunctor
         // Compute heat flux
         const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * normalFMag * geomMeanRadius) / 4., 1. / 3.);
+            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geomMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr1[i] - temperaturePtr2[j]);
 
         // Apply heat flux
@@ -1512,7 +1512,7 @@ class DEMFunctor
           // Compute heat flux
           const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
           const SoAFloatPrecision conductance =
-              2. * _conductivity * std::pow((3. * normalFMag * geomMeanRadius) / 4., 1. / 3.);
+              2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geomMeanRadius) / 4., 1. / 3.);
           const SoAFloatPrecision heatFluxI = conductance * (temperatureArr[j] - temperaturetmp[j]);
 
           // Apply heat flux
@@ -1747,7 +1747,7 @@ class DEMFunctor
       // Compute heat flux
       const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
       const SoAFloatPrecision conductance =
-          2. * _conductivity * std::pow((3. * normalFMag * geomMeanRadius) / 4., 1. / 3.);
+          2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geomMeanRadius) / 4., 1. / 3.);
       const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[indexFirst]);
 
       // Apply heat flux
@@ -1904,7 +1904,7 @@ class DEMFunctor
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
-  const double _conductivity = 5e-2;
+  const double _conductivity = 1e-2;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

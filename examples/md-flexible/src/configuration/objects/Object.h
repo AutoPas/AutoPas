@@ -64,6 +64,7 @@ class Object {
     particle.setTorque({0.0, 0.0, 0.0});
     particle.setAngularVel(_angularVelocity);
     particle.setTemperature(_temperature);
+    particle.setHeatFlux(0.);
 #endif
 
     return particle;

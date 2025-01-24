@@ -268,7 +268,7 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
-#if DEM_MODE == ON
+#if DEM_MODE == ON/**
     if (_iteration < settlingEndingIteration) {
       calculateBackgroundFriction(0.9,
                                   0.975,
@@ -277,7 +277,7 @@ void Simulation::run() {
       calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
                                   _configuration.backgroundTorqueFrictionCoeff.value,
                                   *_configuration.getParticlePropertiesLibrary());}
-
+**/
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {

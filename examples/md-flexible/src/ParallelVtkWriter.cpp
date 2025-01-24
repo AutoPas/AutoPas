@@ -146,10 +146,18 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile << "        </DataArray>\n";
 
   // print temperatures
-  timestepFile << "        <DataArray Name=\"temperatures\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"temperatures\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float64\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto temperature = particle->getTemperature();
     timestepFile << "        " << temperature << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print Heat Fluxes
+  timestepFile << "        <DataArray Name=\"heatFluxes\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float64\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      const auto heatFlux = particle->getHeatFlux();
+      timestepFile << "        " << heatFlux << "\n";
   }
   timestepFile << "        </DataArray>\n";
 #endif
