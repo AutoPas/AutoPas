@@ -217,6 +217,12 @@ class AutoTuner {
   bool inTuningPhase() const;
 
   /**
+   * Indicate if the tuner is in the first iteration of a tuning phase.
+   * @return
+   */
+  bool inFirstTuningStep() const;
+
+  /**
    * Getter for the internal evidence collection.
    * @return
    */
@@ -229,10 +235,10 @@ class AutoTuner {
   bool canMeasureEnergy() const;
 
   /**
-  * Sets the _rebuildFrequency.
-  * This is used to dynamically change the _rebuildFrequency based on estimate in case of dynamic containers.
-  */
-  void setRebuildFrequency(unsigned int rebuildFrequency);
+   * Sets the _rebuildFrequency.
+   * This is used to dynamically change the _rebuildFrequency based on estimate in case of dynamic containers.
+   */
+  void setRebuildFrequency(double rebuildFrequency);
 
  private:
   /**
@@ -317,7 +323,7 @@ class AutoTuner {
    * In case of dynamic containers, this reflects the current estimate of rebuild frequency.
    * In static containers, this is set to user-defined rebuild frequency.
    */
-  unsigned int _rebuildFrequency;
+  double _rebuildFrequency;
 
   /**
    * How many times each configuration should be tested.

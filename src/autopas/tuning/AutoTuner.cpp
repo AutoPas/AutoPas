@@ -441,9 +441,11 @@ bool AutoTuner::inTuningPhase() const {
   return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
+bool AutoTuner::inFirstTuningStep() const { return (_iteration % _tuningInterval == 0); }
+
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
 bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 
-void AutoTuner::setRebuildFrequency(unsigned int rebuildFrequency) {_rebuildFrequency = rebuildFrequency;}
+void AutoTuner::setRebuildFrequency(double rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 }  // namespace autopas
