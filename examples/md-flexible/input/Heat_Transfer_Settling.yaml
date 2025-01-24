@@ -19,7 +19,7 @@ box-min                          :  [-0.75, -0.75, -0.75]
 box-max                          :  [10.25, 175.75, 10.25]
 cell-size                        :  [1]
 deltaT                           :  0.00005
-iterations                       :  500000
+iterations                       :  1000000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,-1.,0]
 backgroundForceFrictionCoeff      :  0.
