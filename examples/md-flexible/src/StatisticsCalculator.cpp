@@ -294,7 +294,7 @@ void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &co
   outputFile_meanTemp.open(filename_meanTemp.str(), std::ios::out);
 
   if (outputFile_meanTemp.is_open()) {
-    outputFile_meanTemp << "Iteration, RoundedY, MeanTemperature\n";
+    outputFile_meanTemp << "Iteration, RoundedY, MeanTemperature, TemperatureSum, NumConsideredParticles\n";
   } else {
     throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " + filename_meanTemp.str());
   }
@@ -365,7 +365,7 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateRDF(
 
   return binIndex_to_rdf;
 }
-std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateYToMeanTemperature(
+std::vector<std::tuple<size_t, double, double, size_t>> StatisticsCalculator::calculateYToMeanTemperature(
     const autopas::AutoPas<ParticleType> &autoPasContainer,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -373,7 +373,7 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateYToMeanTe
 
   std::map<size_t, size_t> roundedY_to_counts;
   std::map<size_t, double> roundedY_to_temperatureSum;
-  std::vector<std::tuple<size_t, double>> roundedY_to_meanTemperature;
+  std::vector<std::tuple<size_t, double, double, size_t>> roundedY_to_meanTemperature;
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
     const std::array<double, 3> r_i = i->getR();
@@ -390,9 +390,10 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateYToMeanTe
     const double temperatureSum = (roundedY_to_temperatureSum.count(roundedY) > 0)
                                       ? roundedY_to_temperatureSum[roundedY]
                                       : 0.0;
-    const double meanTemperature = temperatureSum / (counts + 1e-6);
+    const double meanTemperature = counts <= 0 ? 0. : temperatureSum / (counts);
 
-    roundedY_to_meanTemperature.emplace_back(roundedY, meanTemperature);
+
+    roundedY_to_meanTemperature.emplace_back(roundedY, meanTemperature, temperatureSum, counts);
   }
 
   return roundedY_to_meanTemperature;

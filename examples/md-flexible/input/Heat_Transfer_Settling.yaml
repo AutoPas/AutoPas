@@ -21,7 +21,7 @@ cell-size                        :  [1]
 deltaT                           :  0.00005
 iterations                       :  500000
 boundary-type                    :  [reflective,reflective,reflective]
-globalForce                      :  [0,-9.8,0]
+globalForce                      :  [0,-1.,0]
 backgroundForceFrictionCoeff      :  0.
 backgroundTorqueFrictionCoeff     :  0.
 Sites:
@@ -54,7 +54,7 @@ Objects:
       temperature: 0.
     1:
       particle-spacing: 1.5
-      bottomLeftCorner: [ 0., 30., 0. ]
+      bottomLeftCorner: [ 0., 32., 0. ]
       box-length                 :  [10, 30, 10]
       velocity: [ 0, 0, 0 ]
       angularVelocity             :  [0,0,0]
@@ -66,7 +66,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Heat_transfer_settling_elastic100
+vtk-filename                     :  Heat_transfer_settling_gravity1
 vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true

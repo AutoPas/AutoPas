@@ -62,7 +62,7 @@ class StatisticsCalculator {
   static std::vector<std::tuple<size_t, double>>
       calculateRDF(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
-  static std::vector<std::tuple<size_t, double>>
+  static std::vector<std::tuple<size_t, double, double, size_t>>
       calculateYToMeanTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
