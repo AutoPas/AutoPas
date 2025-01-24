@@ -17,7 +17,7 @@ namespace mdLib {
 /**
  * Molecule class for the LJFunctor.
  */
-class MoleculeLJ : public autopas::Particle {
+class MoleculeLJ : public autopas::ParticleFP64 {
  public:
   MoleculeLJ() = default;
 
