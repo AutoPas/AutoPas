@@ -64,11 +64,10 @@ class MoleculeLJBase : public autopas::ParticleBase<CalcType, AccuType, idType> 
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJBase *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType = typename autopas::utils::SoAType<
+      MoleculeLJBase *, size_t /*id*/, CalcType /*x*/, CalcType /*y*/, CalcType /*z*/, CalcType /*vx*/, CalcType /*vy*/,
+      CalcType /*vz*/, AccuType /*fx*/, AccuType /*fy*/, AccuType /*fz*/, AccuType /*oldFx*/, AccuType /*oldFy*/,
+      AccuType /*oldFz*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -171,13 +170,13 @@ class MoleculeLJBase : public autopas::ParticleBase<CalcType, AccuType, idType> 
    * Get the old force.
    * @return
    */
-  [[nodiscard]] const std::array<double, 3> &getOldF() const { return _oldF; };
+  [[nodiscard]] const std::array<AccuType, 3> &getOldF() const { return _oldF; };
 
   /**
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; };
+  void setOldF(const std::array<AccuType, 3> &oldForce) { _oldF = oldForce; };
 
   /**
    * Get TypeId.
@@ -224,7 +223,7 @@ class MoleculeLJBase : public autopas::ParticleBase<CalcType, AccuType, idType> 
   /**
    * Old Force of the particle experiences as 3D vector.
    */
-  std::array<double, 3> _oldF = {0., 0., 0.};
+  std::array<AccuType, 3> _oldF = {0., 0., 0.};
 };
 
 }  // namespace mdLib

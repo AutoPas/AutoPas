@@ -173,20 +173,15 @@ class LJFunctorAVX
     CalcType lj12m6 = lj12 - lj6;
     CalcType fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     std::array<CalcType, 3> f = dr * fac;
-    std::array<AccuType, 3> convertedF;
 
-    if constexpr (std::is_same_v<CalcType, AccuType>) {
-      convertedF = f;
-    } else {
-      // Giving the output type is necessary
-      convertedF = autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(f);
-    }
+    const std::array<AccuType, 3> convertedF = autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(f);
 
     i.addF(convertedF);
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(convertedF);
     }
+
     if (calculateGlobals) {
       // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
@@ -197,12 +192,12 @@ class LJFunctorAVX
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadnum].virialSum += autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(virial);
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadnum].virialSum += autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(virial);
       }
     }
   }
@@ -653,9 +648,6 @@ class LJFunctorAVX
     SIMDCalcType sigmaSquareds = _sigmaSquared;
     SIMDCalcType shift6s = _shift6;
 
-    //! ------------------------------ Tested until here ------------------------------
-    //! ------------------------------- Done until here -------------------------------
-
 #if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
     // code for calculations in single precision
 
@@ -909,12 +901,12 @@ class LJFunctorAVX
     // if newton 3 is used subtract fD from particle j
     if constexpr (newton3) {
       // we need to load and store double the number of particles in this case
-      const __m256d fx2first;
-      const __m256d fx2second;
-      const __m256d fy2first;
-      const __m256d fy2second;
-      const __m256d fz2first;
-      const __m256d fz2second;
+      __m256d fx2first;
+      __m256d fx2second;
+      __m256d fy2first;
+      __m256d fy2second;
+      __m256d fz2first;
+      __m256d fz2second;
 
       // TODO MP Think about this
       if (remainderIsMasked) {
@@ -1090,10 +1082,10 @@ class LJFunctorAVX
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
-                                x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                                &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
-                                &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+      SoAKernel<newton3, false>(
+          0, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStates2tmp.data()), x1, y1, z1,
+          x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(), &typeIDptr[indexFirst],
+          typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
@@ -1134,10 +1126,10 @@ class LJFunctorAVX
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
-                               x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                               &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
-                               &virialSumZ, &potentialEnergySum, rest);
+      SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStates2tmp.data()),
+                               x1, y1, z1, x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(),
+                               fz2tmp.data(), &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc,
+                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
@@ -1311,8 +1303,6 @@ class LJFunctorAVX
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
-
-  //! ------------------------------- Done from here -------------------------------
 
   /**
    * Sets the particle properties constants for this functor.

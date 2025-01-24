@@ -159,13 +159,8 @@ class LJFunctor
     CalcType lj12m6 = lj12 - lj6;
     CalcType fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     std::array<CalcType, 3> f = dr * fac;
-    std::array<AccuType, 3> convertedF;
 
-    if constexpr (std::is_same_v<CalcType, AccuType>) {
-      convertedF = f;
-    } else {
-      convertedF = autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(f);
-    }
+    const std::array<AccuType, 3> convertedF = autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(f);
 
     i.addF(convertedF);
     if (newton3) {
@@ -185,18 +180,19 @@ class LJFunctor
       // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
-      auto virial = dr * f;
-      double potentialEnergy6 =
-          static_cast<AccuType>(epsilon24) * static_cast<AccuType>(lj12m6) + static_cast<AccuType>(shift6);
+      std::array<CalcType, 3> virial = dr * f;
+      CalcType potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadDataGlobals[threadnum].virialSum += virial;
+        _aosThreadDataGlobals[threadnum].virialSum +=
+            autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(virial);
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadDataGlobals[threadnum].virialSum += virial;
+        _aosThreadDataGlobals[threadnum].virialSum +=
+            autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(virial);
       }
       if constexpr (countFLOPs) {
         if (newton3) {
