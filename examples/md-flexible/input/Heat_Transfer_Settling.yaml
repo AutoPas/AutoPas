@@ -29,12 +29,12 @@ Sites:
     epsilon                      :  1.
     sigma                        :  1.
     mass                         :  1.
-    radius                       :  0.5
+    radius                       :  0.75
   1:
     epsilon: 1.
     sigma: 1.
     mass: 1.
-    radius: 0.5
+    radius: 0.75
 # Uncomment below to run a multi-site simulation.
 #Molecules:
 #  0:
@@ -45,7 +45,7 @@ Objects:
   # "water"
   CubeClosestPacked:
     0:
-      particle-spacing           :  1.
+      particle-spacing           :  1.5
       bottomLeftCorner           :  [0., 0., 0.]
       box-length                 :  [10, 30, 10]
       velocity                   :  [0, 0, 0]
@@ -53,7 +53,7 @@ Objects:
       particle-type-id           :  0
       temperature: 0.
     1:
-      particle-spacing: 1.
+      particle-spacing: 1.5
       bottomLeftCorner: [ 0., 30., 0. ]
       box-length                 :  [10, 30, 10]
       velocity: [ 0, 0, 0 ]
@@ -66,7 +66,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Heat_transfer_settling
+vtk-filename                     :  Heat_transfer_settling_elastic100
 vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
