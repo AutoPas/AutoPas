@@ -53,7 +53,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   auto combinedStatistics = std::tuple_cat(energyStatistics);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
   if (currentIteration % 2500 == 0) {
-    const std::vector<std::tuple<size_t, double>> roundedY_to_meanTemperature =
+    const std::vector<std::tuple<size_t, double, double, size_t>> roundedY_to_meanTemperature =
         calculateYToMeanTemperature(autoPasContainer, particlePropertiesLib);
     for (const auto &pair : roundedY_to_meanTemperature) {
       writeRow(outputFile_meanTemp, currentIteration, pair);
