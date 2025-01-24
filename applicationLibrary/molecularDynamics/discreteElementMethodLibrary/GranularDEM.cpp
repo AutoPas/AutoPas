@@ -9,7 +9,7 @@
 
 namespace demLib {
 GranularDEM::GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v,
-                         std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId, const double temperature = 0.)
+                         std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId, double temperature)
     : autopas::Particle(pos, v, particleId), _angularVel(angularVel), _torque({0., 0., 0.}), _typeId(typeId), _temperature(temperature), _heatFlux(0.) {}
 
 const std::array<double, 3> &GranularDEM::getOldF() const { return _oldF; }

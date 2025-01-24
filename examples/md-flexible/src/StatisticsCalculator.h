@@ -62,6 +62,9 @@ class StatisticsCalculator {
   static std::vector<std::tuple<size_t, double>>
       calculateRDF(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
+  static std::vector<std::tuple<size_t, double>>
+      calculateYToMeanTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
+
   /**
    * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.
    * @param autoPasContainer
@@ -81,8 +84,8 @@ class StatisticsCalculator {
   static std::tuple<double, double, double, size_t>
   calculateVolumetricFlowRate(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
-  static std::tuple<double>
-    calculateTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
+  static std::tuple<double, double>
+    calculateTemperatureAndHeatFlux(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
 
   /**
    * Generates the output file (.csv) for the statistics.
@@ -177,6 +180,8 @@ class StatisticsCalculator {
   std::ofstream outputFile;
 
   std::ofstream outputFile_rdf;
+
+  std::ofstream outputFile_meanTemp;
 
   /**
    * Stores the session name.
