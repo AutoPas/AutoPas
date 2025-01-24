@@ -52,7 +52,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
 
   auto combinedStatistics = std::tuple_cat(energyStatistics);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
-  if (currentIteration % 5000 == 0) {
+  if (currentIteration % 2500 == 0) {
     const std::vector<std::tuple<size_t, double>> roundedY_to_meanTemperature =
         calculateYToMeanTemperature(autoPasContainer, particlePropertiesLib);
     for (const auto &pair : roundedY_to_meanTemperature) {
@@ -377,7 +377,7 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateYToMeanTe
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
     const std::array<double, 3> r_i = i->getR();
-    const auto roundedY = static_cast<size_t>(std::round(r_i[1]));
+    const auto roundedY = std::floor(r_i[1]);
 
     const double temperature = i->getTemperature();
     roundedY_to_counts[roundedY]++;
@@ -387,7 +387,9 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateYToMeanTe
   for (auto &pair : roundedY_to_counts) {
     const size_t roundedY = pair.first;
     const size_t counts = pair.second;
-    const double temperatureSum = roundedY_to_temperatureSum[roundedY];
+    const double temperatureSum = (roundedY_to_temperatureSum.count(roundedY) > 0)
+                                      ? roundedY_to_temperatureSum[roundedY]
+                                      : 0.0;
     const double meanTemperature = temperatureSum / (counts + 1e-6);
 
     roundedY_to_meanTemperature.emplace_back(roundedY, meanTemperature);

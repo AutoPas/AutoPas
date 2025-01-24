@@ -1904,7 +1904,7 @@ class DEMFunctor
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
-  const double _conductivity = 1e-2;
+  const double _conductivity = 5e-2;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

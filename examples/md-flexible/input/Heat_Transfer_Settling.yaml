@@ -16,11 +16,11 @@ functor                          :  dem
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [-0.75, -0.75, -0.75]
-box-max                          :  [10.25, 125.75, 10.25]
+box-max                          :  [10.25, 175.75, 10.25]
 cell-size                        :  [1]
 deltaT                           :  0.00005
 iterations                       :  500000
-boundary-type                    :  [reflective,periodic,reflective]
+boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,-9.8,0]
 backgroundForceFrictionCoeff      :  0.
 backgroundTorqueFrictionCoeff     :  0.
@@ -29,12 +29,12 @@ Sites:
     epsilon                      :  1.
     sigma                        :  1.
     mass                         :  1.
-    radius                       :  0.75
+    radius                       :  0.5
   1:
     epsilon: 1.
     sigma: 1.
     mass: 1.
-    radius: 0.75
+    radius: 0.5
 # Uncomment below to run a multi-site simulation.
 #Molecules:
 #  0:
@@ -45,19 +45,21 @@ Objects:
   # "water"
   CubeClosestPacked:
     0:
-      particle-spacing           :  1.5
+      particle-spacing           :  1.
       bottomLeftCorner           :  [0., 0., 0.]
       box-length                 :  [10, 30, 10]
       velocity                   :  [0, 0, 0]
+      angularVelocity             :  [0,0,0]
       particle-type-id           :  0
-      temperature: 0
+      temperature: 0.
     1:
-      particle-spacing: 1.5
+      particle-spacing: 1.
       bottomLeftCorner: [ 0., 30., 0. ]
       box-length                 :  [10, 30, 10]
       velocity: [ 0, 0, 0 ]
+      angularVelocity             :  [0,0,0]
       particle-type-id: 1
-      temperature: 100
+      temperature: 100.
 # thermostat:
 #   initialTemperature             :  1
 #   targetTemperature              :  4
@@ -65,7 +67,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  Heat_transfer_settling
-vtk-write-frequency              :  10
+vtk-write-frequency              :  100
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
