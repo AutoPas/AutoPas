@@ -1163,7 +1163,7 @@ class DEMFunctor
         const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
         const SoAFloatPrecision conductance =
             2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geomMeanRadius) / 4., 1. / 3.);
-        const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr1[i] - temperaturePtr2[j]);
+        const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr2[j] - temperaturePtr1[i]);
 
         // Apply heat flux
         heatFluxAcc += heatFluxI;
