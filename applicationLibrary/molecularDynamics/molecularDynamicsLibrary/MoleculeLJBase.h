@@ -17,8 +17,8 @@ namespace mdLib {
 /**
  * Molecule class for the LJFunctor.
  */
-template <typename calcType, typename accuType, typename idType>
-class MoleculeLJBase : public autopas::ParticleBase<calcType, accuType, idType> {
+template <typename CalcType, typename AccuType, typename idType>
+class MoleculeLJBase : public autopas::ParticleBase<CalcType, AccuType, idType> {
  public:
   MoleculeLJBase() = default;
 
@@ -29,9 +29,9 @@ class MoleculeLJBase : public autopas::ParticleBase<calcType, accuType, idType> 
    * @param moleculeId Unique Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  MoleculeLJBase(const std::array<calcType, 3> &pos, const std::array<calcType, 3> &v, unsigned long moleculeId,
+  MoleculeLJBase(const std::array<CalcType, 3> &pos, const std::array<CalcType, 3> &v, unsigned long moleculeId,
                  unsigned long typeId = 0)
-      : autopas::ParticleBase<calcType, accuType, idType>(pos, v, moleculeId), _typeId(typeId){};
+      : autopas::ParticleBase<CalcType, AccuType, idType>(pos, v, moleculeId), _typeId(typeId){};
 
   ~MoleculeLJBase() override = default;
 
