@@ -277,9 +277,9 @@ class DEMFunctor
     const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
 
     // Apply forces (if newton3: 6 FLOPS, if not: 3 FLOPS)
-    //i.addF(totalF);  // 3 FLOPS
+    i.addF(totalF);  // 3 FLOPS
     if (newton3) {
-    //  j.subF(totalF);  // 3 FLOPS
+      j.subF(totalF);  // 3 FLOPS
     }
 
     // Compute Torques
@@ -313,14 +313,14 @@ class DEMFunctor
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
 
     // Apply torques (if newton3: 19 FLOPS, if not: 9 FLOPS)
-    //i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
+    i.addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
     if (newton3) {
-    //  j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
+      j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
     }
 
     // Heat Transfer
     const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
-    const double conductance = 2. * _conductivity * std::pow((3. * normalFMag * geometricMeanRadius) / 4., 1./3.);
+    const double conductance = 2. * _conductivity * std::pow((3. * normalFMag * geometricMeanRadius) / 4., 1. / 3.);
     const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
     i.addHeatFlux(heatFluxI);
     if (newton3) {
@@ -358,6 +358,9 @@ class DEMFunctor
     SoAFloatPrecision *const __restrict qYptr = soa.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict qZptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 
+    const auto *const __restrict temperaturePtr = soa.template begin<Particle::AttributeNames::temperature>();
+    SoAFloatPrecision *const __restrict heatFluxPtr = soa.template begin<Particle::AttributeNames::heatFlux>();
+
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     // Initialize local variables for constants
@@ -389,9 +392,11 @@ class DEMFunctor
       SoAFloatPrecision qYacc = 0.;
       SoAFloatPrecision qZacc = 0.;
 
+      SoAFloatPrecision heatFluxAcc = 0.;
+
       const double radiusI = _PPLibrary->getRadius(typeptr[i]);
 
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum,                  \
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum,     \
                                numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum, \
                                numInnerIfTanFCallsSum, numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
@@ -583,6 +588,15 @@ class DEMFunctor
         qYptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY);
         qZptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ);
 
+        // Compute Heat Transfer (2 + 3 + 2 + 2 = 9 FLOPS)
+        const SoAFloatPrecision geometricMeanRadius = std::sqrt(radiusI * radiusJ);
+        const SoAFloatPrecision conductance =
+            2. * _conductivity * std::pow((3. * normalFMag * geometricMeanRadius) / 4., 1. / 3.);
+        const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[i]);
+
+        // Apply Heat Flux
+        heatFluxAcc += heatFluxI;
+        heatFluxPtr[j] -= heatFluxI;  // "newton 3"
       }  // end of j loop
 
       fxptr[i] += fxacc;
@@ -592,6 +606,8 @@ class DEMFunctor
       qXptr[i] += qXacc;
       qYptr[i] += qYacc;
       qZptr[i] += qZacc;
+
+      heatFluxPtr[i] += heatFluxAcc;
     }
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
@@ -652,7 +668,7 @@ class DEMFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 18>{
+    return std::array<typename Particle::AttributeNames, 20>{
         Particle::AttributeNames::id,          Particle::AttributeNames::posX,
         Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
         Particle::AttributeNames::velocityX,   Particle::AttributeNames::velocityY,
@@ -669,7 +685,7 @@ class DEMFunctor
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 18>{
+    return std::array<typename Particle::AttributeNames, 20>{
         Particle::AttributeNames::id,          Particle::AttributeNames::posX,
         Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
         Particle::AttributeNames::velocityX,   Particle::AttributeNames::velocityY,
@@ -686,7 +702,7 @@ class DEMFunctor
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 6>{
+    return std::array<typename Particle::AttributeNames, 7>{
         Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
         Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ,
         Particle::AttributeNames::heatFlux};
@@ -878,6 +894,9 @@ class DEMFunctor
     SoAFloatPrecision *const __restrict qYptr1 = soa1.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict qZptr1 = soa1.template begin<Particle::AttributeNames::torqueZ>();
 
+    const auto *const __restrict temperaturePtr1 = soa1.template begin<Particle::AttributeNames::temperature>();
+    SoAFloatPrecision *const __restrict heatFluxPtr1 = soa1.template begin<Particle::AttributeNames::heatFlux>();
+
     // Initialize pointers to SoA Data for soa2
     const auto *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
@@ -899,6 +918,9 @@ class DEMFunctor
     SoAFloatPrecision *const __restrict qXptr2 = soa2.template begin<Particle::AttributeNames::torqueX>();
     SoAFloatPrecision *const __restrict qYptr2 = soa2.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict qZptr2 = soa2.template begin<Particle::AttributeNames::torqueZ>();
+
+    const auto *const __restrict temperaturePtr2 = soa2.template begin<Particle::AttributeNames::temperature>();
+    SoAFloatPrecision *const __restrict heatFluxPtr2 = soa2.template begin<Particle::AttributeNames::heatFlux>();
 
     auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
     auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
@@ -930,10 +952,12 @@ class DEMFunctor
       SoAFloatPrecision qYacc = 0.;
       SoAFloatPrecision qZacc = 0.;
 
+      SoAFloatPrecision heatFluxAcc = 0.;
+
       SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr1[i]);
 
       // Loop over Particles in soa2
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, numDistanceCalculationSum,                  \
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum,     \
                                numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum, \
                                numInnerIfTanFCallsSum, numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
@@ -1134,6 +1158,18 @@ class DEMFunctor
           qYptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY);
           qZptr2[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ);
         }
+
+        // Compute heat flux
+        const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
+        const SoAFloatPrecision conductance =
+            2. * _conductivity * std::pow((3. * normalFMag * geomMeanRadius) / 4., 1. / 3.);
+        const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr1[i] - temperaturePtr2[j]);
+
+        // Apply heat flux
+        heatFluxAcc += heatFluxI;
+        if (newton3) {
+          heatFluxPtr2[j] -= heatFluxI;
+        }
       }  // end of j loop
 
       fxptr1[i] += fxacc;
@@ -1143,6 +1179,8 @@ class DEMFunctor
       qXptr1[i] += qXacc;
       qYptr1[i] += qYacc;
       qZptr1[i] += qZacc;
+
+      heatFluxPtr1[i] += heatFluxAcc;
     }
 
     if constexpr (countFLOPs) {
@@ -1180,6 +1218,9 @@ class DEMFunctor
     auto *const __restrict qyptr = soa.template begin<Particle::AttributeNames::torqueY>();
     auto *const __restrict qzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 
+    const auto *const __restrict temperaturePtr = soa.template begin<Particle::AttributeNames::temperature>();
+    auto *const __restrict heatFluxPtr = soa.template begin<Particle::AttributeNames::heatFlux>();
+
     auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
@@ -1201,6 +1242,8 @@ class DEMFunctor
     SoAFloatPrecision qxacc = 0;
     SoAFloatPrecision qyacc = 0;
     SoAFloatPrecision qzacc = 0;
+
+    SoAFloatPrecision heatFluxAcc = 0;
 
     const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict neighborListPtr = neighborList.data();
@@ -1224,8 +1267,8 @@ class DEMFunctor
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
       alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, vxtmp, vytmp, vztmp, wxtmp, wytmp, wztmp,
-          rtmp, xArr, yArr, zArr, vxArr, vyArr, vzArr, wxArr, wyArr, wzArr, fxArr{0}, fyArr{0}, fzArr{0}, qxArr{0},
-          qyArr{0}, qzArr{0}, rArr;
+          rtmp, temperaturetmp, xArr, yArr, zArr, vxArr, vyArr, vzArr, wxArr, wyArr, wzArr, fxArr{0}, fyArr{0},
+          fzArr{0}, qxArr{0}, qyArr{0}, qzArr{0}, rArr, temperatureArr, heatFluxArr{0};
       alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
 
       // broadcast of the values of particle i
@@ -1243,6 +1286,8 @@ class DEMFunctor
         wztmp[tmpj] = wzptr[indexFirst];
 
         rtmp[tmpj] = radiusI;
+
+        temperaturetmp[tmpj] = temperaturePtr[indexFirst];
       }
 
       // loop over the verlet list from 0 to x*vecsize
@@ -1268,11 +1313,13 @@ class DEMFunctor
 
           rArr[tmpj] = _PPLibrary->getRadius(typeptr[neighborListPtr[joff + tmpj]]);
 
+          temperatureArr[tmpj] = temperaturePtr[neighborListPtr[joff + tmpj]];
+
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
 
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qxacc, qyacc, qzacc, numDistanceCalculationSum,                  \
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qxacc, qyacc, qzacc, heatFluxAcc, numDistanceCalculationSum,     \
                                numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numContactsSum, \
                                numInnerIfTanFCallsSum, numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)       \
     safelen(vecsize)
@@ -1461,6 +1508,18 @@ class DEMFunctor
             qyArr[j] = ((radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY);
             qzArr[j] = ((radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ);
           }
+
+          // Compute heat flux
+          const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
+          const SoAFloatPrecision conductance =
+              2. * _conductivity * std::pow((3. * normalFMag * geomMeanRadius) / 4., 1. / 3.);
+          const SoAFloatPrecision heatFluxI = conductance * (temperatureArr[j] - temperaturetmp[j]);
+
+          // Apply heat flux
+          heatFluxAcc += heatFluxI;
+          if (newton3) {
+            heatFluxArr[j] = heatFluxI;
+          }
         }  // end of j loop
 
         // scatter the forces to where they belong, this is only needed for newton3
@@ -1476,6 +1535,8 @@ class DEMFunctor
             qxptr[j] += qxArr[tmpj];
             qyptr[j] += qyArr[tmpj];
             qzptr[j] += qzArr[tmpj];
+
+            heatFluxPtr[j] -= heatFluxArr[tmpj];
           }
         }  // end of newton3 force / torque application
       }  // end of joff loop
@@ -1682,9 +1743,22 @@ class DEMFunctor
         qyptr[j] += (radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY;
         qzptr[j] += (radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ;
       }
+
+      // Compute heat flux
+      const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
+      const SoAFloatPrecision conductance =
+          2. * _conductivity * std::pow((3. * normalFMag * geomMeanRadius) / 4., 1. / 3.);
+      const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[indexFirst]);
+
+      // Apply heat flux
+      heatFluxAcc += heatFluxI;
+      if (newton3) {
+        heatFluxPtr[j] -= heatFluxI;
+      }
+
     }  // end of jNeighIndex loop
 
-    if (fxacc != 0 or fyacc != 0 or fzacc != 0 or qxacc != 0 or qyacc != 0 or qzacc != 0) {
+    if (fxacc != 0 or fyacc != 0 or fzacc != 0 or qxacc != 0 or qyacc != 0 or qzacc != 0 or heatFluxAcc != 0) {
       fxptr[indexFirst] += fxacc;
       fyptr[indexFirst] += fyacc;
       fzptr[indexFirst] += fzacc;
@@ -1692,6 +1766,8 @@ class DEMFunctor
       qxptr[indexFirst] += qxacc;
       qyptr[indexFirst] += qyacc;
       qzptr[indexFirst] += qzacc;
+
+      heatFluxPtr[indexFirst] += heatFluxAcc;
     }
 
     if constexpr (countFLOPs) {
@@ -1828,7 +1904,7 @@ class DEMFunctor
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
-  const double _conductivity = 1;
+  const double _conductivity = 5e-2;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
