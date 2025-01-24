@@ -19,9 +19,5 @@ using ParticleFP32 = ParticleBase<float, unsigned long>;
  * Particle with all variables in 64 bit precision
  */
 using ParticleFP64 = ParticleBase<double, unsigned long>;
-/**
- * Alias for Particle with all variables in 64 bit precision
- */
-using Particle = ParticleFP64;
 
 }  // namespace autopas
