@@ -310,7 +310,7 @@ class LJFunctorAVX
       // floor soa numParticles to multiple of vecLength
       // If b is a power of 2 the following holds:
       // a & ~(b -1) == a - (a mod b)
-      for (; j < (i & ~(vecLength - 1)); j += 4) {
+      for (; j < (i & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr), x1, y1,
                                z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc,
                                fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
@@ -496,7 +496,7 @@ class LJFunctorAVX
 
       // floor soa2 numParticles to multiple of vecLength
       unsigned int j = 0;
-      for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
+      for (; j < (soa2.size() & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr2), x1,
                                   y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j],
                                   fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
@@ -1024,6 +1024,16 @@ class LJFunctorAVX
 
     const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
+#if AUTOPAS_PRECISION_MODE == SPSP
+    // accumulators
+    __m256 virialSumX = _mm256_setzero_ps();
+    __m256 virialSumY = _mm256_setzero_ps();
+    __m256 virialSumZ = _mm256_setzero_ps();
+    __m256 potentialEnergySum = _mm256_setzero_ps();
+    __m256 fxacc = _mm256_setzero_ps();
+    __m256 fyacc = _mm256_setzero_ps();
+    __m256 fzacc = _mm256_setzero_ps();
+#else
     // accumulators
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -1032,14 +1042,36 @@ class LJFunctorAVX
     __m256d fxacc = _mm256_setzero_pd();
     __m256d fyacc = _mm256_setzero_pd();
     __m256d fzacc = _mm256_setzero_pd();
+#endif
 
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
     // broadcast particle 1
-    const auto x1 = _mm256_broadcast_sd(&xptr[indexFirst]);
-    const auto y1 = _mm256_broadcast_sd(&yptr[indexFirst]);
-    const auto z1 = _mm256_broadcast_sd(&zptr[indexFirst]);
+    const __m256 x1 = _mm256_broadcast_ss(&xptr[indexFirst]);
+    const __m256 y1 = _mm256_broadcast_ss(&yptr[indexFirst]);
+    const __m256 z1 = _mm256_broadcast_ss(&zptr[indexFirst]);
+
+    // ownedStatePtr contains int32_t, so we broadcast these to make an __m256i.
+    // _mm256_set1_epi32 broadcasts a 32-bit integer, we use this instruction to have 8 values!
+    __m256i ownedStateI = _mm256_set1_epi32(static_cast<autopas::OwnershipType>(ownedStatePtr[indexFirst]));
+
+    // TODO MP does this alignment need to change for SPXP?
+    alignas(64) std::array<CalcType, vecLength> x2tmp{};
+    alignas(64) std::array<CalcType, vecLength> y2tmp{};
+    alignas(64) std::array<CalcType, vecLength> z2tmp{};
+    alignas(64) std::array<AccuType, vecLength> fx2tmp{};
+    alignas(64) std::array<AccuType, vecLength> fy2tmp{};
+    alignas(64) std::array<AccuType, vecLength> fz2tmp{};
+    alignas(64) std::array<size_t, vecLength> typeID2tmp{};
+    alignas(64) std::array<autopas::OwnershipState, vecLength> ownedStates2tmp{};
+#else
+    // broadcast particle 1
+    const __m256d x1 = _mm256_broadcast_sd(&xptr[indexFirst]);
+    const __m256d y1 = _mm256_broadcast_sd(&yptr[indexFirst]);
+    const __m256d z1 = _mm256_broadcast_sd(&zptr[indexFirst]);
+
     // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
     // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-    __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[indexFirst]));
+    __m256i ownedStateI = _mm256_set1_epi64x(static_cast<autopas::OwnershipType>(ownedStatePtr[indexFirst]));
 
     alignas(64) std::array<double, vecLength> x2tmp{};
     alignas(64) std::array<double, vecLength> y2tmp{};
@@ -1049,8 +1081,9 @@ class LJFunctorAVX
     alignas(64) std::array<double, vecLength> fz2tmp{};
     alignas(64) std::array<size_t, vecLength> typeID2tmp{};
     alignas(64) std::array<autopas::OwnershipState, vecLength> ownedStates2tmp{};
+#endif
 
-    // load 4 neighbors
+    // load 4 or 8 neighbors
     size_t j = 0;
     // Loop over all neighbors as long as we can fill full vectors
     // (until `neighborList.size() - neighborList.size() % vecLength`)
@@ -1122,6 +1155,7 @@ class LJFunctorAVX
           fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
           fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
         }
+        //!---------------------------------- Done until here ----------------------------------
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
@@ -1256,8 +1290,8 @@ class LJFunctorAVX
       }
       // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
       // contribution is only counted once per pair.
-      _potentialEnergySum *= 0.5;
-      _virialSum *= 0.5;
+      _potentialEnergySum *= static_cast<AccuType>(0.5);
+      _virialSum *= static_cast<AccuType>(0.5);
 
       // We have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;

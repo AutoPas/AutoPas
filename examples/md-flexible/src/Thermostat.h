@@ -10,6 +10,7 @@
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -206,7 +207,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const std::array<double, 3> normal3DVecTranslational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
+      iter->addV(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(
+          normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]));
 #if MD_FLEXIBLE_MODE == MULTISITE
       const std::array<double, 3> normal3DVecRotational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
@@ -262,7 +264,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   // Scale velocities (and angular velocities) with the scaling map
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
+    iter->setV(iter->getV() * static_cast<CalcType>(scalingMap[iter->getTypeId()]));
 #if MD_FLEXIBLE_MODE == MULTISITE
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif

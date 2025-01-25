@@ -220,7 +220,8 @@ class VerletClusterListsRebuilder {
       const std::vector<Particle> &vector = particles2D[index];
       for (const auto &particle : vector) {
         if (utils::inBox(particle.getR(), _towerBlock.getHaloBoxMin(), _towerBlock.getHaloBoxMax())) {
-          auto &tower = _towerBlock.getTowerAtPosition(particle.getR());
+          auto &tower = _towerBlock.getTowerAtPosition(
+              autopas::utils::ArrayUtils::static_cast_copy_array<double>(particle.getR()));
           tower.addParticle(particle);
         } else {
           AutoPasLog(TRACE, "Not adding particle to VerletClusterLists container, because it is outside the halo:\n{}",

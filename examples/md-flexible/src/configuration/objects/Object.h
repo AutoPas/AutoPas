@@ -44,7 +44,7 @@ class Object {
     particle.setID(particleId);
     particle.setTypeId(_typeId);
     particle.setOwnershipState(autopas::OwnershipState::owned);
-    particle.setV(_velocity);
+    particle.setV(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(_velocity));
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
 #if MD_FLEXIBLE_MODE == MULTISITE

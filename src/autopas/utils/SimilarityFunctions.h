@@ -66,7 +66,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
 
   // add particles accordingly to their bin to get the amount of particles in each bin
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
-    const auto &particleLocation = particleItr->getR();
+    const auto &particleLocation = autopas::utils::ArrayUtils::static_cast_copy_array<double>(particleItr->getR());
 
     const auto binIndex3dUnsafe =
         autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);

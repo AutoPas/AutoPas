@@ -24,6 +24,7 @@ class VerletListHelpers {
    * Neighbor list AoS style.
    */
   using NeighborListAoSType = std::unordered_map<Particle *, std::vector<Particle *>>;
+  using CalcType = typename Particle::ParticleCalcType;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
@@ -91,24 +92,24 @@ class VerletListHelpers {
       if (soa.size() == 0) return;
 
       auto **const __restrict ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-      const double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-      const double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-      const double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      const CalcType *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+      const CalcType *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+      const CalcType *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
       size_t numPart = soa.size();
       for (unsigned int i = 0; i < numPart; ++i) {
         auto &currentList = _verletListsAoS.at(ptrptr[i]);
 
         for (unsigned int j = i + 1; j < numPart; ++j) {
-          const double drx = xptr[i] - xptr[j];
-          const double dry = yptr[i] - yptr[j];
-          const double drz = zptr[i] - zptr[j];
+          const CalcType drx = xptr[i] - xptr[j];
+          const CalcType dry = yptr[i] - yptr[j];
+          const CalcType drz = zptr[i] - zptr[j];
 
-          const double drx2 = drx * drx;
-          const double dry2 = dry * dry;
-          const double drz2 = drz * drz;
+          const CalcType drx2 = drx * drx;
+          const CalcType dry2 = dry * dry;
+          const CalcType drz2 = drz * drz;
 
-          const double dr2 = drx2 + dry2 + drz2;
+          const CalcType dr2 = drx2 + dry2 + drz2;
 
           if (dr2 < _interactionLengthSquared) {
             currentList.push_back(ptrptr[j]);
@@ -131,14 +132,14 @@ class VerletListHelpers {
       if (soa1.size() == 0 || soa2.size() == 0) return;
 
       auto **const __restrict ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-      const double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-      const double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-      const double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+      const CalcType *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+      const CalcType *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+      const CalcType *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
       auto **const __restrict ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-      const double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-      const double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-      const double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+      const CalcType *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+      const CalcType *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+      const CalcType *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
       size_t numPart1 = soa1.size();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -147,15 +148,15 @@ class VerletListHelpers {
         size_t numPart2 = soa2.size();
 
         for (unsigned int j = 0; j < numPart2; ++j) {
-          const double drx = x1ptr[i] - x2ptr[j];
-          const double dry = y1ptr[i] - y2ptr[j];
-          const double drz = z1ptr[i] - z2ptr[j];
+          const CalcType drx = x1ptr[i] - x2ptr[j];
+          const CalcType dry = y1ptr[i] - y2ptr[j];
+          const CalcType drz = z1ptr[i] - z2ptr[j];
 
-          const double drx2 = drx * drx;
-          const double dry2 = dry * dry;
-          const double drz2 = drz * drz;
+          const CalcType drx2 = drx * drx;
+          const CalcType dry2 = dry * dry;
+          const CalcType drz2 = drz * drz;
 
-          const double dr2 = drx2 + dry2 + drz2;
+          const CalcType dr2 = drx2 + dry2 + drz2;
 
           if (dr2 < _interactionLengthSquared) {
             currentList.push_back(ptr2ptr[j]);

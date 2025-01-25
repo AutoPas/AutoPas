@@ -103,7 +103,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
+    auto cells = _cellBlock.getNearbyHaloCells(
+        autopas::utils::ArrayUtils::static_cast_copy_array<double>(haloParticle.getR()), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
@@ -162,7 +163,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         if (it->isDummy()) {
           continue;
         }
-        ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
+        ReferenceCell &cell =
+            _cellBlock.getContainingCell(autopas::utils::ArrayUtils::static_cast_copy_array<double>(it->getR()));
         auto address = &(*it);
         cell.addParticleReference(address);
       }
@@ -316,7 +318,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter != particleVec.end();) {
-          if ((*pIter)->isOwned() and utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
+          if ((*pIter)->isOwned() and
+              utils::notInBox(autopas::utils::ArrayUtils::static_cast_copy_array<double>((*pIter)->getR()),
+                              cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(**pIter);
 
             // multi layer swap-delete

@@ -203,7 +203,8 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     const double rightHaloMax = _localBoxMax[dimensionIndex] + skinWidth;
 
     for (const auto &particle : _haloParticles) {
-      std::array<double, _dimensionCount> position = particle.getR();
+      std::array<double, _dimensionCount> position =
+          autopas::utils::ArrayUtils::static_cast_copy_array<double>(particle.getR());
       if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
         _particlesForLeftNeighbor.push_back(particle);
 
@@ -211,7 +212,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
         if (isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex])) {
           position[dimensionIndex] =
               position[dimensionIndex] + (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
-          _particlesForLeftNeighbor.back().setR(position);
+          _particlesForLeftNeighbor.back().setR(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(position));
         }
       } else if (position[dimensionIndex] >= rightHaloMin and position[dimensionIndex] < rightHaloMax) {
         _particlesForRightNeighbor.push_back(particle);
@@ -220,7 +221,8 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
         if (isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
           position[dimensionIndex] =
               position[dimensionIndex] - (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
-          _particlesForRightNeighbor.back().setR(position);
+          _particlesForRightNeighbor.back().setR(
+              autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(position));
         }
       }
     }
@@ -275,7 +277,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       // we can't use range based for loops here because clang accepts this only starting with version 11
       for (size_t i = 0; i < _receivedParticlesBuffer.size(); ++i) {
         const auto &particle = _receivedParticlesBuffer[i];
-        if (isInsideLocalDomain(particle.getR())) {
+        if (isInsideLocalDomain(autopas::utils::ArrayUtils::static_cast_copy_array<double>(particle.getR()))) {
           autoPasContainer.addParticle(particle);
         } else {
           emigrants.push_back(particle);
@@ -311,7 +313,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
 
     auto reflect = [&](bool isUpper) {
-      const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
+      const auto boundaryPosition =
+          static_cast<CalcType>(isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex]);
 
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
@@ -341,13 +344,13 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // mirror particle for use with the actual functor.
 
         // Calculates force acting on site from another site
-        const auto LJKernel = [](const std::array<double, 3> sitePosition,
-                                 const std::array<double, 3> mirrorSitePosition, const double sigmaSquared,
-                                 const double epsilon24) {
+        const auto LJKernel = [](const std::array<CalcType, 3> sitePosition,
+                                 const std::array<CalcType, 3> mirrorSitePosition, const CalcType sigmaSquared,
+                                 const CalcType epsilon24) {
           const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
           const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-          const auto inverseDistanceSquared = 1. / distanceSquared;
+          const auto inverseDistanceSquared = static_cast<CalcType>(1.) / distanceSquared;
           const auto lj2 = sigmaSquared * inverseDistanceSquared;
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
@@ -420,7 +423,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
           const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF(force);
+          p->addF(autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(force));
 #endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE

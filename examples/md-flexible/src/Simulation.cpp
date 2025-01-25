@@ -9,6 +9,7 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -532,7 +533,7 @@ bool Simulation::calculateTriwiseForces() {
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForce);
+    particle->addF(autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(globalForce));
   }
 }
 
@@ -572,7 +573,7 @@ void Simulation::updateSimulationPauseState() {
 
     // reset the forces which accumulated during the tuning phase
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF(_configuration.globalForce.value);
+      particle->setF(autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(_configuration.globalForce.value));
     }
 
     // calculate the forces of the latest iteration again
@@ -699,7 +700,8 @@ void Simulation::loadParticles() {
   // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
   // Idea: Only load what belongs here and send the rest away.
   _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
-    if (_domainDecomposition->isInsideLocalDomain(p.getR())) {
+    if (_domainDecomposition->isInsideLocalDomain(
+            autopas::utils::ArrayUtils::static_cast_copy_array<double>(p.getR()))) {
       // Mark particle in vector as dummy, so we know it has been inserted.
       p.setOwnershipState(autopas::OwnershipState::dummy);
       return true;
@@ -738,8 +740,10 @@ void Simulation::loadParticles() {
   particleCommunicator.waitForSendRequests();
 
   // Add all new particles that belong in this rank
-  _autoPasContainer->addParticlesIf(_configuration.particles,
-                                    [&](auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
+  _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
+    return _domainDecomposition->isInsideLocalDomain(
+        autopas::utils::ArrayUtils::static_cast_copy_array<double>(p.getR()));
+  });
   // cleanup
   _configuration.flushParticles();
 
@@ -783,7 +787,7 @@ void Simulation::loadParticles() {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value;
+  const CalcType cutoff = static_cast<CalcType>(_configuration.cutoff.value);
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
@@ -822,7 +826,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value;
+  const double cutoff = static_cast<CalcType>(_configuration.cutoff.value);
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {

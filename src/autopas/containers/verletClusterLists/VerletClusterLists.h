@@ -192,8 +192,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     const auto &haloPos = haloParticle.getR();
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
+    for (auto it = getRegionIterator(
+             autopas::utils::ArrayUtils::static_cast_copy_array<double>(haloPos) - (this->getVerletSkin() / 2.),
+             autopas::utils::ArrayUtils::static_cast_copy_array<double>(haloPos) + (this->getVerletSkin() / 2.),
+             IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
          it.isValid(); ++it) {
       if (haloParticle.getID() == it->getID()) {
         // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that

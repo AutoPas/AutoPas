@@ -119,7 +119,7 @@ class LiveInfo {
     for (const Particle &particle : container) {
       if (utils::inBox(particle.getR(), boxMin, boxMax)) {
         // find the actual cell
-        const auto offsetIntoBox = particle.getR() - boxMin;
+        const auto offsetIntoBox = autopas::utils::ArrayUtils::static_cast_copy_array<double>(particle.getR()) - boxMin;
         const auto cell = floorToInt(offsetIntoBox * cutoffInv);
         const auto binIndex = (cell[2] * cellsPerDim[1] + cell[1]) * cellsPerDim[0] + cell[0];
         particleBins[binIndex]++;

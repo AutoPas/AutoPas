@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ParticleTypeTrait.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
@@ -15,6 +16,11 @@ namespace autopasTools::generators {
  * Generator for grids of particles.
  */
 namespace GridGenerator {
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+using CalcType = float;
+#else
+using CalcType = double;
+#endif
 /**
  * Fills a cell vector with a cuboid mesh of particles.
  *
@@ -97,7 +103,9 @@ void GridGenerator::fillWithParticles(
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
         auto p = defaultParticle;
-        p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
+        const std::array<double, 3> position{x * (spacing[0]) + offset[0], y * (spacing[1]) + offset[1],
+                                             z * (spacing[2]) + offset[2]};
+        p.setR(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(position));
         p.setID(id++);
         container.addParticle(p);
       }

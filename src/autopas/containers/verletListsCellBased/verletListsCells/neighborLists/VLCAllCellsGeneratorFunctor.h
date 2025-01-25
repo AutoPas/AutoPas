@@ -22,6 +22,7 @@ class VLCAllCellsGeneratorFunctor
     : public PairwiseFunctor<Particle, VLCAllCellsGeneratorFunctor<Particle, TraversalOptionEnum>> {
   using NeighborListsType = typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle>;
   using SoAArraysType = typename Particle::SoAArraysType;
+  using CalcType = typename Particle::ParticleCalcType;
 
  public:
   /**
@@ -136,9 +137,9 @@ class VLCAllCellsGeneratorFunctor
     if (soa.size() == 0) return;
 
     auto **const __restrict__ ptrPtr = soa.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ xPtr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yPtr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zPtr = soa.template begin<Particle::AttributeNames::posZ>();
+    CalcType *const __restrict__ xPtr = soa.template begin<Particle::AttributeNames::posX>();
+    CalcType *const __restrict__ yPtr = soa.template begin<Particle::AttributeNames::posY>();
+    CalcType *const __restrict__ zPtr = soa.template begin<Particle::AttributeNames::posZ>();
 
     // index of cellIndex is particleToCellMap of ptrPtr, same for 2
     const auto [cellIndex, _] = _particleToCellMap.at(ptrPtr[0]);
@@ -149,15 +150,15 @@ class VLCAllCellsGeneratorFunctor
     const size_t numPart = soa.size();
     for (unsigned int i = 0; i < numPart; ++i) {
       for (unsigned int j = i + 1; j < numPart; ++j) {
-        const double drx = xPtr[i] - xPtr[j];
-        const double dry = yPtr[i] - yPtr[j];
-        const double drz = zPtr[i] - zPtr[j];
+        const CalcType drx = xPtr[i] - xPtr[j];
+        const CalcType dry = yPtr[i] - yPtr[j];
+        const CalcType drz = zPtr[i] - zPtr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const CalcType drx2 = drx * drx;
+        const CalcType dry2 = dry * dry;
+        const CalcType drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const CalcType dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffSkinSquared) {
           auto &currentList = _neighborLists[cellIndex];
@@ -185,14 +186,14 @@ class VLCAllCellsGeneratorFunctor
     if (soa1.size() == 0 or soa2.size() == 0) return;
 
     auto **const __restrict__ ptr1Ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x1Ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1Ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1Ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    CalcType *const __restrict__ x1Ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    CalcType *const __restrict__ y1Ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    CalcType *const __restrict__ z1Ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
     auto **const __restrict__ ptr2Ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x2Ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2Ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2Ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    CalcType *const __restrict__ x2Ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    CalcType *const __restrict__ y2Ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    CalcType *const __restrict__ z2Ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1Ptr, same for 2
     const size_t cellIndex1 = _particleToCellMap.at(ptr1Ptr[0]).first;
@@ -224,15 +225,15 @@ class VLCAllCellsGeneratorFunctor
     for (unsigned int i = 0; i < numPart1; ++i) {
       const size_t numPart2 = soa2.size();
       for (unsigned int j = 0; j < numPart2; ++j) {
-        const double drx = x1Ptr[i] - x2Ptr[j];
-        const double dry = y1Ptr[i] - y2Ptr[j];
-        const double drz = z1Ptr[i] - z2Ptr[j];
+        const CalcType drx = x1Ptr[i] - x2Ptr[j];
+        const CalcType dry = y1Ptr[i] - y2Ptr[j];
+        const CalcType drz = z1Ptr[i] - z2Ptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const CalcType drx2 = drx * drx;
+        const CalcType dry2 = dry * dry;
+        const CalcType drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const CalcType dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffSkinSquared) {
           if constexpr (TraversalOptionEnum == TraversalOption::Value::vlc_c01 or

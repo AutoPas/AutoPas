@@ -185,7 +185,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @return true if a particle was found and updated, false if it was not found.
    */
   bool updateHaloParticle(const Particle &haloParticle) override {
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(
+        autopas::utils::ArrayUtils::static_cast_copy_array<double>(haloParticle.getR()), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {

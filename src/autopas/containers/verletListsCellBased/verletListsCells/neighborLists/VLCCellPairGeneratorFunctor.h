@@ -20,6 +20,7 @@ template <class Particle>
 class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
   using PairwiseNeighborListsType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle>;
   using SoAArraysType = typename Particle::SoAArraysType;
+  using CalcType = typename Particle::ParticleCalcType;
 
  public:
   /**
@@ -93,9 +94,9 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
     if (soa.size() == 0) return;
 
     auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    CalcType *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    CalcType *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    CalcType *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1ptr, same for 2
     auto cell = _particleToCellMap.at(ptrptr[0]).first;
@@ -114,15 +115,15 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
     size_t numPart = soa.size();
     for (unsigned int i = 0; i < numPart; ++i) {
       for (unsigned int j = i + 1; j < numPart; ++j) {
-        const double drx = xptr[i] - xptr[j];
-        const double dry = yptr[i] - yptr[j];
-        const double drz = zptr[i] - zptr[j];
+        const CalcType drx = xptr[i] - xptr[j];
+        const CalcType dry = yptr[i] - yptr[j];
+        const CalcType drz = zptr[i] - zptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const CalcType drx2 = drx * drx;
+        const CalcType dry2 = dry * dry;
+        const CalcType drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const CalcType dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffskinsquared) {
           currentList[i].second.push_back(ptrptr[j]);
@@ -149,14 +150,14 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
     auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    CalcType *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    CalcType *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    CalcType *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
     auto **const __restrict__ ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    CalcType *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    CalcType *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    CalcType *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1ptr, same for 2
     size_t cell1 = _particleToCellMap.at(ptr1ptr[0]).first;
@@ -177,15 +178,15 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
     for (unsigned int i = 0; i < numPart1; ++i) {
       size_t numPart2 = soa2.size();
       for (unsigned int j = 0; j < numPart2; ++j) {
-        const double drx = x1ptr[i] - x2ptr[j];
-        const double dry = y1ptr[i] - y2ptr[j];
-        const double drz = z1ptr[i] - z2ptr[j];
+        const CalcType drx = x1ptr[i] - x2ptr[j];
+        const CalcType dry = y1ptr[i] - y2ptr[j];
+        const CalcType drz = z1ptr[i] - z2ptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const CalcType drx2 = drx * drx;
+        const CalcType dry2 = dry * dry;
+        const CalcType drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const CalcType dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffskinsquared) {
           currentList[i].second.push_back(ptr2ptr[j]);

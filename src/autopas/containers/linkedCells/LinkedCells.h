@@ -76,17 +76,20 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   void addParticleImpl(const ParticleType &p) override {
-    ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
+    ParticleCell &cell =
+        _cellBlock.getContainingCell(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p.getR()));
     cell.addParticle(p);
   }
 
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
+    ParticleCell &cell =
+        _cellBlock.getContainingCell(autopas::utils::ArrayUtils::static_cast_copy_array<double>(haloParticle.getR()));
     cell.addParticle(haloParticle);
   }
 
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
+    auto cells = _cellBlock.getNearbyHaloCells(
+        autopas::utils::ArrayUtils::static_cast_copy_array<double>(haloParticle.getR()), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
@@ -160,7 +163,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter < particleVec.end();) {
           // if not in cell
-          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
+          if (utils::notInBox(autopas::utils::ArrayUtils::static_cast_copy_array<double>(pIter->getR()),
+                              cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
             // swap-delete
             *pIter = particleVec.back();
@@ -286,7 +290,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   bool deleteParticle(Particle &particle) override {
     // deduce into which vector the reference points
-    auto &particleVec = _cellBlock.getContainingCell(particle.getR())._particles;
+    auto &particleVec =
+        _cellBlock.getContainingCell(autopas::utils::ArrayUtils::static_cast_copy_array<double>(particle.getR()))
+            ._particles;
     const bool isRearParticle = &particle == &particleVec.back();
     // swap-delete
     particle = particleVec.back();
