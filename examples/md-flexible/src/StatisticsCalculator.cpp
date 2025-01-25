@@ -18,7 +18,8 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 
   std::vector<std::string> columnNames = {
       "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ"};
+      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ",
+      "MeanTemperatureI",   "MeanHeatFluxI",         "MeanTemperatureJ",      "MeanHeatFluxJ"};
 
   /**
   const std::vector<std::string> columnNames = {
@@ -37,6 +38,8 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
   const auto energyStatistics =
       calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
+  const auto statisticsI = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
+  const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
   // const auto flowRateStatistics = calculateVolumetricFlowRate(autoPasContainer, particlePropertiesLib);
   // const auto temperatureStatistics = calculateTemperature(autoPasContainer, particlePropertiesLib);
   /**
@@ -50,21 +53,21 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   statisticsDistanceOverlap);
    **/
 
-  auto combinedStatistics = std::tuple_cat(energyStatistics);
+  auto combinedStatistics = std::tuple_cat(energyStatistics, statisticsI, statisticsJ);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
   if (currentIteration % 2500 == 0) {
-    const std::vector<std::tuple<size_t, double, double, size_t>> roundedY_to_meanTemperature =
+    const std::vector<std::tuple<int, double, double, size_t>> roundedY_to_meanTemperature =
         calculateYToMeanTemperature(autoPasContainer, particlePropertiesLib);
-    for (const auto &pair : roundedY_to_meanTemperature) {
-      writeRow(outputFile_meanTemp, currentIteration, pair);
+    for (const auto &tuple : roundedY_to_meanTemperature) {
+      writeRow(outputFile_meanTemp, currentIteration, tuple);
     }
   }
-/**
-  const auto statisticsI = calculateTemperatureAndHeatFlux(autoPasContainer, 1L);
-  const auto statisticsJ = calculateTemperatureAndHeatFlux(autoPasContainer, 0L);
-  auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ);
-  StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
-  **/
+  /**
+    const auto statisticsI = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
+    const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
+    auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ);
+    StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
+    **/
 }
 
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateTorquesAndAngularVel(
@@ -109,20 +112,26 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
   return std::make_tuple(torqueIX, torqueIY, torqueIZ, angularVelIX, angularVelIY, angularVelIZ);
 }
 
-std::tuple<double, double> StatisticsCalculator::calculateTemperatureAndHeatFlux(
+std::tuple<double, double> StatisticsCalculator::calculateMeanTemperatureAndMeanHeatFlux(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId) {
-  double temperature = 0.;
-  double heatFlux = 0.;
+  double temperatureSum = 0.;
+  double heatFluxSum = 0.;
+  size_t particleCount = 0;
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     if (particle->getTypeId() == typeId) {  // particle i
       auto temperatureI = particle->getTemperature();
-      temperature = temperatureI;
+      temperatureSum += temperatureI;
       auto heatFluxI = particle->getHeatFlux();
-      heatFlux = heatFluxI;
+      heatFluxSum += heatFluxI;
+      particleCount++;
     }
   }
-  return std::make_tuple(temperature, heatFlux);
+  if (particleCount == 0) {
+    return std::make_tuple(0., 0.);
+  }
+
+  return std::make_tuple(temperatureSum / particleCount, heatFluxSum / particleCount);
 }
 
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateForceAndVelocity(
@@ -296,7 +305,8 @@ void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &co
   if (outputFile_meanTemp.is_open()) {
     outputFile_meanTemp << "Iteration, RoundedY, MeanTemperature, TemperatureSum, NumConsideredParticles\n";
   } else {
-    throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " + filename_meanTemp.str());
+    throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " +
+                             filename_meanTemp.str());
   }
 }
 
@@ -365,19 +375,19 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateRDF(
 
   return binIndex_to_rdf;
 }
-std::vector<std::tuple<size_t, double, double, size_t>> StatisticsCalculator::calculateYToMeanTemperature(
+std::vector<std::tuple<int, double, double, size_t>> StatisticsCalculator::calculateYToMeanTemperature(
     const autopas::AutoPas<ParticleType> &autoPasContainer,
     const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas::utils::ArrayMath;
 
-  std::map<size_t, size_t> roundedY_to_counts;
-  std::map<size_t, double> roundedY_to_temperatureSum;
-  std::vector<std::tuple<size_t, double, double, size_t>> roundedY_to_meanTemperature;
+  std::map<int, size_t> roundedY_to_counts;
+  std::map<int, double> roundedY_to_temperatureSum;
+  std::vector<std::tuple<int, double, double, size_t>> roundedY_to_meanTemperature;
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
     const std::array<double, 3> r_i = i->getR();
-    const auto roundedY = std::floor(r_i[1]);
+    const int roundedY = std::floor(r_i[1]);
 
     const double temperature = i->getTemperature();
     roundedY_to_counts[roundedY]++;
@@ -387,11 +397,9 @@ std::vector<std::tuple<size_t, double, double, size_t>> StatisticsCalculator::ca
   for (auto &pair : roundedY_to_counts) {
     const size_t roundedY = pair.first;
     const size_t counts = pair.second;
-    const double temperatureSum = (roundedY_to_temperatureSum.count(roundedY) > 0)
-                                      ? roundedY_to_temperatureSum[roundedY]
-                                      : 0.0;
+    const double temperatureSum =
+        (roundedY_to_temperatureSum.count(roundedY) > 0) ? roundedY_to_temperatureSum[roundedY] : 0.0;
     const double meanTemperature = counts <= 0 ? 0. : temperatureSum / (counts);
-
 
     roundedY_to_meanTemperature.emplace_back(roundedY, meanTemperature, temperatureSum, counts);
   }

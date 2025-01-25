@@ -62,7 +62,7 @@ class StatisticsCalculator {
   static std::vector<std::tuple<size_t, double>>
       calculateRDF(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
-  static std::vector<std::tuple<size_t, double, double, size_t>>
+  static std::vector<std::tuple<int, double, double, size_t>>
       calculateYToMeanTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
@@ -84,8 +84,7 @@ class StatisticsCalculator {
   static std::tuple<double, double, double, size_t>
   calculateVolumetricFlowRate(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
-  static std::tuple<double, double>
-    calculateTemperatureAndHeatFlux(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
+  static std::tuple<double, double> calculateMeanTemperatureAndMeanHeatFlux(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
 
   /**
    * Generates the output file (.csv) for the statistics.

@@ -318,7 +318,7 @@ class DEMFunctor
       j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
     }
 
-    // Heat Transfer
+    // Heat Transfer (2 + 4 + 2 + 1 = 9 FLOPS, for newton3 additional 1 FLOP)
     const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
     const double conductance = 2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
     const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
@@ -802,8 +802,8 @@ class DEMFunctor
   [[nodiscard]] size_t getNumFLOPs() const override {
     /**
      * FLOP count:
-     * KernelNoN3: 155;
-     * 171 KernelN3: 155 + 13 = 168;
+     * KernelNoN3: 155 + 9;
+     * 171 KernelN3: 155 + 13 + 10 = 178;
      */
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc =
@@ -830,8 +830,8 @@ class DEMFunctor
 
       constexpr size_t numFLOPsPerDistanceCall = 9;
       constexpr size_t numFLOPsPerOverlapCall = 2;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 155;
-      constexpr size_t numFLOPsPerN3KernelCall = 168;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 164;
+      constexpr size_t numFLOPsPerN3KernelCall = 178;
       constexpr size_t numFLOPsPerInnerIfTanF = 5;
       constexpr size_t numFLOPsPerInnerIfRollingQ = 5;
       constexpr size_t numFLOPsPerInnerIfTorsionQ = 5;
