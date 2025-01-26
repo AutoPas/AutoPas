@@ -320,11 +320,16 @@ class DEMFunctor
 
     // Heat Transfer (2 + 4 + 2 + 1 = 9 FLOPS, for newton3 additional 1 FLOP)
     const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
-    const double conductance = 2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
+    const double conductance =
+        2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
     const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
-    i.addHeatFlux(heatFluxI);
+
+    // Heat Generation (12 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)
+    const double heatFluxGenerated = _heatGenerationFactor * L2Norm(tanF) * L2Norm(tanVel);
+
+    i.addHeatFlux(heatFluxI + heatFluxGenerated);
     if (newton3) {
-      j.subHeatFlux(heatFluxI);
+      j.addHeatFlux(-heatFluxI + heatFluxGenerated);
     }
   }
 
@@ -591,12 +596,18 @@ class DEMFunctor
         // Compute Heat Transfer (2 + 3 + 2 + 2 = 9 FLOPS)
         const SoAFloatPrecision geometricMeanRadius = std::sqrt(radiusI * radiusJ);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geometricMeanRadius) / 4., 1. / 3.);
+            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[i]);
 
+        // Compute Heat Generation (12 + 1 = 13 FLOPS)
+        const SoAFloatPrecision heatFluxGenerated =
+            _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+            std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
+                      tanRelVelTotalZ * tanRelVelTotalZ);
+
         // Apply Heat Flux
-        heatFluxAcc += heatFluxI;
-        heatFluxPtr[j] -= heatFluxI;  // "newton 3"
+        heatFluxAcc += (heatFluxI + heatFluxGenerated);
+        heatFluxPtr[j] += (-heatFluxI + heatFluxGenerated);  // "newton 3"
       }  // end of j loop
 
       fxptr[i] += fxacc;
@@ -1162,13 +1173,18 @@ class DEMFunctor
         // Compute heat flux
         const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geomMeanRadius) / 4., 1. / 3.);
+            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr2[j] - temperaturePtr1[i]);
 
+        const SoAFloatPrecision heatFluxGenerated =
+            _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+            std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
+                      tanRelVelTotalZ * tanRelVelTotalZ);
+
         // Apply heat flux
-        heatFluxAcc += heatFluxI;
+        heatFluxAcc += (heatFluxI + heatFluxGenerated);
         if (newton3) {
-          heatFluxPtr2[j] -= heatFluxI;
+          heatFluxPtr2[j] += (-heatFluxI + heatFluxGenerated);
         }
       }  // end of j loop
 
@@ -1512,13 +1528,18 @@ class DEMFunctor
           // Compute heat flux
           const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
           const SoAFloatPrecision conductance =
-              2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geomMeanRadius) / 4., 1. / 3.);
+              2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
           const SoAFloatPrecision heatFluxI = conductance * (temperatureArr[j] - temperaturetmp[j]);
 
+          const SoAFloatPrecision heatFluxGenerated =
+              _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+              std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
+                        tanRelVelTotalZ * tanRelVelTotalZ);
+
           // Apply heat flux
-          heatFluxAcc += heatFluxI;
+          heatFluxAcc += (heatFluxI + heatFluxGenerated);
           if (newton3) {
-            heatFluxArr[j] = heatFluxI;
+            heatFluxArr[j] = (-heatFluxI + heatFluxGenerated);
           }
         }  // end of j loop
 
@@ -1536,7 +1557,7 @@ class DEMFunctor
             qyptr[j] += qyArr[tmpj];
             qzptr[j] += qzArr[tmpj];
 
-            heatFluxPtr[j] -= heatFluxArr[tmpj];
+            heatFluxPtr[j] += heatFluxArr[tmpj];
           }
         }  // end of newton3 force / torque application
       }  // end of joff loop
@@ -1747,13 +1768,18 @@ class DEMFunctor
       // Compute heat flux
       const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
       const SoAFloatPrecision conductance =
-          2. * _conductivity * std::pow((3. * _elasticStiffness * overlap  * geomMeanRadius) / 4., 1. / 3.);
+          2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
       const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[indexFirst]);
 
+      const SoAFloatPrecision heatFluxGenerated =
+          _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+          std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
+                        tanRelVelTotalZ * tanRelVelTotalZ);
+
       // Apply heat flux
-      heatFluxAcc += heatFluxI;
+      heatFluxAcc += (heatFluxI + heatFluxGenerated);
       if (newton3) {
-        heatFluxPtr[j] -= heatFluxI;
+        heatFluxPtr[j] += (-heatFluxI + heatFluxGenerated);
       }
 
     }  // end of jNeighIndex loop
@@ -1905,6 +1931,7 @@ class DEMFunctor
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
   const double _conductivity = 1;
+  const double _heatGenerationFactor = 1e-2;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
