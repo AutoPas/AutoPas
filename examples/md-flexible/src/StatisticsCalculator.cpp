@@ -38,8 +38,8 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
   const auto energyStatistics =
       calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
-  const auto statisticsI = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
-  const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
+  const auto statisticsI = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
+  //const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
   // const auto flowRateStatistics = calculateVolumetricFlowRate(autoPasContainer, particlePropertiesLib);
   // const auto temperatureStatistics = calculateTemperature(autoPasContainer, particlePropertiesLib);
   /**
@@ -53,8 +53,9 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   statisticsDistanceOverlap);
    **/
 
-  auto combinedStatistics = std::tuple_cat(energyStatistics, statisticsI, statisticsJ);
+  auto combinedStatistics = std::tuple_cat(energyStatistics, statisticsI);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
+  /**
   if (currentIteration % 2500 == 0) {
     const std::vector<std::tuple<int, double, double, size_t>> roundedY_to_meanTemperature =
         calculateYToMeanTemperature(autoPasContainer, particlePropertiesLib);
@@ -62,6 +63,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
       writeRow(outputFile_meanTemp, currentIteration, tuple);
     }
   }
+   **/
   /**
     const auto statisticsI = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
     const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);

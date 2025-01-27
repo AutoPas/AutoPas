@@ -204,11 +204,11 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    //const size_t rotationalGlobalForceIterationFrom = 60000;
+    const size_t rotationalGlobalForceIterationFrom = 100000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      //const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-      //    _configuration.globalForce.value, -17.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
-      updatePositionsAndResetForces(_configuration.globalForce.value, _iteration < settlingEndingIteration);  // normal case parameter: _configuration.globalForce.value
+      const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
+          _configuration.globalForce.value, -2.5, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
+      updatePositionsAndResetForces(globalForce, _iteration < settlingEndingIteration);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -221,7 +221,6 @@ void Simulation::run() {
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing
-      /**
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
         _domainDecomposition->update(computationalLoad);
@@ -249,7 +248,7 @@ void Simulation::run() {
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
       }
-       **/
+
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
@@ -268,7 +267,7 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
-#if DEM_MODE == ON/**
+#if DEM_MODE == ON
     if (_iteration < settlingEndingIteration) {
       calculateBackgroundFriction(0.9,
                                   0.975,
@@ -277,7 +276,7 @@ void Simulation::run() {
       calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
                                   _configuration.backgroundTorqueFrictionCoeff.value,
                                   *_configuration.getParticlePropertiesLibrary());}
-**/
+
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
