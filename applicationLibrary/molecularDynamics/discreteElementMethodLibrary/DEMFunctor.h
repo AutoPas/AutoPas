@@ -242,6 +242,20 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (not newton3 ? 1 : 0);
     }
 
+    double coefficientFactor = 1.0;
+    if (i.getTypeId() == 1) {
+      coefficientFactor = 2.;
+    }
+    const double elasticStiffness = _elasticStiffness * coefficientFactor;
+    const double normalViscosity = _normalViscosity * coefficientFactor;
+    const double staticFrictionCoeff = _staticFrictionCoeff * coefficientFactor;
+    const double frictionViscosity = _frictionViscosity * coefficientFactor;
+    const double dynamicFrictionCoeff = _dynamicFrictionCoeff * coefficientFactor;
+    const double rollingViscosity = _rollingViscosity * coefficientFactor;
+    const double rollingFrictionCoeff = _rollingFrictionCoeff * coefficientFactor;
+    const double torsionViscosity = _torsionViscosity * coefficientFactor;
+    const double torsionFrictionCoeff = _torsionFrictionCoeff * coefficientFactor;
+
     // (3 + 1 + 1 + 1 + 3 + 3 + 5 = 17 FLOPS)
     assert(dist != 0. && "Distance is zero, division by zero detected!");
     const std::array<double, 3> normalUnit = displacement / (dist + preventDivisionByZero);
@@ -255,7 +269,7 @@ class DEMFunctor
 
     // Compute Forces
     // Compute normal forces (3 + 3 = 6 FLOPS)
-    const double normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;  // 3 FLOPS
+    const double normalContactFMag = elasticStiffness * overlap - normalViscosity * relVelDotNormalUnit;  // 3 FLOPS
     const double normalFMag = normalContactFMag;
     const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);  // 3 FLOPS
 
@@ -264,12 +278,12 @@ class DEMFunctor
                                             cross(normalUnit * radiusJReduced, j.getAngularVel());  // 30 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                  // 3 FLOPS
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);                         // 1 FLOPS
-    std::array<double, 3> tanF = tanVel * (-_frictionViscosity);                                    // 3 FLOPS
+    const double coulombLimit = staticFrictionCoeff * (normalContactFMag);                         // 1 FLOPS
+    std::array<double, 3> tanF = tanVel * (-frictionViscosity);                                    // 3 FLOPS
     const double tanFMag = L2Norm(tanF);                                                            // 6 FLOPS
     if (tanFMag > coulombLimit) {
       ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;  // -> additional 5 FLOPS
-      const double scale = _dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);  // 2 FLOPS
+      const double scale = dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);  // 2 FLOPS
       tanF = tanF * scale;                                                                                   // 3 FLOPS
     }
 
@@ -289,12 +303,12 @@ class DEMFunctor
     // Compute rolling torque (15 + 3 + 6 + 12 = 36 FLOPS)
     const std::array<double, 3> rollingRelVel =
         cross(normalUnit, (i.getAngularVel() - j.getAngularVel())) * (-radiusReduced);  // 15 FLOPS
-    std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);              // 3 FLOPS
+    std::array<double, 3> rollingF = rollingRelVel * (-rollingViscosity);              // 3 FLOPS
     const double rollingFMag = L2Norm(rollingF);                                        // 6 FLOPS
     if (rollingFMag > coulombLimit) {
       ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;  // -> additional 5 FLOPS
       const double scale =
-          _rollingFrictionCoeff * (normalContactFMag) / (rollingFMag + preventDivisionByZero);  // 2 FLOPS
+          rollingFrictionCoeff * (normalContactFMag) / (rollingFMag + preventDivisionByZero);  // 2 FLOPS
       rollingF = rollingF * scale;
     }
     const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
@@ -302,12 +316,12 @@ class DEMFunctor
     // Compute torsional torque (11 + 3 + 6 + 3 = 23 FLOPS)
     const std::array<double, 3> torsionRelVel = normalUnit * dot(normalUnit, (i.getAngularVel() - j.getAngularVel())) *
                                                 radiusReduced;              // 1 + 3 + 5 + 2 = 11 FLOPS
-    std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
+    std::array<double, 3> torsionF = torsionRelVel * (-torsionViscosity);  // 3 FLOPS
     const double torsionFMag = L2Norm(torsionF);                            // 6 FLOPS
     if (torsionFMag > coulombLimit) {
       ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;  // -> additional 5 FLOPS
       const double scale =
-          _torsionFrictionCoeff * (normalContactFMag) / (torsionFMag + preventDivisionByZero);  // 2 FLOPS
+          torsionFrictionCoeff * (normalContactFMag) / (torsionFMag + preventDivisionByZero);  // 2 FLOPS
       torsionF = torsionF * scale;
     }
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
@@ -321,7 +335,7 @@ class DEMFunctor
     // Heat Transfer (2 + 4 + 2 + 1 = 9 FLOPS, for newton3 additional 1 FLOP)
     const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
     const double conductance =
-        2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
+        2. * _conductivity * std::pow((3. * elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
     const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
 
     // Heat Generation (12 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)

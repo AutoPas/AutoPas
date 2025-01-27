@@ -1,0 +1,97 @@
+# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
+## md-flexible compiled for multi-site molecules.
+container                        :  [DirectSum, LinkedCells, LinkedCellsReferences]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius-per-timestep  :  0.1
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS]
+traversal                        :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18]
+tuning-metric                        :  time
+tuning-strategies                    :  [slow-config-filter, predictive-tuning]
+tuning-interval                  :  2500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  dem
+newton3                          :  [disabled]
+cutoff                           :  3
+box-min                          :  [-2.5, -2.5, -0.5]
+box-max                          :  [32.5, 32.5, 7.5]
+cell-size                        :  [1]
+deltaT                           :  0.0001
+iterations                       :  700000
+boundary-type                    :  [reflective,reflective,reflective]
+globalForce                      :  [0,-2.5,0]
+backgroundForceFrictionCoeff      :  0.1
+backgroundTorqueFrictionCoeff     :  0.1
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+    radius                       :  0.75
+  1:
+    epsilon: 1.
+    sigma: 1.
+    mass: 2.
+    radius: 1
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    site-types                   :  [ 0 ]
+#    relative-site-positions      :  [ [0, 0, 0 ] ]
+#    moment-of-inertia            :  [ 1., 1., 1. ]
+Objects:
+  # "water"
+  CubeClosestPacked:
+    0:
+      particle-spacing           :  1.5
+      bottomLeftCorner           :  [0., 0., 0.]
+      box-length                 :  [30, 13, 7]
+      velocity                   :  [0, 0, 0]
+      angularVelocity: [ 0, 0, 0 ]
+      temperature                :  0.
+      particle-type-id           :  0
+    1: # left wall
+      particle-spacing: 2
+      bottomLeftCorner: [ -2., -2., 0. ]
+      box-length                 :  [2, 34, 7]
+      velocity: [ 0, 0, 0 ]
+      angularVelocity             :  [0,0,0]
+      temperature                :  0.
+      particle-type-id           :  1
+    2: # right wall
+      particle-spacing: 2
+      bottomLeftCorner: [ 30, -2., 0. ]
+      box-length: [ 2, 34, 7 ]
+      velocity: [ 0, 0, 0 ]
+      angularVelocity: [ 0,0,0 ]
+      temperature: 0.
+      particle-type-id: 1
+    3: # bottom wall
+        particle-spacing: 2
+        bottomLeftCorner: [ 0., -2., 0. ]
+        box-length: [ 30, 2, 7 ]
+        velocity: [ 0, 0, 0 ]
+        angularVelocity: [ 0,0,0 ]
+        temperature: 0.
+        particle-type-id: 1
+    4: # top wall
+        particle-spacing: 2
+        bottomLeftCorner: [ 0., 32, 0. ]
+        box-length: [ 30, 2, 7 ]
+        velocity: [ 0, 0, 0 ]
+        angularVelocity: [ 0,0,0 ]
+        temperature: 0.
+        particle-type-id: 1
+# thermostat:
+#   initialTemperature             :  1
+#   targetTemperature              :  4
+#   deltaTemperature               :  0.1
+#   thermostatInterval             :  10
+#   addBrownianMotion              :  false
+vtk-filename                     :  SquareTumbler_heat_wall_w0
+vtk-write-frequency              :  1000
+vtk-output-folder                :  vtkOutputFolder
+no-end-config                    :  true
+log-level                        :  info
