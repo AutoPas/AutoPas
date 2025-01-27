@@ -1931,7 +1931,7 @@ class DEMFunctor
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
   const double _conductivity = 1;
-  const double _heatGenerationFactor = 1e-2;
+  const double _heatGenerationFactor = 0.1;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
