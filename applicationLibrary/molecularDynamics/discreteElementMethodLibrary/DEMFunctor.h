@@ -242,6 +242,10 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (not newton3 ? 1 : 0);
     }
 
+    if (i.getTypeId() == 1 and j.getTypeId() == 1) {
+      return; // no interaction between wall particles
+    }
+
     double coefficientFactor = 1.0;
     if (i.getTypeId() == 1) {
       coefficientFactor = 2.;
