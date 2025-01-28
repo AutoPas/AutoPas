@@ -600,6 +600,8 @@ class LogicHandler {
    * Helpful for determining the frequency for the dynamic containers
    * This function is only used for dynamic containers currently but returns user defined rebuild frequency for static
    * case for safety.
+   * @param onlyLastSimulationPhase Bool to determine if mean rebuild frequency is to be calculated over entire
+   * iterations or only during the simulation phase.
    * @return value of the mean frequency as double
    */
   [[nodiscard]] double getMeanRebuildFrequency(bool onlyLastSimulationPhase = false) const {

@@ -243,6 +243,8 @@ class AutoTuner {
   /**
    * Sets the _rebuildFrequency.
    * This is used to dynamically change the _rebuildFrequency based on estimate in case of dynamic containers.
+   * @param rebuildFrequency Current rebuild frequency in this instance of autopas, used by autopas for weighing rebuild
+   * and non-rebuild iterations
    */
   void setRebuildFrequency(double rebuildFrequency);
 
