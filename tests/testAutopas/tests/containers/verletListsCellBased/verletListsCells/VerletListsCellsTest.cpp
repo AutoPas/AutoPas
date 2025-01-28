@@ -12,23 +12,23 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/UniformGenerator.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
 
-void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
+void applyFunctor(MockPairwiseFunctor<Particle> &functor, const double cellSizefactor,
                   autopas::VerletListsCellsHelpers::VLCBuildType buildType) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<Particle, autopas::VLCAllCellsNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizefactor, loadEstimator, buildType);
+      min, max, cutoff, skin, rebuildFrequency, cellSizefactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -37,12 +37,12 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCAllCellsNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCAllCellsNeighborList<Particle>> traversal(
       verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(), verletLists.getCellLength(),
       autopas::DataLayoutOption::aos, true, autopas::ContainerOption::verletListsCells);
 
   verletLists.rebuildNeighborLists(&traversal);
-  verletLists.iteratePairwise(&traversal);
+  verletLists.computeInteractions(&traversal);
 
   std::vector<Particle *> list;
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
@@ -95,8 +95,8 @@ void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers::VLCB
 
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
-  verletLists1.iteratePairwise(&verletTraversal1);
-  verletLists2.iteratePairwise(&soaTraversal);
+  verletLists1.computeInteractions(&verletTraversal1);
+  verletLists2.computeInteractions(&soaTraversal);
 
   auto iter1 = verletLists1.begin();
   auto iter2 = verletLists2.begin();
@@ -112,22 +112,22 @@ void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers::VLCB
 }
 
 TEST_F(VerletListsCellsTest, testVerletListBuild) {
-  MockFunctor<Particle> emptyFunctorAoSBuild;
+  MockPairwiseFunctor<Particle> emptyFunctorAoSBuild;
   EXPECT_CALL(emptyFunctorAoSBuild, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorAoSBuild, 1.0, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild);
 
-  MockFunctor<Particle> emptyFunctorSoABuild;
+  MockPairwiseFunctor<Particle> emptyFunctorSoABuild;
   EXPECT_CALL(emptyFunctorSoABuild, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorSoABuild, 1.0, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild);
 
-  MockFunctor<Particle> emptyFunctorAoSBuild_cs2;
+  MockPairwiseFunctor<Particle> emptyFunctorAoSBuild_cs2;
   EXPECT_CALL(emptyFunctorAoSBuild_cs2, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorAoSBuild_cs2, 2.0, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild);
 
-  MockFunctor<Particle> emptyFunctorSoABuild_cs2;
+  MockPairwiseFunctor<Particle> emptyFunctorSoABuild_cs2;
   EXPECT_CALL(emptyFunctorSoABuild_cs2, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorSoABuild_cs2, 2.0, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild);

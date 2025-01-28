@@ -469,8 +469,8 @@ std::pair<OctreeTest::Vector3DList, std::vector<std::tuple<unsigned long, unsign
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
                                     size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMin,
-                                    std::array<double, 3> boxMax, double cellSizeFactor, double cutoff,
-                                    double skinPerTimestep, unsigned int rebuildFrequency, double interactionLength,
+                                    std::array<double, 3> boxMax, double cellSizeFactor, double cutoff, double skin,
+                                    unsigned int rebuildFrequency, double interactionLength,
                                     Vector3DList particlePositions, Vector3DList haloParticlePositions) {
   using namespace autopas;
 
@@ -480,9 +480,8 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Construct container
   ContainerSelector<Molecule> selector{boxMin, boxMax, cutoff};
-  selector.selectContainer(containerOption,
-                           autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
-                                                          autopas::LoadEstimatorOption::none});
+  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
+                                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
@@ -504,11 +503,11 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   }
 
   // Obtain a compatible traversal
-  auto traversal =
-      autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
-            traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
-      });
+  auto traversal = autopas::utils::withStaticCellType<
+      Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+    return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(mockFunctor)>(
+        traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+  });
 
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
@@ -538,7 +537,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
-  container.iteratePairwise(traversal.get());
+  container.computeInteractions(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
   // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has
@@ -597,9 +596,9 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   std::array<double, 3> _boxMin{0, 0, 0};
   double _cutoff{1.};
-  double skinPerTimestep = _cutoff * 0.1;
+  double skin = _cutoff * 0.1;
   unsigned int rebuildFrequency = 1;
-  double interactionLength = _cutoff + skinPerTimestep * rebuildFrequency;
+  double interactionLength = _cutoff + skin;
 
   // Obtain a starting configuration
   auto containerOption = ContainerOption::octree;
@@ -637,14 +636,14 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   // Calculate the forces using the octree
   auto [calculatedForces, calculatedPairs] =
       calculateForcesAndPairs(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                              numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skinPerTimestep,
-                              rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
+                              numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin, rebuildFrequency,
+                              interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate the forces using the reference implementation
   auto [referenceForces, referencePairs] = calculateForcesAndPairs(
       autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
-      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff,
-      skinPerTimestep, rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
+      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin,
+      rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   // std::sort(calculatedPairs.begin(), calculatedPairs.end());

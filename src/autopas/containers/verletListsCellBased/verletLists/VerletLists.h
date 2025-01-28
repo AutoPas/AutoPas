@@ -49,20 +49,20 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Constructor of the VerletLists class.
-   * The neighbor lists are build using a search radius of cutoff + skinPerTimestep*rebuildFrequency.
+   * The neighbor lists are build using a search radius of cutoff + skin.
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skinPerTimestep The skin radius per timestep.
+   * @param skin The skin radius per timestep.
    * @param rebuildFrequency rebuild fequency.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skinPerTimestep, const unsigned int rebuildFrequency,
+              const double skin, const unsigned int rebuildFrequency,
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                         compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _buildVerletListType(buildVerletListType) {}
 
@@ -71,7 +71,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
@@ -79,11 +79,11 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                                          _soaNeighborLists);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in VerletLists::iteratePairwise");
+          "trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -95,7 +95,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @note This function will be called in computeInteractions()!
    * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -134,7 +134,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-    this->_linkedCells.iteratePairwise(&traversal);
+    this->_linkedCells.computeInteractions(&traversal);
 
     _soaListIsValid = false;
   }

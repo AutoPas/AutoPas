@@ -234,7 +234,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   }
 
   std::cout << "calculation of density... started" << std::endl;
-  sphSystem.iteratePairwise(&densityFunctor);
+  sphSystem.computeInteractions(&densityFunctor);
   std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::halo); part.isValid(); ++part) {
@@ -274,7 +274,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
 
   std::cout << "calculation of hydroforces... started" << std::endl;
 
-  sphSystem.iteratePairwise(&hydroForceFunctor);
+  sphSystem.computeInteractions(&hydroForceFunctor);
   std::cout << "calculation of hydroforces... completed" << std::endl;
 }
 
@@ -313,7 +313,7 @@ int main() {
   sphSystem.setBoxMin(boxMin);
   sphSystem.setBoxMax(boxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
+  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   // In case you want to use another tuning strategy, you can do that using:

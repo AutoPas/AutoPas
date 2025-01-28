@@ -63,7 +63,7 @@ do
     if [[ ${container} =~ 'Verlet' ]];
     then
         VLRebuild=(1   5  10  20)
-        VLSkin=( 0.0 0.1 0.2 0.3)
+        VLSkin=( 0.0 0.5 2. 6.)
     else
         VLRebuild=(100000)
         VLSkin=(0)
@@ -133,6 +133,7 @@ do
                             --box-length 10 \
                             --cell-size ${cellSizeFactor} \
                             --container ${container} \
+                            --functor ljAVX \
                             --cutoff 1 \
                             --data-layout ${dataLayout} \
                             --deltaT 0. \
@@ -146,7 +147,7 @@ do
                             --traversal ${!t} \
                             --tuning-interval $(( ${thisReps} + 1 )) \
                             --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
-                            --verlet-skin-radius-per-timestep ${VLSkin[$iVL]} \
+                            --verlet-skin-radius ${VLSkin[$iVL]} \
 
                         )
 

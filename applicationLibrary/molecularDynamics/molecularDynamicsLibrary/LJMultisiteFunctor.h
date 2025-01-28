@@ -9,7 +9,7 @@
 #include "MoleculeLJ.h"
 #include "MultisiteMoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -43,8 +43,8 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJMultisiteFunctor
-    : public autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
-                                                           calculateGlobals, relevantForTuning, countFLOPs>> {
+    : public autopas::PairwiseFunctor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
+                                                                   calculateGlobals, relevantForTuning, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -113,8 +113,8 @@ class LJMultisiteFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                      relevantForTuning, countFLOPs>>(cutoff),
+      : autopas::PairwiseFunctor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
+                                                              calculateGlobals, relevantForTuning, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -155,6 +155,8 @@ class LJMultisiteFunctor
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
+
+  std::string getName() final { return "LJMultisiteFunctor"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -269,7 +271,7 @@ class LJMultisiteFunctor
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
@@ -456,7 +458,7 @@ class LJMultisiteFunctor
           }
 
           for (size_t siteB = 0; siteB < siteCount - (siteIndexMolB); ++siteB) {
-            const auto mixingData = _PPLibrary->getMixingData(siteTypes[siteA], siteTypes[siteIndexMolB + siteB]);
+            const auto mixingData = _PPLibrary->getLJMixingData(siteTypes[siteA], siteTypes[siteIndexMolB + siteB]);
             sigmaSquareds[siteB] = mixingData.sigmaSquared;
             epsilon24s[siteB] = mixingData.epsilon24;
             if (applyShift) {
@@ -586,7 +588,7 @@ class LJMultisiteFunctor
     }
   }
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
@@ -599,7 +601,7 @@ class LJMultisiteFunctor
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -739,8 +741,8 @@ class LJMultisiteFunctor
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
-      AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
@@ -996,7 +998,7 @@ class LJMultisiteFunctor
           // preload sigmas, epsilons, and shifts
           for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
             const auto mixingData =
-                _PPLibrary->getMixingData(_PPLibrary->getSiteTypes(typeptrA[molA])[siteA], siteTypesB[siteB]);
+                _PPLibrary->getLJMixingData(_PPLibrary->getSiteTypes(typeptrA[molA])[siteA], siteTypesB[siteB]);
             sigmaSquareds[siteB] = mixingData.sigmaSquared;
             epsilon24s[siteB] = mixingData.epsilon24;
             if (applyShift) {
@@ -1357,7 +1359,7 @@ class LJMultisiteFunctor
           const auto siteTypesOfNeighborMol = _PPLibrary->getSiteTypes(typeptr[neighborMolIndex]);
 
           for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
-            const auto mixingData = _PPLibrary->getMixingData(primeSiteType, siteTypesOfNeighborMol[site]);
+            const auto mixingData = _PPLibrary->getLJMixingData(primeSiteType, siteTypesOfNeighborMol[site]);
             sigmaSquareds[siteIndex] = mixingData.sigmaSquared;
             epsilon24s[siteIndex] = mixingData.epsilon24;
             if constexpr (applyShift) {

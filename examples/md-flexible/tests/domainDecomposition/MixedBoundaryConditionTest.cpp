@@ -90,7 +90,6 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 
   const double cutoff = 0.3;
   const double sigma = 1.;
-
   // initialise AutoPas container & domainDecomposition
   MDFlexConfig config(0, nullptr);
   config.epsilonMap.value.clear();
@@ -101,7 +100,8 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.cutoff.value = cutoff;
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
-  config.addSiteType(0, 1., sigma, 1.);
+  config.addSiteType(0, 1.);
+  config.addLJParametersToSite(0, 1., sigma);
 
   const std::array<double, 3> boxLength = config.boxMax.value - config.boxMin.value;
   RegularGridDecomposition domainDecomposition(config);
@@ -114,16 +114,16 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->setCutoff(config.cutoff.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
+  particlePropertiesLibrary->addSiteType(0, 1.);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1., sigma);
 #if MD_FLEXIBLE_MODE == MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
 #endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
-  const auto &[expectedPositions, expectedHaloPositions, expectedForces] = setUpExpectations(
-      particlePositions, config.boxMin.value, config.boxMax.value, sigma,
-      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value,
-      config.boundaryOption.value);
+  const auto &[expectedPositions, expectedHaloPositions, expectedForces] =
+      setUpExpectations(particlePositions, config.boxMin.value, config.boxMax.value, sigma,
+                        config.cutoff.value + config.verletSkinRadius.value, config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
   // but also close to their designated positions, so they end up in the correct MPI rank

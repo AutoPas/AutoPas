@@ -12,7 +12,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -51,18 +51,17 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skinPerTimestep
+   * @param skin
    * @param rebuildFrequency
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                        const double skinPerTimestep, const unsigned int rebuildFrequency,
-                        const double cellSizeFactor = 1.0,
+                        const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   /**
@@ -144,9 +143,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
-   */
   void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   /**
@@ -173,10 +169,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
@@ -184,12 +180,12 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCellsReferences::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in LinkedCellsReferences::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -232,8 +228,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
-      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMinWithSafetyMargin -= this->getVerletSkin();
+      boxMaxWithSafetyMargin += this->getVerletSkin();
     }
 
     // first and last relevant cell index
@@ -540,8 +536,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @param iteratorBehavior
    * @param boxMin The actual search box min
    * @param boxMax The actual search box max
-   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
-   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skin
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skin
    * @param endCellIndex Last relevant cell index
    * @return tuple<cellIndex, particleIndex>
    */

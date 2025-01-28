@@ -14,14 +14,14 @@
 #include "testingHelpers/commonTypedefs.h"
 
 // AutoPas is instantiated in AutoPasInstantiations.cpp
-// but iteratePairwise() versions with countFLOPs == true not,
+// but computeInteractions() versions with countFLOPs == true not,
 // so they have to be explicitly instantiated here.
 extern template class autopas::AutoPas<Molecule>;
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
+template bool autopas::AutoPas<Molecule>::computeInteractions(
     mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, /*countFLOPs*/ true, true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
+template bool autopas::AutoPas<Molecule>::computeInteractions(
     mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true, true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
+template bool autopas::AutoPas<Molecule>::computeInteractions(
     mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true, true> *);
 
 /**
@@ -48,7 +48,7 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({3, 3, 3});
   autoPas.setCutoff(1.1);
-  autoPas.setVerletSkinPerTimestep(0.2);
+  autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(1);
   if (isVerlet) {
     autoPas.setAllowedContainers({autopas::ContainerOption::verletListsCells});
@@ -116,7 +116,7 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
       autoPas.getCutoff());
 
-  autoPas.iteratePairwise(&ljFunctor);
+  autoPas.computeInteractions(&ljFunctor);
 
   // See above for reasoning.
   const auto expectedDistanceCalculations =

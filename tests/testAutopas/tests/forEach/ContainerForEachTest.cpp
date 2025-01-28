@@ -7,10 +7,10 @@
 
 #include "ForEachTestHelper.h"
 #include "autopas/AutoPasDecl.h"
-#include "testingHelpers/EmptyFunctor.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
 template <typename AutoPasT>
 auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
@@ -20,11 +20,12 @@ auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, const autopas::Contain
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkinPerTimestep(0.1);
+  autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
+      containerOption, autopas::InteractionTypeOption::pairwise));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
   autoPas.init();
@@ -83,8 +84,8 @@ TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    EmptyPairwiseFunctor<Molecule> eFunctor;
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {
@@ -131,8 +132,8 @@ TEST_P(ContainerForEachTest, testForEachSequential) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    EmptyPairwiseFunctor<Molecule> eFunctor;
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {
@@ -177,8 +178,8 @@ TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    EmptyPairwiseFunctor<Molecule> eFunctor;
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {
@@ -225,8 +226,8 @@ TEST_P(ContainerForEachTest, testForEachParallel) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    EmptyPairwiseFunctor<Molecule> eFunctor;
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {

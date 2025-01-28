@@ -387,7 +387,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
     part->setDensity(part->getDensity() / 2);
   }
 
-  sphSystem.iteratePairwise(&densityFunctor);
+  sphSystem.computeInteractions(&densityFunctor);
 
   // 1.3 delete halo particles, as their values are no longer valid
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::halo); part.isValid(); ++part) {
@@ -411,7 +411,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
     part->setEngDot(0.);
   }
 
-  sphSystem.iteratePairwise(&hydroForceFunctor);
+  sphSystem.computeInteractions(&hydroForceFunctor);
 }
 
 void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
@@ -500,7 +500,7 @@ int main(int argc, char *argv[]) {
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
+  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   std::set<autopas::ContainerOption> allowedContainers{
