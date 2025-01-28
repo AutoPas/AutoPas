@@ -166,6 +166,10 @@ class LogicHandler {
       // Bump iteration counters for all autotuners
       for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
         const bool needsToWait = checkTuningStates(interactionType);
+        // Called before bumpIterationCounters as it would return false after that.
+        if (autoTuner->inLastTuningStep()) {
+          _iterationAtEndOfLastTuningPhase = _iteration;
+        }
         autoTuner->bumpIterationCounters(needsToWait);
       }
 
@@ -598,13 +602,15 @@ class LogicHandler {
    * case for safety.
    * @return value of the mean frequency as double
    */
-  [[nodiscard]] double getMeanRebuildFrequency() const {
+  [[nodiscard]] double getMeanRebuildFrequency(bool onlyLastSimulationPhase = false) const {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    if (_numRebuilds == 0) {
+    auto numRebuilds = onlyLastSimulationPhase ? _numRebuildsInSimulationPhase : _numRebuilds;
+    auto iteration = onlyLastSimulationPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration;
+    if (numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
-      // The total number of iterations is _iteration + 1
-      return static_cast<double>(_iteration + 1) / _numRebuilds;
+      // The total number of iterations is iteration + 1
+      return static_cast<double>(iteration + 1) / numRebuilds;
     }
 #else
     return static_cast<double>(_neighborListRebuildFrequency);
@@ -930,7 +936,8 @@ class LogicHandler {
   size_t _numRebuilds{0};
 
   /**
-   * This is used to store the total number of neighbour lists rebuild.
+   * This is used to store the total number of neighbour lists rebuild in the simulation phase.
+   * This is reset at the start of a new tuning phase.
    */
   size_t _numRebuildsInSimulationPhase{0};
 
@@ -963,10 +970,16 @@ class LogicHandler {
    * Total number of functor calls of all interaction types.
    */
   unsigned int _functorCalls{0};
+
   /**
    * The current iteration number.
    */
   unsigned int _iteration{0};
+
+  /**
+   * The iteration number at the end of last tuning phase.
+   */
+  unsigned int _iterationAtEndOfLastTuningPhase{0};
 
   /**
    * Atomic tracker of the number of owned particles.
@@ -1171,7 +1184,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   auto &container = _containerSelector.getCurrentContainer();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningStep()) {
-    autoTuner.setRebuildFrequency(static_cast<double>(_iteration) / _numRebuildsInSimulationPhase);
+    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* onlyLastSimulationPhase */ true));
     _numRebuildsInSimulationPhase = 0;
   }
 #endif

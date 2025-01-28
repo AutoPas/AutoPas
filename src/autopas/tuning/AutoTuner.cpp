@@ -286,7 +286,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
         }());
 
     _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists, _samplesNotRebuildingNeighborLists,
-                                    _iteration, reducedValue, smoothedValue);
+                                    _iteration, reducedValue, smoothedValue, _rebuildFrequency);
   }
 }
 
@@ -443,6 +443,8 @@ bool AutoTuner::inTuningPhase() const {
 }
 
 bool AutoTuner::inFirstTuningStep() const { return (_iteration % _tuningInterval == 0); }
+
+bool AutoTuner::inLastTuningStep() const { return _endOfTuningPhase; }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 

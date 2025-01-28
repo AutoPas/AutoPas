@@ -223,6 +223,12 @@ class AutoTuner {
   bool inFirstTuningStep() const;
 
   /**
+   * Indicate if the tuner is in the last iteration of the tuning phase.
+   * @return
+   */
+  bool inLastTuningStep() const;
+
+  /**
    * Getter for the internal evidence collection.
    * @return
    */
