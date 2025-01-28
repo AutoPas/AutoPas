@@ -5,7 +5,7 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS]
+data-layout                      :  [AoS, SoA]
 traversal                        :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18]
 tuning-metric                        :  time
 tuning-strategies                    :  [slow-config-filter, predictive-tuning]
@@ -13,7 +13,7 @@ tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  dem
-newton3                          :  [disabled]
+newton3                          :  [enabled, disabled]
 cutoff                           :  3
 box-min                          :  [-5.5, -5.5, -0.5]
 box-max                          :  [35.5, 35.5, 7.5]

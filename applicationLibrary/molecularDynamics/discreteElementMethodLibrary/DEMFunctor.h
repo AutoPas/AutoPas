@@ -247,7 +247,7 @@ class DEMFunctor
     }
 
     double coefficientFactor = 1.0;
-    if (i.getTypeId() == 1) {
+    if (i.getTypeId() == 1 or j.getTypeId() == 1) {
       coefficientFactor = 2.;
     }
     const double elasticStiffness = _elasticStiffness * coefficientFactor;
@@ -451,6 +451,24 @@ class DEMFunctor
           continue;  // VdW deactivated
         }
 
+        if (typeptr[i] == 1 and typeptr[j] == 1) {
+          continue; // no interaction between wall particles
+        }
+
+        double coefficientFactor = 1.0;
+        if (typeptr[i] == 1 or typeptr[j] == 1) {
+          coefficientFactor = 2.;
+        }
+        const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
+        const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
+        const SoAFloatPrecision staticFrictionCoeff = _staticFrictionCoeff * coefficientFactor;
+        const SoAFloatPrecision frictionViscosity = _frictionViscosity * coefficientFactor;
+        const SoAFloatPrecision dynamicFrictionCoeff = _dynamicFrictionCoeff * coefficientFactor;
+        const SoAFloatPrecision rollingViscosity = _rollingViscosity * coefficientFactor;
+        const SoAFloatPrecision rollingFrictionCoeff = _rollingFrictionCoeff * coefficientFactor;
+        const SoAFloatPrecision torsionViscosity = _torsionViscosity * coefficientFactor;
+        const SoAFloatPrecision torsionFrictionCoeff = _torsionFrictionCoeff * coefficientFactor;
+
         const SoAFloatPrecision invDist = 1. / (dist + preventDivisionByZero);
         const SoAFloatPrecision normalUnitX = drx * invDist;
         const SoAFloatPrecision normalUnitY = dry * invDist;
@@ -490,7 +508,7 @@ class DEMFunctor
 
         // Compute normal force as sum of contact force and long-range force (VdW).
         const SoAFloatPrecision normalContactFMag =
-            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+            elasticStiffness * overlap - normalViscosity * relVelDotNormalUnit;
         const SoAFloatPrecision normalFMag = normalContactFMag;  // VdW deactivated
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
@@ -498,18 +516,18 @@ class DEMFunctor
         const SoAFloatPrecision normalFZ = normalFMag * normalUnitZ;
 
         // Compute tangential force
-        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
-        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
-        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
+        SoAFloatPrecision tanFX = -frictionViscosity * tanRelVelTotalX;
+        SoAFloatPrecision tanFY = -frictionViscosity * tanRelVelTotalY;
+        SoAFloatPrecision tanFZ = -frictionViscosity * tanRelVelTotalZ;
 
         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
-        const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * (normalContactFMag);
+        const SoAFloatPrecision coulombLimit = staticFrictionCoeff * (normalContactFMag);
         if (tanFMag > coulombLimit) {
           if constexpr (countFLOPs) {
             ++numInnerIfTanFCallsSum;
           }
           const SoAFloatPrecision scale =
-              _dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);
+              dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);
           tanFX *= scale;
           tanFY *= scale;
           tanFZ *= scale;
@@ -548,9 +566,9 @@ class DEMFunctor
             -radiusReduced * (normalUnitX * (angularVelYptr[i] - angularVelYptr[j]) -
                               normalUnitY * (angularVelXptr[i] - angularVelXptr[j]));
 
-        SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
-        SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
-        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+        SoAFloatPrecision rollingFX = rollingRelVelX * (-rollingViscosity);
+        SoAFloatPrecision rollingFY = rollingRelVelY * (-rollingViscosity);
+        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-rollingViscosity);
 
         const SoAFloatPrecision rollingFMag =
             std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
@@ -560,7 +578,7 @@ class DEMFunctor
             ++numInnerIfRollingQCallsSum;
           }
           const SoAFloatPrecision scale =
-              _rollingFrictionCoeff * (normalContactFMag) / (rollingFMag + preventDivisionByZero);
+              rollingFrictionCoeff * (normalContactFMag) / (rollingFMag + preventDivisionByZero);
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -579,9 +597,9 @@ class DEMFunctor
         const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
         const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
 
-        SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
-        SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
-        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+        SoAFloatPrecision torsionFX = torsionRelVelX * (-torsionViscosity);
+        SoAFloatPrecision torsionFY = torsionRelVelY * (-torsionViscosity);
+        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-torsionViscosity);
 
         const SoAFloatPrecision torsionFMag =
             std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
@@ -591,7 +609,7 @@ class DEMFunctor
             ++numInnerIfTorsionQCallsSum;
           }
           const SoAFloatPrecision scale =
-              _torsionFrictionCoeff * (normalContactFMag) / (torsionFMag + preventDivisionByZero);
+              torsionFrictionCoeff * (normalContactFMag) / (torsionFMag + preventDivisionByZero);
           torsionFX *= scale;
           torsionFY *= scale;
           torsionFZ *= scale;
@@ -614,7 +632,7 @@ class DEMFunctor
         // Compute Heat Transfer (2 + 3 + 2 + 2 = 9 FLOPS)
         const SoAFloatPrecision geometricMeanRadius = std::sqrt(radiusI * radiusJ);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
+            2. * _conductivity * std::pow((3. * elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[i]);
 
         // Compute Heat Generation (12 + 1 = 13 FLOPS)
@@ -1020,6 +1038,25 @@ class DEMFunctor
           continue;  // VdW deactivated
         }
 
+        if (typeptr1[i] == 1 and typeptr2[j] == 1) {
+          continue;  // VdW deactivated
+        }
+
+        double coefficientFactor = 1.0;
+        if (typeptr1[i] == 1 or typeptr2[j] == 1) {
+          coefficientFactor = 2.;
+        }
+        const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
+        const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
+        const SoAFloatPrecision staticFrictionCoeff = _staticFrictionCoeff * coefficientFactor;
+        const SoAFloatPrecision frictionViscosity = _frictionViscosity * coefficientFactor;
+        const SoAFloatPrecision dynamicFrictionCoeff = _dynamicFrictionCoeff * coefficientFactor;
+        const SoAFloatPrecision rollingViscosity = _rollingViscosity * coefficientFactor;
+        const SoAFloatPrecision rollingFrictionCoeff = _rollingFrictionCoeff * coefficientFactor;
+        const SoAFloatPrecision torsionViscosity = _torsionViscosity * coefficientFactor;
+        const SoAFloatPrecision torsionFrictionCoeff = _torsionFrictionCoeff * coefficientFactor;
+
+
         const SoAFloatPrecision invDist = 1.0 / (dist + preventDivisionByZero);
         const SoAFloatPrecision invDistSquared = 1.0 / distSquared;
         const SoAFloatPrecision normalUnitX = drx * invDist;
@@ -1059,7 +1096,7 @@ class DEMFunctor
 
         // Compute normal force
         const SoAFloatPrecision normalContactFMag =
-            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+            elasticStiffness * overlap - normalViscosity * relVelDotNormalUnit;
         const SoAFloatPrecision normalFMag = normalContactFMag;  // VdW deactivated
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
@@ -1070,21 +1107,21 @@ class DEMFunctor
         const SoAFloatPrecision tanFUnitMag = std::sqrt(
             tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY + tanRelVelTotalZ * tanRelVelTotalZ);
         const SoAFloatPrecision tanFScale =
-            _dynamicFrictionCoeff * normalContactFMag / (tanFUnitMag + preventDivisionByZero);
+            dynamicFrictionCoeff * normalContactFMag / (tanFUnitMag + preventDivisionByZero);
 
-        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
-        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
-        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
+        SoAFloatPrecision tanFX = -frictionViscosity * tanRelVelTotalX;
+        SoAFloatPrecision tanFY = -frictionViscosity * tanRelVelTotalY;
+        SoAFloatPrecision tanFZ = -frictionViscosity * tanRelVelTotalZ;
 
         const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
-        const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * (normalContactFMag);
+        const SoAFloatPrecision coulombLimit = staticFrictionCoeff * (normalContactFMag);
 
         if (tanFMag > coulombLimit) {
           if constexpr (countFLOPs) {
             ++numInnerIfTanFCallsSum;
           }
           const SoAFloatPrecision scale =
-              _dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);
+              dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);
           tanFX *= scale;
           tanFY *= scale;
           tanFZ *= scale;
@@ -1124,9 +1161,9 @@ class DEMFunctor
             -radiusReduced * (normalUnitX * (angularVelYptr1[i] - angularVelYptr2[j]) -
                               normalUnitY * (angularVelXptr1[i] - angularVelXptr2[j]));
 
-        SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
-        SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
-        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+        SoAFloatPrecision rollingFX = rollingRelVelX * (-rollingViscosity);
+        SoAFloatPrecision rollingFY = rollingRelVelY * (-rollingViscosity);
+        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-rollingViscosity);
 
         const SoAFloatPrecision rollingFMag =
             std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
@@ -1136,7 +1173,7 @@ class DEMFunctor
             ++numInnerIfRollingQCallsSum;
           }
           const SoAFloatPrecision scale =
-              _rollingFrictionCoeff * (normalContactFMag) / (rollingFMag + preventDivisionByZero);
+              rollingFrictionCoeff * (normalContactFMag) / (rollingFMag + preventDivisionByZero);
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -1155,9 +1192,9 @@ class DEMFunctor
         const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
         const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
 
-        SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
-        SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
-        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+        SoAFloatPrecision torsionFX = torsionRelVelX * (-torsionViscosity);
+        SoAFloatPrecision torsionFY = torsionRelVelY * (-torsionViscosity);
+        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-torsionViscosity);
 
         const SoAFloatPrecision torsionFMag =
             std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
@@ -1167,7 +1204,7 @@ class DEMFunctor
             ++numInnerIfTorsionQCallsSum;
           }
           const SoAFloatPrecision scale =
-              _torsionFrictionCoeff * (normalContactFMag) / (torsionFMag + preventDivisionByZero);
+              torsionFrictionCoeff * (normalContactFMag) / (torsionFMag + preventDivisionByZero);
           torsionFX *= scale;
           torsionFY *= scale;
           torsionFZ *= scale;
@@ -1191,7 +1228,7 @@ class DEMFunctor
         // Compute heat flux
         const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
+            2. * _conductivity * std::pow((3. * elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr2[j] - temperaturePtr1[i]);
 
         const SoAFloatPrecision heatFluxGenerated =
