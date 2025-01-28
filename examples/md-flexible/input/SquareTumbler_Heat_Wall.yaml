@@ -33,7 +33,7 @@ Sites:
   1:
     epsilon: 1.
     sigma: 1.
-    mass: 100.
+    mass: 1000.
     radius: 2.5
 # Uncomment below to run a multi-site simulation.
 #Molecules:
@@ -91,7 +91,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  SquareTumbler_heat_wall_thicker
-vtk-write-frequency              :  10
+vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info

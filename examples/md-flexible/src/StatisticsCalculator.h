@@ -84,7 +84,7 @@ class StatisticsCalculator {
   static std::tuple<double, double, double, size_t>
   calculateVolumetricFlowRate(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
-  static std::tuple<double, double> calculateMeanTemperatureAndMeanHeatFlux(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
+  static std::tuple<double, double, double, double, double> calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(const autopas::AutoPas<ParticleType> &autoPasContainer, const size_t typeId);
 
   /**
    * Generates the output file (.csv) for the statistics.
