@@ -1170,7 +1170,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  if (autoTuner.inFirstTuningStep) {
+  if (autoTuner.inFirstTuningStep()) {
     autoTuner.setRebuildFrequency(static_cast<double>(_iteration) / _numRebuildsInSimulationPhase);
     _numRebuildsInSimulationPhase = 0;
   }
