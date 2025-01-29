@@ -242,7 +242,7 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (not newton3 ? 1 : 0);
     }
 
-    if (i.getTypeId() == 1 and j.getTypeId() == 1) {
+    if (i.getTypeId() == 1 and j.getTypeId() == 1 and isWallSimulation) {
       return; // no interaction between wall particles
     }
 
@@ -453,7 +453,7 @@ class DEMFunctor
           continue;  // VdW deactivated
         }
 
-        if (typeptr[i] == 1 and typeptr[j] == 1) {
+        if (typeptr[i] == 1 and typeptr[j] == 1 and isWallSimulation) {
           continue; // no interaction between wall particles
         }
 
@@ -1042,8 +1042,8 @@ class DEMFunctor
           continue;  // VdW deactivated
         }
 
-        if (typeptr1[i] == 1 and typeptr2[j] == 1) {
-          continue;  // VdW deactivated
+        if (typeptr1[i] == 1 and typeptr2[j] == 1 and isWallSimulation) {
+          continue;
         }
 
         double coefficientFactor = 1.0;
@@ -1991,9 +1991,10 @@ class DEMFunctor
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
-  const double _conductivity = 1;
+  const double _conductivity = 0.05;
   const double _heatGenerationFactor = 0.1;
   const double _coefficientFactor = 1.;
+  const bool isWallSimulation = false;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

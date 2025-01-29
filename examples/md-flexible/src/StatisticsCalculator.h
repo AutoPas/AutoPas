@@ -63,7 +63,7 @@ class StatisticsCalculator {
       calculateRDF(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
 
   static std::vector<std::tuple<int, double, double, size_t>>
-      calculateYToMeanTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
+      calculateDimensionToMeanTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib, const size_t typeId, const size_t dimension);
 
   /**
    * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.
@@ -180,7 +180,9 @@ class StatisticsCalculator {
 
   std::ofstream outputFile_rdf;
 
-  std::ofstream outputFile_meanTemp;
+  std::ofstream outputFile_meanTempY;
+
+  std::ofstream outputFile_meanTempX;
 
   /**
    * Stores the session name.

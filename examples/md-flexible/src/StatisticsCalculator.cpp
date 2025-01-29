@@ -63,15 +63,21 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
 
   auto combinedStatistics = std::tuple_cat(energyStatisticsI, energyStatisticsJ, statisticsI, statisticsJ);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
-  /**
+/**
   if (currentIteration % 2500 == 0) {
+    const std::vector<std::tuple<int, double, double, size_t>> roundedX_to_meanTemperature =
+        calculateDimensionToMeanTemperature(autoPasContainer, particlePropertiesLib, 0L, 0L);
+    for (const auto &tuple : roundedX_to_meanTemperature) {
+      writeRow(outputFile_meanTempX, currentIteration, tuple);
+    }
     const std::vector<std::tuple<int, double, double, size_t>> roundedY_to_meanTemperature =
-        calculateYToMeanTemperature(autoPasContainer, particlePropertiesLib);
+        calculateDimensionToMeanTemperature(autoPasContainer, particlePropertiesLib, 0L, 1L);
     for (const auto &tuple : roundedY_to_meanTemperature) {
-      writeRow(outputFile_meanTemp, currentIteration, tuple);
+      writeRow(outputFile_meanTempY, currentIteration, tuple);
     }
   }
-   **/
+  **/
+
   /**
     const auto statisticsI = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
     const auto statisticsJ = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
@@ -332,16 +338,29 @@ void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &co
   }
 
   // ---------------------------------------------------------------------------------------------------------
-  std::ostringstream filename_meanTemp;
-  filename_meanTemp << _statisticsFolderPath << _sessionName << "_statistics_meanTemp.csv";
+  std::ostringstream filename_meanTempX;
+  filename_meanTempX << _statisticsFolderPath << _sessionName << "_statistics_meanTempX.csv";
 
-  outputFile_meanTemp.open(filename_meanTemp.str(), std::ios::out);
+  outputFile_meanTempX.open(filename_meanTempX.str(), std::ios::out);
 
-  if (outputFile_meanTemp.is_open()) {
-    outputFile_meanTemp << "Iteration, RoundedY, MeanTemperature, TemperatureSum, NumConsideredParticles\n";
+  if (outputFile_meanTempX.is_open()) {
+    outputFile_meanTempX << "Iteration, RoundedX, MeanTemperature, TemperatureSum, NumConsideredParticles\n";
   } else {
     throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " +
-                             filename_meanTemp.str());
+                             filename_meanTempX.str());
+  }
+
+ // ---------------------------------------------------------------------------------------------------------
+  std::ostringstream filename_meanTempY;
+  filename_meanTempY << _statisticsFolderPath << _sessionName << "_statistics_meanTempY.csv";
+
+  outputFile_meanTempY.open(filename_meanTempY.str(), std::ios::out);
+
+  if (outputFile_meanTempY.is_open()) {
+    outputFile_meanTempY << "Iteration, RoundedY, MeanTemperature, TemperatureSum, NumConsideredParticles\n";
+  } else {
+    throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " +
+                             filename_meanTempY.str());
   }
 }
 
@@ -410,9 +429,9 @@ std::vector<std::tuple<size_t, double>> StatisticsCalculator::calculateRDF(
 
   return binIndex_to_rdf;
 }
-std::vector<std::tuple<int, double, double, size_t>> StatisticsCalculator::calculateYToMeanTemperature(
-    const autopas::AutoPas<ParticleType> &autoPasContainer,
-    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+std::vector<std::tuple<int, double, double, size_t>> StatisticsCalculator::calculateDimensionToMeanTemperature(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
+    const size_t typeId, const size_t dimension) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas::utils::ArrayMath;
 
@@ -421,8 +440,11 @@ std::vector<std::tuple<int, double, double, size_t>> StatisticsCalculator::calcu
   std::vector<std::tuple<int, double, double, size_t>> roundedY_to_meanTemperature;
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
+    if (i->getTypeId() != typeId) {  // Only consider solid particles
+      continue;
+    }
     const std::array<double, 3> r_i = i->getR();
-    const int roundedY = std::floor(r_i[1]);
+    const int roundedY = std::floor(r_i[dimension]);
 
     const double temperature = i->getTemperature();
     roundedY_to_counts[roundedY]++;
