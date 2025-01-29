@@ -629,8 +629,8 @@ class DEMFunctor
                       tanRelVelTotalZ * tanRelVelTotalZ);
 
         // Apply Heat Flux
-        heatFluxAcc += (heatTransferMask * heatFluxI + heatFluxGenerated);
-        heatFluxPtr[j] += (heatTransferMask * (-heatFluxI) + heatFluxGenerated);  // "newton 3"
+        heatFluxAcc += (heatFluxI);
+        heatFluxPtr[j] += ((-heatFluxI));  // "newton 3"
       }  // end of j loop
 
       fxptr[i] += fxacc;
