@@ -690,6 +690,7 @@ class AutoPas {
    * Set the maximum allowed slowdown factor for the auto tuner. If a configuration is slower than the optimum
    * configuration found so far by more than this factor, it is blacklisted an will not be tested again until the next
    * tuning phase.
+   * @param maxAllowedSlowdownFactor
    */
   void setMaxAllowedSlowdownFactor(double maxAllowedSlowdownFactor) {
     _autoTunerInfo.maxAllowedSlowdownFactor = maxAllowedSlowdownFactor;
