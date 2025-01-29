@@ -442,9 +442,9 @@ bool AutoTuner::inTuningPhase() const {
   return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
-bool AutoTuner::inFirstTuningStep() const { return (_iteration % _tuningInterval == 0); }
+bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
 
-bool AutoTuner::inLastTuningStep() const { return _endOfTuningPhase; }
+bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 

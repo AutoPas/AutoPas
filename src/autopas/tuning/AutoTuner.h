@@ -220,13 +220,13 @@ class AutoTuner {
    * Indicate if the tuner is in the first iteration of a tuning phase.
    * @return
    */
-  bool inFirstTuningStep() const;
+  bool inFirstTuningIteration() const;
 
   /**
    * Indicate if the tuner is in the last iteration of the tuning phase.
    * @return
    */
-  bool inLastTuningStep() const;
+  bool inLastTuningIteration() const;
 
   /**
    * Getter for the internal evidence collection.
@@ -328,7 +328,8 @@ class AutoTuner {
 
   /**
    * The rebuild frequency this instance of AutoPas uses.
-   * In case of dynamic containers, this reflects the current estimate of rebuild frequency.
+   * In the case of dynamic containers, this reflects the current estimate of the average rebuild frequency.
+   * As the estimate is an average of integers, it can be a fraction and so double is used here.
    * In static containers, this is set to user-defined rebuild frequency.
    */
   double _rebuildFrequency;

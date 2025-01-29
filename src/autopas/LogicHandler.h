@@ -167,7 +167,7 @@ class LogicHandler {
       for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
         const bool needsToWait = checkTuningStates(interactionType);
         // Called before bumpIterationCounters as it would return false after that.
-        if (autoTuner->inLastTuningStep()) {
+        if (autoTuner->inLastTuningIteration()) {
           _iterationAtEndOfLastTuningPhase = _iteration;
         }
         autoTuner->bumpIterationCounters(needsToWait);
@@ -600,18 +600,18 @@ class LogicHandler {
    * Helpful for determining the frequency for the dynamic containers
    * This function is only used for dynamic containers currently but returns user defined rebuild frequency for static
    * case for safety.
-   * @param onlyLastSimulationPhase Bool to determine if mean rebuild frequency is to be calculated over entire
+   * @param onlyLastNonTuningPhase Bool to determine if mean rebuild frequency is to be calculated over entire
    * iterations or only during the simulation phase.
    * @return value of the mean frequency as double
    */
-  [[nodiscard]] double getMeanRebuildFrequency(bool onlyLastSimulationPhase = false) const {
+  [[nodiscard]] double getMeanRebuildFrequency(bool onlyLastNonTuningPhase = false) const {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    auto numRebuilds = onlyLastSimulationPhase ? _numRebuildsInSimulationPhase : _numRebuilds;
-    auto iterationCount = onlyLastSimulationPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
+    const auto numRebuilds = onlyLastNonTuningPhase ? _numRebuildsInSimulationPhase : _numRebuilds;
+    // The total number of iterations is iteration + 1
+    const auto iterationCount = onlyLastNonTuningPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
     if (numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
-      // The total number of iterations is iteration + 1
       return static_cast<double>(iterationCount) / numRebuilds;
     }
 #else
@@ -1185,8 +1185,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  if (autoTuner.inFirstTuningStep()) {
-    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* onlyLastSimulationPhase */ true));
+  if (autoTuner.inFirstTuningIteration()) {
+    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* onlyLastNonTuningPhase */ true));
     _numRebuildsInSimulationPhase = 0;
   }
 #endif
