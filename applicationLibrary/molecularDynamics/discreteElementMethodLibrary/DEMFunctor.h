@@ -853,8 +853,8 @@ class DEMFunctor
   [[nodiscard]] size_t getNumFLOPs() const override {
     /**
      * FLOP count:
-     * KernelNoN3: 155 + 9;
-     * 171 KernelN3: 155 + 13 + 10 = 178;
+     * KernelNoN3: 155 + 9 + 13 = 177;
+     * KernelN3: 155 + 13 + 10 + 14 = 192;
      */
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc =
@@ -881,8 +881,8 @@ class DEMFunctor
 
       constexpr size_t numFLOPsPerDistanceCall = 9;
       constexpr size_t numFLOPsPerOverlapCall = 2;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 164;
-      constexpr size_t numFLOPsPerN3KernelCall = 178;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 177;
+      constexpr size_t numFLOPsPerN3KernelCall = 192;
       constexpr size_t numFLOPsPerInnerIfTanF = 5;
       constexpr size_t numFLOPsPerInnerIfRollingQ = 5;
       constexpr size_t numFLOPsPerInnerIfTorsionQ = 5;
