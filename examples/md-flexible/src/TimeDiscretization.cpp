@@ -59,7 +59,6 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
     // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
-    if (iter->getTypeId() != 1 and isWallSimulated) {
       if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
           maxAllowedDistanceMovedSquared > 0) {
         const auto distanceMoved = std::sqrt(dot(displacement, displacement));
@@ -73,7 +72,6 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
           throwException = true;
         }
       }
-    }
   }
 
   if (throwException) {
