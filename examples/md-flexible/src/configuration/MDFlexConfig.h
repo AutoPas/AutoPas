@@ -449,19 +449,17 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
       15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
-   * verletSkinRadiusPerTimeStep
-   */
-  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{
-      .2, "verlet-skin-radius-per-timestep", true,
-      "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
-      "verletRebuildFrequency."};
-
-  /**
    * fastParticlesThrow
    */
-  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
-                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
-                                                  "will throw an exception during the position update or not."};
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{
+      false, "fastParticlesThrow", false,
+      "Decide if particles that move farther than skin/2/rebuildFrequency "
+      "will throw an exception during the position update or not for the case with statically rebuilding containers."};
+  /**
+   * verletSkinRadius
+   */
+  MDFlexOption<double, __LINE__> verletSkinRadius{
+      .2, "verlet-skin-radius", true, "Skin added to the cutoff avoid rebuilding containers every iteration."};
   /**
    * boxMin
    */
