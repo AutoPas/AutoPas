@@ -53,7 +53,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  SquareTumbler_heat_w_2
+vtk-filename                     :  SquareTumbler_heat_w_1
 vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
