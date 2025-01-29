@@ -51,7 +51,7 @@ class StatisticsCalculator {
    */
   static std::tuple<double, double, double, double, double, double, double>
   calculateMeanPotentialKineticRotationalEnergy(
-      const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
+      const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib, const size_t typeId);
 
   /**
    *

@@ -17,10 +17,13 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   tryCreateStatisticsFolders(_sessionName, outputFolder);
 
   std::vector<std::string> columnNames = {
-      "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ",
+      "Iteration",          "MeanPotentialEnergyZI",  "MeanKineticEnergyXI",    "MeanKineticEnergyYI",
+      "MeanKineticEnergyZI", "MeanRotationalEnergyXI", "MeanRotationalEnergyYI", "MeanRotationalEnergyZI",
+      "MeanPotentialEnergyZJ",  "MeanKineticEnergyXJ",    "MeanKineticEnergyYJ",
+      "MeanKineticEnergyZJ", "MeanRotationalEnergyXJ", "MeanRotationalEnergyYJ", "MeanRotationalEnergyZJ",
       "MeanTemperatureI",   "MinTemperatureI",       "MaxTemperatureI",       "VarTemperatureI",
-      "MeanHeatFluxI"};
+      "MeanHeatFluxI",      "MeanTemperatureJ",      "MinTemperatureJ",       "MaxTemperatureJ",
+      "VarTemperatureJ",    "MeanHeatFluxJ"};
 
   /**
   const std::vector<std::string> columnNames = {
@@ -37,13 +40,16 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
-  const auto energyStatistics =
-      calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
+  const auto energyStatisticsI =
+      calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib, 0L);
+  const auto energyStatisticsJ =
+      calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib, 1L);
   const auto statisticsI = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
-  //const auto statisticsJ = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
-  // const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
-  //  const auto flowRateStatistics = calculateVolumetricFlowRate(autoPasContainer, particlePropertiesLib);
-  //  const auto temperatureStatistics = calculateTemperature(autoPasContainer, particlePropertiesLib);
+  const auto statisticsJ = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
+  // const auto statisticsJ = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
+  //  const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
+  //   const auto flowRateStatistics = calculateVolumetricFlowRate(autoPasContainer, particlePropertiesLib);
+  //   const auto temperatureStatistics = calculateTemperature(autoPasContainer, particlePropertiesLib);
   /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
@@ -55,7 +61,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   statisticsDistanceOverlap);
    **/
 
-  auto combinedStatistics = std::tuple_cat(energyStatistics, statisticsI);
+  auto combinedStatistics = std::tuple_cat(energyStatisticsI, energyStatisticsJ, statisticsI, statisticsJ);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
   /**
   if (currentIteration % 2500 == 0) {
@@ -188,7 +194,7 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
 std::tuple<double, double, double, double, double, double, double>
 StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
-    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+    const ParticlePropertiesLibraryType &particlePropertiesLib, const size_t typeId) {
   using namespace autopas::utils::ArrayMath::literals;
 
   size_t particleCount = 0;
@@ -197,7 +203,9 @@ StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
   std::array<double, 3> meanRotationalEnergy = {0., 0., 0.};
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    if (particle->getTypeId() != 0) continue;
+    if (particle->getTypeId() != typeId) {
+      continue;
+    }
 
     const double mass = particlePropertiesLib.getSiteMass(particle->getTypeId());
     const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
