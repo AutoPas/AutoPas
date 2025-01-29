@@ -63,20 +63,22 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
 
   auto combinedStatistics = std::tuple_cat(energyStatisticsI, energyStatisticsJ, statisticsI, statisticsJ);
   StatisticsCalculator::writeRow(StatisticsCalculator::outputFile, currentIteration, combinedStatistics);
-/**
+
   if (currentIteration % 2500 == 0) {
+    /**
     const std::vector<std::tuple<int, double, double, size_t>> roundedX_to_meanTemperature =
         calculateDimensionToMeanTemperature(autoPasContainer, particlePropertiesLib, 0L, 0L);
     for (const auto &tuple : roundedX_to_meanTemperature) {
       writeRow(outputFile_meanTempX, currentIteration, tuple);
     }
+     **/
     const std::vector<std::tuple<int, double, double, size_t>> roundedY_to_meanTemperature =
         calculateDimensionToMeanTemperature(autoPasContainer, particlePropertiesLib, 0L, 1L);
     for (const auto &tuple : roundedY_to_meanTemperature) {
       writeRow(outputFile_meanTempY, currentIteration, tuple);
     }
   }
-  **/
+
 
   /**
     const auto statisticsI = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 1L);

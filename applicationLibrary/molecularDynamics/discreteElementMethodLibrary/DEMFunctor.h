@@ -242,16 +242,7 @@ class DEMFunctor
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += (not newton3 ? 1 : 0);
     }
 
-    if (i.getTypeId() == 1 and j.getTypeId() == 1 and isWallSimulation) {
-      return; // no interaction between wall particles
-    }
-
     double coefficientFactor = 1.0;
-    bool heatTransferMask = true;
-    if (i.getTypeId() == 1 or j.getTypeId() == 1) {
-      coefficientFactor = _coefficientFactor;
-      heatTransferMask = false;
-    }
     const double elasticStiffness = _elasticStiffness * coefficientFactor;
     const double normalViscosity = _normalViscosity * coefficientFactor;
     const double staticFrictionCoeff = _staticFrictionCoeff * coefficientFactor;
@@ -347,9 +338,9 @@ class DEMFunctor
     // Heat Generation (12 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)
     const double heatFluxGenerated = _heatGenerationFactor * L2Norm(tanF) * L2Norm(tanVel);
 
-    i.addHeatFlux(heatTransferMask * heatFluxI + heatFluxGenerated);
+    i.addHeatFlux(heatFluxI);
     if (newton3) {
-      j.addHeatFlux(heatTransferMask * (-heatFluxI) + heatFluxGenerated);
+      j.addHeatFlux((-heatFluxI));
     }
   }
 
@@ -453,16 +444,8 @@ class DEMFunctor
           continue;  // VdW deactivated
         }
 
-        if (typeptr[i] == 1 and typeptr[j] == 1 and isWallSimulation) {
-          continue; // no interaction between wall particles
-        }
 
         double coefficientFactor = 1.0;
-        bool heatTransferMask = true;
-        if (typeptr[i] == 1 or typeptr[j] == 1) {
-          coefficientFactor = _coefficientFactor;
-          heatTransferMask = false;
-        }
         const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
         const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
         const SoAFloatPrecision staticFrictionCoeff = _staticFrictionCoeff * coefficientFactor;
@@ -1042,16 +1025,7 @@ class DEMFunctor
           continue;  // VdW deactivated
         }
 
-        if (typeptr1[i] == 1 and typeptr2[j] == 1 and isWallSimulation) {
-          continue;
-        }
-
         double coefficientFactor = 1.0;
-        bool heatTransferMask = true;
-        if (typeptr1[i] == 1 or typeptr2[j] == 1) {
-          coefficientFactor = _coefficientFactor;
-          heatTransferMask = false;
-        }
         const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
         const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
         const SoAFloatPrecision staticFrictionCoeff = _staticFrictionCoeff * coefficientFactor;
@@ -1243,9 +1217,9 @@ class DEMFunctor
                       tanRelVelTotalZ * tanRelVelTotalZ);
 
         // Apply heat flux
-        heatFluxAcc += (heatTransferMask * heatFluxI + heatFluxGenerated);
+        heatFluxAcc += (heatFluxI);
         if (newton3) {
-          heatFluxPtr2[j] += (heatTransferMask * (-heatFluxI) + heatFluxGenerated);
+          heatFluxPtr2[j] += ((-heatFluxI));
         }
       }  // end of j loop
 
