@@ -207,7 +207,7 @@ void Simulation::run() {
     const size_t rotationalGlobalForceIterationFrom = 100000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-          _configuration.globalForce.value, -(2.5 * 4), (M_PI/16.) * 2., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
+          _configuration.globalForce.value, -(2.5), (M_PI/16.), rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
       updatePositionsAndResetForces(globalForce, _iteration < settlingEndingIteration);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();

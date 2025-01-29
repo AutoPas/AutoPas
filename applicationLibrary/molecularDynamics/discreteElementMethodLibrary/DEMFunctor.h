@@ -247,8 +247,10 @@ class DEMFunctor
     }
 
     double coefficientFactor = 1.0;
+    bool heatTransferMask = true;
     if (i.getTypeId() == 1 or j.getTypeId() == 1) {
       coefficientFactor = 2.;
+      heatTransferMask = false;
     }
     const double elasticStiffness = _elasticStiffness * coefficientFactor;
     const double normalViscosity = _normalViscosity * coefficientFactor;
@@ -345,9 +347,9 @@ class DEMFunctor
     // Heat Generation (12 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)
     const double heatFluxGenerated = _heatGenerationFactor * L2Norm(tanF) * L2Norm(tanVel);
 
-    i.addHeatFlux(heatFluxI + heatFluxGenerated);
+    i.addHeatFlux(heatTransferMask * heatFluxI + heatFluxGenerated);
     if (newton3) {
-      j.addHeatFlux(-heatFluxI + heatFluxGenerated);
+      j.addHeatFlux(heatTransferMask * (-heatFluxI) + heatFluxGenerated);
     }
   }
 
@@ -456,8 +458,10 @@ class DEMFunctor
         }
 
         double coefficientFactor = 1.0;
+        bool heatTransferMask = true;
         if (typeptr[i] == 1 or typeptr[j] == 1) {
           coefficientFactor = 2.;
+          heatTransferMask = false;
         }
         const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
         const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
@@ -642,8 +646,8 @@ class DEMFunctor
                       tanRelVelTotalZ * tanRelVelTotalZ);
 
         // Apply Heat Flux
-        heatFluxAcc += (heatFluxI + heatFluxGenerated);
-        heatFluxPtr[j] += (-heatFluxI + heatFluxGenerated);  // "newton 3"
+        heatFluxAcc += (heatTransferMask * heatFluxI + heatFluxGenerated);
+        heatFluxPtr[j] += (heatTransferMask * (-heatFluxI) + heatFluxGenerated);  // "newton 3"
       }  // end of j loop
 
       fxptr[i] += fxacc;
@@ -1043,8 +1047,10 @@ class DEMFunctor
         }
 
         double coefficientFactor = 1.0;
+        bool heatTransferMask = true;
         if (typeptr1[i] == 1 or typeptr2[j] == 1) {
           coefficientFactor = 2.;
+          heatTransferMask = false;
         }
         const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
         const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
@@ -1237,9 +1243,9 @@ class DEMFunctor
                       tanRelVelTotalZ * tanRelVelTotalZ);
 
         // Apply heat flux
-        heatFluxAcc += (heatFluxI + heatFluxGenerated);
+        heatFluxAcc += (heatTransferMask * heatFluxI + heatFluxGenerated);
         if (newton3) {
-          heatFluxPtr2[j] += (-heatFluxI + heatFluxGenerated);
+          heatFluxPtr2[j] += (heatTransferMask * (-heatFluxI) + heatFluxGenerated);
         }
       }  // end of j loop
 

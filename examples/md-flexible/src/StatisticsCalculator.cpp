@@ -20,8 +20,7 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
       "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
       "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ",
       "MeanTemperatureI",   "MinTemperatureI",       "MaxTemperatureI",       "VarTemperatureI",
-      "MeanHeatFluxI",
-  };
+      "MeanHeatFluxI"};
 
   /**
   const std::vector<std::string> columnNames = {
@@ -41,6 +40,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   const auto energyStatistics =
       calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
   const auto statisticsI = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
+  const auto statisticsJ = calculateMeanMinMaxVarTemperatureAndMeanHeatFlux(autoPasContainer, 1L);
   // const auto statisticsJ = calculateMeanTemperatureAndMeanHeatFlux(autoPasContainer, 0L);
   //  const auto flowRateStatistics = calculateVolumetricFlowRate(autoPasContainer, particlePropertiesLib);
   //  const auto temperatureStatistics = calculateTemperature(autoPasContainer, particlePropertiesLib);
