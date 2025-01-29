@@ -51,7 +51,7 @@ void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &conf
                                               double meanRebuildFrequency) const {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(_loggerName)
-      ->info("{},{},{},{},{},{}", iteration, configuration.getCSVLine(),
+      ->info("{},{},{},{},{},{},{}", iteration, configuration.getCSVLine(),
              utils::ArrayUtils::to_string(samplesRebuildingNeighborLists, ",", {"", ""}),
              utils::ArrayUtils::to_string(samplesNotRebuildingNeighborLists, ",", {"", ""}), reducedValue,
              smoothedValue, meanRebuildFrequency);

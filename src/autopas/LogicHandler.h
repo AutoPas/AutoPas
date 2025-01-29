@@ -607,12 +607,12 @@ class LogicHandler {
   [[nodiscard]] double getMeanRebuildFrequency(bool onlyLastSimulationPhase = false) const {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     auto numRebuilds = onlyLastSimulationPhase ? _numRebuildsInSimulationPhase : _numRebuilds;
-    auto iteration = onlyLastSimulationPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration;
+    auto iterationCount = onlyLastSimulationPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
     if (numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
       // The total number of iterations is iteration + 1
-      return static_cast<double>(iteration + 1) / numRebuilds;
+      return static_cast<double>(iterationCount) / numRebuilds;
     }
 #else
     return static_cast<double>(_neighborListRebuildFrequency);
