@@ -1993,8 +1993,8 @@ class DEMFunctor
   const double preventDivisionByZero = 1e-6;
   const double _conductivity = 0.05;
   const double _heatGenerationFactor = 0.1;
-  const double _coefficientFactor = 1.;
-  const bool isWallSimulation = false;
+  const double _coefficientFactor = 3.;
+  const bool isWallSimulation = true;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
