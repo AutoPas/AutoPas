@@ -877,16 +877,15 @@ class LJFunctorAVX
     // special mixed precision case, we have to convert the 8 floats to doubles first before adding them
 
     // split into 2*4 floats and convert to 2*4 doubles, _mm256_cvtps_pd are expensive! _mm512_cvtps_pd introduced by
-    // AVX512 could cut these in half
-    // TODO MP is "if (rest < 5)" worth it here?
+    // AVX512 could reduce this to one instruction each
     const __m256d fxCvtLow = _mm256_cvtps_pd(_mm256_extractf128_ps(fx, 0));
-    const __m256d fxCvtHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(fx, 1));
+    const __m256d fxCvtHigh = (rest > 4) ? _mm256_cvtps_pd(_mm256_extractf128_ps(fx, 1)) : _mm256_setzero_pd();
 
     const __m256d fyCvtLow = _mm256_cvtps_pd(_mm256_extractf128_ps(fy, 0));
-    const __m256d fyCvtHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(fy, 1));
+    const __m256d fyCvtHigh = (rest > 4) ? _mm256_cvtps_pd(_mm256_extractf128_ps(fy, 1)) : _mm256_setzero_pd();
 
     const __m256d fzCvtLow = _mm256_cvtps_pd(_mm256_extractf128_ps(fz, 0));
-    const __m256d fzCvtHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(fz, 1));
+    const __m256d fzCvtHigh = (rest > 4) ? _mm256_cvtps_pd(_mm256_extractf128_ps(fz, 1)) : _mm256_setzero_pd();
 
     // add the converted values
     fxacc = _mm256_add_pd(fxacc, fxCvtLow);
@@ -900,31 +899,75 @@ class LJFunctorAVX
 
     // if newton 3 is used subtract fD from particle j
     if constexpr (newton3) {
-      // we need to load and store double the number of particles in this case
-      __m256d fx2first;
-      __m256d fx2second;
-      __m256d fy2first;
-      __m256d fy2second;
-      __m256d fz2first;
-      __m256d fz2second;
+      // we need to potentially load and store double the number of particles in this case
+      const __m256d fx2first = remainderIsMasked && rest < 4 ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1])
+                                                             : _mm256_loadu_pd(&fx2ptr[j]);
+      const __m256d fx2second = remainderIsMasked && rest > 4 ? _mm256_maskload_pd(&fx2ptr[j + 4], _masks[rest - 5])
+                                                              : _mm256_loadu_pd(&fx2ptr[j + 4]);
+      const __m256d fy2first = remainderIsMasked && rest < 4 ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1])
+                                                             : _mm256_loadu_pd(&fy2ptr[j]);
+      const __m256d fy2second = remainderIsMasked && rest > 4 ? _mm256_maskload_pd(&fy2ptr[j + 4], _masks[rest - 5])
+                                                              : _mm256_loadu_pd(&fy2ptr[j + 4]);
+      const __m256d fz2first = remainderIsMasked && rest < 4 ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1])
+                                                             : _mm256_loadu_pd(&fz2ptr[j]);
+      const __m256d fz2second = remainderIsMasked && rest > 4 ? _mm256_maskload_pd(&fz2ptr[j + 4], _masks[rest - 5])
+                                                              : _mm256_loadu_pd(&fz2ptr[j + 4]);
 
-      // TODO MP Think about this
-      if (remainderIsMasked) {
-        /*
-        if (rest < 5){
-        }else{
-          fx2first = _mm256_loadu_pd(&fx2ptr[j]);
-        }
-        */
+      const __m256d fx2newfirst = _mm256_sub_pd(fx2first, fxCvtLow);
+      const __m256d fx2newsecond = _mm256_sub_pd(fx2second, fxCvtHigh);
+      const __m256d fy2newfirst = _mm256_sub_pd(fy2first, fyCvtLow);
+      const __m256d fy2newsecond = _mm256_sub_pd(fy2second, fyCvtHigh);
+      const __m256d fz2newfirst = _mm256_sub_pd(fz2first, fzCvtLow);
+      const __m256d fz2newsecond = _mm256_sub_pd(fz2second, fzCvtHigh);
 
-      } else {
-        fx2first = _mm256_loadu_pd(&fx2ptr[j]);
-        fx2second = _mm256_loadu_pd(&fx2ptr[j + 4]);
-        fy2first = _mm256_loadu_pd(&fy2ptr[j]);
-        fy2second = _mm256_loadu_pd(&fy2ptr[j + 4]);
-        fz2first = _mm256_loadu_pd(&fz2ptr[j]);
-        fz2second = _mm256_loadu_pd(&fz2ptr[j + 4]);
+      remainderIsMasked &&rest < 4 ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2newfirst)
+                                   : _mm256_storeu_pd(&fx2ptr[j], fx2newfirst);
+      remainderIsMasked &&rest > 4 ? _mm256_maskstore_pd(&fx2ptr[j + 4], _masks[rest - 5], fx2newsecond)
+                                   : _mm256_storeu_pd(&fx2ptr[j + 4], fx2newsecond);
+      remainderIsMasked &&rest < 4 ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2newfirst)
+                                   : _mm256_storeu_pd(&fy2ptr[j], fy2newfirst);
+      remainderIsMasked &&rest > 4 ? _mm256_maskstore_pd(&fy2ptr[j + 4], _masks[rest - 5], fy2newsecond)
+                                   : _mm256_storeu_pd(&fy2ptr[j + 4], fy2newsecond);
+      remainderIsMasked &&rest < 4 ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2newfirst)
+                                   : _mm256_storeu_pd(&fz2ptr[j], fz2newfirst);
+      remainderIsMasked &&rest > 4 ? _mm256_maskstore_pd(&fz2ptr[j + 4], _masks[rest - 5], fz2newsecond)
+                                   : _mm256_storeu_pd(&fz2ptr[j + 4], fz2newsecond);
+    }
+
+    if constexpr (calculateGlobals) {
+      // Global Virial
+      const __m256 virialX = _mm256_mul_ps(fx, drx);
+      const __m256 virialY = _mm256_mul_ps(fy, dry);
+      const __m256 virialZ = _mm256_mul_ps(fz, drz);
+
+      // Global Potential
+      const __m256 potentialEnergy = wrapperFMA(epsilon24s, lj12m6, shift6s);
+
+      const __m256 potentialEnergyMasked =
+          remainderIsMasked
+              ? _mm256_and_ps(potentialEnergy, _mm256_and_ps(cutoffDummyMask, _mm256_castsi256_ps(_masks[rest - 1])))
+              : _mm256_and_ps(potentialEnergy, cutoffDummyMask);
+
+      const __m256 ownedMaskI =
+          _mm256_cmp_ps(_mm256_castsi256_ps(ownedStateI), _mm256_castsi256_ps(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+      __m256 energyFactor = _mm256_blendv_ps(_zero, _one, ownedMaskI);
+      if constexpr (newton3) {
+        __m256d ownedMaskJ =
+            _mm256_cmp_ps(_mm256_castsi256_ps(ownedStateJ), _mm256_castsi256_ps(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+        energyFactor = _mm256_add_ps(energyFactor, _mm256_blendv_ps(_zero, _one, ownedMaskJ));
       }
+      const __m256d energyFactorLow = _mm256_cvtps_pd(_mm256_extractf128_ps(energyFactor, 0));
+      const __m256d energyFactorHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(energyFactor, 1));
+      *potentialEnergySum = wrapperFMA(
+          energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(potentialEnergyMasked, 0), *potentialEnergySum));
+      *potentialEnergySum = wrapperFMA(
+          energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(potentialEnergyMasked, 1), *potentialEnergySum));
+      *virialSumX = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialX, 0), *virialSumX));
+      *virialSumX = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialX, 1), *virialSumX));
+      *virialSumY = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialY, 0), *virialSumY));
+      *virialSumY = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialY, 1), *virialSumY));
+      *virialSumZ = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialZ, 0), *virialSumZ));
+      *virialSumZ = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialZ, 1), *virialSumZ));
     }
 #else
     // double precision
@@ -1396,25 +1439,6 @@ class LJFunctorAVX
 #else
     // dummy return. If no vectorization is available this whole class is pointless anyways.
     return __m256d();
-#endif
-  }
-
-  /**
-   * Wrapper function for FMA. If FMA is not supported it first executes the multiplication then the addition.
-   * @param factorA
-   * @param factorB
-   * @param summandC
-   * @return A * B + C
-   */
-  inline __m256 wrapperFMA(const __m256 &factorA, const __m256 &factorB, const __m256 &summandC) {
-#ifdef __FMA__
-    return _mm256_fmadd_ps(factorA, factorB, summandC);
-#elif __AVX__
-    const __m256d tmp = _mm256_mul_ps(factorA, factorB);
-    return _mm256_add_ps(summandC, tmp);
-#else
-    // dummy return. If no vectorization is available this whole class is pointless anyways.
-    return __m256();
 #endif
   }
 #endif
