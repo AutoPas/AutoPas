@@ -229,9 +229,9 @@ class AutoTuner {
   bool canMeasureEnergy() const;
 
   /**
-   * Notify the tuner about the iteratePairwise runtime of the current configuration. 
-   * Keeps track of the fastest runtime so far and triggers early stopping of the sampling phase if the current runtime is
-   * worse than the fastest runtime by more than the maximum allowed slowdown factor.
+   * Notify the tuner about the iteratePairwise runtime of the current configuration.
+   * Keeps track of the fastest runtime so far and triggers early stopping of the sampling phase if the current runtime
+   * is worse than the fastest runtime by more than the maximum allowed slowdown factor.
    */
   void evaluateConfigurationPerformance(long performance);
 
