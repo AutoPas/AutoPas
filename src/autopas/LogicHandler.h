@@ -606,11 +606,12 @@ class LogicHandler {
    * non-rebuild samples.
    * @return value of the mean frequency as double
    */
-  [[nodiscard]] double getMeanRebuildFrequency(bool onlyLastNonTuningPhase = false) const {
+  [[nodiscard]] double getMeanRebuildFrequency(bool considerOnlyLastNonTuningPhase = false) const {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    const auto numRebuilds = onlyLastNonTuningPhase ? _numRebuildsInNonTuningPhase : _numRebuilds;
+    const auto numRebuilds = considerOnlyLastNonTuningPhase ? _numRebuildsInNonTuningPhase : _numRebuilds;
     // The total number of iterations is iteration + 1
-    const auto iterationCount = onlyLastNonTuningPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
+    const auto iterationCount =
+        considerOnlyLastNonTuningPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
     if (numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
@@ -1188,7 +1189,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   auto &container = _containerSelector.getCurrentContainer();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
-    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* onlyLastNonTuningPhase */ true));
+    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
   }
 #endif
