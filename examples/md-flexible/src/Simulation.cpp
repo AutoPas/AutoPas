@@ -102,13 +102,13 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   const auto *fillerAfterSuffix =
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
   const auto outputSuffix =
-      "_Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
+      "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
   } else {
     _logFile = std::make_shared<std::ofstream>();
-    _logFile->open(_configuration.logFileName.value + outputSuffix);
+    _logFile->open(_configuration.logFileName.value + "_" + outputSuffix);
     _outputStream = &(*_logFile);
   }
 
