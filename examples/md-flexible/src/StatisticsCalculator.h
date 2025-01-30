@@ -66,7 +66,7 @@ class StatisticsCalculator {
       calculateDimensionToMeanTemperature(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib, const size_t typeId, const size_t dimension);
 
   static std::vector<std::tuple<int, size_t>>
-      calculateRoundedYToNumParticles(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib, const size_t typeId);
+      calculateRoundedYToNumParticles(const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib);
   /**
    * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.
    * @param autoPasContainer

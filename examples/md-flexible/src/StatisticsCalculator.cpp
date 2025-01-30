@@ -79,7 +79,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
     }
 
     const std::vector<std::tuple<int, size_t>> roundedY_to_numParticles =
-        calculateRoundedYToNumParticles(autoPasContainer, particlePropertiesLib, 0L);
+        calculateRoundedYToNumParticles(autoPasContainer, particlePropertiesLib);
     for (const auto &tuple : roundedY_to_numParticles) {
       writeRow(outputFile_numParticlesByY, currentIteration, tuple);
     }
@@ -485,8 +485,7 @@ std::vector<std::tuple<int, double, double, size_t>> StatisticsCalculator::calcu
 }
 
 std::vector<std::tuple<int, size_t>> StatisticsCalculator::calculateRoundedYToNumParticles(
-    const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
-    const size_t typeId) {
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas::utils::ArrayMath;
 
@@ -494,9 +493,6 @@ std::vector<std::tuple<int, size_t>> StatisticsCalculator::calculateRoundedYToNu
   std::vector<std::tuple<int, size_t>> roundedY_to_numParticles_vector;
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
-    if (i->getTypeId() != typeId) {  // Only consider solid particles
-      continue;
-    }
     const std::array<double, 3> r_i = i->getR();
     const int roundedY = std::floor(r_i[1]);
 
