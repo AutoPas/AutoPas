@@ -13,7 +13,6 @@ namespace autopas::utils {
 EnergySensor::EnergySensor(EnergySensorOption sensor) : _option(sensor) {
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   _sensor = pmt::Create(sensor.to_string());
-  // check if there is a way to check if sensor is created in PMT
 #endif
 }
 
