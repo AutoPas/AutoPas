@@ -250,7 +250,7 @@ class DEMFunctor
     bool heatTransferMask = true;
     if (i.getTypeId() == 1 or j.getTypeId() == 1) {
       coefficientFactor = _coefficientFactor;
-      heatTransferMask = false;
+      heatTransferMask = activatedHeatTransfer;
     }
     const double elasticStiffness = _elasticStiffness * coefficientFactor;
     const double normalViscosity = _normalViscosity * coefficientFactor;
@@ -461,7 +461,7 @@ class DEMFunctor
         bool heatTransferMask = true;
         if (typeptr[i] == 1 or typeptr[j] == 1) {
           coefficientFactor = _coefficientFactor;
-          heatTransferMask = false;
+          heatTransferMask = activatedHeatTransfer;
         }
         const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
         const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
@@ -1050,7 +1050,7 @@ class DEMFunctor
         bool heatTransferMask = true;
         if (typeptr1[i] == 1 or typeptr2[j] == 1) {
           coefficientFactor = _coefficientFactor;
-          heatTransferMask = false;
+          heatTransferMask = activatedHeatTransfer;
         }
         const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
         const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
@@ -1995,6 +1995,7 @@ class DEMFunctor
   const double _heatGenerationFactor = 0.1;
   const double _coefficientFactor = 3.;
   const bool isWallSimulation = true;
+  const bool activatedHeatTransfer = true;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
