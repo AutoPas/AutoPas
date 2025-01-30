@@ -494,7 +494,7 @@ std::vector<std::tuple<int, size_t>> StatisticsCalculator::calculateRoundedYToNu
 
   for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
     const std::array<double, 3> r_i = i->getR();
-    const int roundedY = std::floor(r_i[1]);
+    const int roundedY = (int)(r_i[1] + 0.5);
 
     roundedY_to_counts[roundedY]++;
   }  // End of 'i' loop
