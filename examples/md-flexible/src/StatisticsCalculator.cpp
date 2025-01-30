@@ -77,6 +77,12 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
     for (const auto &tuple : roundedY_to_meanTemperature) {
       writeRow(outputFile_meanTempY, currentIteration, tuple);
     }
+
+    const std::vector<std::tuple<int, size_t>> roundedY_to_numParticles =
+        calculateRoundedYToNumParticles(autoPasContainer, particlePropertiesLib, 0L);
+    for (const auto &tuple : roundedY_to_numParticles) {
+      writeRow(outputFile_numParticlesByY, currentIteration, tuple);
+    }
   }
 
 
@@ -364,6 +370,18 @@ void StatisticsCalculator::generateOutputFile(const std::vector<std::string> &co
     throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " +
                              filename_meanTempY.str());
   }
+  // ---------------------------------------------------------------------------------------------------------
+  std::ostringstream filename_numParticlesByY;
+  filename_numParticlesByY << _statisticsFolderPath << _sessionName << "_statistics_numParticlesByY.csv";
+
+  outputFile_numParticlesByY.open(filename_numParticlesByY.str(), std::ios::out);
+
+  if (outputFile_numParticlesByY.is_open()) {
+    outputFile_numParticlesByY << "Iteration, RoundedY, NumParticles\n";
+  } else {
+    throw std::runtime_error("StatisticsCalculator::generateOutputFile(): Could not open file " +
+                             filename_numParticlesByY.str());
+  }
 }
 
 void StatisticsCalculator::tryCreateStatisticsFolders(const std::string &name, const std::string &location) {
@@ -464,4 +482,33 @@ std::vector<std::tuple<int, double, double, size_t>> StatisticsCalculator::calcu
   }
 
   return roundedY_to_meanTemperature;
+}
+
+std::vector<std::tuple<int, size_t>> StatisticsCalculator::calculateRoundedYToNumParticles(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
+    const size_t typeId) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
+
+  std::map<int, size_t> roundedY_to_counts;
+  std::vector<std::tuple<int, size_t>> roundedY_to_numParticles_vector;
+
+  for (auto i = autoPasContainer.begin(autopas::IteratorBehavior::owned); i.isValid(); ++i) {
+    if (i->getTypeId() != typeId) {  // Only consider solid particles
+      continue;
+    }
+    const std::array<double, 3> r_i = i->getR();
+    const int roundedY = std::floor(r_i[1]);
+
+    roundedY_to_counts[roundedY]++;
+  }  // End of 'i' loop
+
+  for (auto &pair : roundedY_to_counts) {
+    const size_t roundedY = pair.first;
+    const size_t counts = pair.second;
+
+    roundedY_to_numParticles_vector.emplace_back(roundedY, counts);
+  }
+
+  return roundedY_to_numParticles_vector;
 }
