@@ -600,13 +600,15 @@ class LogicHandler {
    * Helpful for determining the frequency for the dynamic containers
    * This function is only used for dynamic containers currently but returns user defined rebuild frequency for static
    * case for safety.
-   * @param onlyLastNonTuningPhase Bool to determine if mean rebuild frequency is to be calculated over entire
-   * iterations or only during the simulation phase.
+   * @param considerOnlyLastNonTuningPhase Bool to determine if mean rebuild frequency is to be calculated over entire
+   * iterations or only during the last non-tuning phase.
+   * The mean rebuild frequency over the non-tuning phase is required by the autoTuner for weighting the rebuild and
+   * non-rebuild samples.
    * @return value of the mean frequency as double
    */
   [[nodiscard]] double getMeanRebuildFrequency(bool onlyLastNonTuningPhase = false) const {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    const auto numRebuilds = onlyLastNonTuningPhase ? _numRebuildsInSimulationPhase : _numRebuilds;
+    const auto numRebuilds = onlyLastNonTuningPhase ? _numRebuildsInNonTuningPhase : _numRebuilds;
     // The total number of iterations is iteration + 1
     const auto iterationCount = onlyLastNonTuningPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
     if (numRebuilds == 0) {
@@ -938,10 +940,10 @@ class LogicHandler {
   size_t _numRebuilds{0};
 
   /**
-   * This is used to store the total number of neighbour lists rebuild in the simulation phase.
+   * This is used to store the total number of neighbour lists rebuilds in the non-tuning phase.
    * This is reset at the start of a new tuning phase.
    */
-  size_t _numRebuildsInSimulationPhase{0};
+  size_t _numRebuildsInNonTuningPhase{0};
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
@@ -1187,7 +1189,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
     autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* onlyLastNonTuningPhase */ true));
-    _numRebuildsInSimulationPhase = 0;
+    _numRebuildsInNonTuningPhase = 0;
   }
 #endif
   autopas::utils::Timer timerTotal;
@@ -1210,7 +1212,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     this->resetNeighborListsInvalidDoDynamicRebuild();
     _numRebuilds++;
     if (not autoTuner.inTuningPhase()) {
-      _numRebuildsInSimulationPhase++;
+      _numRebuildsInNonTuningPhase++;
     }
 #endif
     timerRebuild.stop();

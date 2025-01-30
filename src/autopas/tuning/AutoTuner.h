@@ -107,10 +107,11 @@ class AutoTuner {
   void bumpIterationCounters(bool needToWait = false);
 
   /**
-   * Returns whether rebuildNeighborLists() will be triggered in the next iteration.
-   * This might also indicate a container change.
-   *
-   * @return True if the current iteration counters indicate a rebuild in the next iteration.
+   * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
+   * This indicates a configuration change.
+   * In the non-tuning phase, the rebuildNeighborLists() is triggered in LogicHandler.
+   * @return True if the current iteration counters indicate a rebuild in the next iteration due to a configuration
+   * change.
    */
   bool willRebuildNeighborLists() const;
 
@@ -241,7 +242,7 @@ class AutoTuner {
   bool canMeasureEnergy() const;
 
   /**
-   * Sets the _rebuildFrequency.
+   * Sets the _rebuildFrequency. This is the average number of iterations per rebuild.
    * This is used to dynamically change the _rebuildFrequency based on estimate in case of dynamic containers.
    * @param rebuildFrequency Current rebuild frequency in this instance of autopas, used by autopas for weighing rebuild
    * and non-rebuild iterations

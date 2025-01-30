@@ -312,11 +312,10 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 
 bool AutoTuner::willRebuildNeighborLists() const {
   // AutoTuner only triggers rebuild during the tuning phase
-  const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : std::numeric_limits<unsigned int>::max();
-  ;
+  const auto iterationsPerConfig = this->inTuningPhase() ? _maxSamples : std::numeric_limits<unsigned int>::max();
   // _iterationBaseLine + 1 since we want to look ahead to the next iteration
   const auto iterationBaselineNextStep = _forceRetune ? _iterationBaseline : _iterationBaseline + 1;
-  return (iterationBaselineNextStep % iterationsPerRebuild) == 0;
+  return (iterationBaselineNextStep % iterationsPerConfig) == 0;
 }
 
 bool AutoTuner::initEnergy() {
