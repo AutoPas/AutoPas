@@ -90,7 +90,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  SquareTumbler_heat_wall_thicker_no_ht_with_walls
+vtk-filename                     :  SquareTumbler_heat_wall_thicker_no_ht_with_walls_c0d05
 vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
