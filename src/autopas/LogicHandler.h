@@ -1767,8 +1767,6 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
-  autoTuner.evaluateConfigurationPerformance(measurements.timeTotal);
-
   /// Pass on measurements
   // if this was a major iteration add measurements
   if (functor->isRelevantForTuning()) {

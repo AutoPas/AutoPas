@@ -139,11 +139,6 @@ bool AutoTuner::tuneConfiguration() {
     // CASE: somewhere in a tuning phase
     _isTuning = true;
 
-    if (_earlyStoppingOfResampling) {
-      _iterationBaseline = 0;
-      _earlyStoppingOfResampling = false;
-    }
-
     AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before optimizeSuggestions: (Size={}) {}", _configQueue.size(),
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                             [](const auto &conf) { return conf.toShortString(false); }));
@@ -189,6 +184,7 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
     // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
     // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
     const bool stillTuning = tuneConfiguration();
+    _earlyStoppingOfResampling = false;
     return {getCurrentConfig(), stillTuning};
   }
 }
@@ -244,6 +240,9 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   } else {
     _samplesNotRebuildingNeighborLists.push_back(sample);
   }
+
+  checkEarlyStoppingCondition();
+
   // if this was the last sample for this configuration:
   //  - calculate the evidence from the collected samples
   //  - log what was collected
@@ -421,9 +420,6 @@ bool AutoTuner::prepareIteration() {
     for (const auto &tuningStrat : _tuningStrategies) {
       tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
     }
-
-    // reset fastestTraversalTimeSoFar
-    _fastestIteratePairwiseTime = std::numeric_limits<long>::max();
   }
 
   // if necessary, we need to collect live info in the first tuning iteration
@@ -463,14 +459,22 @@ const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evi
 
 bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 
-void AutoTuner::evaluateConfigurationPerformance(long performance) {
-  _fastestIteratePairwiseTime = std::min(_fastestIteratePairwiseTime, performance);
-
-  double slowdownFactor = static_cast<double>(performance) / static_cast<double>(_fastestIteratePairwiseTime);
-
-  if (performance == _fastestIteratePairwiseTime) {
-    AutoPasLog(DEBUG, "Configuration achieved new fastest traversal time so far");
+void AutoTuner::checkEarlyStoppingCondition() {
+  if (_samplesNotRebuildingNeighborLists.empty()) {
+    // Wait until a sample without expensive rebuilding occurred to make it fairer for Verlet-based methods.
+    // This should generally happen in the second sample
+    return;
   }
+  if (_evidenceCollection.empty()) {
+    // For the first configuration in a tuning phase, we have nothing to compare it against. So we cannot skip it.
+    return;
+  }
+
+  long preliminaryEstimate = estimateRuntimeFromSamples();
+
+  auto [_, bestEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+
+  double slowdownFactor = static_cast<double>(preliminaryEstimate) / static_cast<double>(bestEvidence.value);
 
   if (slowdownFactor > _maxAllowedSlowdownFactor) {
     AutoPasLog(DEBUG,
@@ -478,6 +482,9 @@ void AutoTuner::evaluateConfigurationPerformance(long performance) {
                "maximum allowed slowdown factor of {}. Further evaluation of this configuration will be skipped.",
                slowdownFactor, _maxAllowedSlowdownFactor);
     _earlyStoppingOfResampling = true;
+
+    // Pretend that we are in the last iteration of this sample. This is required for the periodic rebuilding
+    _iterationBaseline += (_maxSamples - (_iterationBaseline % _maxSamples)) - 1;
   }
 }
 }  // namespace autopas
