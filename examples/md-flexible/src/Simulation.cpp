@@ -170,7 +170,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
   const auto *fillerAfterSuffix =
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
-  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + fillerBeforeSuffix +
+  _autoPasContainer->setOutputSuffix("_Rank" + std::to_string(rank) + fillerBeforeSuffix +
                                      _configuration.outputSuffix.value + fillerAfterSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
