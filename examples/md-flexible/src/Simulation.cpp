@@ -95,11 +95,19 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                             std::to_string(_configuration.iterations.value).size());
   }
 
+  const auto rank = _domainDecomposition->getDomainIndex();
+  const auto *fillerBeforeSuffix =
+      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
+  const auto *fillerAfterSuffix =
+      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
+  const auto outputSuffix = "Rank" + std::to_string(rank) + fillerBeforeSuffix +
+                            _configuration.outputSuffix.value + fillerAfterSuffix;
+
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
   } else {
     _logFile = std::make_shared<std::ofstream>();
-    _logFile->open(_configuration.logFileName.value);
+    _logFile->open(_configuration.logFileName.value + outputSuffix);
     _outputStream = &(*_logFile);
   }
 
@@ -165,13 +173,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
-  const auto rank = _domainDecomposition->getDomainIndex();
-  const auto *fillerBeforeSuffix =
-      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
-  const auto *fillerAfterSuffix =
-      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
-  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + fillerBeforeSuffix +
-                                     _configuration.outputSuffix.value + fillerAfterSuffix);
+  _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
   _autoPasContainer->init();
