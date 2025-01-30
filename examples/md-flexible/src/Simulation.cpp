@@ -101,8 +101,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
   const auto *fillerAfterSuffix =
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
-  const auto outputSuffix = "_Rank" + std::to_string(rank) + fillerBeforeSuffix +
-                            _configuration.outputSuffix.value + fillerAfterSuffix;
+  const auto outputSuffix =
+      "_Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
