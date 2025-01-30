@@ -227,6 +227,10 @@ StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     ++particleCount;
   }
 
+  if (particleCount <= 0) {
+    return std::make_tuple(0., 0., 0., 0., 0., 0., 0.);
+  }
+
   meanPotentialEnergy = meanPotentialEnergy * (1. / particleCount);
   meanKineticEnergy = meanKineticEnergy * (1. / particleCount);
   meanRotationalEnergy = meanRotationalEnergy * (1. / particleCount);
