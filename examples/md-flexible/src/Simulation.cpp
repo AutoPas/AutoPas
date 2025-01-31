@@ -108,7 +108,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     _outputStream = &std::cout;
   } else {
     _logFile = std::make_shared<std::ofstream>();
-    _logFile->open(_configuration.logFileName.value + outputSuffix);
+    _logFile->open(_configuration.logFileName.value + "_" + outputSuffix);
     _outputStream = &(*_logFile);
   }
 
