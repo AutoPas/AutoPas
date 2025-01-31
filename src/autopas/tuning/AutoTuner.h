@@ -229,10 +229,10 @@ class AutoTuner {
   bool canMeasureEnergy() const;
 
   /**
-   * Checks whether the current configuration performs so poorly that it shouldn't be resampled further within this tuning phase.
-   * If the currently sampled configuration is worse than the current best configuration by more than the
-   * earlyStoppingFactor factor, it will not be sampled again this tuning phase. Uses the _estimateRuntimeFromSamples() function to
-   * estimate the runtimes.
+   * Checks whether the current configuration performs so poorly that it shouldn't be resampled further within this
+   * tuning phase. If the currently sampled configuration is worse than the current best configuration by more than the
+   * earlyStoppingFactor factor, it will not be sampled again this tuning phase. Uses the _estimateRuntimeFromSamples()
+   * function to estimate the runtimes.
    */
   void checkEarlyStoppingCondition();
 
@@ -421,9 +421,11 @@ class AutoTuner {
    * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
+
   /**
-   * A counter incremented in every iteration and reset to zero at the beginning of a tuning phase and at the end of
-   * a tuning phase
+   * Used only for triggering rebuilds when configurations switch during tuning phases, which occurs when
+   * _iterationBaseline % _maxSamples == 0. _iterationBaseline may therefore be modified to "skip" iterations e.g. when
+   * early stopping is used."
    */
   size_t _iterationBaseline{0};
 };

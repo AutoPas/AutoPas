@@ -461,8 +461,8 @@ bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 
 void AutoTuner::checkEarlyStoppingCondition() {
   if (_samplesNotRebuildingNeighborLists.empty()) {
-    // Wait until a sample without the expensive rebuilding has occurred to compare the configurations based on estimated runtime for the non-tuning phase.
-    // This should generally happen in the second sample.
+    // Wait until a sample without the expensive rebuilding has occurred to compare the configurations based on
+    // estimated runtime for the non-tuning phase. This should generally happen in the second sample.
     return;
   }
 
@@ -484,8 +484,9 @@ void AutoTuner::checkEarlyStoppingCondition() {
                slowdownFactor, _earlyStoppingFactor);
     _earlyStoppingOfResampling = true;
 
-    // Pretend that we are in the last iteration of this sample. This is required for the periodic rebuilding
-    _iterationBaseline += (_maxSamples - (_iterationBaseline % _maxSamples)) - 1;
+    // Add the number of skipped samples to _iterationBaseline, to trigger a rebuild in the next iteration
+    size_t skippedSamples = (_maxSamples - (_iterationBaseline % _maxSamples)) - 1;
+    _iterationBaseline += skippedSamples;
   }
 }
 }  // namespace autopas
