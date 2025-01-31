@@ -9,7 +9,7 @@ Therefore, AutoPas offers a bunch of [Tuning Strategies](https://github.com/Auto
 ## Tuning Loop
 To better understand what the strategies do, we first take a look at the way AutoPas does its tuning.
 
-The basic idea is that the AutoTuner class determines a configuration, which the LogicHandler then assembles and applies to the ParticleContainer.
+The basic idea is that the [AutoTuner](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/AutoTuner.h) class determines a configuration, which the [LogicHandler](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/LogicHandler.h) then assembles and applies to the [ParticleContainer](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/containers/ParticleContainerInterface.h).
 In order to determine the optimal configuration, the AutoTuner has a queue of candidates that it tries out by using it for one interaction computation in order to measure their performance.
 Those iterations while candidate configurations are evaluated are referred to as tuning phase.
 AutoPas works on the assumption that particle simulations evolve very slow and thus the simulation state of subsequent iterations is sufficiently similar to compare the configurations' performances.
