@@ -18,7 +18,7 @@ When the queue is fully processed, the configuration with the optimal measuremen
 ### Tuning Interval
 The interval between the start of two tuning phases can be configured by the user.
 Iterations for sampling the configurations do count against this interval so if an tuning interval of 1000 is set tuning will start at iterations 0, 1000, 2000.
-Should the tuning take longer than one interval any starts that fall into an active tuning phase are skipped.
+Should the tuning take longer than one interval, the subsequent tuning phases are skipped until the first is complete.
 
 ### Tuning Strategies
 By default, the AutoTuner configuration queue is filled with all applicable configurations and processed sequentially.
