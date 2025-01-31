@@ -69,8 +69,6 @@ class LogicHandler {
         _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
-    // Reserve some memory for the _rebuildIntervals to avoid reallocations
-    _rebuildIntervals.reserve(1000);
     // Initialize AutoPas with tuners for given interaction types
     for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
@@ -168,14 +166,15 @@ class LogicHandler {
       // Bump iteration counters for all autotuners
       for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
         const bool needsToWait = checkTuningStates(interactionType);
+        // Called before bumpIterationCounters as it would return false after that.
+        if (autoTuner->inLastTuningIteration()) {
+          _iterationAtEndOfLastTuningPhase = _iteration;
+        }
         autoTuner->bumpIterationCounters(needsToWait);
       }
 
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-        _rebuildIntervals.push_back(_stepsSinceLastListRebuild);
-#endif
         _stepsSinceLastListRebuild = 0;
       }
       ++_stepsSinceLastListRebuild;
@@ -601,19 +600,22 @@ class LogicHandler {
    * Helpful for determining the frequency for the dynamic containers
    * This function is only used for dynamic containers currently but returns user defined rebuild frequency for static
    * case for safety.
+   * @param considerOnlyLastNonTuningPhase Bool to determine if mean rebuild frequency is to be calculated over entire
+   * iterations or only during the last non-tuning phase.
+   * The mean rebuild frequency over the non-tuning phase is required by the autoTuner for weighting the rebuild and
+   * non-rebuild samples.
    * @return value of the mean frequency as double
    */
-  [[nodiscard]] double getMeanRebuildFrequency() const {
+  [[nodiscard]] double getMeanRebuildFrequency(bool considerOnlyLastNonTuningPhase = false) const {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    if (_rebuildIntervals.empty()) {
+    const auto numRebuilds = considerOnlyLastNonTuningPhase ? _numRebuildsInNonTuningPhase : _numRebuilds;
+    // The total number of iterations is iteration + 1
+    const auto iterationCount =
+        considerOnlyLastNonTuningPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
+    if (numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
-      // Neglecting the first entry in the vector as _stepsSinceLastListRebuild is initialized to a very large value,
-      // to trigger the first rebuild when starting the simulation,
-      // which gets stored in the vector on the very first rebuild.
-      // This large value is ignored when calculating the mean value below.
-      return std::accumulate(_rebuildIntervals.begin() + 1, _rebuildIntervals.end(), 0.) /
-             static_cast<double>(_rebuildIntervals.size() - 1);
+      return static_cast<double>(iterationCount) / numRebuilds;
     }
 #else
     return static_cast<double>(_neighborListRebuildFrequency);
@@ -982,10 +984,15 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * Array of int which contains the iteration number when a rebuild occurs.
-   * This is used to calculate the mean rebuild frequency.
+   * This is used to store the total number of neighbour lists rebuild.
    */
-  std::vector<int> _rebuildIntervals;
+  size_t _numRebuilds{0};
+
+  /**
+   * This is used to store the total number of neighbour lists rebuilds in the non-tuning phase.
+   * This is reset at the start of a new tuning phase.
+   */
+  size_t _numRebuildsInNonTuningPhase{0};
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
@@ -1016,10 +1023,16 @@ class LogicHandler {
    * Total number of functor calls of all interaction types.
    */
   unsigned int _functorCalls{0};
+
   /**
    * The current iteration number.
    */
   unsigned int _iteration{0};
+
+  /**
+   * The iteration number at the end of last tuning phase.
+   */
+  unsigned int _iterationAtEndOfLastTuningPhase{0};
 
   /**
    * Atomic tracker of the number of owned particles.
@@ -1220,7 +1233,12 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   auto &autoTuner = *_autoTunerRefs[interactionType];
   auto &container = _containerSelector.getCurrentContainer();
-
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  if (autoTuner.inFirstTuningIteration()) {
+    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
+    _numRebuildsInNonTuningPhase = 0;
+  }
+#endif
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerComputeInteractions;
@@ -1240,6 +1258,10 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     container.rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->resetNeighborListsInvalidDoDynamicRebuild();
+    _numRebuilds++;
+    if (not autoTuner.inTuningPhase()) {
+      _numRebuildsInNonTuningPhase++;
+    }
 #endif
     timerRebuild.stop();
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
