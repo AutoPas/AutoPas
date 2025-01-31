@@ -465,8 +465,9 @@ void AutoTuner::checkEarlyStoppingCondition() {
     // This should generally happen in the second sample
     return;
   }
-  if (_evidenceCollection.empty()) {
-    // For the first configuration in a tuning phase, we have nothing to compare it against. So we cannot skip it.
+
+  if (_iterationBaseline < _maxSamples) {
+    // Since there is no prior evidence, we must fully evaluate the first configuration.
     return;
   }
 
