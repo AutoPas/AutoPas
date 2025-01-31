@@ -755,10 +755,12 @@ class LogicHandler {
    * @tparam Functor
    * @param functor
    * @param newton3
+   * @param useSoA Use SoA functor calls where it is feasible. This still leaves some interactions with the AoS functor
+   * but the switch is useful to disable SoA calls if a functor doesn't support them at all.
    * @return
    */
   template <class Functor>
-  void computeRemainderInteractions(Functor &functor, bool newton3);
+  void computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA);
 
   /**
    * Performs the interactions ParticleContainer::computeInteractions() did not cover.
@@ -779,15 +781,17 @@ class LogicHandler {
    * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
    * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
    * updated.
+   * @param useSoA Use SoAFunctor calls instead of AoSFunctor calls wherever it makes sense.
    */
   template <bool newton3, class ContainerType, class PairwiseFunctor>
   void computeRemainderInteractions2B(PairwiseFunctor *f, ContainerType &container,
                                       std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffers, bool useSoA);
 
   /**
-   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and
-   * containers
+   * Helper Method for computeRemainderInteractions2B.
+   * This method calculates all interactions between buffers and containers.
+   *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
    * @tparam PairwiseFunctor
@@ -798,37 +802,81 @@ class LogicHandler {
    * updated.
    */
   template <bool newton3, class ContainerType, class PairwiseFunctor>
-  void remainderHelperBufferContainer(PairwiseFunctor *f, ContainerType &container,
-                                      std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+  void remainderHelperBufferContainerAoS(PairwiseFunctor *f, ContainerType &container,
+                                         std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                         std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and
-   * buffers
+   * Helper Method for computeRemainderInteractions2B.
+   * This method calculates all interactions between buffers and buffers
    * @tparam newton3
    * @tparam PairwiseFunctor
    * @param f
-   * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
-   * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
-   * updated.
+   * @param particleBuffers Vector of particle buffers. These particles' force vectors will be updated.
+   * @param useSoA Use SoA based interactions instead of AoS.
    */
   template <bool newton3, class PairwiseFunctor>
   void remainderHelperBufferBuffer(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                   std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+                                   bool useSoA);
 
   /**
-   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and halo
-   * buffers
+   * AoS implementation for remainderHelperBufferBuffer().
    * @tparam newton3
    * @tparam PairwiseFunctor
    * @param f
-   * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
-   * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
-   * updated.
+   * @param particleBuffers
    */
   template <bool newton3, class PairwiseFunctor>
+  void remainderHelperBufferBufferAoS(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers);
+
+  /**
+   * SoA implementation for remainderHelperBufferBuffer().
+   * @tparam newton3
+   * @tparam PairwiseFunctor
+   * @param f
+   * @param particleBuffers
+   */
+  template <bool newton3, class PairwiseFunctor>
+  void remainderHelperBufferBufferSoA(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers);
+
+  /**
+   * Helper Method for computeRemainderInteractions2B.
+   * This method calculates all interactions between buffers and halo buffers.
+   *
+   * @note This function never uses Newton3 because we do not need to calculate the effect on the halo particles.
+   *
+   * @tparam PairwiseFunctor
+   * @param f
+   * @param particleBuffers Vector of particle buffers. These particles' force vectors will be updated.
+   * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
+   * updated.
+   * @param useSoA Use SoA based interactions instead of AoS.
+   */
+  template <class PairwiseFunctor>
   void remainderHelperBufferHaloBuffer(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                       std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+                                       std::vector<FullParticleCell<Particle>> &haloParticleBuffers, bool useSoA);
+
+  /**
+   * AoS implementation for remainderHelperBufferHaloBuffer()
+   * @tparam PairwiseFunctor
+   * @param f
+   * @param particleBuffers
+   * @param haloParticleBuffers
+   */
+  template <class PairwiseFunctor>
+  void remainderHelperBufferHaloBufferAoS(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+
+  /**
+   * SoA implementation for remainderHelperBufferHaloBuffer()
+   * @tparam PairwiseFunctor
+   * @param f
+   * @param particleBuffers
+   * @param haloParticleBuffers
+   */
+  template <class PairwiseFunctor>
+  void remainderHelperBufferHaloBufferSoA(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
    * Performs the interactions ParticleContainer::computeInteractions() did not cover.
@@ -879,8 +927,8 @@ class LogicHandler {
    * @param f
    */
   template <class TriwiseFunctor>
-  void remainderHelper3bBufferBufferBuffer(const std::vector<Particle *> &bufferParticles,
-                                           size_t numOwnedBufferParticles, TriwiseFunctor *f);
+  void remainderHelper3bBufferBufferBufferAoS(const std::vector<Particle *> &bufferParticles,
+                                              size_t numOwnedBufferParticles, TriwiseFunctor *f);
 
   /**
    * Helper Method for computeRemainderInteractions3B. This method calculates all interactions between two buffer
@@ -894,9 +942,9 @@ class LogicHandler {
    * @param f
    */
   template <class ContainerType, class TriwiseFunctor>
-  void remainderHelper3bBufferBufferContainer(const std::vector<Particle *> &bufferParticles,
-                                              size_t numOwnedBufferParticles, ContainerType &container,
-                                              TriwiseFunctor *f);
+  void remainderHelper3bBufferBufferContainerAoS(const std::vector<Particle *> &bufferParticles,
+                                                 size_t numOwnedBufferParticles, ContainerType &container,
+                                                 TriwiseFunctor *f);
 
   /**
    * Helper Method for computeRemainderInteractions3B. This method calculates all interactions between one buffer
@@ -911,9 +959,9 @@ class LogicHandler {
    * @param f
    */
   template <bool newton3, class ContainerType, class TriwiseFunctor>
-  void remainderHelper3bBufferContainerContainer(const std::vector<Particle *> &bufferParticles,
-                                                 size_t numOwnedBufferParticles, ContainerType &container,
-                                                 TriwiseFunctor *f);
+  void remainderHelper3bBufferContainerContainerAoS(const std::vector<Particle *> &bufferParticles,
+                                                    size_t numOwnedBufferParticles, ContainerType &container,
+                                                    TriwiseFunctor *f);
 
   /**
    * Check that the simulation box is at least of interaction length in each direction.
@@ -1170,9 +1218,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     }
   }();
 
-  const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
   auto &autoTuner = *_autoTunerRefs[interactionType];
-  const bool newton3 = autoTuner.getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
@@ -1185,7 +1231,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerTotal.start();
   functor.initTraversal();
 
-  if (doListRebuild) {
+  // if lists are not valid -> rebuild;
+  if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
     timerRebuild.start();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
@@ -1203,7 +1250,9 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerComputeInteractions.stop();
 
   timerComputeRemainder.start();
-  computeRemainderInteractions(functor, newton3);
+  const bool newton3 = autoTuner.getCurrentConfig().newton3;
+  const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
+  computeRemainderInteractions(functor, newton3, dataLayout);
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
@@ -1226,15 +1275,17 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
 template <typename Particle>
 template <class Functor>
-void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, bool newton3) {
+void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA) {
   auto &container = _containerSelector.getCurrentContainer();
 
   withStaticContainerType(container, [&](auto &actualContainerType) {
     if constexpr (utils::isPairwiseFunctor<Functor>()) {
       if (newton3) {
-        computeRemainderInteractions2B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions2B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer,
+                                             useSoA);
       } else {
-        computeRemainderInteractions2B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions2B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer,
+                                              useSoA);
       }
     } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
       if (newton3) {
@@ -1250,7 +1301,7 @@ template <class Particle>
 template <bool newton3, class ContainerType, class PairwiseFunctor>
 void LogicHandler<Particle>::computeRemainderInteractions2B(
     PairwiseFunctor *f, ContainerType &container, std::vector<FullParticleCell<Particle>> &particleBuffers,
-    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+    std::vector<FullParticleCell<Particle>> &haloParticleBuffers, bool useSoA) {
   // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
   if (_bufferLocks.size() < particleBuffers.size()) {
     utils::ExceptionHandler::exception("Not enough locks for non-halo buffers! Num Locks: {}, Buffers: {}",
@@ -1272,20 +1323,37 @@ void LogicHandler<Particle>::computeRemainderInteractions2B(
   autopas::utils::Timer timerBufferContainer;
   autopas::utils::Timer timerPBufferPBuffer;
   autopas::utils::Timer timerPBufferHBuffer;
+  autopas::utils::Timer timerBufferSoAConversion;
 
   timerBufferContainer.start();
 #endif
-  // steps 1 & 2. particleBuffer with all close particles in container and haloParticleBuffer with owned, close
-  // particles in container
-  remainderHelperBufferContainer<newton3>(f, container, particleBuffers, haloParticleBuffers);
+  // steps 1 & 2.
+  // particleBuffer with all particles close in container
+  // and haloParticleBuffer with owned, close particles in container.
+  // This is always AoS-based because the container particles are found with region iterators,
+  // which don't have an SoA interface.
+  remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainer.stop();
+  timerBufferSoAConversion.start();
+#endif
+  if (useSoA) {
+    // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
+    for (auto &buffer : particleBuffers) {
+      f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    }
+    for (auto &buffer : haloParticleBuffers) {
+      f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    }
+  }
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferSoAConversion.stop();
   timerPBufferPBuffer.start();
 #endif
 
   // step 3. particleBuffer with itself and all other buffers
-  remainderHelperBufferBuffer<newton3>(f, particleBuffers, haloParticleBuffers);
+  remainderHelperBufferBuffer<newton3>(f, particleBuffers, useSoA);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferPBuffer.stop();
@@ -1293,27 +1361,30 @@ void LogicHandler<Particle>::computeRemainderInteractions2B(
 #endif
 
   // step 4. particleBuffer with haloParticleBuffer
-  remainderHelperBufferHaloBuffer<newton3>(f, particleBuffers, haloParticleBuffers);
+  remainderHelperBufferHaloBuffer(f, particleBuffers, haloParticleBuffers, useSoA);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferHBuffer.stop();
 #endif
 
   // unpack particle SoAs. Halo data is not interesting
-  for (auto &buffer : particleBuffers) {
-    f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
+  if (useSoA) {
+    for (auto &buffer : particleBuffers) {
+      f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
+    }
   }
 
-  AutoPasLog(TRACE, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer   (  4): {}", timerPBufferHBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer    (  3): {}", timerPBufferPBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer    (  4): {}", timerPBufferHBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Load and extract SoA buffers: {}", timerBufferSoAConversion.getTotalTime());
 
   // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }
 
 template <class Particle>
 template <bool newton3, class ContainerType, class PairwiseFunctor>
-void LogicHandler<Particle>::remainderHelperBufferContainer(
+void LogicHandler<Particle>::remainderHelperBufferContainerAoS(
     PairwiseFunctor *f, ContainerType &container, std::vector<FullParticleCell<Particle>> &particleBuffers,
     std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   using autopas::utils::ArrayUtils::static_cast_copy_array;
@@ -1391,30 +1462,53 @@ template <class Particle>
 template <bool newton3, class PairwiseFunctor>
 void LogicHandler<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f,
                                                          std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                                         std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
-  // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
-  for (auto &buffer : particleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
+                                                         bool useSoA) {
+  if (useSoA) {
+    remainderHelperBufferBufferSoA<newton3>(f, particleBuffers);
+  } else {
+    remainderHelperBufferBufferAoS<newton3>(f, particleBuffers);
   }
-  for (auto &buffer : haloParticleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  }
+}
 
-  AUTOPAS_OPENMP(parallel) {
-    // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
-    // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
-    // buffer. This saves expensive locks.
-    // we can not use collapse here without locks, otherwise races would occur.
-    AUTOPAS_OPENMP(for)
-    for (size_t i = 0; i < particleBuffers.size(); ++i) {
-      for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
-        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-        const auto j = (i + jj) % particleBuffers.size();
-        if (i == j) {
-          f->SoAFunctorSingle(*particleBufferSoAA, true);
-        } else {
-          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+template <class Particle>
+template <bool newton3, class PairwiseFunctor>
+void LogicHandler<Particle>::remainderHelperBufferBufferAoS(PairwiseFunctor *f,
+                                                            std::vector<FullParticleCell<Particle>> &particleBuffers) {
+  // For all interactions between different buffers we turn newton3 always off,
+  // which ensures that only one thread at a time is writing to a buffer.
+  // This saves expensive locks.
+
+  // We can not use collapse here without locks, otherwise races would occur.
+  AUTOPAS_OPENMP(parallel for)
+  for (size_t bufferIdxI = 0; bufferIdxI < particleBuffers.size(); ++bufferIdxI) {
+    for (size_t bufferIdxJOffset = 0; bufferIdxJOffset < particleBuffers.size(); ++bufferIdxJOffset) {
+      // Let each bufferI use a different starting point for bufferJ to minimize false sharing
+      const auto bufferIdxJ = (bufferIdxI + bufferIdxJOffset) % particleBuffers.size();
+
+      // interact the two buffers
+      if (bufferIdxI == bufferIdxJ) {
+        // CASE Same buffer
+        // Only use Newton3 if it is allowed, and we are working on only one buffer. This avoids data races.
+        const bool useNewton3 = newton3;
+        auto &bufferRef = particleBuffers[bufferIdxI];
+        const auto bufferSize = bufferRef.size();
+        for (auto i = 0; i < bufferSize; ++i) {
+          auto &p1 = bufferRef[i];
+          // If Newton3 is disabled run over the whole buffer, otherwise only what is ahead
+          for (auto j = useNewton3 ? i + 1 : 0; j < bufferSize; ++j) {
+            if (i == j) {
+              continue;
+            }
+            auto &p2 = bufferRef[j];
+            f->AoSFunctor(p1, p2, useNewton3);
+          }
+        }
+      } else {
+        // CASE: Two buffers
+        for (auto &p1 : particleBuffers[bufferIdxI]) {
+          for (auto &p2 : particleBuffers[bufferIdxJ]) {
+            f->AoSFunctor(p1, p2, false);
+          }
         }
       }
     }
@@ -1423,7 +1517,65 @@ void LogicHandler<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f,
 
 template <class Particle>
 template <bool newton3, class PairwiseFunctor>
+void LogicHandler<Particle>::remainderHelperBufferBufferSoA(PairwiseFunctor *f,
+                                                            std::vector<FullParticleCell<Particle>> &particleBuffers) {
+  // we can not use collapse here without locks, otherwise races would occur.
+  AUTOPAS_OPENMP(parallel for)
+  for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+      auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+      // instead of starting every (parallel) iteration i at j == 0 offset them by i to minimize waiting times at locks
+      const auto j = (i + jj) % particleBuffers.size();
+      if (i == j) {
+        // For buffer interactions where bufferA == bufferB we can always enable newton3 if it is allowed.
+        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+      } else {
+        // For all interactions between different buffers we turn newton3 always off,
+        // which ensures that only one thread at a time is writing to a buffer. This saves expensive locks.
+        auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+        f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+      }
+    }
+  }
+}
+
+template <class Particle>
+template <class PairwiseFunctor>
 void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
+    PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
+    std::vector<FullParticleCell<Particle>> &haloParticleBuffers, bool useSoA) {
+  if (useSoA) {
+    remainderHelperBufferHaloBufferSoA<PairwiseFunctor>(f, particleBuffers, haloParticleBuffers);
+  } else {
+    remainderHelperBufferHaloBufferAoS<PairwiseFunctor>(f, particleBuffers, haloParticleBuffers);
+  }
+}
+
+template <class Particle>
+template <class PairwiseFunctor>
+void LogicHandler<Particle>::remainderHelperBufferHaloBufferAoS(
+    PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
+    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+  // Here, phase / color based parallelism turned out to be more efficient than tasks
+  AUTOPAS_OPENMP(parallel)
+  for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
+    AUTOPAS_OPENMP(for)
+    for (size_t i = 0; i < particleBuffers.size(); ++i) {
+      auto &particleBuffer = particleBuffers[i];
+      auto &haloBuffer = haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()];
+
+      for (auto &p1 : particleBuffer) {
+        for (auto &p2 : haloBuffer) {
+          f->AoSFunctor(p1, p2, false);
+        }
+      }
+    }
+  }
+}
+
+template <class Particle>
+template <class PairwiseFunctor>
+void LogicHandler<Particle>::remainderHelperBufferHaloBufferSoA(
     PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
     std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // Here, phase / color based parallelism turned out to be more efficient than tasks
@@ -1459,7 +1611,7 @@ void LogicHandler<Particle>::computeRemainderInteractions3B(
 #endif
 
   // Step 1: Triwise interactions of all particles in the buffers (owned and halo)
-  remainderHelper3bBufferBufferBuffer(bufferParticles, numOwnedBufferParticles, f);
+  remainderHelper3bBufferBufferBufferAoS(bufferParticles, numOwnedBufferParticles, f);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferBufferBuffer.stop();
@@ -1467,7 +1619,7 @@ void LogicHandler<Particle>::computeRemainderInteractions3B(
 #endif
 
   // Step 2: Triwise interactions of 2 buffer particles with 1 container particle
-  remainderHelper3bBufferBufferContainer(bufferParticles, numOwnedBufferParticles, container, f);
+  remainderHelper3bBufferBufferContainerAoS(bufferParticles, numOwnedBufferParticles, container, f);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferBufferContainer.stop();
@@ -1475,7 +1627,7 @@ void LogicHandler<Particle>::computeRemainderInteractions3B(
 #endif
 
   // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
-  remainderHelper3bBufferContainerContainer<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
+  remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainerContainer.stop();
@@ -1522,9 +1674,9 @@ size_t LogicHandler<Particle>::collectBufferParticles(std::vector<Particle *> &b
 
 template <class Particle>
 template <class TriwiseFunctor>
-void LogicHandler<Particle>::remainderHelper3bBufferBufferBuffer(const std::vector<Particle *> &bufferParticles,
-                                                                 const size_t numOwnedBufferParticles,
-                                                                 TriwiseFunctor *f) {
+void LogicHandler<Particle>::remainderHelper3bBufferBufferBufferAoS(const std::vector<Particle *> &bufferParticles,
+                                                                    const size_t numOwnedBufferParticles,
+                                                                    TriwiseFunctor *f) {
   AUTOPAS_OPENMP(parallel for)
   for (auto i = 0; i < numOwnedBufferParticles; ++i) {
     Particle &p1 = *bufferParticles[i];
@@ -1545,9 +1697,9 @@ void LogicHandler<Particle>::remainderHelper3bBufferBufferBuffer(const std::vect
 
 template <class Particle>
 template <class ContainerType, class TriwiseFunctor>
-void LogicHandler<Particle>::remainderHelper3bBufferBufferContainer(const std::vector<Particle *> &bufferParticles,
-                                                                    const size_t numOwnedBufferParticles,
-                                                                    ContainerType &container, TriwiseFunctor *f) {
+void LogicHandler<Particle>::remainderHelper3bBufferBufferContainerAoS(const std::vector<Particle *> &bufferParticles,
+                                                                       const size_t numOwnedBufferParticles,
+                                                                       ContainerType &container, TriwiseFunctor *f) {
   using autopas::utils::ArrayUtils::static_cast_copy_array;
   using namespace autopas::utils::ArrayMath::literals;
 
@@ -1582,9 +1734,9 @@ void LogicHandler<Particle>::remainderHelper3bBufferBufferContainer(const std::v
 
 template <class Particle>
 template <bool newton3, class ContainerType, class TriwiseFunctor>
-void LogicHandler<Particle>::remainderHelper3bBufferContainerContainer(const std::vector<Particle *> &bufferParticles,
-                                                                       const size_t numOwnedBufferParticles,
-                                                                       ContainerType &container, TriwiseFunctor *f) {
+void LogicHandler<Particle>::remainderHelper3bBufferContainerContainerAoS(
+    const std::vector<Particle *> &bufferParticles, const size_t numOwnedBufferParticles, ContainerType &container,
+    TriwiseFunctor *f) {
   // Todo: parallelize without race conditions - https://github.com/AutoPas/AutoPas/issues/904
   using autopas::utils::ArrayUtils::static_cast_copy_array;
   using namespace autopas::utils::ArrayMath::literals;
