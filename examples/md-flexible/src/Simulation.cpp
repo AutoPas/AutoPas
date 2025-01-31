@@ -198,7 +198,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    if (_calculateStatistics and _iteration % 100 == 0) {  // TODO: to change
+    if (_calculateStatistics and _iteration % 5000 == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[1], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
