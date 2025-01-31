@@ -229,9 +229,9 @@ class AutoTuner {
   bool canMeasureEnergy() const;
 
   /**
-   * Checks whether the current configuration seems to perform so poorly that it shouldn't be resampled further
-   * If the current configuration seems worse than the previosuly best configuration by more than the
-   * earlyStoppingFactor factor, it will not be sampled again. Uses the _estimateRuntimeFromSamples() function to
+   * Checks whether the current configuration performs so poorly that it shouldn't be resampled further within this tuning phase.
+   * If the currently sampled configuration is worse than the current best configuration by more than the
+   * earlyStoppingFactor factor, it will not be sampled again this tuning phase. Uses the _estimateRuntimeFromSamples() function to
    * estimate the runtimes.
    */
   void checkEarlyStoppingCondition();
@@ -326,7 +326,7 @@ class AutoTuner {
 
   /**
    * EarlyStoppingFactor for the auto-tuner. A configuration performing worse than the currently best configuration
-   * by more than this factor will not be sampled again
+   * by more than this factor will not be sampled again this tuning phase.
    */
   double _earlyStoppingFactor;
 

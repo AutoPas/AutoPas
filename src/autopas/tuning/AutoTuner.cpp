@@ -461,8 +461,8 @@ bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 
 void AutoTuner::checkEarlyStoppingCondition() {
   if (_samplesNotRebuildingNeighborLists.empty()) {
-    // Wait until a sample without expensive rebuilding occurred to make it fairer for Verlet-based methods.
-    // This should generally happen in the second sample
+    // Wait until a sample without the expensive rebuilding has occurred to compare the configurations based on estimated runtime for the non-tuning phase.
+    // This should generally happen in the second sample.
     return;
   }
 
