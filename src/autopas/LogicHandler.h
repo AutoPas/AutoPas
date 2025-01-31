@@ -570,7 +570,7 @@ class LogicHandler {
    * it will never be applicable.
    */
   template <class Functor>
-  [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
+  [[nodiscard]] std::optional<std::unique_ptr<TraversalInterface>> isConfigurationApplicable(
       const Configuration &conf, Functor &functor, const InteractionTypeOption &interactionType);
 
   /**
@@ -1811,7 +1811,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
                   configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
                   configuration.newton3);
 
-          // set sortingThreshold of the traversal if it can be casted to a CellTraversal and uses the CellFunctor
+          // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
           if (auto *cellTraversalPtr =
                   dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
                       traversalPtr.get())) {
@@ -1848,11 +1848,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       // applicability check also sets the container
       std::tie(traversalPtrOpt, rejectIndefinitely) =
           isConfigurationApplicable(configuration, functor, interactionType);
-      if (traversalPtrOpt.has_value()) {
+      const bool configurationCompatible = traversalPtrOpt.has_value();
+      if (configurationCompatible) {
         break;
       }
       // if no config is left after rejecting this one an exception is thrown here.
-      std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
+      std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, not configurationCompatible);
     }
   }
 
@@ -1947,7 +1948,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
 
 template <typename Particle>
 template <class Functor>
-std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
+std::optional<std::unique_ptr<TraversalInterface>> LogicHandler<Particle>::isConfigurationApplicable(
     const Configuration &conf, Functor &functor, const InteractionTypeOption &interactionType) {
   // Check if the container supports the traversal
   const auto allContainerTraversals =
@@ -1955,14 +1956,14 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
     AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
                conf.traversal);
-    return {std::nullopt, true};
+    return {std::nullopt};
   }
 
   // Check if the required Newton 3 mode is supported by the functor
   if ((conf.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (conf.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", conf.newton3);
-    return {std::nullopt, true};
+    return {std::nullopt};
   }
 
   // Check if the traversal is applicable to the current state of the container
@@ -1992,7 +1993,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
           return std::nullopt;
         }
       });
-  return {std::move(traversalPtrOpt), false};
+  return {std::move(traversalPtrOpt)};
 }
 
 }  // namespace autopas
