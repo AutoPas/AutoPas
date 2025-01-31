@@ -22,7 +22,7 @@ Should the tuning take longer than one interval, the subsequent tuning phases ar
 
 ### Tuning Strategies
 By default, the AutoTuner configuration queue is filled with all applicable configurations and processed sequentially.
-Tuning strategies can filter, modify, and reorder this queue.
+Tuning strategies can filter, reorder, or otherwise modify this queue.
 After each sampling of a configuration, they receive the measurement, called evidence, and some live information about the current state of the domain.
 Multiple strategies can be activated at the same time.
 They are all applied in every decision process in the order they are specified in the vector of `ConfigurationOption`s passed to AutoPas.
