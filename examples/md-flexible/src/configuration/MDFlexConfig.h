@@ -368,12 +368,13 @@ class MDFlexConfig {
                                                      "Number of samples to collect per configuration."};
 
   /**
-   * MaxAllowedSlowdownFactor
+   * EarlyStoppingFactor
    */
-  MDFlexOption<double, __LINE__> maxAllowedSlowdownFactor{
-      std::numeric_limits<double>::infinity(), "max-allowed-slowdown-factor", false,
-      "Maximum allowed slowdown factor for the auto-tuner. A configuration performing worse than the current optimum "
-      "by this factor will be blacklisted from the current tuning phase"};
+  MDFlexOption<double, __LINE__> earlyStoppingFactor{
+      std::numeric_limits<double>::infinity(), "early-stopping-factor", false,
+      "EarlyStoppingFactor for the auto-tuner. A configuration seeming to perform worse than the "
+      "previously best configuration "
+      "by this factor will not be sampled again"};
 
   /**
    * useLOESSSmoothening

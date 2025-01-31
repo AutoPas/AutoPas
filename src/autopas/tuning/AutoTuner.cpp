@@ -29,7 +29,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
-      _maxAllowedSlowdownFactor(autoTunerInfo.maxAllowedSlowdownFactor),
+      _earlyStoppingFactor(autoTunerInfo.earlyStoppingFactor),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
@@ -477,11 +477,11 @@ void AutoTuner::checkEarlyStoppingCondition() {
 
   double slowdownFactor = static_cast<double>(preliminaryEstimate) / static_cast<double>(bestEvidence.value);
 
-  if (slowdownFactor > _maxAllowedSlowdownFactor) {
+  if (slowdownFactor > _earlyStoppingFactor) {
     AutoPasLog(DEBUG,
                "Configuration is {} times slower than the current fastest traversal time. This is higher than the "
-               "maximum allowed slowdown factor of {}. Further evaluation of this configuration will be skipped.",
-               slowdownFactor, _maxAllowedSlowdownFactor);
+               "earlyStoppingFactor factor of {}. Further samples of this configuration will be skipped.",
+               slowdownFactor, _earlyStoppingFactor);
     _earlyStoppingOfResampling = true;
 
     // Pretend that we are in the last iteration of this sample. This is required for the periodic rebuilding

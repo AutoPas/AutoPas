@@ -356,13 +356,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
         }
-      } else if (key == config.maxAllowedSlowdownFactor.name) {
+      } else if (key == config.earlyStoppingFactor.name) {
         expected = "Floating point value > 1";
-        description = config.maxAllowedSlowdownFactor.description;
+        description = config.earlyStoppingFactor.description;
 
-        config.maxAllowedSlowdownFactor.value = node[key].as<double>();
-        if (config.maxAllowedSlowdownFactor.value <= 1) {
-          throw std::runtime_error("Max allowed slowdown factor has to be greater than 1!");
+        config.earlyStoppingFactor.value = node[key].as<double>();
+        if (config.earlyStoppingFactor.value <= 1) {
+          throw std::runtime_error("EarlyStoppingFactor has to be greater than 1!");
         }
       } else if (key == config.useLOESSSmoothening.name) {
         expected = "Boolean Value";

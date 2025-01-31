@@ -32,9 +32,9 @@ struct AutoTunerInfo {
   unsigned int maxSamples{3};
 
   /**
-   * Maximum allowed slowdown factor for the auto-tuner.
+   * EarlyStoppingFactor for the auto-tuner.
    */
-  double maxAllowedSlowdownFactor{std::numeric_limits<double>::infinity()};
+  double earlyStoppingFactor{std::numeric_limits<double>::infinity()};
   /**
    * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
    */

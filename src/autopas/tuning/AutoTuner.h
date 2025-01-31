@@ -229,10 +229,10 @@ class AutoTuner {
   bool canMeasureEnergy() const;
 
   /**
-   * Checks whether the current configuration performs so poorly that it shouldn't be resampled further
-   * Keeps track of the fastest runtime so far and triggers early stopping of the sampling phase if the current runtime
-   * is worse than the fastest runtime by more than the maximum allowed slowdown factor.
-   * Uses the _estimateRuntimeFromSamples() function to estimate the runtimes.
+   * Checks whether the current configuration seems to perform so poorly that it shouldn't be resampled further
+   * If the current configuration seems worse than the previosuly best configuration by more than the
+   * earlyStoppingFactor factor, it will not be sampled again. Uses the _estimateRuntimeFromSamples() function to
+   * estimate the runtimes.
    */
   void checkEarlyStoppingCondition();
 
@@ -325,10 +325,10 @@ class AutoTuner {
   size_t _maxSamples;
 
   /**
-   * Maximum allowed slowdown factor for the auto-tuner. A configuration performing worse to the currently fastest
-   * iteratePairwise run by more than this factor is not considered for the next tuning phase.
+   * EarlyStoppingFactor for the auto-tuner. A configuration performing worse than the currently best configuration
+   * by more than this factor will not be sampled again
    */
-  double _maxAllowedSlowdownFactor;
+  double _earlyStoppingFactor;
 
   /**
    * Flag indicating if any tuning strategy needs the smoothed homogeneity and max density collected.
@@ -418,7 +418,7 @@ class AutoTuner {
 
   /**
    * Is set to true if the current configuration should not be used to collect further samples because it is
-   * significantly slower than the fastest configuration by more than _maxAllowedSlowdownFactor.
+   * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
   /**

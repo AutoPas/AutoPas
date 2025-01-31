@@ -149,7 +149,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
   _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
   _autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
-  _autoPasContainer->setMaxAllowedSlowdownFactor(_configuration.maxAllowedSlowdownFactor.value);
+  _autoPasContainer->setEarlyStoppingFactor(_configuration.earlyStoppingFactor.value);
   _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
   _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
   _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
