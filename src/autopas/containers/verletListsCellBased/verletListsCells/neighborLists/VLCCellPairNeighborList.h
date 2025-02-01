@@ -109,15 +109,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
       return (offset[0] + 1) * 9 + (offset[1] + 1) * 3 + (offset[2] + 1);
     };
 
-    // Todo reuse old neighbour lists
-    neighborLists.clear();
-    neighborLists.resize(cells.size());
-
-    // global to local index is now replaced by relIdx lambda
-    // globalToLocalIndex.clear();
-    // globalToLocalIndex.resize(cells.size());
-
-    // Todo: Create an estimate for the average length of a neighbor list.
     // This assumes homogeneous distribution and some overestimation.
     const auto listLengthEstimate = VerletListsCellsHelpers::estimateListLength(
         linkedCells.getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, interactionLength, 1.3);
@@ -144,47 +135,34 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
      * and in that case finds or creates the appropriate list.
      *
      * @param p1 Reference to source particle.
-     * @param p1Index Index of p1 in its cell.
      * @param p2 Reference to target particle.
-     * @param cellIndex1 Index of cell where p1 resides.
-     * @param cellIndexBase Index of the base cell of the c08 step.
      * @param neighborList Reference to the list where the particle pair should be stored.
      */
-    auto insert = [&](auto &p1, auto p1Index, auto &p2, auto cellIndex1, auto cellIndexBase, auto &neighborList) {
-      // Easy case: cell1 is the base cell
-      if (cellIndexBase == cellIndex1) {
-        if (neighborList.size() <= p1Index) {
-          neighborList.resize(p1Index + 1);
-        }
-        neighborList[p1Index].first = &p1;
-        neighborList[p1Index].second.push_back(&p2);
-
+    auto insert = [&](auto &p1, auto &p2, auto &neighborList) {
+      // Check if the base cell already has a list for p1
+      auto iter = std::find_if(neighborList.begin(), neighborList.end(), [&](const auto &pair) {
+        const auto &[particlePtr, list] = pair;
+        return particlePtr == &p1;
+      });
+      // If yes, append p2 to it.
+      if (iter != neighborList.end()) {
+        iter->second.push_back(&p2);
       } else {
-        // Otherwise, check if the base cell already has a list for p1
-        auto iter = std::find_if(neighborList.begin(), neighborList.end(), [&](const auto &pair) {
-          const auto &[particlePtr, list] = pair;
-          return particlePtr == &p1;
-        });
-        // If yes, append p2 to it.
-        if (iter != neighborList.end()) {
-          iter->second.push_back(&p2);
+        // If no, create one (or reuse an empty pair), reserve space for the list and emplace p2
+        if (auto insertLoc = std::find_if(neighborList.begin(), neighborList.end(),
+                                          [&](const auto &pair) {
+                                            const auto &[particlePtr, list] = pair;
+                                            return particlePtr == nullptr;
+                                          });
+            insertLoc != neighborList.end()) {
+          auto &[particlePtr, neighbors] = *insertLoc;
+          particlePtr = &p1;
+          neighbors.reserve(listLengthEstimate);
+          neighbors.push_back(&p2);
         } else {
-          // If no, create one (or reuse an empty pair), reserve space for the list and emplace p2
-          if (auto insertLoc = std::find_if(neighborList.begin(), neighborList.end(),
-                                            [&](const auto &pair) {
-                                              const auto &[particlePtr, list] = pair;
-                                              return particlePtr == nullptr;
-                                            });
-              insertLoc != neighborList.end()) {
-            auto &[particlePtr, neighbors] = *insertLoc;
-            particlePtr = &p1;
-            neighbors.reserve(listLengthEstimate);
-            neighbors.push_back(&p2);
-          } else {
-            neighborList.emplace_back(&p1, std::vector<Particle *>{});
-            neighborList.back().second.reserve(listLengthEstimate);
-            neighborList.back().second.push_back(&p2);
-          }
+          neighborList.emplace_back(&p1, std::vector<Particle *>{});
+          neighborList.back().second.reserve(listLengthEstimate);
+          neighborList.back().second.push_back(&p2);
         }
       }
     };
@@ -223,29 +201,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           auto &baseCell = cells[cellIndexBase];
           auto &baseCellsLists = neighborLists[cellIndexBase];
           auto threadNum = autopas_get_thread_num();
-
-          // Todo: Use esitmate from above for this
-          // Allocate memory for ptr-list pairs for this cell.
-          // baseCellsLists.resize(27);
-
-          // baseCellsLists.resize(VerletListsCellsHelpers::estimateNumLists(
-          //     cellIndexBase, useNewton3, cells, offsets,
-          //     utils::ArrayUtils::static_cast_copy_array<size_t>(cellsPerDim)));
-
-          // Re-initialize a neighbor list for all particles in the cell but at most for as many as there are lists
-          // const size_t minCellSizeVsNumLists = std::min(baseCell.size(), baseCellsLists.size());
-          // for (size_t i = 0; i < minCellSizeVsNumLists; ++i) {
-          //   auto &[particlePtr, neighbors] = baseCellsLists[i];
-          //   particlePtr = &baseCell[i];
-          //   neighbors.reserve(listLengthEstimate);
-          // }
-
-          // For any remaining particles create a new list.
-          // This case can only happen if estimateNumLists can return values smaller than baseCell.size()
-          // for (size_t i = minCellSizeVsNumLists; i < baseCell.size(); ++i) {
-          //   baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
-          //   baseCellsLists.back().second.reserve(listLengthEstimate);
-          // }
 
           // Build c08 lists for this base step according to predefined cell pairs
           for (const auto &[offset1, offset2, _] : offsets) {
@@ -293,16 +248,15 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
                 const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
                 if (distSquared < interactionLengthSquared) {
                   {
-                    size_t secondCellIndexInFirst;
-                    insert(p1, particleIndexCell1, p2, cellIndex1, cellIndex1,
-                           cell1List[relIdx(cellIndex1, cellIndex2)]);
+                    const size_t secondCellIndexInFirst = relIdx(cellIndex1, cellIndex2);
+                    insert(p1, p2, cell1List[secondCellIndexInFirst]);
                   }
-                  // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
+                  // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's
+                  // list
                   if (not useNewton3 and not(vlcTraversalOpt == TraversalOption::vlp_c01)) {
                     {
-                      size_t secondCellIndexInFirst;
-                      insert(p2, particleIndexCell2, p1, cellIndex2, cellIndex2,
-                             cell2List[relIdx(cellIndex2, cellIndex1)]);
+                      const size_t secondCellIndexInFirst = relIdx(cellIndex2, cellIndex1);
+                      insert(p2, p1, cell2List[secondCellIndexInFirst]);
                     }
                   }
                 }
