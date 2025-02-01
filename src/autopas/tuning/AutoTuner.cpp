@@ -286,7 +286,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
         }());
 
     _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists, _samplesNotRebuildingNeighborLists,
-                                    _iteration, reducedValue, smoothedValue);
+                                    _iteration, reducedValue, smoothedValue, _rebuildFrequency);
   }
 }
 
@@ -311,11 +311,11 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  // What is the rebuild rhythm?
-  const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : _rebuildFrequency;
+  // AutoTuner only triggers rebuild during the tuning phase
+  const auto iterationsPerConfig = this->inTuningPhase() ? _maxSamples : std::numeric_limits<unsigned int>::max();
   // _iterationBaseLine + 1 since we want to look ahead to the next iteration
   const auto iterationBaselineNextStep = _forceRetune ? _iterationBaseline : _iterationBaseline + 1;
-  return (iterationBaselineNextStep % iterationsPerRebuild) == 0;
+  return (iterationBaselineNextStep % iterationsPerConfig) == 0;
 }
 
 bool AutoTuner::initEnergy() {
@@ -441,7 +441,13 @@ bool AutoTuner::inTuningPhase() const {
   return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
+bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
+
+bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
+
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
 bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
+
+void AutoTuner::setRebuildFrequency(double rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 }  // namespace autopas
