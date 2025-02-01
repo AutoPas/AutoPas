@@ -325,6 +325,12 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
+  // if next iteration is start of new tuning phase, we need to rebuild, since the container may change
+  // _iteration + 1 since we want to look ahead to the next iteration
+  if ((_iteration + 1) % _tuningInterval == 0) {
+    return true;
+  }
+
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : _rebuildFrequency;
   // _iterationBaseLine + 1 since we want to look ahead to the next iteration
