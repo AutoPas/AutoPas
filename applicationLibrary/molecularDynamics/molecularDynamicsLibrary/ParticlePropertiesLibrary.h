@@ -31,7 +31,7 @@ class ParticlePropertiesLibrary {
    * Constructor
    * @param cutoff Cutoff for the Potential
    */
-  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff(cutoff) {}
+  explicit ParticlePropertiesLibrary(const floatType cutoff) : _cutoff(cutoff) {}
 
   /**
    * Copy Constructor.
@@ -271,7 +271,7 @@ class ParticlePropertiesLibrary {
    * @param cutoffSquared squared cutoff of the lennard-jones potential
    * @return shift multiplied by 6
    */
-  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared);
+  static floatType calcShift6(floatType epsilon24, floatType sigmaSquared, floatType cutoffSquared);
 
   /**
    * Returns the precomputed mixed epsilon * 24.
@@ -301,7 +301,7 @@ class ParticlePropertiesLibrary {
  private:
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
-  const double _cutoff;
+  const floatType _cutoff;
 
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
@@ -572,8 +572,8 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMoleculesLargestSigm
 }
 
 template <typename floatType, typename intType>
-double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon24, double sigmaSquared,
-                                                                 double cutoffSquared) {
+floatType ParticlePropertiesLibrary<floatType, intType>::calcShift6(floatType epsilon24, floatType sigmaSquared,
+                                                                    floatType cutoffSquared) {
   const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
   const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
   const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);

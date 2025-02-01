@@ -26,8 +26,8 @@ class CubeClosestPacked : public Object {
    * @param boxLength
    * @param bottomLeftCorner
    */
-  CubeClosestPacked(const std::array<double, 3> &velocity, unsigned long typeId, double particleSpacing,
-                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+  CubeClosestPacked(const std::array<CalcPrecision, 3> &velocity, unsigned long typeId, CalcPrecision particleSpacing,
+                    const std::array<CalcPrecision, 3> &boxLength, const std::array<CalcPrecision, 3> &bottomLeftCorner)
       : Object(velocity, typeId),
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
@@ -36,7 +36,7 @@ class CubeClosestPacked : public Object {
         _xOffset(particleSpacing * 1. / 2.),
         _yOffset(particleSpacing * sqrt(1. / 12.)) {}
 
-  [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
+  [[nodiscard]] CalcPrecision getParticleSpacing() const override { return _particleSpacing; }
 
   /**
    * Returns the total amount of particles which will be / have been generated.
@@ -63,14 +63,14 @@ class CubeClosestPacked : public Object {
     const size_t oddLayer = xNumRow * yNumOdd - std::ceil(xOdd * yNumOdd * 0.5);
 
     // Total number of layers.
-    const double numLayers = std::ceil(_boxLength[2] / spacingLayer);
+    const CalcPrecision numLayers = std::ceil(_boxLength[2] / spacingLayer);
     // Add up all even and odd layers.
     return evenLayer * std::ceil(numLayers / 2.) + oddLayer * std::floor(numLayers / 2.);
   }
 
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
+  [[nodiscard]] std::array<CalcPrecision, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
-  [[nodiscard]] std::array<double, 3> getBoxMax() const override {
+  [[nodiscard]] std::array<CalcPrecision, 3> getBoxMax() const override {
     using namespace autopas::utils::ArrayMath::literals;
     return _bottomLeftCorner + _boxLength;
   }
@@ -111,30 +111,30 @@ class CubeClosestPacked : public Object {
   /**
    * The distance between the particles.
    */
-  double _particleSpacing;
+  CalcPrecision _particleSpacing;
 
   /**
    * Extend of the box in each dimension.
    */
-  std::array<double, 3> _boxLength;
+  std::array<CalcPrecision, 3> _boxLength;
 
   /**
    * Minimum box coordinates.
    */
-  std::array<double, 3> _bottomLeftCorner;
+  std::array<CalcPrecision, 3> _bottomLeftCorner;
 
   /**
    * Maximum box coordinates
    */
-  std::array<double, 3> _topRightCorner;
+  std::array<CalcPrecision, 3> _topRightCorner;
 
   /**
    * Shorter part of the bisectrix when split at the intersection of all bisectrices.
    */
-  double _xOffset;
+  CalcPrecision _xOffset;
 
   /**
    * Shorter part of the bisectrix when split at the intersection of all bisectrices.
    */
-  double _yOffset;
+  CalcPrecision _yOffset;
 };
