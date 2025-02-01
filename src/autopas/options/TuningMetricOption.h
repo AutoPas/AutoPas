@@ -29,6 +29,14 @@ class TuningMetricOption : public Option<TuningMetricOption> {
      * Optimize for least energy usage
      */
     energy,
+    /**
+     * Optimize for least energy usage per FLOP
+     */
+    energyPerFLOP,
+    /**
+     * Optimize for least energy usage times delta time
+     */
+    energyDelayProduct,
   };
 
   /**
@@ -62,6 +70,8 @@ class TuningMetricOption : public Option<TuningMetricOption> {
     return {
         {TuningMetricOption::time, "time"},
         {TuningMetricOption::energy, "energy"},
+        {TuningMetricOption::energyPerFLOP, "energyPerFLOP"},
+        {TuningMetricOption::energyDelayProduct, "energyDelayProduct"},
     };
   };
 
