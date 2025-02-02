@@ -90,7 +90,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  SquareTumbler_heat_wall_adjusted_c0d05_adiabatic
+vtk-filename                     :  SquareTumbler_heat_wall_adjusted_c0d05_t0
 vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
