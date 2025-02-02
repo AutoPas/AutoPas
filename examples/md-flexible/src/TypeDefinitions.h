@@ -37,6 +37,7 @@
 
 #endif
 
+#include "discreteElementMethodLibrary/DEMFunctor.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**

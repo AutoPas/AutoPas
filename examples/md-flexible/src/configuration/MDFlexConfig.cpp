@@ -539,7 +539,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 
   // initialize at site level
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM) || MD_FLEXIBLE_MODE == MULTISITE
     _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
                                             massMap.value.at(siteTypeId), radiusMap.value.at(siteTypeId));
 #else

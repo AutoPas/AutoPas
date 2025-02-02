@@ -195,12 +195,12 @@ void Simulation::run() {
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition, *_configuration.getParticlePropertiesLibrary());
       _timers.vtk.stop();
     }
-
+/**
     if (_calculateStatistics and _iteration % 10 == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
-
+**/
     _timers.computationalLoad.start();
     //const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {

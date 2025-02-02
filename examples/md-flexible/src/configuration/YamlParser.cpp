@@ -587,7 +587,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
-#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM) or MD_FLEXIBLE_MODE == MULTISITE
           const auto radius =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.radiusMap.name.c_str(), siteErrors);
 
