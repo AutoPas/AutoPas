@@ -1995,7 +1995,7 @@ class DEMFunctor
   const double _heatGenerationFactor = 0.1;
   const double _coefficientFactor = 3.;
   const bool isWallSimulation = true;
-  const bool activatedHeatTransfer = true;
+  const bool activatedHeatTransfer = false;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
