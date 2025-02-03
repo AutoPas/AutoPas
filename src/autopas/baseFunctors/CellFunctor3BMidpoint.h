@@ -16,6 +16,17 @@
 #include "autopas/utils/WrapMPI.h"
 #include "predicates.h"
 
+inline static const bool exactMidpoint = false;
+
+inline double getInnerAngleBetweenVectors(std::array<double, 3> a, std::array<double, 3> b) {
+  double innerProduct = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+  double aLength = std::sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+  double bLength = std::sqrt(b[0] * b[0] + b[1] * b[1] + b[2] * b[2]);
+  auto angle = std::acos(innerProduct / (aLength * bLength));
+  if (angle >= 180) return 360 - angle;
+  return angle;
+}
+
 /*****************************************************************************/
 /*                                                                           */
 /*  tricircumcenter3d()   Find the circumcenter of a triangle in 3D.         */
@@ -112,44 +123,77 @@ inline bool isMidpointInsideDomain(std::array<double, 3> a, std::array<double, 3
   /*     (aid == 95 and bid == 4 and cid == 94) || (aid == 95 and bid == 94 and cid == 4)) { */
   /*   print = true; */
   /* } */
-  auto css = tricircumcenter3d(a, b, c, print);
-  std::array<double, 3> midpoint = {a.at(0) + css.at(0), a.at(1) + css.at(1), a.at(2) + css.at(2)};
-  // if the three points are on a straight line, a midpoint can not be found
-  if (std::isnan(midpoint.at(0))) {
-    // then take the average of the three points as the midpoint
-    midpoint = {(a.at(0) + b.at(0) + c.at(0)) / 3, (a.at(1) + b.at(1) + c.at(1)) / 3,
-                (a.at(2) + b.at(2) + c.at(2)) / 3};
+  std::array<double, 3> midpoint;
+
+  if (!exactMidpoint) {
+    auto xmax = std::max({a.at(0), b.at(0), c.at(0)});
+    auto xmin = std::min({a.at(0), b.at(0), c.at(0)});
+    auto ymax = std::max({a.at(1), b.at(1), c.at(1)});
+    auto ymin = std::min({a.at(1), b.at(1), c.at(1)});
+    auto zmax = std::max({a.at(2), b.at(2), c.at(2)});
+    auto zmin = std::min({a.at(2), b.at(2), c.at(2)});
+    midpoint = {(xmax + xmin) / 2, (ymax + ymin) / 2, (zmax + zmin) / 2};
+  } else {
+    using namespace autopas::utils::ArrayMath::literals;
+    auto alpha = getInnerAngleBetweenVectors(b - a, c - a);
+    auto beta = getInnerAngleBetweenVectors(c - b, a - b);
+    auto gamma = 180 - alpha - beta;
+    // if the three points are on a straight line, the midpoint is the
+    // average between min and max of all dimensions
+    if (alpha == 180 || beta == 180 || gamma == 180) {
+      auto xmax = std::max({a.at(0), b.at(0), c.at(0)});
+      auto xmin = std::min({a.at(0), b.at(0), c.at(0)});
+      auto ymax = std::max({a.at(1), b.at(1), c.at(1)});
+      auto ymin = std::min({a.at(1), b.at(1), c.at(1)});
+      auto zmax = std::max({a.at(2), b.at(2), c.at(2)});
+      auto zmin = std::min({a.at(2), b.at(2), c.at(2)});
+      midpoint = {(xmax + xmin) / 2, (ymax + ymin) / 2, (zmax + zmin) / 2};
+    }
+    // if there is an anlge greater than 90, the midpoint is the
+    // halfway-point of the longest edge of the triangle
+    else if (alpha > 90 || beta > 90 || gamma > 90) {
+      auto ab = b - a;
+      auto ac = c - a;
+      auto bc = c - b;
+      auto abLen = autopas::utils::ArrayMath::L2Norm(ab);
+      auto acLen = autopas::utils::ArrayMath::L2Norm(ac);
+      auto bcLen = autopas::utils::ArrayMath::L2Norm(bc);
+      if (abLen > acLen && abLen > bcLen) {
+        midpoint = (a + b) / 2.;
+      } else if (acLen > abLen && acLen > bcLen) {
+        midpoint = (a + c) / 2.;
+      } else {
+        midpoint = (b + c) / 2.;
+      }
+    }
+    // else, the midpoint is the circumcenter of the triangle
+    else {
+      auto css = tricircumcenter3d(a, b, c, print);
+      midpoint = {a.at(0) + css.at(0), a.at(1) + css.at(1), a.at(2) + css.at(2)};
+    }
   }
 
   bool result = true;
 
   for (size_t i = 0; i < 3; i++) {
-    /* if (boxMin.at(i) == globalMin.at(i) && boxMax.at(i) == globalMax.at(i)) { */
-    /*     result = result && (midpoint.at(i) >= boxMin.at(i) && midpoint.at(i) <= boxMax.at(i)); */
-    /*     continue; */
-    /* } */
     result = result && (midpoint.at(i) >= boxMin.at(i) && midpoint.at(i) < boxMax.at(i));
   }
-  /* if ((aid == 3 and bid == 94 and cid == 93) || (aid == 3 and bid == 93 and cid == 94) || */
-  /*     (aid == 94 and bid == 3 and cid == 93) || (aid == 94 and bid == 93 and cid == 3) || */
-  /*     (aid == 93 and bid == 3 and cid == 94) || (aid == 93 and bid == 94 and cid == 3)) { */
+  /* int rank; */
+  /* autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank); */
+  /* std::cout << " !!! Midpoint between " << aid << " and " << bid << " and " << cid << " is (" << midpoint.at(0) << ",
+   * " */
+  /*           << midpoint.at(1) << ", " << midpoint.at(2) << ") and result is " << result << " on rank: " << rank */
+  /*           << std::endl */
+  /*           << "posa: " << a.at(0) << ", " << a.at(1) << ", " << a.at(2) << std::endl */
+  /*           << "posb: " << b.at(0) << ", " << b.at(1) << ", " << b.at(2) << std::endl */
+  /*           << "posc: " << c.at(0) << ", " << c.at(1) << ", " << c.at(2) << std::endl */
+  /*           << "boxMin: " << boxMin.at(0) << ", " << boxMin.at(1) << ", " << boxMin.at(2) << std::endl */
+  /*           << "boxMax: " << boxMax.at(0) << ", " << boxMax.at(1) << ", " << boxMax.at(2) << std::endl */
+  /*           << midpoint.at(1) << " <= " << boxMax.at(1) << " == " << (midpoint.at(1) <= boxMax.at(1)) << std::endl */
 
-  if ((aid == 4 and bid == 94 and cid == 95) || (aid == 4 and bid == 95 and cid == 94) ||
-      (aid == 94 and bid == 4 and cid == 95) || (aid == 94 and bid == 95 and cid == 4) ||
-      (aid == 95 and bid == 4 and cid == 94) || (aid == 95 and bid == 94 and cid == 4)) {
-    int rank;
-    autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-    std::cout << " !!! Midpoint between " << aid << " and " << bid << " and " << cid << " is (" << midpoint.at(0)
-              << ", " << midpoint.at(1) << ", " << midpoint.at(2) << ") and result is " << result
-              << " on rank: " << rank << std::endl
-              << "posa: " << a.at(0) << ", " << a.at(1) << ", " << a.at(2) << std::endl
-              << "posb: " << b.at(0) << ", " << b.at(1) << ", " << b.at(2) << std::endl
-              << "posc: " << c.at(0) << ", " << c.at(1) << ", " << c.at(2) << std::endl
-              << "boxMin: " << boxMin.at(0) << ", " << boxMin.at(1) << ", " << boxMin.at(2) << std::endl
-              << "boxMax: " << boxMax.at(0) << ", " << boxMax.at(1) << ", " << boxMax.at(2) << std::endl
-              << midpoint.at(1) << " <= " << boxMax.at(1) << " == " << (midpoint.at(1) <= boxMax.at(1)) << std::endl
-              << midpoint.at(1) << " >= " << boxMin.at(1) << " == " << (midpoint.at(1) >= boxMin.at(1)) << std::endl;
-  }
+  /*           << midpoint.at(1) << " >= " << boxMin.at(1) << " == " << (midpoint.at(1) >= boxMin.at(1)) << std::endl;
+   */
+
   return result;
 }
 
@@ -187,8 +231,8 @@ class CellFunctor3BMidpoint {
 
   /**
    * Process the interactions between the particles of cell1 with particles of cell2. This includes both triwise
-   * interactions with 2 particles from cell1 and 1 particle from cell2 as well as 1 particle from cell1 and 2 particles
-   * from cell2.
+   * interactions with 2 particles from cell1 and 1 particle from cell2 as well as 1 particle from cell1 and 2
+   * particles from cell2.
    * @param cell1
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is
@@ -240,7 +284,8 @@ class CellFunctor3BMidpoint {
    * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
    * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or
    * not:
-   * - if _useNewton3 is true: the aos functor will be applied once for each triplet (only i,j,k), passing newton3=true.
+   * - if _useNewton3 is true: the aos functor will be applied once for each triplet (only i,j,k), passing
+   * newton3=true.
    * - if _useNewton3 is false: the aos functor will be applied three times for each triplet (i,j,k and j,i,k and
    * k,i,j), passing newton3=false.
    * @param cell
@@ -252,15 +297,20 @@ class CellFunctor3BMidpoint {
    * exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
+   * @param boxMin Lower bounds of the box in which the particles are located.
+   * @param boxMax Upper bounds of the box in which the particles are located.
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, std::array<double, 3> boxMin,
+                            std::array<double, 3> boxMax, const std::array<double, 3> &sortingDirection);
 
   /**
    * Applies the functor to all particle triplets between cell1 and cell2
    * without exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
+   * @param boxMin Lower bounds of the box in which the particles are located.
+   * @param boxMax Upper bounds of the box in which the particles are located.
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
   void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, std::array<double, 3> boxMin,
@@ -272,12 +322,15 @@ class CellFunctor3BMidpoint {
    * @param cell1
    * @param cell2
    * @param cell3
+   * @param boxMin Lower bounds of the box in which the particles are located.
+   * @param boxMax Upper bounds of the box in which the particles are located.
    * @param sortingDirection Normalized vector along which particles from cell1 and cell2 are sorted.
    *
-   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1 and
-   * cell2.
+   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1
+   * and cell2.
    */
   void processCellTripleAoSN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
+                              std::array<double, 3> boxMin, std::array<double, 3> boxMax,
                               const std::array<double, 3> &sortingDirection);
 
   /**
@@ -286,14 +339,15 @@ class CellFunctor3BMidpoint {
    * @param cell1
    * @param cell2
    * @param cell3
+   * @param boxMin Lower bounds of the box in which the particles are located.
+   * @param boxMax Upper bounds of the box in which the particles are located.
    * @param sortingDirection Normalized vector along which particles from cell1 and cell2 are sorted.
    *
-   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1 and
-   * cell2.
+   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1
+   * and cell2.
    */
   void processCellTripleAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
                                 std::array<double, 3> boxMin, std::array<double, 3> boxMax,
-
                                 const std::array<double, 3> &sortingDirection);
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
@@ -381,7 +435,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
   switch (_dataLayout) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
-        processCellPairAoSN3(cell1, cell2, sortingDirection);
+        processCellPairAoSN3(cell1, cell2, boxMin, boxMax, sortingDirection);
       } else {
         processCellPairAoSNoN3(cell1, cell2, boxMin, boxMax, sortingDirection);
       }
@@ -408,8 +462,8 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
     return;
   }
 
-  // avoid force calculations if all three cells can not contain owned particles or if newton3==false and cell1 does not
-  // contain owned particles
+  // avoid force calculations if all three cells can not contain owned particles or if newton3==false and cell1 does
+  // not contain owned particles
   const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
   const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
   const bool cell3HasOwnedParticles = toInt64(cell3.getPossibleParticleOwnerships() & OwnershipState::owned);
@@ -422,7 +476,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
   switch (_dataLayout) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
-        processCellTripleAoSN3(cell1, cell2, cell3, sortingDirection);
+        processCellTripleAoSN3(cell1, cell2, cell3, boxMin, boxMax, sortingDirection);
       } else {
         processCellTripleAoSNoN3(cell1, cell2, cell3, boxMin, boxMax, sortingDirection);
       }
@@ -495,7 +549,8 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
+    ParticleCell &cell1, ParticleCell &cell2, std::array<double, 3> boxMin, std::array<double, 3> boxMax,
+    const std::array<double, 3> &sortingDirection) {
   if ((cell1.size() + cell2.size() > _sortingThreshold) and sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
@@ -515,6 +570,10 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
               std::abs(p1Projection - p3Projection) > _sortingCutoff) {
             break;
           }
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
+                                      p2Ptr->getID(), p3Ptr->getID())) {
+            continue;
+          }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
         }
       }
@@ -531,6 +590,10 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
               std::abs(p1Projection - p3Projection) > _sortingCutoff) {
             break;
           }
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
+                                      p2Ptr->getID(), p3Ptr->getID())) {
+            continue;
+          }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
         }
       }
@@ -543,6 +606,10 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
       ++p2Ptr;
       for (; p2Ptr != cell1.end(); ++p2Ptr) {
         for (auto &p3 : cell2) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax, p1Ptr->getID(),
+                                      p2Ptr->getID(), p3.getID())) {
+            continue;
+          }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, p3, true);
         }
       }
@@ -552,6 +619,10 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
         auto p3Ptr = p2Ptr;
         ++p3Ptr;
         for (; p3Ptr != cell2.end(); ++p3Ptr) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
+                                      p2Ptr->getID(), p3Ptr->getID())) {
+            continue;
+          }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
         }
       }
@@ -661,7 +732,8 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::processCellTripleAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3, const std::array<double, 3> &sortingDirection) {
+    ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3, std::array<double, 3> boxMin,
+    std::array<double, 3> boxMax, const std::array<double, 3> &sortingDirection) {
   if ((cell1.size() + cell2.size() + cell3.size() > _sortingThreshold) and
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
@@ -673,6 +745,10 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
           break;
         }
         for (auto &p3 : cell3) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax, p1Ptr->getID(),
+                                      p2Ptr->getID(), p3.getID())) {
+            continue;
+          }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, p3, true);
         }
       }
@@ -681,6 +757,10 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
         for (auto &p3 : cell3) {
+          if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), boxMin, boxMax, p1.getID(),
+                                      p2.getID(), p3.getID())) {
+            continue;
+          }
           _functor->AoSFunctor(p1, p2, p3, true);
         }
       }
