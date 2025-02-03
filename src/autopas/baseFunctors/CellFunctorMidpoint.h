@@ -100,7 +100,8 @@ class CellFunctorMidpoint {
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, std::array<double, 3> boxMin,
+                            std::array<double, 3> boxMax, const std::array<double, 3> &sortingDirection);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
@@ -121,7 +122,7 @@ class CellFunctorMidpoint {
   void processCellSoANoN3(ParticleCell &cell);
 
   using ParticleType = typename ParticleCell::ParticleType;
-  bool isMidpointInsideDomain(ParticleType *p1, ParticleType* p2, std::array<double, 3> boxMin,
+  bool isMidpointInsideDomain(ParticleType *p1, ParticleType *p2, std::array<double, 3> boxMin,
                               std::array<double, 3> boxMax);
 
   ParticleFunctor *_functor;
@@ -214,7 +215,7 @@ void CellFunctorMidpoint<ParticleCell, ParticleFunctor, bidirectional>::processC
   switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
-        processCellPairAoSN3(cell1, cell2, sortingDirection);
+        processCellPairAoSN3(cell1, cell2, boxMin, boxMax, sortingDirection);
       } else {
         processCellPairAoSNoN3(cell1, cell2, boxMin, boxMax, sortingDirection);
       }
@@ -272,7 +273,8 @@ void CellFunctorMidpoint<ParticleCell, ParticleFunctor, bidirectional>::processC
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctorMidpoint<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
+    ParticleCell &cell1, ParticleCell &cell2, std::array<double, 3> boxMin, std::array<double, 3> boxMax,
+    const std::array<double, 3> &sortingDirection) {
   if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
@@ -282,12 +284,18 @@ void CellFunctorMidpoint<ParticleCell, ParticleFunctor, bidirectional>::processC
         if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
           break;
         }
+        if (!isMidpointInsideDomain(p1Ptr, p2Ptr, boxMin, boxMax)) {
+          continue;
+        }
         _functor->AoSFunctor(*p1Ptr, *p2Ptr, true);
       }
     }
   } else {
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
+        if (!isMidpointInsideDomain(&p1, &p2, boxMin, boxMax)) {
+          continue;
+        }
         _functor->AoSFunctor(p1, p2, true);
       }
     }
