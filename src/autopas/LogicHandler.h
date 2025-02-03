@@ -1846,8 +1846,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     bool rejectIndefinitely = false;
     while (true) {
       // applicability check also sets the container
-      std::tie(traversalPtrOpt, rejectIndefinitely) =
-          isConfigurationApplicable(configuration, functor, interactionType);
+      traversalPtrOpt = isConfigurationApplicable(configuration, functor, interactionType);
       const bool configurationCompatible = traversalPtrOpt.has_value();
       if (configurationCompatible) {
         break;
