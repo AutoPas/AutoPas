@@ -28,6 +28,11 @@ class TraversalOption : public Option<TraversalOption> {
      * + DSSequentialTraversal : Sequential nested loop over all particles.
      */
     ds_sequential,
+    /**
+     * + DSSequentialTraversal : Sequential nested loop over all particles.
+     * Uses CellFunctorMidpoint / CellFunctor3BMidpoint to check for midpoint before interactions.
+     */
+    ds_sequential_midpoint,
 
     // LinkedCell Traversals:
     /**
@@ -35,6 +40,12 @@ class TraversalOption : public Option<TraversalOption> {
      * parallel. Good load balancing and no overhead.
      */
     lc_c01,
+    /**
+     * + LCC01MidpointTraversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus
+     * embarrassingly parallel. Good load balancing and no overhead. Uses CellFunctorMidpoint / CellFunctor3BMidpoint to
+     * check for midpoint before interactions.
+     */
+    lc_c01_midpoint,
     /**
      * LCC01CombinedSoATraversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain
      * is traversed line-wise.
@@ -196,11 +207,6 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
-    /**
-     * + LCC01MidpointTraversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
-     * parallel. Good load balancing and no overhead. Uses CellFunctorMidpoint to check for midpoint before interactions.
-     */
-    lc_c01_midpoint,
 
   };
 
@@ -239,7 +245,9 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for triwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential, Value::lc_c01, Value::lc_c01_midpoint}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() {
+    return {Value::ds_sequential, Value::lc_c01, Value::lc_c01_midpoint, Value::ds_sequential_midpoint};
+  }
 
   /**
    * Set of all pairwise traversals without discouraged options.
@@ -291,6 +299,7 @@ class TraversalOption : public Option<TraversalOption> {
     return {
         // DirectSum Traversals:
         {TraversalOption::ds_sequential, "ds_sequential"},
+        {TraversalOption::ds_sequential_midpoint, "ds_sequential_midpoint"},
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
