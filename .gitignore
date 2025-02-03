@@ -17,6 +17,7 @@ venv/
 # benchmark output folder
 *testTuning_*/
 *measurePerf_*/
+runBenchmark.sh
 
 # sourcetrail stuff
 *.srctrlbm

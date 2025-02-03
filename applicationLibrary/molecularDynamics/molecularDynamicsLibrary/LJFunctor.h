@@ -678,11 +678,11 @@ class LJFunctor
       }
       // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
       // contribution is only counted once per pair.
-      _potentialEnergySum *= 0.5;
-      _virialSum *= 0.5;
+      _potentialEnergySum *= static_cast<AccuType>(0.5);
+      _virialSum *= static_cast<AccuType>(0.5);
 
       // We have always calculated 6*potentialEnergy, so we divide by 6 here!
-      _potentialEnergySum /= 6.;
+      _potentialEnergySum /= static_cast<AccuType>(6.0);
       _postProcessed = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);

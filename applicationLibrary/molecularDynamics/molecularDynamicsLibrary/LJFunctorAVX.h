@@ -76,10 +76,10 @@ class LJFunctorAVX
 #ifdef __AVX__
       : autopas::PairwiseFunctor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                         countFLOPs, relevantForTuning>>(cutoff),
-#if AUTOPAS_PRECISION_MODE == DPDP
-        _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
-#else
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
         _cutoffSquared{_mm256_set1_ps(cutoff * cutoff)},
+#else
+        _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
 #endif
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -1097,7 +1097,6 @@ class LJFunctorAVX
     // _mm256_set1_epi32 broadcasts a 32-bit integer, we use this instruction to have 8 values!
     __m256i ownedStateI = _mm256_set1_epi32(static_cast<autopas::OwnershipType>(ownedStatePtr[indexFirst]));
 
-    // TODO MP does this alignment need to change for SPXP?
     alignas(64) std::array<CalcType, vecLength> x2tmp{};
     alignas(64) std::array<CalcType, vecLength> y2tmp{};
     alignas(64) std::array<CalcType, vecLength> z2tmp{};
