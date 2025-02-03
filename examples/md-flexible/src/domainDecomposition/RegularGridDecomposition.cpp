@@ -233,7 +233,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
                                         leftNeighbor, rightNeighbor);
     _haloParticles.insert(_haloParticles.end(), _receivedParticlesBuffer.begin(), _receivedParticlesBuffer.end());
   }
-  autoPasContainer.addHaloParticles(_haloParticles);
+  autoPasContainer.addHaloParticles(_haloParticles, true);
 }
 
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
