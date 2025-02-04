@@ -52,7 +52,7 @@ Molecules:
 Objects:
   CubeUniform:
     0:
-      numberOfParticles: 15
+      numberOfParticles: 30
       box-length: [ 20, 13, 3 ]
       bottomLeftCorner: [30.5, 3.5, 3.5]
       velocity: [ 0, 0, 0 ]
@@ -66,6 +66,6 @@ Objects:
 log-level                            :  info
 vtk-filename                         :  RightPipe_four_spheres
 vtk-output-folder                    :  vtkOutputFolder
-vtk-write-frequency                  :  100
+vtk-write-frequency                  :  3000
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt

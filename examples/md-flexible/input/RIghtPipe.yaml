@@ -17,7 +17,7 @@ cutoff                           :  3
 box-min                              :  [0, 0, 0]
 box-max                          :  [52.5, 20, 10]
 cell-size                        :  [1]
-deltaT                           :  0.0005
+deltaT                           :  0.00005
 iterations                       :  5000000
 boundary-type                    :  [periodic,reflective,reflective]
 globalForce                          :  [0, 0., 0]
@@ -26,12 +26,12 @@ backgroundTorqueFrictionCoeff     :  0.2
 load-balancer                        :  InvertedPressure
 Sites:
   0:
-    epsilon                          :  1.5
+    epsilon                          :  1.
     sigma                            :  3
     mass                             :  .5
     radius                           :  .75
   1:
-    epsilon: 1.5
+    epsilon: 1.
     sigma: 0.4
     mass: 0.1
     radius: .2
