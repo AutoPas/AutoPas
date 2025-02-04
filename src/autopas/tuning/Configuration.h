@@ -93,9 +93,16 @@ class Configuration {
 
   /**
    * Checks if any of the configuration values are incompatible with each other.
+   * @warning This function checks by using CompatibleTraversals and CompatibleLoadEstimators. What is not checked by
+   * this function is whether some limitations are imposed during the construction of the traversal nor if the
+   * desired functor imposes some find of restriction on newton3.
+   * @param silent if false, WARN-level logs are printed if a configuration is not compatible. This is desirable during
+   * a simulation as it suggests something with the tuning strategy or elsewhere is wrong. Before the simulation, this
+   * function is used to reduce the search space to only compatible values. Here incompatible values do not indicate
+   * that something is wrong and so silent==true can be used.
    * @return True if all options are compatible to each other.
    */
-  [[nodiscard]] bool hasCompatibleValues() const;
+  [[nodiscard]] bool hasCompatibleValues(bool silent = false) const;
 
   /**
    * Check if all discrete options of the given configuration are equal to this'.

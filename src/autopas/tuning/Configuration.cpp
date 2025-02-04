@@ -49,10 +49,14 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
   return retString;
 }
 
-bool autopas::Configuration::hasCompatibleValues() const {
+bool autopas::Configuration::hasCompatibleValues(bool silent) const {
   // Check if container and traversal fit together
   const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container, interactionType);
   if (allContainerTraversals.find(traversal) == allContainerTraversals.end()) {
+    if (not silent) {
+      AutoPasLog(WARN, "Configuration is incompatible: Container {} does not support the traversal {} with "
+                 "interaction type {}.", container, traversal, interactionType);
+    }
     return false;
   }
 
@@ -60,6 +64,10 @@ bool autopas::Configuration::hasCompatibleValues() const {
   const std::set<LoadEstimatorOption> applicableLoadEstimators =
       loadEstimators::getApplicableLoadEstimators(container, traversal, LoadEstimatorOption::getAllOptions());
   if (applicableLoadEstimators.find(loadEstimator) == applicableLoadEstimators.end()) {
+    if (not silent) {
+      AutoPasLog(WARN, "Configuration is incompatible: Container {} with traversal {} does not support load estimator "
+                 "{}.", container, traversal, loadEstimator);
+    }
     return false;
   }
 
@@ -67,24 +75,36 @@ bool autopas::Configuration::hasCompatibleValues() const {
   if (newton3 == Newton3Option::enabled) {
     const auto newton3DisabledTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
     if (newton3DisabledTraversals.find(traversal) != newton3DisabledTraversals.end()) {
+      if (not silent) {
+        AutoPasLog(WARN, "Configuration is incompatible: Traversal {} does not support newton3 enabled.");
+      }
       return false;
     }
   }
   if (newton3 == Newton3Option::disabled) {
     const auto newton3EnabledTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
     if (newton3EnabledTraversals.find(traversal) != newton3EnabledTraversals.end()) {
+      if (not silent) {
+        AutoPasLog(WARN, "Configuration is incompatible: Traversal {} does not support newton3 enabled.");
+      }
       return false;
     }
   }
   if (dataLayout == DataLayoutOption::aos) {
     const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlySoA();
     if (soaTraversals.find(traversal) != soaTraversals.end()) {
+      if (not silent) {
+        AutoPasLog(WARN, "Configuration is incompatible: Traversal {} does not support AoS.");
+      }
       return false;
     }
   }
   if (dataLayout == DataLayoutOption::soa) {
     const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlyAoS();
     if (soaTraversals.find(traversal) != soaTraversals.end()) {
+      if (not silent) {
+        AutoPasLog(WARN, "Configuration is incompatible: Traversal {} does not support SoA.");
+      }
       return false;
     }
   }
