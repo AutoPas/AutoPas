@@ -37,6 +37,7 @@ auto initDomain(options::BoundaryTypeOption boundaryType) {
   configuration.verletRebuildFrequency.value = 2;
   const double interactionLength = configuration.cutoff.value + configuration.verletSkinRadius.value;
   configuration.zonalMethodOption.value = options::ZonalMethodOption::fullshell;
+  configuration.loadBalancer.value = LoadBalancerOption::none;
   const double localBoxLength = 3. * interactionLength;
   const double globalBoxLength = localBoxLength * numberOfProcesses;
   configuration.subdivideDimension.value = {true, false, false};
