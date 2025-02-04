@@ -325,14 +325,14 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
       break;
     case options::ZonalMethodOption::midpoint:
       checkLoadBalancerTurnedOff(config);
-      checkTraversal(config, {autopas::TraversalOption::lc_c01_midpoint},
+      checkTraversal(config, {autopas::TraversalOption::lc_c01_midpoint, autopas::TraversalOption::ds_sequential_midpoint},
                      {autopas::TraversalOption::lc_c01_midpoint, autopas::TraversalOption::ds_sequential_midpoint});
       checkAllowedFunctors(config);
       checkDataType(config);
       break;
     case options::ZonalMethodOption::halfshell:
       checkLoadBalancerTurnedOff(config);
-      checkTraversal(config, {autopas::TraversalOption::lc_c01},
+      checkTraversal(config, {autopas::TraversalOption::lc_c01, autopas::TraversalOption::ds_sequential},
                      {autopas::TraversalOption::lc_c01, autopas::TraversalOption::ds_sequential});
       checkAllowedFunctors(config);
       checkDataType(config);
@@ -340,7 +340,7 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
       break;
     case options::ZonalMethodOption::fullshell:
       checkLoadBalancerTurnedOff(config);
-      checkTraversal(config, {autopas::TraversalOption::lc_c01},
+      checkTraversal(config, {autopas::TraversalOption::lc_c01, autopas::TraversalOption::ds_sequential},
                      {autopas::TraversalOption::lc_c01, autopas::TraversalOption::ds_sequential});
       checkAllowedFunctors(config);
       checkDataType(config);
