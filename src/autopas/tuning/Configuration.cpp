@@ -6,7 +6,11 @@
 
 #include "Configuration.h"
 
+#include <optional>
+
+#include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
+#include "tuning/selectors/TraversalSelector.h"
 
 std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
@@ -110,6 +114,47 @@ bool autopas::Configuration::hasCompatibleValues(bool silent) const {
   }
 
   return true;
+}
+
+template <class Functor_T, class Particle_T>
+bool autopas::Configuration::hasCompatibleValues(Functor_T &functor, ParticleContainerInterface<Particle_T> &builtContainer, bool silent) const {
+  // First check using the non-functor version of this function
+  if (not hasCompatibleValues(silent)) {
+    return false;
+  }
+
+  // Check if the required Newton 3 mode is supported by the functor
+  if ((newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
+      (newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
+    if (not silent) {
+      AutoPasLog(WARN, "Configuration is incompatible: The functor does not support Newton3 {}.", newton3);
+      return false;
+    }
+  }
+
+  // Check if the traversal can be generated using the container with all parameters set
+  const auto traversalInfo = builtContainer.getTraversalSelectorInfo();
+
+  auto isTraversalApplicable = utils::withStaticCellType<Particle_T>(
+      builtContainer.getParticleCellTypeEnum(),
+      [&](const auto &particleCellDummy) -> bool {
+        // Can't make this unique_ptr const otherwise we can't move it later.
+        auto traversalPtr =
+            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
+                traversal, functor, traversalInfo, dataLayout, newton3);
+
+        if (traversalPtr->isApplicable()) {
+          return true;
+        } else {
+          if (not silent) {
+            AutoPasLog(WARN, "Configuration is incompatible: Generation of traversal {} failed. Check traversal's "
+                       "isApplicable function for the reason.\n Configuration: [{}]", traversal, this);
+          }
+          return false;
+        }
+      });
+
+  return isTraversalApplicable;
 }
 
 std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration &configuration) {

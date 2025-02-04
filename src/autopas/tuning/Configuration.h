@@ -10,6 +10,8 @@
 
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/baseFunctors/Functor.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -103,6 +105,22 @@ class Configuration {
    * @return True if all options are compatible to each other.
    */
   [[nodiscard]] bool hasCompatibleValues(bool silent = false) const;
+
+  /**
+   * Checks if any of the configuration values are incompatible with each other. Uses the non-functor variant of
+   * hasCompatibleValues to check compatibility using CompatibleTraversals and CompatibleLoadEstimators, and then
+   * checks that the configuration is compatible with the functor (i.e. the functor supports the newton3 type) and that
+   * the traversal can be constructed with the chosen container and configuration (which may fail due to additional
+   * constraints that are only forced in the generation of the traversal.)
+   * @tparam Functor_T Functor type
+   * @tparam Particle_T Particle type
+   * @param functor functor intended for use with configuration
+   * @param builtContainer the container with which the traversal is attempted to be generated
+   * @param silent if false, WARN-level logs are printed if a configuration is not compatible.
+   * @return True if the configuration is compatible.
+   */
+  template <class Functor_T, class Particle_T>
+  [[nodiscard]] bool hasCompatibleValues(Functor_T &functor, ParticleContainerInterface<Particle_T> &builtContainer, bool silent = false) const;
 
   /**
    * Check if all discrete options of the given configuration are equal to this'.
