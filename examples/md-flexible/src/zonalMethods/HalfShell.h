@@ -115,7 +115,7 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
 
   void calculateZonalInteractionTriwise(
-      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) override;
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) override;
 
   // stores is newton3 is used in the node
   bool _useNewton3;

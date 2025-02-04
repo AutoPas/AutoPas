@@ -201,5 +201,5 @@ class ZonalMethod {
    * @param aosFunctor
    */
   virtual void calculateZonalInteractionTriwise(
-      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) = 0;
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) = 0;
 };

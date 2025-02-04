@@ -89,7 +89,7 @@ void FullShell::calculateZonalInteractionPairwise(std::string zone1, std::string
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
 
 void FullShell::calculateZonalInteractionTriwise(
-    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {}
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {}
 
 const std::vector<RectRegion> FullShell::getExportRegions() { return _exportRegions; }
 

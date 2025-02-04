@@ -177,7 +177,7 @@ void HalfShell::calculateZonalInteractionPairwise(std::string zone1, std::string
                                                   std::function<void(ParticleType &, ParticleType &)> aosFunctor) {}
 
 void HalfShell::calculateZonalInteractionTriwise(
-    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {}
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {}
 
 const std::vector<RectRegion> HalfShell::getExportRegions() { return _exportRegions; }
 

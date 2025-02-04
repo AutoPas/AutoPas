@@ -194,25 +194,8 @@ void Midpoint::calculateZonalInteractionPairwise(std::string zone1, std::string 
 void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[3])> identifyZone) {
   // calculate interaction schedule for triwise
   if (!_pairwiseInteraction) {
-    int d[3];
-    for (d[0] = -1; d[0] <= 1; d[0]++) {
-      for (d[1] = -1; d[1] <= 1; d[1]++) {
-        for (d[2] = -1; d[2] <= 1; d[2]++) {
-          if (d[0] == 0 && d[1] == 0 && d[2] == 0) {
-            continue;
-          }
-          auto zone = identifyZone(d);
-          _interactionZones.push_back(zone);
-          for (int i = 0; i < 26; i++) {
-            if (std::stoi(zone) == i) continue;
-            auto d2 = convZoneStringIntoRelNeighbourIndex(std::to_string(i));
-            bool isNeighbour =
-                (std::abs(d[0] - d2[0]) <= 1) && (std::abs(d[1] - d2[1]) <= 1) && (std::abs(d[2] - d2[2]) <= 1);
-            if (!isNeighbour) continue;
-            _interactionSchedule[zone].push_back(std::to_string(i));
-          }
-        }
-      }
+    if constexpr (_bruteForceSchedule3B) {
+      calculateInteractionScheduleTriwiseBruteForce(identifyZone);
     }
     return;
   }
@@ -334,7 +317,39 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
 }
 
 void Midpoint::calculateZonalInteractionTriwise(
-    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {
+  if constexpr (_bruteForceSchedule3B) {
+    calculateZonalInteractionTriwise(zone, aosFunctor);
+  }
+}
+
+void Midpoint::calculateInteractionScheduleTriwiseBruteForce(std::function<std::string(const int[3])> identifyZone) {
+  int d[3];
+  for (d[0] = -1; d[0] <= 1; d[0]++) {
+    for (d[1] = -1; d[1] <= 1; d[1]++) {
+      for (d[2] = -1; d[2] <= 1; d[2]++) {
+        if (d[0] == 0 && d[1] == 0 && d[2] == 0) {
+          continue;
+        }
+        auto zone = identifyZone(d);
+        _interactionZones.push_back(zone);
+        for (int i = 0; i < 26; i++) {
+          if (std::stoi(zone) == i) continue;
+          auto d2 = convZoneStringIntoRelNeighbourIndex(std::to_string(i));
+          bool isNeighbour =
+              (std::abs(d[0] - d2[0]) <= 1) && (std::abs(d[1] - d2[1]) <= 1) && (std::abs(d[2] - d2[2]) <= 1);
+          if (!isNeighbour) continue;
+          _interactionSchedule[zone].push_back(std::to_string(i));
+        }
+      }
+    }
+  }
+}
+
+void Midpoint::calculateZonalInteractionTriwiseBruteForce(
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {
+  // deactivate newton3 used on halo particles
+  mdLib::haloNewton = true;
   CombinedBuffer combinedBuffer;
   auto zoneIndex = (_regionCount - std::stoi(zone)) - 1;
   auto &zoneBuffer = _importBuffers.at(zoneIndex);
@@ -357,7 +372,7 @@ void Midpoint::calculateZonalInteractionTriwise(
                                     _homeBoxRegion._origin + _homeBoxRegion._size)) {
           continue;
         }
-        aosFunctor(p1, p2, p3);
+        aosFunctor(p1, p2, p3, false);
       }
     }
   }
@@ -373,11 +388,13 @@ void Midpoint::calculateZonalInteractionTriwise(
                                     _homeBoxRegion._origin + _homeBoxRegion._size)) {
           continue;
         }
-        aosFunctor(p1, p2, p3);
-        aosFunctor(p2, p1, p3);
+        aosFunctor(p1, p2, p3, false);
+        aosFunctor(p2, p1, p3, false);
       }
     }
   }
+  // reactivate newton3 used on halo particles
+  mdLib::haloNewton = true;
 }
 
 std::array<int, 3> Midpoint::convZoneStringIntoRelNeighbourIndex(std::string s) {

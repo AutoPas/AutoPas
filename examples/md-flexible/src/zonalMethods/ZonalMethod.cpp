@@ -59,14 +59,12 @@ void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContain
     using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
                                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
     auto atFunc = ATFunctor{cutoff, *particleProperties};
-    auto AoSFunct = [&atFunc](ParticleType &p1, ParticleType &p2, ParticleType &p3) {
-      return atFunc.AoSFunctor(p1, p2, p3, false);
+    auto AoSFunct = [&atFunc](ParticleType &p1, ParticleType &p2, ParticleType &p3, bool newton3) {
+      return atFunc.AoSFunctor(p1, p2, p3, newton3);
     };
-    mdLib::haloNewton = false;
     for (auto &zone : _interactionZones) {
       calculateZonalInteractionTriwise(zone, AoSFunct);
     }
-    mdLib::haloNewton = true;
   }
 }
 

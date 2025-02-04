@@ -27,7 +27,7 @@ void ZonalMethodTest::calculateZonalInteractionPairwise(
  * Define function to allow instantiation
  */
 void ZonalMethodTest::calculateZonalInteractionTriwise(
-    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {}
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {}
 
 /**
  * Define function to allow instantiation

@@ -117,7 +117,7 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
 
   void calculateZonalInteractionTriwise(
-      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) override;
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) override;
 
   /**
    * Calculates the _interactionZones and _interactionSchedule
@@ -166,11 +166,27 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
   // stores cutoff
   double _cutoff;
 
+  // flag to control if brute force schedule is used for triplet interactions
+  inline static constexpr bool _bruteForceSchedule3B = true;
+
   /**
-   * Stores the triwise zonal interaction schedule 
+   * Stores the triwise zonal interaction schedule
    */
   std::map<std::string, std::vector<std::set<std::string>>> _interactionScheduleTriwise;
 
+  /**
+   * Calculate the interaction schedule for triplet interactions, which considers all
+   * zonal interactions which consist of zones that are neighbours.
+   * @param identifyZone
+   */
+  void calculateInteractionScheduleTriwiseBruteForce(std::function<std::string(const int[3])> identifyZone);
+
+  /**
+   * Calculate the zonal interaction for triplet interactions, given the bruteforce schedule.
+   * @param identifyZone
+   */
+  void calculateZonalInteractionTriwiseBruteForce(
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor);
   /**
    * Calculate the relative coordinate of a given zone string
    * @param s
