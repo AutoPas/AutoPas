@@ -127,8 +127,6 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
   // save results to container
   using namespace autopas::utils::ArrayMath::literals;
   bufferIndex = 0;
-  // divide results by half if we are not using Newton3 for triwise
-  double divider = !_useNewton3 && !_pairwiseInteraction ? 2. : 1.;
   // for all exported regions
   for (auto &exRegion : _exportRegions) {
     // go over all exported particles in the container
@@ -140,7 +138,7 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       for (auto &result : _regionBuffers.at(bufferIndex)) {
         if (particleIter->getID() == result.getID()) {
           // if found, add the result and delete from buffer
-          particleIter->addF(result.getF() / divider);
+          particleIter->addF(result.getF());
           _regionBuffers.at(bufferIndex).erase(_regionBuffers.at(bufferIndex).begin() + result_index);
           break;
         }

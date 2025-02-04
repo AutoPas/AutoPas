@@ -3,7 +3,6 @@
 #include "src/zonalMethods/Midpoint.h"
 
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/logging/Logger.h"
 #include "src/ParticleCommunicator.h"
 
 Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
@@ -128,8 +127,6 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
   // save results to container
   using namespace autopas::utils::ArrayMath::literals;
   bufferIndex = 0;
-  // divide results by half if we are not using Newton3 for triwise
-  double divider = !_useNewton3 && !_pairwiseInteraction ? 2. : 1.;
   // for all exported regions
   for (auto &exRegion : _exportRegions) {
     // go over all exported particles in the container
@@ -141,7 +138,7 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       for (auto &result : _regionBuffers.at(bufferIndex)) {
         if (particleIter->getID() == result.getID()) {
           // if found, add the result and delete from buffer
-          particleIter->addF(result.getF() / divider);
+          particleIter->addF(result.getF());
           _regionBuffers.at(bufferIndex).erase(_regionBuffers.at(bufferIndex).begin() + result_index);
           break;
         }
@@ -207,6 +204,10 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
           _interactionZones.push_back(zone);
           for (int i = 0; i < 26; i++) {
             if (std::stoi(zone) == i) continue;
+            auto d2 = convZoneStringIntoRelNeighbourIndex(std::to_string(i));
+            bool isNeighbour =
+                (std::abs(d[0] - d2[0]) <= 1) && (std::abs(d[1] - d2[1]) <= 1) && (std::abs(d[2] - d2[2]) <= 1);
+            if (!isNeighbour) continue;
             _interactionSchedule[zone].push_back(std::to_string(i));
           }
         }
@@ -214,6 +215,7 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
     }
     return;
   }
+
   /**
    * See:
    * Evaluation of Zonal Methods for Small
@@ -334,7 +336,7 @@ void Midpoint::calculateZonalInteractionTriwise(
     std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &)> aosFunctor) {
   CombinedBuffer combinedBuffer;
   auto zoneIndex = (_regionCount - std::stoi(zone)) - 1;
-  auto &zoneBuffer = _regionBuffers.at(zoneIndex);
+  auto &zoneBuffer = _importBuffers.at(zoneIndex);
 
   // initiate combined buffer
   for (auto otherZone : _interactionSchedule.at(zone)) {
@@ -344,7 +346,7 @@ void Midpoint::calculateZonalInteractionTriwise(
 
   // calculate interaction of triples
   // for triples with 1 particle in original zone
-  for (auto p1 : zoneBuffer) {
+  for (auto& p1 : zoneBuffer) {
     for (size_t i = 0; i < combinedBuffer.size(); i++) {
       for (size_t j = i + 1; j < combinedBuffer.size(); j++) {
         ParticleType &p2 = combinedBuffer.at(i);
@@ -373,9 +375,26 @@ void Midpoint::calculateZonalInteractionTriwise(
           continue;
         }
         aosFunctor(p1, p2, p3);
+        aosFunctor(p2, p1, p3);
       }
     }
   }
+}
+
+std::array<int, 3> Midpoint::convZoneStringIntoRelNeighbourIndex(std::string s) {
+  std::array<int, 3> relNeighbour;
+  auto index = std::stoi(s);
+  if (index >= 13) index++;
+  relNeighbour[2] = index % 3;
+  index -= relNeighbour[2];
+  relNeighbour[1] = (index % 9) / 3;
+  index -= relNeighbour[1] * 3;
+  relNeighbour[0] = index / 9;
+
+  using namespace autopas::utils::ArrayMath::literals;
+  relNeighbour -= 1;
+
+  return relNeighbour;
 }
 
 const std::vector<RectRegion> Midpoint::getExportRegions() { return _exportRegions; }

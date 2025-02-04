@@ -62,9 +62,11 @@ void ZonalMethod::calculateExternalZonalInteractions(AutoPasType &autoPasContain
     auto AoSFunct = [&atFunc](ParticleType &p1, ParticleType &p2, ParticleType &p3) {
       return atFunc.AoSFunctor(p1, p2, p3, false);
     };
+    mdLib::haloNewton = false;
     for (auto &zone : _interactionZones) {
       calculateZonalInteractionTriwise(zone, AoSFunct);
     }
+    mdLib::haloNewton = true;
   }
 }
 

@@ -165,4 +165,15 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
 
   // stores cutoff
   double _cutoff;
+
+  /**
+   * Stores the triwise zonal interaction schedule 
+   */
+  std::map<std::string, std::vector<std::set<std::string>>> _interactionScheduleTriwise;
+
+  /**
+   * Calculate the relative coordinate of a given zone string
+   * @param s
+   */
+  std::array<int, 3> convZoneStringIntoRelNeighbourIndex(std::string s);
 };

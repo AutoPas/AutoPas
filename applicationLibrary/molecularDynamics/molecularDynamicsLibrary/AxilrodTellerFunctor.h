@@ -14,10 +14,15 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace mdLib {
+
+// If true, if the interacting particle is a halo particle, Newton3 is used to store the result
+// into the Halo Particle in AoSFunctor
+inline bool haloNewton = true;
 
 /**
  * The Axilrod-Teller potential
@@ -228,11 +233,12 @@ class AxilrodTellerFunctor
         displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
 
     const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
+
     i.addF(forceI);
 
     auto forceJ = forceI;
     auto forceK = forceI;
-    if (newton3) {
+    if (newton3 || (j.isHalo() and k.isHalo() and haloNewton)) {
       const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
       const auto forceJDirectionIJ =
           displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
@@ -244,6 +250,39 @@ class AxilrodTellerFunctor
 
       forceK = (forceI + forceJ) * (-1.0);
       k.addF(forceK);
+
+    } else if (j.isHalo() and haloNewton) {
+      const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
+      const auto forceJDirectionIJ =
+          displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
+      const auto forceJDirectionJK =
+          displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
+
+      forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
+      /**
+       * This force is divided by half, as a triple with two owned particles and
+       * one halo particle (in this case j) will be computed twice by the
+       * traversal if Newton3 is not used.
+       * This way, the final result will be the correct result.
+       */
+      j.addF(forceJ / 2.);
+
+    } else if (k.isHalo() and haloNewton) {
+      const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
+      const auto forceJDirectionIJ =
+          displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
+      const auto forceJDirectionJK =
+          displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
+
+      forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
+      forceK = (forceI + forceJ) * (-1.0);
+      /**
+       * This force is divided by half, as a triple with two owned particles and
+       * one halo particle (in this case k) will be computed twice by the
+       * traversal if Newton3 is not used.
+       * This way, the final result will be the correct result.
+       */
+      k.addF(forceK / 2.);
     }
 
     if constexpr (countFLOPs) {
