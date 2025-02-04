@@ -60,6 +60,19 @@ class LJMultisiteFunctor
    */
   const double _cutoffSquared;
 
+  const double _cutoff;
+
+  const double _elasticStiffness = 100;
+  const double _normalViscosity = 1e-3;
+  const double _frictionViscosity = 1e-1;
+  const double _rollingViscosity = 1e-2;
+  const double _torsionViscosity = 1e-2;
+  const double _staticFrictionCoeff = 7.5;
+  const double _dynamicFrictionCoeff = 5;
+  const double _rollingFrictionCoeff = 5;
+  const double _torsionFrictionCoeff = 5;
+  const double preventDivisionByZero = 1e-6;
+
   /**
    * epsilon x 24. Not constant as may be reset through PPL.
    */
@@ -116,6 +129,7 @@ class LJMultisiteFunctor
       : autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                       relevantForTuning, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
+        _cutoff{cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
@@ -175,6 +189,7 @@ class LJMultisiteFunctor
    */
   void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
+    using namespace autopas::utils::ArrayMath;
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
@@ -215,37 +230,90 @@ class LJMultisiteFunctor
             autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-        const auto sigmaSquared =
-            useMixing ? _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]) : _sigmaSquared;
-        const auto epsilon24 = useMixing ? _PPLibrary->getMixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24;
-        const auto shift6 =
-            applyShift ? (useMixing ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6) : 0;
+        if (distanceSquared > _cutoffSquared) {
+          continue;
+        }
 
-        // clang-format off
-        // Calculate potential between sites and thus force
-        // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
-        //         {                         scalarMultiple                                   } * {                     displacement             }
-        // clang-format on
-        const auto invDistSquared = 1. / distanceSquared;
-        const auto lj2 = sigmaSquared * invDistSquared;
-        const auto lj6 = lj2 * lj2 * lj2;
-        const auto lj12 = lj6 * lj6;
-        const auto lj12m6 = lj12 - lj6;  // = LJ potential / (4x epsilon)
-        const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * invDistSquared;
-        const auto force = autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
+        const double distance = sqrt(distanceSquared);
+        const double radiusI = _PPLibrary->getRadius(siteIdsA[i]);
+        const double radiusJ = _PPLibrary->getRadius(siteIdsB[j]);
+        const double overlap = radiusI + radiusJ - distance;
+
+        if (overlap <= 0) {
+          continue;
+        }
+
+        assert(distance != 0. && "Distance is zero, division by zero detected!");
+        const std::array<double, 3> normalUnit = displacement / (distance + preventDivisionByZero);
+        const double overlapHalf = overlap / 2.;
+        const double radiusIReduced = radiusI - overlapHalf;
+        const double radiusJReduced = radiusJ - overlapHalf;
+        assert((radiusIReduced + radiusJReduced) != 0. && "Distance is zero, division by zero detected!");
+        const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
+        const std::array<double, 3> relVel = particleA.getV() - particleB.getV();
+        const double relVelDotNormalUnit = dot(relVel, normalUnit);
+
+        const double normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+        const double normalFMag = normalContactFMag;
+        const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);
+
+        const std::array<double, 3> tanRelVel = relVel + cross(normalUnit * radiusIReduced, particleA.getAngularVel()) +
+                                                cross(normalUnit * radiusJReduced, particleB.getAngularVel());
+        const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;
+        const std::array<double, 3> tanVel = tanRelVel - normalRelVel;
+        const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);
+        std::array<double, 3> tanF = tanVel * (-_frictionViscosity);
+        const double tanFMag = L2Norm(tanF);
+        if (tanFMag > coulombLimit) {
+          const double scale =
+              _dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);  // 2 FLOPS
+          tanF = tanF * scale;
+        }
+
+        const std::array<double, 3> totalF = normalF + tanF;
 
         // Add force on site to net force
-        particleA.addF(force);
+        particleA.addF(totalF);
         if (newton3) {
-          particleB.subF(force);
+          particleB.subF(totalF);
         }
+
+        const std::array<double, 3> frictionQI = cross(normalUnit * (-radiusIReduced), tanF);
+
+        const std::array<double, 3> rollingRelVel =
+            cross(normalUnit, (particleA.getAngularVel() - particleB.getAngularVel())) * (-radiusReduced);
+        std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);
+        const double rollingFMag = L2Norm(rollingF);
+        if (rollingFMag > coulombLimit) {
+          const double scale =
+              _rollingFrictionCoeff * (normalContactFMag) / (rollingFMag + preventDivisionByZero);  // 2 FLOPS
+          rollingF = rollingF * scale;
+        }
+        const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);
+
+        const std::array<double, 3> torsionRelVel =
+            normalUnit * dot(normalUnit, (particleA.getAngularVel() - particleB.getAngularVel())) * radiusReduced;
+        std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);
+        const double torsionFMag = L2Norm(torsionF);
+        if (torsionFMag > coulombLimit) {
+          const double scale = _torsionFrictionCoeff * (normalContactFMag) / (torsionFMag + preventDivisionByZero);
+          torsionF = torsionF * scale;
+        }
+        const std::array<double, 3> torsionQI = torsionF * radiusReduced;
+
+        const std::array<double, 3> totalTorqueI =
+            cross(rotatedSitePositionsA[i], totalF) + frictionQI + rollingQI + torsionQI;
+        const std::array<double, 3> totalTorqueJ = cross(rotatedSitePositionsB[j], totalF) * (-1.) +
+                                                   frictionQI * (radiusJReduced / radiusIReduced) - rollingQI -
+                                                   torsionQI;
 
         // Add torque applied by force
-        particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[i], force));
+        particleA.addTorque(totalTorqueI);
         if (newton3) {
-          particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], force));
+          particleB.addTorque(totalTorqueJ);
         }
 
+        /**
         if (calculateGlobals) {
           // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
           // Potential energy has an additional factor of 6, which is also handled in endTraversal().
@@ -264,6 +332,8 @@ class LJMultisiteFunctor
             _aosThreadData[threadNum].virialSum += virial;
           }
         }
+        **/
+
       }
     }
   }
@@ -472,7 +542,8 @@ class LJMultisiteFunctor
         SoAFloatPrecision torqueSumY = 0.;
         SoAFloatPrecision torqueSumZ = 0.;
 
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, \
+                               potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
           const size_t globalSiteBIndex = siteB + siteIndexMolB;
 
@@ -637,30 +708,50 @@ class LJMultisiteFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 16>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0,
-        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
-        Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
-        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle::AttributeNames, 19>{Particle::AttributeNames::id,
+                                                             Particle::AttributeNames::posX,
+                                                             Particle::AttributeNames::posY,
+                                                             Particle::AttributeNames::posZ,
+                                                             Particle::AttributeNames::forceX,
+                                                             Particle::AttributeNames::forceY,
+                                                             Particle::AttributeNames::forceZ,
+                                                             Particle::AttributeNames::quaternion0,
+                                                             Particle::AttributeNames::quaternion1,
+                                                             Particle::AttributeNames::quaternion2,
+                                                             Particle::AttributeNames::quaternion3,
+                                                             Particle::AttributeNames::angularVelX,
+                                                             Particle::AttributeNames::angularVelY,
+                                                             Particle::AttributeNames::angularVelZ,
+                                                             Particle::AttributeNames::torqueX,
+                                                             Particle::AttributeNames::torqueY,
+                                                             Particle::AttributeNames::torqueZ,
+                                                             Particle::AttributeNames::typeId,
+                                                             Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 16>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0,
-        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
-        Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
-        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle::AttributeNames, 19>{Particle::AttributeNames::id,
+                                                             Particle::AttributeNames::posX,
+                                                             Particle::AttributeNames::posY,
+                                                             Particle::AttributeNames::posZ,
+                                                             Particle::AttributeNames::forceX,
+                                                             Particle::AttributeNames::forceY,
+                                                             Particle::AttributeNames::forceZ,
+                                                             Particle::AttributeNames::quaternion0,
+                                                             Particle::AttributeNames::quaternion1,
+                                                             Particle::AttributeNames::quaternion2,
+                                                             Particle::AttributeNames::quaternion3,
+                                                             Particle::AttributeNames::angularVelX,
+                                                             Particle::AttributeNames::angularVelY,
+                                                             Particle::AttributeNames::angularVelZ,
+                                                             Particle::AttributeNames::torqueX,
+                                                             Particle::AttributeNames::torqueY,
+                                                             Particle::AttributeNames::torqueZ,
+                                                             Particle::AttributeNames::typeId,
+                                                             Particle::AttributeNames::ownershipState};
   }
 
   /**
@@ -1013,7 +1104,8 @@ class LJMultisiteFunctor
         const auto exactSitePositionAy = rotatedSitePositionAy + yAptr[molA];
         const auto exactSitePositionAz = rotatedSitePositionAz + zAptr[molA];
 
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, \
+                               potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;

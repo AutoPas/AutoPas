@@ -33,7 +33,12 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     auto v = iter->getV();
     auto f = iter->getF();
     iter->setOldF(f);
-    iter->setF(globalForce);
+    if (iter->getTypeId() != 0 and dot(v,v) < 100) {
+      const std::array<double, 3> rightF = {1, 0., 0.};
+      iter->setF(rightF);
+    } else {
+      iter->setF(globalForce);
+    }
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;

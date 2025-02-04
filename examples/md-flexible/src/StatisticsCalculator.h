@@ -181,4 +181,6 @@ class StatisticsCalculator {
    * Stores the name of output .vtu file for the current process.
    */
   std::string _outputFileName;
+  std::tuple<double, double, double, double> calculateMeanQuaternion(
+      const autopas::AutoPas<ParticleType> &autoPasContainer, size_t typeId);
 };

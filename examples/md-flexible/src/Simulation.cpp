@@ -195,12 +195,12 @@ void Simulation::run() {
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition, *_configuration.getParticlePropertiesLibrary());
       _timers.vtk.stop();
     }
-/**
-    if (_calculateStatistics and _iteration % 10 == 0) {  // TODO: to change
+
+    if (_calculateStatistics and _iteration % 100 == 0) {  // TODO: to change
       _statsCalculator->recordStatistics(_iteration, _configuration.globalForce.value[2], *_autoPasContainer,
                                          *_configuration.getParticlePropertiesLibrary());
     }
-**/
+
     _timers.computationalLoad.start();
     //const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
@@ -217,6 +217,7 @@ void Simulation::run() {
 
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
+      /**
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
@@ -244,6 +245,7 @@ void Simulation::run() {
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
       }
+       **/
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
@@ -269,11 +271,11 @@ void Simulation::run() {
                                   *_configuration.getParticlePropertiesLibrary());
     } else {
     **/
-      calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
-                                  _configuration.backgroundTorqueFrictionCoeff.value,
-                                  *_configuration.getParticlePropertiesLibrary());
 
 #endif
+    calculateBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
+                                _configuration.backgroundTorqueFrictionCoeff.value,
+                                *_configuration.getParticlePropertiesLibrary());
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag

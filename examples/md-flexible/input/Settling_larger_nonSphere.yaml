@@ -14,13 +14,13 @@ tuning-max-evidence              :  10
 functor                              :  Lennard-Jones (12-6)
 newton3                          :  [enabled, disabled]
 cutoff                           :  3
-box-min                              :  [-4.75, -4.75, -4.75]
-box-max                              :  [17.25, 17.25, 17.25]
+box-min                              :  [0, 0, 0]
+box-max                          :  [20, 20, 150]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  50000
+iterations                       :  25000
 boundary-type                    :  [reflective,reflective,reflective]
-globalForce                          :  [-0.1, -1, 0]
+globalForce                          :  [0, -2.5, 0]
 load-balancer                        :  InvertedPressure
 Sites:
   0:
@@ -39,29 +39,15 @@ Molecules:
     relative-site-positions          : [ [ -0.75, 0., 0. ], [ 0.75, 0., 0. ] ]
     moment-of-inertia                : [ 0.45, 1.575, 1.575 ]
 Objects:
-  CubeGrid:
+  CubeClosestPacked:
     0:
-      particles-per-dimension: [ 3, 2, 3 ]
-      particle-spacing: 3.
-      bottomLeftCorner: [ 3, 3, 3 ]
-      velocity: [ 0, 0, 0 ]
-      # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
-      # given for site-0. For multi-site simulations, this fills the object with multi-site molecules with the multi-site
-      # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
-      # information.
-      particle-type-id: 0
-    1:
-      particles-per-dimension: [ 3, 2, 3 ]
-      particle-spacing: 3.
-      bottomLeftCorner: [ 5, 8, 3 ]
-      velocity: [ 0, 0, 0 ]
-      # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
-      # given for site-0. For multi-site simulations, this fills the object with multi-site molecules with the multi-site
-      # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
-      # information.
-      particle-type-id: 0
+      box-length                     :  [15, 10, 15]
+      bottomLeftCorner               :  [2.5, 3.5, 2.5]
+      particle-spacing               :  3
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
 log-level                            :  info
-vtk-filename                         :  Settling_nonSphere
+vtk-filename                         :  Settling_larger_nonSphere
 vtk-output-folder                    :  vtkOutputFolder
 vtk-write-frequency                  :  100
 #checkpoint                          : AllOptionsSim_10.vtk
