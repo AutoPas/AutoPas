@@ -642,8 +642,8 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
 #endif
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("    Boundaries                    ", boundariesTotalTime,
-                               maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    Boundaries                    ", boundariesTotalTime, maximumNumberOfDigits,
+                               simulate);
     std::cout << timerToString("      HaloParticleExchange        ", haloParticleExchange, maximumNumberOfDigits,
                                boundariesTotalTime);
     std::cout << timerToString("      ReflectParticlesAtBoundaries", reflectParticlesAtBoundaries,
@@ -652,14 +652,15 @@ void Simulation::logMeasurements() {
                                boundariesTotalTime);
     std::cout << timerToString("      ZonalResultsExchange        ", zonalResultExchange, maximumNumberOfDigits,
                                boundariesTotalTime);
-    std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotalTime, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotalTime, maximumNumberOfDigits,
+                               simulate);
     std::cout << timerToString("      Tuning                      ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotalTime);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotalTime);
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotalTime);
-    std::cout << timerToString("      ForceUpdateZonel            ", zonalInteractions, maximumNumberOfDigits,
+    std::cout << timerToString("      ForceUpdateZonal            ", zonalInteractions, maximumNumberOfDigits,
                                forceUpdateTotalTime);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -779,7 +780,7 @@ void Simulation::loadParticles() {
   std::cout << "Number of particles at initialization "
             // align outputs based on the max number of ranks
             << "on rank " << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length())
-            << std::right << rank << ": " << numParticlesLocally << "\n";
+            << std::right << rank << ": " << numParticlesLocally << " with domain: " << to_string(_domainDecomposition->getLocalBoxMin()) << " - " << to_string(_domainDecomposition->getLocalBoxMax()) << "\n";
 
   // Local unnamed struct to pack data for MPI
   struct {
