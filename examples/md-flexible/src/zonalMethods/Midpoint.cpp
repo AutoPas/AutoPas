@@ -192,6 +192,7 @@ void Midpoint::calculateZonalInteractionPairwise(std::string zone1, std::string 
 }
 
 void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[3])> identifyZone) {
+  // calculate interaction schedule for triwise
   if (!_pairwiseInteraction) {
     int d[3];
     for (d[0] = -1; d[0] <= 1; d[0]++) {
@@ -217,6 +218,7 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
   }
 
   /**
+   * Calculate interaction schedule for pairwise
    * See:
    * Evaluation of Zonal Methods for Small
    * Molecular Systems
@@ -265,8 +267,8 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
           }
         }
         /* neighbour type center:
-         * interact with opposite ring + with the "next" center neighbour for two directions
-         * Fig 3.5
+         * interact with opposite ring (Fig 3.5) +
+         * with the "next" center neighbour for two directions +
          */
         if (zeroIndices.size() == 2) {
           std::vector<std::string> oppositeRing;
@@ -287,8 +289,7 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
             _interactionSchedule.at(zone).insert(_interactionSchedule.at(zone).end(), oppositeRing.begin(),
                                                  oppositeRing.end());
           }
-
-          // for two directions
+          // for two directions, interact with the next center piece
           for (size_t i = 0; i < 2; i++) {
             int opp[3] = {d[0], d[1], d[2]};
             if (nonZeroIndices[0] > zeroIndices[i]) {
@@ -346,15 +347,14 @@ void Midpoint::calculateZonalInteractionTriwise(
 
   // calculate interaction of triples
   // for triples with 1 particle in original zone
-  for (auto& p1 : zoneBuffer) {
+  for (auto &p1 : zoneBuffer) {
     for (size_t i = 0; i < combinedBuffer.size(); i++) {
       for (size_t j = i + 1; j < combinedBuffer.size(); j++) {
         ParticleType &p2 = combinedBuffer.at(i);
         ParticleType &p3 = combinedBuffer.at(j);
         using namespace autopas::utils::ArrayMath::literals;
         if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
-                                    _homeBoxRegion._origin + _homeBoxRegion._size, p1.getID(), p2.getID(),
-                                    p3.getID())) {
+                                    _homeBoxRegion._origin + _homeBoxRegion._size)) {
           continue;
         }
         aosFunctor(p1, p2, p3);
@@ -370,8 +370,7 @@ void Midpoint::calculateZonalInteractionTriwise(
         ParticleType &p3 = combinedBuffer.at(k);
         using namespace autopas::utils::ArrayMath::literals;
         if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
-                                    _homeBoxRegion._origin + _homeBoxRegion._size, p1.getID(), p2.getID(),
-                                    p3.getID())) {
+                                    _homeBoxRegion._origin + _homeBoxRegion._size)) {
           continue;
         }
         aosFunctor(p1, p2, p3);

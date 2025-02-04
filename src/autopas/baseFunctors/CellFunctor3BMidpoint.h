@@ -8,12 +8,9 @@
 #define EXACT true
 
 #include <array>
-#include <ostream>
 
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/WrapMPI.h"
 #include "predicates.h"
 
 inline static const bool exactMidpoint = false;
@@ -44,7 +41,7 @@ inline double getInnerAngleBetweenVectors(std::array<double, 3> a, std::array<do
 /*          from https://ics.uci.edu/~eppstein/junkyard/circumcenter.html    */
 /*****************************************************************************/
 inline std::array<double, 3> tricircumcenter3d(std::array<double, 3> a, std::array<double, 3> b,
-                                               std::array<double, 3> c, bool print = false) {
+                                               std::array<double, 3> c) {
   std::array<double, 3> circumcenter;
   long double xba, yba, zba, xca, yca, zca;
   long double balength, calength;
@@ -71,15 +68,15 @@ inline std::array<double, 3> tricircumcenter3d(std::array<double, 3> a, std::arr
   REAL pb[2] = {b[1], b[2]};
   REAL pc[2] = {c[1], c[2]};
   REAL pa[2] = {a[1], a[2]};
-  xcrossbc = orient2dslow(pb, pc, pa);
+  xcrossbc = orient2d(pb, pc, pa);
   REAL pb2[2] = {b[2], b[0]};
   REAL pc2[2] = {c[2], c[0]};
   REAL pa2[2] = {a[2], a[0]};
-  ycrossbc = orient2dslow(pb2, pc2, pa2);
+  ycrossbc = orient2d(pb2, pc2, pa2);
   REAL pb3[2] = {b[0], b[1]};
   REAL pc3[2] = {c[0], c[1]};
   REAL pa3[2] = {a[0], a[1]};
-  zcrossbc = orient2dslow(pb3, pc3, pa3);
+  zcrossbc = orient2d(pb3, pc3, pa3);
 #else
   /* Take your chances with floating-point roundoff. */
   xcrossbc = yba * zca - yca * zba;
@@ -90,23 +87,11 @@ inline std::array<double, 3> tricircumcenter3d(std::array<double, 3> a, std::arr
   /* Calculate the denominator of the formulae. */
   denominator = 0.5 / (xcrossbc * xcrossbc + ycrossbc * ycrossbc + zcrossbc * zcrossbc);
 
-  if (print) {
-    std::cout << "xcrossbc: " << std::setprecision(17) << xcrossbc << std::endl;
-    std::cout << "ycrossbc: " << std::setprecision(17) << ycrossbc << std::endl;
-    std::cout << "zcrossbc: " << std::setprecision(17) << zcrossbc << std::endl;
-    std::cout << "denominator: " << std::setprecision(17) << denominator << std::endl;
-  }
-
   /* Calculate offset (from `a') of circumcenter. */
   xcirca = ((balength * yca - calength * yba) * zcrossbc - (balength * zca - calength * zba) * ycrossbc) * denominator;
   ycirca = ((balength * zca - calength * zba) * xcrossbc - (balength * xca - calength * xba) * zcrossbc) * denominator;
   zcirca = ((balength * xca - calength * xba) * ycrossbc - (balength * yca - calength * yba) * xcrossbc) * denominator;
 
-  if (print) {
-    std::cout << "xcirca: " << std::setprecision(17) << xcirca << std::endl;
-    std::cout << "ycirca: " << std::setprecision(17) << ycirca << std::endl;
-    std::cout << "zcirca: " << std::setprecision(17) << zcirca << std::endl;
-  }
   circumcenter[0] = xcirca;
   circumcenter[1] = ycirca;
   circumcenter[2] = zcirca;
@@ -115,17 +100,11 @@ inline std::array<double, 3> tricircumcenter3d(std::array<double, 3> a, std::arr
 }
 
 inline bool isMidpointInsideDomain(std::array<double, 3> a, std::array<double, 3> b, std::array<double, 3> c,
-                                   std::array<double, 3> boxMin, std::array<double, 3> boxMax, int aid = 0, int bid = 0,
-                                   int cid = 0) {
-  bool print = false;
-  /* if ((aid == 4 and bid == 94 and cid == 95) || (aid == 4 and bid == 95 and cid == 94) || */
-  /*     (aid == 94 and bid == 4 and cid == 95) || (aid == 94 and bid == 95 and cid == 4) || */
-  /*     (aid == 95 and bid == 4 and cid == 94) || (aid == 95 and bid == 94 and cid == 4)) { */
-  /*   print = true; */
-  /* } */
+                                   std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
   std::array<double, 3> midpoint;
 
   if (!exactMidpoint) {
+    // use approximation of midpoint
     auto xmax = std::max({a.at(0), b.at(0), c.at(0)});
     auto xmin = std::min({a.at(0), b.at(0), c.at(0)});
     auto ymax = std::max({a.at(1), b.at(1), c.at(1)});
@@ -168,7 +147,7 @@ inline bool isMidpointInsideDomain(std::array<double, 3> a, std::array<double, 3
     }
     // else, the midpoint is the circumcenter of the triangle
     else {
-      auto css = tricircumcenter3d(a, b, c, print);
+      auto css = tricircumcenter3d(a, b, c);
       midpoint = {a.at(0) + css.at(0), a.at(1) + css.at(1), a.at(2) + css.at(2)};
     }
   }
@@ -178,21 +157,6 @@ inline bool isMidpointInsideDomain(std::array<double, 3> a, std::array<double, 3
   for (size_t i = 0; i < 3; i++) {
     result = result && (midpoint.at(i) >= boxMin.at(i) && midpoint.at(i) < boxMax.at(i));
   }
-  /* int rank; */
-  /* autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank); */
-  /* std::cout << " !!! Midpoint between " << aid << " and " << bid << " and " << cid << " is (" << midpoint.at(0) << ",
-   * " */
-  /*           << midpoint.at(1) << ", " << midpoint.at(2) << ") and result is " << result << " on rank: " << rank */
-  /*           << std::endl */
-  /*           << "posa: " << a.at(0) << ", " << a.at(1) << ", " << a.at(2) << std::endl */
-  /*           << "posb: " << b.at(0) << ", " << b.at(1) << ", " << b.at(2) << std::endl */
-  /*           << "posc: " << c.at(0) << ", " << c.at(1) << ", " << c.at(2) << std::endl */
-  /*           << "boxMin: " << boxMin.at(0) << ", " << boxMin.at(1) << ", " << boxMin.at(2) << std::endl */
-  /*           << "boxMax: " << boxMax.at(0) << ", " << boxMax.at(1) << ", " << boxMax.at(2) << std::endl */
-  /*           << midpoint.at(1) << " <= " << boxMax.at(1) << " == " << (midpoint.at(1) <= boxMax.at(1)) << std::endl */
-
-  /*           << midpoint.at(1) << " >= " << boxMin.at(1) << " == " << (midpoint.at(1) >= boxMin.at(1)) << std::endl;
-   */
 
   return result;
 }
@@ -570,8 +534,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
               std::abs(p1Projection - p3Projection) > _sortingCutoff) {
             break;
           }
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3Ptr->getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax)) {
             continue;
           }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
@@ -590,8 +553,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
               std::abs(p1Projection - p3Projection) > _sortingCutoff) {
             break;
           }
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3Ptr->getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax)) {
             continue;
           }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
@@ -606,8 +568,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
       ++p2Ptr;
       for (; p2Ptr != cell1.end(); ++p2Ptr) {
         for (auto &p3 : cell2) {
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3.getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax)) {
             continue;
           }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, p3, true);
@@ -619,8 +580,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
         auto p3Ptr = p2Ptr;
         ++p3Ptr;
         for (; p3Ptr != cell2.end(); ++p3Ptr) {
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3Ptr->getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax)) {
             continue;
           }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
@@ -670,8 +630,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
               std::abs(p1Projection - p3Projection) > _sortingCutoff) {
             break;
           }
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3Ptr->getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax)) {
             continue;
           }
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr, true);
@@ -690,8 +649,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
               std::abs(p1Projection - p3Projection) > _sortingCutoff) {
             break;
           }
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3Ptr->getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax)) {
             continue;
           }
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr, false);
@@ -706,8 +664,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
       ++p2Ptr;
       for (; p2Ptr != cell1.end(); ++p2Ptr) {
         for (auto &p3 : cell2) {
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3.getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax)) {
             continue;
           }
           interactParticles(*p1Ptr, *p2Ptr, p3, true);
@@ -719,8 +676,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
         auto p3Ptr = p2Ptr;
         ++p3Ptr;
         for (; p3Ptr != cell2.end(); ++p3Ptr) {
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3Ptr->getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3Ptr->getR(), boxMin, boxMax)) {
             continue;
           }
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr, false);
@@ -745,8 +701,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
           break;
         }
         for (auto &p3 : cell3) {
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3.getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax)) {
             continue;
           }
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, p3, true);
@@ -757,8 +712,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
         for (auto &p3 : cell3) {
-          if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), boxMin, boxMax, p1.getID(),
-                                      p2.getID(), p3.getID())) {
+          if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), boxMin, boxMax)) {
             continue;
           }
           _functor->AoSFunctor(p1, p2, p3, true);
@@ -793,8 +747,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
         }
 
         for (auto &p3 : cell3) {
-          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax, p1Ptr->getID(),
-                                      p2Ptr->getID(), p3.getID())) {
+          if (!isMidpointInsideDomain(p1Ptr->getR(), p2Ptr->getR(), p3.getR(), boxMin, boxMax)) {
             continue;
           }
           interactParticlesNoN3(*p1Ptr, *p2Ptr, p3);
@@ -805,8 +758,7 @@ void CellFunctor3BMidpoint<ParticleCell, ParticleFunctor, bidirectional>::proces
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
         for (auto &p3 : cell3) {
-          if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), boxMin, boxMax, p1.getID(), p2.getID(),
-                                      p3.getID())) {
+          if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), boxMin, boxMax)) {
             continue;
           }
           interactParticlesNoN3(p1, p2, p3);
