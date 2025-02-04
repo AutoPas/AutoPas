@@ -161,6 +161,9 @@ StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
   std::array<double, 3> meanRotationalEnergy = {0., 0., 0.};
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    if (particle->getTypeId() != 0L) {
+      continue;
+    }
     const double mass = particlePropertiesLib.getSiteMass(particle->getTypeId());
     const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
     const std::array<double, 3> v = particle->getV();
