@@ -325,7 +325,8 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
       break;
     case options::ZonalMethodOption::midpoint:
       checkLoadBalancerTurnedOff(config);
-      checkLCC01MidpointTraversal(config);
+      checkTraversal(config, {autopas::TraversalOption::lc_c01_midpoint},
+                     {autopas::TraversalOption::lc_c01_midpoint, autopas::TraversalOption::ds_sequential_midpoint});
       checkAllowedFunctors(config);
       checkDataType(config);
       break;
