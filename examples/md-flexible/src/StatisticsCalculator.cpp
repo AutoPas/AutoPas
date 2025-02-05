@@ -70,7 +70,9 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
           autopas::utils::quaternion::rotateVectorOfPositions(particle->getQuaternion(), unrotatedSitePositions);
       const std::array<double, 3> CoMToSite0 = autopas::utils::ArrayMath::sub(rotatedSitePositions[0], CoM);
       const std::array<double, 3> CoMToSite1 = autopas::utils::ArrayMath::sub(rotatedSitePositions[1], CoM);
-      const std::array<double, 3> normalVector = autopas::utils::ArrayMath::cross(CoMToSite0, CoMToSite1);
+      std::array<double, 3> normalVector = autopas::utils::ArrayMath::cross(CoMToSite0, CoMToSite1);
+      const double normalVectorNorm = autopas::utils::ArrayMath::L2Norm(normalVector);
+      normalVector = autopas::utils::ArrayMath::divScalar(normalVector, normalVectorNorm);
       normalVectors.emplace_back(normalVector);
 
       nXSum += normalVector[0];
