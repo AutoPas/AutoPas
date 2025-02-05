@@ -879,59 +879,54 @@ class LJFunctorAVX
     // split into 2*4 floats and convert to 2*4 doubles, _mm256_cvtps_pd are expensive! _mm512_cvtps_pd introduced by
     // AVX512 could reduce this to one instruction each
     const __m256d fxCvtLow = _mm256_cvtps_pd(_mm256_extractf128_ps(fx, 0));
-    const __m256d fxCvtHigh = (rest > 4) ? _mm256_cvtps_pd(_mm256_extractf128_ps(fx, 1)) : _mm256_setzero_pd();
-
     const __m256d fyCvtLow = _mm256_cvtps_pd(_mm256_extractf128_ps(fy, 0));
-    const __m256d fyCvtHigh = (rest > 4) ? _mm256_cvtps_pd(_mm256_extractf128_ps(fy, 1)) : _mm256_setzero_pd();
-
     const __m256d fzCvtLow = _mm256_cvtps_pd(_mm256_extractf128_ps(fz, 0));
-    const __m256d fzCvtHigh = (rest > 4) ? _mm256_cvtps_pd(_mm256_extractf128_ps(fz, 1)) : _mm256_setzero_pd();
 
     // add the converted values
     fxacc = _mm256_add_pd(fxacc, fxCvtLow);
-    fxacc = _mm256_add_pd(fxacc, fxCvtHigh);
-
     fyacc = _mm256_add_pd(fyacc, fyCvtLow);
-    fyacc = _mm256_add_pd(fyacc, fyCvtHigh);
-
     fzacc = _mm256_add_pd(fzacc, fzCvtLow);
-    fzacc = _mm256_add_pd(fzacc, fzCvtHigh);
+
+    __m256d fxCvtHigh;
+    __m256d fyCvtHigh;
+    __m256d fzCvtHigh;
+    // execute the second half if needed
+    if (not remainderIsMasked or (remainderIsMasked and rest > 4)) {
+      fxCvtHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(fx, 1));
+      fyCvtHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(fy, 1));
+      fzCvtHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(fz, 1));
+      fxacc = _mm256_add_pd(fxacc, fxCvtHigh);
+      fyacc = _mm256_add_pd(fyacc, fyCvtHigh);
+      fzacc = _mm256_add_pd(fzacc, fzCvtHigh);
+    }
 
     // if newton 3 is used subtract fD from particle j
     if constexpr (newton3) {
       // we need to potentially load and store double the number of particles in this case
-      const __m256d fx2first = remainderIsMasked && rest < 4 ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1])
-                                                             : _mm256_loadu_pd(&fx2ptr[j]);
-      const __m256d fx2second = remainderIsMasked && rest > 4 ? _mm256_maskload_pd(&fx2ptr[j + 4], _masks[rest - 5])
-                                                              : _mm256_loadu_pd(&fx2ptr[j + 4]);
-      const __m256d fy2first = remainderIsMasked && rest < 4 ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1])
-                                                             : _mm256_loadu_pd(&fy2ptr[j]);
-      const __m256d fy2second = remainderIsMasked && rest > 4 ? _mm256_maskload_pd(&fy2ptr[j + 4], _masks[rest - 5])
-                                                              : _mm256_loadu_pd(&fy2ptr[j + 4]);
-      const __m256d fz2first = remainderIsMasked && rest < 4 ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1])
-                                                             : _mm256_loadu_pd(&fz2ptr[j]);
-      const __m256d fz2second = remainderIsMasked && rest > 4 ? _mm256_maskload_pd(&fz2ptr[j + 4], _masks[rest - 5])
-                                                              : _mm256_loadu_pd(&fz2ptr[j + 4]);
+      const __m256d fx2first = _mm256_loadu_pd(&fx2ptr[j]);
+      const __m256d fy2first = _mm256_loadu_pd(&fy2ptr[j]);
+      const __m256d fz2first = _mm256_loadu_pd(&fz2ptr[j]);
 
       const __m256d fx2newfirst = _mm256_sub_pd(fx2first, fxCvtLow);
-      const __m256d fx2newsecond = _mm256_sub_pd(fx2second, fxCvtHigh);
       const __m256d fy2newfirst = _mm256_sub_pd(fy2first, fyCvtLow);
-      const __m256d fy2newsecond = _mm256_sub_pd(fy2second, fyCvtHigh);
       const __m256d fz2newfirst = _mm256_sub_pd(fz2first, fzCvtLow);
-      const __m256d fz2newsecond = _mm256_sub_pd(fz2second, fzCvtHigh);
 
-      remainderIsMasked &&rest < 4 ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2newfirst)
-                                   : _mm256_storeu_pd(&fx2ptr[j], fx2newfirst);
-      remainderIsMasked &&rest > 4 ? _mm256_maskstore_pd(&fx2ptr[j + 4], _masks[rest - 5], fx2newsecond)
-                                   : _mm256_storeu_pd(&fx2ptr[j + 4], fx2newsecond);
-      remainderIsMasked &&rest < 4 ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2newfirst)
-                                   : _mm256_storeu_pd(&fy2ptr[j], fy2newfirst);
-      remainderIsMasked &&rest > 4 ? _mm256_maskstore_pd(&fy2ptr[j + 4], _masks[rest - 5], fy2newsecond)
-                                   : _mm256_storeu_pd(&fy2ptr[j + 4], fy2newsecond);
-      remainderIsMasked &&rest < 4 ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2newfirst)
-                                   : _mm256_storeu_pd(&fz2ptr[j], fz2newfirst);
-      remainderIsMasked &&rest > 4 ? _mm256_maskstore_pd(&fz2ptr[j + 4], _masks[rest - 5], fz2newsecond)
-                                   : _mm256_storeu_pd(&fz2ptr[j + 4], fz2newsecond);
+      _mm256_storeu_pd(&fx2ptr[j], fx2newfirst);
+      _mm256_storeu_pd(&fy2ptr[j], fy2newfirst);
+      _mm256_storeu_pd(&fz2ptr[j], fz2newfirst);
+
+      // execute the second half if needed
+      if (not remainderIsMasked or (remainderIsMasked and rest > 4)) {
+        const __m256d fx2second = _mm256_loadu_pd(&fx2ptr[j + 4]);
+        const __m256d fy2second = _mm256_loadu_pd(&fy2ptr[j + 4]);
+        const __m256d fz2second = _mm256_loadu_pd(&fz2ptr[j + 4]);
+        const __m256d fx2newsecond = _mm256_sub_pd(fx2second, fxCvtHigh);
+        const __m256d fy2newsecond = _mm256_sub_pd(fy2second, fyCvtHigh);
+        const __m256d fz2newsecond = _mm256_sub_pd(fz2second, fzCvtHigh);
+        _mm256_storeu_pd(&fx2ptr[j + 4], fx2newsecond);
+        _mm256_storeu_pd(&fy2ptr[j + 4], fy2newsecond);
+        _mm256_storeu_pd(&fz2ptr[j + 4], fz2newsecond);
+      }
     }
 
     if constexpr (calculateGlobals) {
