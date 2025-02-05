@@ -16,18 +16,10 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
     : _sessionName(std::move(sessionName)) {
   tryCreateStatisticsFolders(_sessionName, outputFolder);
 
-  std::vector<std::string> columnNames = {"Iteration",
-                                          "MeanPotentialEnergyZ",
-                                          "MeanKineticEnergyX",
-                                          "MeanKineticEnergyY",
-                                          "MeanKineticEnergyZ",
-                                          "MeanRotationalEnergyX",
-                                          "MeanRotationalEnergyY",
-                                          "MeanRotationalEnergyZ",
-                                          "MeanQ0",
-                                          "MeanQ1",
-                                          "MeanQ2",
-                                          "MeanQ3"};
+  std::vector<std::string> columnNames = {
+      "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
+      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ",
+      "MeanNormalVectorX",  "MeanNormalVectorY",     "MeanNormalVectorZ"};
   /**
   const std::vector<std::string> columnNames = {
       "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
@@ -43,7 +35,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
   const auto energyStatistics =
       calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
-  const auto meanQ = calculateMeanQuaternion(autoPasContainer, 0L);
+  const auto meanQ = calculateMeanNormalVector(autoPasContainer, particlePropertiesLib, 0L);
   /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
@@ -58,29 +50,36 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 }
 
-std::tuple<double, double, double, double> StatisticsCalculator::calculateMeanQuaternion(
-    const autopas::AutoPas<ParticleType> &autoPasContainer, size_t typeId) {
-  double q0Sum = 0.;
-  double q1Sum = 0.;
-  double q2Sum = 0.;
-  double q3Sum = 0.;
+std::tuple<double, double, double> StatisticsCalculator::calculateMeanNormalVector(
+    const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
+    size_t typeId) {
+  double nXSum = 0.;
+  double nYSum = 0.;
+  double nZSum = 0.;
   size_t particleCount = 0;
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     if (particle->getTypeId() == typeId) {
-      auto q = particle->getQuaternion();
-      q0Sum += q[0];
-      q1Sum += q[1];
-      q2Sum += q[2];
-      q3Sum += q[3];
+      const std::array<double, 3> CoM = particle->getR();
+      const std::vector<std::array<double, 3>> unrotatedSitePositions =
+          particlePropertiesLib.getSitePositions(particle->getTypeId());
+      const auto rotatedSitePositions =
+          autopas::utils::quaternion::rotateVectorOfPositions(particle->getQuaternion(), unrotatedSitePositions);
+      const std::array<double, 3> CoMToSite0 = autopas::utils::ArrayMath::sub(rotatedSitePositions[0], CoM);
+      const std::array<double, 3> CoMToSite1 = autopas::utils::ArrayMath::sub(rotatedSitePositions[1], CoM);
+      const std::array<double, 3> normalVector = autopas::utils::ArrayMath::cross(CoMToSite0, CoMToSite1);
+
+      nXSum += normalVector[0];
+      nYSum += normalVector[1];
+      nZSum += normalVector[2];
       particleCount++;
     }
   }
 
   if (particleCount == 0) {
-    return std::make_tuple(0., 0., 0., 0.);
+    return std::make_tuple(0, 0, 0);
   }
-  return std::make_tuple(q0Sum / particleCount, q1Sum / particleCount, q2Sum / particleCount, q3Sum / particleCount);
+  return std::make_tuple(nXSum / particleCount, nYSum / particleCount, nZSum / particleCount);
 }
 
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateTorquesAndAngularVel(
