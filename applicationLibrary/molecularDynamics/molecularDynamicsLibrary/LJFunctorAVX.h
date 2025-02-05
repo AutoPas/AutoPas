@@ -1192,7 +1192,6 @@ class LJFunctorAVX
           fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
           fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
         }
-        //!---------------------------------- Done until here ----------------------------------
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
@@ -1211,6 +1210,27 @@ class LJFunctorAVX
       }
     }
 
+#if AUTOPAS_PRECISION_MODE == SPSP
+    // horizontally reduce fDacc to sumfD
+    const __m256 hSumfxfy = _mm256_hadd_ps(fxacc, fyacc);
+    const __m256 hSumfz = _mm256_hadd_ps(fzacc, fzacc);
+
+    const __m128 hSumfxfyLow = _mm256_extractf128_ps(hSumfxfy, 0);
+    const __m128 hSumfzLow = _mm256_extractf128_ps(hSumfz, 0);
+
+    const __m128 hSumfxfyHigh = _mm256_extractf128_ps(hSumfxfy, 1);
+    const __m128 hSumfzHigh = _mm256_extractf128_ps(hSumfz, 1);
+
+    const __m128 sumfxfyVEC = _mm_add_ps(hSumfxfyLow, hSumfxfyHigh);
+    const __m128 sumfzVEC = _mm_add_ps(hSumfzLow, hSumfzHigh);
+
+    const __m128 hsumfxfyVEC = _mm_hadd_ps(sumfxfyVEC, sumfxfyVEC);
+    const __m128 hsumfzVEC = _mm_hadd_ps(sumfzVEC, sumfzVEC);
+
+    const float sumfx = hsumfxfyVEC[0];
+    const float sumfy = hsumfxfyVEC[1];
+    const float sumfz = _mm_cvtss_f32(hsumfzVEC);
+#else
     // horizontally reduce fDacc to sumfD
     const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
     const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
@@ -1227,6 +1247,7 @@ class LJFunctorAVX
     const double sumfx = sumfxfyVEC[0];
     const double sumfy = sumfxfyVEC[1];
     const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+#endif
 
     fxptr[indexFirst] += sumfx;
     fyptr[indexFirst] += sumfy;
@@ -1235,30 +1256,52 @@ class LJFunctorAVX
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
 
+#if AUTOPAS_PRECISION_MODE == SPSP
+      // horizontally reduce virialSumX and virialSumY
+      const __m256 hSumVirialxy = _mm256_hadd_ps(virialSumX, virialSumY);
+      const __m128 hSumVirialxyLow = _mm256_extractf128_ps(hSumVirialxy, 0);
+      const __m128 hSumVirialxyHigh = _mm256_extractf128_ps(hSumVirialxy, 1);
+      const __m128 sumVirialxyVec = _mm_add_ps(hSumVirialxyHigh, hSumVirialxyLow);
+      const __m128 hSumVirialxyVec = _mm_hadd_ps(sumVirialxyVec, sumVirialxyVec);
+
+      // horizontally reduce virialSumZ and potentialEnergySum
+      const __m256 hSumVirialzPotentialEnergy = _mm256_hadd_ps(virialSumZ, potentialEnergySum);
+      const __m128 hSumVirialzPotentialEnergyLow = _mm256_extractf128_ps(hSumVirialzPotentialEnergy, 0);
+      const __m128 hSumVirialzPotentialEnergyHigh = _mm256_extractf128_ps(hSumVirialzPotentialEnergy, 1);
+      const __m128 sumVirialzPotentialEnergyVec =
+          _mm_add_ps(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
+      const __m128 hSumVirialzPotentialEnergyVec =
+          _mm_hadd_ps(sumVirialzPotentialEnergyVec, sumVirialzPotentialEnergyVec);
+
+      // globals = {virialX, virialY, virialZ, potentialEnergy}
+      float globals[4];
+      _mm_store_ps(&globals[0], hSumVirialxyVec);
+      _mm_store_ps(&globals[2], hSumVirialzPotentialEnergyVec);
+#else
       // horizontally reduce virialSumX and virialSumY
       const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
       const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
       const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+      const __m128d sumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
       // horizontally reduce virialSumZ and potentialEnergySum
       const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
       const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
       const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
-      const __m128d hSumVirialzPotentialEnergyVec =
+      const __m128d sumVirialzPotentialEnergyVec =
           _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
 
       // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
-      _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
-
+      _mm_store_pd(&globals[0], sumVirialxyVec);
+      _mm_store_pd(&globals[2], sumVirialzPotentialEnergyVec);
+#endif
       _aosThreadData[threadnum].virialSum[0] += globals[0];
       _aosThreadData[threadnum].virialSum[1] += globals[1];
       _aosThreadData[threadnum].virialSum[2] += globals[2];
       _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
-    // interact with i with 4 neighbors
+    // interact with i with 4 or 8 neighbors
 #endif  // __AVX__
   }
 
