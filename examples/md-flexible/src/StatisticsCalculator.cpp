@@ -19,13 +19,14 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
   std::vector<std::string> columnNames = {
       "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
       "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ",
-      "MeanNormalVectorX",  "MeanNormalVectorY",     "MeanNormalVectorZ"};
+      "MeanNormalVectorX",  "MeanNormalVectorY",     "MeanNormalVectorZ",     "VarNormalVectorX",
+      "VarNormalVectorY",   "VarNormalVectorZ"};
   /**
   const std::vector<std::string> columnNames = {
       "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
       "TorqueJX",  "TorqueJY",   "TorqueJZ",   "AngularVelJX", "AngularVelJY", "AngularVelJZ", "ForceIX",
       "ForceIY",   "ForceIZ",    "VelocityIX", "VelocityIY",   "VelocityIZ",   "ForceJX",      "ForceJY",
-      "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ", "Overlap", "DistanceBetweenCenters", "NotNeeded"};
+      "ForceJZ",   "VelocityJX", "VelocityJY", "VelocityJZ", "Overlap", "DistanceBetweenCenter  s", "NotNeeded"};
       **/
   generateOutputFile(columnNames);
 }
@@ -35,7 +36,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
   const auto energyStatistics =
       calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
-  const auto meanQ = calculateMeanNormalVector(autoPasContainer, particlePropertiesLib, 0L);
+  const auto meanQ = calculateMeanAndVarNormalVector(autoPasContainer, particlePropertiesLib, 0L);
   /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
@@ -50,13 +51,15 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 }
 
-std::tuple<double, double, double> StatisticsCalculator::calculateMeanNormalVector(
+std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateMeanAndVarNormalVector(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
     size_t typeId) {
   double nXSum = 0.;
   double nYSum = 0.;
   double nZSum = 0.;
   size_t particleCount = 0;
+
+  std::vector<std::array<double, 3>> normalVectors = {};
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     if (particle->getTypeId() == typeId) {
@@ -68,6 +71,7 @@ std::tuple<double, double, double> StatisticsCalculator::calculateMeanNormalVect
       const std::array<double, 3> CoMToSite0 = autopas::utils::ArrayMath::sub(rotatedSitePositions[0], CoM);
       const std::array<double, 3> CoMToSite1 = autopas::utils::ArrayMath::sub(rotatedSitePositions[1], CoM);
       const std::array<double, 3> normalVector = autopas::utils::ArrayMath::cross(CoMToSite0, CoMToSite1);
+      normalVectors.emplace_back(normalVector);
 
       nXSum += normalVector[0];
       nYSum += normalVector[1];
@@ -76,10 +80,29 @@ std::tuple<double, double, double> StatisticsCalculator::calculateMeanNormalVect
     }
   }
 
+  const double meanNX = nXSum / particleCount;
+  const double meanNY = nYSum / particleCount;
+  const double meanNZ = nZSum / particleCount;
+
   if (particleCount == 0) {
-    return std::make_tuple(0, 0, 0);
+    return std::make_tuple(0, 0, 0, 0, 0, 0);
   }
-  return std::make_tuple(nXSum / particleCount, nYSum / particleCount, nZSum / particleCount);
+
+  double varNX = 0.;
+  double varNY = 0.;
+  double varNZ = 0.;
+
+  for (const auto& normalVector : normalVectors) {
+      varNX += (normalVector[0] - meanNX) * (normalVector[0] - meanNX);
+      varNY += (normalVector[1] - meanNY) * (normalVector[1] - meanNY);
+      varNZ += (normalVector[2] - meanNZ) * (normalVector[2] - meanNZ);
+  }
+
+  varNX = varNX / particleCount;
+  varNY = varNY / particleCount;
+  varNZ = varNZ / particleCount;
+
+  return std::make_tuple(meanNX, meanNY, meanNZ, varNX, varNY, varNZ);
 }
 
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateTorquesAndAngularVel(

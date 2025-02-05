@@ -181,7 +181,7 @@ class StatisticsCalculator {
    * Stores the name of output .vtu file for the current process.
    */
   std::string _outputFileName;
-  std::tuple<double, double, double> calculateMeanNormalVector(
+  std::tuple<double, double, double, double, double, double> calculateMeanAndVarNormalVector(
       const autopas::AutoPas<ParticleType> &autoPasContainer,
       const ParticlePropertiesLibraryType &particlePropertiesLib, size_t typeId);
 };
