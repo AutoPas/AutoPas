@@ -196,6 +196,8 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
   if (!_pairwiseInteraction) {
     if constexpr (_bruteForceSchedule3B) {
       calculateInteractionScheduleTriwiseBruteForce(identifyZone);
+    } else {
+      calculateInteractionScheduleTriwisePlane(identifyZone);
     }
     return;
   }
@@ -319,7 +321,9 @@ void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[
 void Midpoint::calculateZonalInteractionTriwise(
     std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {
   if constexpr (_bruteForceSchedule3B) {
-    calculateZonalInteractionTriwise(zone, aosFunctor);
+    calculateZonalInteractionTriwiseBruteForce(zone, aosFunctor);
+  } else {
+    calculateZonalInteractionTriwisePlane(zone, aosFunctor);
   }
 }
 
@@ -348,8 +352,9 @@ void Midpoint::calculateInteractionScheduleTriwiseBruteForce(std::function<std::
 
 void Midpoint::calculateZonalInteractionTriwiseBruteForce(
     std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {
+  bool previous = mdLib::haloNewton;
   // deactivate newton3 used on halo particles
-  mdLib::haloNewton = true;
+  mdLib::haloNewton = false;
   CombinedBuffer combinedBuffer;
   auto zoneIndex = (_regionCount - std::stoi(zone)) - 1;
   auto &zoneBuffer = _importBuffers.at(zoneIndex);
@@ -393,8 +398,159 @@ void Midpoint::calculateZonalInteractionTriwiseBruteForce(
       }
     }
   }
-  // reactivate newton3 used on halo particles
-  mdLib::haloNewton = true;
+  // reset newton3 used on halo particles
+  mdLib::haloNewton = previous;
+}
+
+void Midpoint::calculateInteractionScheduleTriwisePlane(std::function<std::string(const int[3])> identifyZone) {
+  std::map<std::array<int, 3>, bool> interactionMap;
+  int d[3];
+  // for all zones
+  for (d[0] = -1; d[0] <= 1; d[0]++) {
+    for (d[1] = -1; d[1] <= 1; d[1]++) {
+      for (d[2] = -1; d[2] <= 1; d[2]++) {
+        if (d[0] == 0 && d[1] == 0 && d[2] == 0) {
+          continue;
+        }
+        auto zone = identifyZone(d);
+        _interactionZones.push_back(zone);
+        _interactionScheduleTriwise.insert_or_assign(zone, std::vector<std::set<std::string>>{});
+        // check first interaction partner
+        for (int i = 0; i < 26; i++) {
+          if (std::stoi(zone) == i) continue;
+          auto d2 = convZoneStringIntoRelNeighbourIndex(std::to_string(i));
+          bool isNeighbour =
+              (std::abs(d[0] - d2[0]) <= 1) && (std::abs(d[1] - d2[1]) <= 1) && (std::abs(d[2] - d2[2]) <= 1);
+          if (!isNeighbour) continue;
+          // check second interaction partner
+          for (int j = i; j < 26; j++) {
+            if (std::stoi(zone) == j) continue;
+            auto d3 = convZoneStringIntoRelNeighbourIndex(std::to_string(j));
+            bool isNeighbour2 =
+                (std::abs(d[0] - d3[0]) <= 1) && (std::abs(d[1] - d3[1]) <= 1) && (std::abs(d[2] - d3[2]) <= 1);
+            if (!isNeighbour2) continue;
+            bool isNeighbour3 =
+                (std::abs(d2[0] - d3[0]) <= 1) && (std::abs(d2[1] - d3[1]) <= 1) && (std::abs(d2[2] - d3[2]) <= 1);
+            if (!isNeighbour3) continue;
+
+            std::array<int, 3> t = {i, j, std::stoi(zone)};
+            std::sort(std::begin(t), std::end(t));
+            if (interactionMap.find(t) != interactionMap.end()) {
+              continue;
+            }
+
+            interactionMap.insert_or_assign(t, true);
+
+            // for the six sides, check if these interacting zones all lie on a common side
+            std::vector<std::array<int, 3>> sides = {{-1, 0, 0}, {1, 0, 0},  {0, -1, 0},
+                                                     {0, 1, 0},  {0, 0, -1}, {0, 0, 1}};
+            std::array<int, 3> da = {d[0], d[1], d[2]};
+            std::array<int, 3> d2a = {d2[0], d2[1], d2[2]};
+            std::array<int, 3> d3a = {d3[0], d3[1], d3[2]};
+            bool commonSide = false;
+            for (auto side : sides) {
+              using namespace autopas::utils::ArrayMath;
+              if (!dot(side, da - side) && !dot(side, d2a - side) && !dot(side, d3a - side)) {
+                commonSide = true;
+                break;
+              }
+            }
+            // if all three points lie on a same side
+            if (commonSide) {
+              continue;
+            }
+            _interactionScheduleTriwise.at(zone).push_back({std::to_string(i), std::to_string(j)});
+          }
+        }
+      }
+    }
+  }
+}
+
+void Midpoint::calculateZonalInteractionTriwisePlane(
+    std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {
+  bool previous = mdLib::haloNewton;
+  // deactivate newton3 used on halo particles
+  mdLib::haloNewton = false;
+  auto zoneIndex = (_regionCount - std::stoi(zone)) - 1;
+  auto &zoneBuffer = _importBuffers.at(zoneIndex);
+
+  auto interactionToString = [&](std::set<std::string> interaction) -> std::string {
+    std::string res = "";
+    for (auto i : interaction) {
+      res += to_string(convZoneStringIntoRelNeighbourIndex(i)) + " ";
+    }
+    return res;
+  };
+
+  for (auto interaction : _interactionScheduleTriwise.at(zone)) {
+    /* std::cout << "Interaction: " << convZoneStringIntoRelNeighbourIndex(zone) << " -> " */
+    /*           << interactionToString(interaction) << std::endl; */
+    // if pairwise zonal interaction
+    if (interaction.size() == 1) {
+      auto otherIndex = (_regionCount - std::stoi(*interaction.begin())) - 1;
+      auto &otherBuffer = _importBuffers.at(otherIndex);
+      // iterate over particles in original zone
+      for (size_t z1 = 0; z1 < zoneBuffer.size(); z1++) {
+        // iterate over particles in other zone
+        for (size_t o1 = 0; o1 < otherBuffer.size(); o1++) {
+          // Case 1: find all third particles in other zone
+          for (size_t o2 = o1 + 1; o2 < otherBuffer.size(); o2++) {
+            ParticleType &p1 = zoneBuffer.at(z1);
+            ParticleType &p2 = otherBuffer.at(o1);
+            ParticleType &p3 = otherBuffer.at(o2);
+            using namespace autopas::utils::ArrayMath::literals;
+            if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
+                                        _homeBoxRegion._origin + _homeBoxRegion._size)) {
+              continue;
+            }
+            aosFunctor(p1, p2, p3, true);
+          }
+          // Case 2: find all thrid particles in original zone
+          for (size_t z2 = z1 + 1; z2 < zoneBuffer.size(); z2++) {
+            ParticleType &p1 = zoneBuffer.at(z1);
+            ParticleType &p2 = otherBuffer.at(o1);
+            ParticleType &p3 = zoneBuffer.at(z2);
+            using namespace autopas::utils::ArrayMath::literals;
+            if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
+                                        _homeBoxRegion._origin + _homeBoxRegion._size)) {
+              continue;
+            }
+            aosFunctor(p1, p2, p3, true);
+          }
+        }
+      }
+    }
+    // if triwise zonal interaction
+    else {
+      auto otherIndex = (_regionCount - std::stoi(*interaction.begin())) - 1;
+      auto &otherBuffer = _importBuffers.at(otherIndex);
+      auto thirdIndex = (_regionCount - std::stoi(*(++interaction.begin()))) - 1;
+      auto &thirdBuffer = _importBuffers.at(thirdIndex);
+
+      // iterate over particles in original zone
+      for (size_t z1 = 0; z1 < zoneBuffer.size(); z1++) {
+        // iterate over particles in other zone
+        for (size_t o1 = 0; o1 < otherBuffer.size(); o1++) {
+          // iterate over particles in third zone
+          for (size_t t1 = 0; t1 < thirdBuffer.size(); t1++) {
+            ParticleType &p1 = zoneBuffer.at(z1);
+            ParticleType &p2 = otherBuffer.at(o1);
+            ParticleType &p3 = thirdBuffer.at(t1);
+            using namespace autopas::utils::ArrayMath::literals;
+            if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
+                                        _homeBoxRegion._origin + _homeBoxRegion._size)) {
+              continue;
+            }
+            aosFunctor(p1, p2, p3, false);
+          }
+        }
+      }
+    }
+  }
+
+  // reset newton3 used on halo particles
+  mdLib::haloNewton = previous;
 }
 
 std::array<int, 3> Midpoint::convZoneStringIntoRelNeighbourIndex(std::string s) {

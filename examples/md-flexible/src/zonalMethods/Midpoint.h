@@ -167,7 +167,7 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
   double _cutoff;
 
   // flag to control if brute force schedule is used for triplet interactions
-  inline static constexpr bool _bruteForceSchedule3B = true;
+  inline static constexpr bool _bruteForceSchedule3B = false;
 
   /**
    * Stores the triwise zonal interaction schedule
@@ -187,6 +187,21 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
    */
   void calculateZonalInteractionTriwiseBruteForce(
       std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor);
+
+  /**
+   * Calculate the interaction schedule for triplet interactions, which considers all
+   * zonal interactions where at least two zones lie on a distinct "side" or "plane".
+   * @param identifyZone
+   */
+  void calculateInteractionScheduleTriwisePlane(std::function<std::string(const int[3])> identifyZone);
+
+  /**
+   * Calculate the zonal interaction for triplet interactions, given the plane schedule.
+   * @param identifyZone
+   */
+  void calculateZonalInteractionTriwisePlane(
+      std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor);
+
   /**
    * Calculate the relative coordinate of a given zone string
    * @param s
