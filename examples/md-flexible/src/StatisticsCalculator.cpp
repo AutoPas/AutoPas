@@ -72,7 +72,7 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
       const std::array<double, 3> CoMToSite1 = autopas::utils::ArrayMath::sub(rotatedSitePositions[1], CoM);
       std::array<double, 3> normalVector = autopas::utils::ArrayMath::cross(CoMToSite0, CoMToSite1);
       const double normalVectorNorm = autopas::utils::ArrayMath::L2Norm(normalVector);
-      normalVector = autopas::utils::ArrayMath::divScalar(normalVector, normalVectorNorm);
+      normalVector = autopas::utils::ArrayMath::divScalar(normalVector, (normalVectorNorm + 1e-10));
       normalVectors.emplace_back(normalVector);
 
       nXSum += normalVector[0];
