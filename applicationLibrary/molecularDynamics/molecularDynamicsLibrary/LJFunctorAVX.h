@@ -1469,12 +1469,6 @@ class LJFunctorAVX
       _mm256_set_epi32(0, 0, 0, 0, 0, -1, -1, -1),    _mm256_set_epi32(0, 0, 0, 0, -1, -1, -1, -1),
       _mm256_set_epi32(0, 0, 0, -1, -1, -1, -1, -1),  _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1),
       _mm256_set_epi32(0, -1, -1, -1, -1, -1, -1, -1)};
-  const __m256i _masksHalf[3]{
-      _mm256_set_epi64x(0, 0, 0, -1),
-      _mm256_set_epi64x(0, 0, -1, -1),
-      _mm256_set_epi64x(0, -1, -1, -1),
-  };
-
   const __m256i _ownedStateDummyMM256i{0x0};
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi32(static_cast<int32_t>(autopas::OwnershipState::owned))};
   const __m256 _cutoffSquared{};
