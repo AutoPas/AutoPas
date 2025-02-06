@@ -20,9 +20,6 @@ message(STATUS "pmt - using bundled version (commit 7a56fa3a) and patch")
 
 include(FetchContent)
 
-set(FETCHCONTENT_QUIET OFF)
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
 FetchContent_Declare(
     pmt
     URL
