@@ -31,7 +31,7 @@ Sites:
     mass                             :  .5
     radius                           :  .75
   1:
-    epsilon: 1.
+    epsilon: .4
     sigma: 0.4
     mass: 0.1
     radius: .2
