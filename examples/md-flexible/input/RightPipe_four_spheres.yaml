@@ -21,8 +21,8 @@ deltaT                           :  0.00005
 iterations                       :  5000000
 boundary-type                    :  [periodic,reflective,reflective]
 globalForce                          :  [0, 0., 0]
-backgroundForceFrictionCoeff      :  0.2
-backgroundTorqueFrictionCoeff     :  0.2
+backgroundForceFrictionCoeff      :  0.
+backgroundTorqueFrictionCoeff     :  0.
 load-balancer                        :  InvertedPressure
 Sites:
   0:
@@ -52,7 +52,7 @@ Molecules:
 Objects:
   CubeUniform:
     0:
-      numberOfParticles: 100
+      numberOfParticles: 50
       box-length: [ 50, 13, 3 ]
       bottomLeftCorner: [3.5, 3.5, 3.5]
       velocity: [ 0, 0, 0 ]
@@ -64,7 +64,7 @@ Objects:
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 log-level                            :  info
-vtk-filename                         :  RightPipe_four_spheres_more_solid_abs
+vtk-filename                         :  RightPipe_four_spheres_more_solid_abs_no_bf
 vtk-output-folder                    :  vtkOutputFolder
 vtk-write-frequency                  :  3000
 #checkpoint                          : AllOptionsSim_10.vtk
