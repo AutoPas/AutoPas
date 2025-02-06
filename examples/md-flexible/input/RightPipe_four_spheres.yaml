@@ -44,7 +44,7 @@ Molecules:
     # match.
     site-types                       : [ 0, 0, 0, 0 ]
     relative-site-positions          : [ [ -0.75, 0.75, 0. ], [ 0.75, 0.75, 0. ], [ 0.75, -0.75, 0], [ -0.75, -0.75, 0] ]
-    moment-of-inertia                : [ 0.788, 0.788, 1.353 ]
+    moment-of-inertia                : [ 1.575, 1.575, 2.70 ]
   1:
     site-types                       : [ 1 ]
     relative-site-positions          : [ [ 0., 0., 0. ] ]
@@ -64,7 +64,7 @@ Objects:
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 log-level                            :  info
-vtk-filename                         :  RightPipe_four_spheres_delta_T_10e-5
+vtk-filename                         :  RightPipe_four_spheres_corrected_inertia
 vtk-output-folder                    :  vtkOutputFolder
 vtk-write-frequency                  :  3000
 #checkpoint                          : AllOptionsSim_10.vtk
