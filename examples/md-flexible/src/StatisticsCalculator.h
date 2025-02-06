@@ -50,8 +50,10 @@ class StatisticsCalculator {
    * @return tuple of doubles containing the statistics.
    */
   static std::tuple<double, double, double, double, double, double, double>
-  calculateMeanPotentialKineticRotationalEnergy(
-      const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ, const ParticlePropertiesLibraryType &particlePropertiesLib);
+  calculateMeanPotentialKineticRotationalEnergy(const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                                const double globalForceZ,
+                                                const ParticlePropertiesLibraryType &particlePropertiesLib,
+                                                const size_t typeId);
 
   /**
    * Calculates the sum of Overlaps, Distances, and Force magnitudes to use for verification of each model.

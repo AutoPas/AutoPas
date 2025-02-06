@@ -16,11 +16,27 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
     : _sessionName(std::move(sessionName)) {
   tryCreateStatisticsFolders(_sessionName, outputFolder);
 
-  std::vector<std::string> columnNames = {
-      "Iteration",          "MeanPotentialEnergyZ",  "MeanKineticEnergyX",    "MeanKineticEnergyY",
-      "MeanKineticEnergyZ", "MeanRotationalEnergyX", "MeanRotationalEnergyY", "MeanRotationalEnergyZ",
-      "MeanNormalVectorXAbs",  "MeanNormalVectorYAbs",     "MeanNormalVectorZAbs",     "VarNormalVectorXAbs",
-      "VarNormalVectorYAbs",   "VarNormalVectorZAbs"};
+  std::vector<std::string> columnNames = {"Iteration",
+                                          "MeanPotentialEnergyZI",
+                                          "MeanKineticEnergyXI",
+                                          "MeanKineticEnergyYI",
+                                          "MeanKineticEnergyZI",
+                                          "MeanRotationalEnergyXI",
+                                          "MeanRotationalEnergyYI",
+                                          "MeanRotationalEnergyZI",
+                                          "MeanNormalVectorXAbs",
+                                          "MeanNormalVectorYAbs",
+                                          "MeanNormalVectorZAbs",
+                                          "VarNormalVectorXAbs",
+                                          "VarNormalVectorYAbs",
+                                          "VarNormalVectorZAbs",
+                                          "MeanPotentialEnergyZJ",
+                                          "MeanKineticEnergyXJ",
+                                          "MeanKineticEnergyYJ",
+                                          "MeanKineticEnergyZJ",
+                                          "MeanRotationalEnergyXJ",
+                                          "MeanRotationalEnergyYJ",
+                                          "MeanRotationalEnergyZJ"};
   /**
   const std::vector<std::string> columnNames = {
       "Iteration", "TorqueIX",   "TorqueIY",   "TorqueIZ",     "AngularVelIX", "AngularVelIY", "AngularVelIZ",
@@ -34,9 +50,11 @@ StatisticsCalculator::StatisticsCalculator(std::string sessionName, const std::s
 void StatisticsCalculator::recordStatistics(size_t currentIteration, const double globalForceZ,
                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
                                             const ParticlePropertiesLibraryType &particlePropertiesLib) {
-  const auto energyStatistics =
-      calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib);
+  const auto energyStatisticsI =
+      calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib, 0L);
   const auto meanQ = calculateMeanAndVarNormalVectorAbs(autoPasContainer, particlePropertiesLib, 0L);
+  const auto energyStatisticsJ =
+      calculateMeanPotentialKineticRotationalEnergy(autoPasContainer, globalForceZ, particlePropertiesLib, 1L);
   /**
   const auto statisticsI = calculateTorquesAndAngularVel(autoPasContainer, 1L);
   const auto statisticsJ = calculateTorquesAndAngularVel(autoPasContainer, 0L);
@@ -47,7 +65,7 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
   auto combinedStatistics = std::tuple_cat(statisticsI, statisticsJ, statisticsIForceVel, statisticsJForceVel,
   statisticsDistanceOverlap);
    **/
-  auto combinedStatistics = std::tuple_cat(energyStatistics, meanQ);
+  auto combinedStatistics = std::tuple_cat(energyStatisticsI, meanQ, energyStatisticsJ);
   StatisticsCalculator::writeRow(currentIteration, combinedStatistics);
 }
 
@@ -73,9 +91,8 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
       std::array<double, 3> normalVector = autopas::utils::ArrayMath::cross(CoMToSite0, CoMToSite1);
       const double normalVectorNorm = autopas::utils::ArrayMath::L2Norm(normalVector);
       normalVector = autopas::utils::ArrayMath::divScalar(normalVector, (normalVectorNorm + 1e-10));
-      const std::array<double, 3> normalVectorAbs = std::array<double, 3>{std::abs(normalVector[0]),
-                                                                          std::abs(normalVector[1]),
-                                                                          std::abs(normalVector[2])};
+      const std::array<double, 3> normalVectorAbs =
+          std::array<double, 3>{std::abs(normalVector[0]), std::abs(normalVector[1]), std::abs(normalVector[2])};
 
       normalVectorAbsList.emplace_back(normalVectorAbs);
 
@@ -98,7 +115,7 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
   double varNYAbs = 0.;
   double varNZAbs = 0.;
 
-  for (const auto&normalVectorAbs : normalVectorAbsList) {
+  for (const auto &normalVectorAbs : normalVectorAbsList) {
     varNXAbs += (normalVectorAbs[0] - meanNXAbs) * (normalVectorAbs[0] - meanNXAbs);
     varNYAbs += (normalVectorAbs[1] - meanNYAbs) * (normalVectorAbs[1] - meanNYAbs);
     varNZAbs += (normalVectorAbs[2] - meanNZAbs) * (normalVectorAbs[2] - meanNZAbs);
@@ -180,7 +197,7 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
 std::tuple<double, double, double, double, double, double, double>
 StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const double globalForceZ,
-    const ParticlePropertiesLibraryType &particlePropertiesLib) {
+    const ParticlePropertiesLibraryType &particlePropertiesLib, const size_t typeId) {
   using namespace autopas::utils::ArrayMath::literals;
 
   size_t particleCount = 0;
@@ -189,7 +206,7 @@ StatisticsCalculator::calculateMeanPotentialKineticRotationalEnergy(
   std::array<double, 3> meanRotationalEnergy = {0., 0., 0.};
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    if (particle->getTypeId() != 0L) {
+    if (particle->getTypeId() != typeId) {
       continue;
     }
     const double mass = particlePropertiesLib.getSiteMass(particle->getTypeId());
