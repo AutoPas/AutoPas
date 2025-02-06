@@ -76,6 +76,13 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
 
   /**
+   * Resizes the home box region and thus recalculates
+   * the import and export regions
+   * @param homeBoxRegion
+   */
+  void resizeHomeBoxRegion(RectRegion homeBoxRegion) override;
+
+  /**
    * Get the export regions
    * @return
    */
@@ -165,6 +172,8 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
 
   // stores cutoff
   double _cutoff;
+
+  double _verletSkinWidth;
 
   // flag to control if brute force schedule is used for triplet interactions
   inline static constexpr bool _bruteForceSchedule3B = false;

@@ -66,6 +66,13 @@ class FullShell : public ZonalMethod, public RectRegionMethodInterface {
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
 
   /**
+   * Resizes the home box region and thus recalculates
+   * the import and export regions
+   * @param homeBoxRegion
+   */
+  void resizeHomeBoxRegion(RectRegion homeBoxRegion) override;
+
+  /**
    * Get the export regions
    * @return
    */
@@ -108,4 +115,8 @@ class FullShell : public ZonalMethod, public RectRegionMethodInterface {
                                          std::function<void(ParticleType &, ParticleType &)> aosFunctor) override;
   void calculateZonalInteractionTriwise(
       std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) override;
+
+  double _cutoff;
+
+  double _verletSkinWidth;
 };

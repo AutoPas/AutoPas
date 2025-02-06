@@ -240,6 +240,14 @@ void Simulation::run() {
         _domainDecomposition->update(computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
+
+        if (_configuration.zonalMethodOption.value != options::ZonalMethodOption::none) {
+          using namespace ::autopas::utils::ArrayMath::literals;
+          RectRegion homeBoxRegion(_domainDecomposition->getLocalBoxMin(),
+                                   _domainDecomposition->getLocalBoxMax() - _domainDecomposition->getLocalBoxMin());
+          _domainDecomposition->getZonalMethod()->resizeHomeBoxRegion(homeBoxRegion);
+        }
+
         // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in
         //  the
         // container again.
@@ -780,7 +788,9 @@ void Simulation::loadParticles() {
   std::cout << "Number of particles at initialization "
             // align outputs based on the max number of ranks
             << "on rank " << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length())
-            << std::right << rank << ": " << numParticlesLocally << " with domain: " << to_string(_domainDecomposition->getLocalBoxMin()) << " - " << to_string(_domainDecomposition->getLocalBoxMax()) << "\n";
+            << std::right << rank << ": " << numParticlesLocally
+            << " with domain: " << to_string(_domainDecomposition->getLocalBoxMin()) << " - "
+            << to_string(_domainDecomposition->getLocalBoxMax()) << "\n";
 
   // Local unnamed struct to pack data for MPI
   struct {

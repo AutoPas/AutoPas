@@ -35,6 +35,11 @@ void ZonalMethodTest::calculateZonalInteractionTriwise(
 void ZonalMethodTest::recollectResultsFromContainer(AutoPasType &autoPasContainer) {}
 
 /**
+ * Define function to allow instantiation
+ */
+void ZonalMethodTest::resizeHomeBoxRegion(RectRegion homeBoxRegion) {}
+
+/**
  * Tests the functionality of the getRectRegionConditional function, by
  * specifying a condition which should result in no regions.
  */

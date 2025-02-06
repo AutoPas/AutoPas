@@ -11,12 +11,13 @@ Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegio
                    std::array<options::BoundaryTypeOption, 3> boundaryType)
     : ZonalMethod(26, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType),
       _cutoff(cutoff),
+      _verletSkinWidth(verletSkinWidth),
       _useNewton3(useNewton3),
       _pairwiseInteraction(pairwiseInteraction) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
-  auto hsCondition = [](const int d[3]) {
+  auto mpCondition = [](const int d[3]) {
     /**
      * Stencil:
      *  from every side
@@ -29,11 +30,11 @@ Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegio
   };
 
   // calculate exportRegions
-  getRectRegionsConditional(_homeBoxRegion, cutoff / 2, verletSkinWidth, _exportRegions, hsCondition, identifyZone,
+  getRectRegionsConditional(_homeBoxRegion, cutoff / 2, verletSkinWidth, _exportRegions, mpCondition, identifyZone,
                             false);
 
   // calculate importRegions
-  getRectRegionsConditional(_homeBoxRegion, cutoff / 2, verletSkinWidth, _importRegions, hsCondition, identifyZone,
+  getRectRegionsConditional(_homeBoxRegion, cutoff / 2, verletSkinWidth, _importRegions, mpCondition, identifyZone,
                             true);
 
   std::reverse(_importRegions.begin(), _importRegions.end());
@@ -545,6 +546,36 @@ std::array<int, 3> Midpoint::convZoneStringIntoRelNeighbourIndex(std::string s) 
   relNeighbour -= 1;
 
   return relNeighbour;
+}
+
+void Midpoint::resizeHomeBoxRegion(RectRegion homeBoxRegion) {
+  _homeBoxRegion = homeBoxRegion;
+  _exportRegions.clear();
+  _importRegions.clear();
+  _exportRegions.reserve(_regionCount);
+  _importRegions.reserve(_regionCount);
+
+  auto mpCondition = [](const int d[3]) {
+    /**
+     * Stencil:
+     *  from every side
+     */
+    return true;
+  };
+
+  auto identifyZone = [this](const int d[3]) {
+    return std::to_string(convRelNeighboursToIndex(std::array<int, 3>{d[0], d[1], d[2]}));
+  };
+
+  // calculate exportRegions
+  getRectRegionsConditional(_homeBoxRegion, _cutoff / 2, _verletSkinWidth, _exportRegions, mpCondition, identifyZone,
+                            false);
+
+  // calculate importRegions
+  getRectRegionsConditional(_homeBoxRegion, _cutoff / 2, _verletSkinWidth, _importRegions, mpCondition, identifyZone,
+                            true);
+
+  std::reverse(_importRegions.begin(), _importRegions.end());
 }
 
 const std::vector<RectRegion> Midpoint::getExportRegions() { return _exportRegions; }

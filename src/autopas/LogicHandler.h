@@ -267,6 +267,10 @@ class LogicHandler {
     const auto interactionLengthInv = 1. / (_containerSelector.getCurrentContainer().getInteractionLength());
     initSpacialLocks(boxLength, interactionLengthInv);
 
+    // set fields for traversal generation
+    this->_boxMin = boxMin;
+    this->_boxMax = boxMax;
+
     // Set this flag, s.t., the container is rebuilt!
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
 

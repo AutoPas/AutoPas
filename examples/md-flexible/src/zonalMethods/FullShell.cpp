@@ -7,7 +7,9 @@
 FullShell::FullShell(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
                      RectRegion globalBoxRegion, autopas::AutoPas_MPI_Comm comm,
                      std::array<int, 26> allNeighbourIndices, std::array<options::BoundaryTypeOption, 3> boundaryType)
-    : ZonalMethod(1, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType) {
+    : ZonalMethod(1, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType),
+      _cutoff(cutoff),
+      _verletSkinWidth(verletSkinWidth) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
@@ -90,6 +92,34 @@ void FullShell::calculateZonalInteractionPairwise(std::string zone1, std::string
 
 void FullShell::calculateZonalInteractionTriwise(
     std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {}
+
+void FullShell::resizeHomeBoxRegion(RectRegion homeBoxRegion) {
+  _homeBoxRegion = homeBoxRegion;
+  _exportRegions.clear();
+  _importRegions.clear();
+  _exportRegions.reserve(_regionCount);
+  _importRegions.reserve(_regionCount);
+
+  auto fsCondition = [](const int d[3]) {
+    /**
+     * Stencil:
+     *   - export to all
+     *   - no need to import
+     */
+    return true;
+  };
+
+  auto identifyZone = [](const int d[3]) { return "A"; };
+
+  // calculate exportRegions
+  getRectRegionsConditional(_homeBoxRegion, _cutoff, _verletSkinWidth, _exportRegions, fsCondition, identifyZone,
+                            false);
+
+  // calculate importRegions
+  getRectRegionsConditional(_homeBoxRegion, _cutoff, _verletSkinWidth, _importRegions, fsCondition, identifyZone, true);
+
+  std::reverse(_importRegions.begin(), _importRegions.end());
+}
 
 const std::vector<RectRegion> FullShell::getExportRegions() { return _exportRegions; }
 

@@ -10,7 +10,9 @@ HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
                      std::array<options::BoundaryTypeOption, 3> boundaryType)
     : ZonalMethod(1, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType),
       _useNewton3(useNewton3),
-      _pairwiseInteraction(pairwiseInteraction) {
+      _pairwiseInteraction(pairwiseInteraction),
+      _cutoff(cutoff),
+      _verletSkinWidth(verletSkinWidth) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
@@ -178,6 +180,38 @@ void HalfShell::calculateZonalInteractionPairwise(std::string zone1, std::string
 
 void HalfShell::calculateZonalInteractionTriwise(
     std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) {}
+
+void HalfShell::resizeHomeBoxRegion(RectRegion homeBoxRegion) {
+  _homeBoxRegion = homeBoxRegion;
+  _exportRegions.clear();
+  _importRegions.clear();
+  _exportRegions.reserve(_regionCount);
+  _importRegions.reserve(_regionCount);
+
+  auto hsCondition = [](const int d[3]) {
+    /**
+     * Stencil:
+     *  z > 0 +
+     *  z == 0 and y > 0 +
+     *  z == 0 and y == 0 and x > 0
+     */
+    return d[2] > 0 or (d[2] == 0 and (d[1] > 0 or (d[1] == 0 and d[0] > 0)));
+  };
+
+  auto importCondition = [hsCondition](const int d[3]) { return !hsCondition(d); };
+
+  auto identifyZone = [](const int d[3]) { return "A"; };
+
+  // calculate exportRegions
+  getRectRegionsConditional(_homeBoxRegion, _cutoff, _verletSkinWidth, _exportRegions, hsCondition, identifyZone,
+                            false);
+
+  // calculate importRegions
+  getRectRegionsConditional(_homeBoxRegion, _cutoff, _verletSkinWidth, _importRegions, importCondition, identifyZone,
+                            true);
+
+  std::reverse(_importRegions.begin(), _importRegions.end());
+}
 
 const std::vector<RectRegion> HalfShell::getExportRegions() { return _exportRegions; }
 

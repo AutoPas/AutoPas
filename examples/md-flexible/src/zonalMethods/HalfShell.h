@@ -74,6 +74,13 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
 
   /**
+   * Resizes the home box region and thus recalculates
+   * the import and export regions
+   * @param homeBoxRegion
+   */
+  void resizeHomeBoxRegion(RectRegion homeBoxRegion) override;
+
+  /**
    * Get the export regions
    * @return
    */
@@ -122,4 +129,8 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
 
   // stores if pairwise interaction is used
   bool _pairwiseInteraction;
+
+  double _cutoff;
+
+  double _verletSkinWidth;
 };

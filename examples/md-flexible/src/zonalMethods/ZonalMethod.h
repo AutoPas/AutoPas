@@ -83,6 +83,14 @@ class ZonalMethod {
    */
   virtual void recollectResultsFromContainer(AutoPasType &autoPasContainer) = 0;
 
+
+  /**
+   * Resizes the home box region and thus recalculates
+   * the import and export regions
+   * @param homeBoxRegion
+   */
+  virtual void resizeHomeBoxRegion(RectRegion homeBoxRegion) = 0;
+
  protected:
   /**
    * Stores the number of zones (except for the home zone)

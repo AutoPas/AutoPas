@@ -242,10 +242,13 @@ void RegularGridDecomposition::initializeZonalMethod(const MDFlexConfig &config)
 
 void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig &config) const {
   auto checkLoadBalancerTurnedOff = [](const MDFlexConfig &config) {
-    if (config.loadBalancer.value != LoadBalancerOption::none)
-      throw std::invalid_argument(
-          "This zonal method can not be used with a load balancer: we do not support box resizing yet.\nTurn it off "
-          "using the load-balancer option.");
+    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+      if (config.loadBalancer.value != LoadBalancerOption::none)
+        throw std::invalid_argument(
+            "Triwise interactions can not be used with a load balancer: we do not support box resizing yet.\nTurn it "
+            "off "
+            "using the load-balancer option.");
+    }
   };
   auto checkTraversal = [](const MDFlexConfig &config, std::vector<autopas::TraversalOption> pTraversals,
                            std::vector<autopas::TraversalOption> tTraversals) {
@@ -267,20 +270,6 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
             [](std::string a, autopas::TraversalOption b) { return a + " " + b.to_string(); });
         throw std::invalid_argument("This zonal method allows the following traversals for triwise:" +
                                     possibleTraversals);
-      }
-    }
-  };
-  auto checkLCC01MidpointTraversal = [this](const MDFlexConfig &config) {
-    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
-      if (config.traversalOptions.value.find(autopas::TraversalOption::lc_c01_midpoint) ==
-          config.traversalOptions.value.end()) {
-        throw std::invalid_argument("This zonal method can only be used with LCC01 midpoint traversal.");
-      }
-    }
-    if (config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
-      if (config.traversalOptions3B.value.find(autopas::TraversalOption::lc_c01_midpoint) ==
-          config.traversalOptions3B.value.end()) {
-        throw std::invalid_argument("This zonal method can only be used with LCC01 midpoint traversal.");
       }
     }
   };
@@ -325,7 +314,8 @@ void RegularGridDecomposition::checkZonalMethodConfiguration(const MDFlexConfig 
       break;
     case options::ZonalMethodOption::midpoint:
       checkLoadBalancerTurnedOff(config);
-      checkTraversal(config, {autopas::TraversalOption::lc_c01_midpoint, autopas::TraversalOption::ds_sequential_midpoint},
+      checkTraversal(config,
+                     {autopas::TraversalOption::lc_c01_midpoint, autopas::TraversalOption::ds_sequential_midpoint},
                      {autopas::TraversalOption::lc_c01_midpoint, autopas::TraversalOption::ds_sequential_midpoint});
       checkAllowedFunctors(config);
       checkDataType(config);

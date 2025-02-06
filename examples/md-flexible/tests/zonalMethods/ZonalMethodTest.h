@@ -29,4 +29,7 @@ class ZonalMethodTest : public ZonalMethod, public AutoPasTestBase {
       std::string zone, std::function<void(ParticleType &, ParticleType &, ParticleType &, bool)> aosFunctor) override;
 
   void recollectResultsFromContainer(AutoPasType &autoPasContainer) override;
+
+  void resizeHomeBoxRegion(RectRegion homeBoxRegion) override;
+
 };
