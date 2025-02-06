@@ -52,9 +52,9 @@ Molecules:
 Objects:
   CubeUniform:
     0:
-      numberOfParticles: 30
-      box-length: [ 20, 13, 3 ]
-      bottomLeftCorner: [30.5, 3.5, 3.5]
+      numberOfParticles: 100
+      box-length: [ 50, 13, 3 ]
+      bottomLeftCorner: [3.5, 3.5, 3.5]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
     1:
@@ -64,7 +64,7 @@ Objects:
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 log-level                            :  info
-vtk-filename                         :  RightPipe_four_spheres_corrected_inertia
+vtk-filename                         :  RightPipe_four_spheres_more_solid
 vtk-output-folder                    :  vtkOutputFolder
 vtk-write-frequency                  :  3000
 #checkpoint                          : AllOptionsSim_10.vtk
