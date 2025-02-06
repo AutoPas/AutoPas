@@ -328,6 +328,7 @@ void Midpoint::calculateZonalInteractionTriwise(
 }
 
 void Midpoint::calculateInteractionScheduleTriwiseBruteForce(std::function<std::string(const int[3])> identifyZone) {
+  std::map<std::array<int, 2>, bool> interactionMap;
   int d[3];
   for (d[0] = -1; d[0] <= 1; d[0]++) {
     for (d[1] = -1; d[1] <= 1; d[1]++) {
@@ -337,12 +338,19 @@ void Midpoint::calculateInteractionScheduleTriwiseBruteForce(std::function<std::
         }
         auto zone = identifyZone(d);
         _interactionZones.push_back(zone);
+        _interactionSchedule.insert_or_assign(zone, std::vector<std::string>());
         for (int i = 0; i < 26; i++) {
           if (std::stoi(zone) == i) continue;
           auto d2 = convZoneStringIntoRelNeighbourIndex(std::to_string(i));
           bool isNeighbour =
               (std::abs(d[0] - d2[0]) <= 1) && (std::abs(d[1] - d2[1]) <= 1) && (std::abs(d[2] - d2[2]) <= 1);
           if (!isNeighbour) continue;
+          std::array<int, 2> zonePair = {{std::stoi(zone), i}};
+          std::sort(zonePair.begin(), zonePair.end());
+          if (interactionMap.find(zonePair) != interactionMap.end()) {
+            continue;
+          }
+          interactionMap.insert_or_assign(zonePair, true);
           _interactionSchedule[zone].push_back(std::to_string(i));
         }
       }
@@ -377,24 +385,7 @@ void Midpoint::calculateZonalInteractionTriwiseBruteForce(
                                     _homeBoxRegion._origin + _homeBoxRegion._size)) {
           continue;
         }
-        aosFunctor(p1, p2, p3, false);
-      }
-    }
-  }
-  // for triples with 2 particles in original zone
-  for (size_t i = 0; i < zoneBuffer.size(); i++) {
-    for (size_t j = i + 1; j < zoneBuffer.size(); j++) {
-      ParticleType &p1 = zoneBuffer.at(i);
-      ParticleType &p2 = zoneBuffer.at(j);
-      for (size_t k = 0; k < combinedBuffer.size(); k++) {
-        ParticleType &p3 = combinedBuffer.at(k);
-        using namespace autopas::utils::ArrayMath::literals;
-        if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
-                                    _homeBoxRegion._origin + _homeBoxRegion._size)) {
-          continue;
-        }
-        aosFunctor(p1, p2, p3, false);
-        aosFunctor(p2, p1, p3, false);
+        aosFunctor(p1, p2, p3, true);
       }
     }
   }
@@ -438,7 +429,6 @@ void Midpoint::calculateInteractionScheduleTriwisePlane(std::function<std::strin
             if (interactionMap.find(t) != interactionMap.end()) {
               continue;
             }
-
             interactionMap.insert_or_assign(t, true);
 
             // for the six sides, check if these interacting zones all lie on a common side
@@ -506,18 +496,6 @@ void Midpoint::calculateZonalInteractionTriwisePlane(
             }
             aosFunctor(p1, p2, p3, true);
           }
-          // Case 2: find all thrid particles in original zone
-          for (size_t z2 = z1 + 1; z2 < zoneBuffer.size(); z2++) {
-            ParticleType &p1 = zoneBuffer.at(z1);
-            ParticleType &p2 = otherBuffer.at(o1);
-            ParticleType &p3 = zoneBuffer.at(z2);
-            using namespace autopas::utils::ArrayMath::literals;
-            if (!isMidpointInsideDomain(p1.getR(), p2.getR(), p3.getR(), _homeBoxRegion._origin,
-                                        _homeBoxRegion._origin + _homeBoxRegion._size)) {
-              continue;
-            }
-            aosFunctor(p1, p2, p3, true);
-          }
         }
       }
     }
@@ -542,7 +520,7 @@ void Midpoint::calculateZonalInteractionTriwisePlane(
                                         _homeBoxRegion._origin + _homeBoxRegion._size)) {
               continue;
             }
-            aosFunctor(p1, p2, p3, false);
+            aosFunctor(p1, p2, p3, true);
           }
         }
       }
