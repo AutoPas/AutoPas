@@ -3,7 +3,7 @@
 zonalMethod                      :  midpoint
 container                        :  [LinkedCells]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius-per-timestep  :  0.1
+verlet-skin-radius               :  1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -61,4 +61,4 @@ vtk-output-folder                :  fallingDropMidpoint
 no-end-config                    :  true
 no-progress-bar                      :  true
 log-level                        :  info
-load-balancer                    :  None
+load-balancer                    :  invertedPressure
