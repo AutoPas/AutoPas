@@ -72,6 +72,8 @@ void StatisticsCalculator::recordStatistics(size_t currentIteration, const doubl
 std::tuple<double, double, double, double, double, double> StatisticsCalculator::calculateMeanAndVarNormalVectorAbs(
     const autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLib,
     size_t typeId) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
   double nXAbsSum = 0.;
   double nYAbsSum = 0.;
   double nZAbsSum = 0.;
@@ -84,10 +86,9 @@ std::tuple<double, double, double, double, double, double> StatisticsCalculator:
       const std::array<double, 3> CoM = particle->getR();
       const std::vector<std::array<double, 3>> unrotatedSitePositions =
           particlePropertiesLib.getSitePositions(particle->getTypeId());
-      const auto rotatedSitePositions =
-          autopas::utils::quaternion::rotateVectorOfPositions(particle->getQuaternion(), unrotatedSitePositions);
-      const std::array<double, 3> CoMToSite0 = autopas::utils::ArrayMath::sub(rotatedSitePositions[0], CoM);
-      const std::array<double, 3> CoMToSite1 = autopas::utils::ArrayMath::sub(rotatedSitePositions[1], CoM);
+      const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(particle->getQuaternion(), unrotatedSitePositions);
+      const std::array<double, 3> CoMToSite0 = autopas::utils::ArrayMath::sub(rotatedSitePositions[0] + CoM, CoM);
+      const std::array<double, 3> CoMToSite1 = autopas::utils::ArrayMath::sub(rotatedSitePositions[1] + CoM, CoM);
       std::array<double, 3> normalVector = autopas::utils::ArrayMath::cross(CoMToSite0, CoMToSite1);
       const double normalVectorNorm = autopas::utils::ArrayMath::L2Norm(normalVector);
       normalVector = autopas::utils::ArrayMath::divScalar(normalVector, (normalVectorNorm + 1e-10));
