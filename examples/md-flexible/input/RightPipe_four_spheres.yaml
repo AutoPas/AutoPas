@@ -33,7 +33,7 @@ Sites:
   1:
     epsilon: .4
     sigma: 0.4
-    mass: 0.25
+    mass: 0.3
     radius: .2
 # Uncomment below to run a multi-site simulation.
 Molecules:
