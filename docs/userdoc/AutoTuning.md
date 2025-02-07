@@ -34,7 +34,10 @@ First, Verlet based algorithms require iterations with rebuild steps that take s
 Thus at least two iterations are necessary to calculate a weighted average.
 Second, especially measurements from iterations which take significantly less time than one second tend to be noisy.
 This is tackled by reducing all measurements of a type (rebuilding vs. not-rebuilding) for one configuration with a [SelectorStrategy](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/options/SelectorStrategyOption.h).
-Further, when data from at least two previous tuning phases already exists, [LOESS](https://en.wikipedia.org/wiki/Local_regression) can be applied to mitigate positive outliers.
+Whilst gathering many samples can help reduce the noise, it can also be costly due to having to gather many samples for sub optimal configurations.
+To alleviate this, when data from at least two previous tuning phases already exists, a variation of [LOESS](https://en.wikipedia.org/wiki/Local_regression) can be applied to mitigate positive outliers. 
+Use this feature with caution since it can sometimes lead to undesirable tuning outcomes. 
+When in doubt compare the reduced vs smoothed values from the `TuningDataLogger`. 
 
 ## Tuning Metric
 AutoPas not only offers tuning for minimal runtime.
