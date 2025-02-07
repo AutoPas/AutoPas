@@ -26,7 +26,7 @@ backgroundTorqueFrictionCoeff     :  0.05
 load-balancer                        :  InvertedPressure
 Sites:
   0:
-    epsilon                          :  3.5
+    epsilon                          :  5
     sigma                            :  5
     mass                             :  .5
     radius                           :  .75
@@ -58,13 +58,13 @@ Objects:
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
     1:
-      numberOfParticles: 3500
+      numberOfParticles: 5000
       box-length: [ 50, 18.5, 11.5 ]
       bottomLeftCorner: [ .5, .5, -1.5 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 log-level                            :  info
-vtk-filename                         :  RightPipe_four_spheres_more_solid_abs_no_bf
+vtk-filename                         :  RightPipe_four_spheres_more_particles
 vtk-output-folder                    :  vtkOutputFolder
 vtk-write-frequency                  :  3000
 #checkpoint                          : AllOptionsSim_10.vtk
