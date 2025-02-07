@@ -26,7 +26,7 @@ backgroundTorqueFrictionCoeff     :  0.2
 load-balancer                        :  InvertedPressure
 Sites:
   0:
-    epsilon                          :  1.
+    epsilon                          :  2.5
     sigma                            :  5
     mass                             :  .5
     radius                           :  .75
@@ -43,7 +43,7 @@ Molecules:
     # 3x3 Moment-of-inertia matrix. It is the user's responsibility that the site masses, positions, and Moment of Inertia
     # match.
     site-types                       : [ 0, 0, 0, 0 ]
-    relative-site-positions          : [ [ -0.75, 0.75, 0. ], [ 0.75, 0.75, 0. ], [ 0.75, -0.75, 0], [ -0.75, -0.75, 0] ]
+    relative-site-positions          : [ [ 0, 0.75, -0.75 ], [ 0, 0.75, 0.75 ], [ 0, -0.75, 0.75], [ 0, -0.75, -0.75] ]
     moment-of-inertia                : [ 1.575, 1.575, 2.70 ]
   1:
     site-types                       : [ 1 ]
