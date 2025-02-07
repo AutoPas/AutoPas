@@ -21,12 +21,12 @@ deltaT                           :  0.00005
 iterations                       :  5000000
 boundary-type                    :  [periodic,reflective,reflective]
 globalForce                          :  [0, 0., 0]
-backgroundForceFrictionCoeff      :  0.2
-backgroundTorqueFrictionCoeff     :  0.2
+backgroundForceFrictionCoeff      :  0.05
+backgroundTorqueFrictionCoeff     :  0.05
 load-balancer                        :  InvertedPressure
 Sites:
   0:
-    epsilon                          :  2.5
+    epsilon                          :  3.5
     sigma                            :  5
     mass                             :  .5
     radius                           :  .75
