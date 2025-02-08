@@ -133,4 +133,20 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
   double _cutoff;
 
   double _verletSkinWidth;
+
+  class ParticleInfoHash {
+   public:
+    std::size_t operator()(const std::pair<int, std::array<double, 3>> &p) const {
+      return std::hash<int>()(p.first) ^ std::hash<double>()(p.second[0]) ^ std::hash<double>()(p.second[1]) ^
+             std::hash<double>()(p.second[2]);
+    }
+  };
+
+  // maps information of an imported particle to a reference of the particle object
+  // stored in on of _importBuffers buffers.
+  std::unordered_map<std::pair<int, std::array<double, 3>>, std::reference_wrapper<ParticleType>, ParticleInfoHash>
+      _importParticleMap;
+
+  // maps a particle id to a iterator of the autopas container
+  std::unordered_map<int, std::reference_wrapper<ParticleType>> _exportParticleMap;
 };

@@ -46,12 +46,13 @@ HalfShell::HalfShell(double cutoff, double verletSkinWidth, int ownRank, RectReg
 HalfShell::~HalfShell() = default;
 
 void HalfShell::collectParticles(AutoPasType &autoPasContainer) {
+  _exportParticleMap.clear();
   size_t index = 0;
   for (auto &region : _exportRegions) {
     // NOTE Optimization: Could reserve buffer in advance
     _regionBuffers.at(index).clear();
     if (needToCollectParticles(region.getNeighbour())) {
-      region.collectParticles(autoPasContainer, _regionBuffers.at(index));
+      region.collectParticles(autoPasContainer, _regionBuffers.at(index), std::ref(_exportParticleMap));
       wrapAroundPeriodicBoundary(region.getNeighbour(), _regionBuffers.at(index));
     }
     ++index;
@@ -72,6 +73,7 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
   // receive
   // NOTE Optimization: Could reserve buffer in advance
   bufferIndex = 0;
+  _importParticleMap.clear();
   for (auto &imRegion : _importRegions) {
     _importBuffers.at(bufferIndex).clear();
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
@@ -82,6 +84,10 @@ void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
       _importBuffers.at(bufferIndex)
           .insert(_importBuffers.at(bufferIndex).end(), _regionBuffers.at(bufferIndex).begin(),
                   _regionBuffers.at(bufferIndex).end());
+    }
+    for (size_t i = 0; i < _importBuffers.at(bufferIndex).size(); ++i) {
+      ParticleType &particle = _importBuffers.at(bufferIndex).at(i);
+      _importParticleMap.insert_or_assign({particle.getID(), particle.getR()}, std::ref(particle));
     }
     autoPasContainer.addHaloParticles(_importBuffers.at(bufferIndex));
     ++bufferIndex;
@@ -121,7 +127,6 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       _regionBuffers.at(bufferIndex).reserve(size);
       particleCommunicator.receiveParticles(_regionBuffers.at(bufferIndex), neighbourRank);
     }
-
     ++bufferIndex;
   }
   particleCommunicator.waitForSendRequests();
@@ -131,47 +136,19 @@ void HalfShell::SendAndReceiveResults(AutoPasType &autoPasContainer) {
   bufferIndex = 0;
   // for all exported regions
   for (auto &exRegion : _exportRegions) {
-    // go over all exported particles in the container
-    for (auto particleIter = autoPasContainer.getRegionIterator(exRegion._origin, exRegion._origin + exRegion._size,
-                                                                autopas::IteratorBehavior::owned);
-         particleIter.isValid(); ++particleIter) {
-      // find the corresponding result in the buffer
-      size_t result_index = 0;
-      for (auto &result : _regionBuffers.at(bufferIndex)) {
-        if (particleIter->getID() == result.getID()) {
-          // if found, add the result and delete from buffer
-          particleIter->addF(result.getF());
-          _regionBuffers.at(bufferIndex).erase(_regionBuffers.at(bufferIndex).begin() + result_index);
-          break;
-        }
-        ++result_index;
-      }
-    }
-    // sanity check
-    if (_regionBuffers.at(bufferIndex).size()) {
-      throw std::runtime_error("Halfshell: Not all results were found in the container - Something went wrong!");
+    for (auto &result : _regionBuffers.at(bufferIndex)) {
+      auto &particle = _exportParticleMap.at(result.getID());
+      particle.get().addF(result.getF());
     }
     ++bufferIndex;
   }
 }
 
 void HalfShell::recollectResultsFromContainer(AutoPasType &autoPasContainer) {
-  // clear and reserve space
-  for (auto &buffer : _importBuffers) {
-    auto size = buffer.size();
-    buffer.clear();
-    buffer.reserve(size);
-  }
-  // iterate over halo particles and insert into respecitve buffer
+  // iterate over halo particles and overwrite them in the respective buffer
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
-    size_t bufferIndex = 0;
-    for (auto &imRegion : _importRegions) {
-      if (imRegion.contains(iter->getR())) {
-        _importBuffers.at(bufferIndex).push_back(*iter);
-        break;
-      }
-      ++bufferIndex;
-    }
+    auto &b = _importParticleMap.at({iter->getID(), iter->getR()});
+    b.get() = *iter;
   }
 }
 
