@@ -21,8 +21,8 @@ deltaT                           :  0.00005
 iterations                       :  5000000
 boundary-type                    :  [periodic,reflective,reflective]
 globalForce                          :  [0, 0., 0]
-backgroundForceFrictionCoeff      :  0.05
-backgroundTorqueFrictionCoeff     :  0.05
+backgroundForceFrictionCoeff      :  0.25
+backgroundTorqueFrictionCoeff     :  0.25
 load-balancer                        :  InvertedPressure
 Sites:
   0:
@@ -31,10 +31,10 @@ Sites:
     mass                             :  .5
     radius                           :  .75
   1:
-    epsilon: .4
-    sigma: 0.4
+    epsilon: 1.5
+    sigma: 3
     mass: 0.3
-    radius: .2
+    radius: .25
 # Uncomment below to run a multi-site simulation.
 Molecules:
   0:
@@ -59,8 +59,8 @@ Objects:
       particle-type-id: 0
     1:
       numberOfParticles: 4000
-      box-length: [ 50, 18.5, 11.5 ]
-      bottomLeftCorner: [ .5, .5, -1.5 ]
+      box-length: [ 45.5, 15.5, 10 ]
+      bottomLeftCorner: [ 2.5, 2.5, 0 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 log-level                            :  info
