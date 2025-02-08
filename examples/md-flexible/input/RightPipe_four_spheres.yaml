@@ -58,7 +58,7 @@ Objects:
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
     1:
-      numberOfParticles: 2000
+      numberOfParticles: 2500
       box-length: [ 42.5, 10., 5 ]
       bottomLeftCorner: [ 5, 5, 2.5 ]
       velocity: [ 0, 0, 0 ]
