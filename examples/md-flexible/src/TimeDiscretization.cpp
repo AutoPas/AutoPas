@@ -34,7 +34,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     auto f = iter->getF();
     iter->setOldF(f);
     if (iter->getTypeId() != 0 and dot(v,v) < 2.5) {
-      const std::array<double, 3> rightF = {0.05, 0., 0.};
+      const std::array<double, 3> rightF = {0.1, 0., 0.};
       iter->setF(rightF);
     } else {
       iter->setF(globalForce);
