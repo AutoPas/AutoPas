@@ -31,10 +31,10 @@ Sites:
     mass                             :  .5
     radius                           :  .75
   1:
-    epsilon: 3
+    epsilon: 4
     sigma: 5
     mass: 0.3
-    radius: .25
+    radius: .2
 # Uncomment below to run a multi-site simulation.
 Molecules:
   0:
@@ -58,8 +58,8 @@ Objects:
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
     1:
-      numberOfParticles: 3500
-      box-length: [ 43., 13., 7.5 ]
+      numberOfParticles: 2000
+      box-length: [ 42.5, 10., 5 ]
       bottomLeftCorner: [ 5, 5, 2.5 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
