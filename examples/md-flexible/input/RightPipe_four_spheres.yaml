@@ -64,7 +64,7 @@ Objects:
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 log-level                            :  info
-vtk-filename                         :  RightPipe_four_spheres_080225
+vtk-filename                         :  RightPipe_four_spheres_090225
 vtk-output-folder                    :  vtkOutputFolder
 vtk-write-frequency                  :  3000
 #checkpoint                          : AllOptionsSim_10.vtk
