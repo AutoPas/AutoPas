@@ -40,8 +40,8 @@ class RectRegion : public Region {
    * @param autoPasContainer
    * @param buffer
    */
-  void collectParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &buffer) override;
-
+  void collectParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &buffer,
+                        std::optional<ParticleMap> = std::nullopt) override;
 
   /**
    * Check if the given position is inside the region
@@ -63,7 +63,6 @@ class RectRegion : public Region {
    * without changing the specified region.
    * */
   void normalize();
-
 
   /**
    * Returns a string representation of the region.

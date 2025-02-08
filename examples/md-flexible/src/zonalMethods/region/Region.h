@@ -16,13 +16,16 @@ class Region {
    */
   using AutoPasType = autopas::AutoPas<ParticleType>;
 
+  typedef std::reference_wrapper<std::unordered_map<int, std::reference_wrapper<ParticleType>>> ParticleMap;
+
   /**
    * Collect particles from the AutoPas container and store them in the given buffer.
    * @param autoPasContainer
    * @param buffer
+   * @param particleMapOption (optional)
    */
-  virtual void collectParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &buffer) = 0;
-
+  virtual void collectParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &buffer,
+                                std::optional<ParticleMap> particleMap = std::nullopt) = 0;
 
   /**
    * Check if the given position is inside the region
