@@ -27,7 +27,7 @@ load-balancer                        :  InvertedPressure
 Sites:
   0:
     epsilon                          :  3
-    sigma                            :  8.5
+    sigma                            :  10
     mass                             :  .5
     radius                           :  .75
   1:
