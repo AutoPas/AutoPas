@@ -53,14 +53,14 @@ Objects:
   CubeUniform:
     0:
       numberOfParticles: 50
-      box-length: [ 50, 13, 3 ]
+      box-length: [ 51.5, 13, 3 ]
       bottomLeftCorner: [3.5, 3.5, 3.5]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
     1:
-      numberOfParticles: 2500
-      box-length: [ 42.5, 10., 5 ]
-      bottomLeftCorner: [ 5, 5, 2.5 ]
+      numberOfParticles: 2750
+      box-length: [ 50.5, 10., 5 ]
+      bottomLeftCorner: [ 0.5, 5, 2.5 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 log-level                            :  info
