@@ -27,7 +27,7 @@ load-balancer                        :  InvertedPressure
 Sites:
   0:
     epsilon                          :  3
-    sigma                            :  8
+    sigma                            :  8.5
     mass                             :  .5
     radius                           :  .75
   1:
@@ -53,7 +53,7 @@ Objects:
   CubeUniform:
     0:
       numberOfParticles: 50
-      box-length: [ 51.5, 13, 3 ]
+      box-length: [ 45, 13, 3 ]
       bottomLeftCorner: [3.5, 3.5, 3.5]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
