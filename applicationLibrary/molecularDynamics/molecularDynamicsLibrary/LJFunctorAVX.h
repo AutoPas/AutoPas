@@ -1374,7 +1374,7 @@ class LJFunctorAVX
       _virialSum *= static_cast<AccuType>(0.5);
 
       // We have always calculated 6*potentialEnergy, so we divide by 6 here!
-      _potentialEnergySum /= 6.;
+      _potentialEnergySum /= static_cast<AccuType>(6.);
       _postProcessed = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
@@ -1386,7 +1386,7 @@ class LJFunctorAVX
    * Get the potential Energy
    * @return the potential Energy
    */
-  double getPotentialEnergy() {
+  AccuType getPotentialEnergy() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get potential energy even though calculateGlobals is false. If you want this functor to "
@@ -1405,7 +1405,7 @@ class LJFunctorAVX
    * Get the virial
    * @return the virial
    */
-  double getVirial() {
+  AccuType getVirial() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
