@@ -298,7 +298,7 @@ void Simulation::run() {
       updateSimulationPauseState();
     }
 
-    // NOTE: calculate zonal interactions and them exchange results between ranks
+    // calculate zonal interactions and them exchange results between ranks
     if (_configuration.zonalMethodOption.value != options::ZonalMethodOption::none) {
       _timers.calculatingZonalInteractions.start();
       _domainDecomposition->calculateZonalInteractions(*_autoPasContainer, _configuration);

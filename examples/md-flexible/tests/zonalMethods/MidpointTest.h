@@ -25,7 +25,7 @@ class MidpointTest : public AutoPasTestBase, public Midpoint {
    */
   MidpointTest()
       : AutoPasTestBase(),
-        Midpoint(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion, false, true, autopas::AutoPas_MPI_Comm(),
+        Midpoint(_cutoff, _verletSkinWidth, 0, _homeBoxRegion, _homeBoxRegion, false, true, true, autopas::AutoPas_MPI_Comm(),
                  _allNeighbourIndices)
 
   {}

@@ -6,14 +6,15 @@
 #include "src/ParticleCommunicator.h"
 
 Midpoint::Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion,
-                   RectRegion globalBoxRegion, bool useNewton3, bool pairwiseInteraction,
+                   RectRegion globalBoxRegion, bool useNewton3, bool pairwiseInteraction, bool triwiseInteraction,
                    autopas::AutoPas_MPI_Comm comm, std::array<int, 26> allNeighbourIndices,
                    std::array<options::BoundaryTypeOption, 3> boundaryType)
     : ZonalMethod(26, ownRank, homeBoxRegion, globalBoxRegion, comm, allNeighbourIndices, boundaryType),
       _cutoff(cutoff),
       _verletSkinWidth(verletSkinWidth),
       _useNewton3(useNewton3),
-      _pairwiseInteraction(pairwiseInteraction) {
+      _pairwiseInteraction(pairwiseInteraction),
+      _triwiseInteraction(triwiseInteraction) {
   _exportRegions.reserve(_regionCount);
   _importRegions.reserve(_regionCount);
 
@@ -172,14 +173,14 @@ void Midpoint::calculateZonalInteractionPairwise(std::string zone1, std::string 
 
 void Midpoint::calculateInteractionSchedule(std::function<std::string(const int[3])> identifyZone) {
   // calculate interaction schedule for triwise
-  if (!_pairwiseInteraction) {
+  if (_triwiseInteraction) {
     if constexpr (_bruteForceSchedule3B) {
       calculateInteractionScheduleTriwiseBruteForce(identifyZone);
     } else {
       calculateInteractionScheduleTriwisePlane(identifyZone);
     }
-    return;
   }
+  if (!_pairwiseInteraction) return;
 
   /**
    * Calculate interaction schedule for pairwise
@@ -317,7 +318,7 @@ void Midpoint::calculateInteractionScheduleTriwiseBruteForce(std::function<std::
         }
         auto zone = identifyZone(d);
         _interactionZones.push_back(zone);
-        _interactionSchedule.insert_or_assign(zone, std::vector<std::string>());
+        _interactionScheduleBruteForce.insert_or_assign(zone, std::vector<std::string>());
         for (int i = 0; i < 26; i++) {
           if (std::stoi(zone) == i) continue;
           auto d2 = convZoneStringIntoRelNeighbourIndex(std::to_string(i));
@@ -330,7 +331,7 @@ void Midpoint::calculateInteractionScheduleTriwiseBruteForce(std::function<std::
             continue;
           }
           interactionMap.insert_or_assign(zonePair, true);
-          _interactionSchedule[zone].push_back(std::to_string(i));
+          _interactionScheduleBruteForce[zone].push_back(std::to_string(i));
         }
       }
     }
@@ -347,7 +348,7 @@ void Midpoint::calculateZonalInteractionTriwiseBruteForce(
   auto &zoneBuffer = _importBuffers.at(zoneIndex);
 
   // initiate combined buffer
-  for (auto otherZone : _interactionSchedule.at(zone)) {
+  for (auto otherZone : _interactionScheduleBruteForce.at(zone)) {
     auto otherIndex = (_regionCount - std::stoi(otherZone)) - 1;
     combinedBuffer.add_buffer(_importBuffers.at(otherIndex));
   }

@@ -209,8 +209,8 @@ void RegularGridDecomposition::initializeZonalMethod(const MDFlexConfig &config)
   RectRegion homeBoxRegion(_localBoxMin, _localBoxMax - _localBoxMin);
   RectRegion globalBoxRegion(_globalBoxMin, _globalBoxMax - _globalBoxMin);
 
-  // NOTE: This is not very clean, but suffices for now
   bool pairwiseInteraction = config.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise);
+  bool triwiseInteraction = config.getInteractionTypes().count(autopas::InteractionTypeOption::triwise);
   bool useNewton3;
   // NOTE: We assume that we only use the first option
   if (pairwiseInteraction)
@@ -230,9 +230,9 @@ void RegularGridDecomposition::initializeZonalMethod(const MDFlexConfig &config)
                                                            _communicator, _allNeighborDomainIndices, _boundaryType));
       break;
     case options::ZonalMethodOption::midpoint:
-      _zonalMethod = std::make_unique<Midpoint>(Midpoint(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion,
-                                                         globalBoxRegion, useNewton3, pairwiseInteraction,
-                                                         _communicator, _allNeighborDomainIndices, _boundaryType));
+      _zonalMethod = std::make_unique<Midpoint>(
+          Midpoint(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion, useNewton3,
+                   pairwiseInteraction, triwiseInteraction, _communicator, _allNeighborDomainIndices, _boundaryType));
     default:
       std::make_unique<FullShell>(FullShell(_cutoffWidth, _skinWidth, _domainIndex, homeBoxRegion, globalBoxRegion,
                                             _communicator, _allNeighborDomainIndices, _boundaryType));

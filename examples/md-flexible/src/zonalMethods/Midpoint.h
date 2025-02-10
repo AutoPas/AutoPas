@@ -22,12 +22,13 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
    * @param globalBoxRegion
    * @param useNewton3
    * @param pairwiseInteraction
+   * @param triwiseInteraction
    * @param comm (optional)
    * @param allNeighbourIndices (optional)
    * @param boundaryType (optional)
    * */
   Midpoint(double cutoff, double verletSkinWidth, int ownRank, RectRegion homeBoxRegion, RectRegion globalBoxRegion,
-           bool useNewton3 = false, bool pairwiseInteraction = true,
+           bool useNewton3 = false, bool pairwiseInteraction = true, bool triwiseInteraction = false,
            autopas::AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD,
            std::array<int, 26> allNeighbourIndices = std::array<int, 26>(),
            std::array<options::BoundaryTypeOption, 3> boundaryType = std::array<options::BoundaryTypeOption, 3>(
@@ -170,6 +171,9 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
   // stores if pairwise interaction is used
   bool _pairwiseInteraction;
 
+  // stores if triplet interaction is used
+  bool _triwiseInteraction;
+
   // stores cutoff
   double _cutoff;
 
@@ -177,6 +181,12 @@ class Midpoint : public ZonalMethod, public RectRegionMethodInterface {
 
   // flag to control if brute force schedule is used for triplet interactions
   inline static constexpr bool _bruteForceSchedule3B = false;
+
+
+  /**
+   * Stores the brute force zonal interaction schedule
+   */
+  std::map<std::string, std::vector<std::string>> _interactionScheduleBruteForce;
 
   /**
    * Stores the triwise zonal interaction schedule
