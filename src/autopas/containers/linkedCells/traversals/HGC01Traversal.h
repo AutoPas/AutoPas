@@ -73,7 +73,7 @@ class HGC01Traversal : public HGTraversalBase<ParticleCell>, public HGTraversalI
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_c01; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_c01_iterator; };
 
   [[nodiscard]] bool isApplicable() const override {
     return this->_useNewton3 == false && this->_dataLayout == DataLayoutOption::aos;

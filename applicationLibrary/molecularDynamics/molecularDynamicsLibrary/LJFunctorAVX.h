@@ -103,13 +103,16 @@ class LJFunctorAVX
    * properties like sigma, epsilon and shift.
    * @param cutoff
    * @param particlePropertiesLibrary
+   * * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
-  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+                        bool scalingCutoff = false)
       : LJFunctorAVX(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
+    _scalingCutoff = scalingCutoff;
   }
 
   std::string getName() final { return "LJFunctorAVX"; }
@@ -135,7 +138,9 @@ class LJFunctorAVX
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      cutoffSquared = _cutoffSquaredAoS * sigmaSquared;
+      if (_scalingCutoff) {
+        cutoffSquared = _cutoffSquaredAoS * sigmaSquared;
+      }
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
@@ -494,7 +499,9 @@ class LJFunctorAVX
           not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
           not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
           _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
-      cutoffSquared = _mm256_mul_pd(_cutoffSquared, sigmaSquareds);
+      if (_scalingCutoff) {
+        cutoffSquared = _mm256_mul_pd(_cutoffSquared, sigmaSquareds);
+      }
       if constexpr (applyShift) {
         shift6s = _mm256_set_pd(
             (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
@@ -1047,5 +1054,7 @@ class LJFunctorAVX
   // number of double values that fit into a vector register.
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
+
+  bool _scalingCutoff;
 };
 }  // namespace mdLib

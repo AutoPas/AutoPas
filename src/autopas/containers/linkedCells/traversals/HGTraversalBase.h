@@ -43,15 +43,48 @@ class HGTraversalBase : public TraversalInterface {
   std::vector<double> _cutoffs;
   double _skin;
 
-  // double getMinDistBetweenCellsSquared(const internal::CellBlock3D<ParticleCell> &upperCB, std::array<size_t, 3>
-  // &upperCell,
-  //                                      const internal::CellBlock3D<ParticleCell> &lowerCB, std::array<size_t, 3>
-  //                                      &lowerCell) {
-  //   const auto posX = upperCB.getCellBoundingBox(upperCell);
-  //   const auto posY = lowerCB.getCellBoundingBox(lowerCell);
-  //   double sum = 0;
-  //   return sum;
-  // }
+  using CBParticleCell = FullParticleCell<Particle>;
+
+  /**
+   *
+   * @param upperCB first CellBlock3D
+   * @param upperCell 3d cell index of cell belonging to first CellBlock3D
+   * @param lowerCB second CellBlock3D
+   * @param lowerCell 3d cell index of cell belonging to second CellBlock3D
+   * @return minimum distance between two cells squared
+   */
+  double getMinDistBetweenCellsSquared(const internal::CellBlock3D<CBParticleCell> &upperCB,
+                                       const std::array<size_t, 3> &upperCell,
+                                       const internal::CellBlock3D<CBParticleCell> &lowerCB,
+                                       const std::array<size_t, 3> &lowerCell) {
+    const auto posX = upperCB.getCellBoundingBox(upperCell);
+    const auto posY = lowerCB.getCellBoundingBox(lowerCell);
+    double totalDist = 0;
+    for (size_t i = 0; i < 3; ++i) {
+      const auto dist = std::max(0.0, std::max(posX.first[i] - posY.second[i], posY.first[i] - posX.second[i]));
+      totalDist += dist * dist;
+    }
+    return totalDist;
+  }
+
+  /**
+   *
+   * @param CB cell block that contains the cell
+   * @param cellIndex 3d cell index of cell belonging to first CellBlock3D
+   * @param point
+   * @return minimum distance between a cell and a point squared
+   */
+  double getMinDistBetweenCellAndPointSquared(const internal::CellBlock3D<CBParticleCell> &CB,
+                                              const std::array<size_t, 3> &cellIndex,
+                                              const std::array<double, 3> &point) {
+    const auto posX = CB.getCellBoundingBox(cellIndex);
+    double totalDist = 0;
+    for (size_t i = 0; i < 3; ++i) {
+      const auto dist = std::max(0.0, std::max(posX.first[i] - point[i], point[i] - posX.second[i]));
+      totalDist += dist * dist;
+    }
+    return totalDist;
+  }
 
   /**
    *

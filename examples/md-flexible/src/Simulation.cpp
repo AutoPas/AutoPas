@@ -792,6 +792,11 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+      if (!_configuration.cutoffs.value.empty()) {
+        // if cutoffs was set we have a scaling-cutoff
+        // TODO: multi site wont compile as it doesnt have scaling cutoff implemented
+        return f(LJFunctorTypeAutovec{_configuration.baseCutoff.value, particlePropertiesLibrary, true});
+      }
       return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
@@ -801,6 +806,10 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+      if (!_configuration.cutoffs.value.empty()) {
+        // if cutoffs was set we have a scaling-cutoff
+        return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary, true});
+      }
       return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(

@@ -602,8 +602,8 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
                                            momentOfInertiaMap.at(molTypeId));
   }
 #endif
-
-  _particlePropertiesLibrary->calculateMixingCoefficients();
+  // using scaling cutoff if cutoffs value was set in the config file
+  _particlePropertiesLibrary->calculateMixingCoefficients(!cutoffs.value.empty());
 }
 
 void MDFlexConfig::initializeObjects() {

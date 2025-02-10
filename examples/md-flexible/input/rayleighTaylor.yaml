@@ -27,10 +27,10 @@ iterations                       :  100000
 boundary-type                    :  [periodic, periodic, reflective]
 globalForce                      :  [0, 0, -12.44]
 data-layout                      :  [SoA]
-traversal                        :  [lc_c08, hgrid_color, hgrid_color_soa_cell]
-newton3                          : [enabled, disabled]
+traversal: [ lc_c08, hgrid_color, hgrid_test, hgrid_color_soa_cell ]
+newton3: [ enabled ]
 cell-size                        : [0.5, 1]
-tuning-interval                  :  62
+tuning-interval: 42
 tuning-samples                   : 5
 Sites:
   0:

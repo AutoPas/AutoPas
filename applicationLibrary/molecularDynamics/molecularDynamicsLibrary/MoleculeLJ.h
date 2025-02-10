@@ -22,6 +22,9 @@ class MoleculeLJ : public autopas::Particle {
  public:
   MoleculeLJ() = default;
 
+  /**
+   * A static refernce to particlePropertiesLibrary so that sigma of particles can be used in getSize() function.
+   */
   static std::shared_ptr<ParticlePropertiesLibrary<> > particlePropertiesLibrary;
 
   /**

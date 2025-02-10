@@ -202,7 +202,7 @@ class TraversalOption : public Option<TraversalOption> {
      * other levels y are iterated and cells of level x is traversed as c01. For each particle of level x, all particles
      * in the adjacent cells of level y are called with the functor.
      */
-    hgrid_c01,
+    hgrid_c01_iterator,
     /**
      * HGColorTraversal: For each level, LCC08Traversal is used. For the cross-level interactions, for each level x only
      * smaller levels are iterated. The cells on level x are iterated with colors (dynamic color count based on ratio
@@ -210,7 +210,12 @@ class TraversalOption : public Option<TraversalOption> {
      * that are considered for each cell on level x do not intersect.
      */
     hgrid_color,
+    /**
+     * HGColorSoACellToCeell: Same as HGColorTraversal but during cross-level traversals SoA cell to cell functor is
+     * used. (Instead of 1 particle in upper cell <-> full cell in lower level like in HGColorTraversal)
+     */
     hgrid_color_soa_cell,
+    hgrid_test,
   };
 
   /**
@@ -348,9 +353,10 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::ot_c01, "ot_c01"},
 
         // HierarchicalGrid Traversals:
-        {TraversalOption::hgrid_c01, "hgrid_c01"},
+        {TraversalOption::hgrid_c01_iterator, "hgrid_c01"},
         {TraversalOption::hgrid_color, "hgrid_color"},
         {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
+        {TraversalOption::hgrid_test, "hgrid_test"},
     };
   };
 

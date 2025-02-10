@@ -41,9 +41,35 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
     if (not this->isApplicable()) {
       utils::ExceptionHandler::exception("Currently only AoS and newton3 is supported on hgrid_color traversal.");
     }
+    // 4D vector (hierarchy level, 3D cell index) to store next non-empty cell in increasing x direction for each cell
+    std::vector<std::vector<std::vector<std::vector<size_t>>>> nextNonEmpty;
     // computeInteractions for each level independently first
     std::vector<std::unique_ptr<TraversalInterface>> traversals(this->_numLevels);
     for (size_t level = 0; level < this->_numLevels; level++) {
+      // TODO: Do this nextNonEmpty calculation after rebuilds in container code, not every iteration, as it only
+      // changes after a rebuild
+      const auto dim = this->getTraversalSelectorInfo(level).cellsPerDim;
+      nextNonEmpty.emplace_back(dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
+      const auto &cellBlock = this->_levels->at(level)->getCellBlock();
+      // calculate next non-empty cell in increasing x direction for each cell
+      for (size_t z = 0; z < dim[2]; ++z) {
+        for (size_t y = 0; y < dim[1]; ++y) {
+          // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
+          size_t index1D = utils::ThreeDimensionalMapping::threeToOneD({dim[0] - 1, y, z}, dim);
+          std::vector<size_t> &nextRef = nextNonEmpty[level][z][y];
+          nextRef[dim[0] - 1] = dim[0];
+          for (int x = dim[0] - 2; x >= 0; --x, --index1D) {
+            if (cellBlock.getCell(index1D).isEmpty()) {
+              // if the next cell is empty, set nextRef[x] to nextRef[x + 1]
+              nextRef[x] = nextRef[x + 1];
+            } else {
+              // if next cell is not empty, set nextRef[x] to x + 1 as it is the next non-empty cell
+              nextRef[x] = x + 1;
+            }
+          }
+        }
+      }
+
       // generate new traversal, load cells into it, if dataLayout is SoA also load SoA, but do not store SoA
       // as they can still be later used for cross-level interactions
       traversals[level] = generateNewTraversal(level);
@@ -73,14 +99,18 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
         //_functor->setCutoff(cutoff);
         // TODO: scale verlet skin by how long passed till last rebuild???
         const double interactionLength = cutoff + this->_skin;
+        const double interactionLengthSquared = interactionLength * interactionLength;
 
         std::array<unsigned long, 3> stride{};
         for (size_t i = 0; i < 3; i++) {
           if (this->_useNewton3) {
             // find out the stride so that cells we check on lowerLevel do not intersect
-            stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
-                                                                 lowerLength[i] / upperLength[i]));
-            // stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength  * 2 / upperLength[i]));
+            // stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
+            //                                                     lowerLength[i] / upperLength[i]));
+            // the stride calculation below can result in less colors, but two different threads can operate on SoA
+            // Buffer of the same cell at the same time They won't update the same value at the same time, but they can
+            // change adjacent values causing false sharing
+            stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength * 2 / upperLength[i]));
           } else {
             // do c01 traversal if newton3 is disabled
             stride[i] = 1;
@@ -114,7 +144,8 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
           for (unsigned long z = start_z; z < end_z; z += stride_z) {
             for (unsigned long y = start_y; y < end_y; y += stride_y) {
               for (unsigned long x = start_x; x < end_x; x += stride_x) {
-                auto &cell = upperLevelCB.getCell({x, y, z});
+                const std::array<unsigned long, 3> upperCellIndex3D{x, y, z};
+                auto &cell = upperLevelCB.getCell(upperCellIndex3D);
                 // skip if cell is a halo cell and newton3 is disabled
                 auto isHalo = cell.getPossibleParticleOwnerships() == OwnershipState::halo;
                 if (isHalo && !this->_useNewton3) {
@@ -134,8 +165,15 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
                     }
                     for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
                       for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
-                          auto &lowerCell = lowerLevelCB.getCell({xl, yl, zl});
+                        std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
+                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+                          const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+                          auto &lowerCell = lowerLevelCB.getCell(lowerCellIndex);
+                          // skip if cell is farther than interactionLength
+                          if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
+                              interactionLengthSquared) {
+                            continue;
+                          }
                           for (auto &p : lowerCell) {
                             this->_functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
                           }
@@ -150,7 +188,7 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
                   const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
                   for (int idx = 0; idx < cell.size(); ++idx) {
                     const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
-                    auto soaView = soa.constructView(idx, idx + 1);
+                    auto soaSingleParticle = soa.constructView(idx, idx + 1);
                     auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
                     auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
                     if (containToOwnedOnly) {
@@ -159,12 +197,17 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
                     }
                     for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
                       for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
-                          // TODO: you don't need to check every cell in 3D cubic region, actual region will be like a
-                          // sphere
-                          // TODO: if (shortest dist between particle and cube) ^ 2 > cutoff ^ 2, can skip this cell
+                        std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
+                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+                          const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+                          // skip if cell is farther than interactionLength
+                          if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
+                              interactionLengthSquared) {
+                            continue;
+                          }
                           // 1 to n SoAFunctorPair
-                          this->_functor->SoAFunctorPair(soaView, lowerLevelCB.getCell({xl, yl, zl})._particleSoABuffer,
+                          this->_functor->SoAFunctorPair(soaSingleParticle,
+                                                         lowerLevelCB.getCell(lowerCellIndex)._particleSoABuffer,
                                                          this->_useNewton3);
                         }
                       }

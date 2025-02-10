@@ -495,7 +495,7 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> cutoff{2., "cutoff", true, "Lennard-Jones force cutoff."};
 
   /**
-   * cutoffs
+   * cutoffs for Hierarchical Grid container levels
    */
   MDFlexOption<std::vector<double>, __LINE__> cutoffs{
       {}, "cutoffs", true, "Lennard-Jones force cutoffs for Hierarchical Grid container."};

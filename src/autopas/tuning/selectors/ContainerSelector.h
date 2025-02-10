@@ -54,7 +54,10 @@ class ContainerSelector {
         _cutoff(cutoff),
         _currentContainer(nullptr),
         _cutoffs(cutoffs),
-        _currentInfo() {}
+        _currentInfo() {
+    // make sure cutoffs are sorted
+    std::sort(_cutoffs.begin(), _cutoffs.end());
+  }
 
   /**
    * Sets the container to the given option.
@@ -108,59 +111,63 @@ template <class Particle>
 std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector<Particle>::generateContainer(
     ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> container;
+  double cutoff = _cutoff;
+  if (!_cutoffs.empty()) {
+    cutoff = _cutoffs.back();
+  }
   switch (containerChoice) {
     case ContainerOption::directSum: {
-      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep,
+      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep,
                                                         containerInfo.verletRebuildFrequency);
       break;
     }
 
     case ContainerOption::linkedCells: {
-      container = std::make_unique<LinkedCells<Particle>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
-          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
+      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep,
+                                                          containerInfo.verletRebuildFrequency,
+                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::linkedCellsReferences: {
       container = std::make_unique<LinkedCellsReferences<Particle>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          _boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletLists: {
       container = std::make_unique<VerletLists<Particle>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          _boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           VerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletListsCells: {
       container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          _boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator, VerletListsCellsHelpers::VLCBuildType::soaBuild);
       break;
     }
     case ContainerOption::verletClusterLists: {
       container = std::make_unique<VerletClusterLists<Particle>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          _boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.verletClusterSize, containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          _boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor);
       break;
     }
 
     case ContainerOption::pairwiseVerletLists: {
       container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          _boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator, VerletListsCellsHelpers::VLCBuildType::soaBuild);
       break;
     }
     case ContainerOption::octree: {
       container =
-          std::make_unique<Octree<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep,
+          std::make_unique<Octree<Particle>>(_boxMin, _boxMax, cutoff, containerInfo.verletSkinPerTimestep,
                                              containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
       break;
     }
@@ -170,8 +177,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
         _cutoffs = {_cutoff / 4, _cutoff / 3, _cutoff / 2, _cutoff};
       }
       container = std::make_unique<HierarchicalGrid<Particle>>(
-          _boxMin, _boxMax, _cutoff, _cutoffs, containerInfo.verletSkinPerTimestep,
-          containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+          _boxMin, _boxMax, cutoff, _cutoffs, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
       break;
     }
     default: {

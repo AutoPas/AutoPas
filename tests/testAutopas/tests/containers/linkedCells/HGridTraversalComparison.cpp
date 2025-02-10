@@ -109,7 +109,7 @@ HGridTraversalComparison::calculateForces(autopas::ContainerOption containerOpti
   if (interactionType == autopas::InteractionTypeOption::pairwise) {
     mdLib::LJFunctor<Molecule, true /*applyShift*/, true /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/>
-        functor{_cutoff, *_particlePropertiesLibrary};
+        functor{_cutoff, *_particlePropertiesLibrary, true};
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
         functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
   } else if (interactionType == autopas::InteractionTypeOption::triwise) {
@@ -351,7 +351,7 @@ auto HGridTraversalComparison::getTestParams() {
   for (auto [siteTypeId, nu] : std::vector<std::pair<int, double>>{{0, 1.}, {1, 1.}}) {
     _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
   }
-  _particlePropertiesLibrary->calculateMixingCoefficients();
+  _particlePropertiesLibrary->calculateMixingCoefficients(true);
   Molecule::particlePropertiesLibrary = _particlePropertiesLibrary;
   std::vector<TestingTuple> testParams{};
   for (auto containerOption : {autopas::ContainerOption::hierarchicalGrid}) {

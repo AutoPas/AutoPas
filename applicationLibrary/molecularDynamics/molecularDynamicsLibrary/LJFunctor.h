@@ -96,13 +96,16 @@ class LJFunctor
    * properties like sigma, epsilon and shift.
    * @param cutoff
    * @param particlePropertiesLibrary
+   * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+                     bool scalingCutoff = false)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
+    _scalingCutoff = scalingCutoff;
   }
 
   std::string getName() final { return "LJFunctorAutoVec"; }
@@ -136,7 +139,9 @@ class LJFunctor
     auto cutoffSquared = _cutoffSquared;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      cutoffSquared = sigmaSquared * _cutoffSquared;
+      if (_scalingCutoff) {
+        cutoffSquared = sigmaSquared * _cutoffSquared;
+      }
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
@@ -277,7 +282,9 @@ class LJFunctor
         SoAFloatPrecision epsilon24 = const_epsilon24;
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
-          cutoffSquared = _cutoffSquared * sigmaSquared;
+          if (_scalingCutoff) {
+            cutoffSquared = sigmaSquared * _cutoffSquared;
+          }
           epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
             shift6 = shift6s[j];
@@ -467,7 +474,9 @@ class LJFunctor
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
-          cutoffSquared = _cutoffSquared * sigmaSquared;
+          if (_scalingCutoff) {
+            cutoffSquared = sigmaSquared * _cutoffSquared;
+          }
           epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
             shift6 = shift6s[j];
@@ -1220,5 +1229,7 @@ class LJFunctor
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
+
+  bool _scalingCutoff;
 };
 }  // namespace mdLib

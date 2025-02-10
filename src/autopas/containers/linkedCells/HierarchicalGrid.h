@@ -513,7 +513,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @return which Hierarchy the particle belongs to
    */
   size_t getHierarchyLevel(const ParticleType &p) const {
-    // binary search not worth if there are small amount of levels
     // scale size by baseCutoff
     const double cutoff = p.getSize() * _baseCutoff;
     // AutoPasLog(INFO, "Adding particle with size {}\n{}", ParticleType::getSizeFunctor(&p), p.toString());
