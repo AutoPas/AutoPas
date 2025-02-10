@@ -1,28 +1,12 @@
-# This yaml file creates a simple simulation box to be run with 3-body functors.
-container                            :  [LinkedCells] # DirectSum
-functor-3b                           :  axilrod-teller #[argon-triwise, axilrod-teller]
-traversal-3b                         :  [lc_c01] # ds_sequential, lc_c01
-newton3-3b                           :  [disabled]
-data-layout-3b                       :  [AoS]
-
-# Uncomment to combine pairwise and 3-body interaction
-functor                              :  argon-pairwise #[argon-pairwise, glob]
+functor                              :  argon-pairwise #Lennard-Jones (12-6) avx #argon-pairwise #[argon-pairwise, glob]
 traversal                            :  [lc_c01] #[lc_c01, lc_c08, lc_sliced]
 newton3                              :  [disabled]
 data-layout                          :  [AoS]
 
-verlet-rebuild-frequency             :  10
-verlet-skin-radius                   :  0.2
-selector-strategy                    :  Fastest-Absolute-Value
-tuning-strategies                    :  []
-tuning-interval                      :  2000
-tuning-samples                       :  3
-tuning-max-evidence                  :  10
-
 cutoff                               :  1.5 #nm (atomic radius 0.098)
 cell-size                            :  [1]
 deltaT                               :  0.0002
-iterations                           :  100
+iterations                           :  20000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 

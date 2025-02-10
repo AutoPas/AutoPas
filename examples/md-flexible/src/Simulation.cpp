@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -818,6 +818,15 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::argon_pairwise: {
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
+      return f(ArgonPairwiseFunctorType{cutoff});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for the Argon Pair Functor. Activate it via `cmake "
+          "-MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE=ON`.");
+#endif
+    }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
@@ -837,6 +846,15 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption3B::argon_triwise: {
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
+      return f(ArgonTriwiseFunctorType{cutoff});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for Argon Triwise Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE=ON`.");
 #endif
     }
     default: {
