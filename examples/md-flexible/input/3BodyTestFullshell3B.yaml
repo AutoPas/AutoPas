@@ -1,7 +1,7 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells] 
 functor-3b                           :  axilrod-teller
-traversal-3b                         :  [lc_c01_midpoint]
+traversal-3b                         :  [lc_c01]
 newton3-3b                           :  [disabled]
 data-layout-3b                       :  [AoS]
 
