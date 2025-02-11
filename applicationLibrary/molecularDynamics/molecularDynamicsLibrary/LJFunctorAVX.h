@@ -947,7 +947,7 @@ class LJFunctorAVX
           _mm256_cmp_ps(_mm256_castsi256_ps(ownedStateI), _mm256_castsi256_ps(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
       __m256 energyFactor = _mm256_blendv_ps(_zero, _one, ownedMaskI);
       if constexpr (newton3) {
-        __m256d ownedMaskJ =
+        __m256 ownedMaskJ =
             _mm256_cmp_ps(_mm256_castsi256_ps(ownedStateJ), _mm256_castsi256_ps(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
         energyFactor = _mm256_add_ps(energyFactor, _mm256_blendv_ps(_zero, _one, ownedMaskJ));
       }
