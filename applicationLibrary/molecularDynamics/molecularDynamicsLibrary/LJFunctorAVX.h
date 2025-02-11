@@ -1478,6 +1478,25 @@ class LJFunctorAVX
     return __m256d();
 #endif
   }
+
+  /**
+   * Wrapper function for FMA. If FMA is not supported it first executes the multiplication then the addition.
+   * @param factorA
+   * @param factorB
+   * @param summandC
+   * @return A * B + C
+   */
+  inline __m256 wrapperFMA(const __m256 &factorA, const __m256 &factorB, const __m256 &summandC) {
+#ifdef __FMA__
+    return _mm256_fmadd_ps(factorA, factorB, summandC);
+#elif __AVX__
+    const __m256 tmp = _mm256_mul_ps(factorA, factorB);
+    return _mm256_add_ps(summandC, tmp);
+#else
+    // dummy return. If no vectorization is available this whole class is pointless anyways.
+    return __m256();
+#endif
+  }
 #endif
 
   /**
