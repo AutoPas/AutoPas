@@ -9,8 +9,8 @@ newton3                              :  [enabled]
 # traversal                            :  [lc_c01]
 # newton3                              :  [disabled]
 
-verlet-rebuild-frequency             :  10
-verlet-skin-radius-per-timestep      :  0.02
+verlet-rebuild-frequency             :  1
+verlet-skin-radius-per-timestep      :  0
 tuning-strategies                    :  []
 tuning-interval                      :  2000
 tuning-samples                       :  3
@@ -18,7 +18,7 @@ tuning-max-evidence                  :  10
 
 cutoff                               :  2.5
 cell-size                            :  [1]
-deltaT                               :  0.00004
+deltaT                               :  0.001
 iterations                           :  100000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
