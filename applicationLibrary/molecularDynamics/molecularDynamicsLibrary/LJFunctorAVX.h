@@ -954,15 +954,15 @@ class LJFunctorAVX
       const __m256d energyFactorLow = _mm256_cvtps_pd(_mm256_extractf128_ps(energyFactor, 0));
       const __m256d energyFactorHigh = _mm256_cvtps_pd(_mm256_extractf128_ps(energyFactor, 1));
       *potentialEnergySum = wrapperFMA(
-          energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(potentialEnergyMasked, 0), *potentialEnergySum));
+          energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(potentialEnergyMasked, 0)), *potentialEnergySum);
       *potentialEnergySum = wrapperFMA(
-          energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(potentialEnergyMasked, 1), *potentialEnergySum));
-      *virialSumX = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialX, 0), *virialSumX));
-      *virialSumX = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialX, 1), *virialSumX));
-      *virialSumY = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialY, 0), *virialSumY));
-      *virialSumY = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialY, 1), *virialSumY));
-      *virialSumZ = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialZ, 0), *virialSumZ));
-      *virialSumZ = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialZ, 1), *virialSumZ));
+          energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(potentialEnergyMasked, 1)), *potentialEnergySum);
+      *virialSumX = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialX, 0)), *virialSumX);
+      *virialSumX = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialX, 1)), *virialSumX);
+      *virialSumY = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialY, 0)), *virialSumY);
+      *virialSumY = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialY, 1)), *virialSumY);
+      *virialSumZ = wrapperFMA(energyFactorLow, _mm256_cvtps_pd(_mm256_extractf128_ps(virialZ, 0)), *virialSumZ);
+      *virialSumZ = wrapperFMA(energyFactorHigh, _mm256_cvtps_pd(_mm256_extractf128_ps(virialZ, 1)), *virialSumZ);
     }
 #else
     // double precision
@@ -1377,8 +1377,8 @@ class LJFunctorAVX
       _potentialEnergySum /= static_cast<AccuType>(6.);
       _postProcessed = true;
 
-      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(INFO, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(INFO, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
