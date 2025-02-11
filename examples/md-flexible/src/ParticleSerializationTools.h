@@ -35,4 +35,32 @@ void deserializeParticle(char *particleData, ParticleType &particle);
  * @param particles The particle container to which to append the deserialized particles to.
  */
 void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleType> &particles);
+
+/**
+ * Serializes particle positions with ids.
+ * @param particles The particles to be serialized.
+ * @param serializedParticles The container to wich the serialized particle will be appended.
+ */
+void serializeParticlePositions(const std::vector<ParticleType> &particles, std::vector<char> &serializedParticles);
+
+/**
+ * Deserializes particle positions with ids.
+ * @param particleData A pointer to the serialized particle data.
+ * @param serializedParticles The particle container to which to append the deserialized particles to.
+ */
+void deserializeParticlePositions(std::vector<char> particleData, std::vector<ParticleType> &serializedParticles);
+
+/**
+ * Serializes particle forces with id.
+ * @param particles The particles to be serialized.
+ * @param serializedParticles The container to wich the serialized particle will be appended.
+ */
+void serializeParticleForces(const std::vector<ParticleType> &particles, std::vector<char> &serializedParticles);
+
+/**
+ * Deserializes particle forces with ids.
+ * @param particleData A pointer to the serialized particle data.
+ * @param serializedParticles The particle container to which to append the deserialized particles to.
+ */
+void deserializeParticleForces(std::vector<char> particleData, std::vector<ParticleType> &serializedParticles);
 }  // namespace ParticleSerializationTools

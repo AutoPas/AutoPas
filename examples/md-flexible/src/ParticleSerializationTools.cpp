@@ -145,4 +145,90 @@ void deserializeParticles(std::vector<char> &particlesData, std::vector<Particle
   }
 }
 
+void doubleVectorToCharVector(std::vector<double> ds, std::vector<char> &cs) {
+  cs.resize(ds.size() * sizeof(double));
+  memcpy(cs.data(), ds.data(), ds.size() * sizeof(double));
+}
+
+void charVectorToDoubleVector(std::vector<char> cs, std::vector<double> &ds) {
+  ds.resize(cs.size() / sizeof(double));
+  memcpy(ds.data(), cs.data(), cs.size());
+}
+
+void serializeParticlePositions(const std::vector<ParticleType> &particles, std::vector<char> &serializedParticles) {
+  std::vector<double> positions;
+  positions.reserve(serializedParticles.size() + particles.size() * 8);
+  for (const auto &particle : particles) {
+    // save id of particle
+    unsigned long id = particle.getID();
+    double *did = (double *)(&id);
+    positions.push_back(*did);
+
+    // save type id of particle
+    unsigned long type = particle.getTypeId();
+    double *dtype = (double *)(&type);
+    positions.push_back(*dtype);
+
+    // save position of particle
+    auto pos = particle.getR();
+    positions.push_back(pos.at(0));
+    positions.push_back(pos.at(1));
+    positions.push_back(pos.at(2));
+
+    // save velocity of particle
+    auto v = particle.getV();
+    positions.push_back(v.at(0));
+    positions.push_back(v.at(1));
+    positions.push_back(v.at(2));
+  }
+  std::vector<char> positionsCharData(reinterpret_cast<char *>(positions.data()),
+                                      reinterpret_cast<char *>(positions.data() + positions.size()));
+  serializedParticles.insert(serializedParticles.end(), positionsCharData.begin(), positionsCharData.end());
+}
+
+void deserializeParticlePositions(std::vector<char> particleData, std::vector<ParticleType> &particles) {
+  std::vector<double> particleDoubleData(reinterpret_cast<double *>(particleData.data()),
+                                         reinterpret_cast<double *>(particleData.data() + particleData.size()));
+  particles.reserve(particles.size() + particleDoubleData.size() / 8);
+  for (size_t i = 0; i < particleDoubleData.size(); i += 8) {
+    unsigned long *id = (unsigned long *)(&particleDoubleData[i]);
+    unsigned long *type = (unsigned long *)(&particleDoubleData[i + 1]);
+    ParticleType particle({particleDoubleData[i + 2], particleDoubleData[i + 3], particleDoubleData[i + 4]},
+                          {particleDoubleData[i + 5], particleDoubleData[i + 6], particleDoubleData[i + 7]}, *id,
+                          *type);
+    particles.push_back(particle);
+  }
+}
+
+void serializeParticleForces(const std::vector<ParticleType> &particles, std::vector<char> &serializedParticles) {
+  std::vector<double> forces;
+  forces.reserve(serializedParticles.size() + particles.size() * 4);
+  for (const auto &particle : particles) {
+    // save id of particle
+    unsigned long id = particle.getID();
+    double *did = (double *)(&id);
+    forces.push_back(*did);
+
+    // save position of particle
+    auto f = particle.getF();
+    forces.push_back(f.at(0));
+    forces.push_back(f.at(1));
+    forces.push_back(f.at(2));
+  }
+  std::vector<char> forcesCharData(reinterpret_cast<char *>(forces.data()),
+                                   reinterpret_cast<char *>(forces.data() + forces.size()));
+  serializedParticles.insert(serializedParticles.end(), forcesCharData.begin(), forcesCharData.end());
+}
+
+void deserializeParticleForces(std::vector<char> particleData, std::vector<ParticleType> &particles) {
+  std::vector<double> particleDoubleData(reinterpret_cast<double *>(particleData.data()),
+                                         reinterpret_cast<double *>(particleData.data() + particleData.size()));
+  for (size_t i = 0; i < particleDoubleData.size(); i += 4) {
+    unsigned long *id = (unsigned long *)(&particleDoubleData[i]);
+    ParticleType particle({0, 0, 0}, {0, 0, 0}, *id);
+    particle.setF({particleDoubleData[i + 1], particleDoubleData[i + 2], particleDoubleData[i + 3]});
+    particles.push_back(particle);
+  }
+}
+
 }  // namespace ParticleSerializationTools

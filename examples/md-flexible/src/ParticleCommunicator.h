@@ -41,6 +41,34 @@ class ParticleCommunicator {
   void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
 
   /**
+   * Sends positions and ids of particles of type ParticleType to a receiver.
+   * @param particles The particles to be sent to the receiver.
+   * @param receiver The recipient of the particles.
+   */
+  void sendParticlePositions(const std::vector<ParticleType> &particles, const int &receiver);
+
+  /**
+   * Receives positions and ids of particles sent by a sender.
+   * @param receivedParticles The container where the received particles will be stored.
+   * @param source The sender id/rank.
+   */
+  void receiveParticlePositions(std::vector<ParticleType> &receivedParticles, const int &source);
+
+  /**
+   * Sends forces and ids of particles of type ParticleType to a receiver.
+   * @param particles The particles to be sent to the receiver.
+   * @param receiver The recipient of the particles.
+   */
+  void sendParticleForces(const std::vector<ParticleType> &particles, const int &receiver);
+
+  /**
+   * Receives forces and ids of particles sent by a sender.
+   * @param receivedParticles The container where the received particles will be stored.
+   * @param source The sender id/rank.
+   */
+  void receiveParticleForces(std::vector<ParticleType> &receivedParticles, const int &source);
+
+  /**
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();
@@ -74,4 +102,5 @@ class ParticleCommunicator {
    * @param dataBuffer The buffer where the received data will be stored.
    */
   void receiveDataFromNeighbor(const int &neighbor, std::vector<char> &dataBuffer);
+
 };

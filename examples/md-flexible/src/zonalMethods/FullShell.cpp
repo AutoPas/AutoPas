@@ -58,7 +58,7 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.sendParticles(_regionBuffers.at(bufferIndex), neighbourRank);
+      particleCommunicator.sendParticlePositions(_regionBuffers.at(bufferIndex), neighbourRank);
     }
     ++bufferIndex;
   }
@@ -70,7 +70,7 @@ void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.receiveParticles(_importParticles, neighbourRank);
+      particleCommunicator.receiveParticlePositions(_importParticles, neighbourRank);
     } else {
       _importParticles.insert(_importParticles.end(), _regionBuffers.at(bufferIndex).begin(),
                               _regionBuffers.at(bufferIndex).end());

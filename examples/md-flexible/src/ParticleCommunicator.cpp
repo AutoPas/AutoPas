@@ -36,6 +36,45 @@ void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedP
   }
 }
 
+
+void ParticleCommunicator::sendParticlePositions(const std::vector<ParticleType> &particles, const int &receiver){
+  std::vector<char> buffer;
+
+  ParticleSerializationTools::serializeParticlePositions(particles, buffer);
+
+  sendDataToNeighbor(buffer, receiver);
+}
+  
+void ParticleCommunicator::receiveParticlePositions(std::vector<ParticleType> &receivedParticles, const int &source){
+  std::vector<char> receiveBuffer;
+
+  receiveDataFromNeighbor(source, receiveBuffer);
+
+  if(!receiveBuffer.empty()){
+    ParticleSerializationTools::deserializeParticlePositions(receiveBuffer, receivedParticles);
+  }
+
+}
+
+void ParticleCommunicator::sendParticleForces(const std::vector<ParticleType> &particles, const int &receiver){
+  std::vector<char> buffer;
+
+  ParticleSerializationTools::serializeParticleForces(particles, buffer);
+
+  sendDataToNeighbor(buffer, receiver);
+}
+  
+void ParticleCommunicator::receiveParticleForces(std::vector<ParticleType> &receivedParticles, const int &source){
+  std::vector<char> receiveBuffer;
+
+  receiveDataFromNeighbor(source, receiveBuffer);
+
+  if(!receiveBuffer.empty()){
+    ParticleSerializationTools::deserializeParticleForces(receiveBuffer, receivedParticles);
+  }
+
+}
+
 void ParticleCommunicator::waitForSendRequests() {
   std::vector<autopas::AutoPas_MPI_Status> sendStates;
   sendStates.resize(_sendRequests.size());
@@ -65,3 +104,4 @@ void ParticleCommunicator::receiveDataFromNeighbor(const int &neighbour, std::ve
   autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _communicator,
                             AUTOPAS_MPI_STATUS_IGNORE);
 }
+

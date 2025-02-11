@@ -67,7 +67,7 @@ void Midpoint::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(exRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.sendParticles(_regionBuffers.at(bufferIndex), neighbourRank);
+      particleCommunicator.sendParticlePositions(_regionBuffers.at(bufferIndex), neighbourRank);
     }
     ++bufferIndex;
   }
@@ -80,7 +80,7 @@ void Midpoint::SendAndReceiveExports(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.receiveParticles(_importBuffers.at(bufferIndex), neighbourRank);
+      particleCommunicator.receiveParticlePositions(_importBuffers.at(bufferIndex), neighbourRank);
     } else {
       _importBuffers.at(bufferIndex)
           .insert(_importBuffers.at(bufferIndex).end(), _regionBuffers.at(bufferIndex).begin(),
@@ -104,7 +104,7 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
     auto index = convRelNeighboursToIndex(imRegion.getNeighbour());
     auto neighbourRank = _allNeighbourIndices.at(index);
     if (neighbourRank != _ownRank) {
-      particleCommunicator.sendParticles(_importBuffers.at(bufferIndex), neighbourRank);
+      particleCommunicator.sendParticleForces(_importBuffers.at(bufferIndex), neighbourRank);
     } else {
       _regionBuffers.at(bufferIndex).clear();
       // NOTE: We can only add the results inside the container if
@@ -126,7 +126,7 @@ void Midpoint::SendAndReceiveResults(AutoPasType &autoPasContainer) {
       auto size = _regionBuffers.at(bufferIndex).size();
       _regionBuffers.at(bufferIndex).clear();
       _regionBuffers.at(bufferIndex).reserve(size);
-      particleCommunicator.receiveParticles(_regionBuffers.at(bufferIndex), neighbourRank);
+      particleCommunicator.receiveParticleForces(_regionBuffers.at(bufferIndex), neighbourRank);
     }
     ++bufferIndex;
   }
