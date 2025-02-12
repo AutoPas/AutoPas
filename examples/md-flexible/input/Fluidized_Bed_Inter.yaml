@@ -5,7 +5,7 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS, SoA]
+data-layout                      :  [AoS]
 traversal                         :   [lc_c01]
 tuning-metric                        :  time
 tuning-strategies                    :  [slow-config-filter, predictive-tuning]
@@ -62,7 +62,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Fluidized_Bed_vl_120225_lc_c01
+vtk-filename                     :  Fluidized_Bed_vl_120225_lc_aos
 vtk-write-frequency              :  5000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
