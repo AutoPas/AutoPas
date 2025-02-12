@@ -52,5 +52,5 @@ no-end-config                        :  true
 no-progress-bar                      :  true
 vtk-filename                         :  HomoTest
 vtk-output-folder                    :  BigHomoTestFullshell
-vtk-write-frequency                  :  10
+vtk-write-frequency                  :  10000
 #log-file                            : log.txt
