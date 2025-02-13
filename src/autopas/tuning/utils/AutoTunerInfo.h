@@ -31,6 +31,11 @@ struct AutoTunerInfo {
    * Number of samples that shall be collected per combination.
    */
   unsigned int maxSamples{3};
+
+  /**
+   * EarlyStoppingFactor for the auto-tuner.
+   */
+  double earlyStoppingFactor{std::numeric_limits<double>::infinity()};
   /**
    * Used energy sensor of energy metric selected
    */

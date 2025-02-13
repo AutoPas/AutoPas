@@ -268,6 +268,7 @@ std::string MDFlexConfig::to_string() const {
   printOption(tuningMetricOption);
   printOption(tuningInterval);
   printOption(tuningSamples);
+  printOption(earlyStoppingFactor);
   printOption(useLOESSSmoothening);
   if (tuningStrategyOptionsContainAnyOf({
           autopas::TuningStrategyOption::randomSearch,
