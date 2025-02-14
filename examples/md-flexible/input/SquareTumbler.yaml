@@ -52,7 +52,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  SquareTumbler
-vtk-write-frequency              :  2000
+vtk-write-frequency              :  5000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
