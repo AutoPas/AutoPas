@@ -5,7 +5,7 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS]
+data-layout                      :  [SoA]
 traversal                        :  [vcl_c01_balanced]
 tuning-metric                        :  time
 tuning-strategies                    :  [slow-config-filter, predictive-tuning]
@@ -51,7 +51,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  SquareTumbler_vl_aos
+vtk-filename                     :  SquareTumbler_vl_soa
 vtk-write-frequency              :  5000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
