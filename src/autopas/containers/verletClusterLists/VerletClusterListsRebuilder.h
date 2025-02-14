@@ -445,6 +445,7 @@ class VerletClusterListsRebuilder {
 
   void updatePairNeighborLists() {
     using autopas::utils::ArrayMath::boxDistanceSquared;
+    AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2))
     for (size_t x = 0; x < _towerBlock.getTowersPerDim()[0]; x++) {
       for (size_t y = 0; y < _towerBlock.getTowersPerDim()[1]; y++) {
         auto &tower = _towerBlock.getTowerByIndex2D(x, y);
