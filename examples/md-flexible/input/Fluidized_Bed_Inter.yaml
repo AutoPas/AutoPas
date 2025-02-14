@@ -17,7 +17,7 @@ newton3                          :  [disabled]
 cutoff                           :  3
 box-min                          :  [-0.75, -0.75, -0.75]
 box-max                          :  [25.25, 25.75, 25.25]
-cell-size                        :  [1.0, 1.5, 2.0, 2.5]
+cell-size                        :  [2.0]
 deltaT                           :  0.00005
 iterations                       :  300000
 boundary-type                    :  [reflective,periodic,reflective]
@@ -62,7 +62,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Fluidized_Bed_vl_120225_lc_cs_variants
+vtk-filename                     :  Fluidized_Bed_vl_120225_lc_cs_2
 vtk-write-frequency              :  5000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
