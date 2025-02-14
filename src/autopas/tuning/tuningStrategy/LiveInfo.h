@@ -187,6 +187,7 @@ class LiveInfo {
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
     infos["particleSize"] = sizeof(Particle);
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
+
     constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle, PairwiseFunctor>(
         std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>());
     infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;

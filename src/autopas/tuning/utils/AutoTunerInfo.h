@@ -30,6 +30,11 @@ struct AutoTunerInfo {
    * Number of samples that shall be collected per combination.
    */
   unsigned int maxSamples{3};
+
+  /**
+   * EarlyStoppingFactor for the auto-tuner.
+   */
+  double earlyStoppingFactor{std::numeric_limits<double>::infinity()};
   /**
    * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
    */

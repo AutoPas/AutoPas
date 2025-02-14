@@ -126,6 +126,7 @@ jobs:
             -DAUTOPAS_ENABLE_HARMONY=ON \
             -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
+            -DAUTOPAS_ENABLE_DYNAMIC_CONTAINERS=ON \
             ..
           entrypoint.sh cmake --build . --parallel 8
       - name: Run tests ${{ matrix.part }}/2

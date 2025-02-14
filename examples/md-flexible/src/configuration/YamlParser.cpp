@@ -356,6 +356,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
         }
+      } else if (key == config.earlyStoppingFactor.name) {
+        expected = "Floating point value > 1";
+        description = config.earlyStoppingFactor.description;
+
+        config.earlyStoppingFactor.value = node[key].as<double>();
+        if (config.earlyStoppingFactor.value <= 1) {
+          throw std::runtime_error("EarlyStoppingFactor has to be greater than 1!");
+        }
       } else if (key == config.useLOESSSmoothening.name) {
         expected = "Boolean Value";
         description = config.useLOESSSmoothening.description;
@@ -530,11 +538,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.verletRebuildFrequency.value < 1) {
           throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
-      } else if (key == config.verletSkinRadiusPerTimestep.name) {
+      } else if (key == config.verletSkinRadius.name) {
         expected = "Positive floating-point value.";
-        description = config.verletSkinRadiusPerTimestep.description;
+        description = config.verletSkinRadius.description;
 
-        config.verletSkinRadiusPerTimestep.value = node[key].as<double>();
+        config.verletSkinRadius.value = node[key].as<double>();
       } else if (key == config.fastParticlesThrow.name) {
         expected = "Boolean Value";
         description = config.fastParticlesThrow.description;
