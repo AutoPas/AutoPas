@@ -205,7 +205,7 @@ void Simulation::run() {
     const size_t rotationalGlobalForceIterationFrom = 60000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
-          _configuration.globalForce.value, -2.1875, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
+          _configuration.globalForce.value, -1.09375, M_PI/16., rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
       //std::cout << "Global force: " << globalForce[0] << " " << globalForce[1] << " " << globalForce[2] << std::endl;
       updatePositionsAndResetForces(globalForce);  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE

@@ -21,7 +21,7 @@ cell-size                        :  [1]
 deltaT                           :  0.0005
 iterations                       :  60000
 boundary-type                    :  [reflective,reflective,reflective]
-globalForce                      :  [0,-2.1875,0]
+globalForce                      :  [0,-1.09375,0]
 backgroundForceFrictionCoeff      :  0.01
 backgroundTorqueFrictionCoeff     :  0.01
 Sites:
@@ -51,7 +51,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  SquareTumbler_all_times_inv8_gravity
+vtk-filename                     :  SquareTumbler_all_times_inv16_gravity
 vtk-write-frequency              :  5000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
