@@ -14,6 +14,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -994,6 +995,20 @@ class AutoPas {
    */
   void setTuningMetricOption(TuningMetricOption tuningMetricOption) {
     _autoTunerInfo.tuningMetric = tuningMetricOption;
+  }
+
+  /**
+   * Getter for the energy sensor
+   * @return
+   */
+  [[nodiscard]] const EnergySensorOption &getEnergySensorOption() const { return _autoTunerInfo.energySensor; }
+
+  /**
+   * Setter for the energy sensor
+   * @param energySensorOption
+   */
+  void setEnergySensorOption(EnergySensorOption energySensorOption) {
+    _autoTunerInfo.energySensor = energySensorOption;
   }
 
   /**
