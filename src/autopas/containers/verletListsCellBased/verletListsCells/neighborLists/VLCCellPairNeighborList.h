@@ -98,8 +98,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     const auto boxSizeWithHalo = linkedCells.getBoxMax() - linkedCells.getBoxMin() +
                                  std::array<double, 3>{interactionLength, interactionLength, interactionLength} * 2.;
 
-    // Helper lambda to compute the relative index from two cells
-    auto relIdx = [&](auto cellIndex1, auto cellIndex2) {
+    // Helper lambda to compute the relative index from two cells within in a 3x3x3 cell-cube
+    auto relativeNeighborhoodIndex = [&](auto cellIndex1, auto cellIndex2) {
       const auto cellsPerDimensionWithHalo = linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
       const auto threeDPosCell1 = utils::ThreeDimensionalMapping::oneToThreeD(static_cast<long unsigned>(cellIndex1),
                                                                               cellsPerDimensionWithHalo);
@@ -248,14 +248,14 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
                 const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
                 if (distSquared < interactionLengthSquared) {
                   {
-                    const size_t secondCellIndexInFirst = relIdx(cellIndex1, cellIndex2);
+                    const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cellIndex1, cellIndex2);
                     insert(p1, p2, cell1List[secondCellIndexInFirst]);
                   }
                   // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's
                   // list
                   if (not useNewton3 and not(vlcTraversalOpt == TraversalOption::vlp_c01)) {
                     {
-                      const size_t secondCellIndexInFirst = relIdx(cellIndex2, cellIndex1);
+                      const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cellIndex2, cellIndex1);
                       insert(p2, p1, cell2List[secondCellIndexInFirst]);
                     }
                   }
