@@ -11,6 +11,7 @@
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+#include "molecularDynamicsLibrary/CoulombMultisiteFunctor.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #endif
 
@@ -93,6 +94,11 @@ constexpr bool calcGlobals =
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+
+using CoulombFunctorTypeAutovec =
+    mdLib::CoulombMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
@@ -133,7 +139,8 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
-using ArgonPairwiseFunctorType = mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, false, false>;
+using ArgonPairwiseFunctorType = mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both,
+                                                                 mdFlexibleTypeDefs::calcGlobals, false, false>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
@@ -151,12 +158,13 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
 
 #if defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
 /**
-* Type of LJFunctorTypeAT used in md-flexible.
+ * Type of LJFunctorTypeAT used in md-flexible.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Argon triwise functor does not have support for multisite molecules!"
 #else
-using ArgonTriwiseFunctorType = mdLib::ArgonFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals>;
+using ArgonTriwiseFunctorType =
+    mdLib::ArgonFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals>;
 #endif
 
 #endif

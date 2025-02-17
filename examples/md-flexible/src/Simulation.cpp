@@ -522,6 +522,9 @@ long Simulation::accumulateTime(const long &time) {
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+
+  applyWithChosenFunctorElectrostatic<bool>(
+      [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -788,7 +791,7 @@ void Simulation::loadParticles() {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value;
+  const double cutoff = _configuration.cutoff.value * 0.5;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
@@ -832,6 +835,14 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
     }
   }
+}
+
+template <class ReturnType, class FunctionType>
+ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f) {
+  const double cutoff = _configuration.cutoff.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+
+  return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 }
 
 template <class ReturnType, class FunctionType>

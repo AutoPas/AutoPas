@@ -610,6 +610,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           siteErrors.clear();
           siteID = std::distance(node[MDFlexConfig::siteStr].begin(), siteIterator);
 
+          // Check Coulomb parameters
+          const auto charge = parseComplexTypeValueSingle<double>(siteIterator->second, config.chargeMap.name.c_str(),
+                                                                  siteErrors, false);
+          const auto coulombEpsilon = parseComplexTypeValueSingle<double>(
+              siteIterator->second, config.coulombEpsilonMap.name.c_str(), siteErrors, false);
+
+          config.addCoulombParametersToSite(siteID, coulombEpsilon, charge);
+
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
 

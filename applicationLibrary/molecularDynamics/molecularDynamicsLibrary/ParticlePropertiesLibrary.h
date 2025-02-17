@@ -78,6 +78,8 @@ class ParticlePropertiesLibrary {
    */
   void addATParametersToSite(const intType siteId, const floatType nu);
 
+  void addCoulombParametersToSite(const intType siteId, const floatType epsilon, const floatType q);
+
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
    * diagonalized moment of inertia.
@@ -144,6 +146,20 @@ class ParticlePropertiesLibrary {
    * @return nu_i
    */
   floatType getNu(intType i) const;
+
+  /**
+   * Getter for the site's q.
+   * @param i Type Id of the site or single-site molecule.
+   * @return q_i
+   */
+  floatType getCharge(intType i) const;
+
+  /**
+   * Getter for the site's coulomb epsilon.
+   * @param i Type Id of the site or single-site molecule.
+   * @return coulombEpsilon_i
+   */
+  floatType getCoulombEpsilon(intType i) const;
 
   /**
    * Getter for the site's mass.
@@ -307,6 +323,8 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
   std::vector<floatType> _nus;  // Factor for AxilrodTeller potential
+  std::vector<floatType> _coulombEpsilons;
+  std::vector<floatType> _charges;
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -320,6 +338,7 @@ class ParticlePropertiesLibrary {
   // Allocate memory for the respective parameters
   bool _storeLJData{false};
   bool _storeATData{false};
+  bool _storeCoulombData{false};
 
   struct PackedLJMixingData {
     floatType epsilon24;
@@ -354,6 +373,10 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   }
   if (_storeATData) {
     _nus.emplace_back(0.0);
+  }
+  if (_storeCoulombData) {
+    _coulombEpsilons.emplace_back(0.0);
+    _charges.emplace_back(0.0);
   }
 }
 
@@ -390,6 +413,26 @@ void ParticlePropertiesLibrary<floatType, intType>::addATParametersToSite(intTyp
     _nus.resize(_numRegisteredSiteTypes);
   }
   _nus[siteID] = nu;
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addCoulombParametersToSite(intType siteID, floatType epsilon,
+                                                                               floatType q) {
+  std::cout << "ParticlePropertiesLibrary::addCoulombParametersToSite" << std::endl;
+  if (siteID >= _numRegisteredSiteTypes) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addCoulombParametersToSite(): Trying to set coulomb parameters for a site type "
+        "with id {},"
+        " which has not been registered yet. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  _storeCoulombData = true;
+  if (_coulombEpsilons.size() != _numRegisteredSiteTypes) {
+    _coulombEpsilons.resize(_numRegisteredSiteTypes);
+    _charges.resize(_numRegisteredSiteTypes);
+  }
+  _coulombEpsilons[siteID] = epsilon;
+  _charges[siteID] = q;
 }
 
 template <typename floatType, typename intType>
@@ -547,6 +590,16 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) con
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getNu(intType i) const {
   return _nus[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getCharge(intType i) const {
+  return _charges[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getCoulombEpsilon(intType i) const {
+  return _coulombEpsilons[i];
 }
 
 template <typename floatType, typename intType>

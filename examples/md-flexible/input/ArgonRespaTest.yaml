@@ -1,4 +1,4 @@
-functor                              :  argon-pairwise #Lennard-Jones (12-6) avx #argon-pairwise #[argon-pairwise, glob]
+functor                              :  Lennard-Jones (12-6) avx #Lennard-Jones (12-6) avx #argon-pairwise #[argon-pairwise, glob]
 traversal                            :  [lc_c01] #[lc_c01, lc_c08, lc_sliced]
 newton3                              :  [disabled]
 data-layout                          :  [AoS]
