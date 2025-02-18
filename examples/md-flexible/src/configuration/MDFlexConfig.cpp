@@ -232,6 +232,9 @@ std::string MDFlexConfig::to_string() const {
   printOption(containerOptions);
 
   // since all containers are rebuilt only periodically print Verlet config always.
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  printOption(fastParticlesThrow);
+#endif
   printOption(verletRebuildFrequency);
   printOption(verletSkinRadius);
   const auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
@@ -452,6 +455,8 @@ std::string MDFlexConfig::to_string() const {
 
 void MDFlexConfig::calcSimulationBox() {
   const double interactionLength = cutoff.value + verletSkinRadius.value;
+  const auto preBoxMin = boxMin.value;
+  const auto preBoxMax = boxMax.value;
 
   // helper function so that we can do the same for every object collection
   // resizes the domain to the maximal extents of all objects
@@ -475,6 +480,10 @@ void MDFlexConfig::calcSimulationBox() {
   resizeToObjectLimits(cubeUniformObjects);
   resizeToObjectLimits(sphereObjects);
   resizeToObjectLimits(cubeClosestPackedObjects);
+
+  if (boxMin.value != preBoxMin or boxMax.value != preBoxMax) {
+    std::cout << "WARNING: Simulation box increased due to particles being too close to the boundaries." << std::endl;
+  }
 
   // guarantee the box is at least of size interationLength
   for (int i = 0; i < 3; i++) {

@@ -1039,7 +1039,8 @@ class AutoPas {
 
   /**
    * Getter for the mean rebuild frequency.
-   * Helpful for analyzing the behavior of the dynamic containers.
+   * Helpful for determining the frequency for the dynamic containers as well as for determining fast particles by
+   * computing skinPerStep for static container
    * @return Value of the mean rebuild frequency as double
    */
   double getMeanRebuildFrequency() { return _logicHandler->getMeanRebuildFrequency(); }
@@ -1105,7 +1106,8 @@ class AutoPas {
    */
   bool _useTuningStrategyLoggerProxy{false};
   /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild, if a rebuild is not triggered
+   * earlier by the dynamic rebuild mechanic.
    */
   unsigned int _verletRebuildFrequency{100};
   /**

@@ -37,8 +37,13 @@ class ParticleBase {
         _v({0., 0., 0.}),
         _f({0.0, 0.0, 0.0}),
         _id(0),
-        _ownershipState(OwnershipState::owned),
-        _rAtRebuild({0.0, 0.0, 0.0}) {}
+        _ownershipState(OwnershipState::owned)
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        ,
+        _rAtRebuild({0.0, 0.0, 0.0})
+#endif
+  {
+  }
 
   /**
    * Constructor of the Particle class.
@@ -49,7 +54,17 @@ class ParticleBase {
    */
   ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
                OwnershipState ownershipState = OwnershipState::owned)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _ownershipState(ownershipState), _rAtRebuild(r) {}
+      : _r(r),
+        _v(v),
+        _f({0.0, 0.0, 0.0}),
+        _id(id),
+        _ownershipState(ownershipState)
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        ,
+        _rAtRebuild(r)
+#endif
+  {
+  }
 
   /**
    * Destructor of ParticleBase class
@@ -62,10 +77,12 @@ class ParticleBase {
    */
   std::array<floatType, 3> _r;
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**
    * Particle position during last rebuild as 3D coordinates.
    */
   std::array<floatType, 3> _rAtRebuild;
+#endif
 
   /**
    * Particle velocity as 3D vector.
@@ -160,17 +177,17 @@ class ParticleBase {
   [[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
 
   /**
-   * Get the last rebuild position of the particle
-   * @return current rebuild position
-   */
-  [[nodiscard]] const std::array<double, 3> &getRAtRebuild() const { return _rAtRebuild; }
-
-  /**
    * Set the position of the particle
    * @param r new position
    */
   void setR(const std::array<double, 3> &r) { _r = r; }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  /**
+   * Get the last rebuild position of the particle
+   * @return current rebuild position
+   */
+  [[nodiscard]] const std::array<double, 3> &getRAtRebuild() const { return _rAtRebuild; }
   /**
    * Set the rebuild position of the particle
    * @param r rebuild position to be set
@@ -190,6 +207,7 @@ class ParticleBase {
   const std::array<double, 3> calculateDisplacementSinceRebuild() const {
     return utils::ArrayMath::sub(_rAtRebuild, _r);
   }
+#endif
 
   /**
    * Add a distance vector to the position of the particle and check if the distance between the old and new position
@@ -221,15 +239,6 @@ class ParticleBase {
   void addR(const std::array<double, 3> &r) {
     using namespace autopas::utils::ArrayMath::literals;
     _r += r;
-  }
-
-  /**
-   * Add a distance vector to the position of the particle
-   * @param r vector to be added
-   */
-  void addRAtRebuild(const std::array<double, 3> &r) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _rAtRebuild += r;
   }
 
   /**

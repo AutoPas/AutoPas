@@ -440,6 +440,13 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
       15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
+   * fastParticlesThrow
+   */
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{
+      false, "fastParticlesThrow", false,
+      "Decide if particles that move farther than skin/2/rebuildFrequency "
+      "will throw an exception during the position update or not for the case with statically rebuilding containers."};
+  /**
    * verletSkinRadius
    */
   MDFlexOption<double, __LINE__> verletSkinRadius{

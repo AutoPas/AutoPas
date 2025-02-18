@@ -12,7 +12,6 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
-#include <unordered_set>
 
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/cells/FullParticleCell.h"
@@ -70,7 +69,8 @@ class LogicHandler {
         _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
-
+    // Reserve some memory for the _rebuildIntervals to avoid reallocations
+    _rebuildIntervals.reserve(1000);
     // Initialize AutoPas with tuners for given interaction types
     for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
@@ -117,7 +117,6 @@ class LogicHandler {
           if (p.isDummy()) {
             continue;
           }
-          //if particle is inside the box of the current container
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
             p.setOwnershipState(OwnershipState::owned);
             _containerSelector.getCurrentContainer().addParticle(p);
@@ -160,13 +159,8 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
-    //IMP: the return value of a function should not be ignored.
-    //If the result of a function marked with [[nodiscard]] is discarded, the compiler will generate a warning.
-    //_neighborListInvalidDoDynamicRebuild
-    // check if there are fast particles
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
-    // boolean based on above, tuning, and frequency
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
 
@@ -191,7 +185,6 @@ class LogicHandler {
 
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
-    //e.x linkedcells verlet lists etc.
 
     AutoPasLog(TRACE, "Initiating container update.");
     auto leavingParticles = _containerSelector.getCurrentContainer().updateContainer(not doDataStructureUpdate);
@@ -323,8 +316,6 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addParticle()
    */
-  //  this adds particles to the container, at the very beginning,
-  //  so it populates the container, in order to proceed w the calculation
   void addParticle(const Particle &p) {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
@@ -617,11 +608,14 @@ class LogicHandler {
   /**
    * Getter for the mean rebuild frequency.
    * Helpful for determining the frequency for the dynamic containers
+   * This function is only used for dynamic containers currently but returns user defined rebuild frequency for static
+   * case for safety.
    * @return value of the mean frequency as double
    */
   [[nodiscard]] double getMeanRebuildFrequency() const {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     if (_rebuildIntervals.empty()) {
-      return 0.;
+      return static_cast<double>(_neighborListRebuildFrequency);
     } else {
       // Neglecting the first entry in the vector as _stepsSinceLastListRebuild is initialized to a very large value,
       // to trigger the first rebuild when starting the simulation,
@@ -630,6 +624,9 @@ class LogicHandler {
       return std::accumulate(_rebuildIntervals.begin() + 1, _rebuildIntervals.end(), 0.) /
              static_cast<double>(_rebuildIntervals.size() - 1);
     }
+#else
+    return static_cast<double>(_neighborListRebuildFrequency);
+#endif
   }
 
   /**
@@ -643,12 +640,6 @@ class LogicHandler {
    * updates bool: _neighborListInvalidDoDynamicRebuild
    */
   void checkNeighborListsInvalidDoDynamicRebuild();
-
-  bool checkNan();
-
-  bool hasDuplicates();
-  using R = std::array<double, 3>;
-  bool hasDuplicates(std::vector<std::vector<std::tuple<int, R>>> v);
 
   /**
    * Checks if any particle has moved more than skin/2.
@@ -1063,6 +1054,7 @@ class LogicHandler {
 
 template <typename Particle>
 void LogicHandler<Particle>::updateRebuildPositions() {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
@@ -1070,6 +1062,7 @@ void LogicHandler<Particle>::updateRebuildPositions() {
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
+#endif
 }
 
 template <typename Particle>
@@ -1105,71 +1098,17 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
 #endif
       or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
-    // std::memory_order_relaxed: This is a memory ordering option that affects how memory operations are ordered in
-    // multithreading. memory_order_relaxed: It ensures no synchronization or ordering constraints on other memory
-    // operations. It’s the most relaxed memory ordering, used when you don't need synchronization with other threads,
-    // but you still want atomicity.
   }
 
   return _neighborListsAreValid.load(std::memory_order_relaxed);
 }
 
 template <typename Particle>
-bool LogicHandler<Particle>::hasDuplicates() {
-  std::unordered_set<int> elements;
-  for (auto &cell : _particleBuffer) {
-    auto &buffer = cell._particles;
-    for (auto &particle : buffer) {
-      // Try to insert the number; if it's already present, there's a duplicate
-      if (particle.getOwnershipState() == OwnershipState::owned) {
-        elements.insert(particle.getID());
-      }
-    }
-  }
-
-  bool flag = false;
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    Particle& particle = *iter;
-    if (particle.getOwnershipState() == OwnershipState::owned) {
-      if (!elements.insert(particle.getID()).second) {
-        std::cout << "--------------" << particle.getID() << " is already in use. ----------------" << std::endl;
-        flag = true;
-      }
-    }
-  }
-
-  return flag;
-}
-
-using R = std::array<double, 3>;
-template <typename Particle>
-bool LogicHandler<Particle>::hasDuplicates(std::vector<std::vector<std::tuple<int, R>>> v) {
-  std::unordered_set<int> seenIds;
-
-  for (const auto& outerVec : v) {
-    for (const auto& particle : outerVec) {
-      int id = std::get<0>(particle);
-      if (seenIds.find(id) != seenIds.end()) {
-        return true;
-      }
-      seenIds.insert(id);
-    }
-  }
-
-  return false;
-}
-
-//TODO here instead of triggering a rebuild save particles to buffer
-// these will then be automatically considered by the diff containers since they also consider the particles that go outside the container
-// Owned state, a particle with this state is an actual particle and owned by the current AutoPas object!
-// Halo state, a particle with this state is an actual particle, but not owned by the current AutoPas object!
-// Dummy or deleted state, a particle with this state is not an actual particle!
-
-template <typename Particle>
 void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
-
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   //if (_iteration == 0) return;
   long _particleNumber = 0;
+
 
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
@@ -1182,7 +1121,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
- AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
@@ -1202,6 +1141,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
 
       }
   }
+
 
   for (const auto& t : toDelete) {
     for (auto p : t) {
@@ -1225,6 +1165,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
     // _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
 
   _fastParticles = _particleNumber;
+#endif
 }
 
 template <typename Particle>
@@ -1232,7 +1173,6 @@ void LogicHandler<Particle>::resetNeighborListsInvalidDoDynamicRebuild() {
   _neighborListInvalidDoDynamicRebuild = false;
 }
 
-// ONLY FOR TESTING
 template <typename Particle>
 void LogicHandler<Particle>::setParticleBuffers(const std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                 const std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
@@ -1271,52 +1211,6 @@ template <typename Particle>
 std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
 LogicHandler<Particle>::getParticleBuffers() const {
   return {_particleBuffer, _haloParticleBuffer};
-}
-
-template <typename Particle>
-bool LogicHandler<Particle>::checkNan() {
-  bool flag = false;
-  bool result = false;
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    Particle& particle = *iter;
-    auto r = particle.getR();
-    flag = false;
-    for (size_t i = 0; i < r.size(); ++i) {
-      if (std::isnan(r[i])) {
-        flag = true;
-        result = true;
-      }
-    }
-    if(flag || particle.getID() == 1290) {
-      std::cout << "in container Particle: " << particle.getID() << "ownership: " << particle.getOwnershipState() << std::endl;
-      for (size_t i = 0; i < r.size(); ++i) {
-        std::cout << r[i] << std::endl;
-      }
-      std::cout << "===========================" << std::endl;
-    }
-  }
-
-  for (auto &cell : _particleBuffer) {
-    auto &buffer = cell._particles;
-    for (auto &particle : buffer) {
-      flag = false;
-      auto r = particle.getR();
-      for (size_t i = 0; i < r.size(); ++i) {
-        if (std::isnan(r[i])) {
-          flag = true;
-          result = true;
-        }
-      }
-      if(flag || particle.getID() == 1290) {
-        std::cout << "in buffer Particle: " << particle.getID() << "ownership: " << particle.getOwnershipState() << std::endl;
-        for (size_t i = 0; i < r.size(); ++i) {
-          std::cout << r[i] << std::endl;
-        }
-        std::cout << "===========================" << std::endl;
-      }
-    }
-  }
-  return result;
 }
 
 template <typename Particle>
@@ -1364,7 +1258,6 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     timerRebuild.stop();
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
-
 
   timerComputeInteractions.start();
   container.computeInteractions(&traversal);
@@ -1922,7 +1815,6 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
     ss << " Total: " << sum;
     return ss.str();
   };
-
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
   AutoPasLog(DEBUG, "Type of interaction :          {}", interactionType.to_string());
