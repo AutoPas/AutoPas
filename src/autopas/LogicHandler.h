@@ -202,7 +202,6 @@ class LogicHandler {
     }
 
    _containerSize = this->_containerSelector.getCurrentContainer().size(); //(owned + halo + dummy)
-    //_containerSize = this->_containerSelector.getCurrentContainer().getNumberOfParticles();
 
     return leavingParticles;
   }
