@@ -1106,16 +1106,12 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
 template <typename Particle>
 void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  //if (_iteration == 0) return;
-  long _particleNumber = 0;
-
 
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
 
-  using R = std::array<double, 3>;
-  // std::vector<std::vector<std::tuple<int, R>>> toDelete(autopas_get_max_threads());
+  long _particleNumber = 0;
   std::vector<std::vector<std::tuple<int, size_t>>> toDelete(autopas_get_max_threads());
 
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
@@ -1132,7 +1128,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
         Particle particleCopy = particle;
 
        _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-        // internal::markParticleAsDeleted(particle);
+        internal::markParticleAsDeleted(particle);
 
         size_t cellIndex = iter.getVectorIndex();
         toDelete[autopas_get_thread_num()].push_back(std::make_tuple(particle.getID(), cellIndex));
@@ -1158,13 +1154,12 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
       _particleBufferSize += th.size();
     }
 
-    if (_particleBufferSize > static_cast<long>(0.10 * _containerSize)) {
+    if (_particleBufferSize > static_cast<long>(0.01 * _containerSize)) {
       _neighborListInvalidDoDynamicRebuild = true;
     }
 
-    // _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
-
   _fastParticles = _particleNumber;
+
 #endif
 }
 
