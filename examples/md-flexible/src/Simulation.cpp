@@ -150,7 +150,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
-  _autoPasContainer->setCutoff(_configuration.cutoff.value);
+  _autoPasContainer->setCutoff(_configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
   _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
@@ -791,7 +791,7 @@ void Simulation::loadParticles() {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value * 0.5;
+  const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
@@ -839,7 +839,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value;
+  const double cutoff = _configuration.cutoff.value * _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
   return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});

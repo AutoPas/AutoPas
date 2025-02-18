@@ -11,7 +11,8 @@ data-layout                          :  [AoS]
 #newton3-3b                           :  [disabled]
 #data-layout-3b                       :  [AoS]
 
-cutoff                               :  3
+cutoff                               :  1.5
+cutoff-factor-electrostatics         :  2
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]
 cell-size                            :  [1]

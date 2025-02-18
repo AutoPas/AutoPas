@@ -500,6 +500,12 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> cutoff{2., "cutoff", true, "Lennard-Jones force cutoff."};
   /**
+   * cutoff factor for electro statics
+   */
+  MDFlexOption<double, __LINE__> cutoffFactorElectrostatics{
+      2., "cutoff-factor-electrostatics", true,
+      "The cutoff is multiplied with this value and used as the electrostatics cutoff"};
+  /**
    * functorOption
    */
   MDFlexOption<FunctorOption, __LINE__> functorOption{
@@ -637,7 +643,8 @@ class MDFlexConfig {
   /**
    * chargeMap
    */
-  MDFlexOption<std::map<unsigned long, double>, 0> chargeMap{{}, "charge", true, "Mapping from site type to a charge value."};
+  MDFlexOption<std::map<unsigned long, double>, 0> chargeMap{
+      {}, "charge", true, "Mapping from site type to a charge value."};
   /**
    * coulombEpsilonMap
    */
