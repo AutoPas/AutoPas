@@ -44,7 +44,7 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
   void collectParticles(AutoPasType &autoPasContainer) override;
 
   /**
-   * Send and receive exports.
+   * Send and receive imports.
    * Received particles are stored internally.
    * @param autoPasContainer
    * @param comm
@@ -52,7 +52,7 @@ class HalfShell : public ZonalMethod, public RectRegionMethodInterface {
    * @param ownRank
    * @param boundaryType
    */
-  void SendAndReceiveExports(AutoPasType &autoPasContainer) override;
+  void SendAndReceiveImports(AutoPasType &autoPasContainer) override;
   /**
    * Send and receive results of the force calculation and
    * store them into the respective particles in the AutoPas container.

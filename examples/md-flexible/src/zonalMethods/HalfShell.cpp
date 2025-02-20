@@ -59,7 +59,7 @@ void HalfShell::collectParticles(AutoPasType &autoPasContainer) {
   }
 }
 
-void HalfShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
+void HalfShell::SendAndReceiveImports(AutoPasType &autoPasContainer) {
   ParticleCommunicator particleCommunicator(_comm);
   size_t bufferIndex = 0;
   for (auto &exRegion : _exportRegions) {

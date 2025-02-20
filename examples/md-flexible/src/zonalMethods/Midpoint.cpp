@@ -60,7 +60,7 @@ void Midpoint::collectParticles(AutoPasType &autoPasContainer) {
   }
 }
 
-void Midpoint::SendAndReceiveExports(AutoPasType &autoPasContainer) {
+void Midpoint::SendAndReceiveImports(AutoPasType &autoPasContainer) {
   ParticleCommunicator particleCommunicator(_comm);
   size_t bufferIndex = 0;
   for (auto &exRegion : _exportRegions) {

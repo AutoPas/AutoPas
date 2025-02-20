@@ -47,11 +47,11 @@ class ZonalMethod {
   virtual void collectParticles(AutoPasType &autoPasContainer) = 0;
 
   /**
-   * Send and receive exports.
+   * Send and receive imports.
    * Received particles are stored internally.
    * @param autoPasContainer
    */
-  virtual void SendAndReceiveExports(AutoPasType &autoPasContainer) = 0;
+  virtual void SendAndReceiveImports(AutoPasType &autoPasContainer) = 0;
 
   /**
    * Send and receive results of the force calculation and

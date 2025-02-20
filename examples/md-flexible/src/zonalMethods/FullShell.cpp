@@ -51,7 +51,7 @@ void FullShell::collectParticles(AutoPasType &autoPasContainer) {
   }
 }
 
-void FullShell::SendAndReceiveExports(AutoPasType &autoPasContainer) {
+void FullShell::SendAndReceiveImports(AutoPasType &autoPasContainer) {
   ParticleCommunicator particleCommunicator(_comm);
   size_t bufferIndex = 0;
   for (auto &exRegion : _exportRegions) {

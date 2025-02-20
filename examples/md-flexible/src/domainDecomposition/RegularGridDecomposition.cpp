@@ -431,7 +431,7 @@ void RegularGridDecomposition::exchangeZonalHaloParticlesExport(AutoPasType &aut
   _zonalMethod->collectParticles(autoPasContainer);
 
   // send exports and receive imports
-  _zonalMethod->SendAndReceiveExports(autoPasContainer);
+  _zonalMethod->SendAndReceiveImports(autoPasContainer);
 }
 
 void RegularGridDecomposition::calculateZonalInteractions(AutoPasType &autoPasContainer, MDFlexConfig &config) {
