@@ -39,19 +39,23 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
     if (not this->isApplicable()) {
-      utils::ExceptionHandler::exception("Currently only AoS and newton3 is supported on hgrid_color traversal.");
+      utils::ExceptionHandler::exception("Not supported with hgrid_color");
     }
     // 4D vector (hierarchy level, 3D cell index) to store next non-empty cell in increasing x direction for each cell
-    std::vector<std::vector<std::vector<std::vector<size_t>>>> nextNonEmpty;
+    std::vector<std::vector<std::vector<std::vector<size_t>>>> nextNonEmpty(this->_numLevels);
     // computeInteractions for each level independently first
     std::vector<std::unique_ptr<TraversalInterface>> traversals(this->_numLevels);
     for (size_t level = 0; level < this->_numLevels; level++) {
       // TODO: Do this nextNonEmpty calculation after rebuilds in container code, not every iteration, as it only
       // changes after a rebuild
       const auto dim = this->getTraversalSelectorInfo(level).cellsPerDim;
-      nextNonEmpty.emplace_back(dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
+
+      nextNonEmpty[level] = std::vector<std::vector<std::vector<size_t>>>(
+        dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
+
       const auto &cellBlock = this->_levels->at(level)->getCellBlock();
       // calculate next non-empty cell in increasing x direction for each cell
+      AUTOPAS_OPENMP(parallel for collapse(2))
       for (size_t z = 0; z < dim[2]; ++z) {
         for (size_t y = 0; y < dim[1]; ++y) {
           // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
@@ -77,7 +81,7 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
       this->_levels->at(level)->prepareTraversal(temp);
       traversals[level]->initTraversal();
       traversals[level]->traverseParticles();
-      // do not call endTraversal as it will store SoA
+      // do not call endTraversal as SoA's should be stored after cross-level interactions are calculated
       // this->_levels->at(level)->computeInteractions(traversals[level].get());
     }
     // computeInteractions across different levels
@@ -105,12 +109,16 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
         for (size_t i = 0; i < 3; i++) {
           if (this->_useNewton3) {
             // find out the stride so that cells we check on lowerLevel do not intersect
-            // stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
-            //                                                     lowerLength[i] / upperLength[i]));
+            if (this->_dataLayout == DataLayoutOption::soa) {
+              stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
+                                                                   lowerLength[i] / upperLength[i]));
+            }
             // the stride calculation below can result in less colors, but two different threads can operate on SoA
-            // Buffer of the same cell at the same time They won't update the same value at the same time, but they can
-            // change adjacent values causing false sharing
-            stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength * 2 / upperLength[i]));
+            // Buffer of the same cell at the same time. They won't update the same value at the same time, but
+            // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store again).
+            else {
+              stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength * 2 / upperLength[i]));
+            }
           } else {
             // do c01 traversal if newton3 is disabled
             stride[i] = 1;

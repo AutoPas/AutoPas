@@ -33,20 +33,23 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
     if (not this->isApplicable()) {
-      utils::ExceptionHandler::exception("Currently only AoS and newton3 is supported on hgrid_color traversal.");
+      utils::ExceptionHandler::exception("Not supported with hgrid_color");
     }
     // 4D vector (hierarchy level, 3D cell index) to store next non-empty cell in increasing x direction for each cell
-    std::vector<std::vector<std::vector<std::vector<size_t>>>> nextNonEmpty;
+    std::vector<std::vector<std::vector<std::vector<size_t>>>> nextNonEmpty(this->_numLevels);
     // computeInteractions for each level independently first
     std::vector<std::unique_ptr<TraversalInterface>> traversals(this->_numLevels);
     for (size_t level = 0; level < this->_numLevels; level++) {
       // TODO: Do this nextNonEmpty calculation after rebuilds in container code, not every iteration, as it only
       // changes after a rebuild
       const auto dim = this->getTraversalSelectorInfo(level).cellsPerDim;
-      nextNonEmpty.emplace_back(dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
-      ;
+
+      nextNonEmpty[level] = std::vector<std::vector<std::vector<size_t>>>(
+        dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
+
       const auto &cellBlock = this->_levels->at(level)->getCellBlock();
       // calculate next non-empty cell in increasing x direction for each cell
+      AUTOPAS_OPENMP(parallel for collapse(2))
       for (size_t z = 0; z < dim[2]; ++z) {
         for (size_t y = 0; y < dim[1]; ++y) {
           // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
@@ -64,6 +67,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
           }
         }
       }
+
       // generate new traversal, load cells into it, if dataLayout is SoA also load SoA, but do not store SoA
       // as they can still be later used for cross-level interactions
       traversals[level] = generateNewTraversal(level);
@@ -91,6 +95,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
         const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
         const std::array<double, 3> lowerLength = this->_levels->at(lowerLevel)->getTraversalSelectorInfo().cellLength;
         //_functor->setCutoff(cutoff);
+        // TODO: scale verlet skin by how long passed till last rebuild???
         const double interactionLength = cutoff + this->_skin;
         const double interactionLengthSquared = interactionLength * interactionLength;
 
@@ -98,12 +103,16 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
         for (size_t i = 0; i < 3; i++) {
           if (this->_useNewton3) {
             // find out the stride so that cells we check on lowerLevel do not intersect
-            // stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
-            //                                                     lowerLength[i] / upperLength[i]));
+            if (this->_dataLayout == DataLayoutOption::soa) {
+              stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
+                                                                   lowerLength[i] / upperLength[i]));
+            }
             // the stride calculation below can result in less colors, but two different threads can operate on SoA
-            // Buffer of the same cell at the same time They won't update the same value at the same time, but they can
-            // change adjacent values causing false sharing
-            stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength * 2 / upperLength[i]));
+            // Buffer of the same cell at the same time. They won't update the same value at the same time, but
+            // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store again).
+            else {
+              stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength * 2 / upperLength[i]));
+            }
           } else {
             // do c01 traversal if newton3 is disabled
             stride[i] = 1;
@@ -137,7 +146,8 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
           for (unsigned long z = start_z; z < end_z; z += stride_z) {
             for (unsigned long y = start_y; y < end_y; y += stride_y) {
               for (unsigned long x = start_x; x < end_x; x += stride_x) {
-                auto &cell = upperLevelCB.getCell({x, y, z});
+                const std::array<unsigned long, 3> upperCellIndex3D{x, y, z};
+                auto &cell = upperLevelCB.getCell(upperCellIndex3D);
                 // skip if cell is a halo cell and newton3 is disabled
                 auto isHalo = cell.getPossibleParticleOwnerships() == OwnershipState::halo;
                 if (isHalo && !this->_useNewton3) {
@@ -145,29 +155,64 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
                 }
                 // variable to determine if we are only interested in owned particles in the lower level
                 const bool containToOwnedOnly = isHalo && this->_useNewton3;
-                auto &soa = cell._particleSoABuffer;
-                auto [posMin, posMax] = upperLevelCB.getCellBoundingBox({x, y, z});
-                auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(posMin - dir);
-                auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(posMax + dir);
-                // skip halo cells if we need to consider only owned particles
-                if (containToOwnedOnly) {
-                  startIndex3D = this->getMax(startIndex3D, lowerBound);
-                  stopIndex3D = this->getMin(stopIndex3D, upperBound);
-                }
-
-                for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
-                  for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                    std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
-                    for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
-                      // skip if min distance between the two cells is bigger than interactionLength
-                      if (this->getMinDistBetweenCellsSquared(upperLevelCB, {x, y, z}, lowerLevelCB, {xl, yl, zl}) >
-                          interactionLengthSquared) {
-                        continue;
+                if (this->_dataLayout == DataLayoutOption::aos) {
+                  for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
+                    const std::array<double, 3> &pos = p1Ptr->getR();
+                    auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
+                    auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
+                    // skip halo cells if we need to consider only owned particles
+                    if (containToOwnedOnly) {
+                      startIndex3D = this->getMax(startIndex3D, lowerBound);
+                      stopIndex3D = this->getMin(stopIndex3D, upperBound);
+                    }
+                    for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+                      for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+                        std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
+                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+                          const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+                          auto &lowerCell = lowerLevelCB.getCell(lowerCellIndex);
+                          // skip if cell is farther than interactionLength
+                          if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
+                              interactionLengthSquared) {
+                            continue;
+                          }
+                          for (auto &p : lowerCell) {
+                            this->_functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
+                          }
+                        }
                       }
-                      // n to n SoAFunctorPair
-                      this->_functor->SoAFunctorPair(cell._particleSoABuffer,
-                                                     lowerLevelCB.getCell({xl, yl, zl})._particleSoABuffer,
-                                                     this->_useNewton3);
+                    }
+                  }
+                } else {
+                  auto &soa = cell._particleSoABuffer;
+                  const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+                  const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+                  const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+                  for (int idx = 0; idx < cell.size(); ++idx) {
+                    const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
+                    auto soaSingleParticle = soa.constructView(idx, idx + 1);
+                    auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
+                    auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
+                    if (containToOwnedOnly) {
+                      startIndex3D = this->getMax(startIndex3D, lowerBound);
+                      stopIndex3D = this->getMin(stopIndex3D, upperBound);
+                    }
+                    for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+                      for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+                        std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
+                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+                          const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+                          // skip if cell is farther than interactionLength
+                          if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
+                              interactionLengthSquared) {
+                            continue;
+                          }
+                          // 1 to n SoAFunctorPair
+                          this->_functor->SoAFunctorPair(soaSingleParticle,
+                                                         lowerLevelCB.getCell(lowerCellIndex)._particleSoABuffer,
+                                                         this->_useNewton3);
+                        }
+                      }
                     }
                   }
                 }

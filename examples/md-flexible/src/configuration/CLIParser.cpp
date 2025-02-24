@@ -53,6 +53,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.checkpointfile,
       config.containerOptions,
       config.cutoff,
+      config.cutoffs,
       config.dataLayoutOptions,
       config.dataLayoutOptions3B,
       config.deltaT,
