@@ -6,11 +6,11 @@ import time as t
 
 
 def get_according_cluster_and_nodes(num_cpus: int) -> [str, str, int, int]:
-    if num_cpus <= 56:
+    if num_cpus <= 16:
         return "serial", "serial_std", 1, 1
-    if num_cpus <= 112:
+    if num_cpus <= 224:
         return "cm4", "cm4_tiny", 1, 1
-    if num_cpus > 448:
+    if num_cpus > 896:
         raise ValueError("Too many cpus")
     return "cm4", "cm4_std", 2, 4
 
@@ -21,9 +21,14 @@ optimized_portion = 0.3
 
 def get_run_script(name: str, num_tasks: int, num_threads: int,
                    executable: str, input_file: str, memory_per_task: int,
-                   time: int, adapt_time: bool) -> str:
+                   time: int, adapt_time: bool, cm4: bool) -> str:
+    num_cpus = num_tasks * num_threads
+    num_assigned_threads = num_threads
+    if cm4 and num_cpus <= 16:
+        num_assigned_threads = (int(17 / num_tasks) + 1)
+        num_cpus = num_tasks * num_assigned_threads
     clusters, partition, min_nodes, max_nodes = get_according_cluster_and_nodes(
-        num_tasks * num_threads)
+        num_cpus)
     num_nodes = min_nodes
     num_tasks_per_node = int(num_tasks / num_nodes)
     mem_per_node = memory_per_task * num_tasks_per_node
@@ -57,7 +62,7 @@ def get_run_script(name: str, num_tasks: int, num_threads: int,
 #SBATCH --mem={mem_per_node}mb
 #SBATCH --nodes={num_nodes}
 #SBATCH --ntasks-per-node={num_tasks_per_node}
-#SBATCH --cpus-per-task={num_threads}
+#SBATCH --cpus-per-task={num_assigned_threads}
 #SBATCH --export=NONE
 #SBATCH --mail-user=ge42joq@mytum.de
 #SBATCH --time={time_str}
@@ -71,9 +76,9 @@ OMP_NUM_THREADS={num_threads} mpirun -np {num_tasks} {executable} --yaml-filenam
 if __name__ == "__main__":
 
     # read args
-    if len(sys.argv) < 7 or len(sys.argv) > 8:
+    if len(sys.argv) < 7 or len(sys.argv) > 9:
         print(
-            "Usage: python parallelComp.py <num_tasks> <num_threads> <executable> <input_file> <mem> <time> [true|false]")
+            "Usage: python parallelComp.py <num_tasks> <num_threads> <executable> <input_file> <mem> <time> [true|false] [cm4]")
         print(" - num_tasks  : number of MPI ranks to use")
         print(" - num_threads: number of threads to use per rank")
         print(" - executable : executable to use")
@@ -85,9 +90,12 @@ if __name__ == "__main__":
         print("                This will also adapt the expected time heuristically.")
         sys.exit(1)
 
+    cm4 = False
     stepUp = False
-    if (len(sys.argv) == 8 and sys.argv[7] == "true"):
+    if (len(sys.argv) >= 8 and sys.argv[7] == "true"):
         stepUp = True
+    if (len(sys.argv) == 9 and sys.argv[8] == "cm4"):
+        cm4 = True
 
     num_tasks = int(sys.argv[1])
     num_threads = int(sys.argv[2])
@@ -113,7 +121,7 @@ if __name__ == "__main__":
     while current_tasks <= num_tasks:
         name = f"{base_name}_{current_tasks}"
         run_script = get_run_script(
-            name, current_tasks, num_threads, executable, input_file, mem, time, adaptTime)
+            name, current_tasks, num_threads, executable, input_file, mem, time, adaptTime, cm4)
 
         with open(f"{name}.sh", "w") as f:
             f.write(run_script)
