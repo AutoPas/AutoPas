@@ -42,18 +42,18 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @param boxMax
    * @param baseCutoff base cutoff for each particle, it will be scaled by the size of a Particle
    * @param cutoffs cutoffs for each level of the hierarchy
-   * @param skinPerTimestep
+   * @param skin
    * @param rebuildFrequency
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double baseCutoff,
-                   const std::vector<double> &cutoffs, const double skinPerTimestep,
+                   const std::vector<double> &cutoffs, const double skin,
                    const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
-      : ParticleContainerInterface<Particle>(skinPerTimestep),
+      : ParticleContainerInterface<Particle>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _baseCutoff(baseCutoff),
-        _skin(skinPerTimestep * rebuildFrequency),
+        _skin(skin),
         _numLevels(cutoffs.size()),
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
@@ -107,7 +107,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       const double interactionLengthLevel = _cutoffs[i] + _skin;
       const double ratio = interactionLengthLevel / interactionLengthLargest;
       _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(
-          _boxMin, _boxMax, _cutoffs.back(), skinPerTimestep, rebuildFrequency, _cellSizeFactor * ratio));
+          _boxMin, _boxMax, _cutoffs.back(), skin, rebuildFrequency, _cellSizeFactor * ratio));
     }
   }
 

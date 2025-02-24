@@ -27,11 +27,10 @@ TEST_P(ParticleCounterTest, testGetNumberOfParticles) {
 
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, _boxMax, _cutoff};
-  constexpr double skinPerTimestep = _cutoff * 0.1;
+  constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
-  selector.selectContainer(containerOption,
-                           autopas::ContainerSelectorInfo{_cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
-                                                          autopas::LoadEstimatorOption::none});
+  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{_cellSizeFactor, skin, rebuildFrequency, 32,
+                                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
 
   // add owned particles

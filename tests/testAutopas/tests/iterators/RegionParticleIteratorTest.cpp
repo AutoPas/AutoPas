@@ -35,7 +35,7 @@ auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopa
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkinPerTimestep(0.1);
+  autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
@@ -232,7 +232,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   autopas::AutoPas<Molecule> autoPas{};
   // Get a 10x10x10 box
   defaultInit(autoPas, containerOption, 1.);
-  const auto shortDistance = autoPas.getVerletSkinPerTimestep() * 0.1;
+  const auto shortDistance = autoPas.getVerletSkin() * 0.1;
 
   // This function creates particle positions within the simulation box that are the offset-value distant from the
   // boundary and the positions mirrored at the boundary. In addition, a search box is calculated for each position.
