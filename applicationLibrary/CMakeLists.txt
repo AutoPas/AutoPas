@@ -19,6 +19,7 @@ set(MD_FLEXIBLE_MODE
         )
 set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLESITE;MULTISITE")
 
+
 # Define numerical values for different md-flexible modes
 target_compile_definitions(molecularDynamicsLibrary PUBLIC SINGLESITE=0)
 target_compile_definitions(molecularDynamicsLibrary PUBLIC MULTISITE=1)
@@ -29,6 +30,14 @@ if (MD_FLEXIBLE_MODE_lower MATCHES  "singlesite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=0)
 elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
+endif()
+
+option(OPTIMIZE_ZONAL_RECOMMUNICATION "Compile with optimized zonal communication" OFF)
+
+if (OPTIMIZE_ZONAL_RECOMMUNICATION)
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC ZONAL_RECOMMUNICATION_OPT=1)
+else()
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC ZONAL_RECOMMUNICATION_OPT=0)
 endif()
 
 target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
