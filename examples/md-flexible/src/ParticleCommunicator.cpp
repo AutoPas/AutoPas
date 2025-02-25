@@ -36,43 +36,56 @@ void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedP
   }
 }
 
-
-void ParticleCommunicator::sendParticlePositions(const std::vector<ParticleType> &particles, const int &receiver){
+void ParticleCommunicator::sendParticlePositions(const std::vector<ParticleType> &particles, const int &receiver) {
+#if ZONAL_RECOMMUNICATION_OPT == 0
+  sendParticles(particles, receiver);
+#else
   std::vector<char> buffer;
 
   ParticleSerializationTools::serializeParticlePositions(particles, buffer);
 
   sendDataToNeighbor(buffer, receiver);
+#endif
 }
-  
-void ParticleCommunicator::receiveParticlePositions(std::vector<ParticleType> &receivedParticles, const int &source){
+
+void ParticleCommunicator::receiveParticlePositions(std::vector<ParticleType> &receivedParticles, const int &source) {
+#if ZONAL_RECOMMUNICATION_OPT == 0
+  receiveParticles(receivedParticles, source);
+#else
   std::vector<char> receiveBuffer;
 
   receiveDataFromNeighbor(source, receiveBuffer);
 
-  if(!receiveBuffer.empty()){
+  if (!receiveBuffer.empty()) {
     ParticleSerializationTools::deserializeParticlePositions(receiveBuffer, receivedParticles);
   }
-
+#endif
 }
 
-void ParticleCommunicator::sendParticleForces(const std::vector<ParticleType> &particles, const int &receiver){
+void ParticleCommunicator::sendParticleForces(const std::vector<ParticleType> &particles, const int &receiver) {
+#if ZONAL_RECOMMUNICATION_OPT == 0
+  sendParticles(particles, receiver);
+#else
   std::vector<char> buffer;
 
   ParticleSerializationTools::serializeParticleForces(particles, buffer);
 
   sendDataToNeighbor(buffer, receiver);
+#endif
 }
-  
-void ParticleCommunicator::receiveParticleForces(std::vector<ParticleType> &receivedParticles, const int &source){
+
+void ParticleCommunicator::receiveParticleForces(std::vector<ParticleType> &receivedParticles, const int &source) {
+#if ZONAL_RECOMMUNICATION_OPT == 0
+  receiveParticles(receivedParticles, source);
+#else
   std::vector<char> receiveBuffer;
 
   receiveDataFromNeighbor(source, receiveBuffer);
 
-  if(!receiveBuffer.empty()){
+  if (!receiveBuffer.empty()) {
     ParticleSerializationTools::deserializeParticleForces(receiveBuffer, receivedParticles);
   }
-
+#endif
 }
 
 void ParticleCommunicator::waitForSendRequests() {
@@ -104,4 +117,3 @@ void ParticleCommunicator::receiveDataFromNeighbor(const int &neighbour, std::ve
   autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _communicator,
                             AUTOPAS_MPI_STATUS_IGNORE);
 }
-
