@@ -178,10 +178,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     using utils::ArrayUtils::operator<<;
     std::ostringstream text;
     text << "\n------------------------------------------\nHierarchicalGrid sizes: [";
-    for (const auto &cutoff : _cutoffs) {
-      text << std::to_string(cutoff) + ", ";
-    }
-    text << "]\n";
+    text << utils::ArrayUtils::to_string(_cutoffs, ", ",
+                                             {"Cutoffs [ ", " ]\n"});
     text << "BoxMin: " << getBoxMin() << " BoxMax: " << getBoxMax() << "\n";
     for (size_t i = 0; i < _numLevels; ++i) {
       auto &cellBlock = _levels[i]->getCellBlock();
@@ -276,7 +274,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   void computeInteractions(TraversalInterface *traversal) override {
-    AutoPasLog(INFO, "Hgrid data: {}", toString());
     prepareTraversal(traversal);
     traversal->initTraversal();
     traversal->traverseParticles();

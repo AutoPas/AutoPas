@@ -232,7 +232,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
         "for this configuration!\n"
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
-  AutoPasLog(INFO, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
+  AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
   if (neighborListRebuilt) {
     _samplesRebuildingNeighborLists.push_back(sample);
   } else {
@@ -262,7 +262,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 
     // print config, times and reduced value
     AutoPasLog(
-        INFO, "Collected {} for {}",
+        DEBUG, "Collected {} for {}",
         [&]() {
           switch (this->_tuningMetric) {
             case TuningMetricOption::time:
@@ -346,6 +346,14 @@ long AutoTuner::estimateRuntimeFromSamples() const {
       _samplesNotRebuildingNeighborLists.empty()
           ? reducedValueBuilding
           : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
+
+  if (_rebuildFrequency == 1) {
+    long samples = _samplesRebuildingNeighborLists.size() + _samplesNotRebuildingNeighborLists.size();
+    // weighted avg
+    return (reducedValueBuilding * _samplesRebuildingNeighborLists.size() +
+            reducedValueNotBuilding * _samplesNotRebuildingNeighborLists.size()) /
+           samples;
+  }
 
   // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
