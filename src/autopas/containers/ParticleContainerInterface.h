@@ -51,7 +51,7 @@ class ParticleContainerInterface {
    * Constructor
    * @param skin Skin distance a particle is allowed to move.
    */
-  ParticleContainerInterface(double skin) : _skin(skin) {}
+  ParticleContainerInterface(double skin) : _maxDisplacement(skin), _skin(skin) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -299,6 +299,19 @@ class ParticleContainerInterface {
   }
 
   /**
+   *
+   * @param maxDisplacement the maximum displacement of any particle in the container
+   */
+  virtual void setMaxDisplacement(double maxDisplacement) {
+    _maxDisplacement = maxDisplacement;
+  }
+
+  /**
+   * @return the maximum displacement of any particle in the container
+   */
+  [[nodiscard]] virtual double getMaxDisplacement() const { return _maxDisplacement; }
+
+  /**
    * Return the interaction length (cutoff+skin) of the container.
    * @return interaction length
    */
@@ -427,6 +440,11 @@ class ParticleContainerInterface {
    * be 0
    */
   size_t _stepsSinceLastRebuild{0};
+
+  /**
+   * Stores maximum displacement of any particle in the container since the last rebuild.
+   */
+  double _maxDisplacement{0};
 
   /**
    * Skin distance a particle is allowed to move in one time-step.

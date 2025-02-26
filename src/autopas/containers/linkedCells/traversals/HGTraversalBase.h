@@ -21,20 +21,22 @@ class HGTraversalBase : public TraversalInterface {
   using Particle = typename ParticleCell::ParticleType;
 
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0) {}
+      : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0), _maxDisplacement(0) {}
 
   /**
    * Store HGrid data
    * @param levels LinkedCells for each HGrid level
    * @param cutoffs cutoffs of each HGrid level
    * @param skin verlet skin of HGrid container
+   * @param maxDisplacement maximum displacement of any particle in the container, ignored if dynamic containers is not used
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs,
-                 double skin) {
+                 double skin, double maxDisplacement) {
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
     _levels = levels;
     _skin = skin;
+    _maxDisplacement = maxDisplacement;
   }
 
  protected:
@@ -42,6 +44,7 @@ class HGTraversalBase : public TraversalInterface {
   std::vector<std::unique_ptr<LinkedCells<Particle>>> *_levels;
   std::vector<double> _cutoffs;
   double _skin;
+  double _maxDisplacement;
 
   using CBParticleCell = FullParticleCell<Particle>;
 
@@ -135,7 +138,7 @@ class HGTraversalBase : public TraversalInterface {
     // TODO: _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual
     // interactionlength
     // TODO: so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo cells
-    const TraversalSelectorInfo ret{temp.cellsPerDim, _cutoffs[level] + _skin, temp.cellLength, temp.clusterSize};
+    const TraversalSelectorInfo ret{temp.cellsPerDim, _cutoffs[level] + _maxDisplacement * 2, temp.cellLength, temp.clusterSize};
     return ret;
   }
 };

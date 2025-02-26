@@ -232,7 +232,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
         "for this configuration!\n"
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
-  AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
+  AutoPasLog(INFO, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
   if (neighborListRebuilt) {
     _samplesRebuildingNeighborLists.push_back(sample);
   } else {
@@ -262,7 +262,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 
     // print config, times and reduced value
     AutoPasLog(
-        DEBUG, "Collected {} for {}",
+        INFO, "Collected {} for {}",
         [&]() {
           switch (this->_tuningMetric) {
             case TuningMetricOption::time:

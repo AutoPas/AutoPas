@@ -276,6 +276,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   void computeInteractions(TraversalInterface *traversal) override {
+    AutoPasLog(INFO, "Hgrid data: {}", toString());
     prepareTraversal(traversal);
     traversal->initTraversal();
     traversal->traverseParticles();
@@ -536,7 +537,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
-      hGridTraversal->setLevels(&_levels, _cutoffs, _skin);
+      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, this->getMaxDisplacement());
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",

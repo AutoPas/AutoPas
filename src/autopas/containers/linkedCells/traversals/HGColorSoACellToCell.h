@@ -30,7 +30,7 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    //_functor->setCutoff(this->_cutoffs[level]);
+
     return std::make_unique<LCC08Traversal<ParticleCell, Functor>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
@@ -53,6 +53,7 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
       ;
       const auto &cellBlock = this->_levels->at(level)->getCellBlock();
       // calculate next non-empty cell in increasing x direction for each cell
+      AUTOPAS_OPENMP(parallel for collapse(2))
       for (size_t z = 0; z < dim[2]; ++z) {
         for (size_t y = 0; y < dim[1]; ++y) {
           // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
@@ -80,6 +81,7 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
       // do not call endTraversal as it will store SoA
       // this->_levels->at(level)->computeInteractions(traversals[level].get());
     }
+
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
       // only look top-down if newton3 is enabled, both ways otherwise
@@ -96,8 +98,15 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
         const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
         const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
         const std::array<double, 3> lowerLength = this->_levels->at(lowerLevel)->getTraversalSelectorInfo().cellLength;
-        //_functor->setCutoff(cutoff);
+
+        // We only need to check at most distance cutoff + max displacement of any particle in the container
+        // NOTE: if in the future, Hgrid will be used as a base container to a verlet list, interactionLength should be
+        // always cutoff + _skin.
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        const double interactionLength = cutoff + this->_maxDisplacement * 2;
+#else
         const double interactionLength = cutoff + this->_skin;
+#endif
         const double interactionLengthSquared = interactionLength * interactionLength;
 
         std::array<unsigned long, 3> stride{};

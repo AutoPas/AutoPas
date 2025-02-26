@@ -149,10 +149,10 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
 
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff, {_cutoff / 2, _cutoff}};
-  constexpr double skinPerTimestep = _cutoff * 0.1;
+  constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
   selector.selectContainer(containerOption,
-                           autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
+                           autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
   const auto numParticles1 = numParticles / 2;
@@ -199,7 +199,7 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
   container.rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
-    executeShift(container, skinPerTimestep * rebuildFrequency / 2, numParticles + numHaloParticles);
+    executeShift(container, skin * rebuildFrequency / 2, numParticles + numHaloParticles);
   }
 
   if (particleDeletionPosition & DeletionPosition::afterLists) {

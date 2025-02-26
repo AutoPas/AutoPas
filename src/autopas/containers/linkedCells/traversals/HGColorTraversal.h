@@ -30,7 +30,6 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    //_functor->setCutoff(this->_cutoffs[level]);
     return std::make_unique<LCC08Traversal<ParticleCell, Functor>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
@@ -100,9 +99,15 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
         const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
         const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
         const std::array<double, 3> lowerLength = this->_levels->at(lowerLevel)->getTraversalSelectorInfo().cellLength;
-        //_functor->setCutoff(cutoff);
-        // TODO: scale verlet skin by how long passed till last rebuild???
+
+        // We only need to check at most distance cutoff + max displacement of any particle in the container
+        // NOTE: if in the future, Hgrid will be used as a base container to a verlet list, interactionLength should be
+        // always cutoff + _skin.
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        const double interactionLength = cutoff + this->_maxDisplacement * 2;
+#else
         const double interactionLength = cutoff + this->_skin;
+#endif
         const double interactionLengthSquared = interactionLength * interactionLength;
 
         std::array<unsigned long, 3> stride{};

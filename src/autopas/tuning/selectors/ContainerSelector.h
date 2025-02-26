@@ -113,6 +113,8 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> container;
   double cutoff = _cutoff;
   if (!_cutoffs.empty()) {
+    // if cutoffs is set, use the last one as cutoff for single level containers
+    // the normal _cutoff is then the scaling value for hierarchical grid and the functor
     cutoff = _cutoffs.back();
   }
   switch (containerChoice) {
@@ -175,6 +177,10 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       if (_cutoffs.empty() && _cutoff > 0) {
         // placeholder cutoffs if not provided by user
         _cutoffs = {_cutoff / 4, _cutoff / 3, _cutoff / 2, _cutoff};
+      }
+      else {
+        // set scaling cutoff to _cutoff
+        cutoff = _cutoff;
       }
       container = std::make_unique<HierarchicalGrid<Particle>>(
           _boxMin, _boxMax, cutoff, _cutoffs, containerInfo.verletSkin, containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);

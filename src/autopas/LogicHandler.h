@@ -1159,13 +1159,25 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+  double maxDistanceSquare = 0;
+  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild) reduction(max : maxDistanceSquare))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+    maxDistanceSquare = std::max(maxDistanceSquare, distanceSquare);
   }
+  if (_neighborListInvalidDoDynamicRebuild) {
+    // will be rebuilt, set max displacement to 0
+    getContainer().setMaxDisplacement(0);
+  }
+  else {
+    // set maxDisplacement to the square root of the maximum over all particles
+    // trim if displacement is larger than skin/2 (can cause problems in some tests otherwise)
+    getContainer().setMaxDisplacement(std::max(skin / 2, std::sqrt(maxDistanceSquare) + 1e-15));
+  }
+
 #endif
 }
 
