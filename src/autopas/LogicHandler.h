@@ -74,6 +74,7 @@ class LogicHandler {
     // Initialize AutoPas with tuners for given interaction types
     for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
+      _neighborListsAreValid.emplace(interactionType, true);
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
@@ -83,7 +84,8 @@ class LogicHandler {
       _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
       checkMinimalSize();
     }
-
+    std::cout << "Size: " << _neighborListsAreValid.size() << std::endl;
+    std::cout << _neighborListsAreValid[InteractionTypeOption::pairwise].load() << std::endl;
     // initialize locks needed for remainder traversal
     const auto interactionLength = logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency;
     const auto interactionLengthInv = 1. / interactionLength;
@@ -161,7 +163,8 @@ class LogicHandler {
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
     setNeighborListsStatus();
-    const bool doDataStructureUpdate = not _neighborListsAreValid.load(std::memory_order_relaxed);
+    const bool doDataStructureUpdate = not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and
+      _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed));;
 
     // We will do a rebuild in this timestep
     if (doDataStructureUpdate) {
@@ -263,7 +266,8 @@ class LogicHandler {
     initSpacialLocks(boxLength, interactionLengthInv);
 
     // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
+    _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
 
     return particlesNowOutside;
   }
@@ -298,7 +302,7 @@ class LogicHandler {
     }
 
     // Only reserve memory if we rebuild afterward. Otherwise, we might invalidate any existing particle references.
-    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+    if (not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed))) {
       _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
     }
   }
@@ -320,7 +324,7 @@ class LogicHandler {
     }
     Particle particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
-    if (forceToContainer or not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+    if (forceToContainer or not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed))) {
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
@@ -346,7 +350,7 @@ class LogicHandler {
     }
     Particle haloParticleCopy = haloParticle;
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
-    if (forceToContainer or not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+    if (forceToContainer or not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed))) {
       container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
@@ -363,7 +367,8 @@ class LogicHandler {
    * @copydoc AutoPas::deleteAllParticles()
    */
   void deleteAllParticles() {
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
+    _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
     _containerSelector.getCurrentContainer().deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
@@ -904,7 +909,7 @@ class LogicHandler {
   /**
    * Specifies if the neighbor list is valid.
    */
-  std::atomic<bool> _neighborListsAreValid{false};
+  std::unordered_map<InteractionTypeOption::Value, std::atomic<bool>> _neighborListsAreValid;
 
   /**
    * Steps since last rebuild
@@ -992,11 +997,18 @@ void LogicHandler<Particle>::setNeighborListsStatus() {
            _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
   };
 
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needRebuild(InteractionTypeOption::pairwise) or
-      needRebuild(InteractionTypeOption::triwise)) {
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency) {
+    _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
+    _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
   } else {
-    _neighborListsAreValid.store(true, std::memory_order_relaxed);
+    if (needRebuild(InteractionTypeOption::pairwise)) {
+      _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
+    } else if (needRebuild(InteractionTypeOption::triwise)) {
+      _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
+    } else {
+      _neighborListsAreValid[InteractionTypeOption::pairwise].store(true, std::memory_order_relaxed);
+      _neighborListsAreValid[InteractionTypeOption::triwise].store(true, std::memory_order_relaxed);
+    }
   }
 }
 
@@ -1057,7 +1069,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
           "PairwiseFunctor or TriwiseFunctor.");
     }
   }();
-  const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
+  const bool doListRebuild = not _neighborListsAreValid[interactionType].load(std::memory_order_relaxed);
   auto &autoTuner = *_autoTunerRefs[interactionType];
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
@@ -1078,7 +1090,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     moveBufferParticlesToContainer();
     container.rebuildNeighborLists(&traversal);
     timerRebuild.stop();
-    _neighborListsAreValid.store(true, std::memory_order_relaxed);
+    _neighborListsAreValid[interactionType].store(true, std::memory_order_relaxed);
   }
 
   timerComputeInteractions.start();
@@ -1621,9 +1633,9 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
 
   // Safety check to rebuild when container changed (e.g. between pairwise and triwise config)
   if (not(_containerSelector.getCurrentContainer().getContainerType() == oldContainer)) {
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    _neighborListsAreValid[interactionType].store(false, std::memory_order_relaxed);
   }
-  const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
+  const auto rebuildIteration = not _neighborListsAreValid[interactionType].load(std::memory_order_relaxed);
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
