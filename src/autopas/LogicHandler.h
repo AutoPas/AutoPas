@@ -101,58 +101,59 @@ class LogicHandler {
   autopas::ParticleContainerInterface<Particle> &getContainer() { return _containerSelector.getCurrentContainer(); }
 
   /**
-   * Collects leaving particles from buffer and potentially inserts owned particles to the container.
-   * @param insertOwnedParticlesToContainer Decides whether to insert owned particles to the container.
+   * Collects leaving particles from buffer.
    * @return Leaving particles.
    */
-  [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
+  [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer() {
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
     std::vector<Particle> leavingBufferParticles{};
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
-      if (insertOwnedParticlesToContainer) {
-        // Can't be const because we potentially modify ownership before re-adding
-        for (auto &p : buffer) {
-          if (p.isDummy()) {
-            continue;
-          }
-          if (utils::inBox(p.getR(), boxMin, boxMax)) {
-            p.setOwnershipState(OwnershipState::owned);
-            _containerSelector.getCurrentContainer().addParticle(p);
-          } else {
-            leavingBufferParticles.push_back(p);
-          }
-        }
-        buffer.clear();
-      } else {
-        for (auto iter = buffer.begin(); iter < buffer.end();) {
-          auto &p = *iter;
 
-          auto fastRemoveP = [&]() {
-            // Fast remove of particle, i.e., swap with last entry && pop.
-            std::swap(p, buffer.back());
-            buffer.pop_back();
-            // Do not increment the iter afterward!
-          };
+      // Use remove_if to partition the vector
+      auto newEnd = std::remove_if(buffer.begin(), buffer.end(),
+        [&](Particle& p) {
           if (p.isDummy()) {
-            // We remove dummies!
-            fastRemoveP();
-            // In case we swapped a dummy here, don't increment the iterator and do another iteration to check again.
-            continue;
+            return true;  // Remove dummy particles from the buffer
           }
-          // if p was a dummy a new particle might now be at the memory location of p so we need to check that.
-          // We also just might have deleted the last particle in the buffer in that case the inBox check is meaningless
-          if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
-            leavingBufferParticles.push_back(p);
-            fastRemoveP();
-          } else {
-            ++iter;
+          if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+              leavingBufferParticles.push_back(std::move(p)); // Move to leaving particles
+            return true;  // Remove from buffer
           }
-        }
-      }
+          return false;  // Keep in buffer
+        });
+
+      // Erase the moved and dummy particles from the buffer
+      buffer.erase(newEnd, buffer.end());
     }
     return leavingBufferParticles;
+  }
+
+  /**
+   * Moves buffer particles to the container and removes them from the buffer.
+   */
+  void moveBufferParticlesToContainer() {
+    const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
+    const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
+
+    for (auto &cell : _particleBuffer) {
+      auto &buffer = cell._particles;
+
+      auto newEnd = std::remove_if(buffer.begin(), buffer.end(), [this, &boxMin, &boxMax](auto &p) {
+        if (p.isDummy()) {
+          return true; // Remove dummies without adding to container.
+        }
+        if (utils::inBox(p.getR(), boxMin, boxMax)) {
+          p.setOwnershipState(OwnershipState::owned);
+          _containerSelector.getCurrentContainer().addParticle(std::move(p));
+          return true; // Remove from the buffer.
+        }
+        return false; // Keep in the buffer.
+      });
+
+      buffer.erase(newEnd, buffer.end());
+    }
   }
 
   /**
@@ -178,8 +179,8 @@ class LogicHandler {
       ++_iteration;
     }
 
-    // The next call also adds particles to the container if doDataStructureUpdate is true.
-    auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
+    // Collect particles that left the simulation domain.
+    auto leavingBufferParticles = collectLeavingParticlesFromBuffer();
 
     AutoPasLog(TRACE, "Initiating container update.");
     auto leavingParticles = _containerSelector.getCurrentContainer().updateContainer(not doDataStructureUpdate);
@@ -319,7 +320,7 @@ class LogicHandler {
     }
     Particle particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
-    if (forceToContainer) {
+    if (forceToContainer or not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
@@ -345,7 +346,7 @@ class LogicHandler {
     }
     Particle haloParticleCopy = haloParticle;
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
-    if (forceToContainer) {
+    if (forceToContainer or not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
@@ -1071,10 +1072,13 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerTotal.start();
   functor.initTraversal();
 
+  // Move buffer particles to the container and do the list rebuild.
   if (doListRebuild) {
     timerRebuild.start();
+    moveBufferParticlesToContainer();
     container.rebuildNeighborLists(&traversal);
     timerRebuild.stop();
+    _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
 
   timerComputeInteractions.start();

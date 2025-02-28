@@ -123,7 +123,7 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   auto p4 = Molecule{{5., 5., 4.}, {0., 0., 0.}, 0};
   logicHandler.addParticle(p4);
 
-  static_cast<void>(logicHandler.updateContainer());  // Discard the return vector
+  static_cast<void>(logicHandler.updateContainer());
 
   // Expect p4 to stay in the buffers since we won't rebuild this iteration
   EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 1);
@@ -148,12 +148,14 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
 
   static_cast<void>(logicHandler.updateContainer());
 
-  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 0);
+  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 1);
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(12);
   EXPECT_CALL(triwiseFunctor, AoSFunctor(_, _, _, _)).Times(12);
 
   logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
   logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
+
+  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 0);
 }
 
 using ::testing::Combine;
