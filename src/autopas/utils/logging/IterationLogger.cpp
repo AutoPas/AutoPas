@@ -31,7 +31,8 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
       "computeInteractionsTotal[ns],"
-      "tuning[ns]";
+      "tuning[ns],"
+      "numThreads";
   if (energyMeasurements) {
     csvHeader.append(
         ",energyPsys[J],"
@@ -61,18 +62,18 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             const IterationMeasurements &measurements) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyPsys, energyPkg, energyRam, energyTotal] = measurements;
+               energyPsys, energyPkg, energyRam, energyTotal, numThreads] = measurements;
   if (energyMeasurementsPossible) {
     _accumulatedMeasurements.addEnergy(energyPsys, energyPkg, energyRam);
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
                configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, energyPsys, energyPkg, energyRam);
+               timeTuning, energyPsys, energyPkg, energyRam, numThreads);
   } else {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
+        ->info("{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
                configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning);
+               timeTuning, numThreads);
   }
 #endif
 }

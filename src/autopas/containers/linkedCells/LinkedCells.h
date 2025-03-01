@@ -142,7 +142,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     std::vector<ParticleType> invalidParticles;
     AUTOPAS_OPENMP(parallel) {
-      AUTOPAS_OPENMP(critical) { AutoPasLog(INFO, "Threads used: {}", autopas_get_num_threads()); }
       // private for each thread!
       std::vector<ParticleType> myInvalidParticles{}, myInvalidNotOwnedParticles{};
       // TODO: needs smarter heuristic than this.

@@ -56,5 +56,10 @@ struct IterationMeasurements {
    * energy sources.
    */
   long energyTotal{};
+
+  /**
+   * Number of threads used inside parallel region.
+   */
+  int numThreads{};
 };
 }  // namespace autopas

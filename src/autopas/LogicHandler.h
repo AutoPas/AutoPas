@@ -1069,6 +1069,11 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   const bool energyMeasurementsPossible = autoTuner.resetEnergy();
 
+  int numThreads;
+  AUTOPAS_OPENMP(parallel) {
+    numThreads = omp_get_num_threads();
+  }
+
   timerTotal.start();
   functor.initTraversal();
 
@@ -1101,7 +1106,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
           energyMeasurementsPossible ? energyPsys : nanD,
           energyMeasurementsPossible ? energyPkg : nanD,
           energyMeasurementsPossible ? energyRam : nanD,
-          energyMeasurementsPossible ? energyTotal : nanL};
+          energyMeasurementsPossible ? energyTotal : nanL,
+          numThreads};
 }
 
 template <typename Particle>
