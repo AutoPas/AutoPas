@@ -8,6 +8,7 @@
 #include <atomic>
 #include <limits>
 #include <memory>
+#include <omp.h>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -670,6 +671,9 @@ class LogicHandler {
   template <class Functor>
   std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(
       Functor &functor, const InteractionTypeOption &interactionType);
+
+  template <class Functor>
+  int getThreadCountForTraversal(Functor &functor, const InteractionTypeOption &interactionType);
 
   /**
    * Triggers the core steps of computing the particle interactions:
@@ -1595,6 +1599,53 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
 template <typename Particle>
 template <class Functor>
+int LogicHandler<Particle>::getThreadCountForTraversal(Functor &functor, const InteractionTypeOption &interactionType) {
+
+  auto [configuration, traversalPtr, stillTuning] = selectConfiguration(functor, interactionType);
+  
+  auto traversalType = configuration.traversal.to_string();
+
+  int maxThreads = autopas::autopas_get_max_threads();
+
+  auto &container = _containerSelector.getCurrentContainer();
+  const auto &boxMin = container.getBoxMin();
+  const auto &boxMax = container.getBoxMax();
+  const auto interactionLength = container.getInteractionLength();
+
+  double Lx = boxMax[0] - boxMin[0];
+  double Ly = boxMax[1] - boxMin[1];
+  double Lz = boxMax[2] - boxMin[2];
+
+  int Ncx = Lx / interactionLength;
+  int Ncy = Ly / interactionLength;
+  int Ncz = Lz / interactionLength;
+  int N_cells = Ncx * Ncy * Ncz;
+
+  int P_max = maxThreads;
+
+  static const std::unordered_map<std::string, std::function<int()>> traversalMap = {
+      {"lc_c01",    [&]() { return std::min(N_cells, maxThreads); }},
+      {"lc_c04",    [&]() { int patchSize = 32; int N_patches = N_cells / patchSize; return std::min(N_patches / 4, maxThreads); }},
+      {"lc_c04HCP", [&]() { int patchSize = 6; int N_patches = N_cells / patchSize; return std::min(N_patches / 4, maxThreads); }},
+      {"lc_c08",    [&]() { return std::min(N_cells / 8, maxThreads); }},
+      {"lc_c18",    [&]() { return std::min(N_cells / 18, maxThreads); }},
+      {"lc_sliced", [&]() { 
+          double longestDim = std::max({Lx, Ly, Lz});
+          int N_slices = longestDim / interactionLength;
+          return std::min(N_slices, maxThreads);
+      }},
+  };
+
+  auto it = traversalMap.find(traversalType);
+  if (it != traversalMap.end()) {
+    P_max = it->second();
+  }
+
+  return P_max;
+}
+
+template <typename Particle>
+template <class Functor>
 bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                                                          const InteractionTypeOption &interactionType) {
   if (not _interactionTypes.count(interactionType)) {
@@ -1616,6 +1667,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
+  autopas_set_num_threads(getThreadCountForTraversal(*functor, interactionType));
   const IterationMeasurements measurements = computeInteractions(*functor, *traversalPtr);
 
   /// Debug Output
