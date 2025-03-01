@@ -8,7 +8,6 @@
 #include <atomic>
 #include <limits>
 #include <memory>
-#include <omp.h>
 #include <optional>
 #include <tuple>
 #include <type_traits>
