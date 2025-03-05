@@ -15,7 +15,7 @@ autopas::FeatureVectorEncoder::FeatureVectorEncoder(
     const std::vector<VectorizationPatternOption> &vecPatternOptions)
     : _interactionType(interactionType) {
   setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
-    vecPatternOptions);
+                    vecPatternOptions);
 }
 
 autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
@@ -23,7 +23,8 @@ autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
 void autopas::FeatureVectorEncoder::setAllowedOptions(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors, const std::vector<VectorizationPatternOption> &vecPatternOptions) {
+    const autopas::NumberSet<double> &cellSizeFactors,
+    const std::vector<VectorizationPatternOption> &vecPatternOptions) {
   _containerTraversalEstimatorOptions = containerTraversalEstimatorOptions;
   _dataLayoutOptions = dataLayoutOptions;
   _newton3Options = newton3Options;
@@ -290,5 +291,6 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
 
-  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, _interactionType, vecPattern);
+  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, _interactionType,
+                       vecPattern);
 }

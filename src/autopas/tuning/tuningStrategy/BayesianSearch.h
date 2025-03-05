@@ -59,11 +59,11 @@ class BayesianSearch final : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-      size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()(),
-      const std::set<VectorizationPatternOption> &allowedVecPatternOptions = VectorizationPatternOption::getAllOptions());
+      const std::set<VectorizationPatternOption> &allowedVecPatternOptions =
+          VectorizationPatternOption::getAllOptions());
 
   TuningStrategyOption getOptionType() const override;
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "molecularDynamics/molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "autopas/utils/SoA.h"
+#include "molecularDynamics/molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using LJFunctorXSIMDTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
@@ -16,7 +16,7 @@ class LJFunctorXSIMDTest : public AutoPasTestBase, public ::testing::WithParamIn
    */
   constexpr static double _maxError = 1e-12;
 
-  //void testLJFunctorVSLJFunctorXSIMDKernel(bool newton3);
+  // void testLJFunctorVSLJFunctorXSIMDKernel(bool newton3);
 
   /**
    * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.

@@ -3,10 +3,10 @@
 #include "LJFunctorMIPPTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "molecularDynamics/molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/UniformGenerator.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
 
 template <class SoAType>
 bool LJFunctorMIPPTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -76,7 +76,7 @@ bool LJFunctorMIPPTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
 }
 
 void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                           bool useUnalignedViews) {
+                                                             bool useUnalignedViews) {
   FMCell cell1MIPP;
   FMCell cell2MIPP;
 
@@ -126,9 +126,9 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
 
   if (useUnalignedViews) {
     ljFunctorNoMIPP.SoAFunctorPair(cell1NoMIPP._particleSoABuffer.constructView(1, cell1NoMIPP.size()),
-                                  cell2NoMIPP._particleSoABuffer.constructView(1, cell2NoMIPP.size()), newton3);
+                                   cell2NoMIPP._particleSoABuffer.constructView(1, cell2NoMIPP.size()), newton3);
     ljFunctorMIPP.SoAFunctorPair(cell1MIPP._particleSoABuffer.constructView(1, cell1MIPP.size()),
-                                cell2MIPP._particleSoABuffer.constructView(1, cell2MIPP.size()), newton3);
+                                 cell2MIPP._particleSoABuffer.constructView(1, cell2MIPP.size()), newton3);
   } else {
     ljFunctorNoMIPP.SoAFunctorPair(cell1NoMIPP._particleSoABuffer, cell2NoMIPP._particleSoABuffer, newton3);
     ljFunctorMIPP.SoAFunctorPair(cell1MIPP._particleSoABuffer, cell2MIPP._particleSoABuffer, newton3);
@@ -155,14 +155,14 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
 }
 
 void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool doDeleteSomeParticles,
-                                                          bool useUnalignedViews) {
+                                                            bool useUnalignedViews) {
   FMCell cellMIPP;
 
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cellMIPP) {
@@ -222,7 +222,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly
@@ -297,7 +297,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDel
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly

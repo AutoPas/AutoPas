@@ -215,8 +215,7 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
       static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
       static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
       static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]), static_cast<VectorizationPatternOption::Value>(config[7])
-  };
+      static_cast<InteractionTypeOption::Value>(config[5]), static_cast<VectorizationPatternOption::Value>(config[7])};
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {

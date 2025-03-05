@@ -18,11 +18,11 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
-#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
@@ -947,8 +947,7 @@ class AutoPas {
       for (auto iType : InteractionTypeOption::getMostOptions()) {
         _allowedVecPatternsOptions[iType] = allowedVecPatterns;
       }
-    }
-    else {
+    } else {
       _allowedVecPatternsOptions[interactionType] = allowedVecPatterns;
     }
   }
@@ -1169,8 +1168,8 @@ class AutoPas {
 
   // TODO: comment
   std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
-    {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
-    {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
+      {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
+      {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.

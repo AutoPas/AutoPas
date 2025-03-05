@@ -58,7 +58,6 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
 
-
 namespace {
 /**
  * Tries to identify the width of the terminal where the simulation is running.
@@ -157,7 +156,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
-                                          autopas::VectorizationPatternOption::p1xVec);
+                                           autopas::VectorizationPatternOption::p1xVec);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
@@ -839,34 +838,38 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_XSIMD: {
 #if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
-        return f(mdLib::LJFunctorXSIMD<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(mdLib::LJFunctorXSIMD<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 #else
-        throw std::runtime_error(
+      throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor XSIMD. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_XSIMD=ON`.");
 #endif
-    } case MDFlexConfig::FunctorOption::lj12_6_MIPP: {
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_MIPP: {
 #if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
-        return f(mdLib::LJFunctorMIPP<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(mdLib::LJFunctorMIPP<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 #else
-            throw std::runtime_error(
+      throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor MIPP. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_MIPP=ON`.");
 #endif
-    }  case MDFlexConfig::FunctorOption::lj12_6_SIMDe: {
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_SIMDe: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
-        return f(mdLib::LJFunctorSIMDe<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(mdLib::LJFunctorSIMDe<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 #else
-        throw std::runtime_error(
+      throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
 #endif
-    }  case MDFlexConfig::FunctorOption::lj12_6_HWY: {
-        return f(mdLib::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
-      } default: {
-        throw std::runtime_error("Unknown pairwise functor choice" +
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+      return f(mdLib::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+    }
+    default: {
+      throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
-      }
+    }
   }
 }
 

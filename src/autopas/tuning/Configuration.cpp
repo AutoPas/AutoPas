@@ -99,8 +99,8 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 
 bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
   return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
-         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType
-         and vecPattern == rhs.vecPattern;
+         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType and
+         vecPattern == rhs.vecPattern;
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
@@ -117,9 +117,9 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
-                  lhs.interactionType, lhs.vecPattern)
-                  < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator,
-                             rhs.dataLayout, rhs.newton3, rhs.interactionType, lhs.vecPattern);
+                  lhs.interactionType, lhs.vecPattern) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal,
+                                                                  rhs.loadEstimator, rhs.dataLayout, rhs.newton3,
+                                                                  rhs.interactionType, lhs.vecPattern);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {

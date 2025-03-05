@@ -8,9 +8,9 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/SoA.h"
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "molecularDynamicsLibrary/LJFunctorHWY.h"
 
 using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 
@@ -22,9 +22,11 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
 
   constexpr static double _maxError = 1e-12;
 
-  void testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews, VectorizationPattern pattern);
+  void testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
+                                              VectorizationPattern pattern);
 
-  void testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews, VectorizationPattern pattern);
+  void testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
+                                             VectorizationPattern pattern);
 
   void testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles);
 

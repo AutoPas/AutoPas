@@ -209,7 +209,7 @@ class FeatureVectorEncoder {
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions{};
   std::vector<DataLayoutOption> _dataLayoutOptions{};
   std::vector<Newton3Option> _newton3Options{};
-  std::vector<VectorizationPatternOption> _vecPatternOptions {};
+  std::vector<VectorizationPatternOption> _vecPatternOptions{};
   InteractionTypeOption _interactionType;
   /**
    * Number of allowed options of each discrete dimension.

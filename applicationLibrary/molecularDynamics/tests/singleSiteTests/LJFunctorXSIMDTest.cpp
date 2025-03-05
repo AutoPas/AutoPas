@@ -3,11 +3,11 @@
 #include "LJFunctorXSIMDTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/particles/Particle.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctorAVX.h"
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctorXSIMD.h"
-#include "autopas/particles/Particle.h"
-#include "autopasTools/generators/UniformGenerator.h"
 
 template <class SoAType>
 bool LJFunctorXSIMDTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -77,7 +77,7 @@ bool LJFunctorXSIMDTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
 }
 
 void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                           bool useUnalignedViews) {
+                                                               bool useUnalignedViews) {
   FMCell cell1XSIMD;
   FMCell cell2XSIMD;
 
@@ -127,9 +127,9 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
 
   if (useUnalignedViews) {
     ljFunctorNoXSIMD.SoAFunctorPair(cell1NoXSIMD._particleSoABuffer.constructView(1, cell1NoXSIMD.size()),
-                                  cell2NoXSIMD._particleSoABuffer.constructView(1, cell2NoXSIMD.size()), newton3);
+                                    cell2NoXSIMD._particleSoABuffer.constructView(1, cell2NoXSIMD.size()), newton3);
     ljFunctorXSIMD.SoAFunctorPair(cell1XSIMD._particleSoABuffer.constructView(1, cell1XSIMD.size()),
-                                cell2XSIMD._particleSoABuffer.constructView(1, cell2XSIMD.size()), newton3);
+                                  cell2XSIMD._particleSoABuffer.constructView(1, cell2XSIMD.size()), newton3);
   } else {
     ljFunctorNoXSIMD.SoAFunctorPair(cell1NoXSIMD._particleSoABuffer, cell2NoXSIMD._particleSoABuffer, newton3);
     ljFunctorXSIMD.SoAFunctorPair(cell1XSIMD._particleSoABuffer, cell2XSIMD._particleSoABuffer, newton3);
@@ -151,19 +151,19 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
   ljFunctorNoXSIMD.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  //EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getUpot(), tolerance) << "global uPot";
-  //EXPECT_NEAR(ljFunctorXSIMD.getVirial(), ljFunctorNoXSIMD.getVirial(), tolerance) << "global virial";
+  // EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getUpot(), tolerance) << "global uPot";
+  // EXPECT_NEAR(ljFunctorXSIMD.getVirial(), ljFunctorNoXSIMD.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool doDeleteSomeParticles,
-                                                          bool useUnalignedViews) {
+                                                              bool useUnalignedViews) {
   FMCell cellXSIMD;
 
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cellXSIMD) {
@@ -223,7 +223,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool 
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly
@@ -287,8 +287,8 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool 
   ljFunctorNoXSIMD.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  //EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getUpot(), tolerance) << "global uPot";
-  //EXPECT_NEAR(ljFunctorXSIMD.getVirial(), ljFunctorNoXSIMD.getVirial(), tolerance) << "global virial";
+  // EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getUpot(), tolerance) << "global uPot";
+  // EXPECT_NEAR(ljFunctorXSIMD.getVirial(), ljFunctorNoXSIMD.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doDeleteSomeParticles) {
@@ -298,7 +298,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doD
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly
