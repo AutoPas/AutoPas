@@ -53,13 +53,25 @@ cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON ..
 
 ### Energy Measurements and Tuning
 
-By default, AutoPas tunes for the best configuration according to runtime. For all Linux based systems, it is also possible to tune
-for the algorithm that consumes the least energy. This is implemented via [pmt-stable](https://github.com/MaxPraus23/pmt-stable) which is a customised version tuned for performance based on [PMT](https://git.astron.nl/RD/pmt). In the current version, energy consumption can be measured via Intel's RAPL or with LIKWID.
+By default, AutoPas tunes for the best configuration according to runtime. For all Linux based systems, it is also possible to tune for the algorithm that consumes the least energy.
+This is implemented via [PMT](https://git.astron.nl/RD/pmt) with customization carried out to remove performance overhead in energy measurements.
+The changes with respect to parent repository can be found in `AutoPas/libs/patches/patch-file-pmt-for-autopas.patch`, and detail on the reason behind the changes can be found in the [bachelor's thesis](https://mediatum.ub.tum.de/doc/1760019/1760019.pdf) by Maximilian Praus.
+In the current version, energy consumption can be measured via Intel's RAPL or with LIKWID.
+RAPL is set as the default sensor and is forced to compile always.
 
-To use energy tuning, the energy sensor, used for measurement, must be specified:
+To use energy tuning, energy measurements must be enabled using the CMake option:
 ```bash
-cmake -DPMT_BUILD_RAPL=ON -DPMT_BUILD_LIKWID=ON .. 
+cmake -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON .. 
 ```
+
+The RAPL sensor is forcibly enabled by AutoPas by forcing the cmake option `PMT_BUILD_RAPL` to `ON`. However, other available sensors like `LIKWID` can also be used by separately compiling them using the CMake option:
+```bash
+cmake -DPMT_BUILD_LIKWID=ON .. 
+```
+Note that user must have `LIKWID` installed before enabling this option.
+Additionally, an energy sensor used for measurement needs to be selected during runtime by specifying the option `energy-sensor` in the input file. 
+The default is set to `rapl` and will be used when no option is specified. 
+However, when multiple sensors are compiled, user can choose any of the available sensors by specifying the `energy-sensor` option.
 
 ### Select a Non-Default Compiler
 If you want to use a different compiler than your system default, change the `CC` and `CXX` environment variables during initial configuration AND building:

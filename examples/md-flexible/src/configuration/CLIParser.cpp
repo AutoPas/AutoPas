@@ -97,11 +97,12 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningPhases,
       config.tuningSamples,
       config.tuningStrategyOptions,
+      config.useLOESSSmoothening,
       config.useThermostat,
       config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
-      config.verletSkinRadiusPerTimestep,
+      config.verletSkinRadius,
       config.vtkFileName,
       config.vtkOutputFolder,
       config.vtkWriteFrequency,
@@ -301,8 +302,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-        } else if (strArg.find("glob") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else if(strArg.find("xsimd") != string::npos) {
@@ -527,11 +526,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.verletSkinRadiusPerTimestep)::getoptChar: {
+      case decltype(config.verletSkinRadius)::getoptChar: {
         try {
-          config.verletSkinRadiusPerTimestep.value = stod(strArg);
+          config.verletSkinRadius.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -551,6 +550,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Error parsing number of tuning samples: " << optarg << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case decltype(config.useLOESSSmoothening)::getoptChar: {
+        config.useLOESSSmoothening.value = false;
         break;
       }
       case decltype(config.particleSpacing)::getoptChar: {

@@ -36,7 +36,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
     csvHeader.append(
         ",energyWatts[W],"
         "energyJoules[J],"
-        "energySeconds[S]");
+        "energyDeltaT[s]");
   }
   headerLogger->info(csvHeader, Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
@@ -60,12 +60,12 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             const IterationMeasurements &measurements) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyWatts, energyJoules, energySeconds, energyTotal] = measurements;
+               energyWatts, energyJoules, energyDeltaT, energyTotal] = measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
                configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, energyWatts, energyJoules, energySeconds);
+               timeTuning, energyWatts, energyJoules, energyDeltaT);
   } else {
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",

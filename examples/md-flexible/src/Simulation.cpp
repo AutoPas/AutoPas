@@ -20,9 +20,6 @@ extern template class autopas::AutoPas<ParticleType>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovec *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovecGlobals *);
-#endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAVX *);
 #endif
@@ -116,11 +113,19 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                             std::to_string(_configuration.iterations.value).size());
   }
 
+  const auto rank = _domainDecomposition->getDomainIndex();
+  const auto *fillerBeforeSuffix =
+      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
+  const auto *fillerAfterSuffix =
+      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
+  const auto outputSuffix =
+      "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
+
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
   } else {
     _logFile = std::make_shared<std::ofstream>();
-    _logFile->open(_configuration.logFileName.value);
+    _logFile->open(_configuration.logFileName.value + "_" + outputSuffix);
     _outputStream = &(*_logFile);
   }
 
@@ -178,22 +183,17 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
   _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
+  _autoPasContainer->setUseLOESSSmoothening(_configuration.useLOESSSmoothening.value);
   _autoPasContainer->setEnergySensorOption(_configuration.energySensorOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
+  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
-  const auto rank = _domainDecomposition->getDomainIndex();
-  const auto *fillerBeforeSuffix =
-      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
-  const auto *fillerAfterSuffix =
-      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
-  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + fillerBeforeSuffix +
-                                     _configuration.outputSuffix.value + fillerAfterSuffix);
+  _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
   _autoPasContainer->init();
@@ -224,7 +224,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 void Simulation::finalize() {
   _timers.total.stop();
-
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
   logSimulationState();
@@ -365,12 +364,13 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
 
         const size_t searchSpaceSizeTriwise =
             _configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) == 0
-                ?: autopas::SearchSpaceGenerators::cartesianProduct(
-                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
-                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
-                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                       _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::triwise)
-                       .size();
+                ? 0
+                : autopas::SearchSpaceGenerators::cartesianProduct(
+                      _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
+                      _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                      _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
+                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::triwise)
+                      .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
       }
@@ -662,7 +662,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
+    std::cout << timerToString("  One iteration                 ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
@@ -676,6 +676,9 @@ void Simulation::logMeasurements() {
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << "\n";
+#endif
   }
 }
 
@@ -814,15 +817,6 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
-#endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-      return f(LJFunctorTypeAutovecGlobals{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor AutoVec Globals. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=ON`.");
 #endif
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {

@@ -93,7 +93,7 @@ add_test(
         --particles-total 10
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
-        --verlet-skin-radius-per-timestep 0
+        --verlet-skin-radius 0
         --boundary-type none
         --deltaT 0.
         --no-end-config
@@ -167,7 +167,7 @@ add_test(
         --particles-per-dimension 10
         --particle-spacing 1.1225
         --verlet-rebuild-frequency 4
-        --verlet-skin-radius-per-timestep 0.05
+        --verlet-skin-radius 0.2
         --boundary-type periodic
         --deltaT 0.005
         --no-end-config

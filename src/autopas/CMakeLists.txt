@@ -12,13 +12,19 @@ file(
     "*.cuh"
 )
 
+option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+        "Enables energy measurements and tuning using PMT library and enables the RAPL interface, by default, allowing for energy measurement on Intel and AMD hardware."
+        ON
+)
+
+option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
+
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
 if (NOT AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     list(FILTER MY_SRC EXCLUDE REGEX ".*parser_generated.*")
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
-
 
 add_library(autopas STATIC ${MY_SRC})
 
@@ -55,9 +61,10 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
+        $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
         _USE_MATH_DEFINES
 )
-
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)

@@ -228,8 +228,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-        } else if (strArg.find("glob") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else if(strArg.find("xsimd") != std::string::npos) {
@@ -382,6 +380,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
         }
+      } else if (key == config.useLOESSSmoothening.name) {
+        expected = "Boolean Value";
+        description = config.useLOESSSmoothening.description;
+
+        config.useLOESSSmoothening.value = node[key].as<bool>();
       } else if (key == config.tuningMaxEvidence.name) {
         expected = "Unsigned Integer >= 1";
         description = config.tuningMaxEvidence.description;
@@ -544,11 +547,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.verletRebuildFrequency.value < 1) {
           throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
-      } else if (key == config.verletSkinRadiusPerTimestep.name) {
+      } else if (key == config.verletSkinRadius.name) {
         expected = "Positive floating-point value.";
-        description = config.verletSkinRadiusPerTimestep.description;
+        description = config.verletSkinRadius.description;
 
-        config.verletSkinRadiusPerTimestep.value = node[key].as<double>();
+        config.verletSkinRadius.value = node[key].as<double>();
       } else if (key == config.fastParticlesThrow.name) {
         expected = "Boolean Value";
         description = config.fastParticlesThrow.description;

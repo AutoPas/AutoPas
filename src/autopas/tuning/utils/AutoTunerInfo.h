@@ -34,6 +34,10 @@ struct AutoTunerInfo {
   /**
    * Used energy sensor of energy metric selected
    */
-  EnergySensorOption energySensor{EnergySensorOption::none};
+  EnergySensorOption energySensor{EnergySensorOption::rapl};
+  /**
+   * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
+   */
+  bool useLOESSSmoothening{true};
 };
 }  // namespace autopas

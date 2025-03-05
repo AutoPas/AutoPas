@@ -181,15 +181,8 @@ class LJFunctorAVX
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the soa.
-   * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    if (newton3) {
-      SoAFunctorSingleImpl<true>(soa);
-    } else {
-      SoAFunctorSingleImpl<false>(soa);
-    }
-  }
+  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final { SoAFunctorSingleImpl(soa); }
 
   // clang-format off
   /**
@@ -208,10 +201,8 @@ class LJFunctorAVX
  private:
   /**
    * Templatized version of SoAFunctorSingle actually doing what the latter should.
-   * @tparam newton3
    * @param soa
    */
-  template <bool newton3>
   inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
     if (soa.size() == 0) return;
@@ -885,8 +876,8 @@ class LJFunctorAVX
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
-      AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 

@@ -1,5 +1,9 @@
 option(pmt_ForceBundled "Do not look for an installed version, always used bundled." ON)
 
+# RAPL sensor is disabled in PMT (PMT_BUILD_RAPL is OFF by default),
+# however in AutoPas, it is set to ON by default whenever energy measurement is enabled.
+set(PMT_BUILD_RAPL ON CACHE BOOL "RAPL is by default enabled when PMT is enabled" FORCE)
+
 if (NOT ${pmt_ForceBundled})
     set(expectedVersion ${expectedVersion} QUIET)
     if (pmt_FOUND)
@@ -12,22 +16,29 @@ if (NOT ${pmt_ForceBundled})
     endif()
 endif()
 
-message(STATUS "pmt - using bundled version 1.3.1 (commit e93666bd)")
+message(STATUS "pmt - using bundled version (commit 7a56fa3a) and patch")
 
 include(FetchContent)
 
 FetchContent_Declare(
     pmt
     URL
-        ${AUTOPAS_SOURCE_DIR}/libs/pmt_stable_1.0.zip
-        URL_HASH MD5=9a3e1d5c73bb672ff93ce9ffb3f277b7
+        # pmt-master.zip contains commit 7a56fa3a (master as on Dec 19, 2024) with patch applied
+        # The patch applies the following changes:
+        # removal of 100 ms minimum time interval for energy samples, and
+        # removing asynchronous energy measurement
+        # better error handling
+        # the patch can found under AutoPas/libs/patches/patch-file-pmt-for-autopas.patch
+        ${AUTOPAS_SOURCE_DIR}/libs/pmt-master.zip
+        URL_HASH MD5=3c60096bf151e11cde6efc6e5ede1195
 )
 
 FetchContent_MakeAvailable(pmt)
 
+# sensors available in pmt that are not currently required in AutoPas
 mark_as_advanced(
     PMT_BUILD_CRAY
-    PMT_BUILD_NVML
+    PMT_BUILD_NVML  
     PMT_BUILD_POWERSENSOR2
     PMT_BUILD_POWERSENSOR3
     PMT_BUILD_PYTHON
@@ -42,10 +53,6 @@ if (IS_DIRECTORY "${pmt_SOURCE_DIR}")
     set_property(DIRECTORY ${pmt_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
 endif()
 
-target_compile_options(pmt PUBLIC -DCMAKE_INSTALL_PREFIX="./build")
-
-get_target_property(propval pmt INTERFACE_INCLUDE_DIRECTORIES)
-message(" Directories: ${propval}")
+target_compile_options(pmt PUBLIC -w -DCMAKE_INSTALL_PREFIX="./build")
 
 target_include_directories(pmt SYSTEM PUBLIC "${pmt_SOURCE_DIR}")
-#target_include_directories(pmt SYSTEM PUBLIC "${propval}")

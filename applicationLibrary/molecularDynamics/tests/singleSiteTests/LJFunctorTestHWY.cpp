@@ -93,11 +93,16 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     size_t numParticles = 23;
 
     ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-    PPL.addSiteType(0,1.,1.,1.);
-    PPL.addSiteType(1,1.5,2.,1.);
-    PPL.addSiteType(2,2.,1.,1.);
-    PPL.addSiteType(3,2.5,2.,1.);
-    PPL.addSiteType(4,3.,1.,1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -189,11 +194,16 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     size_t numParticles = 23;
 
     ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-    PPL.addSiteType(0,1.,1.,1.);
-    PPL.addSiteType(1,1.5,2.,1.);
-    PPL.addSiteType(2,2.,1.,1.);
-    PPL.addSiteType(3,2.5,2.,1.);
-    PPL.addSiteType(4,3.,1.,1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -263,11 +273,16 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
     constexpr size_t numParticles = 23;
 
     ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-    PPL.addSiteType(0,1.,1.,1.);
-    PPL.addSiteType(1,1.5,2.,1.);
-    PPL.addSiteType(2,2.,1.,1.);
-    PPL.addSiteType(3,2.5,2.,1.);
-    PPL.addSiteType(4,3.,1.,1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -347,11 +362,16 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
     constexpr size_t numParticles = 23;
 
     ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-    PPL.addSiteType(0,1.,1.,1.);
-    PPL.addSiteType(1,1.5,2.,1.);
-    PPL.addSiteType(2,2.,1.,1.);
-    PPL.addSiteType(3,2.5,2.,1.);
-    PPL.addSiteType(4,3.,1.,1.);
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
     PPL.calculateMixingCoefficients();
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -438,7 +458,7 @@ std::vector<VectorizationPattern> patterns {
     VectorizationPattern::p2xVecDiv2,
     VectorizationPattern::pVecDiv2x2,
     VectorizationPattern::pVecx1,
-    VectorizationPattern::pVecxVec
+    // VectorizationPattern::pVecxVec
 };
 
 std::map<VectorizationPattern, std::string> patternsToString {

@@ -205,7 +205,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_XSIMD, lj12_6_MIPP, lj12_6_SIMDe, lj12_6_HWY };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_XSIMD, lj12_6_MIPP, lj12_6_SIMDe, lj12_6_HWY };
 
   /**
    * Choice of the Triwise functor
@@ -340,8 +340,8 @@ class MDFlexConfig {
    * enerySensorOption
    */
   MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
-      autopas::EnergySensorOption::none, "energy-sensor", true,
-      "Sensor, used for energy consumption measurement. Possible Values: " +
+      autopas::EnergySensorOption::rapl, "energy-sensor", true,
+      "Sensor used for energy consumption measurement. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::EnergySensorOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * ruleFilename
@@ -380,6 +380,11 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
                                                      "Number of samples to collect per configuration."};
+  /**
+   * useLOESSSmoothening
+   */
+  MDFlexOption<bool, __LINE__> useLOESSSmoothening{
+      false, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
   /**
    * tuningMaxEvidence
    */
@@ -449,19 +454,17 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
       15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
-   * verletSkinRadiusPerTimeStep
-   */
-  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{
-      .2, "verlet-skin-radius-per-timestep", true,
-      "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
-      "verletRebuildFrequency."};
-
-  /**
    * fastParticlesThrow
    */
-  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
-                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
-                                                  "will throw an exception during the position update or not."};
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{
+      false, "fastParticlesThrow", false,
+      "Decide if particles that move farther than skin/2/rebuildFrequency "
+      "will throw an exception during the position update or not for the case with statically rebuilding containers."};
+  /**
+   * verletSkinRadius
+   */
+  MDFlexOption<double, __LINE__> verletSkinRadius{
+      .2, "verlet-skin-radius", true, "Skin added to the cutoff avoid rebuilding containers every iteration."};
   /**
    * boxMin
    */

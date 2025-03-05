@@ -10,7 +10,7 @@
 
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #endif
 
@@ -18,7 +18,7 @@
 
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #endif
 

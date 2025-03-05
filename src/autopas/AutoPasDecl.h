@@ -542,7 +542,7 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @return _verletSkin
    */
-  double getVerletSkin() { return _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency; };
+  double getVerletSkin() { return _logicHandlerInfo.verletSkin; };
 
   /**
    * Returns the number of particles in this container.
@@ -634,18 +634,10 @@ class AutoPas {
   }
 
   /**
-   * Get length added to the cutoff for the Verlet lists' skin per timestep.
-   * @return _verletSkinPerTimestep
-   */
-  [[nodiscard]] double getVerletSkinPerTimestep() const { return _logicHandlerInfo.verletSkinPerTimestep; }
-
-  /**
    * Set length added to the cutoff for the Verlet lists' skin per timestep.
-   * @param verletSkinPerTimestep
+   * @param verletSkin
    */
-  void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
-    _logicHandlerInfo.verletSkinPerTimestep = verletSkinPerTimestep;
-  }
+  void setVerletSkin(double verletSkin) { _logicHandlerInfo.verletSkin = verletSkin; }
 
   /**
    * Get Verlet rebuild frequency.
@@ -695,6 +687,18 @@ class AutoPas {
    * @param numSamples
    */
   void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
+
+  /**
+   * Get flag for whether a LOESS-based smoothening is used.
+   * @return
+   */
+  [[nodiscard]] bool getUseLOESSSmoothening() const { return _autoTunerInfo.useLOESSSmoothening; }
+
+  /**
+   * Set flag for whether a LOESS-based smoothening is used.
+   * @param useLOESSSmoothening
+   */
+  void setUseLOESSSmoothening(bool useLOESSSmoothening) { _autoTunerInfo.useLOESSSmoothening = useLOESSSmoothening; }
 
   /**
    * Get maximum number of evidence for tuning
@@ -1060,6 +1064,14 @@ class AutoPas {
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
   /**
+   * Getter for the mean rebuild frequency.
+   * Helpful for determining the frequency for the dynamic containers as well as for determining fast particles by
+   * computing skinPerStep for static container
+   * @return Value of the mean rebuild frequency as double
+   */
+  double getMeanRebuildFrequency() { return _logicHandler->getMeanRebuildFrequency(); }
+
+  /**
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
    * @param useTuningLogger
    */
@@ -1120,9 +1132,10 @@ class AutoPas {
    */
   bool _useTuningStrategyLoggerProxy{false};
   /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild, if a rebuild is not triggered
+   * earlier by the dynamic rebuild mechanic.
    */
-  unsigned int _verletRebuildFrequency{20};
+  unsigned int _verletRebuildFrequency{100};
   /**
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.

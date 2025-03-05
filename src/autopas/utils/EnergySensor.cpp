@@ -7,61 +7,76 @@
 #include "autopas/utils/EnergySensor.h"
 
 #include "autopas/options/EnergySensorOption.h"
-#include "pmt.h"
 
 namespace autopas::utils {
 
 EnergySensor::EnergySensor(EnergySensorOption sensor) : _option(sensor) {
-  if (_option != EnergySensorOption::none) {
-    _sensor = pmt::Create(sensor.to_string());
-  } else {
-    AutoPasLog(WARN, "No sensor for energy consumption measurement specified. Energy will not be measured!");
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  _sensor = pmt::Create(sensor.to_string());
+#endif
+}
+
+bool EnergySensor::init(bool tuningMetricIsEnergy) {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  return true;
+#else
+  if (tuningMetricIsEnergy) {
+    autopas::utils::ExceptionHandler::exception(
+        "Energy tuning cannot be performed because AutoPas has been compiled with AUTOPAS_ENABLE_ENERGY_MEASUREM=OFF.");
   }
+  return false;
+#endif
 }
 
 bool EnergySensor::startMeasurement() {
-  if (_option != EnergySensorOption::none) {
-    _start = _sensor->Read();
-    return true;
-  }
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  _start = _sensor->Read();
+  return true;
+#else
   return false;
+#endif
 }
 
-const EnergySensorOption EnergySensor::getOption() { return _option; }
+const EnergySensorOption EnergySensor::getOption() const { return _option; }
 
 bool EnergySensor::endMeasurement() {
-  if (_option != EnergySensorOption::none) {
-    _end = _sensor->Read();
-    return true;
-  }
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  _end = _sensor->Read();
+  return true;
+#else
   return false;
+#endif
 }
 
-double EnergySensor::getJoules() {
-  if (_option != EnergySensorOption::none) {
-    return _sensor->joules(_start, _end);
-  }
+double EnergySensor::getJoules() const {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  return _sensor->joules(_start, _end);
+#else
   return -1;
+#endif
 }
 
-double EnergySensor::getWatts() {
-  if (_option != EnergySensorOption::none) {
-    return _sensor->watts(_start, _end);
-  }
+double EnergySensor::getWatts() const {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  return _sensor->watts(_start, _end);
+#else
   return -1;
+#endif
 }
 
-double EnergySensor::getSeconds() {
-  if (_option != EnergySensorOption::none) {
-    return _sensor->seconds(_start, _end);
-  }
+double EnergySensor::getEnergyDeltaT() const {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  return _sensor->seconds(_start, _end);
+#else
   return -1;
+#endif
 }
 
-long EnergySensor::getNanoJoules() {
-  if (_option != EnergySensorOption::none) {
-    return static_cast<long>(_sensor->joules(_start, _end) * 1e9);
-  }
+long EnergySensor::getNanoJoules() const {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  return static_cast<long>(_sensor->joules(_start, _end) * 1e9);
+#else
   return -1;
+#endif
 }
 }  // namespace autopas::utils

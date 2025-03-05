@@ -107,10 +107,11 @@ class AutoTuner {
   void bumpIterationCounters(bool needToWait = false);
 
   /**
-   * Returns whether rebuildNeighborLists() will be triggered in the next iteration.
-   * This might also indicate a container change.
-   *
-   * @return True if the current iteration counters indicate a rebuild in the next iteration.
+   * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
+   * This indicates a configuration change.
+   * In the non-tuning phase, the rebuildNeighborLists() is triggered in LogicHandler.
+   * @return True if the current iteration counters indicate a rebuild in the next iteration due to a configuration
+   * change.
    */
   bool willRebuildNeighborLists() const;
 
@@ -159,6 +160,12 @@ class AutoTuner {
    * @param tuningTime
    */
   void logTuningResult(bool tuningIteration, long tuningTime) const;
+
+  /**
+   * Initialize pmt sensor.
+   * @return True if energy measurements are enabled and possible.
+   */
+  bool initEnergy();
 
   /**
    * Reset the rapl meter to prepare for a new measurement.
@@ -211,6 +218,18 @@ class AutoTuner {
   bool inTuningPhase() const;
 
   /**
+   * Indicate if the tuner is in the first iteration of a tuning phase.
+   * @return
+   */
+  bool inFirstTuningIteration() const;
+
+  /**
+   * Indicate if the tuner is in the last iteration of the tuning phase.
+   * @return
+   */
+  bool inLastTuningIteration() const;
+
+  /**
    * Getter for the internal evidence collection.
    * @return
    */
@@ -220,7 +239,15 @@ class AutoTuner {
    * Returns whether the AutoTuner can take energy measurements.
    * @return
    */
-  bool canMeasureEnergy();
+  bool canMeasureEnergy() const;
+
+  /**
+   * Sets the _rebuildFrequency. This is the average number of iterations per rebuild.
+   * This is used to dynamically change the _rebuildFrequency based on estimate in case of dynamic containers.
+   * @param rebuildFrequency Current rebuild frequency in this instance of autopas, used by autopas for weighing rebuild
+   * and non-rebuild iterations
+   */
+  void setRebuildFrequency(double rebuildFrequency);
 
  private:
   /**
@@ -285,6 +312,11 @@ class AutoTuner {
   TuningMetricOption _tuningMetric;
 
   /**
+   * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
+   */
+  bool _useLOESSSmoothening;
+
+  /**
    * Is energy measurement possible.
    * Initialize as true and check in the constructor if it is indeed possible.
    */
@@ -292,8 +324,11 @@ class AutoTuner {
 
   /**
    * The rebuild frequency this instance of AutoPas uses.
+   * In the case of dynamic containers, this reflects the current estimate of the average rebuild frequency.
+   * As the estimate is an average of integers, it can be a fraction and so double is used here.
+   * In static containers, this is set to user-defined rebuild frequency.
    */
-  unsigned int _rebuildFrequency;
+  double _rebuildFrequency;
 
   /**
    * How many times each configuration should be tested.

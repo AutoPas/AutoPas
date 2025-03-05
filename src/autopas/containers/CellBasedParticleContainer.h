@@ -31,17 +31,17 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skinPerTimestep
+   * @param skin
    * @param rebuildFrequency
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, double skinPerTimestep, unsigned int rebuildFrequency)
-      : ParticleContainerInterface<Particle>(skinPerTimestep),
+                             const double cutoff, double skin, unsigned int rebuildFrequency)
+      : ParticleContainerInterface<Particle>(skin),
         _cells(),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
-        _skin(skinPerTimestep * rebuildFrequency) {}
+        _skin(skin) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -88,8 +88,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] double getInteractionLength() const final { return _cutoff + _skin; }
   /**
-   * Returns the total verlet Skin length
-   * @return _skinPerTimestep * _rebuildFrequency
+   * Returns the verlet Skin length
+   * @return _skin
    */
   [[nodiscard]] double getVerletSkin() const final { return _skin; }
 

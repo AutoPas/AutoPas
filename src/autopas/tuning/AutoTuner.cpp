@@ -25,6 +25,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningStrategies(std::move(tuningStrategies)),
       _tuningInterval(autoTunerInfo.tuningInterval),
       _tuningMetric(autoTunerInfo.tuningMetric),
+      _useLOESSSmoothening(autoTunerInfo.useLOESSSmoothening),
+      _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
@@ -45,6 +47,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
+  AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening {}.", _useLOESSSmoothening ? "enabled" : "disabled");
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
@@ -243,9 +246,12 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
     const long reducedValue = estimateRuntimeFromSamples();
     _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
 
-    // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
+    // If LOESS-based smoothening is enabled, use it to smooth evidence to remove high outliers. If smoothing results in
+    // a higher value or if LOESS-based smoothening is disabled, use the original value.
     const auto smoothedValue =
-        std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5));
+        _useLOESSSmoothening
+            ? std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5))
+            : reducedValue;
 
     // replace collected evidence with smoothed value to improve next smoothing
     _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
@@ -281,7 +287,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
         }());
 
     _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists, _samplesNotRebuildingNeighborLists,
-                                    _iteration, reducedValue, smoothedValue);
+                                    _iteration, reducedValue, smoothedValue, _rebuildFrequency);
   }
 }
 
@@ -292,6 +298,7 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
   }
   ++_iterationBaseline;
   ++_iteration;
+  AutoPasLog(DEBUG, "Iteration: {}", _iteration);
   _endOfTuningPhase = false;
 
   if (_iteration % _tuningInterval == 0) {
@@ -305,18 +312,23 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  // What is the rebuild rhythm?
-  const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : _rebuildFrequency;
+  // AutoTuner only triggers rebuild during the tuning phase
+  const auto iterationsPerConfig = this->inTuningPhase() ? _maxSamples : std::numeric_limits<unsigned int>::max();
   // _iterationBaseLine + 1 since we want to look ahead to the next iteration
   const auto iterationBaselineNextStep = _forceRetune ? _iterationBaseline : _iterationBaseline + 1;
-  return (iterationBaselineNextStep % iterationsPerRebuild) == 0;
+  return (iterationBaselineNextStep % iterationsPerConfig) == 0;
+}
+
+bool AutoTuner::initEnergy() {
+  // Try to initialize the raplMeter
+  return _energySensor.init(_tuningMetric == TuningMetricOption::energy);
 }
 
 bool AutoTuner::resetEnergy() { return _energySensor.startMeasurement(); }
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
   _energySensor.endMeasurement();
-  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getSeconds(),
+  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getEnergyDeltaT(),
           _energySensor.getNanoJoules()};
 }
 
@@ -403,7 +415,13 @@ bool AutoTuner::inTuningPhase() const {
   return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
+bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
+
+bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
+
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
-bool AutoTuner::canMeasureEnergy() { return _energySensor.getOption() != EnergySensorOption::none; }
+bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
+
+void AutoTuner::setRebuildFrequency(double rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 }  // namespace autopas
