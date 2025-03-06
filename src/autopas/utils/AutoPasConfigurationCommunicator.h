@@ -60,8 +60,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
                           const std::set<Newton3Option> &newton3Options,
-                          const std::set<VectorizationPatternOption> &vecPatternOptions,
-                          const InteractionTypeOption &interactionTypeOption);
+                          const InteractionTypeOption &interactionTypeOption,
+                          const std::set<VectorizationPatternOption> &vecPatternOptions);
 
 /**
  * Distributes the provided configurations globally for equal work loads.

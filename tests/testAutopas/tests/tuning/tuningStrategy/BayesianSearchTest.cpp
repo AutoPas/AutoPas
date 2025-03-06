@@ -21,10 +21,11 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       maxEvidence);
@@ -65,10 +66,11 @@ TEST_F(BayesianSearchTest, testFindBest) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound,
@@ -79,7 +81,8 @@ TEST_F(BayesianSearchTest, testFindBest) {
   // configuration to find
   const autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
+                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
+                                    autopas::VectorizationPatternOption::p1xVec);
 
   // artificial time skip
   size_t iteration = 0;

@@ -22,6 +22,9 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   ++_loadEstimatorIt;
   if (_loadEstimatorIt != _allowedAndApplicableLoadEstimatorOptions.end()) return;
   _loadEstimatorIt = _allowedAndApplicableLoadEstimatorOptions.begin();
+  ++_vecPatternIt;
+  if (_vecPatternIt != _vecPatternOptions.end()) return;
+  _vecPatternIt = _vecPatternOptions.begin();
   ++_traversalIt;
   if (_traversalIt != _allowedAndApplicableTraversalOptions.end()) {
     selectLoadEstimatorsForCurrentContainerAndTraversal();

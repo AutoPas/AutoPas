@@ -33,6 +33,7 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    * @param _interactionType
+   * @param _vecPattern
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */

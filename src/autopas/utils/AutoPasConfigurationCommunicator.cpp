@@ -19,7 +19,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
                           const std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption &interactionTypeOption) {
+                          const InteractionTypeOption &interactionTypeOption,
+                          const std::set<VectorizationPatternOption> &vecPatternOptions) {
   // only take into account finite sets of cellSizeFactors.
   const size_t cellSizeFactorArraySize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
 
@@ -38,7 +39,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
       const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
           loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, loadEstimatorOptions);
       numConfigs += cellSizeFactorArraySize * allowedAndApplicableLoadEstimators.size() * dataLayoutOptions.size() *
-                    newton3Options.size();
+                    newton3Options.size() * vecPatternOptions.size();
     }
   }
   return numConfigs;
@@ -62,7 +63,8 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
                           std::set<TraversalOption> &traversalOptions,
                           std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption interactionType) {
+                          const InteractionTypeOption interactionType,
+                          std::set<VectorizationPatternOption> &vecPatternOptions) {
   // ============== setup ======================================================
 
   // These will be set to the Options specific to this rank and will overwrite the input sets.
@@ -72,6 +74,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   auto newLoadEstimatorOptions = std::set<LoadEstimatorOption>();
   auto newDataLayoutOptions = std::set<DataLayoutOption>();
   auto newNewton3Options = std::set<Newton3Option>();
+  auto newVecPatternOptions = std::set<VectorizationPatternOption>();
 
   // Distribution works only with finite sets of cellSizeFactors.
   // If the set is infinite a dummy value will be used and replaced later on.
@@ -87,7 +90,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
 
   ConfigurationAndRankIteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors, traversalOptions,
                                                       loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                                      interactionType, numConfigs, commSize);
+                                                      interactionType, vecPatternOptions, numConfigs, commSize);
 
   while (iteratorHandler.getRankIterator() < rank) {
     iteratorHandler.advanceIterators(numConfigs, commSize);
@@ -105,7 +108,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     newLoadEstimatorOptions.emplace(*iteratorHandler.getLoadEstimatorIterator());
     newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
     newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
-
+    newVecPatternOptions.emplace(*iteratorHandler.getVecPatternIterator());
     iteratorHandler.advanceIterators(numConfigs, commSize);
   }
 
@@ -132,10 +135,12 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              InteractionTypeOption interactionType, const int rank, const int commSize) {
+                              InteractionTypeOption interactionType,
+                              std::set<VectorizationPatternOption> &vecPatternOptions, const int rank,
+                              const int commSize) {
   const auto numConfigs =
       static_cast<int>(getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                          dataLayoutOptions, newton3Options, interactionType));
+                                          dataLayoutOptions, newton3Options, interactionType, vecPatternOptions));
 
   if (numConfigs == 0) {
     utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
@@ -145,15 +150,16 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
   // Creates a set for each option and each rank containing the serialized versions (std::byte or double) of all
   // options assigned to that rank.
   generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
-                       loadEstimatorOptions, dataLayoutOptions, newton3Options, interactionType);
+                       loadEstimatorOptions, dataLayoutOptions, newton3Options, interactionType, vecPatternOptions);
 
   AutoPasLog(DEBUG,
-             "After distributing: {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s"
+             "After distributing: {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s, {} "
+             "vecPatterns"
              " => {} total configs",
              containerOptions.size(), /*cellSizeFactorsSize*/ (cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1),
-             traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(),
+             traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(), vecPatternOptions.size(),
              getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                dataLayoutOptions, newton3Options, interactionType));
+                                dataLayoutOptions, newton3Options, interactionType, vecPatternOptions));
 }
 
 Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,

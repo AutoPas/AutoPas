@@ -358,7 +358,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::pairwise)
+                      autopas::InteractionTypeOption::pairwise, _configuration.vecPatternOptions.value)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -368,7 +368,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::triwise)
+                      autopas::InteractionTypeOption::triwise, _configuration.vecPatternOptions.value)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
