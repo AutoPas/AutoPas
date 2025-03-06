@@ -62,10 +62,10 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   using ::testing::_;
   ::testing::Sequence seq;
 
-  constexpr unsigned int verletRebuildFrequency = 3;
+  constexpr unsigned int verletRebuildFrequency = 2;
   constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
-      .maxSamples = 3,
+      .maxSamples = 2,
   };
   constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -74,8 +74,11 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const autopas::AutoTuner::SearchSpaceType searchSpace{std::get<0>(GetParam())};
-  const autopas::AutoTuner::SearchSpaceType searchSpace3B{std::get<1>(GetParam())};
+  const auto [pairwiseConfig, triwiseConfig] = GetParam();
+  const autopas::AutoTuner::SearchSpaceType searchSpace{pairwiseConfig};
+  const autopas::AutoTuner::SearchSpaceType searchSpace3B{triwiseConfig};
+
+  const bool differentContainers = pairwiseConfig.container != triwiseConfig.container;
 
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -102,6 +105,7 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
     return count;
   };
 
+  // ITERATION 1
   auto p1 = Molecule{{5., 5., 5.}, {0., 0., 0.}, 0};
   logicHandler.addParticle(p1);
   auto p2 = Molecule{{4., 5., 5.}, {0., 0., 0.}, 0};
@@ -111,50 +115,49 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
 
   static_cast<void>(logicHandler.updateContainer());
 
+  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 3);
+
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(6);
   EXPECT_CALL(triwiseFunctor, AoSFunctor(_, _, _, _)).Times(3);
-
   logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
   logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
   ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
   ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
 
+  // There was a rebuild and datastructure update during computeInteractions.
+  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 0);
+
+  // ITERATION 2
   // Add a new particle before the next iteration
   auto p4 = Molecule{{5., 5., 4.}, {0., 0., 0.}, 0};
   logicHandler.addParticle(p4);
 
   static_cast<void>(logicHandler.updateContainer());
 
-  // Expect p4 to stay in the buffers since we won't rebuild this iteration
+  // Expect p4 to always be placed in the buffer before a datastructure update
   EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 1);
+
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(12);
   EXPECT_CALL(triwiseFunctor, AoSFunctor(_, _, _, _)).Times(12);
-
   logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
   logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
   ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
   ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
 
+  // There was a datastructure update if the pairwise and triwise containers are different.
+  const auto expectedBufferParticles = differentContainers ? 0 : 1;
+  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), expectedBufferParticles);
+
+  // ITERATION 3
   static_cast<void>(logicHandler.updateContainer());
 
-  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 1);
-  EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(12);
-  EXPECT_CALL(triwiseFunctor, AoSFunctor(_, _, _, _)).Times(12);
-
-  logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
-  logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
-  ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
-  ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
-
-  static_cast<void>(logicHandler.updateContainer());
-
-  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 1);
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(12);
   EXPECT_CALL(triwiseFunctor, AoSFunctor(_, _, _, _)).Times(12);
 
   logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
   logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
 
+  // Iteration 3 was a rebuild iteration, so the buffers should always be empty
   EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 0);
 }
 
