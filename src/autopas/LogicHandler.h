@@ -84,8 +84,6 @@ class LogicHandler {
       _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
       checkMinimalSize();
     }
-    std::cout << "Size: " << _neighborListsAreValid.size() << std::endl;
-    std::cout << _neighborListsAreValid[InteractionTypeOption::pairwise].load() << std::endl;
     // initialize locks needed for remainder traversal
     const auto interactionLength = logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency;
     const auto interactionLengthInv = 1. / interactionLength;
@@ -114,17 +112,16 @@ class LogicHandler {
       auto &buffer = cell._particles;
 
       // Use remove_if to partition the vector
-      auto newEnd = std::remove_if(buffer.begin(), buffer.end(),
-        [&](Particle& p) {
-          if (p.isDummy()) {
-            return true;  // Remove dummy particles from the buffer
-          }
-          if (utils::notInBox(p.getR(), boxMin, boxMax)) {
-              leavingBufferParticles.push_back(std::move(p)); // Move to leaving particles
-            return true;  // Remove from buffer
-          }
-          return false;  // Keep in buffer
-        });
+      auto newEnd = std::remove_if(buffer.begin(), buffer.end(), [&](Particle &p) {
+        if (p.isDummy()) {
+          return true;  // Remove dummy particles from the buffer
+        }
+        if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+          leavingBufferParticles.push_back(std::move(p));  // Move to leaving particles
+          return true;                                     // Remove from buffer
+        }
+        return false;  // Keep in buffer
+      });
 
       // Erase the moved and dummy particles from the buffer
       buffer.erase(newEnd, buffer.end());
@@ -144,14 +141,14 @@ class LogicHandler {
 
       auto newEnd = std::remove_if(buffer.begin(), buffer.end(), [this, &boxMin, &boxMax](auto &p) {
         if (p.isDummy()) {
-          return true; // Remove dummies without adding to container.
+          return true;  // Remove dummies without adding to container.
         }
         if (utils::inBox(p.getR(), boxMin, boxMax)) {
           p.setOwnershipState(OwnershipState::owned);
           _containerSelector.getCurrentContainer().addParticle(std::move(p));
-          return true; // Remove from the buffer.
+          return true;  // Remove from the buffer.
         }
-        return false; // Keep in the buffer.
+        return false;  // Keep in the buffer.
       });
 
       buffer.erase(newEnd, buffer.end());
@@ -163,8 +160,7 @@ class LogicHandler {
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
     setNeighborListsStatus();
-    const bool doDataStructureUpdate = not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and
-      _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed));;
+    const bool doDataStructureUpdate = not allNeighborListsValid();
 
     // We will do a rebuild in this timestep
     if (doDataStructureUpdate) {
@@ -266,8 +262,7 @@ class LogicHandler {
     initSpacialLocks(boxLength, interactionLengthInv);
 
     // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
-    _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
+    setNeighborListStatusToAll(false);
 
     return particlesNowOutside;
   }
@@ -302,7 +297,7 @@ class LogicHandler {
     }
 
     // Only reserve memory if we rebuild afterward. Otherwise, we might invalidate any existing particle references.
-    if (not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed))) {
+    if (not allNeighborListsValid()) {
       _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
     }
   }
@@ -324,7 +319,7 @@ class LogicHandler {
     }
     Particle particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
-    if (forceToContainer or not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed))) {
+    if (forceToContainer or not allNeighborListsValid()) {
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
@@ -350,7 +345,7 @@ class LogicHandler {
     }
     Particle haloParticleCopy = haloParticle;
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
-    if (forceToContainer or not (_neighborListsAreValid[InteractionTypeOption::pairwise].load(std::memory_order_relaxed) and _neighborListsAreValid[InteractionTypeOption::triwise].load(std::memory_order_relaxed))) {
+    if (forceToContainer or not allNeighborListsValid()) {
       container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
@@ -367,8 +362,7 @@ class LogicHandler {
    * @copydoc AutoPas::deleteAllParticles()
    */
   void deleteAllParticles() {
-    _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
-    _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
+    setNeighborListStatusToAll(false);
     _containerSelector.getCurrentContainer().deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
@@ -875,10 +869,21 @@ class LogicHandler {
    *
    * This can be the case either because we hit the rebuild frequency or because the auto tuner tests
    * a new configuration.
-   *
-   * @return True iff the neighbor lists will not be rebuild.
    */
   void setNeighborListsStatus();
+
+  /**
+   * Checks if the neighbor lists are valid and sets the flag accordingly.
+   *
+   * @return true if all neighbor lists are valid.
+   */
+  bool allNeighborListsValid() const;
+
+  /**
+   * Sets the neighbor list status for all interaction types to the given status.
+   * @param status The status to set the neighbor lists to (true or false).
+   */
+  void setNeighborListStatusToAll(bool status);
 
   const LogicHandlerInfo _logicHandlerInfo;
   /**
@@ -991,24 +996,34 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 void LogicHandler<Particle>::setNeighborListsStatus() {
-  // Implement rebuild indicator as function, so it is only evaluated when needed.
   const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
-    return _interactionTypes.count(interactionOption) != 0 and
-           _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
+    return _interactionTypes.count(interactionOption) and _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
   };
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency) {
-    _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
-    _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
+    setNeighborListStatusToAll(false);
   } else {
-    if (needRebuild(InteractionTypeOption::pairwise)) {
-      _neighborListsAreValid[InteractionTypeOption::pairwise].store(false, std::memory_order_relaxed);
-    } else if (needRebuild(InteractionTypeOption::triwise)) {
-      _neighborListsAreValid[InteractionTypeOption::triwise].store(false, std::memory_order_relaxed);
-    } else {
-      _neighborListsAreValid[InteractionTypeOption::pairwise].store(true, std::memory_order_relaxed);
-      _neighborListsAreValid[InteractionTypeOption::triwise].store(true, std::memory_order_relaxed);
+    _neighborListsAreValid[InteractionTypeOption::pairwise].store(!needRebuild(InteractionTypeOption::pairwise),
+                                                                  std::memory_order_relaxed);
+    _neighborListsAreValid[InteractionTypeOption::triwise].store(!needRebuild(InteractionTypeOption::triwise),
+                                                                 std::memory_order_relaxed);
+  }
+}
+
+template <typename Particle>
+bool LogicHandler<Particle>::allNeighborListsValid() const {
+  for (const auto &[interactionType, neighborListValid] : _neighborListsAreValid) {
+    if (not neighborListValid.load(std::memory_order_relaxed)) {
+      return false;
     }
+  }
+  return true;
+}
+
+template <typename Particle>
+void LogicHandler<Particle>::setNeighborListStatusToAll(bool status) {
+  for (auto &[interactionType, neighborListValid] : _neighborListsAreValid) {
+    neighborListValid = status;
   }
 }
 
