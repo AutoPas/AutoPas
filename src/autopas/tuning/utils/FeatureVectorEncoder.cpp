@@ -31,7 +31,7 @@ void autopas::FeatureVectorEncoder::setAllowedOptions(
   _vecPatternOptions = vecPatternOptions;
 
   _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
-                tunableContinuousDims;
+                _vecPatternOptions.size() + tunableContinuousDims;
 
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
       _containerTraversalEstimatorOptions.size();
