@@ -208,10 +208,10 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
     auto [encodedDiscrete, encodedContinuous] = encoder.convertToCluster(fv, iteration);
     auto neighbours = encoder.clusterNeighboursManhattan1(encodedDiscrete);
 
-    // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons + all patterns - 3
-    // (initial vector is counted trice)
+    // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons + all patterns - 4
+    // (initial vector is counted 4 times)
     EXPECT_EQ(neighbours.size(), allCompatibleContainerTraversalEstimators.size() + dataLayouts.size() +
-                                     newtons.size() + patterns.size() - 3);
+                                     newtons.size() + patterns.size() - 4);
 
     // neighbours should be unique
     for (size_t i = 0; i < neighbours.size(); ++i) {
@@ -260,10 +260,10 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
     auto [encodedDiscrete, encodedContinuous] = encoder.convertToCluster(fv, iteration);
     auto neighbours = encoder.clusterNeighboursManhattan1Container(encodedDiscrete);
 
-    // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons + all patterns - 3
-    // (initial vector is counted trice)
+    // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons + all patterns - 4
+    // (initial vector is counted 4 times)
     EXPECT_EQ(neighbours.size(), allCompatibleContainerTraversalEstimators.size() + dataLayouts.size() +
-                                     newtons.size() + patterns.size() - 3);
+                                     newtons.size() + patterns.size() - 4);
 
     // neighbours should be unique
     for (size_t i = 0; i < neighbours.size(); ++i) {
