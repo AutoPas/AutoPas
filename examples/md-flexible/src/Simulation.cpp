@@ -29,9 +29,11 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
-// #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
-// #endif
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorHWY.h"
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
 #include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
 #endif
@@ -41,9 +43,6 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
 #include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSIMDe.h"
 #endif
-// #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
-#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorHWY.h"
-// #endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -829,7 +828,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(LJFunctorSVE<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
@@ -864,7 +863,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 #endif
     }
     case MDFlexConfig::FunctorOption::lj12_6_HWY: {
-      return f(mdLib::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeHWY{cutoff, particlePropertiesLibrary});
     }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +

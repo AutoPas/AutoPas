@@ -461,8 +461,7 @@ std::vector<VectorizationPattern> patterns{
 std::map<VectorizationPattern, std::string> patternsToString{{VectorizationPattern::p1xVec, "1xVec"},
                                                              {VectorizationPattern::p2xVecDiv2, "2xVec_2"},
                                                              {VectorizationPattern::pVecDiv2x2, "Vec_2x2"},
-                                                             {VectorizationPattern::pVecx1, "Vecx1"},
-                                                             {VectorizationPattern::pVecxVec, "VecxVec"}};
+                                                             {VectorizationPattern::pVecx1, "Vecx1"}};
 
 static auto toString = [](const auto &info) {
   auto [newton3, doDeleteSomeParticle, vecPattern] = info.param;

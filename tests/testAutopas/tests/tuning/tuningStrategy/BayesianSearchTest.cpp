@@ -28,7 +28,7 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
       autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                      maxEvidence);
+                                      vecPatternOptions, maxEvidence);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.begin(), searchSpace.end()};
   autopas::EvidenceCollection evidenceCollection{};
@@ -72,7 +72,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
       autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
-                                      traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
+                                      traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, vecPatternOptions,
                                       maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound,
                                       predNumLHSamples, seed);
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};

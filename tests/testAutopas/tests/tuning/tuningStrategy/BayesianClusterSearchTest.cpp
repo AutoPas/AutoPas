@@ -32,7 +32,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
       autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianClusterSearch bayesClusterSearch(autopas::InteractionTypeOption::pairwise, containerOptions,
                                                     cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                                    dataLayoutOptions, newton3Options, maxEvidence);
+                                                    dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
 
@@ -89,7 +89,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
       autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
-      loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
+      loadEstimatorOptions, dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence,
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
@@ -168,7 +168,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
       autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
-      loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
+      loadEstimatorOptions, dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence,
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
@@ -260,7 +260,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
       autopas::InteractionTypeOption::pairwise, vecPatternOptions);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
-      loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
+      loadEstimatorOptions, dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence,
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};

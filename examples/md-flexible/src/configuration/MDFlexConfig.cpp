@@ -300,6 +300,10 @@ std::string MDFlexConfig::to_string() const {
     os << indent;
     os << setw(valueOffset - indentWidth) << left << functorOption.name << ":  ";
     switch (functorOption.value) {
+      case FunctorOption::none: {
+        os << "None selected" << endl;
+        break;
+      }
       case FunctorOption::lj12_6: {
         os << "Lennard-Jones (12-6)" << endl;
         break;

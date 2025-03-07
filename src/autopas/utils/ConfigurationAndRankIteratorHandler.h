@@ -33,6 +33,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param interactionType
+   * @param vecPatternOptions
    * @param numConfigs
    * @param commSize
    */
@@ -76,6 +77,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param traversalIt out
    * @param dataLayoutIt out
    * @param newton3It out
+   * @param vecPatternIt out
    */
   inline void getConfigIterators(std::set<ContainerOption>::iterator &containerIt,
                                  std::set<double>::iterator &cellSizeFactorIt,

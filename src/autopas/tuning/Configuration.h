@@ -123,9 +123,10 @@ class Configuration {
    * Traversal option.
    */
   TraversalOption traversal;
-
+  /**
+   * Vectorization Pattern option
+   */
   VectorizationPatternOption vecPattern;
-
   /**
    * Load Estimator option.
    */

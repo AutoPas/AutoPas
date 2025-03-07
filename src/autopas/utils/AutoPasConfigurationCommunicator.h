@@ -53,6 +53,7 @@ inline std::byte castToByte(TOption option) {
  * @param dataLayoutOptions
  * @param newton3Options
  * @param interactionTypeOption
+ * @param vecPatternOptions
  * @return
  */
 size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
@@ -74,6 +75,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param dataLayoutOptions
  * @param newton3Options
  * @param interactionTypeOption
+ * @param vecPatternOptions
  * @param rank
  * @param commSize
  */

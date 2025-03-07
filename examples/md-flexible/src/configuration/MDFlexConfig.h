@@ -299,7 +299,9 @@ class MDFlexConfig {
       autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
       "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
-
+  /**
+   * vectorizationPattern
+   */
   MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
       autopas::VectorizationPatternOption::getMostOptions(), "vectorizationPattern", true,
       "Vectorization Pattern for HWY Functor."};
@@ -521,7 +523,7 @@ class MDFlexConfig {
       // Default is a dummy option
       FunctorOption::lj12_6_AVX, "functor", true,
       "Pairwise force functor to use. Possible Values: (lennard-jones "
-      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};  // TODO: extend
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals lennard-jones-xsimd lennard-jones-simde lennard-jones-mipp lennard-jones-highway)"};
   /**
    * functorOption3B
    */

@@ -45,6 +45,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedVecPatternOptions
    * @param mpiDivideAndConquer
    * @param comm
    */
@@ -53,7 +54,9 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer, AutoPas_MPI_Comm comm);
+                const std::set<Newton3Option> &allowedNewton3Options,
+                const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
+                bool mpiDivideAndConquer, AutoPas_MPI_Comm comm);
 
   ~ActiveHarmony() override;
 

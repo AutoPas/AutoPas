@@ -66,6 +66,7 @@ class FeatureVectorEncoder {
    * @param newton3Options
    * @param cellSizeFactors
    * @param interactionType
+   * @param vecPatternOptions
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
@@ -81,6 +82,7 @@ class FeatureVectorEncoder {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param cellSizeFactors
+   * @param vecPatternOptions
    */
   void setAllowedOptions(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
