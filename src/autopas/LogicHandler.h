@@ -74,7 +74,7 @@ class LogicHandler {
     // Initialize AutoPas with tuners for given interaction types
     for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
-      _neighborListsAreValid.emplace(interactionType, true);
+      _neighborListsAreValid.emplace(interactionType, false);
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid

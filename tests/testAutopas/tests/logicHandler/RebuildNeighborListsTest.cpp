@@ -115,7 +115,8 @@ TEST_P(RebuildNeighborListsTest, testRebuildDifferentContainerPairwiseTriwise) {
 
   static_cast<void>(logicHandler.updateContainer());
 
-  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 3);
+  // Simulation starts with invalid neighbor lists
+  EXPECT_EQ(countParticles(logicHandler.getParticleBuffers()), 0);
 
   EXPECT_CALL(pairwiseFunctor, AoSFunctor(_, _, _)).Times(6);
   EXPECT_CALL(triwiseFunctor, AoSFunctor(_, _, _, _)).Times(3);
