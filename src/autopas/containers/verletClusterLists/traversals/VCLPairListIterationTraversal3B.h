@@ -72,7 +72,6 @@ class VCLPairListIterationTraversal3B : public TraversalInterface, public VCLTra
    * @param isHaloCluster
    */
   void processClusterPairListInteration(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
-    //TODO: switch depending on data layout and N3
     if (not isHaloCluster) {
       _clusterFunctor.traverseClusterTriwise(cluster);
     }

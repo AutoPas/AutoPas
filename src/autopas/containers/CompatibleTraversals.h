@@ -188,6 +188,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
   return {
+      TraversalOption::vcl_cluster_iteration_3b,
       TraversalOption::vcl_list_intersection_3b,
       TraversalOption::vcl_pair_list_iteration_3b,
       TraversalOption::vl_pair_list_iteration_3b,

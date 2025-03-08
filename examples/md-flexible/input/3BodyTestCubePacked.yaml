@@ -1,7 +1,7 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
-container                            :  [VerletLists] #LinkedCells #VerletLists #VerletClusterLists
+container                            :  [VerletClusterLists] #LinkedCells #VerletLists #VerletClusterLists
 functor-3b                           :  axilrod-teller
-traversal-3b                         :  [vl_list_iteration]
+traversal-3b                         :  [vcl_cluster_iteration_3b]
 
 #lc_c01
 #vl_list_iteration #vl_list_intersection_sorted_3b #vl_pair_list_iteration_3b
@@ -39,11 +39,11 @@ Sites:
     mass                             :  1.
     nu                               :  0.073 # Value for Argon
 Objects:
-  CubeGrid:
+  CubeClosestPacked:
     0:
-      particles-per-dimension: [ 64, 64, 64 ]
-      particle-spacing: 1.5
+      box-length: [ 100, 100, 100 ]
       bottomLeftCorner: [ 0, 0, 0 ]
+      particle-spacing: 2.45
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
 thermostat:

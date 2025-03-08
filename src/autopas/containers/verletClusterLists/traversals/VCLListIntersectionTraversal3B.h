@@ -75,7 +75,6 @@ class VCLListIntersectionTraversal3B : public TraversalInterface,
    * @param isHaloCluster
    */
   void processClusterListIntersection(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
-    //TODO: switch depending on data layout and N3
     if (not isHaloCluster) {
       _clusterFunctor.traverseClusterTriwise(cluster);
     }
