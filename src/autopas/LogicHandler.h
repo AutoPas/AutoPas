@@ -1000,7 +1000,7 @@ void LogicHandler<Particle>::setNeighborListsStatus() {
     return _interactionTypes.count(interactionOption) and _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
   };
 
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency) {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
     setNeighborListStatusToAll(false);
   } else {
     _neighborListsAreValid[InteractionTypeOption::pairwise].store(!needRebuild(InteractionTypeOption::pairwise),
