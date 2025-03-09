@@ -98,7 +98,7 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
       << " Particle has not moved yet, so no dynamic rebuild required. \n";
 
   // In the first step, neighborListsAreValid is false
-  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "In the first iteration, neighbor lists are invalid.";
+  ASSERT_FALSE(_logicHandler->allNeighborListsValid()) << "In the first iteration, neighbor lists are invalid.";
 
   // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skim -> particle is outside the boundary
   for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -133,7 +133,7 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
-  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
+  ASSERT_TRUE(_logicHandler->allNeighborListsValid()) << "After one iteration, neighbor lists are valid.";
 
   _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
   _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
@@ -167,7 +167,7 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
       << " Particle has not moved yet, so no dynamic rebuild required. \n";
 
   // In the first step, neighborListsAreValid is false
-  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "In the first iteration, neighbor lists are invalid.";
+  ASSERT_FALSE(_logicHandler->allNeighborListsValid()) << "In the first iteration, neighbor lists are invalid.";
 
   constexpr double cutoff = 1.1;
   LJFunctorGlobals functor(cutoff);
@@ -178,7 +178,7 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
-  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
+  ASSERT_TRUE(_logicHandler->allNeighborListsValid()) << "After one iteration, neighbor lists are valid.";
 
   _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
   ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())

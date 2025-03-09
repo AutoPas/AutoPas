@@ -72,6 +72,7 @@ class LogicHandler {
     // Initialize AutoPas with tuners for given interaction types
     for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
+      _neighborListsAreValid.emplace(interactionType, false);
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
@@ -160,7 +161,7 @@ class LogicHandler {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
 #endif
-    bool doDataStructureUpdate = not neighborListsAreValid();
+    const bool doDataStructureUpdate = not allNeighborListsValid();
 
     if (_functorCalls > 0) {
       // Bump iteration counters for all autotuners
@@ -174,7 +175,7 @@ class LogicHandler {
       }
 
       // We will do a rebuild in this timestep
-      if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+      if (doDataStructureUpdate) {
         _stepsSinceLastListRebuild = 0;
       }
       ++_stepsSinceLastListRebuild;
@@ -266,7 +267,7 @@ class LogicHandler {
     initSpacialLocks(boxLength, interactionLengthInv);
 
     // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    setNeighborListStatusToAll(false);
 
     return particlesNowOutside;
   }
@@ -320,7 +321,7 @@ class LogicHandler {
     }
     Particle particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
-    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+    if (not allNeighborListsValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
@@ -347,7 +348,7 @@ class LogicHandler {
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticleCopy.toString());
     }
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
-    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+    if (not allNeighborListsValid()) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
@@ -365,7 +366,7 @@ class LogicHandler {
    * @copydoc AutoPas::deleteAllParticles()
    */
   void deleteAllParticles() {
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    setNeighborListStatusToAll(false);
     _containerSelector.getCurrentContainer().deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
@@ -641,14 +642,19 @@ class LogicHandler {
   void resetNeighborListsInvalidDoDynamicRebuild();
 
   /**
-   * Checks if in the next iteration the neighbor lists have to be rebuilt.
+   * Checks if the neighbor lists have to be rebuilt in this iteration.
    *
    * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
    * auto tuner tests a new configuration.
-   *
-   * @return True iff the neighbor lists will not be rebuild.
    */
-  bool neighborListsAreValid();
+  void updateNeighborListsStatus();
+
+  /**
+ * Checks if the neighbor lists are valid and sets the flag accordingly.
+ *
+ * @return true if all neighbor lists are valid.
+ */
+  bool allNeighborListsValid() const;
 
  private:
   /**
@@ -972,6 +978,12 @@ class LogicHandler {
    */
   void checkMinimalSize() const;
 
+  /**
+   * Sets the neighbor list status for all interaction types to the given status.
+   * @param status The status to set the neighbor lists to (true or false).
+   */
+  void setNeighborListStatusToAll(bool status);
+
   const LogicHandlerInfo _logicHandlerInfo;
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
@@ -1012,8 +1024,7 @@ class LogicHandler {
   /**
    * Specifies if the neighbor list is valid.
    */
-  std::atomic<bool> _neighborListsAreValid{false};
-
+  std::unordered_map<InteractionTypeOption::Value, std::atomic<bool>> _neighborListsAreValid;
   /**
    * Steps since last rebuild
    */
@@ -1126,12 +1137,29 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 }
 
 template <typename Particle>
+bool LogicHandler<Particle>::allNeighborListsValid() const {
+  for (const auto &[interactionType, neighborListValid] : _neighborListsAreValid) {
+    if (not neighborListValid.load(std::memory_order_relaxed)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename Particle>
+void LogicHandler<Particle>::setNeighborListStatusToAll(bool status) {
+  for (auto &[interactionType, neighborListValid] : _neighborListsAreValid) {
+    neighborListValid = status;
+  }
+}
+
+template <typename Particle>
 bool LogicHandler<Particle>::getNeighborListsInvalidDoDynamicRebuild() {
   return _neighborListInvalidDoDynamicRebuild;
 }
 
 template <typename Particle>
-bool LogicHandler<Particle>::neighborListsAreValid() {
+void LogicHandler<Particle>::updateNeighborListsStatus() {
   // Implement rebuild indicator as function, so it is only evaluated when needed.
   const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
     return _interactionTypes.count(interactionOption) != 0 and
@@ -1143,10 +1171,8 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
       or getNeighborListsInvalidDoDynamicRebuild()
 #endif
       or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
-  }
-
-  return _neighborListsAreValid.load(std::memory_order_relaxed);
+    setNeighborListStatusToAll(false);
+      }
 }
 
 template <typename Particle>
@@ -1250,7 +1276,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   functor.initTraversal();
 
   // if lists are not valid -> rebuild;
-  if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+  if (not allNeighborListsValid()) {
     timerRebuild.start();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
@@ -1264,7 +1290,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     }
 #endif
     timerRebuild.stop();
-    _neighborListsAreValid.store(true, std::memory_order_relaxed);
+    _neighborListsAreValid[interactionType].store(true, std::memory_order_relaxed);
   }
 
   timerComputeInteractions.start();
@@ -1908,7 +1934,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   autoTuner.logTuningResult(stillTuning, tuningTimer.getTotalTime());
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
-  const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
+  const auto rebuildIteration = not _neighborListsAreValid[interactionType].load(std::memory_order_relaxed);
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
