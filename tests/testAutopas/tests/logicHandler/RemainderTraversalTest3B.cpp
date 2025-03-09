@@ -71,14 +71,13 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
   autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
-  // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
-  // container.
+  // Add particles directly to the container
   auto &container = logicHandler.getContainer();
   for (const auto &p : particlesContainerOwned) {
-    logicHandler.addParticle(p);
+    logicHandler.addParticle(p, true);
   }
   for (const auto &p : particlesContainerHalo) {
-    logicHandler.addHaloParticle(p);
+    logicHandler.addHaloParticle(p, true);
   }
   logicHandler.setParticleBuffers(particlesBuffers, particlesHaloBuffers);
 
@@ -460,14 +459,14 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
   autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
-  // fill the container with the given particles
+  // Directly fill the container with the given particles
   for (const auto &p : particles) {
-    logicHandler.addParticle(p);
+    logicHandler.addParticle(p, true);
   }
   ASSERT_EQ(logicHandler.getContainer().size(), particles.size())
       << "Container contains incorrect number of particles!";
   for (const auto &p : haloParticles) {
-    logicHandler.addHaloParticle(p);
+    logicHandler.addHaloParticle(p, true);
   }
   ASSERT_EQ(logicHandler.getContainer().size(), particles.size() + haloParticles.size())
       << "Container contains incorrect number of halo particles!";

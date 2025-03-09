@@ -153,14 +153,19 @@ class AutoPas {
   void reserve(size_t numParticles, size_t numHaloParticles);
 
   /**
-   * Adds a particle to the container.
-   * This is only allowed if the neighbor lists are not valid.
-   * @param p Reference to the particle to be added
-   * @note An exception is thrown if the particle is added and it is not inside of the owned domain (defined by
+   * Adds a particle to the autopas container.
+   * By default, the particle is added to a temporary buffer and moved to the container during the next rebuild.
+   * **Warning**: If `forceToContainer` is true, the particle is added directly to the container. This can lead to wrong
+   * simulation results if the container is not rebuilt afterwards.
+   *
+   * @param p Reference to the particle to be added.
+   * @param forceToContainer If true, add directly to the container (default: false).
+   *
+   * @note An exception is thrown if the particle is added and it is not inside the owned domain (defined by
    * boxMin and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addParticle(const Particle &p);
+  void addParticle(const Particle &p, bool forceToContainer = false);
 
   /**
    * Adds all particles from the collection to the container.
@@ -168,9 +173,10 @@ class AutoPas {
    * @note This function uses addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
+   * @param forceToContainer If true, add directly to the container (default: false).
    */
   template <class Collection>
-  void addParticles(Collection &&particles);
+  void addParticles(Collection &&particles, bool forceToContainer = false);
 
   /**
    * Adds all particles for which predicate(particle) == true to the container.
@@ -180,18 +186,25 @@ class AutoPas {
    * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
    * @param particles Particles that are potentially added.
    * @param predicate Condition that determines if an individual particle should be added.
+   * @param forceToContainer If true, add directly to the container (default: false).
    */
   template <class Collection, class F>
-  void addParticlesIf(Collection &&particles, F predicate);
+  void addParticlesIf(Collection &&particles, F predicate, bool forceToContainer = false);
 
   /**
    * Adds a particle to the container that lies in the halo region of the container.
+   * By default, the particle is added to a temporary buffer and moved to the container during the next rebuild.
+   * **Warning**: If `forceToContainer` is true, the particle is added directly to the container. This can lead to wrong
+   * simulation results if the container is not rebuilt afterwards.
+   *
    * @param haloParticle Particle to be added.
+   * @param forceToContainer If true, add directly to the container (default: false).
+   *
    * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxMin
    * and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addHaloParticle(const Particle &haloParticle);
+  void addHaloParticle(const Particle &haloParticle, bool forceToContainer = false);
 
   /**
    * Adds all halo particles from the collection to the container.
@@ -199,9 +212,10 @@ class AutoPas {
    * @note This function uses addHaloParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
+   * @param forceToContainer If true, add directly to the container (default: false).
    */
   template <class Collection>
-  void addHaloParticles(Collection &&particles);
+  void addHaloParticles(Collection &&particles, bool forceToContainer = false);
 
   /**
    * Adds all halo particles for which predicate(particle) == true to the container.
@@ -211,9 +225,10 @@ class AutoPas {
    * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
    * @param particles Particles that are potentially added.
    * @param predicate Condition that determines if an individual particle should be added.
+   * @param forceToContainer If true, add directly to the container (default: false).
    */
   template <class Collection, class F>
-  void addHaloParticlesIf(Collection &&particles, F predicate);
+  void addHaloParticlesIf(Collection &&particles, F predicate, bool forceToContainer = false);
 
   /**
    * Deletes all particles.
@@ -1185,7 +1200,7 @@ class AutoPas {
    * @param numHalosToAdd For how many new halo particles should space be allocated.
    * @param collectionSize Size of the collection from which particles are added.
    * @param loopBody Function to be called in the parallel loop over collectionSize.
-   * Typically `[&](auto i) {addParticle(collection[i]);}`.
+   * Typically `[&](auto i) {addParticle(collection[i], forceToContainer);}`.
    */
   template <class F>
   void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);

@@ -79,7 +79,7 @@ void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
    */
 
   for (auto &m : molVec) {
-    autoPas.addParticle(m);
+    autoPas.addParticle(m, true);
   }
 
   //  // update container
