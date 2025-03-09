@@ -173,7 +173,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
         return false;
       }
     }
-   throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
+    throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
   }
 
   /**

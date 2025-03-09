@@ -352,7 +352,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       particleIndex++;
     }
     throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
-
   }
 
   /**

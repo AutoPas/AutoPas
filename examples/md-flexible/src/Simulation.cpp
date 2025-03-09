@@ -557,7 +557,6 @@ void Simulation::logSimulationState() {
               << "Owned: " << ownedParticles << "\n"
               << "Halo : " << haloParticles << "\n";
   }
-
 }
 
 void Simulation::updateSimulationPauseState() {

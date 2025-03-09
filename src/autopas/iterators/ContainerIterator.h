@@ -315,7 +315,7 @@ class ContainerIterator {
   /**
    * @return Index of the Vector where the current particle is found.
    */
-  [[nodiscard]] size_t getVectorIndex() const { return _currentVectorIndex;}
+  [[nodiscard]] size_t getVectorIndex() const { return _currentVectorIndex; }
 
  private:
   /**

@@ -62,18 +62,20 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             const std::string &functorName, bool inTuningPhase, long timeTuning,
                                             const IterationMeasurements &measurements) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, containerSize, numberFastParticles,particleBufferSize, timeTotal, energyMeasurementsPossible,
-               energyPsys, energyPkg, energyRam, energyTotal] = measurements;
+  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, containerSize, numberFastParticles,
+               particleBufferSize, timeTotal, energyMeasurementsPossible, energyPsys, energyPkg, energyRam,
+               energyTotal] = measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{}, {}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, containerSize, numberFastParticles, particleBufferSize,timeTotal,
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{}, {}", iteration, functorName,
+               inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
+               timeRemainderTraversal, timeRebuild, containerSize, numberFastParticles, particleBufferSize, timeTotal,
                timeTuning, energyPsys, energyPkg, energyRam);
   } else {
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{},{},{}, {}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, containerSize, numberFastParticles,particleBufferSize,timeTotal,
-               timeTuning);
+               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, containerSize,
+               numberFastParticles, particleBufferSize, timeTotal, timeTuning);
   }
 #endif
 }

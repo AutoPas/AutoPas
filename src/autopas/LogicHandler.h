@@ -197,11 +197,11 @@ class LogicHandler {
     _numParticlesHalo.store(0, std::memory_order_relaxed);
 
     _particleBufferSize = 0;
-    for(auto &th : _particleBuffer) {
-        _particleBufferSize += th.size();
+    for (auto &th : _particleBuffer) {
+      _particleBufferSize += th.size();
     }
 
-   _containerSize = this->_containerSelector.getCurrentContainer().size(); //(owned + halo + dummy)
+    _containerSize = this->_containerSelector.getCurrentContainer().size();  //(owned + halo + dummy)
 
     return leavingParticles;
   }
@@ -1121,24 +1121,21 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
-      if (distanceSquare >= halfSkinSquare) {
+    if (distanceSquare >= halfSkinSquare) {
+      Particle &particle = *iter;
+      Particle particleCopy = particle;
 
-        Particle& particle = *iter;
-        Particle particleCopy = particle;
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      internal::markParticleAsDeleted(particle);
 
-       _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-        internal::markParticleAsDeleted(particle);
+      size_t cellIndex = iter.getVectorIndex();
+      toDelete[autopas_get_thread_num()].push_back(std::make_tuple(particle.getID(), cellIndex));
 
-        size_t cellIndex = iter.getVectorIndex();
-        toDelete[autopas_get_thread_num()].push_back(std::make_tuple(particle.getID(), cellIndex));
-
-        _particleNumber ++;
-
-      }
+      _particleNumber++;
+    }
   }
 
-
-  for (const auto& t : toDelete) {
+  for (const auto &t : toDelete) {
     for (auto p : t) {
       int id = std::get<0>(p);
       size_t cellIndex = std::get<1>(p);
@@ -1146,16 +1143,15 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
     }
   }
 
+  _containerSize = this->_containerSelector.getCurrentContainer().size();
+  _particleBufferSize = 0;
+  for (auto &th : _particleBuffer) {
+    _particleBufferSize += th.size();
+  }
 
-    _containerSize = this->_containerSelector.getCurrentContainer().size();
-    _particleBufferSize = 0;
-    for(auto &th : _particleBuffer) {
-      _particleBufferSize += th.size();
-    }
-
-    if (_particleBufferSize > static_cast<long>(0.01 * _containerSize)) {
-      _neighborListInvalidDoDynamicRebuild = true;
-    }
+  if (_particleBufferSize > static_cast<long>(0.01 * _containerSize)) {
+    _neighborListInvalidDoDynamicRebuild = true;
+  }
 
   _fastParticles = _particleNumber;
 

@@ -542,7 +542,6 @@ class AutoPas {
    */
   double getVerletSkin() { return _logicHandlerInfo.verletSkin; };
 
-
   /**
    * Returns the number of particles in this container.
    * @param behavior Tells this function to report the number of halo, owned or all particles.
