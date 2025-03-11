@@ -359,21 +359,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     return particleIndex < particleVec.size();
   }
 
-  bool deleteParticle(int id, size_t cellIndex) override {
-    auto &particleVec = this->_cells[cellIndex]._particles;
-    int particleIndex = 0;
-
-    for (auto &particle : particleVec) {
-      if (particle.getID() == id) {
-        particle = particleVec.back();
-        particleVec.pop_back();
-        return particleIndex < particleVec.size();
-      }
-      particleIndex++;
-    }
-    throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
-  }
-
  private:
   class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**

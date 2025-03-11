@@ -289,18 +289,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     return false;
   }
 
-  bool deleteParticle(int id, size_t cellIndex) override {
-    auto &particleVec = this->_cells[cellIndex]._particles;
-
-    for (auto particle : particleVec) {
-      if (particle->getID() == id) {
-        internal::markParticleAsDeleted(*particle);
-        return false;
-      }
-    }
-    throw std::runtime_error("Particle " + std::to_string(id) + " does not exist");
-  }
-
   std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);

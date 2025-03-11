@@ -1128,18 +1128,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
       _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
       internal::markParticleAsDeleted(particle);
 
-      size_t cellIndex = iter.getVectorIndex();
-      toDelete[autopas_get_thread_num()].push_back(std::make_tuple(particle.getID(), cellIndex));
-
       _particleNumber++;
-    }
-  }
-
-  for (const auto &t : toDelete) {
-    for (auto p : t) {
-      int id = std::get<0>(p);
-      size_t cellIndex = std::get<1>(p);
-      _containerSelector.getCurrentContainer().deleteParticle(id, cellIndex);
     }
   }
 
