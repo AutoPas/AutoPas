@@ -165,6 +165,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
   _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
   _autoPasContainer->setUseLOESSSmoothening(_configuration.useLOESSSmoothening.value);
+  _autoPasContainer->setEnergySensorOption(_configuration.energySensorOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
@@ -220,7 +221,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 void Simulation::finalize() {
   _timers.total.stop();
-
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
   logSimulationState();
@@ -677,7 +677,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
+    std::cout << timerToString("  One iteration                 ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
