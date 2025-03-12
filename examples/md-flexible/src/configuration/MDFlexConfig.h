@@ -438,6 +438,42 @@ class MDFlexConfig {
   MDFlexOption<size_t, __LINE__> vtkWriteFrequency{100, "vtk-write-frequency", true,
                                                    "Number of iterations after which a VTK file is written."};
   /**
+   * rdfOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> rdfOutputFolder{"output", "rdf-output-folder", true,
+                                                      "The location where the rdf output will be created."};
+  /**
+   * rdfFileName
+   */
+  MDFlexOption<std::string, __LINE__> rdfFileName{"", "rdf-filename", true, "Filename for the RDF output CSV."};
+  /**
+   * rdfRadius
+   */
+  MDFlexOption<double, __LINE__> rdfRadius{0, "rdf-radius", true, "Radius for the RDF calculation."};
+  /**
+   * rdfNumBins
+   */
+  MDFlexOption<size_t, __LINE__> rdfNumBins{0, "rdf-num-bins", true, "Number of bins for the RDF calculation."};
+  /**
+   * rdfCaptureFreuency
+   */
+  MDFlexOption<size_t, __LINE__> rdfCaptureFreuency{1, "rdf-capture-frequency", true,
+                                                    "Number of iterations after which the RDF is captured."};
+  /**
+   * rdfStartIteration
+   */
+  MDFlexOption<size_t, __LINE__> rdfStartIteration{0, "rdf-start-iteration", true,
+                                                   "Iteration number after which RDF capturing is enabled"};
+  /**
+   * rdfEndIteration
+   */
+  MDFlexOption<size_t, __LINE__> rdfEndIteration{0, "rdf-end-iteration", true,
+                                                 "Iteration number after which RDF capturing is disabled."};
+  /**
+   * rdfGuardArea
+   */
+  MDFlexOption<double, __LINE__> rdfGuardArea{0, "rdf-guard-area", true, "Guard area to use for the RDF calculation."};
+  /**
    * verletClusterSize
    */
   MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,

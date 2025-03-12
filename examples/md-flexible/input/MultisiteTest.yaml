@@ -17,7 +17,7 @@ box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]
 cell-size                            :  [1]
 deltaT                               :  0.000001
-iterations                           :  10000
+iterations                           :  100
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 globalForce                          :  [0, 0, 0]
@@ -47,7 +47,7 @@ Molecules:
 Objects:                         
   CubeClosestPacked:
     0:
-      box-length                     :  [4, 4, 4]
+      box-length                     :  [20, 20, 20]
       bottomLeftCorner               :  [0, 0, 15]
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
@@ -61,3 +61,14 @@ thermostat:
 log-level                            :  info
 no-end-config                        :  false
 no-progress-bar                      :  false
+vtk-filename                         :  MultisiteTest
+vtk-output-folder                    :  MultisiteTestOutput
+vtk-write-frequency                  :  1
+rdf-filename                         :  RDFMultisiteTest
+rdf-output-folder                    :  RDFMultisiteTestOutput
+rdf-radius                           :  3
+rdf-num-bins                         :  100
+rdf-guard-area                       :  0
+rdf-capture-frequency                :  1
+rdf-start-iteration                  :  0
+rdf-end-iteration                    :  100
