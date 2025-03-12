@@ -7,8 +7,6 @@ file(
         LIB_MD_SRC
         "molecularDynamics/molecularDynamicsLibrary/*.h"
         "molecularDynamics/molecularDynamicsLibrary/*.cpp"
-        "molecularDynamics/molecularDynamicsLibrary/ArgonInclude/*.h"
-        "molecularDynamics/molecularDynamicsLibrary/ArgonInclude/*.cpp"
 )
 
 add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})

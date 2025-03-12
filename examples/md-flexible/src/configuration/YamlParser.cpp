@@ -190,14 +190,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.cutoff.value <= 0) {
           throw std::runtime_error("Cutoff has to be > 0!");
         }
-      } else if (key == config.cutoffFactorElectrostatics.name) {
-        expected = "Positive floating point value > 0.";
-        description = config.cutoffFactorElectrostatics.description;
-
-        config.cutoffFactorElectrostatics.value = node[key].as<double>();
-        if (config.cutoffFactorElectrostatics.value <= 0) {
-          throw std::runtime_error("Cutoff factor has to be > 0!");
-        }
       } else if (key == config.cellSizeFactors.name) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
@@ -238,8 +230,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
-        } else if (strArg.find("argon-pairwise") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::argon_pairwise;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -252,8 +242,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
         if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
-        } else if (strArg.find("argon-triwise") != std::string::npos) {
-          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::argon_triwise;
         } else {
           throw std::runtime_error("Unrecognized triwise functor!");
         }
@@ -687,14 +675,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
              ++siteIterator) {
           siteErrors.clear();
           siteID = std::distance(node[MDFlexConfig::siteStr].begin(), siteIterator);
-
-          // Check Coulomb parameters
-          const auto charge = parseComplexTypeValueSingle<double>(siteIterator->second, config.chargeMap.name.c_str(),
-                                                                  siteErrors, false);
-          const auto coulombEpsilon = parseComplexTypeValueSingle<double>(
-              siteIterator->second, config.coulombEpsilonMap.name.c_str(), siteErrors, false);
-
-          config.addCoulombParametersToSite(siteID, coulombEpsilon, charge);
 
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);

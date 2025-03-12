@@ -108,7 +108,9 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
+      struct option retStruct {
+        name.c_str(), requiresArgument, nullptr, getOptChar
+      };
       return retStruct;
     }
   };
@@ -171,16 +173,6 @@ class MDFlexConfig {
   void addATParametersToSite(unsigned long siteId, double nu);
 
   /**
-   * Adds the Coulomb parameters specified site.
-   * Checks if the given site exists and if the parameter was already specified.
-   *
-   * @param siteId unique site type id
-   * @param epsilon
-   * @param q
-   */
-  void addCoulombParametersToSite(unsigned long siteId, double epsilon, double q);
-
-  /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
    *
    * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
@@ -212,12 +204,12 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, argon_pairwise };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
 
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at, argon_triwise };
+  enum class FunctorOption3B { none, at };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -546,24 +538,19 @@ class MDFlexConfig {
   /**
    * cutoff factor for electro statics
    */
-  MDFlexOption<double, __LINE__> cutoffFactorElectrostatics{
-      2., "cutoff-factor-electrostatics", true,
-      "The cutoff is multiplied with this value and used as the electrostatics cutoff"};
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{
-      // Default is a dummy option
-      FunctorOption::none, "functor", true,
-      "Pairwise force functor to use. Possible Values: (lennard-jones "
-      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals argon-pairwise)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
+                                                      FunctorOption::none, "functor", true,
+                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
   /**
    * functorOption3B
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true,
-      "Triwise force functor to use. Possible Values: (axilrod-teller argon-triwise)"};
+      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
   /**
    * iterations
    */
@@ -684,16 +671,6 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
-  /**
-   * chargeMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> chargeMap{
-      {}, "charge", true, "Mapping from site type to a charge value."};
-  /**
-   * coulombEpsilonMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> coulombEpsilonMap{
-      {}, "coulomb-epsilon", true, "Mapping from site type to an coulomb epsilon value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

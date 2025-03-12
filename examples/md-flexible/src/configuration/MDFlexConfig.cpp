@@ -316,10 +316,6 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
         break;
       }
-      case FunctorOption::argon_pairwise: {
-        os << "Argon Pair Potential" << endl;
-        break;
-      }
     }
     os << indent;
     printOption(traversalOptions, -indentWidth);
@@ -343,10 +339,6 @@ std::string MDFlexConfig::to_string() const {
       }
       case FunctorOption3B::at: {
         os << "Axilrod-Teller" << endl;
-        break;
-      }
-      case FunctorOption3B::argon_triwise: {
-        os << "Argon Triwise" << endl;
         break;
       }
     }
@@ -379,9 +371,6 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << nuMap.name << ":  " << nuMap.value.at(siteId) << endl;
-    os << "    " << setw(valueOffset - 4) << left << coulombEpsilonMap.name << ":  "
-       << coulombEpsilonMap.value.at(siteId) << endl;
-    os << "    " << setw(valueOffset - 4) << left << chargeMap.name << ":  " << chargeMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -559,20 +548,6 @@ void MDFlexConfig::addATParametersToSite(unsigned long siteId, double nu) {
   }
 }
 
-void MDFlexConfig::addCoulombParametersToSite(unsigned long siteId, double epsilon, double q) {
-  // check if siteId was already declared and mass was specified
-  if (coulombEpsilonMap.value.count(siteId) == 1) {
-    if (autopas::utils::Math::isNearRel(chargeMap.value.at(siteId), q)) {
-      return;
-    } else {
-      throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
-    }
-  } else {
-    coulombEpsilonMap.value.emplace(siteId, epsilon);
-    chargeMap.value.emplace(siteId, q);
-  }
-}
-
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
                               const std::vector<std::array<double, 3>> &relSitePos,
                               std::array<double, 3> momentOfInertia) {
@@ -620,10 +595,6 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   // initialize AT parameters
   for (auto [siteTypeId, nu] : nuMap.value) {
     _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
-  }
-  // initialize Coulomb parameters
-  for (auto [siteTypeId, coulombEpsilon] : coulombEpsilonMap.value) {
-    _particlePropertiesLibrary->addCoulombParametersToSite(siteTypeId, coulombEpsilon, chargeMap.value.at(siteTypeId));
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

@@ -413,18 +413,5 @@ class Simulation {
    * @return Return value of f.
    */
   template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctorElectrostatic(FunctionType f);
-
-  /**
-   *
-   * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
-   * @note This templated function is private and hence implemented in the .cpp
-   *
-   * @tparam ReturnType Return type of f.
-   * @tparam FunctionType Function type ReturnType f(auto functor).
-   * @param f lambda function.
-   * @return Return value of f.
-   */
-  template <class ReturnType, class FunctionType>
   ReturnType applyWithChosenFunctor3B(FunctionType f);
 };

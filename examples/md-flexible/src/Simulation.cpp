@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w{};
+      struct winsize w {};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -150,7 +150,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
-  _autoPasContainer->setCutoff(_configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value);
+  _autoPasContainer->setCutoff(_configuration.cutoff.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
   _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
@@ -553,9 +553,6 @@ long Simulation::accumulateTime(const long &time) {
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
-
-  applyWithChosenFunctorElectrostatic<bool>(
-      [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -852,28 +849,11 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
-    case MDFlexConfig::FunctorOption::argon_pairwise: {
-#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
-      return f(ArgonPairwiseFunctorType{cutoff});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for the Argon Pair Functor. Activate it via `cmake "
-          "-MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE=ON`.");
-#endif
-    }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
     }
   }
-}
-
-template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value * _configuration.cutoff.value;
-  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
-
-  return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 }
 
 template <class ReturnType, class FunctionType>
@@ -888,15 +868,6 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
-#endif
-    }
-    case MDFlexConfig::FunctorOption3B::argon_triwise: {
-#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
-      return f(ArgonTriwiseFunctorType{cutoff});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for Argon Triwise Functor. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE=ON`.");
 #endif
     }
     default: {
