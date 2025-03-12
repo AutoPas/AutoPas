@@ -38,7 +38,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
-      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
+      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
+      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
@@ -320,42 +321,15 @@ bool AutoTuner::willRebuildNeighborLists() const {
 
 bool AutoTuner::initEnergy() {
   // Try to initialize the raplMeter
-  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
+  return _energySensor.init(_tuningMetric == TuningMetricOption::energy);
 }
 
-bool AutoTuner::resetEnergy() {
-  if (_energyMeasurementPossible) {
-    try {
-      _raplMeter.reset();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      /**
-       * very unlikely to happen, as check was performed at initialisation of autotuner
-       * but may occur if permissions are changed during runtime.
-       */
-      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
-      _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      }
-    }
-  }
-  return _energyMeasurementPossible;
-}
+bool AutoTuner::resetEnergy() { return _energySensor.startMeasurement(); }
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
-  if (_energyMeasurementPossible) {
-    try {
-      _raplMeter.sample();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
-      _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      }
-    }
-  }
-  return {_raplMeter.get_psys_energy(), _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy(),
-          _raplMeter.get_total_energy()};
+  _energySensor.endMeasurement();
+  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getEnergyDeltaT(),
+          _energySensor.getNanoJoules()};
 }
 
 size_t AutoTuner::getCurrentNumSamples() const {

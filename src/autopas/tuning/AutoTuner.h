@@ -17,7 +17,7 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
-#include "autopas/utils/RaplMeter.h"
+#include "autopas/utils/EnergySensor.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -162,8 +162,8 @@ class AutoTuner {
   void logTuningResult(bool tuningIteration, long tuningTime) const;
 
   /**
-   * Initialize rapl meter.
-   * @return True if energy measurements are possible on this system.
+   * Initialize pmt sensor.
+   * @return True if energy measurements are enabled and possible.
    */
   bool initEnergy();
 
@@ -250,11 +250,6 @@ class AutoTuner {
   void setRebuildFrequency(double rebuildFrequency);
 
  private:
-  /**
-   * Measures consumed energy for tuning
-   */
-  utils::RaplMeter _raplMeter;
-
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
@@ -407,6 +402,11 @@ class AutoTuner {
    * CSV logger for all samples collected during a tuning phase.
    */
   TuningDataLogger _tuningDataLogger;
+
+  /**
+   * Sensor for energy measurement
+   */
+  utils::EnergySensor _energySensor;
 
   /**
    * Is set to true during a tuning phase.
