@@ -108,7 +108,9 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
+      struct option retStruct {
+        name.c_str(), requiresArgument, nullptr, getOptChar
+      };
       return retStruct;
     }
   };
@@ -212,12 +214,12 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, argon_pairwise };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
 
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at, argon_triwise };
+  enum class FunctorOption3B { none, at };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -516,18 +518,16 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{
-      // Default is a dummy option
-      FunctorOption::none, "functor", true,
-      "Pairwise force functor to use. Possible Values: (lennard-jones "
-      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals argon-pairwise)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
+                                                      FunctorOption::none, "functor", true,
+                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
   /**
    * functorOption3B
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true,
-      "Triwise force functor to use. Possible Values: (axilrod-teller argon-triwise)"};
+      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
   /**
    * iterations
    */
