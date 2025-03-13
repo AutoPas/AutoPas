@@ -78,7 +78,16 @@ class ParticlePropertiesLibrary {
    */
   void addATParametersToSite(const intType siteId, const floatType nu);
 
-  void addCoulombParametersToSite(const intType siteId, const floatType epsilon, const floatType q);
+  /**
+   * Adds the Coulomb properties of a single site type to the library.
+   *
+   * Checks if a site with given siteId was already registered.
+   * Old values will be overwritten.
+   * @param siteId
+   * @param epsilon
+   * @param charge
+   */
+  void addCoulombParametersToSite(const intType siteId, const floatType epsilon, const floatType charge);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
