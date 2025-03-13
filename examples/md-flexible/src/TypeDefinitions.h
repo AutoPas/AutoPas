@@ -11,8 +11,10 @@
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-#include "molecularDynamicsLibrary/CoulombMultisiteFunctor.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+#include "molecularDynamicsLibrary/CoulombMultisiteFunctor.h"
+#endif
 #endif
 
 #else
@@ -86,11 +88,11 @@ constexpr bool calcGlobals =
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
-
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
 using CoulombFunctorTypeAutovec =
     mdLib::CoulombMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                    mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
-
+#endif
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;

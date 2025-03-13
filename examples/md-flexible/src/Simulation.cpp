@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -833,7 +833,13 @@ ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f) {
   const double cutoff = _configuration.cutoff.value * _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
   return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+#else
+  throw std::runtime_error(
+      "MD-Flexible was not compiled with support for Coulomb interactions. Activate it via `cmake "
+      "-DMD_FLEXIBLE_FUNCTOR_COULOMB=ON`.");
+#endif
 }
 
 template <class ReturnType, class FunctionType>
