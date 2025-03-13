@@ -75,30 +75,41 @@ class VCLListIntersectionTraversal3B : public TraversalInterface,
    * @param isHaloCluster
    */
   void processClusterListIntersection(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
-    if (not isHaloCluster) {
-      _clusterFunctor.traverseClusterTriwise(cluster);
+    if (isHaloCluster) {
+      return;
     }
+    _clusterFunctor.traverseClusterTriwise(cluster);
     if (*(cluster.getNeighbors()->data())) {
       auto intersectingNeighbors = std::vector<internal::Cluster<Particle>*>();
 
       auto &neighborClusters1 = *(cluster.getNeighbors());
-      std::sort(neighborClusters1.begin(), neighborClusters1.end());
+      std::sort(neighborClusters1.begin(), neighborClusters1.end(), [](const auto cluster1, const auto cluster2)
+                {return (*cluster1)[0].getID() < (*cluster2)[0].getID();});
       auto neighborClusters1End = neighborClusters1.end();
 
-      for (auto neighborClusterIter1 = neighborClusters1.begin(); neighborClusterIter1 != neighborClusters1End; ++neighborClusterIter1) {
+      for (auto neighborClusterIter1 = neighborClusters1.begin(); neighborClusterIter1 != neighborClusters1End;) {
         internal::Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
-        //take care of all neighbor pairs first
+        //take care of all cluster pairs first
         _clusterFunctor.traverseClusterPairTriwise(cluster, neighbor1);
+
         auto &neighborClusters2 = *(neighbor1.getNeighbors());
-        std::sort(neighborClusters2.begin(), neighborClusters2.end());
+        std::sort(neighborClusters2.begin(), neighborClusters2.end(), [](const auto cluster1, const auto cluster2)
+                  {return (*cluster1)[0].getID() < (*cluster2)[0].getID();});
+
         //reserve space in buffer
         std::size_t maxIntersectionSize = std::min(neighborClusters1.size(), neighborClusters2.size());
         intersectingNeighbors.reserve(maxIntersectionSize);
-        //intersect the neighbors of cluster and neighbor1
-        auto intersectingNeighborsIter = neighborClusterIter1;
-        auto intersectingNeighborsEnd = std::set_intersection(++intersectingNeighborsIter, neighborClusters1End,
-                                                              neighborClusters2.begin(), neighborClusters2.end(),
-                                                              std::back_inserter(intersectingNeighbors));
+
+        //preemptively increment neighbor list since current neighbor can not be in intersection
+        ++neighborClusterIter1;
+
+        //intersect the neighbors of cluster and neighbor1 to find common neighbors
+        std::set_intersection(
+            neighborClusterIter1, neighborClusters1End,
+            neighborClusters2.begin(), neighborClusters2.end(),
+            std::back_inserter(intersectingNeighbors),
+            [](const auto cluster1, const auto cluster2){return (*cluster1)[0].getID() < (*cluster2)[0].getID();});
+
         //iterate over intersected list
         for (auto neighborClusterIter2 = intersectingNeighbors.begin(); neighborClusterIter2 != intersectingNeighbors.end(); ++neighborClusterIter2) {
           internal::Cluster<Particle> &neighbor2 = **(neighborClusterIter2);
