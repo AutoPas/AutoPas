@@ -87,10 +87,19 @@ class VCLListIntersectionTraversal3B : public TraversalInterface,
                 {return (*cluster1)[0].getID() < (*cluster2)[0].getID();});
       auto neighborClusters1End = neighborClusters1.end();
 
-      for (auto neighborClusterIter1 = neighborClusters1.begin(); neighborClusterIter1 != neighborClusters1End;) {
+      for (auto neighborClusterIter1 = neighborClusters1.begin(); neighborClusterIter1 < neighborClusters1End;) {
         internal::Cluster<Particle> &neighbor1 = **(neighborClusterIter1);
         //take care of all cluster pairs first
         _clusterFunctor.traverseClusterPairTriwise(cluster, neighbor1);
+
+        if (neighborClusterIter1 + 1 < neighborClusters1End) {
+          //preemptively increment neighbor list since current neighbor can not be in intersection
+          ++neighborClusterIter1;
+        }
+        else {
+          //do not try to find more triplet clusters if neighbor1 was the last neighbor of cluster
+          break;
+        }
 
         auto &neighborClusters2 = *(neighbor1.getNeighbors());
         std::sort(neighborClusters2.begin(), neighborClusters2.end(), [](const auto cluster1, const auto cluster2)
@@ -99,9 +108,6 @@ class VCLListIntersectionTraversal3B : public TraversalInterface,
         //reserve space in buffer
         std::size_t maxIntersectionSize = std::min(neighborClusters1.size(), neighborClusters2.size());
         intersectingNeighbors.reserve(maxIntersectionSize);
-
-        //preemptively increment neighbor list since current neighbor can not be in intersection
-        ++neighborClusterIter1;
 
         //intersect the neighbors of cluster and neighbor1 to find common neighbors
         std::set_intersection(
