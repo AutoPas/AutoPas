@@ -523,8 +523,10 @@ bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
 
-  applyWithChosenFunctorElectrostatic<bool>(
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+  wasTuningIteration |= applyWithChosenFunctorElectrostatic<bool>(
       [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+#endif
   return wasTuningIteration;
 }
 

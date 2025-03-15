@@ -371,9 +371,13 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << nuMap.name << ":  " << nuMap.value.at(siteId) << endl;
-    os << "    " << setw(valueOffset - 4) << left << coulombEpsilonMap.name << ":  "
-       << coulombEpsilonMap.value.at(siteId) << endl;
-    os << "    " << setw(valueOffset - 4) << left << chargeMap.name << ":  " << chargeMap.value.at(siteId) << endl;
+    if (coulombEpsilonMap.value.count(siteId) > 0) {
+      os << "    " << setw(valueOffset - 4) << left << coulombEpsilonMap.name << ":  "
+         << coulombEpsilonMap.value.at(siteId) << endl;
+    }
+    if (chargeMap.value.count(siteId) > 0) {
+      os << "    " << setw(valueOffset - 4) << left << chargeMap.name << ":  " << chargeMap.value.at(siteId) << endl;
+    }
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE

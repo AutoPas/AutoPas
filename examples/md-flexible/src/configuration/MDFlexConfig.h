@@ -513,7 +513,7 @@ class MDFlexConfig {
    * cutoff factor for electro statics
    */
   MDFlexOption<double, __LINE__> cutoffFactorElectrostatics{
-      2., "cutoff-factor-electrostatics", true,
+      1., "cutoff-factor-electrostatics", true,
       "The cutoff is multiplied with this value and used as the electrostatics cutoff"};
   /**
    * functorOption
