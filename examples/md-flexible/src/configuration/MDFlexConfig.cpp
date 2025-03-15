@@ -551,17 +551,17 @@ void MDFlexConfig::addATParametersToSite(unsigned long siteId, double nu) {
   }
 }
 
-void MDFlexConfig::addCoulombParametersToSite(unsigned long siteId, double epsilon, double q) {
+void MDFlexConfig::addCoulombParametersToSite(unsigned long siteId, double epsilon, double charge) {
   // check if siteId was already declared and mass was specified
   if (coulombEpsilonMap.value.count(siteId) == 1) {
-    if (autopas::utils::Math::isNearRel(chargeMap.value.at(siteId), q)) {
+    if (autopas::utils::Math::isNearRel(chargeMap.value.at(siteId), charge)) {
       return;
     } else {
       throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
     }
   } else {
     coulombEpsilonMap.value.emplace(siteId, epsilon);
-    chargeMap.value.emplace(siteId, q);
+    chargeMap.value.emplace(siteId, charge);
   }
 }
 

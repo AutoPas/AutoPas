@@ -178,9 +178,9 @@ class MDFlexConfig {
    *
    * @param siteId unique site type id
    * @param epsilon
-   * @param q
+   * @param charge
    */
-  void addCoulombParametersToSite(unsigned long siteId, double epsilon, double q);
+  void addCoulombParametersToSite(unsigned long siteId, double epsilon, double charge);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
