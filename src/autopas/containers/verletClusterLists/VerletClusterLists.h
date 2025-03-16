@@ -789,6 +789,24 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                  enablePairNeighborLists);
       }
       _builder->rebuildNeighborListsAndFillClusters();
+
+      if (traversalType == TraversalOption::vcl_list_intersection_3b) {
+        //sort the neighbor lists first
+        const auto towersPerDimX = _towerBlock.getTowersPerDim()[0];
+        const auto towersPerDimY = _towerBlock.getTowersPerDim()[1];
+        AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2))
+        for (size_t x = 0; x < towersPerDimX; x++) {
+          for (size_t y = 0; y < towersPerDimY; y++) {
+            auto &tower = _towerBlock.getTowerByIndex2D(x, y);
+            for (auto clusterIter = tower.getClusters().begin(); clusterIter < tower.getClusters().end(); ++clusterIter) {
+              if (!((*clusterIter).getNeighbors()->empty())) {
+                std::sort(((*clusterIter).getNeighbors())->begin(), ((*clusterIter).getNeighbors())->end(),
+                          [](const auto cluster1, const auto cluster2){ return (*cluster1)[0].getID() < (*cluster2)[0].getID();});
+              }
+            }
+          }
+        }
+      }
       if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
         calculateClusterThreadPartition();
       }

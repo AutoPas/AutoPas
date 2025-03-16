@@ -83,8 +83,6 @@ class VCLListIntersectionTraversal3B : public TraversalInterface,
       auto intersectingNeighbors = std::vector<internal::Cluster<Particle>*>();
 
       auto &neighborClusters1 = *(cluster.getNeighbors());
-      std::sort(neighborClusters1.begin(), neighborClusters1.end(), [](const auto cluster1, const auto cluster2)
-                {return (*cluster1)[0].getID() < (*cluster2)[0].getID();});
       auto neighborClusters1End = neighborClusters1.end();
 
       for (auto neighborClusterIter1 = neighborClusters1.begin(); neighborClusterIter1 < neighborClusters1End;) {
@@ -100,8 +98,6 @@ class VCLListIntersectionTraversal3B : public TraversalInterface,
 
         if (!neighbor1.getNeighbors()->empty()) {
           auto &neighborClusters2 = *(neighbor1.getNeighbors());
-          std::sort(neighborClusters2.begin(), neighborClusters2.end(), [](const auto cluster1, const auto cluster2)
-                    {return (*cluster1)[0].getID() < (*cluster2)[0].getID();});
 
           //reserve space in buffer
           std::size_t maxIntersectionSize = std::min(neighborClusters1.size(), neighborClusters2.size());

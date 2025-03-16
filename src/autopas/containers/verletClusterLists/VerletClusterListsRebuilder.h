@@ -452,7 +452,7 @@ class VerletClusterListsRebuilder {
         for (auto clusterIter = tower.getFirstOwnedCluster(); clusterIter < tower.getFirstTailHaloCluster();
              ++clusterIter) {
           auto cluster = *clusterIter;
-          if (*(cluster.getNeighbors()->data())) {
+          if (!cluster.getNeighbors()->empty()) {
             auto &neighborClusters = *(cluster.getNeighbors());
             auto neighborClustersEnd = neighborClusters.end();
             for (auto neighborClusterIter1 = neighborClusters.begin(); neighborClusterIter1 != neighborClustersEnd; ++neighborClusterIter1) {
