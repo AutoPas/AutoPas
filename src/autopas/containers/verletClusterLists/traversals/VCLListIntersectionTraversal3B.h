@@ -92,11 +92,8 @@ class VCLListIntersectionTraversal3B : public TraversalInterface,
         //take care of all cluster pairs first
         _clusterFunctor.traverseClusterPairTriwise(cluster, neighbor1);
 
-        if (neighborClusterIter1 + 1 < neighborClusters1End) {
-          //preemptively increment neighbor list since current neighbor can not be in intersection
-          ++neighborClusterIter1;
-        }
-        else {
+        //preemptively increment neighbor list since current neighbor can not be in intersection
+        if (++neighborClusterIter1 == neighborClusters1End) {
           //do not try to find more triplet clusters if neighbor1 was the last neighbor of cluster
           break;
         }
