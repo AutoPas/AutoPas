@@ -347,7 +347,7 @@ void testSimulationLoop(const autopas::Configuration &conf) {
   doSimulationLoop(autoPas, &functor);
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
-  //forcing the particle to move inwards
+  // forcing the particle to move inwards
   moveParticlesAndResetF({-autoPas.getVerletSkin() / 6, 0., 0.});
 
   addParticlePair({9.99, 1., 5.});
