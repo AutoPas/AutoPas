@@ -19,7 +19,6 @@
 namespace autopas {
 
 /**
- * This class handles the storage of particles in their full form.
  * @tparam Particle
  */
 template <class Particle>
@@ -60,7 +59,6 @@ class FullParticleCell : public ParticleCell<Particle> {
           "{}",
           p.getOwnershipState(), this->_ownershipState);
     }
-
     _particles.push_back(p);
   }
 

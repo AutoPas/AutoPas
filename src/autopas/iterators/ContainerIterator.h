@@ -312,6 +312,11 @@ class ContainerIterator {
    */
   bool operator!=(const bool input) const { return not(*this == input); }
 
+  /**
+   * @return Index of the Vector where the current particle is found.
+   */
+  [[nodiscard]] size_t getVectorIndex() const { return _currentVectorIndex; }
+
  private:
   /**
    * This function queries the container with the current iterator indices and updates them as well as the particle
