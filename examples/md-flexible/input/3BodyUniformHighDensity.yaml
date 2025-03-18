@@ -42,7 +42,7 @@ Objects:
   CubeUniform:
     0:
       numberOfParticles: 125000
-      box-length: [ 54, 54, 54 ]
+      box-length: [ 52, 52, 52 ]
       bottomLeftCorner: [ 0, 0, 0 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
