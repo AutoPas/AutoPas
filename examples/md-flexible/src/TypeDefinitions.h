@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "molecularDynamicsLibrary/LuTFunctor.h"
+
 #if MD_FLEXIBLE_MODE == MULTISITE
 
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
@@ -75,6 +77,9 @@ constexpr bool calcGlobals =
     false;
 #endif
 }  // namespace mdFlexibleTypeDefs
+
+using LuTFunctorType = mdLib::LuTFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                     mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**

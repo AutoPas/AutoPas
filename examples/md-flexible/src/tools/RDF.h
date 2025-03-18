@@ -34,6 +34,12 @@ class RDF {
       size_t numBins, double guardArea, bool periodicBoundaries);
 
   /**
+   * Constructor for the RDF that loads data from a CSV file
+   * @param filename: Filename to data
+   */
+  RDF(const std::string &filename);
+
+  /**
    * Destructor.
    */
   ~RDF() = default;

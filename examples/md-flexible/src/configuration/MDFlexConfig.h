@@ -108,9 +108,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -473,6 +471,14 @@ class MDFlexConfig {
    * rdfGuardArea
    */
   MDFlexOption<double, __LINE__> rdfGuardArea{0, "rdf-guard-area", true, "Guard area to use for the RDF calculation."};
+  /**
+   * rdf
+   */
+  MDFlexOption<std::string, __LINE__> rdf{"", "rdf", true, "RDF input file."};
+  /**
+   * lut
+   */
+  MDFlexOption<std::string, __LINE__> lut{"", "lut", true, "Lookup table input file."};
   /**
    * verletClusterSize
    */

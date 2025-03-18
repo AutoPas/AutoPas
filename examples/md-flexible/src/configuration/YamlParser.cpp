@@ -635,6 +635,22 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.rdfGuardArea.value < 0) {
           throw std::runtime_error("RDF guard area has to be a positive value >= 0!");
         }
+      } else if (key == config.rdf.name) {
+        expected = "Path to RDF CSV file.";
+        description = config.rdf.description;
+
+        config.rdf.value = node[key].as<std::string>();
+        if (config.rdf.value.empty()) {
+          throw std::runtime_error("Parsed RDF input file name is empty");
+        }
+      } else if (key == config.lut.name) {
+        expected = "Path to Lookup table file for IBI potential.";
+        description = config.lut.description;
+
+        config.lut.value = node[key].as<std::string>();
+        if (config.lut.value.empty()) {
+          throw std::runtime_error("Parsed Lookup table file name is empty");
+        }
       } else if (key == config.useTuningLogger.name) {
         expected = "Boolean Value";
         description = config.useTuningLogger.description;

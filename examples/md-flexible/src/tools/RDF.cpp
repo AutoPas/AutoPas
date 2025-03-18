@@ -14,6 +14,39 @@ RDF::RDF(const std::shared_ptr<autopas::AutoPas<ParticleType>> autoPasContainer,
       _guardArea{guardArea},
       _periodicBoundaries{periodicBoundaries} {}
 
+RDF::RDF(const std::string &filename) {
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    std::cerr << "Error: Could not open file " << filename << " for reading." << std::endl;
+    return;
+  }
+
+  _finalRdf.clear();
+  std::string line;
+  std::getline(file, line);  // Skip header
+
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+    std::string rStr, gStr;
+
+    if (!std::getline(ss, rStr, ',') || !std::getline(ss, gStr, ',')) {
+      std::cerr << "Warning: Malformed line in CSV: " << line << std::endl;
+      continue;
+    }
+
+    try {
+      double r = std::stod(rStr);
+      double g = std::stod(gStr);
+      _finalRdf.emplace_back(r, g);
+    } catch (const std::exception &e) {
+      std::cerr << "Error: Could not convert values in line: " << line << "\n";
+    }
+  }
+  file.close();
+
+  _rdfFinished = true;
+}
+
 void RDF::captureRDF() {
   // Parameters for RDF calculation
   const double binWidth = (_radiusMax - _radiusMin) / _numBins;

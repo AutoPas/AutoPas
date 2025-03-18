@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -217,6 +217,29 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _configuration.rdfEndIteration.value = _configuration.iterations.value;
     }
   }
+
+  if (not _configuration.rdf.value.empty()) {
+    _rdfAA = std::make_shared<RDF>(_configuration.rdf.value);
+    _lut = std::make_shared<LookupTable>();
+    if (not _configuration.lut.value.empty()) {
+      _lut->loadFromCSV(_configuration.lut.value);
+    } else {
+      // generate initial cg_potential
+      const double kT = 1;
+      std::vector<std::pair<double, double>> initialPotential(_configuration.rdfNumBins.value,
+                                                              std::pair<double, double>(0, 0));
+      initialPotential.resize(_configuration.rdfNumBins.value);
+      for (int i = 0; i < _configuration.rdfNumBins.value; i++) {
+        initialPotential[i].first =
+            _configuration.rdfRadius.value / static_cast<double>(_configuration.rdfNumBins.value) * (i + 1);
+        if (_rdfAA->getFinalRDF()[i].second > 0.0) {
+          initialPotential[i].second = -kT * std::log(_rdfAA->getFinalRDF()[i].second);
+        }
+      }
+      std::cout << "updateTable" << std::endl;
+      _lut->updateTable(initialPotential);
+    }
+  }
 }
 
 void Simulation::finalize() {
@@ -339,7 +362,32 @@ void Simulation::run() {
       _rdf->captureRDF();
     }
     _rdf->computeFinalRDF();
-    _rdf->writeToCSV(_configuration.rdfOutputFolder.value, _configuration.rdfFileName.value);
+    if (_configuration.lut.value.empty()) {
+      _rdf->writeToCSV(_configuration.rdfOutputFolder.value, _configuration.rdfFileName.value);
+    }
+  }
+
+  if (not _configuration.rdf.value.empty()) {
+    const auto rdf_cg = _rdf->getFinalRDF();
+    const auto rdf_aa = _rdfAA->getFinalRDF();
+    double kT = 1;
+    double tolerance = 0.1;
+
+    // Update the CG potential
+    double max_diff = 0.0;
+    for (int i = 0; i < _configuration.rdfNumBins.value; i++) {
+      if (rdf_cg[i].second > 0.0 && rdf_aa[i].second > 0.0) {
+        double update = kT * std::log(rdf_cg[i].second / rdf_aa[i].second);
+        (*_lut)[i] += update;
+        max_diff = std::max(max_diff, std::abs(update));
+      }
+    }
+
+    _lut->saveToCSV("RDFTestOutput/LUT.csv");
+
+    if (max_diff < tolerance) {
+      std::cout << "Convergence reached!" << std::endl;
+    }
   }
 
   // Record last state of simulation.
@@ -821,6 +869,11 @@ template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+  if (not _configuration.rdf.value.empty()) {
+    auto func = LuTFunctorType{cutoff, particlePropertiesLibrary};
+    func.setLuT(_lut);
+    return f(func);
+  }
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)

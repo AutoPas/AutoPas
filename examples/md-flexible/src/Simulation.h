@@ -13,6 +13,7 @@
 
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
+#include "molecularDynamicsLibrary/LuT.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
@@ -254,6 +255,16 @@ class Simulation {
    * Stores a radial distribution function
    */
   std::shared_ptr<RDF> _rdf;
+
+  /**
+   * Stores a radial distribution function from an initial simulation
+   */
+  std::shared_ptr<RDF> _rdfAA;
+
+  /**
+   * Stores a lookup table for the IBI potential
+   */
+  std::shared_ptr<LookupTable> _lut;
 
  private:
   /**
