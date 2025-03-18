@@ -13,11 +13,13 @@
 
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
+#include "molecularDynamicsLibrary/LuT.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+#include "tools/RDF.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
@@ -248,6 +250,21 @@ class Simulation {
    * Defines, if vtk files should be created or not.
    */
   bool _createVtkFiles;
+
+  /**
+   * Stores a radial distribution function
+   */
+  std::shared_ptr<RDF> _rdf;
+
+  /**
+   * Stores a radial distribution function from an initial simulation
+   */
+  std::shared_ptr<RDF> _rdfAA;
+
+  /**
+   * Stores a lookup table for the IBI potential
+   */
+  std::shared_ptr<LookupTable> _lut;
 
  private:
   /**
