@@ -6,7 +6,7 @@
 
 #pragma once
 namespace autopas {
-template <class Particle>
+template <class ParticleT>
 class AutoPas;
 namespace utils {
 
@@ -38,15 +38,15 @@ struct ParticleTypeTrait<std::vector<ParticleCell>> {
 
 /**
  * Specialization for the AutoPas class.
- * @tparam Particle
+ * @tparam ParticleT
  * @tparam ParticleCell
  */
-template <class Particle>
-struct ParticleTypeTrait<autopas::AutoPas<Particle>> {
+template <class ParticleT>
+struct ParticleTypeTrait<autopas::AutoPas<ParticleT>> {
   /**
    * The Particle Type.
    */
-  using value = Particle;
+  using value = ParticleT;
 };
 }  // namespace utils
 }  // namespace autopas

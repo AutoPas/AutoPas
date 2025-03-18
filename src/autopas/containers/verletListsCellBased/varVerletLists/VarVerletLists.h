@@ -13,11 +13,11 @@ namespace autopas {
 
 /**
  * Variable Verlet Lists container with different neighbor lists.
- * @tparam Particle The particle type this container contains.
+ * @tparam ParticleT The particle type this container contains.
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
-template <class Particle, class NeighborList>
-class VarVerletLists : public VerletListsLinkedBase<Particle> {
+template <class ParticleT, class NeighborList>
+class VarVerletLists : public VerletListsLinkedBase<ParticleT> {
  public:
   /**
    * Constructor of the Variable VerletLists class.
@@ -31,7 +31,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   VarVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                  const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
+      : VerletListsLinkedBase<ParticleT>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                         compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 

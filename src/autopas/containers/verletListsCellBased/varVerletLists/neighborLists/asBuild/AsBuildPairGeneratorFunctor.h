@@ -12,7 +12,7 @@
 
 namespace autopas {
 
-template <class Particle>
+template <class ParticleT>
 class VerletNeighborListAsBuild;
 
 namespace internal {
@@ -21,41 +21,41 @@ namespace internal {
  * This functor can generate or check variable verlet lists using the typical pairwise
  * traversal.
  *
- * @tparam Particle The particle class.
+ * @tparam ParticleT The particle class.
  * @tparam callCheckInstead If false, generate a neighbor list. If true, check the current for validity. Checking
  * validity only works with the AoSFunctor().
  */
-template <class Particle, bool callCheckInstead = false>
+template <class ParticleT, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
-    : public autopas::PairwiseFunctor<Particle, AsBuildPairGeneratorFunctor<Particle, callCheckInstead>> {
+    : public autopas::PairwiseFunctor<ParticleT, AsBuildPairGeneratorFunctor<ParticleT, callCheckInstead>> {
  public:
   /**
    * The structure of the SoAs is defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename ParticleT::SoAArraysType;
 
   /**
    * @copydoc Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 4>{
-        Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ};
+    return std::array<typename ParticleT::AttributeNames, 4>{
+        ParticleT::AttributeNames::ptr, ParticleT::AttributeNames::posX, ParticleT::AttributeNames::posY,
+        ParticleT::AttributeNames::posZ};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 4>{
-        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ};
+    return std::array<typename ParticleT::AttributeNames, 4>{
+        ParticleT::AttributeNames::id, ParticleT::AttributeNames::posX, ParticleT::AttributeNames::posY,
+        ParticleT::AttributeNames::posZ};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static auto getComputedAttr() { return std::array<typename Particle::AttributeNames, 0>{}; }
+  constexpr static auto getComputedAttr() { return std::array<typename ParticleT::AttributeNames, 0>{}; }
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
@@ -65,8 +65,8 @@ class AsBuildPairGeneratorFunctor
    * @param neighborList The neighbor list to fill.
    * @param cutoffskin The cutoff skin to use.
    */
-  AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
-      : autopas::PairwiseFunctor<Particle, AsBuildPairGeneratorFunctor>(cutoffskin),
+  AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<ParticleT> &neighborList, double cutoffskin)
+      : autopas::PairwiseFunctor<ParticleT, AsBuildPairGeneratorFunctor>(cutoffskin),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
@@ -80,7 +80,7 @@ class AsBuildPairGeneratorFunctor
    * @param j The second particle of the pair.
    * @param newton3 Not used!
    */
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(ParticleT &i, ParticleT &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto dist = i.getR() - j.getR();
@@ -102,10 +102,10 @@ class AsBuildPairGeneratorFunctor
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;
 
-    auto **const __restrict ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict ptrptr = soa.template begin<ParticleT::AttributeNames::ptr>();
+    double *const __restrict xptr = soa.template begin<ParticleT::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<ParticleT::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<ParticleT::AttributeNames::posZ>();
 
     size_t numPart = soa.size();
     for (unsigned int i = 0; i < numPart; ++i) {
@@ -138,15 +138,15 @@ class AsBuildPairGeneratorFunctor
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    auto **const __restrict ptrptr1 = soa1.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict ptrptr1 = soa1.template begin<ParticleT::AttributeNames::ptr>();
+    double *const __restrict x1ptr = soa1.template begin<ParticleT::AttributeNames::posX>();
+    double *const __restrict y1ptr = soa1.template begin<ParticleT::AttributeNames::posY>();
+    double *const __restrict z1ptr = soa1.template begin<ParticleT::AttributeNames::posZ>();
 
-    auto **const __restrict ptrptr2 = soa2.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict ptrptr2 = soa2.template begin<ParticleT::AttributeNames::ptr>();
+    double *const __restrict x2ptr = soa2.template begin<ParticleT::AttributeNames::posX>();
+    double *const __restrict y2ptr = soa2.template begin<ParticleT::AttributeNames::posY>();
+    double *const __restrict z2ptr = soa2.template begin<ParticleT::AttributeNames::posZ>();
 
     size_t numPart1 = soa1.size();
     for (unsigned int i = 0; i < numPart1; ++i) {
@@ -173,7 +173,7 @@ class AsBuildPairGeneratorFunctor
   /**
    * The neighbor list to fill.
    */
-  VerletNeighborListAsBuild<Particle> &_list;
+  VerletNeighborListAsBuild<ParticleT> &_list;
   /**
    * The squared cutoff skin to determine if a pair should be added to the list.
    */

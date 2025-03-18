@@ -16,12 +16,12 @@
  * This class uses a std::vector to store particles and allows access to its references.
  * It also keeps track, which references are no longer valid, which happens
  * when operations like delete and resize are performed.
- * @tparam Type of the Particle that is being stored
+ * @tparam ParticleT of the Particle that is being stored
  */
-template <class Type>
+template <class ParticleT>
 class ParticleVector {
  public:
-  ParticleVector<Type>() = default;
+  ParticleVector<ParticleT>() = default;
 
   /**
    * Returns the dirty flag, indicating whether Particles exist in the vector that are not stored in a cell yet.
@@ -63,7 +63,7 @@ class ParticleVector {
    * Add a Particle to the data structure.
    * @param particle A reference to the particle to be stored
    */
-  void push_back(const Type &particle) {
+  void push_back(const ParticleT &particle) {
     _particleListLock.lock();
     _dirty = true;
     if (_particleListImp.capacity() == _particleListImp.size()) {
@@ -108,7 +108,7 @@ class ParticleVector {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda) {
-    for (Type &p : _particleListImp) {
+    for (ParticleT &p : _particleListImp) {
       forEachLambda(p);
     }
   }
@@ -120,7 +120,7 @@ class ParticleVector {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result) {
-    for (Type &p : _particleListImp) {
+    for (ParticleT &p : _particleListImp) {
       reduceLambda(p, result);
     }
   }
@@ -135,5 +135,5 @@ class ParticleVector {
    */
   size_t _dirtyIndex{0};
   autopas::AutoPasLock _particleListLock;
-  std::vector<Type> _particleListImp;
+  std::vector<ParticleT> _particleListImp;
 };

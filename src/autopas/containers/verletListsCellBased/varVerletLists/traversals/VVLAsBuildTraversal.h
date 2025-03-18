@@ -17,24 +17,24 @@ namespace autopas {
  * by the same thread in the same color as during the build of the neighbor list.
  *
  * @tparam ParticleCell
- * @tparam Particle The particle type used by the neighbor list.
+ * @tparam ParticleT The particle type used by the neighbor list.
  * @tparam PairwiseFunctor The type of the functor to use for the iteration.
  */
-template <class ParticleCell, class Particle, class PairwiseFunctor>
-class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle>>,
+template <class ParticleCell, class ParticleT, class PairwiseFunctor>
+class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<ParticleT>>,
                             public TraversalInterface {
  private:
   /**
    * Internal iterate method for AoS.
    * @param neighborList The neighbor list to iterate over.
    */
-  void iterateAoS(VerletNeighborListAsBuild<Particle> &neighborList);
+  void iterateAoS(VerletNeighborListAsBuild<ParticleT> &neighborList);
 
   /**
    * Internal iterate method for SoA.
    * @param neighborList The neighbor list to iterate over.
    */
-  void iterateSoA(VerletNeighborListAsBuild<Particle> &neighborList);
+  void iterateSoA(VerletNeighborListAsBuild<ParticleT> &neighborList);
 
  public:
   /**
@@ -89,12 +89,12 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
   /**
    * A pointer to the SoA to iterate over if DataLayout is soa.
    */
-  SoA<typename Particle::SoAArraysType> *_soa;
+  SoA<typename ParticleT::SoAArraysType> *_soa;
 };
 
-template <class ParticleCell, class Particle, class PairwiseFunctor>
-void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor>::iterateAoS(
-    VerletNeighborListAsBuild<Particle> &neighborList) {
+template <class ParticleCell, class ParticleT, class PairwiseFunctor>
+void VVLAsBuildTraversal<ParticleCell, ParticleT, PairwiseFunctor>::iterateAoS(
+    VerletNeighborListAsBuild<ParticleT> &neighborList) {
   const auto &list = neighborList.getAoSNeighborList();
 
   AUTOPAS_OPENMP(parallel num_threads(list[0].size())) {
@@ -113,9 +113,9 @@ void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor>::iterateAoS(
   }
 }
 
-template <class ParticleCell, class Particle, class PairwiseFunctor>
-void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor>::iterateSoA(
-    VerletNeighborListAsBuild<Particle> &neighborList) {
+template <class ParticleCell, class ParticleT, class PairwiseFunctor>
+void VVLAsBuildTraversal<ParticleCell, ParticleT, PairwiseFunctor>::iterateSoA(
+    VerletNeighborListAsBuild<ParticleT> &neighborList) {
   const auto &soaNeighborList = neighborList.getSoANeighborList();
 
   AUTOPAS_OPENMP(parallel num_threads(soaNeighborList[0].size())) {

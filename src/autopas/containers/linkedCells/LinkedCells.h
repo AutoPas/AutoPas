@@ -34,15 +34,15 @@ namespace autopas {
  * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
- * @tparam Particle type of the Particle
+ * @tparam ParticleT type of the Particle
  */
-template <class Particle>
-class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>> {
+template <class ParticleT>
+class LinkedCells : public CellBasedParticleContainer<FullParticleCell<ParticleT>> {
  public:
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = FullParticleCell<Particle>;
+  using ParticleCell = FullParticleCell<ParticleT>;
 
   /**
    *  Type of the Particle.
@@ -196,13 +196,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                  this->getCellBlock().getCellLength(), 0);
   }
 
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior,
                                                            const std::array<double, 3> &boxMin,
                                                            const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
@@ -225,7 +225,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+  std::tuple<const ParticleT *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
@@ -279,12 +279,12 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
     }
-    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+    const ParticleT *retPtr = &this->_cells[cellIndex][particleIndex];
 
     return {retPtr, cellIndex, particleIndex};
   }
 
-  bool deleteParticle(Particle &particle) override {
+  bool deleteParticle(ParticleT &particle) override {
     // deduce into which vector the reference points
     auto &particleVec = _cellBlock.getContainingCell(particle.getR())._particles;
     const bool isRearParticle = &particle == &particleVec.back();
@@ -318,7 +318,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   /**
    * Execute code on all particles in this container as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (ParticleT &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior
    */
@@ -339,7 +339,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   /**
    * Reduce properties of particles as defined by a lambda function.
-   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam Lambda (ParticleT p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -375,7 +375,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   /**
    * Execute code on all particles in this container in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (ParticleT &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
@@ -413,7 +413,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   /**
    * Execute code on all particles in this container in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam Lambda (ParticleT &p, A &result) -> void
    * @tparam A type of reduction Value
    * @param reduceLambda code to be executed on all particles
    * @param result reference to starting and final value for reduction

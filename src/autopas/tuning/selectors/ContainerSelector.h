@@ -33,10 +33,10 @@ namespace autopas {
  * The class is given a list of allowed container and traversal options to choose from.
  * This class selects the optimal container and delegates the choice of the optimal traversal down to this container.
  *
- * @tparam Particle
+ * @tparam ParticleT
  * @tparam ParticleCell
  */
-template <class Particle>
+template <class ParticleT>
 class ContainerSelector {
  public:
   /**
@@ -71,13 +71,13 @@ class ContainerSelector {
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Reference to the optimal container.
    */
-  inline autopas::ParticleContainerInterface<Particle> &getCurrentContainer();
+  inline autopas::ParticleContainerInterface<ParticleT> &getCurrentContainer();
 
   /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Reference to the optimal container.
    */
-  inline const autopas::ParticleContainerInterface<Particle> &getCurrentContainer() const;
+  inline const autopas::ParticleContainerInterface<ParticleT> &getCurrentContainer() const;
 
  private:
   /**
@@ -86,72 +86,72 @@ class ContainerSelector {
    * @param containerInfo additional parameter for the container
    * @return Smartpointer to new container
    */
-  std::unique_ptr<autopas::ParticleContainerInterface<Particle>> generateContainer(ContainerOption containerChoice,
+  std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> generateContainer(ContainerOption containerChoice,
                                                                                    ContainerSelectorInfo containerInfo);
 
   std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
-  std::unique_ptr<autopas::ParticleContainerInterface<Particle>> _currentContainer;
+  std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
 };
 
-template <class Particle>
-std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector<Particle>::generateContainer(
+template <class ParticleT>
+std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> ContainerSelector<ParticleT>::generateContainer(
     ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
-  std::unique_ptr<autopas::ParticleContainerInterface<Particle>> container;
+  std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> container;
   switch (containerChoice) {
     case ContainerOption::directSum: {
-      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      container = std::make_unique<DirectSum<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                         containerInfo.verletRebuildFrequency);
       break;
     }
 
     case ContainerOption::linkedCells: {
-      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      container = std::make_unique<LinkedCells<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                           containerInfo.verletRebuildFrequency,
                                                           containerInfo.cellSizeFactor, containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      container = std::make_unique<LinkedCellsReferences<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                                     containerInfo.verletRebuildFrequency,
                                                                     containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletLists: {
-      container = std::make_unique<VerletLists<Particle>>(
+      container = std::make_unique<VerletLists<ParticleT>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-          VerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+          VerletLists<ParticleT>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
+      container = std::make_unique<VerletListsCells<ParticleT, VLCAllCellsNeighborList<ParticleT>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator, VerletListsCellsHelpers::VLCBuildType::soaBuild);
       break;
     }
     case ContainerOption::verletClusterLists: {
-      container = std::make_unique<VerletClusterLists<Particle>>(
+      container = std::make_unique<VerletClusterLists<ParticleT>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
           containerInfo.verletClusterSize, containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::varVerletListsAsBuild: {
-      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+      container = std::make_unique<VarVerletLists<ParticleT, VerletNeighborListAsBuild<ParticleT>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor);
       break;
     }
 
     case ContainerOption::pairwiseVerletLists: {
-      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
+      container = std::make_unique<VerletListsCells<ParticleT, VLCCellPairNeighborList<ParticleT>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator, VerletListsCellsHelpers::VLCBuildType::soaBuild);
       break;
     }
     case ContainerOption::octree: {
       container =
-          std::make_unique<Octree<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+          std::make_unique<Octree<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                              containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
       break;
     }
@@ -184,8 +184,8 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
   return container;
 }
 
-template <class Particle>
-autopas::ParticleContainerInterface<Particle> &ContainerSelector<Particle>::getCurrentContainer() {
+template <class ParticleT>
+autopas::ParticleContainerInterface<ParticleT> &ContainerSelector<ParticleT>::getCurrentContainer() {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");
@@ -193,8 +193,8 @@ autopas::ParticleContainerInterface<Particle> &ContainerSelector<Particle>::getC
   return *_currentContainer;
 }
 
-template <class Particle>
-const autopas::ParticleContainerInterface<Particle> &ContainerSelector<Particle>::getCurrentContainer() const {
+template <class ParticleT>
+const autopas::ParticleContainerInterface<ParticleT> &ContainerSelector<ParticleT>::getCurrentContainer() const {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");
@@ -202,8 +202,8 @@ const autopas::ParticleContainerInterface<Particle> &ContainerSelector<Particle>
   return *_currentContainer;
 }
 
-template <class Particle>
-void ContainerSelector<Particle>::selectContainer(ContainerOption containerOption,
+template <class ParticleT>
+void ContainerSelector<ParticleT>::selectContainer(ContainerOption containerOption,
                                                   ContainerSelectorInfo containerInfo) {
   // Only do something if we have no container, a new type is required, or the info changed
   if (_currentContainer == nullptr or _currentContainer->getContainerType() != containerOption or

@@ -18,21 +18,21 @@ namespace autopas::internal {
  *
  * @note Towers are always built on the xy plane towering into the z dimension.
  *
- * @tparam Particle The type of the particle the container contains.
+ * @tparam ParticleT The type of the particle the container contains.
  */
-template <class Particle>
+template <class ParticleT>
 class VerletClusterListsRebuilder {
  public:
   /**
    * Type alias for the neighbor list buffer.
    */
-  using NeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<Particle> *, internal::Cluster<Particle> *>;
+  using NeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<ParticleT> *, internal::Cluster<ParticleT> *>;
 
  private:
   size_t _clusterSize;
   NeighborListsBuffer_T &_neighborListsBuffer;
-  std::vector<Particle> &_particlesToAdd;
-  ClusterTowerBlock2D<Particle> &_towerBlock;
+  std::vector<ParticleT> &_particlesToAdd;
+  ClusterTowerBlock2D<ParticleT> &_towerBlock;
   double _interactionLengthSqr;
   bool _newton3;
 
@@ -47,7 +47,7 @@ class VerletClusterListsRebuilder {
    * @param interactionLengthSqr Squared interaction length (cutoff + skin)^2
    * @param newton3 If the current configuration uses newton3
    */
-  VerletClusterListsRebuilder(ClusterTowerBlock2D<Particle> &towerBlock, std::vector<Particle> &particlesToAdd,
+  VerletClusterListsRebuilder(ClusterTowerBlock2D<ParticleT> &towerBlock, std::vector<ParticleT> &particlesToAdd,
                               NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize,
                               double interactionLengthSqr, bool newton3)
       : _clusterSize(clusterSize),
@@ -86,7 +86,7 @@ class VerletClusterListsRebuilder {
     const auto numTowersNew = numTowersPerDim[0] * numTowersPerDim[1];
 
     // collect all particles that are now not in the right tower anymore
-    std::vector<std::vector<Particle>> invalidParticles{};
+    std::vector<std::vector<ParticleT>> invalidParticles{};
     // Reserve for:
     //   - _particlesToAdd (+1)
     //   - surplus towers (+max(0, numTowersNew - numTowersOld))
@@ -179,8 +179,8 @@ class VerletClusterListsRebuilder {
    * Takes all particles from all towers and returns them. Towers are cleared afterwards.
    * @return All particles in the container sorted in 2D as they were in the towers.
    */
-  std::vector<std::vector<Particle>> collectAllParticlesFromTowers() {
-    std::vector<std::vector<Particle>> invalidParticles;
+  std::vector<std::vector<ParticleT>> collectAllParticlesFromTowers() {
+    std::vector<std::vector<ParticleT>> invalidParticles;
     invalidParticles.resize(_towerBlock.size());
     for (size_t towerIndex = 0; towerIndex < _towerBlock.size(); towerIndex++) {
       invalidParticles[towerIndex] = _towerBlock[towerIndex].collectAllActualParticles();
@@ -195,8 +195,8 @@ class VerletClusterListsRebuilder {
    *
    * @return
    */
-  std::vector<std::vector<Particle>> collectOutOfBoundsParticlesFromTowers() {
-    std::vector<std::vector<Particle>> outOfBoundsParticles;
+  std::vector<std::vector<ParticleT>> collectOutOfBoundsParticlesFromTowers() {
+    std::vector<std::vector<ParticleT>> outOfBoundsParticles;
     outOfBoundsParticles.resize(_towerBlock.size());
     for (size_t towerIndex = 0; towerIndex < _towerBlock.size(); towerIndex++) {
       const auto &[towerBoxMin, towerBoxMax] = _towerBlock.getTowerBoundingBox(towerIndex);
@@ -213,11 +213,11 @@ class VerletClusterListsRebuilder {
    *
    * @param particles2D The particles to sort in the towers.
    */
-  void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles2D) {
+  void sortParticlesIntoTowers(const std::vector<std::vector<ParticleT>> &particles2D) {
     const auto numVectors = particles2D.size();
     AUTOPAS_OPENMP(parallel for schedule(dynamic))
     for (size_t index = 0; index < numVectors; index++) {
-      const std::vector<Particle> &vector = particles2D[index];
+      const std::vector<ParticleT> &vector = particles2D[index];
       for (const auto &particle : vector) {
         if (utils::inBox(particle.getR(), _towerBlock.getHaloBoxMin(), _towerBlock.getHaloBoxMax())) {
           auto &tower = _towerBlock.getTowerAtPosition(particle.getR());
@@ -362,8 +362,8 @@ class VerletClusterListsRebuilder {
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
    * false)
    */
-  void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
-                                       internal::ClusterTower<Particle> &towerB) {
+  void calculateNeighborsBetweenTowers(internal::ClusterTower<ParticleT> &towerA,
+                                       internal::ClusterTower<ParticleT> &towerB) {
     using autopas::utils::ArrayMath::boxDistanceSquared;
 
     const auto interactionLengthFracOfDomainZ =

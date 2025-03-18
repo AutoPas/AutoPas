@@ -13,26 +13,26 @@
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
 
 namespace autopas {
-template <typename Particle>
+template <typename ParticleT>
 class OctreeInnerNode;
 
 /**
  * Will execute the passed function on the given root node.
  *
- * @tparam Particle
+ * @tparam ParticleT
  * @tparam FunctionType
  * @param root
  * @param function
  * @return
  */
-template <typename Particle, typename FunctionType>
-decltype(auto) withStaticNodeType(const std::unique_ptr<OctreeNodeInterface<Particle>> &root, FunctionType &&function) {
-  OctreeNodeInterface<Particle> *nodePtr = root.get();
+template <typename ParticleT, typename FunctionType>
+decltype(auto) withStaticNodeType(const std::unique_ptr<OctreeNodeInterface<ParticleT>> &root, FunctionType &&function) {
+  OctreeNodeInterface<ParticleT> *nodePtr = root.get();
   // TODO: These should be static casts because we already do the runtime check via hasChildren()
   if (nodePtr->hasChildren()) {
-    return function(dynamic_cast<OctreeInnerNode<Particle> *>(nodePtr));
+    return function(dynamic_cast<OctreeInnerNode<ParticleT> *>(nodePtr));
   } else {
-    return function(dynamic_cast<OctreeLeafNode<Particle> *>(nodePtr));
+    return function(dynamic_cast<OctreeLeafNode<ParticleT> *>(nodePtr));
   }
 }
 }  // namespace autopas

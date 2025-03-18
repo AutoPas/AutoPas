@@ -21,7 +21,7 @@ namespace autopas {
 /**
  * Will execute the passed function body with the static container type of container.
  *
- * @tparam Particle
+ * @tparam ParticleT
  * @tparam ParticleCell
  * @tparam FunctionType
  * @param container The container to be used.
@@ -29,31 +29,31 @@ namespace autopas {
  * E.g: [&](auto &container){container->doSth();}  // The & is optional here. The auto is necessary!
  * @return Returns whatever function returns.
  */
-template <typename Particle, typename FunctionType>
-decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Particle> &container,
+template <typename ParticleT, typename FunctionType>
+decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<ParticleT> &container,
                                        FunctionType &&function) {
   switch (container.getContainerType()) {
     case ContainerOption::directSum:
-      return function(dynamic_cast<autopas::DirectSum<Particle> &>(container));
+      return function(dynamic_cast<autopas::DirectSum<ParticleT> &>(container));
     case ContainerOption::linkedCells:
-      return function(dynamic_cast<autopas::LinkedCells<Particle> &>(container));
+      return function(dynamic_cast<autopas::LinkedCells<ParticleT> &>(container));
     case ContainerOption::linkedCellsReferences:
-      return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> &>(container));
+      return function(dynamic_cast<autopas::LinkedCellsReferences<ParticleT> &>(container));
     case ContainerOption::verletLists:
-      return function(dynamic_cast<autopas::VerletLists<Particle> &>(container));
+      return function(dynamic_cast<autopas::VerletLists<ParticleT> &>(container));
     case ContainerOption::verletListsCells:
       return function(
-          dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> &>(container));
+          dynamic_cast<autopas::VerletListsCells<ParticleT, VLCAllCellsNeighborList<ParticleT>> &>(container));
     case ContainerOption::verletClusterLists:
-      return function(dynamic_cast<autopas::VerletClusterLists<Particle> &>(container));
+      return function(dynamic_cast<autopas::VerletClusterLists<ParticleT> &>(container));
     case ContainerOption::pairwiseVerletLists:
       return function(
-          dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> &>(container));
+          dynamic_cast<autopas::VerletListsCells<ParticleT, VLCCellPairNeighborList<ParticleT>> &>(container));
     case ContainerOption::varVerletListsAsBuild:
       return function(
-          dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> &>(container));
+          dynamic_cast<autopas::VarVerletLists<ParticleT, VerletNeighborListAsBuild<ParticleT>> &>(container));
     case ContainerOption::octree:
-      return function(dynamic_cast<autopas::Octree<Particle> &>(container));
+      return function(dynamic_cast<autopas::Octree<ParticleT> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container.getContainerType());

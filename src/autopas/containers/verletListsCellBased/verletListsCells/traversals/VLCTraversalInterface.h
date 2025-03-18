@@ -23,7 +23,7 @@ namespace autopas {
  *
  * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
-template <class Particle, class NeighborList>
+template <class ParticleT, class NeighborList>
 class VLCTraversalInterface {
  public:
   VLCTraversalInterface() = delete;
@@ -89,7 +89,7 @@ class VLCTraversalInterface {
   /**
    * Structure of arrays to be used if the data layout is SoA.
    */
-  SoA<typename Particle::SoAArraysType> *_soa;
+  SoA<typename ParticleT::SoAArraysType> *_soa;
 
   /**
    * The type of neighbor list as an enum value.
@@ -107,14 +107,14 @@ class VLCTraversalInterface {
    * @param useNewton3
    */
   template <class PairwiseFunctor>
-  void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
+  void processCellListsImpl(VLCAllCellsNeighborList<ParticleT> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
     if (dataLayout == DataLayoutOption::aos) {
       auto &aosList = neighborList.getAoSNeighborList();
       for (auto &[particlePtr, neighbors] : aosList[cellIndex]) {
-        Particle &particle = *particlePtr;
+        ParticleT &particle = *particlePtr;
         for (auto neighborPtr : neighbors) {
-          Particle &neighbor = *neighborPtr;
+          ParticleT &neighbor = *neighborPtr;
           pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
         }
       }
@@ -140,15 +140,15 @@ class VLCTraversalInterface {
    * @param useNewton3
    */
   template <class PairwiseFunctor>
-  void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, unsigned long cellIndex,
+  void processCellListsImpl(VLCCellPairNeighborList<ParticleT> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
     if (dataLayout == DataLayoutOption::aos) {
       auto &aosList = neighborList.getAoSNeighborList();
       for (auto &cellPair : aosList[cellIndex]) {
         for (auto &[particlePtr, neighbors] : cellPair) {
-          Particle &particle = *particlePtr;
+          ParticleT &particle = *particlePtr;
           for (auto neighborPtr : neighbors) {
-            Particle &neighbor = *neighborPtr;
+            ParticleT &neighbor = *neighborPtr;
             pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
           }
         }
