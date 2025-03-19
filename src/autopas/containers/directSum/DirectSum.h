@@ -53,7 +53,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<ParticleT>>
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = ParticleT;
 
   /**
    * Constructor of the DirectSum class

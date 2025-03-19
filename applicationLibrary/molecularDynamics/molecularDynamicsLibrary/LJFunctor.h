@@ -24,7 +24,7 @@ namespace mdLib {
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
- * @tparam Particle The type of particle.
+ * @tparam ParticleT The type of particle.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
@@ -33,21 +33,21 @@ namespace mdLib {
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, bool applyShift = false, bool useMixing = false,
+template <class ParticleT, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctor
-    : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+    : public autopas::PairwiseFunctor<ParticleT, LJFunctor<ParticleT, applyShift, useMixing, useNewton3, calculateGlobals,
                                                           countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename ParticleT::SoAArraysType;
 
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename ParticleT::ParticleSoAFloatPrecision;
 
  public:
   /**
@@ -62,7 +62,7 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+      : autopas::PairwiseFunctor<ParticleT, LJFunctor<ParticleT, applyShift, useMixing, useNewton3, calculateGlobals,
                                                      countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -117,7 +117,7 @@ class LJFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  void AoSFunctor(ParticleT &i, ParticleT &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
@@ -203,16 +203,16 @@ class LJFunctor
 
     const auto threadnum = autopas::autopas_get_thread_num();
 
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict xptr = soa.template begin<ParticleT::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<ParticleT::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<ParticleT::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<ParticleT::AttributeNames::ownershipState>();
 
-    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<ParticleT::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<ParticleT::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<ParticleT::AttributeNames::forceZ>();
 
-    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<ParticleT::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
@@ -386,23 +386,23 @@ class LJFunctor
 
     const auto threadnum = autopas::autopas_get_thread_num();
 
-    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict x1ptr = soa1.template begin<ParticleT::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<ParticleT::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<ParticleT::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<ParticleT::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<ParticleT::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<ParticleT::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<ParticleT::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<ParticleT::AttributeNames::ownershipState>();
 
-    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict fx1ptr = soa1.template begin<ParticleT::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<ParticleT::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<ParticleT::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<ParticleT::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<ParticleT::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<ParticleT::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<ParticleT::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<ParticleT::AttributeNames::typeId>();
 
     // Checks whether the cells are halo cells.
     SoAFloatPrecision potentialEnergySum = 0.;
@@ -596,27 +596,32 @@ class LJFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename ParticleT::AttributeNames, 9>{ParticleT::AttributeNames::id,
+                                                             ParticleT::AttributeNames::posX,
+                                                             ParticleT::AttributeNames::posY,
+                                                             ParticleT::AttributeNames::posZ,
+                                                             ParticleT::AttributeNames::forceX,
+                                                             ParticleT::AttributeNames::forceY,
+                                                             ParticleT::AttributeNames::forceZ,
+                                                             ParticleT::AttributeNames::typeId,
+                                                             ParticleT::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename ParticleT::AttributeNames, 6>{
+        ParticleT::AttributeNames::id,   ParticleT::AttributeNames::posX,   ParticleT::AttributeNames::posY,
+        ParticleT::AttributeNames::posZ, ParticleT::AttributeNames::typeId, ParticleT::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 3>{
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+    return std::array<typename ParticleT::AttributeNames, 3>{
+        ParticleT::AttributeNames::forceX, ParticleT::AttributeNames::forceY, ParticleT::AttributeNames::forceZ};
   }
 
   /**
@@ -803,17 +808,17 @@ class LJFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<ParticleT::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<ParticleT::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<ParticleT::AttributeNames::posZ>();
 
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-    [[maybe_unused]] auto *const __restrict typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict fxptr = soa.template begin<ParticleT::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<ParticleT::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<ParticleT::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typeptr1 = soa.template begin<ParticleT::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr2 = soa.template begin<ParticleT::AttributeNames::typeId>();
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<ParticleT::AttributeNames::ownershipState>();
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;

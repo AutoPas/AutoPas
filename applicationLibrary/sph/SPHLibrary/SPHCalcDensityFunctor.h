@@ -14,16 +14,15 @@ namespace sphLib {
 /**
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
- * @tparam Particle
- * @tparam ParticleCell
+ * @tparam ParticleT
  */
-template <class Particle>
-class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcDensityFunctor<Particle>> {
+template <class ParticleT>
+class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<ParticleT, SPHCalcDensityFunctor<ParticleT>> {
  public:
   /// soa arrays type
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename ParticleT::SoAArraysType;
 
-  SPHCalcDensityFunctor() : autopas::PairwiseFunctor<Particle, SPHCalcDensityFunctor<Particle>>(0.){};
+  SPHCalcDensityFunctor() : autopas::PairwiseFunctor<ParticleT, SPHCalcDensityFunctor<ParticleT>>(0.){};
 
   virtual std::string getName() override { return "SPHDensityFunctor"; }
 
@@ -41,7 +40,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
    * @param j second particle of the interaction
    * @param newton3 defines whether or whether not to use newton 3
    */
-  inline void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+  inline void AoSFunctor(ParticleT &i, ParticleT &j, bool newton3 = true) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
@@ -79,15 +78,15 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;
 
-    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xptr = soa.template begin<ParticleT::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<ParticleT::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<ParticleT::AttributeNames::posZ>();
 
-    double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr = soa.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr = soa.template begin<ParticleT::AttributeNames::density>();
+    double *const __restrict smthptr = soa.template begin<ParticleT::AttributeNames::smth>();
+    double *const __restrict massptr = soa.template begin<ParticleT::AttributeNames::mass>();
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<ParticleT::AttributeNames::ownershipState>();
 
     size_t numParticles = soa.size();
     for (unsigned int i = 0; i < numParticles; ++i) {
@@ -134,24 +133,24 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
                       bool newton3) override {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xptr1 = soa1.template begin<ParticleT::AttributeNames::posX>();
+    double *const __restrict yptr1 = soa1.template begin<ParticleT::AttributeNames::posY>();
+    double *const __restrict zptr1 = soa1.template begin<ParticleT::AttributeNames::posZ>();
 
-    double *const __restrict densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr1 = soa1.template begin<ParticleT::AttributeNames::density>();
+    double *const __restrict smthptr1 = soa1.template begin<ParticleT::AttributeNames::smth>();
+    double *const __restrict massptr1 = soa1.template begin<ParticleT::AttributeNames::mass>();
 
-    double *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xptr2 = soa2.template begin<ParticleT::AttributeNames::posX>();
+    double *const __restrict yptr2 = soa2.template begin<ParticleT::AttributeNames::posY>();
+    double *const __restrict zptr2 = soa2.template begin<ParticleT::AttributeNames::posZ>();
 
-    double *const __restrict densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr2 = soa2.template begin<ParticleT::AttributeNames::density>();
+    double *const __restrict smthptr2 = soa2.template begin<ParticleT::AttributeNames::smth>();
+    double *const __restrict massptr2 = soa2.template begin<ParticleT::AttributeNames::mass>();
 
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<ParticleT::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<ParticleT::AttributeNames::ownershipState>();
 
     size_t numParticlesi = soa1.size();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
@@ -203,20 +202,20 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
                         bool newton3) override {
     if (soa.size() == 0) return;
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<ParticleT::AttributeNames::ownershipState>();
 
     // checks whether particle i is owned.
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
 
-    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xptr = soa.template begin<ParticleT::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<ParticleT::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<ParticleT::AttributeNames::posZ>();
 
-    double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr = soa.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr = soa.template begin<ParticleT::AttributeNames::density>();
+    double *const __restrict smthptr = soa.template begin<ParticleT::AttributeNames::smth>();
+    double *const __restrict massptr = soa.template begin<ParticleT::AttributeNames::mass>();
 
     double densacc = 0;
     const auto &currentList = neighborList;
@@ -255,26 +254,26 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 7>{
-        Particle::AttributeNames::mass,          Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,          Particle::AttributeNames::smth, Particle::AttributeNames::density,
-        Particle::AttributeNames::ownershipState};
+    return std::array<typename ParticleT::AttributeNames, 7>{
+        ParticleT::AttributeNames::mass,          ParticleT::AttributeNames::posX, ParticleT::AttributeNames::posY,
+        ParticleT::AttributeNames::posZ,          ParticleT::AttributeNames::smth, ParticleT::AttributeNames::density,
+        ParticleT::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::ownershipState};
+    return std::array<typename ParticleT::AttributeNames, 6>{
+        ParticleT::AttributeNames::mass, ParticleT::AttributeNames::posX, ParticleT::AttributeNames::posY,
+        ParticleT::AttributeNames::posZ, ParticleT::AttributeNames::smth, ParticleT::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
+    return std::array<typename ParticleT::AttributeNames, 1>{ParticleT::AttributeNames::density};
   }
 };
 }  // namespace sphLib

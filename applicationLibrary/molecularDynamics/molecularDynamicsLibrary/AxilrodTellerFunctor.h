@@ -86,27 +86,27 @@ namespace mdLib {
  * A functor to handle Axilrod-Teller(-Muto) interactions between three particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
- * @tparam Particle The type of particle.
+ * @tparam ParticleT The type of particle.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  */
-template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class ParticleT, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool countFLOPs = false>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<
-          Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
+          ParticleT, AxilrodTellerFunctor<ParticleT, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename ParticleT::SoAArraysType;
 
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename ParticleT::ParticleSoAFloatPrecision;
 
  public:
   /**
@@ -121,8 +121,8 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle,
-                                AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
+      : autopas::TriwiseFunctor<ParticleT,
+                                AxilrodTellerFunctor<ParticleT, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -178,7 +178,7 @@ class AxilrodTellerFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) final {
+  void AoSFunctor(ParticleT &i, ParticleT &j, ParticleT &k, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
@@ -300,27 +300,32 @@ class AxilrodTellerFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename ParticleT::AttributeNames, 9>{ParticleT::AttributeNames::id,
+                                                             ParticleT::AttributeNames::posX,
+                                                             ParticleT::AttributeNames::posY,
+                                                             ParticleT::AttributeNames::posZ,
+                                                             ParticleT::AttributeNames::forceX,
+                                                             ParticleT::AttributeNames::forceY,
+                                                             ParticleT::AttributeNames::forceZ,
+                                                             ParticleT::AttributeNames::typeId,
+                                                             ParticleT::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename ParticleT::AttributeNames, 6>{
+        ParticleT::AttributeNames::id,   ParticleT::AttributeNames::posX,   ParticleT::AttributeNames::posY,
+        ParticleT::AttributeNames::posZ, ParticleT::AttributeNames::typeId, ParticleT::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 3>{
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+    return std::array<typename ParticleT::AttributeNames, 3>{
+        ParticleT::AttributeNames::forceX, ParticleT::AttributeNames::forceY, ParticleT::AttributeNames::forceZ};
   }
 
   /**

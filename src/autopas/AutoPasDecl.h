@@ -46,6 +46,11 @@ template <class ParticleT>
 class AutoPas {
  public:
   /**
+   * Particle type to be accessible after initialization.
+   */
+  using ParticleType = ParticleT;
+
+  /**
    * Define the iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
