@@ -41,7 +41,7 @@ Sites:
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension: [ 40, 40, 40 ]
+      particles-per-dimension: [ 25, 25, 25 ]
       particle-spacing: 1.08
       bottomLeftCorner: [ 0, 0, 0 ]
       velocity: [ 0, 0, 0 ]
