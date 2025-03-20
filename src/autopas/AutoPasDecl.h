@@ -688,6 +688,13 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
 
   /**
+   * Set the earlyStoppingFactor for the auto tuner. If a configuration seems to be slower than the optimum
+   * configuration found so far by more than this factor, it will not be sampled again during that tuning phase.
+   * @param earlyStoppingFactor
+   */
+  void setEarlyStoppingFactor(double earlyStoppingFactor) { _autoTunerInfo.earlyStoppingFactor = earlyStoppingFactor; }
+
+  /**
    * Get flag for whether a LOESS-based smoothening is used.
    * @return
    */
