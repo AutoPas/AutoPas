@@ -534,7 +534,7 @@ class LJFunctorMIPP
  public:
   // clang-format off
   /**
-   * @copydoc autopas::Pairwise::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */

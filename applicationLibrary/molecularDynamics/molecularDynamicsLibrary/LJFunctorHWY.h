@@ -1,40 +1,44 @@
 /**
  * @file LJFunctorHWY.h
- * 
+ *
  * @date 27.03.2024
  * @author Luis Gall
  */
 
 #pragma once
 
-#include "ParticlePropertiesLibrary.h"
-#include "autopas/baseFunctors/PairwiseFunctor.h"
-#include "autopas/particles/OwnershipState.h"
+#include <hwy/highway.h>
+
 #include <algorithm>
 
+#include "ParticlePropertiesLibrary.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/options/VectorizationPatternOption.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-
-#include <hwy/highway.h>
-
 namespace mdLib {
 
 namespace highway = hwy::HWY_NAMESPACE;
-
-// architecture specific information
+/** Higwhay tag for full double register */
 const highway::ScalableTag<double> tag_double;
+/** Highway tag for full long register */
 const highway::ScalableTag<int64_t> tag_long;
+/** Nuber of double values in a full register */
 const size_t _vecLengthDouble{highway::Lanes(tag_double)};
+/** Type for a Double vector register */
 using VectorDouble = decltype(highway::Zero(tag_double));
+/** Type for a Long vector register */
 using VectorLong = decltype(highway::Zero(tag_long));
+/** Highway tag for a half-filled double register */
 const highway::Half<highway::DFromV<VectorDouble>> tag_double_half;
-
+/** Type for a Double Mask */
 using MaskDouble = decltype(highway::FirstN(tag_double, 1));
+/** Type for a Long Mask */
 using MaskLong = decltype(highway::FirstN(tag_long, 2));
-
+/** Vectorization Pattern Type */
 using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 
 /**
@@ -50,7 +54,7 @@ using VectorizationPattern = autopas::VectorizationPatternOption::Value;
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.*/
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-           bool countFLOPs = false, bool relevantForTuning = true>
+          bool countFLOPs = false, bool relevantForTuning = true>
 
 class LJFunctorHWY
     : public autopas::PairwiseFunctor<
@@ -242,7 +246,6 @@ class LJFunctorHWY
   }
 
  private:
-  
   template <bool reversed, VectorizationPattern vecPattern>
   inline bool checkFirstLoopCondition(const long i, const long stop) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -919,7 +922,7 @@ class LJFunctorHWY
 
   /**
    * Actual innter kernel of the SoAFunctors
-   * 
+   *
    * @tparam newton3
    * @tparam remainderI
    * @tparam remainderJ
@@ -1045,7 +1048,7 @@ class LJFunctorHWY
  public:
   // clang-format off
   /**
-  * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet(S)
+  * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
   * @note If you want to parallelize this by openmp, please ensure that there
   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
   */
@@ -1331,7 +1334,7 @@ class LJFunctorHWY
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
  private:
- /**
+  /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
   class AoSThreadData {

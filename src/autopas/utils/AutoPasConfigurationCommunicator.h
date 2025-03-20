@@ -25,9 +25,7 @@
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
-// TODO: decide how big this is!
 /**
- * type definition for the serialization of configurations. A serialized config is an array of 13 bytes.
  * type definition for the serialization of configurations. A serialized config is an array of 14 bytes.
  * */
 using SerializedConfiguration = std::array<std::byte, 14>;

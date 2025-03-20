@@ -17,8 +17,8 @@ autopas::BayesianSearch::BayesianSearch(
     const autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
-    size_t maxEvidence, autopas::AcquisitionFunctionOption predAcqFunction, size_t predNumLHSamples, unsigned long seed)
+    const std::set<VectorizationPatternOption> &allowedVecPatternOptions, size_t maxEvidence,
+    autopas::AcquisitionFunctionOption predAcqFunction, size_t predNumLHSamples, unsigned long seed)
     : _interactionType(interactionType),
       _containerOptionsSet(allowedContainerOptions),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),

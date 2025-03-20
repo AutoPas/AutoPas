@@ -46,6 +46,7 @@ class FeatureVector : public Configuration {
    * @param newton3
    * @param cellSizeFactor
    * @param interactionType
+   * @param vecPattern
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
                 LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
