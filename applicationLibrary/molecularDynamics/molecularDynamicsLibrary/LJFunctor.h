@@ -37,8 +37,8 @@ template <class ParticleT, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctor
-    : public autopas::PairwiseFunctor<ParticleT, LJFunctor<ParticleT, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                          countFLOPs, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<ParticleT, LJFunctor<ParticleT, applyShift, useMixing, useNewton3,
+                                                           calculateGlobals, countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -63,7 +63,7 @@ class LJFunctor
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<ParticleT, LJFunctor<ParticleT, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                     countFLOPs, relevantForTuning>>(cutoff),
+                                                      countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},

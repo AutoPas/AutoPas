@@ -26,7 +26,8 @@ class VerletClusterListsRebuilder {
   /**
    * Type alias for the neighbor list buffer.
    */
-  using NeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<ParticleT> *, internal::Cluster<ParticleT> *>;
+  using NeighborListsBuffer_T =
+      NeighborListsBuffer<const internal::Cluster<ParticleT> *, internal::Cluster<ParticleT> *>;
 
  private:
   size_t _clusterSize;

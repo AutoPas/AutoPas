@@ -69,7 +69,7 @@ TEST_P(AllContainersTests, testParticleAdding) {
       for (double z : {boxMin[2] - 1.5, boxMin[2] - .5, boxMin[2], boxMin[2] + 5., boxMax[2] - 0.001, boxMax[2],
                        boxMax[2] + .5, boxMax[2] + 1.5}) {
         autopas::ParticleBaseFP64 p({x, y, z}, {0., 0., 0.},
-                            id++);  // not const as updating ownership (as containers no longer handle this)
+                                    id++);  // not const as updating ownership (as containers no longer handle this)
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
           EXPECT_ANY_THROW(container.addParticle(p));  // outside, therefore not ok!
           p.setOwnershipState(autopas::OwnershipState::halo);
@@ -142,7 +142,7 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
 TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
   const autopas::ParticleBaseFP64 p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42,
-                            autopas::OwnershipState::halo);
+                                    autopas::OwnershipState::halo);
   container.addHaloParticle(p);
 
   EXPECT_EQ(container.size(), 1);

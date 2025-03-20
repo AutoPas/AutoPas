@@ -63,7 +63,7 @@ class VerletLists : public VerletListsLinkedBase<ParticleT> {
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<ParticleT>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                        compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
+                                         compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -118,7 +118,7 @@ class VerletLists : public VerletListsLinkedBase<ParticleT> {
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     typename VerletListHelpers<ParticleT>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                       this->getCutoff() + this->getVerletSkin());
+                                                                        this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;

@@ -22,7 +22,8 @@ TEST_F(VerletClusterListsTest, VerletListConstructor) {
   const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const size_t clusterSize = 4;
-  const autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
+  const autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency,
+                                                              clusterSize);
 }
 
 TEST_F(VerletClusterListsTest, testVerletListBuild) {
@@ -59,8 +60,8 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   const size_t clusterSize = 4;
   autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      verletLists, ParticleFP64{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                verletLists.getBoxMax(), numParticles);
 
   MPairwiseFunctor emptyFunctor;
   autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
@@ -81,8 +82,8 @@ TEST_F(VerletClusterListsTest, testIterator) {
   const size_t clusterSize = 4;
   autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      verletLists, ParticleFP64{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                verletLists.getBoxMax(), numParticles);
 
   MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
@@ -143,8 +144,8 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
   // Fill the container with random particles and build neighbor lists
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      verletLists, ParticleFP64{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                verletLists.getBoxMax(), numParticles);
   CollectParticlePairsFunctor functor{cutoff, boxMin, boxMax};
   autopas::VCLClusterIterationTraversal<FPCell, CollectParticlePairsFunctor> verletTraversal(
       &functor, clusterSize, autopas::DataLayoutOption::aos, false);
@@ -231,8 +232,8 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   for (bool newton3 : {true, false}) {
     autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-    autopasTools::generators::UniformGenerator::fillWithParticles(
-        verletLists, ParticleFP64{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+    autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                  verletLists.getBoxMax(), numParticles);
 
     MockPairwiseFunctor<ParticleFP64> functor;
     if (newton3) {
@@ -272,7 +273,7 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
   const size_t rebuildFreq{10};
   const size_t clusterSize{4};
   autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin / rebuildFreq, rebuildFreq,
-                                                    clusterSize);
+                                                        clusterSize);
   size_t numParticles{0};
   // lower corner of the inner box, thus in the first inner tower
   const ParticleFP64 p0{boxMin, {0., 0., 0.}, numParticles++};

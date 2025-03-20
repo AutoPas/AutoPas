@@ -76,7 +76,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<ParticleT>>,
     auto *haloWrapper = this->getHalo();
 
     OctreeLogger<ParticleT>::octreeToJSON(this->getOwned()->getRaw(), this->getHalo()->getRaw(), this->_ownedLeaves,
-                                         this->_haloLeaves);
+                                          this->_haloLeaves);
 
     // Get neighboring cells for each leaf
     // #pragma omp parallel for

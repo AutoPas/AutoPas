@@ -224,7 +224,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
    * @return Vector of particles that should be stored somewhere else.
    */
   std::vector<ParticleT> collectOutOfBoundsParticles(const std::array<double, 3> &boxMin,
-                                                    const std::array<double, 3> &boxMax) {
+                                                     const std::array<double, 3> &boxMax) {
     // make sure to get rid of all dummies
     deleteDummyParticles();
     // move all particles that are not in the tower to the back of the storage

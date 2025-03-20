@@ -32,7 +32,7 @@ class VarVerletLists : public VerletListsLinkedBase<ParticleT> {
   VarVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                  const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<ParticleT>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                        compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
+                                         compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 
   /**

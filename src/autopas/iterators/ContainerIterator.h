@@ -102,13 +102,13 @@ class ContainerIterator {
   /**
    * Type of the additional vector collection. Switch for const iterators.
    */
-  using ParticleVecType =
-      std::conditional_t<modifiable, std::vector<std::vector<ParticleT> *>, std::vector<std::vector<ParticleT> const *>>;
+  using ParticleVecType = std::conditional_t<modifiable, std::vector<std::vector<ParticleT> *>,
+                                             std::vector<std::vector<ParticleT> const *>>;
   /**
    * Type of the Particle Container type. Switch for const iterators.
    */
-  using ContainerType =
-      std::conditional_t<modifiable, ParticleContainerInterface<ParticleT>, const ParticleContainerInterface<ParticleT>>;
+  using ContainerType = std::conditional_t<modifiable, ParticleContainerInterface<ParticleT>,
+                                           const ParticleContainerInterface<ParticleT>>;
 
   /**
    * Default constructor that guarantees an invalid iterator.

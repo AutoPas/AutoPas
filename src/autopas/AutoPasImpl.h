@@ -178,7 +178,7 @@ void AutoPas<ParticleT>::reserve(size_t numParticles, size_t numHaloParticles) {
 template <class ParticleT>
 template <class F>
 void AutoPas<ParticleT>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
-                                        F loopBody) {
+                                         F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
   AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
@@ -227,7 +227,7 @@ std::vector<ParticleT> AutoPas<ParticleT>::updateContainer() {
 
 template <class ParticleT>
 std::vector<ParticleT> AutoPas<ParticleT>::resizeBox(const std::array<double, 3> &boxMin,
-                                                   const std::array<double, 3> &boxMax) {
+                                                     const std::array<double, 3> &boxMax) {
   if (_allowedCellSizeFactors->isInterval()) {
     AutoPasLog(WARN,
                "The allowed Cell Size Factors are a continuous interval but internally only those values that "

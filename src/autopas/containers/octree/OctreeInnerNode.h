@@ -70,7 +70,7 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
 
       // Assign new leaves as the children.
       _children[i] = std::make_unique<OctreeLeafNode<ParticleT>>(newBoxMin, newBoxMax, this, treeSplitThreshold,
-                                                                interactionLength, cellSizeFactor);
+                                                                 interactionLength, cellSizeFactor);
     }
   }
 
@@ -80,7 +80,7 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
    */
   OctreeInnerNode(const OctreeInnerNode<ParticleT> &other)
       : OctreeNodeInterface<ParticleT>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
-                                      other._interactionLength, other._cellSizeFactor) {
+                                       other._interactionLength, other._cellSizeFactor) {
     for (auto i = 0; i < other._children.size(); ++i) {
       auto *otherChild = other._children[i].get();
       if (otherChild->hasChildren()) {
@@ -218,7 +218,7 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
   }
 
   std::set<OctreeLeafNode<ParticleT> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                        const std::array<double, 3> &max) override {
+                                                         const std::array<double, 3> &max) override {
     std::set<OctreeLeafNode<ParticleT> *> result;
     for (auto &child : _children) {
       double vol = child->getEnclosedVolumeWith(min, max);

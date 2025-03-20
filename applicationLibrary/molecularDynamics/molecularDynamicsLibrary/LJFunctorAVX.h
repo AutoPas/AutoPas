@@ -44,7 +44,7 @@ template <class ParticleT, bool applyShift = false, bool useMixing = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorAVX
     : public autopas::PairwiseFunctor<ParticleT, LJFunctorAVX<ParticleT, applyShift, useMixing, useNewton3,
-                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
+                                                              calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename ParticleT::SoAArraysType;
 
  public:
@@ -62,7 +62,7 @@ class LJFunctorAVX
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
       : autopas::PairwiseFunctor<ParticleT, LJFunctorAVX<ParticleT, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                        countFLOPs, relevantForTuning>>(cutoff),
+                                                         countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},

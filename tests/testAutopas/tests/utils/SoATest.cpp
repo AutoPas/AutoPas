@@ -211,8 +211,8 @@ TEST_F(SoATest, SoATestMultiWriteRead) {
 
   EXPECT_EQ(soa.size(), 1);
 
-  soa.writeMultiple<ParticleBaseFP64::AttributeNames::posX, ParticleBaseFP64::AttributeNames::posY, ParticleBaseFP64::AttributeNames::posZ>(
-      0, {4., 5., 6.});
+  soa.writeMultiple<ParticleBaseFP64::AttributeNames::posX, ParticleBaseFP64::AttributeNames::posY,
+                    ParticleBaseFP64::AttributeNames::posZ>(0, {4., 5., 6.});
 
   std::array<double, 3> f = {7., 8., 9.};
   soa.writeMultiple<ParticleBaseFP64::AttributeNames::forceX, ParticleBaseFP64::AttributeNames::forceY,
@@ -332,8 +332,8 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
 
   EXPECT_EQ(soa.size(), 1);
 
-  soa.writeMultiple<ParticleBaseFP64::AttributeNames::posX, ParticleBaseFP64::AttributeNames::posY, ParticleBaseFP64::AttributeNames::posZ>(
-      0, {4., 5., 6.});
+  soa.writeMultiple<ParticleBaseFP64::AttributeNames::posX, ParticleBaseFP64::AttributeNames::posY,
+                    ParticleBaseFP64::AttributeNames::posZ>(0, {4., 5., 6.});
 
   std::array<double, 3> f = {7., 8., 9.};
   soa.writeMultiple<ParticleBaseFP64::AttributeNames::forceX, ParticleBaseFP64::AttributeNames::forceY,

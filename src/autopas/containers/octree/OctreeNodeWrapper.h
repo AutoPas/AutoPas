@@ -62,7 +62,7 @@ class OctreeNodeWrapper : public ParticleCell<ParticleT> {
                     int unsigned const treeSplitThreshold, double const interactionLength,
                     double const cellSizeFactor) {
     _pointer = std::make_unique<OctreeLeafNode<ParticleT>>(boxMin, boxMax, nullptr, treeSplitThreshold,
-                                                          interactionLength, cellSizeFactor);
+                                                           interactionLength, cellSizeFactor);
   }
 
   /**
@@ -261,7 +261,7 @@ class OctreeNodeWrapper : public ParticleCell<ParticleT> {
    * @return A set of all leaf nodes that are in the query region
    */
   std::set<OctreeLeafNode<ParticleT> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                        const std::array<double, 3> &max) {
+                                                         const std::array<double, 3> &max) {
     return _pointer->getLeavesInRange(min, max);
   }
 

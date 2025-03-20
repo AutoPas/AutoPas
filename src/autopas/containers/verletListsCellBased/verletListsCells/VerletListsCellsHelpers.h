@@ -34,7 +34,8 @@ using AllCellsNeighborListsType = std::vector<std::vector<std::pair<ParticleT *,
  * @tparam ParticleT
  */
 template <class ParticleT>
-using PairwiseNeighborListsType = std::vector<std::vector<std::vector<std::pair<ParticleT *, std::vector<ParticleT *>>>>>;
+using PairwiseNeighborListsType =
+    std::vector<std::vector<std::vector<std::pair<ParticleT *, std::vector<ParticleT *>>>>>;
 
 /**
  * Indicates which build functor should be used for the generation of the neighbor list.

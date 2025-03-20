@@ -55,7 +55,7 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
                    typename VerletListsCellsHelpers::VLCBuildType dataLayoutDuringListRebuild =
                        VerletListsCellsHelpers::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<ParticleT>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                        compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
+                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
         _dataLayoutDuringListRebuild(dataLayoutDuringListRebuild) {}
 
@@ -81,7 +81,7 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
           return loadEstimators::neighborListLength<ParticleT, NeighborList>(_neighborList, cellsPerDimension,
-                                                                            lowerCorner, upperCorner);
+                                                                             lowerCorner, upperCorner);
         };
       }
 

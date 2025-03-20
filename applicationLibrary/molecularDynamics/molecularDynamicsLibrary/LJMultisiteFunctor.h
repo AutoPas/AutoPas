@@ -44,7 +44,7 @@ template <class ParticleT, bool applyShift = false, bool useMixing = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJMultisiteFunctor
     : public autopas::PairwiseFunctor<ParticleT, LJMultisiteFunctor<ParticleT, applyShift, useMixing, useNewton3,
-                                                                   calculateGlobals, relevantForTuning, countFLOPs>> {
+                                                                    calculateGlobals, relevantForTuning, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -114,7 +114,8 @@ class LJMultisiteFunctor
    */
   explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<ParticleT, LJMultisiteFunctor<ParticleT, applyShift, useMixing, useNewton3,
-                                                              calculateGlobals, relevantForTuning, countFLOPs>>(cutoff),
+                                                               calculateGlobals, relevantForTuning, countFLOPs>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},

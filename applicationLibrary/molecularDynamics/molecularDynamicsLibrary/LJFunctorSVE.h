@@ -45,7 +45,7 @@ template <class ParticleT, bool applyShift = false, bool useMixing = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorSVE
     : public autopas::PairwiseFunctor<ParticleT, LJFunctorSVE<ParticleT, applyShift, useMixing, useNewton3,
-                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
+                                                              calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename ParticleT::SoAArraysType;
 
  public:
@@ -63,7 +63,7 @@ class LJFunctorSVE
   explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
       : autopas::PairwiseFunctor<ParticleT, LJFunctorSVE<ParticleT, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                        countFLOPs, relevantForTuning>>(cutoff),
+                                                         countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -79,7 +79,7 @@ class LJFunctorSVE
   }
 #else
       : autopas::PairwiseFunctor<ParticleT, LJFunctorSVE<ParticleT, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                        countFLOPs, relevantForTuning>>(cutoff) {
+                                                         countFLOPs, relevantForTuning>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
 #endif

@@ -189,13 +189,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
   void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
   std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior,
-                                                           const std::array<double, 3> &boxMin,
-                                                           const std::array<double, 3> &boxMax) const override {
+                                                            IteratorBehavior iteratorBehavior,
+                                                            const std::array<double, 3> &boxMin,
+                                                            const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
   std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior) const override {
+                                                            IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -352,7 +352,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
    */
   [[nodiscard]] ContainerIterator<ParticleT, false, false> begin(
       IteratorBehavior behavior,
-      typename ContainerIterator<ParticleT, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
+      typename ContainerIterator<ParticleT, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const override {
     return ContainerIterator<ParticleT, false, false>(*this, behavior, additionalVectors);
   }
 

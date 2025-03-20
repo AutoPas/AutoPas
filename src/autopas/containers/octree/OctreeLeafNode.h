@@ -47,7 +47,7 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
    */
   OctreeLeafNode(OctreeLeafNode<ParticleT> const &other)
       : OctreeNodeInterface<ParticleT>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
-                                      other._interactionLength),
+                                       other._interactionLength),
         FullParticleCell<ParticleT>(utils::ArrayMath::sub(other._boxMax, other._boxMin)),
         _id(other.getID()) {
     this->_particles.reserve(other._particles.size());
@@ -180,7 +180,7 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
   }
 
   std::set<OctreeLeafNode<ParticleT> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                        const std::array<double, 3> &max) override {
+                                                         const std::array<double, 3> &max) override {
     if (this->getEnclosedVolumeWith(min, max) > 0.0) {
       return {this};
     } else {

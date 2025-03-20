@@ -26,8 +26,8 @@ TEST_F(VarVerletListsTest, VerletListConstructor) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
 }
 
 TEST_F(VarVerletListsTest, testAddParticleNumParticle) {
@@ -36,8 +36,8 @@ TEST_F(VarVerletListsTest, testAddParticleNumParticle) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
   EXPECT_EQ(verletLists.size(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -57,8 +57,8 @@ TEST_F(VarVerletListsTest, testDeleteAllParticles) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
   EXPECT_EQ(verletLists.size(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -80,8 +80,8 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   ParticleFP64 p(r, {0., 0., 0.}, 0);
@@ -108,8 +108,8 @@ TEST_F(VarVerletListsTest, testVerletList) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   ParticleFP64 p(r, {0., 0., 0.}, 0);
@@ -136,8 +136,8 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
 
   std::array<double, 3> r = {1.4, 2, 2};
   ParticleFP64 p(r, {0., 0., 0.}, 0);
@@ -165,8 +165,8 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   ParticleFP64 p(r, {0., 0., 0.}, 0);
@@ -195,8 +195,8 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   ParticleFP64 p(r, {0., 0., 0.}, 0);
@@ -226,8 +226,8 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned int rebuildFrequency = 20;
-  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(min, max, cutoff, skin,
-                                                                                              rebuildFrequency);
+  autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, rebuildFrequency);
 
   std::array<double, 3> r = {0.9, 0.9, 0.9};
   ParticleFP64 p(r, {0., 0., 0.}, 0, autopas::OwnershipState::halo);

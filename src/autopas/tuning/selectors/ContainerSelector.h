@@ -86,8 +86,8 @@ class ContainerSelector {
    * @param containerInfo additional parameter for the container
    * @return Smartpointer to new container
    */
-  std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> generateContainer(ContainerOption containerChoice,
-                                                                                   ContainerSelectorInfo containerInfo);
+  std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> generateContainer(
+      ContainerOption containerChoice, ContainerSelectorInfo containerInfo);
 
   std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
@@ -102,20 +102,20 @@ std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> ContainerSelecto
   switch (containerChoice) {
     case ContainerOption::directSum: {
       container = std::make_unique<DirectSum<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                        containerInfo.verletRebuildFrequency);
+                                                         containerInfo.verletRebuildFrequency);
       break;
     }
 
     case ContainerOption::linkedCells: {
       container = std::make_unique<LinkedCells<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                          containerInfo.verletRebuildFrequency,
-                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
+                                                           containerInfo.verletRebuildFrequency,
+                                                           containerInfo.cellSizeFactor, containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                    containerInfo.verletRebuildFrequency,
-                                                                    containerInfo.cellSizeFactor);
+      container = std::make_unique<LinkedCellsReferences<ParticleT>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
+          containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletLists: {
@@ -152,7 +152,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<ParticleT>> ContainerSelecto
     case ContainerOption::octree: {
       container =
           std::make_unique<Octree<ParticleT>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                             containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+                                              containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
       break;
     }
     default: {
@@ -204,7 +204,7 @@ const autopas::ParticleContainerInterface<ParticleT> &ContainerSelector<Particle
 
 template <class ParticleT>
 void ContainerSelector<ParticleT>::selectContainer(ContainerOption containerOption,
-                                                  ContainerSelectorInfo containerInfo) {
+                                                   ContainerSelectorInfo containerInfo) {
   // Only do something if we have no container, a new type is required, or the info changed
   if (_currentContainer == nullptr or _currentContainer->getContainerType() != containerOption or
       _currentInfo != containerInfo) {

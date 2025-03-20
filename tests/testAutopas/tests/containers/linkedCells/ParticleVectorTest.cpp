@@ -12,7 +12,7 @@
 ParticleVectorTest::ParticleVectorTest() = default;
 
 TEST_F(ParticleVectorTest, testdirtySizeAfterMarkAsClean) {
-  auto particleVector = ParticleVector<autopas::ParticleBaseFP64 >();
+  auto particleVector = ParticleVector<autopas::ParticleBaseFP64>();
 
   autopas::ParticleBaseFP64 p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::ParticleBaseFP64 p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);

@@ -82,9 +82,10 @@ INSTANTIATE_TEST_SUITE_P(
                 configOk = autopas::utils::withStaticCellType<ParticleFP64>(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
                       auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy)>();
-                      auto traversalWithN3 = traversalSelector.template generateTraversal<MockTriwiseFunctor<ParticleFP64>>(
-                          traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
-                          autopas::Newton3Option::enabled);
+                      auto traversalWithN3 =
+                          traversalSelector.template generateTraversal<MockTriwiseFunctor<ParticleFP64>>(
+                              traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
+                              autopas::Newton3Option::enabled);
                       auto traversalWithoutN3 =
                           traversalSelector.template generateTraversal<MockTriwiseFunctor<ParticleFP64>>(
                               traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,

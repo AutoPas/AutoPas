@@ -133,7 +133,7 @@ class OctreeNodeInterface {
    * @return A set of all leaf nodes that are in the query region
    */
   virtual std::set<OctreeLeafNode<ParticleT> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                                const std::array<double, 3> &max) = 0;
+                                                                 const std::array<double, 3> &max) = 0;
 
   /**
    * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)

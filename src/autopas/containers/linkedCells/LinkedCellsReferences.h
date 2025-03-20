@@ -190,13 +190,13 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   }
 
   std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior,
-                                                           const std::array<double, 3> &boxMin,
-                                                           const std::array<double, 3> &boxMax) const override {
+                                                            IteratorBehavior iteratorBehavior,
+                                                            const std::array<double, 3> &boxMin,
+                                                            const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
   std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior) const override {
+                                                            IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -219,9 +219,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   template <bool regionIter>
   std::tuple<const ParticleT *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const {
+                                                                IteratorBehavior iteratorBehavior,
+                                                                const std::array<double, 3> &boxMin,
+                                                                const std::array<double, 3> &boxMax) const {
     using namespace autopas::utils::ArrayMath::literals;
 
     std::array<double, 3> boxMinWithSafetyMargin = boxMin;

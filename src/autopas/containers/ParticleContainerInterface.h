@@ -352,7 +352,7 @@ class ParticleContainerInterface {
    * If there is no next fitting particle {nullptr, 0, 0} is returned.
    */
   virtual std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                                   IteratorBehavior iteratorBehavior) const = 0;
+                                                                    IteratorBehavior iteratorBehavior) const = 0;
 
   /**
    * @copydoc getParticle(size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior) const
@@ -363,9 +363,9 @@ class ParticleContainerInterface {
    * domain.
    */
   virtual std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                                   IteratorBehavior iteratorBehavior,
-                                                                   const std::array<double, 3> &boxMin,
-                                                                   const std::array<double, 3> &boxMax) const = 0;
+                                                                    IteratorBehavior iteratorBehavior,
+                                                                    const std::array<double, 3> &boxMin,
+                                                                    const std::array<double, 3> &boxMax) const = 0;
 
   // clang-format off
   /**
@@ -375,14 +375,14 @@ class ParticleContainerInterface {
    */
   // clang-format on
   std::tuple<ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                     IteratorBehavior iteratorBehavior,
-                                                     const std::array<double, 3> &boxMin,
-                                                     const std::array<double, 3> &boxMax) {
+                                                      IteratorBehavior iteratorBehavior,
+                                                      const std::array<double, 3> &boxMin,
+                                                      const std::array<double, 3> &boxMax) {
     const ParticleT *ptr{};
     size_t nextCellIndex{}, nextParticleIndex{};
     std::tie(ptr, nextCellIndex, nextParticleIndex) =
         const_cast<const ParticleContainerInterface<ParticleT> *>(this)->getParticle(cellIndex, particleIndex,
-                                                                                    iteratorBehavior, boxMin, boxMax);
+                                                                                     iteratorBehavior, boxMin, boxMax);
     return {const_cast<ParticleT *>(ptr), nextCellIndex, nextParticleIndex};
   }
 
@@ -392,12 +392,12 @@ class ParticleContainerInterface {
    * @note non-const non-region iter version
    */
   std::tuple<ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                     IteratorBehavior iteratorBehavior) {
+                                                      IteratorBehavior iteratorBehavior) {
     const ParticleT *ptr{};
     size_t nextCellIndex{}, nextParticleIndex{};
     std::tie(ptr, nextCellIndex, nextParticleIndex) =
         const_cast<const ParticleContainerInterface<ParticleT> *>(this)->getParticle(cellIndex, particleIndex,
-                                                                                    iteratorBehavior);
+                                                                                     iteratorBehavior);
     return {const_cast<ParticleT *>(ptr), nextCellIndex, nextParticleIndex};
   }
 
