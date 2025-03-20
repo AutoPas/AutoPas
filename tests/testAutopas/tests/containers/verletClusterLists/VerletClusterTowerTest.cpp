@@ -9,8 +9,8 @@
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "testingHelpers/commonTypedefs.h"
 
-template <class ParticleT>
-using ClusterTower = autopas::internal::ClusterTower<ParticleT>;
+template <class Particle_T>
+using ClusterTower = autopas::internal::ClusterTower<Particle_T>;
 
 TEST_F(VerletClusterTowerTest, testAddParticle) {
   ClusterTower<ParticleFP64> tower(4);

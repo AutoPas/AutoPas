@@ -15,16 +15,16 @@
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
-template <typename ParticleT>
+template <typename Particle_T>
 class OctreeInnerNode;
 
 /**
  * An octree leaf node. This class utilizes the FullParticleCell to store the actual particles.
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  */
-template <typename ParticleT>
-class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticleCell<ParticleT> {
+template <typename Particle_T>
+class OctreeLeafNode : public OctreeNodeInterface<Particle_T>, public FullParticleCell<Particle_T> {
  public:
   /**
    * Create an empty octree leaf node
@@ -36,19 +36,19 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
    * @param cellSizeFactor The cell size factor
    */
   OctreeLeafNode(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                 OctreeNodeInterface<ParticleT> *parent, const int unsigned treeSplitThreshold,
+                 OctreeNodeInterface<Particle_T> *parent, const int unsigned treeSplitThreshold,
                  const double interactionLength, const double cellSizeFactor)
-      : OctreeNodeInterface<ParticleT>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
-        FullParticleCell<ParticleT>(utils::ArrayMath::sub(boxMax, boxMin)) {}
+      : OctreeNodeInterface<Particle_T>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
+        FullParticleCell<Particle_T>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
   /**
    * Copy a leaf by copying all particles from the other leaf to this leaf.
    * @param other The leaf to copy from
    */
-  OctreeLeafNode(OctreeLeafNode<ParticleT> const &other)
-      : OctreeNodeInterface<ParticleT>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
-                                       other._interactionLength),
-        FullParticleCell<ParticleT>(utils::ArrayMath::sub(other._boxMax, other._boxMin)),
+  OctreeLeafNode(OctreeLeafNode<Particle_T> const &other)
+      : OctreeNodeInterface<Particle_T>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
+                                        other._interactionLength),
+        FullParticleCell<Particle_T>(utils::ArrayMath::sub(other._boxMax, other._boxMin)),
         _id(other.getID()) {
     this->_particles.reserve(other._particles.size());
     for (auto &p : other._particles) {
@@ -59,7 +59,7 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<ParticleT>> insert(const ParticleT &p) override {
+  std::unique_ptr<OctreeNodeInterface<Particle_T>> insert(const Particle_T &p) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
@@ -93,7 +93,7 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
 
       return nullptr;
     } else {
-      std::unique_ptr<OctreeNodeInterface<ParticleT>> newInner = std::make_unique<OctreeInnerNode<ParticleT>>(
+      std::unique_ptr<OctreeNodeInterface<Particle_T>> newInner = std::make_unique<OctreeInnerNode<Particle_T>>(
           this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength,
           this->_cellSizeFactor);
       auto ret = newInner->insert(p);
@@ -107,7 +107,7 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
     }
   }
 
-  bool deleteParticle(ParticleT &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     const bool isRearParticle = &particle == &this->_particles.back();
     // WARNING no runtime check that this particle is actually within the node!
     particle = this->_particles.back();
@@ -119,12 +119,12 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
   /**
    * @copydoc OctreeNodeInterface::collectAllParticles()
    */
-  void collectAllParticles(std::vector<ParticleT *> &ps) const override {
+  void collectAllParticles(std::vector<Particle_T *> &ps) const override {
     ps.reserve(ps.size() + this->_particles.size());
     for (auto &particle : this->_particles) {
-      // The cast here is required to remove the `const` modifier from the `ParticleT const &`. The particle should be
+      // The cast here is required to remove the `const` modifier from the `Particle_T const &`. The particle should be
       // modifiable outside the octree and should therefore not be marked `const`, which requires the cast.
-      ps.push_back((ParticleT *)&particle);
+      ps.push_back((Particle_T *)&particle);
     }
   }
 
@@ -139,7 +139,7 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
   /**
    * @copydoc OctreeNodeInterface::clearChildren()
    */
-  void clearChildren(std::unique_ptr<OctreeNodeInterface<ParticleT>> &ref) override { this->_particles.clear(); }
+  void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle_T>> &ref) override { this->_particles.clear(); }
 
   /**
    * @copydoc OctreeNodeInterface::size()
@@ -162,25 +162,25 @@ class OctreeLeafNode : public OctreeNodeInterface<ParticleT>, public FullParticl
   /**
    * @copydoc OctreeNodeInterface::getChild()
    */
-  OctreeNodeInterface<ParticleT> *getChild(int index) override {
+  OctreeNodeInterface<Particle_T> *getChild(int index) override {
     throw std::runtime_error("[OctreeLeafNode::getChild()] Unable to return child by index in leaf");
   }
 
-  std::vector<OctreeLeafNode<ParticleT> *> getLeavesFromDirections(
+  std::vector<OctreeLeafNode<Particle_T> *> getLeavesFromDirections(
       const std::vector<octree::Vertex> &directions) override {
     return {this};
   }
 
-  OctreeNodeInterface<ParticleT> *SON(octree::Octant O) override {
+  OctreeNodeInterface<Particle_T> *SON(octree::Octant O) override {
     throw std::runtime_error("Unable to get SON of leaf node");
   }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<ParticleT> *> &leaves) const override {
-    leaves.push_back((OctreeLeafNode<ParticleT> *)this);
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle_T> *> &leaves) const override {
+    leaves.push_back((OctreeLeafNode<Particle_T> *)this);
   }
 
-  std::set<OctreeLeafNode<ParticleT> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                         const std::array<double, 3> &max) override {
+  std::set<OctreeLeafNode<Particle_T> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                          const std::array<double, 3> &max) override {
     if (this->getEnclosedVolumeWith(min, max) > 0.0) {
       return {this};
     } else {

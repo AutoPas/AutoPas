@@ -211,9 +211,9 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(ruf->getBoxMax(), max);
 }
 
-template <typename ParticleT>
-static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeInterface<ParticleT> *node,
-                               autopas::OctreeNodeInterface<ParticleT> *neighbor) {
+template <typename Particle_T>
+static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeInterface<Particle_T> *node,
+                               autopas::OctreeNodeInterface<Particle_T> *neighbor) {
   using namespace autopas;
 
   int touchAxis = getAxis(face);

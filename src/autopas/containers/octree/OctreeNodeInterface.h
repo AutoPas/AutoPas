@@ -18,17 +18,17 @@ namespace autopas {
 /**
  * This forward declaration is required since the `OctreeNodeInterface` provides a method to gather all
  * `OctreeLeafNode`s.
- * @tparam ParticleT
+ * @tparam Particle_T
  */
-template <typename ParticleT>
+template <typename Particle_T>
 class OctreeLeafNode;
 
 /**
  * The base class that provides the necessary function definitions that can be applied to an octree.
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  */
-template <class ParticleT>
+template <class Particle_T>
 class OctreeNodeInterface {
  public:
   /**
@@ -41,7 +41,7 @@ class OctreeNodeInterface {
    * @param cellSizeFactor The cell size factor
    */
   OctreeNodeInterface(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                      OctreeNodeInterface<ParticleT> *parent, const int unsigned treeSplitThreshold,
+                      OctreeNodeInterface<Particle_T> *parent, const int unsigned treeSplitThreshold,
                       const double interactionLength, const double cellSizeFactor)
       : _boxMin(boxMin),
         _boxMax(boxMax),
@@ -54,25 +54,25 @@ class OctreeNodeInterface {
   virtual ~OctreeNodeInterface() = default;
 
   /** Default copy constructor */
-  OctreeNodeInterface(const OctreeNodeInterface<ParticleT> &) = default;
+  OctreeNodeInterface(const OctreeNodeInterface<Particle_T> &) = default;
 
   /**
    * Insert a particle into the octree.
    * @param p The particle to insert
    * @return A std::unique_ptr to a newly created subtree or nullptr if the subtree did not change
    */
-  virtual std::unique_ptr<OctreeNodeInterface<ParticleT>> insert(const ParticleT &p) = 0;
+  virtual std::unique_ptr<OctreeNodeInterface<Particle_T>> insert(const Particle_T &p) = 0;
 
   /**
    * @copydoc OctreeNodeWrapper::deleteParticle()
    */
-  virtual bool deleteParticle(ParticleT &particle) = 0;
+  virtual bool deleteParticle(Particle_T &particle) = 0;
 
   /**
    * Put all particles that are below this node into the vector.
    * @param ps A reference to the vector that should contain the particles after the operation
    */
-  virtual void collectAllParticles(std::vector<ParticleT *> &ps) const = 0;
+  virtual void collectAllParticles(std::vector<Particle_T *> &ps) const = 0;
 
   /**
    * Put the min/max corner coordinates of every leaf into the vector.
@@ -85,13 +85,13 @@ class OctreeNodeInterface {
    * Put all leaves below this subtree into a given list.
    * @param leaves A reference to the vector that should contain pointers to the leaves
    */
-  virtual void appendAllLeaves(std::vector<OctreeLeafNode<ParticleT> *> &leaves) const = 0;
+  virtual void appendAllLeaves(std::vector<OctreeLeafNode<Particle_T> *> &leaves) const = 0;
 
   /**
    * Delete the entire tree below this node.
    * @param ref A reference that contains this node
    */
-  virtual void clearChildren(std::unique_ptr<OctreeNodeInterface<ParticleT>> &ref) = 0;
+  virtual void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle_T>> &ref) = 0;
 
   /**
    * @copydoc CellBasedParticleContainer::size()
@@ -109,7 +109,7 @@ class OctreeNodeInterface {
    * @param O The octant
    * @return A pointer to a child node
    */
-  virtual OctreeNodeInterface<ParticleT> *SON(octree::Octant O) = 0;
+  virtual OctreeNodeInterface<Particle_T> *SON(octree::Octant O) = 0;
 
   /**
    * Check if the node is a leaf or an inner node. Use this over dynamic_cast to distinguish node types.
@@ -124,7 +124,7 @@ class OctreeNodeInterface {
    * @param index The index of the child. Must be between 0 and 7 inclusive.
    * @return A pointer to the child.
    */
-  virtual OctreeNodeInterface<ParticleT> *getChild(int index) = 0;
+  virtual OctreeNodeInterface<Particle_T> *getChild(int index) = 0;
 
   /**
    * Find all leaves below this subtree that are in the given range.
@@ -132,8 +132,8 @@ class OctreeNodeInterface {
    * @param max The maximum coordinate in 3D space of the query area
    * @return A set of all leaf nodes that are in the query region
    */
-  virtual std::set<OctreeLeafNode<ParticleT> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                                 const std::array<double, 3> &max) = 0;
+  virtual std::set<OctreeLeafNode<Particle_T> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                                  const std::array<double, 3> &max) = 0;
 
   /**
    * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)
@@ -167,7 +167,7 @@ class OctreeNodeInterface {
    * @param other The octree node to check against.
    * @return true iff the enclosed volume is greater than zero, false if the enclosed volume is equal to zero.
    */
-  bool enclosesVolumeWithOtherOnAxis(const int axis, const OctreeNodeInterface<ParticleT> *other) {
+  bool enclosesVolumeWithOtherOnAxis(const int axis, const OctreeNodeInterface<Particle_T> *other) {
     return volumeExistsOnAxis(axis, this->getBoxMin(), this->getBoxMax(), other->getBoxMin(), other->getBoxMax());
   }
 
@@ -228,8 +228,8 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<ParticleT> *EQ_FACE_NEIGHBOR(const octree::Face I) {
-    OctreeNodeInterface<ParticleT> *param, *P = this;
+  OctreeNodeInterface<Particle_T> *EQ_FACE_NEIGHBOR(const octree::Face I) {
+    OctreeNodeInterface<Particle_T> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(I);
     } else {
@@ -244,8 +244,8 @@ class OctreeNodeInterface {
    * @param I The edge in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<ParticleT> *EQ_EDGE_NEIGHBOR(const octree::Edge I) {
-    OctreeNodeInterface<ParticleT> *param, *P = this;
+  OctreeNodeInterface<Particle_T> *EQ_EDGE_NEIGHBOR(const octree::Edge I) {
+    OctreeNodeInterface<Particle_T> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_EDGE_NEIGHBOR(I);
     } else if (COMMON_FACE(I, SONTYPE(P)) != octree::O) {
@@ -262,8 +262,8 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<ParticleT> *EQ_VERTEX_NEIGHBOR(const octree::Vertex I) {
-    OctreeNodeInterface<ParticleT> *param, *P = this;
+  OctreeNodeInterface<Particle_T> *EQ_VERTEX_NEIGHBOR(const octree::Vertex I) {
+    OctreeNodeInterface<Particle_T> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_VERTEX_NEIGHBOR(I);
     } else if (COMMON_EDGE(I, SONTYPE(P)) != octree::OO) {
@@ -282,7 +282,7 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<ParticleT> *GTEQ_FACE_NEIGHBOR(octree::Face I);
+  OctreeNodeInterface<Particle_T> *GTEQ_FACE_NEIGHBOR(octree::Face I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -290,7 +290,7 @@ class OctreeNodeInterface {
    * @param I The edge in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<ParticleT> *GTEQ_EDGE_NEIGHBOR(octree::Edge I);
+  OctreeNodeInterface<Particle_T> *GTEQ_EDGE_NEIGHBOR(octree::Edge I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -298,14 +298,14 @@ class OctreeNodeInterface {
    * @param I The vertex in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<ParticleT> *GTEQ_VERTEX_NEIGHBOR(octree::Vertex I);
+  OctreeNodeInterface<Particle_T> *GTEQ_VERTEX_NEIGHBOR(octree::Vertex I);
 
   /**
    * Find all leaf nodes along a list of given directions.
    * @param directions A list of allowed directions for traversal.
    * @return A list of leaf nodes
    */
-  virtual std::vector<OctreeLeafNode<ParticleT> *> getLeavesFromDirections(
+  virtual std::vector<OctreeLeafNode<Particle_T> *> getLeavesFromDirections(
       const std::vector<octree::Vertex> &directions) = 0;
 
   /**
@@ -313,7 +313,7 @@ class OctreeNodeInterface {
    * @param direction The "original" direction. The leaves will be found along the opposite direction.
    * @return A list of leaf nodes
    */
-  std::vector<OctreeLeafNode<ParticleT> *> getNeighborLeaves(const octree::Any direction) {
+  std::vector<OctreeLeafNode<Particle_T> *> getNeighborLeaves(const octree::Any direction) {
     auto opposite = octree::getOppositeDirection(direction);
     auto directions = octree::getAllowedDirections(opposite);
     auto neighborLeaves = getLeavesFromDirections(directions);
@@ -324,12 +324,12 @@ class OctreeNodeInterface {
    * Get the neighbor leaves in all directions
    * @return A set of (unique) neighboring leaves
    */
-  std::set<OctreeLeafNode<ParticleT> *> getNeighborLeaves() {
-    std::set<OctreeLeafNode<ParticleT> *> result;
+  std::set<OctreeLeafNode<Particle_T> *> getNeighborLeaves() {
+    std::set<OctreeLeafNode<Particle_T> *> result;
 
     // Get all face neighbors
     for (auto face : octree::Tables::faces) {
-      OctreeNodeInterface<ParticleT> *neighbor = GTEQ_FACE_NEIGHBOR(face);
+      OctreeNodeInterface<Particle_T> *neighbor = GTEQ_FACE_NEIGHBOR(face);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(face);
         result.insert(leaves.begin(), leaves.end());
@@ -338,7 +338,7 @@ class OctreeNodeInterface {
 
     // Get all edge neighbors
     for (auto edge : octree::Tables::edges) {
-      OctreeNodeInterface<ParticleT> *neighbor = GTEQ_EDGE_NEIGHBOR(edge);
+      OctreeNodeInterface<Particle_T> *neighbor = GTEQ_EDGE_NEIGHBOR(edge);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(edge);
         result.insert(leaves.begin(), leaves.end());
@@ -347,7 +347,7 @@ class OctreeNodeInterface {
 
     // Get all face neighbors
     for (auto vertex : octree::Tables::vertices) {
-      OctreeNodeInterface<ParticleT> *neighbor = GTEQ_VERTEX_NEIGHBOR(vertex);
+      OctreeNodeInterface<Particle_T> *neighbor = GTEQ_VERTEX_NEIGHBOR(vertex);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(vertex);
         result.insert(leaves.begin(), leaves.end());
@@ -373,7 +373,7 @@ class OctreeNodeInterface {
    * Get the parent node of this node.
    * @return A pointer to the parent, can be nullptr.
    */
-  OctreeNodeInterface<ParticleT> *getParent() const { return _parent; }
+  OctreeNodeInterface<Particle_T> *getParent() const { return _parent; }
 
  protected:
   /**
@@ -385,7 +385,7 @@ class OctreeNodeInterface {
   /**
    * A pointer to the parent node. Can be nullptr (iff this is the root node).
    */
-  OctreeNodeInterface<ParticleT> *_parent;
+  OctreeNodeInterface<Particle_T> *_parent;
 
   /**
    * The min coordinate of the enclosed volume.
@@ -415,12 +415,12 @@ class OctreeNodeInterface {
 
 /**
  * Check if a node is an inner node.
- * @tparam ParticleT The particle type used in this container
+ * @tparam Particle_T The particle type used in this container
  * @param node A pointer to a node
  * @return true if the node has children, false otherwise.
  */
-template <class ParticleT>
-inline bool GRAY(OctreeNodeInterface<ParticleT> *node) {
+template <class Particle_T>
+inline bool GRAY(OctreeNodeInterface<Particle_T> *node) {
   // According to Samet: "All non-leaf nodes are said to be GRAY"
   return node->hasChildren();
 }
@@ -428,25 +428,25 @@ inline bool GRAY(OctreeNodeInterface<ParticleT> *node) {
 /**
  * Get the parent node of an arbitrary octree node.
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  * @param node
  * @return The parent of the given node if the node is not the root node, otherwise nullptr.
  */
-template <class ParticleT>
-inline OctreeNodeInterface<ParticleT> *FATHER(const OctreeNodeInterface<ParticleT> *node) {
+template <class Particle_T>
+inline OctreeNodeInterface<Particle_T> *FATHER(const OctreeNodeInterface<Particle_T> *node) {
   return node->getParent();
 }
 
 /**
  * Get the octant in which a given node can be found in the parent.
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  * @param node The node to check
  * @return The octant in which the node is in the parent, OOO if the node either does not have a parent or could not be
  * found in the parent.
  */
-template <class ParticleT>
-static octree::Octant SONTYPE(const OctreeNodeInterface<ParticleT> *node) {
+template <class Particle_T>
+static octree::Octant SONTYPE(const OctreeNodeInterface<Particle_T> *node) {
   octree::Octant result = octree::OOO;
   if (FATHER(node)) {
     for (octree::Vertex test : octree::Tables::vertices) {
@@ -462,17 +462,17 @@ static octree::Octant SONTYPE(const OctreeNodeInterface<ParticleT> *node) {
   return result;
 }
 
-template <class ParticleT>
-OctreeNodeInterface<ParticleT> *OctreeNodeInterface<ParticleT>::GTEQ_FACE_NEIGHBOR(const octree::Face I) {
+template <class Particle_T>
+OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_FACE_NEIGHBOR(const octree::Face I) {
   // Check precondition
   if (not isFace(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_FACE_NEIGHBOR()] Received invalid face.");
   }
 
-  auto null = [](OctreeNodeInterface<ParticleT> *T) { return T == nullptr; };
+  auto null = [](OctreeNodeInterface<Particle_T> *T) { return T == nullptr; };
 
   // Find a common ancestor
-  OctreeNodeInterface<ParticleT> *Q, *P = this;
+  OctreeNodeInterface<Particle_T> *Q, *P = this;
   if ((not null(FATHER(P))) and ADJ(I, SONTYPE(P))) {
     Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(I);
   } else {
@@ -487,17 +487,17 @@ OctreeNodeInterface<ParticleT> *OctreeNodeInterface<ParticleT>::GTEQ_FACE_NEIGHB
   }
 }
 
-template <class ParticleT>
-OctreeNodeInterface<ParticleT> *OctreeNodeInterface<ParticleT>::GTEQ_EDGE_NEIGHBOR(const octree::Edge I) {
+template <class Particle_T>
+OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_EDGE_NEIGHBOR(const octree::Edge I) {
   // Check precondition
   if (not isEdge(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_EDGE_NEIGHBOR()] Received invalid edge.");
   }
 
-  auto null = [](OctreeNodeInterface<ParticleT> *T) { return T == nullptr; };
+  auto null = [](OctreeNodeInterface<Particle_T> *T) { return T == nullptr; };
 
   // Find a common ancestor
-  OctreeNodeInterface<ParticleT> *Q, *P = this;
+  OctreeNodeInterface<Particle_T> *Q, *P = this;
   if (null(FATHER(P))) {
     Q = nullptr;
   } else if (ADJ(I, SONTYPE(P))) {
@@ -516,15 +516,15 @@ OctreeNodeInterface<ParticleT> *OctreeNodeInterface<ParticleT>::GTEQ_EDGE_NEIGHB
   }
 }
 
-template <class ParticleT>
-OctreeNodeInterface<ParticleT> *OctreeNodeInterface<ParticleT>::GTEQ_VERTEX_NEIGHBOR(const octree::Vertex I) {
+template <class Particle_T>
+OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_VERTEX_NEIGHBOR(const octree::Vertex I) {
   // Check precondition
   if (not isVertex(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_VERTEX_NEIGHBOR()] Received invalid vertex.");
   }
 
   // Find a common ancestor
-  OctreeNodeInterface<ParticleT> *Q, *P = this;
+  OctreeNodeInterface<Particle_T> *Q, *P = this;
   if (not FATHER(P)) {
     Q = nullptr;
   } else if (ADJ(I, SONTYPE(P))) {

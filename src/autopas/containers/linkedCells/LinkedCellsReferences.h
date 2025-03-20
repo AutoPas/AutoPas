@@ -35,17 +35,17 @@ namespace autopas {
  * particles in neighboring cells.
  * @tparam ParticleCell type of the ParticleCells that are used to store the particles
  */
-template <class ParticleT>
-class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<ParticleT>> {
+template <class Particle_T>
+class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle_T>> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = ParticleT;
+  using ParticleType = Particle_T;
   /**
    *  Type of the ParticleCell.
    */
-  using ReferenceCell = ReferenceParticleCell<ParticleT>;
+  using ReferenceCell = ReferenceParticleCell<Particle_T>;
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
@@ -189,14 +189,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     traversal->endTraversal();
   }
 
-  std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                            IteratorBehavior iteratorBehavior,
-                                                            const std::array<double, 3> &boxMin,
-                                                            const std::array<double, 3> &boxMax) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior,
+                                                             const std::array<double, 3> &boxMin,
+                                                             const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                            IteratorBehavior iteratorBehavior) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -218,10 +218,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const ParticleT *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
-                                                                IteratorBehavior iteratorBehavior,
-                                                                const std::array<double, 3> &boxMin,
-                                                                const std::array<double, 3> &boxMax) const {
+  std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                                 IteratorBehavior iteratorBehavior,
+                                                                 const std::array<double, 3> &boxMin,
+                                                                 const std::array<double, 3> &boxMax) const {
     using namespace autopas::utils::ArrayMath::literals;
 
     std::array<double, 3> boxMinWithSafetyMargin = boxMin;
@@ -272,12 +272,12 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
     }
-    const ParticleT *retPtr = &this->_cells[cellIndex][particleIndex];
+    const Particle_T *retPtr = &this->_cells[cellIndex][particleIndex];
 
     return {retPtr, cellIndex, particleIndex};
   }
 
-  bool deleteParticle(ParticleT &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(particle);
     return false;

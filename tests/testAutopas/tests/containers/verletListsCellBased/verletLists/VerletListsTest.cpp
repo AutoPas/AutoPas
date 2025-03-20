@@ -206,8 +206,8 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   ASSERT_EQ(partners, 1);
 }
 
-template <class Container, class ParticleT>
-bool moveUpdateAndExpectEqual(Container &container, ParticleT &particle, const std::array<double, 3> &newPosition) {
+template <class Container, class Particle_T>
+bool moveUpdateAndExpectEqual(Container &container, Particle_T &particle, const std::array<double, 3> &newPosition) {
   particle.setR(newPosition);
   bool updated = container.updateHaloParticle(particle);
   if (updated) {

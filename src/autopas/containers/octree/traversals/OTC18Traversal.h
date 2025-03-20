@@ -22,17 +22,17 @@ namespace autopas {
  * This traversal is capable of iterating over particles stored in the Octree data structure. This traversal does not
  * use any parallelization or speed-increasing strategies and is therefore called naive.
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  * @tparam PairwiseFunctor
  */
-template <class ParticleT, class PairwiseFunctor>
-class OTC18Traversal : public CellTraversal<OctreeLeafNode<ParticleT>>,
-                       public OTTraversalInterface<OctreeNodeWrapper<ParticleT>> {
+template <class Particle_T, class PairwiseFunctor>
+class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
+                       public OTTraversalInterface<OctreeNodeWrapper<Particle_T>> {
  public:
   /**
    * A shortcut to specify the type of the actual iterated cell
    */
-  using ParticleCell = OctreeLeafNode<ParticleT>;
+  using ParticleCell = OctreeLeafNode<Particle_T>;
 
   /**
    * Constructor for the Octree traversal.
@@ -47,7 +47,7 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<ParticleT>>,
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
       : CellTraversal<ParticleCell>({2, 1, 1}),
-        OTTraversalInterface<OctreeNodeWrapper<ParticleT>>(interactionLength, dataLayout, useNewton3),
+        OTTraversalInterface<OctreeNodeWrapper<Particle_T>>(interactionLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
@@ -62,7 +62,7 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<ParticleT>>,
    * @param leaves A list of leaves to assign the IDs to
    * @param startID The minimum ID
    */
-  static void assignIDs(std::vector<OctreeLeafNode<ParticleT> *> &leaves, int startID = 0) {
+  static void assignIDs(std::vector<OctreeLeafNode<Particle_T> *> &leaves, int startID = 0) {
     for (int i = 0; i < leaves.size(); ++i) {
       leaves[i]->setID(startID + i);
     }
@@ -94,13 +94,13 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<ParticleT>>,
     auto *haloWrapper = this->getHalo();
 
     // Get neighboring cells for each leaf
-    for (OctreeLeafNode<ParticleT> *leaf : this->_ownedLeaves) {
+    for (OctreeLeafNode<Particle_T> *leaf : this->_ownedLeaves) {
       // Process cell itself
       _cellFunctor.processCell(*leaf);
 
       // Process connection to all neighbors
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
-      for (OctreeLeafNode<ParticleT> *neighborLeaf : uniqueNeighboringLeaves) {
+      for (OctreeLeafNode<Particle_T> *neighborLeaf : uniqueNeighboringLeaves) {
         if (leaf->getID() < neighborLeaf->getID()) {
           // Execute the cell functor
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
@@ -112,7 +112,7 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<ParticleT>>,
       auto max = leaf->getBoxMax() + this->_interactionLength;
       auto haloNeighbors = haloWrapper->getLeavesInRange(min, max);
 
-      for (OctreeLeafNode<ParticleT> *neighborLeaf : haloNeighbors) {
+      for (OctreeLeafNode<Particle_T> *neighborLeaf : haloNeighbors) {
         if (leaf->getID() < neighborLeaf->getID()) {
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
         }

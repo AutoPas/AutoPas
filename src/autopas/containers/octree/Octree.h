@@ -34,16 +34,16 @@ namespace autopas {
  *
  * @note Octree has a particular to interpret the index of the ContainerIterator. For details see getParticleImpl().
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  */
-template <class ParticleT>
-class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
+template <class Particle_T>
+class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
                public internal::CellBorderAndFlagManager {
  public:
   /**
    * The particle cell used in this CellBasedParticleContainer
    */
-  using ParticleCell = OctreeNodeWrapper<ParticleT>;
+  using ParticleCell = OctreeNodeWrapper<Particle_T>;
 
   /**
    * The particle type used in this container.
@@ -83,14 +83,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
 
     // Create the octree for the owned particles
     this->_cells.push_back(
-        OctreeNodeWrapper<ParticleT>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
+        OctreeNodeWrapper<Particle_T>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
 
     // Extend the halo region with cutoff + skin in all dimensions
     auto haloBoxMin = boxMin - interactionLength;
     auto haloBoxMax = boxMax + interactionLength;
     // Create the octree for the halo particles
     this->_cells.push_back(
-        OctreeNodeWrapper<ParticleT>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
+        OctreeNodeWrapper<Particle_T>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
 
     // set type of particles in the two cells
     this->_cells[CellTypes::OWNED].setPossibleParticleOwnerships(OwnershipState::owned);
@@ -99,7 +99,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListValid) override {
     // invalidParticles: all outside boxMin/Max
-    std::vector<ParticleT> invalidParticles{};
+    std::vector<Particle_T> invalidParticles{};
 
     if (keepNeighborListValid) {
       invalidParticles = LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
@@ -111,9 +111,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
       //   The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
 
       // 1. Copy all particles out of the container
-      std::vector<ParticleT *> particleRefs;
+      std::vector<Particle_T *> particleRefs;
       this->_cells[CellTypes::OWNED].collectAllParticles(particleRefs);
-      std::vector<ParticleT> particles{};
+      std::vector<Particle_T> particles{};
       particles.reserve(particleRefs.size());
 
       for (auto *p : particleRefs) {
@@ -188,14 +188,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
-  std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                            IteratorBehavior iteratorBehavior,
-                                                            const std::array<double, 3> &boxMin,
-                                                            const std::array<double, 3> &boxMax) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior,
+                                                             const std::array<double, 3> &boxMin,
+                                                             const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  std::tuple<const ParticleT *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                            IteratorBehavior iteratorBehavior) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -253,7 +253,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
     }
 
     std::vector<size_t> currentCellIndex{};
-    OctreeLeafNode<ParticleT> *currentCellPtr = nullptr;
+    OctreeLeafNode<Particle_T> *currentCellPtr = nullptr;
 
     std::tie(currentCellIndex, currentCellPtr) = getLeafCellByIndex(cellIndex);
     // check the data behind the indices
@@ -271,7 +271,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
       return {nullptr, 0, 0};
     }
     // parse cellIndex and get referenced cell and particle
-    const ParticleT *retPtr = &((*currentCellPtr)[particleIndex]);
+    const Particle_T *retPtr = &((*currentCellPtr)[particleIndex]);
 
     // if no err value was set, convert cell index from vec to integer
     if (currentCellIndex.empty()) {
@@ -297,27 +297,27 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
    * @param cellIndex Index in the tree as integer
    * @return tuple<index as vector, pointer to cell>
    */
-  std::tuple<std::vector<size_t>, OctreeLeafNode<ParticleT> *> getLeafCellByIndex(size_t cellIndex) const {
+  std::tuple<std::vector<size_t>, OctreeLeafNode<Particle_T> *> getLeafCellByIndex(size_t cellIndex) const {
     // parse cellIndex and get referenced cell and particle
     std::vector<size_t> currentCellIndex;
     // constant heuristic for the tree depth
     currentCellIndex.reserve(10);
     currentCellIndex.push_back(cellIndex % 10);
     cellIndex /= 10;
-    OctreeNodeInterface<ParticleT> *currentCell = this->_cells[currentCellIndex.back()].getRaw();
+    OctreeNodeInterface<Particle_T> *currentCell = this->_cells[currentCellIndex.back()].getRaw();
     // don't restrict loop via cellIndex because it might have "hidden" leading 0
     while (currentCell->hasChildren()) {
       currentCellIndex.push_back(cellIndex % 10);
       cellIndex /= 10;
       currentCell = currentCell->getChild(currentCellIndex.back());
     }
-    return {currentCellIndex, dynamic_cast<OctreeLeafNode<ParticleT> *>(currentCell)};
+    return {currentCellIndex, dynamic_cast<OctreeLeafNode<Particle_T> *>(currentCell)};
   }
 
   /**
    * @copydoc ParticleContainerInterface::deleteParticle()
    */
-  bool deleteParticle(ParticleT &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     if (particle.isOwned()) {
       return this->_cells[CellTypes::OWNED].deleteParticle(particle);
     } else if (particle.isHalo()) {
@@ -341,38 +341,39 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
   /**
    * @copydoc ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ContainerIterator<ParticleT, true, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior,
-      typename ContainerIterator<ParticleT, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleT, true, false>(*this, behavior, additionalVectors);
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
   }
 
   /**
    * @copydoc ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ContainerIterator<ParticleT, false, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior,
-      typename ContainerIterator<ParticleT, false, false>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleT, false, false>(*this, behavior, additionalVectors);
+    return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
    * @copydoc ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ContainerIterator<ParticleT, true, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleT, true, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleT, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
    * @copydoc ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ContainerIterator<ParticleT, false, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleT, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
-    return ContainerIterator<ParticleT, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
+          nullptr) const override {
+    return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -421,7 +422,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
 
   /**
    * Execute code on all particles in this container as defined by a lambda function.
-   * @tparam Lambda (ParticleT &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior
    */
@@ -435,7 +436,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
 
   /**
    * Reduce properties of particles as defined by a lambda function.
-   * @tparam Lambda (ParticleT p, A initialValue) -> void
+   * @tparam Lambda (Particle_T p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -493,21 +494,22 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
    * @return tuple<nextLeafCell, nextParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<OctreeLeafNode<ParticleT> *, size_t> advanceIteratorIndices(
-      std::vector<size_t> &currentCellIndex, OctreeNodeInterface<ParticleT> *const currentCellPtr, size_t particleIndex,
-      IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-      const std::array<double, 3> &boxMinWithSafetyMargin, const std::array<double, 3> &boxMaxWithSafetyMargin) const {
+  std::tuple<OctreeLeafNode<Particle_T> *, size_t> advanceIteratorIndices(
+      std::vector<size_t> &currentCellIndex, OctreeNodeInterface<Particle_T> *const currentCellPtr,
+      size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
+      const std::array<double, 3> &boxMaxWithSafetyMargin) const {
     // TODO: parallelize at the higher tree levels. Choose tree level to parallelize via log_8(numThreads)
     const size_t minLevel = 0;
     //        (iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1
     //            ? 0
     //            : static_cast<size_t>(std::ceil(std::log(static_cast<double>(autopas_get_num_threads())) /
     //            std::log(8.)));
-    OctreeNodeInterface<ParticleT> *currentCellInterfacePtr = currentCellPtr;
-    OctreeLeafNode<ParticleT> *currentLeafCellPtr = nullptr;
+    OctreeNodeInterface<Particle_T> *currentCellInterfacePtr = currentCellPtr;
+    OctreeLeafNode<Particle_T> *currentLeafCellPtr = nullptr;
 
     // helper function:
-    auto cellIsRelevant = [&](const OctreeNodeInterface<ParticleT> *const cellPtr) {
+    auto cellIsRelevant = [&](const OctreeNodeInterface<Particle_T> *const cellPtr) {
       bool isRelevant = cellPtr->size() > 0;
       if constexpr (regionIter) {
         isRelevant = utils::boxesOverlap(cellPtr->getBoxMin(), cellPtr->getBoxMax(), boxMinWithSafetyMargin,
@@ -588,7 +590,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
       }
 
       // at this point we should point to a leaf. All other cases should have hit a return earlier.
-      currentLeafCellPtr = dynamic_cast<OctreeLeafNode<ParticleT> *>(currentCellInterfacePtr);
+      currentLeafCellPtr = dynamic_cast<OctreeLeafNode<Particle_T> *>(currentCellInterfacePtr);
       // sanity check
       if (currentLeafCellPtr == nullptr) {
         utils::ExceptionHandler::exception("Expected a leaf node but didn't get one!");
@@ -602,7 +604,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<ParticleT>>,
   /**
    * A logger that can be called to log the octree data structure.
    */
-  OctreeLogger<ParticleT> logger;
+  OctreeLogger<Particle_T> logger;
 
   double skin;
 };

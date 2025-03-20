@@ -17,10 +17,10 @@ namespace autopas {
  * Inner nodes of the octree data structure. An inner node always points to eight children, which can either be leaves
  * or inner nodes as well.
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  */
-template <class ParticleT>
-class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
+template <class Particle_T>
+class OctreeInnerNode : public OctreeNodeInterface<Particle_T> {
  public:
   /**
    * Create an octree inner node that points to eight leaves.
@@ -32,9 +32,9 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
    * @param cellSizeFactor The cell size factor
    */
   OctreeInnerNode(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                  OctreeNodeInterface<ParticleT> *parent, int unsigned treeSplitThreshold, double interactionLength,
+                  OctreeNodeInterface<Particle_T> *parent, int unsigned treeSplitThreshold, double interactionLength,
                   double cellSizeFactor)
-      : OctreeNodeInterface<ParticleT>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor) {
+      : OctreeNodeInterface<Particle_T>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor) {
     using namespace autopas::utils;
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -69,8 +69,8 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
       }
 
       // Assign new leaves as the children.
-      _children[i] = std::make_unique<OctreeLeafNode<ParticleT>>(newBoxMin, newBoxMax, this, treeSplitThreshold,
-                                                                 interactionLength, cellSizeFactor);
+      _children[i] = std::make_unique<OctreeLeafNode<Particle_T>>(newBoxMin, newBoxMax, this, treeSplitThreshold,
+                                                                  interactionLength, cellSizeFactor);
     }
   }
 
@@ -78,15 +78,16 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
    * Copy all children from the other octree into this octree. (Create a new, copied subtree)
    * @param other The other octree (to copy from)
    */
-  OctreeInnerNode(const OctreeInnerNode<ParticleT> &other)
-      : OctreeNodeInterface<ParticleT>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
-                                       other._interactionLength, other._cellSizeFactor) {
+  OctreeInnerNode(const OctreeInnerNode<Particle_T> &other)
+      : OctreeNodeInterface<Particle_T>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
+                                        other._interactionLength, other._cellSizeFactor) {
     for (auto i = 0; i < other._children.size(); ++i) {
       auto *otherChild = other._children[i].get();
       if (otherChild->hasChildren()) {
-        _children[i] = std::make_unique<OctreeInnerNode<ParticleT>>((OctreeInnerNode<ParticleT> &)*other._children[i]);
+        _children[i] =
+            std::make_unique<OctreeInnerNode<Particle_T>>((OctreeInnerNode<Particle_T> &)*other._children[i]);
       } else {
-        _children[i] = std::make_unique<OctreeLeafNode<ParticleT>>((OctreeLeafNode<ParticleT> &)*other._children[i]);
+        _children[i] = std::make_unique<OctreeLeafNode<Particle_T>>((OctreeLeafNode<Particle_T> &)*other._children[i]);
       }
     }
   }
@@ -94,7 +95,7 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<ParticleT>> insert(const ParticleT &p) override {
+  std::unique_ptr<OctreeNodeInterface<Particle_T>> insert(const Particle_T &p) override {
     // Find a child to insert the particle into.
     for (auto &child : _children) {
       if (child->isInside(p.getR())) {
@@ -107,7 +108,7 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
     return nullptr;
   }
 
-  bool deleteParticle(ParticleT &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     for (auto &child : _children) {
       if (child->isInside(particle.getR())) {
         return child->deleteParticle(particle);
@@ -126,7 +127,7 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
   /**
    * @copydoc OctreeNodeInterface::collectAllParticles()
    */
-  void collectAllParticles(std::vector<ParticleT *> &ps) const override {
+  void collectAllParticles(std::vector<Particle_T *> &ps) const override {
     // An inner node does not contain particles, traverse down to the children.
     for (auto &child : _children) {
       child->collectAllParticles(ps);
@@ -145,12 +146,12 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
   /**
    * @copydoc OctreeNodeInterface::clearChildren()
    */
-  void clearChildren(std::unique_ptr<OctreeNodeInterface<ParticleT>> &ref) override {
+  void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle_T>> &ref) override {
     for (auto &child : _children) {
       child->clearChildren(child);
     }
 
-    std::unique_ptr<OctreeLeafNode<ParticleT>> newLeaf = std::make_unique<OctreeLeafNode<ParticleT>>(
+    std::unique_ptr<OctreeLeafNode<Particle_T>> newLeaf = std::make_unique<OctreeLeafNode<Particle_T>>(
         this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength,
         this->_cellSizeFactor);
     ref = std::move(newLeaf);
@@ -186,11 +187,11 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
   /**
    * @copydoc OctreeNodeInterface::getChild()
    */
-  OctreeNodeInterface<ParticleT> *getChild(int index) override { return _children[index].get(); }
+  OctreeNodeInterface<Particle_T> *getChild(int index) override { return _children[index].get(); }
 
-  std::vector<OctreeLeafNode<ParticleT> *> getLeavesFromDirections(
+  std::vector<OctreeLeafNode<Particle_T> *> getLeavesFromDirections(
       const std::vector<octree::Vertex> &directions) override {
-    std::vector<OctreeLeafNode<ParticleT> *> result;
+    std::vector<OctreeLeafNode<Particle_T> *> result;
     // Only take the children that are allowed (i.e. those which are in the given directions list)
     for (auto d : directions) {
       int childIndex = vertexToIndex(d);
@@ -205,21 +206,21 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
     return result;
   }
 
-  OctreeNodeInterface<ParticleT> *SON(octree::Octant octant) override {
+  OctreeNodeInterface<Particle_T> *SON(octree::Octant octant) override {
     // convert the Octant to a flat child index
     auto flat = vertexToIndex(octant);
     return _children[flat].get();
   }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<ParticleT> *> &leaves) const override {
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle_T> *> &leaves) const override {
     for (auto &child : _children) {
       child->appendAllLeaves(leaves);
     }
   }
 
-  std::set<OctreeLeafNode<ParticleT> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                         const std::array<double, 3> &max) override {
-    std::set<OctreeLeafNode<ParticleT> *> result;
+  std::set<OctreeLeafNode<Particle_T> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                          const std::array<double, 3> &max) override {
+    std::set<OctreeLeafNode<Particle_T> *> result;
     for (auto &child : _children) {
       double vol = child->getEnclosedVolumeWith(min, max);
       // Prevent iteration of the subtree if it is unnecessary
@@ -299,6 +300,6 @@ class OctreeInnerNode : public OctreeNodeInterface<ParticleT> {
   /**
    * Each inner node of an octree can contain exactly 8 children.
    */
-  std::array<std::unique_ptr<OctreeNodeInterface<ParticleT>>, 8> _children;
+  std::array<std::unique_ptr<OctreeNodeInterface<Particle_T>>, 8> _children;
 };
 }  // namespace autopas

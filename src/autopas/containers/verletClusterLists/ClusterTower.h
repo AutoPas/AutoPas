@@ -36,16 +36,16 @@ namespace autopas::internal {
  * calling addParticle() again, since doing otherwise will mess up the dummy particles and actual particles will likely
  * get lost.
  *
- * @tparam ParticleT
+ * @tparam Particle_T
  * @tparam clusterSize
  */
-template <class ParticleT>
-class ClusterTower : public FullParticleCell<ParticleT> {
+template <class Particle_T>
+class ClusterTower : public FullParticleCell<Particle_T> {
  public:
   /**
    * Type that holds or refers to the actual particles.
    */
-  using StorageType = typename FullParticleCell<ParticleT>::StorageType;
+  using StorageType = typename FullParticleCell<Particle_T>::StorageType;
 
   /**
    * Dummy constructor.
@@ -65,7 +65,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
    */
   void clear() override {
     _clusters.clear();
-    FullParticleCell<ParticleT>::clear();
+    FullParticleCell<Particle_T>::clear();
     _firstOwnedCluster = _clusters.end();
     _firstTailHaloCluster = _clusters.end();
     _numDummyParticles = 0;
@@ -82,7 +82,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
    */
   size_t generateClusters() {
     if (getNumActualParticles() == 0) {
-      _clusters.resize(0, Cluster<ParticleT>(nullptr, _clusterSize));
+      _clusters.resize(0, Cluster<Particle_T>(nullptr, _clusterSize));
       _firstOwnedCluster = _clusters.end();
       _firstTailHaloCluster = _clusters.end();
       return 0;
@@ -102,7 +102,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
 
     // Mark start of the different clusters by adding pointers to _particles
     const size_t numClusters = this->_particles.size() / _clusterSize;
-    _clusters.resize(numClusters, Cluster<ParticleT>(nullptr, _clusterSize));
+    _clusters.resize(numClusters, Cluster<Particle_T>(nullptr, _clusterSize));
     bool foundFirstOwnedCluster = false;
     bool foundFirstTailHaloCluster = false;
 
@@ -204,7 +204,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
    * clear() has to called afterwards!
    * @return
    */
-  std::vector<ParticleT> &&collectAllActualParticles() {
+  std::vector<Particle_T> &&collectAllActualParticles() {
     if (not this->_particles.empty()) {
       // Workaround to remove requirement of default constructible particles.
       // This function will always only shrink the array, particles are not actually inserted.
@@ -223,8 +223,8 @@ class ClusterTower : public FullParticleCell<ParticleT> {
    * @param boxMax
    * @return Vector of particles that should be stored somewhere else.
    */
-  std::vector<ParticleT> collectOutOfBoundsParticles(const std::array<double, 3> &boxMin,
-                                                     const std::array<double, 3> &boxMax) {
+  std::vector<Particle_T> collectOutOfBoundsParticles(const std::array<double, 3> &boxMin,
+                                                      const std::array<double, 3> &boxMax) {
     // make sure to get rid of all dummies
     deleteDummyParticles();
     // move all particles that are not in the tower to the back of the storage
@@ -233,7 +233,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
                        [&](const auto &p) { return utils::inBox(p.getR(), boxMin, boxMax); });
 
     // copy out of bounds particles
-    std::vector<ParticleT> outOfBoundsParticles(firstOutOfBoundsParticleIter, this->_particles.end());
+    std::vector<Particle_T> outOfBoundsParticles(firstOutOfBoundsParticleIter, this->_particles.end());
     // shrink the particle storage so all out of bounds particles are cut away
     this->_particles.resize(std::distance(this->_particles.begin(), firstOutOfBoundsParticleIter),
                             *this->_particles.begin());
@@ -277,7 +277,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
    * Returns an iterator to the first cluster that contains at least one owned particle.
    * @return
    */
-  [[nodiscard]] const typename std::vector<autopas::internal::Cluster<ParticleT>>::iterator &getFirstOwnedCluster()
+  [[nodiscard]] const typename std::vector<autopas::internal::Cluster<Particle_T>>::iterator &getFirstOwnedCluster()
       const {
     return _firstOwnedCluster;
   }
@@ -294,7 +294,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
    * Returns an iterator to the first particle after the owned clusters, that contains no owned particles anymore.
    * @return
    */
-  [[nodiscard]] const typename std::vector<autopas::internal::Cluster<ParticleT>>::iterator &getFirstTailHaloCluster()
+  [[nodiscard]] const typename std::vector<autopas::internal::Cluster<Particle_T>>::iterator &getFirstTailHaloCluster()
       const {
     return _firstTailHaloCluster;
   }
@@ -323,7 +323,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
 
   void deleteDummyParticles() override {
     // call super function to do the actual delete
-    FullParticleCell<ParticleT>::deleteDummyParticles();
+    FullParticleCell<Particle_T>::deleteDummyParticles();
     _numDummyParticles = 0;
   }
 
@@ -390,7 +390,7 @@ class ClusterTower : public FullParticleCell<ParticleT> {
   /**
    * The clusters that are contained in this tower.
    */
-  std::vector<Cluster<ParticleT>> _clusters;
+  std::vector<Cluster<Particle_T>> _clusters;
 
   /**
    * Iterator pointing to the first cluster that contains at least one owned particle.

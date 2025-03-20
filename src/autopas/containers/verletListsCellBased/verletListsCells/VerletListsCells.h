@@ -28,13 +28,13 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin.
- * @tparam ParticleT
+ * @tparam Particle_T
  * @tparam NeighborList The neighbor list used by this container.
  */
 
-template <class ParticleT, class NeighborList>
-class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
-  using ParticleCell = FullParticleCell<ParticleT>;
+template <class Particle_T, class NeighborList>
+class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
+  using ParticleCell = FullParticleCell<Particle_T>;
 
  public:
   /**
@@ -54,8 +54,8 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers::VLCBuildType dataLayoutDuringListRebuild =
                        VerletListsCellsHelpers::VLCBuildType::soaBuild)
-      : VerletListsLinkedBase<ParticleT>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
+                                          compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
         _dataLayoutDuringListRebuild(dataLayoutDuringListRebuild) {}
 
@@ -80,8 +80,8 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength<ParticleT, NeighborList>(_neighborList, cellsPerDimension,
-                                                                             lowerCorner, upperCorner);
+          return loadEstimators::neighborListLength<Particle_T, NeighborList>(_neighborList, cellsPerDimension,
+                                                                              lowerCorner, upperCorner);
         };
       }
 
@@ -112,7 +112,7 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
    * @param particle
    * @return the size of the neighbor list(s) of this particle
    */
-  size_t getNumberOfPartners(const ParticleT *particle) const { return _neighborList.getNumberOfPartners(particle); }
+  size_t getNumberOfPartners(const Particle_T *particle) const { return _neighborList.getNumberOfPartners(particle); }
 
   /**
    * Special case of building the neighbor lists in c08 style where all lists that belong to one base step are stored
@@ -186,7 +186,7 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
             neighbors.reserve(listLengthEstimate);
             neighbors.push_back(&p2);
           } else {
-            neighborList.emplace_back(&p1, std::vector<ParticleT *>{});
+            neighborList.emplace_back(&p1, std::vector<Particle_T *>{});
             neighborList.back().second.reserve(listLengthEstimate);
             neighborList.back().second.push_back(&p2);
           }
@@ -224,7 +224,7 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
           // For any remaining particles create a new list.
           // This case can only happen if estimateNumLists can return values smaller than baseCell.size()
           for (size_t i = minCellSizeVsNumLists; i < baseCell.size(); ++i) {
-            baseCellsLists.emplace_back(&baseCell[i], std::vector<ParticleT *>{});
+            baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle_T *>{});
             baseCellsLists.back().second.reserve(listLengthEstimate);
           }
 
@@ -282,7 +282,7 @@ class VerletListsCells : public VerletListsLinkedBase<ParticleT> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
     // VLP needs constexpr special case because the types and thus interfaces are slightly different
-    if constexpr (std::is_same_v<NeighborList, VLCCellPairNeighborList<ParticleT>>) {
+    if constexpr (std::is_same_v<NeighborList, VLCCellPairNeighborList<Particle_T>>) {
       _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
                                          this->getVerletSkin(), this->getInteractionLength(),
                                          traversal->getTraversalType(), _dataLayoutDuringListRebuild);

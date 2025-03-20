@@ -17,11 +17,11 @@ namespace autopas {
 /**
  * This functor can generate verlet lists using the typical pairwise traversal.
  */
-template <class ParticleT, enum TraversalOption::Value TraversalOptionEnum>
+template <class Particle_T, enum TraversalOption::Value TraversalOptionEnum>
 class VLCAllCellsGeneratorFunctor
-    : public PairwiseFunctor<ParticleT, VLCAllCellsGeneratorFunctor<ParticleT, TraversalOptionEnum>> {
-  using NeighborListsType = typename VerletListsCellsHelpers::AllCellsNeighborListsType<ParticleT>;
-  using SoAArraysType = typename ParticleT::SoAArraysType;
+    : public PairwiseFunctor<Particle_T, VLCAllCellsGeneratorFunctor<Particle_T, TraversalOptionEnum>> {
+  using NeighborListsType = typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle_T>;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
  public:
   /**
@@ -33,10 +33,10 @@ class VLCAllCellsGeneratorFunctor
    * @param cellsPerDim Cells per dimension of the underlying Linked Cells container (incl. Halo).
    */
   VLCAllCellsGeneratorFunctor(NeighborListsType &neighborLists,
-                              std::unordered_map<ParticleT *, std::pair<size_t, size_t>> &particleToCellMap,
+                              std::unordered_map<Particle_T *, std::pair<size_t, size_t>> &particleToCellMap,
                               double cutoffSkin, size_t newListAllocationSize,
                               const std::array<size_t, 3> &cellsPerDim = {})
-      : PairwiseFunctor<ParticleT, VLCAllCellsGeneratorFunctor<ParticleT, TraversalOptionEnum>>(0.),
+      : PairwiseFunctor<Particle_T, VLCAllCellsGeneratorFunctor<Particle_T, TraversalOptionEnum>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _cutoffSkinSquared(cutoffSkin * cutoffSkin),
@@ -63,12 +63,12 @@ class VLCAllCellsGeneratorFunctor
    * Set the cells pointer.
    * @param cells
    */
-  void setCells(std::vector<FullParticleCell<ParticleT>> *cells) { _cells = cells; }
+  void setCells(std::vector<FullParticleCell<Particle_T>> *cells) { _cells = cells; }
 
   /**
    * @copydoc PairwiseFunctor::AoSFunctor()
    */
-  void AoSFunctor(ParticleT &i, ParticleT &j, bool newton3) override {
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
@@ -103,16 +103,16 @@ class VLCAllCellsGeneratorFunctor
           //    To respect newton3 == disabled, we can't just do currentList[j].second.push_back(ptr1Ptr[i]).
           // 2. If base cell is neither cellIndex1 or cellIndex2
           auto &list = _neighborLists[cellIndexI];
-          auto iterIandList =
-              std::find_if(list.begin(), list.end(), [&](const std::pair<ParticleT *, std::vector<ParticleT *>> &pair) {
-                const auto &[particle, neighbors] = pair;
-                return particle == &i;
-              });
+          auto iterIandList = std::find_if(list.begin(), list.end(),
+                                           [&](const std::pair<Particle_T *, std::vector<Particle_T *>> &pair) {
+                                             const auto &[particle, neighbors] = pair;
+                                             return particle == &i;
+                                           });
           if (iterIandList != list.end()) {
             auto &[_, neighbors] = *iterIandList;
             neighbors.push_back(&j);
           } else {
-            list.emplace_back(&i, std::vector<ParticleT *>{});
+            list.emplace_back(&i, std::vector<Particle_T *>{});
             list.back().second.reserve(_newListAllocationSize);
             list.back().second.push_back(&j);
           }
@@ -135,10 +135,10 @@ class VLCAllCellsGeneratorFunctor
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;
 
-    auto **const __restrict__ ptrPtr = soa.template begin<ParticleT::AttributeNames::ptr>();
-    double *const __restrict__ xPtr = soa.template begin<ParticleT::AttributeNames::posX>();
-    double *const __restrict__ yPtr = soa.template begin<ParticleT::AttributeNames::posY>();
-    double *const __restrict__ zPtr = soa.template begin<ParticleT::AttributeNames::posZ>();
+    auto **const __restrict__ ptrPtr = soa.template begin<Particle_T::AttributeNames::ptr>();
+    double *const __restrict__ xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict__ yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict__ zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
     // index of cellIndex is particleToCellMap of ptrPtr, same for 2
     const auto [cellIndex, _] = _particleToCellMap.at(ptrPtr[0]);
@@ -184,15 +184,15 @@ class VLCAllCellsGeneratorFunctor
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.size() == 0 or soa2.size() == 0) return;
 
-    auto **const __restrict__ ptr1Ptr = soa1.template begin<ParticleT::AttributeNames::ptr>();
-    double *const __restrict__ x1Ptr = soa1.template begin<ParticleT::AttributeNames::posX>();
-    double *const __restrict__ y1Ptr = soa1.template begin<ParticleT::AttributeNames::posY>();
-    double *const __restrict__ z1Ptr = soa1.template begin<ParticleT::AttributeNames::posZ>();
+    auto **const __restrict__ ptr1Ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
+    double *const __restrict__ x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict__ y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict__ z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
 
-    auto **const __restrict__ ptr2Ptr = soa2.template begin<ParticleT::AttributeNames::ptr>();
-    double *const __restrict__ x2Ptr = soa2.template begin<ParticleT::AttributeNames::posX>();
-    double *const __restrict__ y2Ptr = soa2.template begin<ParticleT::AttributeNames::posY>();
-    double *const __restrict__ z2Ptr = soa2.template begin<ParticleT::AttributeNames::posZ>();
+    auto **const __restrict__ ptr2Ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
+    double *const __restrict__ x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict__ y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict__ z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1Ptr, same for 2
     const size_t cellIndex1 = _particleToCellMap.at(ptr1Ptr[0]).first;
@@ -254,7 +254,7 @@ class VLCAllCellsGeneratorFunctor
               if (iter != currentList.end()) {
                 iter->second.push_back(ptr2Ptr[j]);
               } else {
-                currentList.emplace_back(ptr1Ptr[i], std::vector<ParticleT *>{});
+                currentList.emplace_back(ptr1Ptr[i], std::vector<Particle_T *>{});
                 currentList.back().second.reserve(_newListAllocationSize);
                 currentList.back().second.push_back(ptr2Ptr[j]);
               }
@@ -269,31 +269,31 @@ class VLCAllCellsGeneratorFunctor
    * @copydoc Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename ParticleT::AttributeNames, 4>{
-        ParticleT::AttributeNames::ptr, ParticleT::AttributeNames::posX, ParticleT::AttributeNames::posY,
-        ParticleT::AttributeNames::posZ};
+    return std::array<typename Particle_T::AttributeNames, 4>{
+        Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+        Particle_T::AttributeNames::posZ};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename ParticleT::AttributeNames, 4>{
-        ParticleT::AttributeNames::ptr, ParticleT::AttributeNames::posX, ParticleT::AttributeNames::posY,
-        ParticleT::AttributeNames::posZ};
+    return std::array<typename Particle_T::AttributeNames, 4>{
+        Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+        Particle_T::AttributeNames::posZ};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static auto getComputedAttr() { return std::array<typename ParticleT::AttributeNames, 0>{}; }
+  constexpr static auto getComputedAttr() { return std::array<typename Particle_T::AttributeNames, 0>{}; }
 
  private:
   /**
    * For every cell, a vector of pairs. Each pair maps a particle to a vector of its neighbors.
    */
   NeighborListsType &_neighborLists;
-  std::unordered_map<ParticleT *, std::pair<size_t, size_t>> &_particleToCellMap;
+  std::unordered_map<Particle_T *, std::pair<size_t, size_t>> &_particleToCellMap;
   double _cutoffSkinSquared;
   /**
    * Cells per dimension of the underlying Linked Cells container.
@@ -301,7 +301,7 @@ class VLCAllCellsGeneratorFunctor
    */
   std::array<size_t, 3> _cellsPerDim;
 
-  std::vector<FullParticleCell<ParticleT>> *_cells = nullptr;
+  std::vector<FullParticleCell<Particle_T>> *_cells = nullptr;
 
   /**
    * How many fields are reserved for newly inserted neighbor lists.

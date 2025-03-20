@@ -26,11 +26,11 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
- * @tparam ParticleT
+ * @tparam Particle_T
  */
-template <class ParticleT>
-class VerletLists : public VerletListsLinkedBase<ParticleT> {
-  using LinkedParticleCell = FullParticleCell<ParticleT>;
+template <class Particle_T>
+class VerletLists : public VerletListsLinkedBase<Particle_T> {
+  using LinkedParticleCell = FullParticleCell<Particle_T>;
 
  public:
   /**
@@ -62,8 +62,8 @@ class VerletLists : public VerletListsLinkedBase<ParticleT> {
               const double skin, const unsigned int rebuildFrequency,
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<ParticleT>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                         compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
+                                          compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -91,7 +91,7 @@ class VerletLists : public VerletListsLinkedBase<ParticleT> {
    * get the actual neighbor list
    * @return the neighbor list
    */
-  typename VerletListHelpers<ParticleT>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
+  typename VerletListHelpers<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -117,8 +117,8 @@ class VerletLists : public VerletListsLinkedBase<ParticleT> {
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
-    typename VerletListHelpers<ParticleT>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                        this->getCutoff() + this->getVerletSkin());
+    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(_aosNeighborLists,
+                                                                         this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;
@@ -131,7 +131,7 @@ class VerletLists : public VerletListsLinkedBase<ParticleT> {
                                          _buildVerletListType);
     }
     auto traversal =
-        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<ParticleT>::VerletListGeneratorFunctor>(
+        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
@@ -199,13 +199,13 @@ class VerletLists : public VerletListsLinkedBase<ParticleT> {
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
-  typename VerletListHelpers<ParticleT>::NeighborListAoSType _aosNeighborLists;
+  typename VerletListHelpers<Particle_T>::NeighborListAoSType _aosNeighborLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.
    * The index indexes all particles in the container.
    */
-  std::unordered_map<const ParticleT *, size_t> _particlePtr2indexMap;
+  std::unordered_map<const Particle_T *, size_t> _particlePtr2indexMap;
 
   /**
    * verlet list for SoA:
