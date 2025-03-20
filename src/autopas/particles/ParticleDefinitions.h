@@ -1,5 +1,5 @@
 /**
- * @file Particle.h
+ * @file ParticleDefinitions.h
  *
  * @date 17 Jan 2018
  * @author tchipevn
