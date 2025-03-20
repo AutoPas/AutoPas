@@ -31,13 +31,14 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+          bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorSIMDe
-    : public autopas::PairwiseFunctor<
-          Particle, LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle, LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3,
+                                                               calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:

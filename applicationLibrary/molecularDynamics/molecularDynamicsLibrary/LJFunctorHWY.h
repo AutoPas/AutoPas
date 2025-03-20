@@ -57,8 +57,8 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 
 class LJFunctorHWY
-    : public autopas::PairwiseFunctor<
-          Particle, LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle, LJFunctorHWY<Particle, applyShift, useMixing, useNewton3,
+                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -74,9 +74,8 @@ class LJFunctorHWY
    * @note param dummy unused, only there to make the signature different from the public constructor
    */
   explicit LJFunctorHWY(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<
-            Particle, LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+      : autopas::PairwiseFunctor<Particle, LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{highway::Set(tag_double, cutoff * cutoff)},
         _cutoffSquareAoS{cutoff * cutoff},
         _uPotSum{0.},
@@ -1331,6 +1330,11 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * @copydoc autopas::Functor::setVecPattern()
+   * Setter for the vectorization pattern to choose
+   * @param vecPattern
+   */
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
  private:

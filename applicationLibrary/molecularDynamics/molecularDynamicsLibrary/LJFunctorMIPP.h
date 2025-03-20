@@ -8,7 +8,9 @@
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/inBox.h"
 
 namespace mdLib {
 
@@ -26,14 +28,14 @@ using namespace mipp;
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
-
+          bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorMIPP
-    : public autopas::PairwiseFunctor<
-          Particle, LJFunctorMIPP<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle, LJFunctorMIPP<Particle, applyShift, useMixing, useNewton3,
+                                                              calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -49,9 +51,8 @@ class LJFunctorMIPP
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctorMIPP(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<
-            Particle, LJFunctorMIPP<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+      : autopas::PairwiseFunctor<Particle, LJFunctorMIPP<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                         countFLOPs, relevantForTuning>>(cutoff),
         _cutoffsquare(cutoff * cutoff),
         _cutoffsquareAoS(cutoff * cutoff),
         _upotSum(0.),
