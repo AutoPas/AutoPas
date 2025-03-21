@@ -1849,7 +1849,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    const auto needsDensityStatistics = autoTuner.needsDensityStatisticsBeforePrepare();
+    const auto needsDensityStatistics = autoTuner.needsDomainSimilarityStatisticsBeforePrepare();
     const auto needsLiveInfo = autoTuner.needsLiveInfo();
     if (needsDensityStatistics or needsLiveInfo) {
       // Gather Live Info
@@ -1860,11 +1860,11 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
         getNumberOfParticlesOwned());
       timerCalculateHomogeneity.stop();
       if (needsDensityStatistics) {
-        const auto particleDependentBinDensityStdDev = info.template get<double>("particleDependentBinDensityStdDev");
-        const auto particleDependentBinMaxDensity = info.template get<double>("particleDependentBinMaxDensity");
-        autoTuner.addHomogeneityAndMaxDensity(particleDependentBinDensityStdDev, particleDependentBinMaxDensity,
+        const auto meanParticlesPerCell = info.template get<double>("meanParticlesPerCell");
+        const auto relativeParticlesPerCellStdDev = info.template get<double>("relativeParticlesPerCellStdDev");
+        autoTuner.addDomainSimilarityStatistics(meanParticlesPerCell, relativeParticlesPerCellStdDev,
                                               timerCalculateHomogeneity.getTotalTime());
-        autoTuner.sendSmoothedDensityStatisticsAtStartOfTuningPhase();
+        autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
       }
       if (needsLiveInfo) {
         autoTuner.receiveLiveInfo(info);

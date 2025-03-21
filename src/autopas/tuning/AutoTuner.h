@@ -86,11 +86,11 @@ class AutoTuner {
   void receiveLiveInfo(const LiveInfo &liveInfo);
 
   /**
-   * Indicator whether tuner needs homogeneity and max density information. This occurs if any strategy requires these
-   * and AutoPas is within 10 iterations of the start of the next tuning phase.
-   * @return
+   * Indicator whether tuner needs domain similarity statistics (mean and relative standard deviation number of particles
+   * per CSF1 cell-bin.)
+   * @return true if any strategy requires these and AutoPas is within 10 iterations of the start of the next tuning phase.
    */
-  [[nodiscard]] bool needsDensityStatisticsBeforePrepare() const;
+  [[nodiscard]] bool needsDomainSimilarityStatisticsBeforePrepare() const;
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
@@ -99,10 +99,10 @@ class AutoTuner {
   [[nodiscard]] bool needsLiveInfo() const;
 
   /**
-   * Sends smoothed particle dependent bin max density and standard deviation (a metric of homogeneity) to tuning
-   * strategies if it is the start of a tuning phase.
+   * Sends smoothed mean and relative (to mean) number of particles per cell-bin (mimicking a CSF1 bin) to tuning
+   * strategies if it is the start of a tuning phase. Used to find similar domains e.g. for MPI Tuning.
    */
-  void sendSmoothedDensityStatisticsAtStartOfTuningPhase();
+  void sendDomainSimilarityStatisticsAtStartOfTuningPhase();
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
@@ -196,12 +196,13 @@ class AutoTuner {
   void addMeasurement(long sample, bool neighborListRebuilt);
 
   /**
-   * Adds measurements of homogeneity and maximal density to the vector of measurements.
-   * @param homogeneity
-   * @param maxDensity
+   * Adds measurements of mean and relative (to mean) standard deviation of particles per cell-bin (mimicking a CSF1 cell)
+   * to the vector of measurements, which can be smoothed for use in MPI Tuning to find similar domains.
+   * @param meanParticlesPerCell
+   * @param relStdDevParticlesPerCell
    * @param time Time it took to obtain these measurements.
    */
-  void addHomogeneityAndMaxDensity(double homogeneity, double maxDensity, long time);
+  void addDomainSimilarityStatistics(double meanParticlesPerCell, double relStdDevParticlesPerCell, long time);
 
   /**
    * Getter for the current queue of configurations.
@@ -364,14 +365,16 @@ class AutoTuner {
   bool _needsLiveInfo;
 
   /**
-   * Buffer for the homogeneities of the last ten Iterations
+   * Buffer for the mean particles per cell-bin (mimicking a cell size factor 1 cell) of the last ten Iterations. Used
+   * in MPI Tuning.
    */
-  std::vector<double> _homogeneitiesOfLastTenIterations{};
+  std::vector<double> _meanParticlesPerCellOfLastTenIterations{};
 
   /**
-   * Buffer for the maximum densities of the last ten Iterations.
+   * Buffer for the relative (to the mean) standard deviation in particles per cell-bin (mimicking a cell size factor 1
+   * cell) of the last ten Iterations. Used in MPI Tuning.
    */
-  std::vector<double> _maxDensitiesOfLastTenIterations{};
+  std::vector<double> _relStdDevParticlesPerCellOfLastTenIterations{};
 
   /**
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists are
