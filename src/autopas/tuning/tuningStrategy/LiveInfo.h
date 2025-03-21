@@ -127,13 +127,11 @@ class LiveInfo {
    * divided by the average number of particles per blurred cell. A blurred cell is exactly 1/27th of the domain.
    *
    * @tparam Particle_T The type of particle the container stores.
-   * @tparam PairwiseFunctor The type of functor.
    * @param container The container to gather the infos from.
-   * @param functor The functor to gather the infos from.
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
    */
-  template <class Particle_T, class PairwiseFunctor>
-  void gather(const autopas::ParticleContainerInterface<Particle_T> &container, ContainerIterator<Particle_T, true, false> particleIter, const PairwiseFunctor &functor,
+  template <class Particle_T>
+  void gather(const autopas::ParticleContainerInterface<Particle_T> &container, ContainerIterator<Particle_T, true, false> particleIter,
               size_t rebuildFrequency, size_t numOwnedParticles) {
     using namespace autopas::utils::ArrayMath::literals;
     using autopas::utils::ArrayMath::castedCeil;
@@ -153,9 +151,6 @@ class LiveInfo {
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
     infos["particleSize"] = sizeof(Particle_T);
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
-    constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle_T, PairwiseFunctor>(
-        std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>());
-    infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;
 
     infos["numOwnedParticles"] = numOwnedParticles;
 
