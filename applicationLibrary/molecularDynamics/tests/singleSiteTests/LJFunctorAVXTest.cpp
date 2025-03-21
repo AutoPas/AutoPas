@@ -240,7 +240,6 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
     }
-    particle.setTypeId(particle.getID() % 5);
   }
 
   // copy cells
@@ -338,7 +337,6 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
     }
-    particle.setTypeId(particle.getID() % 5);
   }
 
   // generate neighbor lists
@@ -449,7 +447,6 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
     }
-    particle.setTypeId(particle.getID() % 5);
   }
 
   // copy cells

@@ -14,7 +14,7 @@
 
 using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 
-using LJFunctorHWYTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/, VectorizationPattern>;
+using LJFunctorHWYTestingTuple = std::tuple<bool /*mixing*/, bool /*newton3*/, bool /*doDeleteSomeParticles*/, VectorizationPattern>;
 
 class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorHWYTestingTuple> {
  public:
@@ -22,14 +22,18 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
 
   constexpr static double _maxError = 1e-12;
 
+  template <bool mixing>
   void testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
                                               VectorizationPattern pattern);
 
+  template <bool mixing>
   void testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
                                              VectorizationPattern pattern);
 
+  template <bool mixing>
   void testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles);
 
+  template <bool mixing>
   void testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles);
 
   template <class SoAType>
