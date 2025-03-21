@@ -26,20 +26,20 @@ namespace autopas {
  *
  * This class includes some proxy methods: `appendAllParticles()`, `appendAllLeaves()` and some more. Those methods only
  * invoke similar functions on the pointer to an octree. This indirection could be removed by implementing the
- * `OctreeNodeInterface<Particle>`. However, if this class inherited directly from `OctreeNodeInterface<Particle>`, it
- * would have to implement the _entire interface_ provided by `OctreeNodeInterface<Particle>`. This does not increase
- * the code quality, since one would have to implement other interface methods (like `insert()`) that should not be
- * exposed to the outside. Having proxy calls inside this class keeps the interface clean.
+ * `OctreeNodeInterface<Particle_T>`. However, if this class inherited directly from `OctreeNodeInterface<Particle_T>`,
+ * it would have to implement the _entire interface_ provided by `OctreeNodeInterface<Particle_T>`. This does not
+ * increase the code quality, since one would have to implement other interface methods (like `insert()`) that should
+ * not be exposed to the outside. Having proxy calls inside this class keeps the interface clean.
  *
- * @tparam Particle The particle class that should be used in the octree cell.
+ * @tparam Particle_T The particle class that should be used in the octree cell.
  */
-template <typename Particle>
-class OctreeNodeWrapper : public ParticleCell<Particle> {
+template <typename Particle_T>
+class OctreeNodeWrapper : public ParticleCell<Particle_T> {
  public:
   /**
    * The contained particle cell.
    */
-  using ParticleCell = OctreeNodeWrapper<Particle>;
+  using ParticleCell = OctreeNodeWrapper<Particle_T>;
   /**
    * The contained particle type.
    */
@@ -47,7 +47,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   /**
    * Type that holds or refers to the actual particles.
    */
-  using StorageType = std::vector<Particle *>;
+  using StorageType = std::vector<Particle_T *>;
 
   /**
    * Constructs a new, empty octree and stores the root.
@@ -61,8 +61,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   OctreeNodeWrapper(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                     int unsigned const treeSplitThreshold, double const interactionLength,
                     double const cellSizeFactor) {
-    _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
-                                                          interactionLength, cellSizeFactor);
+    _pointer = std::make_unique<OctreeLeafNode<Particle_T>>(boxMin, boxMax, nullptr, treeSplitThreshold,
+                                                            interactionLength, cellSizeFactor);
   }
 
   /**
@@ -78,13 +78,13 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Append all leaves in the octree to a list.
    * @param leaves The list to which the leaves should be appended to
    */
-  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) { _pointer->appendAllLeaves(leaves); }
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle_T> *> &leaves) { _pointer->appendAllLeaves(leaves); }
 
   /**
    * Adds a Particle to the cell.
    * @param p the particle to be added
    */
-  void addParticle(const Particle &p) override {
+  void addParticle(const Particle_T &p) override {
     std::lock_guard<AutoPasLock> lock(_lock);
 
     auto ret = _pointer->insert(p);
@@ -179,7 +179,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param particle
    * @return True if the given pointer still points to a new, valid particle.
    */
-  bool deleteParticle(Particle &particle) {
+  bool deleteParticle(Particle_T &particle) {
     --_enclosedParticleCount;
 
     return _pointer->deleteParticle(particle);
@@ -216,7 +216,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A ref to a particle
    */
-  Particle &at(size_t index) {
+  Particle_T &at(size_t index) {
     std::lock_guard<AutoPasLock> lock(_lock);
     return _ps.at(index);
   }
@@ -227,7 +227,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A const ref to a particle
    */
-  const Particle &at(size_t index) const {
+  const Particle_T &at(size_t index) const {
     std::lock_guard<AutoPasLock> lock(_lock);
     return _ps.at(index);
   }
@@ -238,7 +238,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A ref to a particle
    */
-  Particle &operator[](size_t index) {
+  Particle_T &operator[](size_t index) {
     std::lock_guard<AutoPasLock> lock(_lock);
     return *_ps[index];
   }
@@ -249,7 +249,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A ref to a particle
    */
-  const Particle &operator[](size_t index) const {
+  const Particle_T &operator[](size_t index) const {
     std::lock_guard<AutoPasLock> lock(_lock);
     return *_ps[index];
   }
@@ -260,8 +260,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param max The maximum coordinate in 3D space of the query area
    * @return A set of all leaf nodes that are in the query region
    */
-  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(const std::array<double, 3> &min,
-                                                        const std::array<double, 3> &max) {
+  std::set<OctreeLeafNode<Particle_T> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                          const std::array<double, 3> &max) {
     return _pointer->getLeavesInRange(min, max);
   }
 
@@ -270,7 +270,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @note This should only be used for debugging and insight into the internal structure fo the octree.
    * @return A raw C pointer to the enclosed node
    */
-  OctreeNodeInterface<Particle> *getRaw() const { return _pointer.get(); }
+  OctreeNodeInterface<Particle_T> *getRaw() const { return _pointer.get(); }
 
   /**
    * Apply the forEach lambda to each particle.
@@ -338,7 +338,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   /**
    * A pointer to the root node of the enclosed octree.
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
+  std::unique_ptr<OctreeNodeInterface<Particle_T>> _pointer;
 
   /**
    * A vector containing all particles when iterating. This serves as a cache such that the octree does not need to

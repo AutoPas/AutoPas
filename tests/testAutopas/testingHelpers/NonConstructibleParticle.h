@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 
 /**
  * A particle class without an actual constructor (only copy, etc.).
  */
-class NonConstructibleParticle : public autopas::Particle {
+class NonConstructibleParticle : public autopas::ParticleBaseFP64 {
  public:
   /**
    * Default constructor is deleted.
