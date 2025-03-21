@@ -23,6 +23,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -204,7 +205,17 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
+  enum class FunctorOption {
+    none,
+    lj12_6,
+    lj12_6_AVX,
+    lj12_6_SVE,
+    lj12_6_Globals,
+    lj12_6_XSIMD,
+    lj12_6_MIPP,
+    lj12_6_SIMDe,
+    lj12_6_HWY
+  };
 
   /**
    * Choice of the Triwise functor
@@ -288,6 +299,12 @@ class MDFlexConfig {
       autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
       "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * vectorizationPattern
+   */
+  MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorizationPattern", true,
+      "Vectorization Pattern for HWY Functor."};
   /**
    * cellSizeFactors
    */
@@ -512,10 +529,12 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
-                                                      FunctorOption::none, "functor", true,
-                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+      // Default is a dummy option
+      FunctorOption::lj12_6_AVX, "functor", true,
+      "Pairwise force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals lennard-jones-xsimd lennard-jones-simde "
+      "lennard-jones-mipp lennard-jones-highway)"};
   /**
    * functorOption3B
    */

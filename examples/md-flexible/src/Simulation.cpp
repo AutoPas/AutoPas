@@ -29,6 +29,22 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorHWY.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeMIPP *);
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeXSIMD *);
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorXSIMD.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSIMDe *);
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSIMDe.h"
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -38,6 +54,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 
 #include "ParticleCommunicator.h"
 #include "Thermostat.h"
+#include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
@@ -139,6 +156,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                               autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
+                                           autopas::VectorizationPatternOption::p1xVec);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
@@ -341,7 +360,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::pairwise)
+                      autopas::InteractionTypeOption::pairwise, _configuration.vecPatternOptions.value)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -351,7 +370,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::triwise)
+                      autopas::InteractionTypeOption::triwise, _configuration.vecPatternOptions.value)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
@@ -817,6 +836,42 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_XSIMD: {
+#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
+      return f(LJFunctorTypeXSIMD{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor XSIMD. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_XSIMD=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_MIPP: {
+#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
+      return f(LJFunctorTypeMIPP{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor MIPP. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_MIPP=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_SIMDe: {
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
+      return f(LJFunctorTypeSIMDe{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+      return f(LJFunctorTypeHWY{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_HWY=ON`.");
 #endif
     }
     default: {
