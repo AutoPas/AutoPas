@@ -31,19 +31,15 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
-#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorHWY.h"
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeMIPP *);
-#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeXSIMD *);
-#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorXSIMD.h"
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSIMDe *);
-#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSIMDe.h"
 #endif
 //! @endcond
 

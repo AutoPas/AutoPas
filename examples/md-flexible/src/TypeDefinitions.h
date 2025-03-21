@@ -226,36 +226,3 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
  * Set to the same precision as ParticleType.
  */
 using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
-
-/**
- * We require access to a version of the force functor for non-iteratePairwise purposes, e.g. calculating FLOPs or AoS
- * functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to
- * be used in the CMake.
- */
-#if MD_FLEXIBLE_MODE == MULTISITE
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#endif
-
-#else
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AVX
-using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_SVE
-using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_HWY
-using LJFunctorTypeAbstract = mdLib::LJFunctorHWY<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_XSIMD
-using LJFunctorTypeAbstract = mdLib::LJFunctorXSIMD<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_SIMDE
-using LJFunctorTypeAbstract = mdLib::LJFunctorSIMDe<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_MIPP
-using LJFunctorTypeAbstract = mdLib::LJFunctorMIPP<ParticleType, true, true>;
-#endif
-
-#endif
