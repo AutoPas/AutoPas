@@ -24,8 +24,8 @@ using ::testing::ValuesIn;
  * @param ListHaloOutsideCutoff All particles in the halo.
  */
 void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3> &bBoxMax, const double cutoff,
-               autopas::ContainerSelector<Particle> &containerSelector, std::vector<Particle> &ListInner,
-               std::vector<Particle> &ListHaloWithinCutoff, std::vector<Particle> &ListHaloOutsideCutoff) {
+               autopas::ContainerSelector<ParticleFP64> &containerSelector, std::vector<ParticleFP64> &ListInner,
+               std::vector<ParticleFP64> &ListHaloWithinCutoff, std::vector<ParticleFP64> &ListHaloOutsideCutoff) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto iter = containerSelector.getCurrentContainer().begin(autopas::IteratorBehavior::owned); iter.isValid();
@@ -47,7 +47,7 @@ void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3>
 TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
   const auto &[from, to] = GetParam();
 
-  autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelector<ParticleFP64> containerSelector(bBoxMin, bBoxMax, cutoff);
   autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency, 64,
                                                autopas::LoadEstimatorOption::none);
 
@@ -67,7 +67,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
       for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
         for (auto z : getPossible1DPositions(bBoxMin[2], bBoxMax[2])) {
           const std::array<double, 3> pos{x, y, z};
-          Particle p(pos, {0., 0., 0.}, id);
+          ParticleFP64 p(pos, {0., 0., 0.}, id);
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
             container.addParticle(p);
           } else {
@@ -80,7 +80,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
     }
   }
 
-  std::vector<Particle> beforeListInner, beforeListHaloWithinCutoff,
+  std::vector<ParticleFP64> beforeListInner, beforeListHaloWithinCutoff,
       beforeListHaloOutsideCutoff /*for particles only in verlet containers*/;
 
   getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, beforeListInner, beforeListHaloWithinCutoff,
@@ -89,7 +89,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
   // select container to which we want to convert to
   containerSelector.selectContainer(to, containerInfo);
 
-  std::vector<Particle> afterListInner, afterListHaloWithinCutoff, afterListHaloOutsideCutoff;
+  std::vector<ParticleFP64> afterListInner, afterListHaloWithinCutoff, afterListHaloOutsideCutoff;
 
   getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, afterListInner, afterListHaloWithinCutoff,
             afterListHaloOutsideCutoff);

@@ -24,7 +24,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skin, rebuildFrequency);
 
   // create owned particles
-  const std::vector<autopas::Particle> ownedParticles{
+  const std::vector<ParticleFP64> ownedParticles{
       // clang-format off
       {{0.5, 0.5, 0.5}, zero, 0},
       {{1.5, 1.5, 1.5}, zero, 1},
@@ -35,7 +35,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   };
 
   // These are going to be halo particles
-  const std::vector<autopas::Particle> haloParticles{
+  const std::vector<ParticleFP64> haloParticles{
       {{-0.5, +1.5, +1.5}, zero, 5, autopas::OwnershipState::halo},
       {{+5.0, +1.5, +1.5}, zero, 6, autopas::OwnershipState::halo},
       {{+1.5, -0.5, +1.5}, zero, 7, autopas::OwnershipState::halo},
@@ -84,7 +84,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   linkedCells.getCells()[particleIdToCellIdMap[3]].begin()->addR({+0.2, +0.0, -1.0});  // move to {5.0, 1.5, 0.5}
   linkedCells.getCells()[particleIdToCellIdMap[4]].begin()->addR({-0.9, -2.0, -2.0});  // move to {1.6, 0.5, 0.5}
 
-  std::vector<Particle> invalidParticles;
+  std::vector<ParticleFP64> invalidParticles;
   EXPECT_NO_THROW(invalidParticles = linkedCells.updateContainer(this->_keepListsValid));
   EXPECT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
@@ -132,7 +132,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   for (const double x : {0., 5., 9.999}) {
     for (const double y : {0., 5., 9.999}) {
       for (const double z : {0., 5., 9.999}) {
-        const autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        const ParticleFP64 p({x, y, z}, {0., 0., 0.}, id++);
         EXPECT_NO_THROW(linkedCells.addParticle(p));  // inside, therefore ok!
       }
     }
@@ -188,18 +188,18 @@ struct two_values {
 };
 
 // defines the types of linkedCells and _keepListsValid
-struct LC_KeepListsValid : two_values<autopas::LinkedCells<Particle>, std::true_type> {};
-struct LC_DontKeepListsValid : two_values<autopas::LinkedCells<Particle>, std::false_type> {};
-struct LCRef_KeepListsValid : two_values<autopas::LinkedCellsReferences<Particle>, std::true_type> {};
-struct LCRef_DontKeepListsValid : two_values<autopas::LinkedCellsReferences<Particle>, std::false_type> {};
+struct LC_KeepListsValid : two_values<autopas::LinkedCells<ParticleFP64>, std::true_type> {};
+struct LC_DontKeepListsValid : two_values<autopas::LinkedCells<ParticleFP64>, std::false_type> {};
+struct LCRef_KeepListsValid : two_values<autopas::LinkedCellsReferences<ParticleFP64>, std::true_type> {};
+struct LCRef_DontKeepListsValid : two_values<autopas::LinkedCellsReferences<ParticleFP64>, std::false_type> {};
 
 using MyTypes =
     ::testing::Types<LC_KeepListsValid, LC_DontKeepListsValid, LCRef_KeepListsValid, LCRef_DontKeepListsValid>;
 
 /// @todo c++20: replace with:
-// using MyTypes = ::testing::Types<std::tuple<autopas::LinkedCells<Particle>, std::true_type>,
-//                                  std::tuple<autopas::LinkedCells<Particle>, std::false_type>,
-//                                  std::tuple<autopas::LinkedCellsReferences<Particle>, std::true_type>,
-//                                  std::tuple<autopas::LinkedCellsReferences<Particle>, std::false_type> >;
+// using MyTypes = ::testing::Types<std::tuple<autopas::LinkedCells<ParticleFP64>, std::true_type>,
+//                                  std::tuple<autopas::LinkedCells<ParticleFP64>, std::false_type>,
+//                                  std::tuple<autopas::LinkedCellsReferences<ParticleFP64>, std::true_type>,
+//                                  std::tuple<autopas::LinkedCellsReferences<ParticleFP64>, std::false_type> >;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LinkedCellsTest, MyTypes);
