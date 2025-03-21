@@ -15,25 +15,25 @@ namespace autopas {
 
 /**
  * Class of helpers for the VerletLists class.
- * @tparam Particle
+ * @tparam Particle_T
  */
-template <class Particle>
+template <class Particle_T>
 class VerletListHelpers {
  public:
   /**
    * Neighbor list AoS style.
    */
-  using NeighborListAoSType = std::unordered_map<Particle *, std::vector<Particle *>>;
+  using NeighborListAoSType = std::unordered_map<Particle_T *, std::vector<Particle_T *>>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public PairwiseFunctor<Particle, VerletListGeneratorFunctor> {
+  class VerletListGeneratorFunctor : public PairwiseFunctor<Particle_T, VerletListGeneratorFunctor> {
    public:
     /**
      * Structure of the SoAs defined by the particle.
      */
-    using SoAArraysType = typename Particle::SoAArraysType;
+    using SoAArraysType = typename Particle_T::SoAArraysType;
 
     /**
      * Constructor
@@ -41,7 +41,7 @@ class VerletListHelpers {
      * @param interactionLength
      */
     VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
-        : PairwiseFunctor<Particle, VerletListGeneratorFunctor>(interactionLength),
+        : PairwiseFunctor<Particle_T, VerletListGeneratorFunctor>(interactionLength),
           _verletListsAoS(verletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
@@ -61,7 +61,7 @@ class VerletListHelpers {
       return true;
     }
 
-    void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
+    void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
 
       if (i.isDummy() or j.isDummy()) {
@@ -90,10 +90,10 @@ class VerletListHelpers {
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.size() == 0) return;
 
-      auto **const __restrict ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-      const double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-      const double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-      const double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
+      const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+      const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+      const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
       size_t numPart = soa.size();
       for (unsigned int i = 0; i < numPart; ++i) {
@@ -130,15 +130,15 @@ class VerletListHelpers {
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
 
-      auto **const __restrict ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-      const double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-      const double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-      const double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+      auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
+      const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+      const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+      const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
 
-      auto **const __restrict ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-      const double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-      const double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-      const double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+      auto **const __restrict ptr2ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
+      const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+      const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+      const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
       size_t numPart1 = soa1.size();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -167,17 +167,17 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::Functor::getNeededAttr()
      */
-    constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
-      return std::array<typename Particle::AttributeNames, 4>{
-          Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-          Particle::AttributeNames::posZ};
+    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 4>{
+          Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ};
     }
 
     /**
      * @copydoc autopas::Functor::getComputedAttr()
      */
-    constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
-      return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
+    constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
     }
 
    private:
@@ -193,12 +193,12 @@ class VerletListHelpers {
    * and neighborlistsAreValid()  will return false.
    * @todo: SoA?
    */
-  class VerletListValidityCheckerFunctor : public PairwiseFunctor<Particle, VerletListValidityCheckerFunctor> {
+  class VerletListValidityCheckerFunctor : public PairwiseFunctor<Particle_T, VerletListValidityCheckerFunctor> {
    public:
     /**
      * Structure of the SoAs defined by the particle.
      */
-    using SoAArraysType = typename Particle::SoAArraysType;
+    using SoAArraysType = typename Particle_T::SoAArraysType;
 
     /**
      * Constructor
@@ -206,7 +206,7 @@ class VerletListHelpers {
      * @param cutoff
      */
     VerletListValidityCheckerFunctor(NeighborListAoSType &verletListsAoS, double cutoff)
-        : PairwiseFunctor<Particle, VerletListValidityCheckerFunctor>(cutoff),
+        : PairwiseFunctor<Particle_T, VerletListValidityCheckerFunctor>(cutoff),
           _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}
@@ -227,7 +227,7 @@ class VerletListHelpers {
       return true;
     }
 
-    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
 
       auto dist = i.getR() - j.getR();

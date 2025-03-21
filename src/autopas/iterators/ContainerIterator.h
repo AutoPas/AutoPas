@@ -45,7 +45,7 @@ namespace containerIteratorUtils {
  * Indicates whether the particle has the correct ownership state and if this is a region iterator is in the region.
  *
  * @tparam regionIter
- * @tparam Particle
+ * @tparam Particle_T
  * @tparam Arr Template because if this is a region iterator ContainerIterator will pass an empty struct
  * @param p
  * @param behavior
@@ -53,8 +53,8 @@ namespace containerIteratorUtils {
  * @param regionMax If regionIter is true this should be a std::array<double, 3>
  * @return True iff the given particle's ownership state is compatible with the iterator behavior.
  */
-template <bool regionIter, class Particle, class Arr>
-[[nodiscard]] bool particleFulfillsIteratorRequirements(const Particle &p, IteratorBehavior behavior,
+template <bool regionIter, class Particle_T, class Arr>
+[[nodiscard]] bool particleFulfillsIteratorRequirements(const Particle_T &p, IteratorBehavior behavior,
                                                         const Arr &regionMin, const Arr &regionMax) {
   // If this is a region iterator check box condition first, otherwise race conditions can occur
   // if multiple region iterator overlap and ownership state is touched.
@@ -85,11 +85,11 @@ template <bool regionIter, class Particle, class Arr>
  * Inserting particles might invalidate the iterator.
  * There are no guarantees about the order in which particles are iterated.
  *
- * @tparam Particle
+ * @tparam Particle_T
  * @tparam modifiable If false, this is a const iterator.
  * @tparam regionIter If false, avoid any region checks and iterate the whole container.
  */
-template <class Particle, bool modifiable, bool regionIter>
+template <class Particle_T, bool modifiable, bool regionIter>
 class ContainerIterator {
   template <class T>
   friend void internal::deleteParticle(T &);
@@ -98,17 +98,17 @@ class ContainerIterator {
   /**
    * Type of the particle this iterator points to. Switch for const iterators.
    */
-  using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
+  using ParticleType = std::conditional_t<modifiable, Particle_T, const Particle_T>;
   /**
    * Type of the additional vector collection. Switch for const iterators.
    */
-  using ParticleVecType =
-      std::conditional_t<modifiable, std::vector<std::vector<Particle> *>, std::vector<std::vector<Particle> const *>>;
+  using ParticleVecType = std::conditional_t<modifiable, std::vector<std::vector<Particle_T> *>,
+                                             std::vector<std::vector<Particle_T> const *>>;
   /**
    * Type of the Particle Container type. Switch for const iterators.
    */
-  using ContainerType =
-      std::conditional_t<modifiable, ParticleContainerInterface<Particle>, const ParticleContainerInterface<Particle>>;
+  using ContainerType = std::conditional_t<modifiable, ParticleContainerInterface<Particle_T>,
+                                           const ParticleContainerInterface<Particle_T>>;
 
   /**
    * Default constructor that guarantees an invalid iterator.
@@ -149,7 +149,7 @@ class ContainerIterator {
    * Copy constructor
    * @param other
    */
-  ContainerIterator(const ContainerIterator<Particle, modifiable, regionIter> &other)
+  ContainerIterator(const ContainerIterator<Particle_T, modifiable, regionIter> &other)
       : _container(other._container),
         _currentParticleIndex(other._currentParticleIndex),
         _currentVectorIndex(other._currentVectorIndex),
@@ -166,8 +166,8 @@ class ContainerIterator {
    * @param other
    * @return
    */
-  ContainerIterator<Particle, modifiable, regionIter> &operator=(
-      const ContainerIterator<Particle, modifiable, regionIter> &other) {
+  ContainerIterator<Particle_T, modifiable, regionIter> &operator=(
+      const ContainerIterator<Particle_T, modifiable, regionIter> &other) {
     if (this != other) {
       _container = other._container;
       _currentParticleIndex = other._currentParticleIndex;
@@ -189,7 +189,7 @@ class ContainerIterator {
    * Move constructor
    * @param other
    */
-  ContainerIterator(ContainerIterator<Particle, modifiable, regionIter> &&other) noexcept
+  ContainerIterator(ContainerIterator<Particle_T, modifiable, regionIter> &&other) noexcept
       : _container(other._container),
         _currentParticleIndex(other._currentParticleIndex),
         _currentVectorIndex(other._currentVectorIndex),
@@ -206,8 +206,8 @@ class ContainerIterator {
    * @param other
    * @return
    */
-  ContainerIterator<Particle, modifiable, regionIter> &operator=(
-      ContainerIterator<Particle, modifiable, regionIter> &&other) noexcept {
+  ContainerIterator<Particle_T, modifiable, regionIter> &operator=(
+      ContainerIterator<Particle_T, modifiable, regionIter> &&other) noexcept {
     if (this != &other) {
       _container = other._container;
       _currentParticleIndex = other._currentParticleIndex;
@@ -269,7 +269,7 @@ class ContainerIterator {
    *
    * @return *this
    */
-  inline ContainerIterator<Particle, modifiable, regionIter> &operator++() {
+  inline ContainerIterator<Particle_T, modifiable, regionIter> &operator++() {
     // bump the index. If it is invalid now, the container will give us the proper one.
     ++_currentParticleIndex;
     fetchParticleAtCurrentIndex();

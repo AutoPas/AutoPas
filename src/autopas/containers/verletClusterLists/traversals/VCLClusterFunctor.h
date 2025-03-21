@@ -14,10 +14,10 @@ namespace autopas::internal {
 /**
  * Provides methods to traverse a single cluster and a pair of clusters.
  *
- * @tparam Particle The type of particle the clusters contain.
+ * @tparam Particle_T The type of particle the clusters contain.
  * @tparam PairwiseFunctor The type of the functor the VCLClusterFunctor should use.
  */
-template <class Particle, class PairwiseFunctor>
+template <class Particle_T, class PairwiseFunctor>
 class VCLClusterFunctor {
  public:
   /**
@@ -35,7 +35,7 @@ class VCLClusterFunctor {
    * @param cluster
    * @param isHaloCluster
    */
-  void processCluster(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
+  void processCluster(internal::Cluster<Particle_T> &cluster, bool isHaloCluster) {
     if (not isHaloCluster) {
       traverseCluster(cluster);
     }
@@ -53,7 +53,7 @@ class VCLClusterFunctor {
    * Traverses pairs of all particles in the given cluster. Always uses newton 3 in the AoS data layout.
    * @param cluster The cluster to traverse.
    */
-  void traverseCluster(internal::Cluster<Particle> &cluster) {
+  void traverseCluster(internal::Cluster<Particle_T> &cluster) {
     if (_dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < _clusterSize; i++) {
         for (size_t j = i + 1; j < _clusterSize; j++) {
@@ -76,7 +76,7 @@ class VCLClusterFunctor {
    * @param cluster The first cluster.
    * @param neighborCluster The second cluster.
    */
-  void traverseClusterPair(internal::Cluster<Particle> &cluster, internal::Cluster<Particle> &neighborCluster) {
+  void traverseClusterPair(internal::Cluster<Particle_T> &cluster, internal::Cluster<Particle_T> &neighborCluster) {
     if (_dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < _clusterSize; i++) {
         for (size_t j = 0; j < _clusterSize; j++) {

@@ -40,20 +40,20 @@ namespace autopas {
  * The image above depicts the segmentation of the surrounding halo volume into six cells, one cell on every side,
  * where the halo cell centers always align with the owned cell center.
  *
- * @tparam Particle Particle type that is used with this container.
+ * @tparam Particle_T Particle type that is used with this container.
  */
-template <class Particle>
-class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> {
+template <class Particle_T>
+class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>> {
  public:
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = FullParticleCell<Particle>;
+  using ParticleCell = FullParticleCell<Particle_T>;
 
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = Particle_T;
 
   /**
    * Constructor of the DirectSum class
@@ -298,14 +298,14 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior,
-                                                           const std::array<double, 3> &boxMin,
-                                                           const std::array<double, 3> &boxMax) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior,
+                                                             const std::array<double, 3> &boxMin,
+                                                             const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -315,7 +315,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
 
-  bool deleteParticle(Particle &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     // swap-delete helper function
     auto swapDelFromCell = [&](auto &particleCell) -> bool {
       auto &particleVec = particleCell._particles;
@@ -387,10 +387,10 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const {
+  std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                                 IteratorBehavior iteratorBehavior,
+                                                                 const std::array<double, 3> &boxMin,
+                                                                 const std::array<double, 3> &boxMax) const {
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       // shortcuts to limit the iterator to only part of the domain.
@@ -434,7 +434,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     if (cellIndex >= this->_cells.size()) {
       return {nullptr, 0, 0};
     }
-    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+    const Particle_T *retPtr = &this->_cells[cellIndex][particleIndex];
 
     return {retPtr, cellIndex, particleIndex};
   }

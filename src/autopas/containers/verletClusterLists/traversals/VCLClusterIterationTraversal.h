@@ -21,7 +21,7 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor>
 class VCLClusterIterationTraversal : public TraversalInterface,
                                      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
-  using Particle = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCell::ParticleType;
 
  public:
   /**
@@ -45,20 +45,20 @@ class VCLClusterIterationTraversal : public TraversalInterface,
 
   void initTraversal() override {
     if (_dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
   }
 
   void endTraversal() override {
     if (_dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
   }
 
   void traverseParticles() override {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<ParticleType>::_verletClusterLists;
 
-    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
+    const auto _clusterTraverseFunctor = [this](internal::Cluster<ParticleType> &cluster) {
       _clusterFunctor.processCluster(cluster, false);
     };
 
@@ -67,6 +67,6 @@ class VCLClusterIterationTraversal : public TraversalInterface,
 
  private:
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
+  internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas

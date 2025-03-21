@@ -15,7 +15,6 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/utils/SimilarityFunctions.h"
 
 /**
  * Provides several functions for handling configurations among mpi ranks.

@@ -15,9 +15,9 @@ class AllContainersTestsBase : public AutoPasTestBase {
   std::array<double, 3> boxMin = {0, 0, 0};
   std::array<double, 3> boxMax = {10, 10, 10};
   double cutoff = 1;
-  autopas::ContainerSelector<Particle> selector{boxMin, boxMax, cutoff};
+  autopas::ContainerSelector<ParticleFP64> selector{boxMin, boxMax, cutoff};
 
-  template <class ParticleType = autopas::Particle>
+  template <class ParticleType = ParticleFP64>
   auto &getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
     const double skin = 0.2;
     const unsigned int rebuildFrequency = 20;

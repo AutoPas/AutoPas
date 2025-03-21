@@ -19,9 +19,9 @@
 namespace autopas {
 /**
  * Log an octree to a .vtk file
- * @tparam Particle The enclosed particle type
+ * @tparam Particle_T The enclosed particle type
  */
-template <typename Particle>
+template <typename Particle_T>
 class OctreeLogger {
  public:
   /**
@@ -38,13 +38,13 @@ class OctreeLogger {
    * Write the octree below the wrapper to a .vtk file
    * @param wrapper A pointer to the octree node wrapper
    */
-  void logTree(OctreeNodeWrapper<Particle> *wrapper) { logTree(wrapper->getRaw()); }
+  void logTree(OctreeNodeWrapper<Particle_T> *wrapper) { logTree(wrapper->getRaw()); }
 
   /**
    * This function writes the octree to a .vtk file
    * @param root A pointer to the octree root node
    */
-  void logTree(OctreeNodeInterface<Particle> *root) {
+  void logTree(OctreeNodeInterface<Particle_T> *root) {
     // Load the leaf boxes
     using Position = std::array<double, 3>;
     using Box = std::pair<Position, Position>;
@@ -148,7 +148,7 @@ class OctreeLogger {
    * @param leaves A list of octree leaves that are echoed into the JSON file
    * @return The FILE pointer is just passed through
    */
-  static FILE *leavesToJSON(FILE *out, std::vector<OctreeLeafNode<Particle> *> &leaves) {
+  static FILE *leavesToJSON(FILE *out, std::vector<OctreeLeafNode<Particle_T> *> &leaves) {
     if (out) {
       fprintf(out, "[\n");
       for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
@@ -270,19 +270,19 @@ class OctreeLogger {
    * @param root The root from which the particles should be obtained
    * @return The file pointer
    */
-  static FILE *particlesToJSON(FILE *out, OctreeNodeInterface<Particle> *root) {
+  static FILE *particlesToJSON(FILE *out, OctreeNodeInterface<Particle_T> *root) {
     if (out) {
       // Get all leaves
-      std::vector<OctreeLeafNode<Particle> *> leaves;
+      std::vector<OctreeLeafNode<Particle_T> *> leaves;
       root->appendAllLeaves(leaves);
 
       fprintf(out, "[");
       for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
-        OctreeLeafNode<Particle> *leaf = leaves[leafIndex];
+        OctreeLeafNode<Particle_T> *leaf = leaves[leafIndex];
 
         auto n = leaf->size();
         for (int particleIndex = 0; particleIndex < n; ++particleIndex) {
-          Particle &particle = leaf->at(particleIndex);
+          Particle_T &particle = leaf->at(particleIndex);
           auto p = particle.getR();
           fputc('[', out);
           out3(out, p[0], p[1], p[2]);
@@ -307,9 +307,9 @@ class OctreeLogger {
    * @param ownedLeaves A list of leaf nodes from the owned octree
    * @param haloLeaves A list of leaf nodes from the halo octree
    */
-  static void octreeToJSON(OctreeNodeInterface<Particle> *owned, OctreeNodeInterface<Particle> *halo,
-                           std::vector<OctreeLeafNode<Particle> *> &ownedLeaves,
-                           std::vector<OctreeLeafNode<Particle> *> &haloLeaves) {
+  static void octreeToJSON(OctreeNodeInterface<Particle_T> *owned, OctreeNodeInterface<Particle_T> *halo,
+                           std::vector<OctreeLeafNode<Particle_T> *> &ownedLeaves,
+                           std::vector<OctreeLeafNode<Particle_T> *> &haloLeaves) {
 #if AUTOPAS_LOG_OCTREE
     // Log all owned leaves for this octree
     fclose(OctreeLogger::leavesToJSON(fopen("owned.json", "w"), ownedLeaves));
@@ -355,7 +355,7 @@ class OctreeLogger {
    * @param out The FILE pointer
    * @param node An octree node to obtain the box minimum and maximum coordinates from
    */
-  static void outBoxCoordinatesJSON(FILE *out, OctreeNodeInterface<Particle> *node) {
+  static void outBoxCoordinatesJSON(FILE *out, OctreeNodeInterface<Particle_T> *node) {
     const auto min = node->getBoxMin();
     const auto max = node->getBoxMax();
     outLocationArrayJSON(out, min, max);

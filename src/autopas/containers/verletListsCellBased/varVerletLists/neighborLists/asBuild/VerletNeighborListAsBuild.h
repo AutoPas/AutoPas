@@ -16,20 +16,20 @@ namespace autopas {
 /**
  * This class implements a neighbor list that remembers which thread added which particle pair and at which color
  * during the build with C08 from LinkedCells.
- * @tparam Particle The particle type the class uses.
+ * @tparam Particle_T The particle type the class uses.
  */
-template <class Particle>
-class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, ColorChangeObserver {
+template <class Particle_T>
+class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>, ColorChangeObserver {
   /**
    * Adds the generator functor for validation checks as friend so it can call checkPair().
    *  @param true mark that it is for validation checks.
    */
-  friend class internal::AsBuildPairGeneratorFunctor<Particle, true>;
+  friend class internal::AsBuildPairGeneratorFunctor<Particle_T, true>;
   /**
    * Adds the generator functor for adding pairs as friend so it can call addPair().
    *  @param false test mark that it is for adding pairs.
    */
-  friend class internal::AsBuildPairGeneratorFunctor<Particle, false>;
+  friend class internal::AsBuildPairGeneratorFunctor<Particle_T, false>;
 
  private:
   /**
@@ -40,11 +40,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   template <bool useNewton3, bool validationMode = false>
   void applyGeneratorFunctor(double cutoff) {
-    internal::AsBuildPairGeneratorFunctor<Particle, validationMode> generatorFunctor(*this, cutoff);
+    internal::AsBuildPairGeneratorFunctor<Particle_T, validationMode> generatorFunctor(*this, cutoff);
     // Use SoA traversal for generation and AoS traversal for validation check.
     constexpr auto dataLayout = validationMode ? DataLayoutOption::aos : DataLayoutOption::soa;
-    auto traversal = C08TraversalColorChangeNotify<FullParticleCell<Particle>,
-                                                   internal::AsBuildPairGeneratorFunctor<Particle, validationMode>>(
+    auto traversal = C08TraversalColorChangeNotify<FullParticleCell<Particle_T>,
+                                                   internal::AsBuildPairGeneratorFunctor<Particle_T, validationMode>>(
         _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &generatorFunctor,
         _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this, dataLayout,
         useNewton3);
@@ -55,7 +55,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * This type represents the neighbor list that each thread has for each color.
    */
-  using AoSThreadNeighborList = std::unordered_map<Particle *, std::vector<Particle *>>;
+  using AoSThreadNeighborList = std::unordered_map<Particle_T *, std::vector<Particle_T *>>;
   /**
    * This type represents the thread lists for all colors.
    */
@@ -83,7 +83,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * It executes C08 on the passed LinkedCells container and saves the resulting pairs in the neighbor list, remembering
    * the thread and current color for each pair.
    */
-  void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3) override {
+  void buildAoSNeighborList(LinkedCells<Particle_T> &linkedCells, bool useNewton3) override {
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
 
@@ -127,7 +127,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * _aosNeighborList
    * = std::array<AoSColorNeighborList, _numColors>
    * = std::array<std::vector<AoSThreadNeighborList>>, _numColors>
-   * = std::array<std::vector<std::unordered_map<Particle *, std::vector<Particle *>>>, _numColors>
+   * = std::array<std::vector<std::unordered_map<Particle_T *, std::vector<Particle_T *>>>, _numColors>
    *
    * @return the internal AoS neighbor list.
    */
@@ -158,7 +158,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   void generateSoAFromAoS() override {
     // Generate a map from pointer to particle index in the SoA. This works, because during loadSoA"()" the particles
     // are loaded in the same order.
-    std::unordered_map<Particle *, size_t> _aos2soaMap;
+    std::unordered_map<Particle_T *, size_t> _aos2soaMap;
     _aos2soaMap.reserve(_baseLinkedCells->size());
     size_t i = 0;
     // needs to iterate also over dummies!
@@ -247,7 +247,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * Called from VarVerletListGeneratorFunctor
    */
-  void addPair(Particle *first, Particle *second) {
+  void addPair(Particle_T *first, Particle_T *second) {
     int currentThreadIndex = autopas_get_thread_num();
     _aosNeighborList[_currentColor][currentThreadIndex][first].push_back(second);
   }
@@ -255,7 +255,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * Called from VarVerletListGeneratorFunctor
    */
-  void checkPair(Particle *first, Particle *second) {
+  void checkPair(Particle_T *first, Particle_T *second) {
     int currentThreadIndex = autopas_get_thread_num();
 
     // Check all neighbor lists for the pair, but the one that the pair would be in if it was not moved first.
@@ -280,7 +280,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * Helper method for checkPair()
    * @return True, if the pair is present, false otherwise.
    */
-  bool isPairInList(AoSThreadNeighborList &currentNeighborList, Particle *first, Particle *second) {
+  bool isPairInList(AoSThreadNeighborList &currentNeighborList, Particle_T *first, Particle_T *second) {
     auto iteratorFound = std::find(currentNeighborList[first].begin(), currentNeighborList[first].end(), second);
 
     return iteratorFound != currentNeighborList[first].end();
@@ -300,7 +300,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The LinkedCells object this neighbor list should use to build.
    */
-  LinkedCells<Particle> *_baseLinkedCells;
+  LinkedCells<Particle_T> *_baseLinkedCells;
 
   /**
    * The internal SoA neighbor list. For format, see getSoANeighborList().
@@ -310,7 +310,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The SoA used.
    */
-  SoA<typename Particle::SoAArraysType> _soa;
+  SoA<typename Particle_T::SoAArraysType> _soa;
 
   /**
    * If the SoA is valid, see isSoAListValid().

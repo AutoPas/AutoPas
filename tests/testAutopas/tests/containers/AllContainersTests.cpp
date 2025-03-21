@@ -25,12 +25,12 @@ TEST_P(AllContainersTests, testGetNumberOfParticles) {
   EXPECT_EQ(container.size(), 0);
 
   const std::array<double, 3> r = {2, 2, 2};
-  const Particle p(r, {0., 0., 0.}, 0);
+  const ParticleFP64 p(r, {0., 0., 0.}, 0);
   container.addParticle(p);
   EXPECT_EQ(container.size(), 1);
 
   const std::array<double, 3> r2 = {1.5, 2, 2};
-  const Particle p2(r2, {0., 0., 0.}, 1);
+  const ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   container.addParticle(p2);
   EXPECT_EQ(container.size(), 2);
 }
@@ -43,11 +43,11 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
   EXPECT_EQ(container.size(), 0);
 
   const std::array<double, 3> r = {2, 2, 2};
-  const Particle p(r, {0., 0., 0.}, 0);
+  const ParticleFP64 p(r, {0., 0., 0.}, 0);
   container.addParticle(p);
 
   const std::array<double, 3> r2 = {1.5, 2, 2};
-  const Particle p2(r2, {0., 0., 0.}, 1);
+  const ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   container.addParticle(p2);
   EXPECT_EQ(container.size(), 2);
 
@@ -68,8 +68,8 @@ TEST_P(AllContainersTests, testParticleAdding) {
                      boxMax[1] + .5, boxMax[1] + 1.5}) {
       for (double z : {boxMin[2] - 1.5, boxMin[2] - .5, boxMin[2], boxMin[2] + 5., boxMax[2] - 0.001, boxMax[2],
                        boxMax[2] + .5, boxMax[2] + 1.5}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.},
-                            id++);  // not const as updating ownership (as containers no longer handle this)
+        autopas::ParticleBaseFP64 p({x, y, z}, {0., 0., 0.},
+                                    id++);  // not const as updating ownership (as containers no longer handle this)
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
           EXPECT_ANY_THROW(container.addParticle(p));  // outside, therefore not ok!
           p.setOwnershipState(autopas::OwnershipState::halo);
@@ -122,7 +122,7 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
         }
         auto pos = domainCenter + std::array<double, 3>{distCenterToMidHalo[0] * x, distCenterToMidHalo[1] * y,
                                                         distCenterToMidHalo[2] * z};
-        const Particle p{pos, zeros, numParticles++, autopas::OwnershipState::halo};
+        const ParticleFP64 p{pos, zeros, numParticles++, autopas::OwnershipState::halo};
         container.addHaloParticle(p);
       }
     }
@@ -141,8 +141,8 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
  */
 TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
-  const autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42,
-                            autopas::OwnershipState::halo);
+  const autopas::ParticleBaseFP64 p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42,
+                                    autopas::OwnershipState::halo);
   container.addHaloParticle(p);
 
   EXPECT_EQ(container.size(), 1);
@@ -165,12 +165,12 @@ TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
 void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previouslyOwned) {
   static std::atomic<unsigned long> numParticles = 0;
 
-  class TestParticle : public autopas::Particle {
+  class TestParticle : public autopas::ParticleBaseFP64 {
    public:
-    TestParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {
+    TestParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : ParticleFP64(r, v, id) {
       ++numParticles;
     }
-    TestParticle(const TestParticle &testParticle) : Particle(testParticle) { ++numParticles; }
+    TestParticle(const TestParticle &testParticle) : ParticleFP64(testParticle) { ++numParticles; }
     ~TestParticle() override { --numParticles; }
   };
 
@@ -237,24 +237,24 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
 
   {
-    const Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0, autopas::OwnershipState::halo);
+    const ParticleFP64 p({-.1, -.1, -.1}, {0., 0., 0.}, 0, autopas::OwnershipState::halo);
     container.addHaloParticle(p);
   }
 
   {
-    const Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
+    const ParticleFP64 p({.02, .1, .1}, {0., 0., 0.}, 1);
     container.addParticle(p);
   }
 
   {
-    const Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
+    const ParticleFP64 p({1.23, .1, .1}, {0., 0., 0.}, 2);
     container.addParticle(p);
   }
   struct Values {
     unsigned long id;
     int occurrences;
   };
-  std::map<Particle *, Values> previous_particles;
+  std::map<ParticleFP64 *, Values> previous_particles;
   for (auto &&p : container) {
     // Iterates over owned and halo particles!
     previous_particles[&p] = {p.getID(), 0};
