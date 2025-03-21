@@ -55,7 +55,7 @@ class LJFunctorSIMDe
    */
   explicit LJFunctorSIMDe(double cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<
-            Particle, LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            Particle, LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
             cutoff),
         _cutoffsquare{simde_mm256_set1_pd(cutoff * cutoff)},
         _cutoffsquareAoS(cutoff * cutoff),

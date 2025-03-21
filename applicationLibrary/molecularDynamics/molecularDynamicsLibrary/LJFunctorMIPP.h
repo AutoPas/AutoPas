@@ -2,6 +2,8 @@
 // Created by robin_3kolqs9 on 17.05.2023.
 //
 
+#pragma once
+
 #include <mipp.h>
 
 #include "ParticlePropertiesLibrary.h"

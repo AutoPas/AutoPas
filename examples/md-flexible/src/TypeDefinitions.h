@@ -34,7 +34,7 @@
 #include "molecularDynamicsLibrary/LJFunctorXSIMD.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_SIMDe)
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
 #include "molecularDynamicsLibrary/LJFunctorSIMDe.h"
 #endif
 
@@ -158,7 +158,7 @@ using LJFunctorTypeXSIMD = mdLib::LJFunctorXSIMD<ParticleType, true, true, autop
 
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_SIMDe)
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
 /**
  * Type of LJFunctorSIMDe used in md-flexible
  * Switches between mdLib::LJFunctorSIMDe and mdLib::LJMultisiteFunctorSIMDe as determined by CMake flag
@@ -252,7 +252,7 @@ using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
 using LJFunctorTypeAbstract = mdLib::LJFunctorHWY<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_XSIMD
 using LJFunctorTypeAbstract = mdLib::LJFunctorXSIMD<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_SIMDe
+#elif MD_FLEXIBLE_FUNCTOR_SIMDE
 using LJFunctorTypeAbstract = mdLib::LJFunctorSIMDe<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_MIPP
 using LJFunctorTypeAbstract = mdLib::LJFunctorMIPP<ParticleType, true, true>;
