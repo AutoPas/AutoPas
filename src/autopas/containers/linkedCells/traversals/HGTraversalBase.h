@@ -48,6 +48,40 @@ class HGTraversalBase : public TraversalInterface {
 
   using CBParticleCell = FullParticleCell<Particle>;
 
+  template <typename T>
+  T computeIndex(T x, T y, T z, T L, T W) {
+    int term = y * L + ((y % 2 == 0) ? x : (L - 1 - x));
+    if (z % 2 == 0) {
+      return z * L * W + term;
+    } else {
+      return (z + 1) * L * W - 1 - term;
+    }
+  }
+
+  /**
+  * Convert a 1d index to a 3d index in a snaky pattern so that between consecutive indexes,
+  * the manhattan distance of the 3D coordinates is 1.
+  * @tparam T Type of the indices.
+  * @param ind The 1d index.
+  * @param dims The total dimensions of the index space.
+  * @return The 3d index.
+  */
+  template <typename T>
+  constexpr std::vector<std::array<T, 3>> oneToThreeDForStart(const std::array<T, 3> &dims) {
+    static_assert(std::is_integral_v<T>, "oneToThreeD requires integral types");
+    std::vector<std::array<T, 3> > coords(dims[0] * dims[1] * dims[2]);
+    for (T z = 0; z < dims[2]; ++z) {
+      for (T y = 0; y < dims[1]; ++y) {
+        for (T x = 0; x < dims[0]; ++x) {
+          int idx = computeIndex(x, y, z, dims[0], dims[1]);
+          coords[idx] = {x, y, z};
+        }
+      }
+    }
+    return coords;
+  }
+
+
   /**
    *
    * @param upperCB first CellBlock3D

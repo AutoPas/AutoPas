@@ -1957,7 +1957,6 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                                 measurements);
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
-  AutoPasLog(INFO, "FLOPS: {}, hitrate: {}", functor->getNumFLOPs(), functor->getHitRate());
 
   /// Pass on measurements
   // if this was a major iteration add measurements

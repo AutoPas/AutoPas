@@ -29,7 +29,8 @@ globalForce: [ 0, 0, -12.44 ]
 data-layout: [ SoA ]
 traversal:
   [
-    lc_c08, hgrid_color_c04_HCP, hgrid_test,
+#     hgrid_test2
+    lc_c08, hgrid_color_c04_HCP, hgrid_test, hgrid_test2,
     hgrid_color,
     hgrid_color_soa_cell
   ]

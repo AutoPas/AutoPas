@@ -21,6 +21,7 @@
 #include "autopas/containers/linkedCells/traversals/HGColorTraversalC04HCP.h"
 #include "autopas/containers/linkedCells/traversals/HGColorTraversalC18.h"
 #include "autopas/containers/linkedCells/traversals/HGTestTraversal.h"
+#include "autopas/containers/linkedCells/traversals/HGTestTraversal2.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -319,6 +320,9 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     }
     case TraversalOption::hgrid_test: {
       return std::make_unique<HGTestTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_test2: {
+      return std::make_unique<HGTestTraversal2<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
     }
     case TraversalOption::hgrid_color_c04: {
       return std::make_unique<HGColorTraversalC04<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,

@@ -40,7 +40,7 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
     if (not this->isApplicable()) {
       utils::ExceptionHandler::exception("Not supported with hgrid_color");
     }
-    autopas::utils::Timer crosslevel, intralevel, initTraversal;
+    //autopas::utils::Timer crosslevel, intralevel, initTraversal;
     // 4D vector (hierarchy level, 3D cell index) to store next non-empty cell in increasing x direction for each cell
     std::vector<std::vector<std::vector<std::vector<size_t>>>> nextNonEmpty(this->_numLevels);
     // computeInteractions for each level independently first
@@ -78,16 +78,16 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
       traversals[level] = generateNewTraversal(level);
       TraversalInterface *temp = traversals[level].get();
       this->_levels->at(level)->prepareTraversal(temp);
-      initTraversal.start();
+      //initTraversal.start();
       traversals[level]->initTraversal();
-      initTraversal.stop();
-      intralevel.start();
+      //initTraversal.stop();
+      //intralevel.start();
       traversals[level]->traverseParticles();
-      intralevel.stop();
+      //intralevel.stop();
       // do not call endTraversal as SoA's should be stored after cross-level interactions are calculated
       // this->_levels->at(level)->computeInteractions(traversals[level].get());
     }
-    crosslevel.start();
+    //crosslevel.start();
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
       // only look top-down if newton3 is enabled, both ways otherwise
@@ -238,9 +238,9 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell>, public HGTraversa
         }
       }
     }
-    crosslevel.stop();
-    AutoPasLog(INFO, "intralevel: {}s interlevel: {}s initTraversal: {}s", intralevel.getTotalTime() / 1000000000.0,
-               crosslevel.getTotalTime() / 1000000000.0, initTraversal.getTotalTime() / 1000000000.0);
+    //crosslevel.stop();
+    // AutoPasLog(INFO, "intralevel: {}s interlevel: {}s initTraversal: {}s", intralevel.getTotalTime() / 1000000000.0,
+    //            crosslevel.getTotalTime() / 1000000000.0, initTraversal.getTotalTime() / 1000000000.0);
     // store SoA now if SoA is used
     for (size_t level = 0; level < this->_numLevels; level++) {
       traversals[level]->endTraversal();

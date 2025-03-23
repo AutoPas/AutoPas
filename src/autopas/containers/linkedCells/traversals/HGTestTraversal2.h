@@ -9,11 +9,11 @@
 namespace autopas {
 
 template <class ParticleCell, class Functor>
-class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversalInterface {
+class HGTestTraversal2 : public HGTraversalBase<ParticleCell>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCell::ParticleType;
 
-  explicit HGTestTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGTestTraversal2(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCell>(dataLayout, useNewton3), _functor(functor) {}
 
   /**
@@ -119,85 +119,80 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
         // do the colored traversal
         // calculate openmp for loop bounds
         const unsigned long numColors = stride[0] * stride[1] * stride[2];
-        std::array<unsigned long, 3> num_index{};
-        for (size_t i = 0; i < 3; i++) {
-          num_index[i] = (end[i] + stride[i] - 1) / stride[i];
+        std::vector<std::array<unsigned long, 3>> start_index(numColors);
+        for (unsigned long col = 0; col < numColors; ++col) {
+          start_index[col] = utils::ThreeDimensionalMapping::oneToThreeD(col, stride);
         }
 
-        // We need extra space as in the vector example
-        const size_t size0 = num_index[0] + 2;
-        const size_t size1 = num_index[1] + 2;
-        const size_t size2 = num_index[2] + 2;
-        const size_t numColorsPlusOne = numColors + 1;
-
-        // Total number of dependency elements.
-        const size_t totalDeps = numColorsPlusOne * size0 * size1 * size2;
-
-        // Create a contiguous dependency array.
-        std::vector<char> taskDepend(totalDeps, false);
-
-        // Inline function (lambda) to compute the 1D index from 4D coordinates.
-        auto index = [=](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
-          return ((col * size0 + xi) * size1 + yi) * size2 + zi;
-        };
-
-        std::vector<std::array<unsigned long, 3>> startIndex(numColors);
-        std::vector<std::array<unsigned long, 3>> colorDiff(numColors);
-        startIndex = this->oneToThreeDForStart(stride);
-        for (int i = 1; i < numColors; i++) {
-          colorDiff[i] = startIndex[i] - startIndex[i - 1];
-        }
-
-        AUTOPAS_OPENMP(parallel) {
-          AUTOPAS_OPENMP(single) {
-            for (unsigned long col = 1; col <= numColors; ++col) {
-              for (unsigned long zi = 1; zi <= num_index[2]; zi++) {
-                for (unsigned long yi = 1; yi <= num_index[1]; yi++) {
-                  for (unsigned long xi = 1; xi <= num_index[0]; xi++) {
-                    AUTOPAS_OPENMP(task depend(in:
-              taskDepend[index(col-1, xi, yi, zi)],
-              taskDepend[index(col-1, xi + colorDiff[col - 1][0], yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])]
-            ) depend(out: taskDepend[index(col, xi, yi, zi)]) ) {
-                      unsigned long z = startIndex[col - 1][2] + (zi - 1) * stride_z;
-                      unsigned long y = startIndex[col - 1][1] + (yi - 1) * stride_y;
-                      unsigned long x = startIndex[col - 1][0] + (xi - 1) * stride_x;
-                      if (x < end[0] && y < end[1] && z < end[2]) {
-                        const std::array<unsigned long, 3> upperCellIndex3D{x, y, z};
-                        auto &cell = upperLevelCB.getCell(upperCellIndex3D);
-                        // skip if cell is a halo cell and newton3 is disabled
-                        auto isHalo = cell.getPossibleParticleOwnerships() == OwnershipState::halo;
-                        if (!(isHalo && !this->_useNewton3)) {
-                          // variable to determine if we are only interested in owned particles in the lower level
-                          const bool containToOwnedOnly = isHalo && this->_useNewton3;
-                          if (this->_dataLayout == DataLayoutOption::aos) {
-                          } else {
-                            auto &cell = upperLevelCB.getCell({x, y, z});
-                            // skip if cell is a halo cell and newton3 is disabled
-                            auto isHalo = cell.getPossibleParticleOwnerships() == OwnershipState::halo;
-                            // variable to determine if we are only interested in owned particles in the lower level
-                            const bool containToOwnedOnly = isHalo && this->_useNewton3;
-                            auto &soa = cell._particleSoABuffer;
-                            auto [posMin, posMax] = upperLevelCB.getCellBoundingBox({x, y, z});
-                            auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(posMin - dir);
-                            auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(posMax + dir);
-                            // skip halo cells if we need to consider only owned particles
-                            if (containToOwnedOnly) {
-                              startIndex3D = this->getMax(startIndex3D, lowerBound);
-                              stopIndex3D = this->getMin(stopIndex3D, upperBound);
-                            }
-
-                            for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
-                              for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                                for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
-                                  // skip if min distance between the two cells is bigger than interactionLength
-                                  // n to n SoAFunctorPair
-                                  this->_functor->SoAFunctorPair(cell._particleSoABuffer,
-                                                                 lowerLevelCB.getCell({xl, yl, zl})._particleSoABuffer,
-                                                                 this->_useNewton3);
-                                }
-                              }
-                            }
+        AUTOPAS_OPENMP(parallel for schedule(dynamic, 1) collapse(4))
+        for (unsigned long col = 0; col < numColors; ++col) {
+          for (unsigned long z = start_index[col][2]; z < end[2]; z += stride_z) {
+            for (unsigned long y = start_index[col][1]; y < end[1]; y += stride_y) {
+              for (unsigned long x = start_index[col][0]; x < end[0]; x += stride_x) {
+                const std::array<unsigned long, 3> upperCellIndex3D{x, y, z};
+                auto &cell = upperLevelCB.getCell(upperCellIndex3D);
+                // skip if cell is a halo cell and newton3 is disabled
+                auto isHalo = cell.getPossibleParticleOwnerships() == OwnershipState::halo;
+                if (isHalo && !this->_useNewton3) {
+                  continue;
+                }
+                // variable to determine if we are only interested in owned particles in the lower level
+                const bool containToOwnedOnly = isHalo && this->_useNewton3;
+                if (this->_dataLayout == DataLayoutOption::aos) {
+                  // for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
+                  //   const std::array<double, 3> &pos = p1Ptr->getR();
+                  //   auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
+                  //   auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
+                  //   // skip halo cells if we need to consider only owned particles
+                  //   if (containToOwnedOnly) {
+                  //     startIndex3D = this->getMax(startIndex3D, lowerBound);
+                  //     stopIndex3D = this->getMin(stopIndex3D, upperBound);
+                  //   }
+                  //   for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+                  //     for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+                  //       std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
+                  //       for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+                  //         const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+                  //         auto &lowerCell = lowerLevelCB.getCell(lowerCellIndex);
+                  //         // skip if cell is farther than interactionLength
+                  //         if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
+                  //             interactionLengthSquared) {
+                  //           continue;
+                  //         }
+                  //         for (auto &p : lowerCell) {
+                  //           this->_functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
+                  //         }
+                  //       }
+                  //     }
+                  //   }
+                  // }
+                } else {
+                  auto &soa = cell._particleSoABuffer;
+                  const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+                  const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+                  const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+                  for (int idx = 0; idx < cell.size(); ++idx) {
+                    const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
+                    auto soaSingleParticle = soa.constructView(idx, idx + 1);
+                    auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
+                    auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
+                    if (containToOwnedOnly) {
+                      startIndex3D = this->getMax(startIndex3D, lowerBound);
+                      stopIndex3D = this->getMin(stopIndex3D, upperBound);
+                    }
+                    for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+                      for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
+                          const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+                          // skip if cell is farther than interactionLength
+                          if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
+                              interactionLengthSquared) {
+                            continue;
                           }
+                          // 1 to n SoAFunctorPair
+                          this->_functor->SoAFunctorPair(soaSingleParticle,
+                                                         lowerLevelCB.getCell(lowerCellIndex)._particleSoABuffer,
+                                                         this->_useNewton3);
                         }
                       }
                     }
@@ -209,7 +204,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
         }
       }
     }
-    // crosslevel.stop();
+    //crosslevel.stop();
     // AutoPasLog(INFO, "intralevel: {}s interlevel: {}s initTraversal: {}s", intralevel.getTotalTime() / 1000000000.0,
     //            crosslevel.getTotalTime() / 1000000000.0, initTraversal.getTotalTime() / 1000000000.0);
     // store SoA now if SoA is used
@@ -218,7 +213,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test2; };
 
   [[nodiscard]] bool isApplicable() const override { return this->_dataLayout == DataLayoutOption::soa; }
 
