@@ -1,19 +1,25 @@
+/**
+ * @file HGColorTraversalC04HCP.h
+ * @author atacann
+ * @date 02.01.2025
+ */
+
 #pragma once
 
 #include "HGTraversalBase.h"
 #include "HGTraversalInterface.h"
-#include "LCC08Traversal.h"
+#include "LCC04HCPTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 
 template <class ParticleCell, class Functor>
-class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversalInterface {
+class HGColorTraversalC04HCP : public HGTraversalBase<ParticleCell>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCell::ParticleType;
 
-  explicit HGTestTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGColorTraversalC04HCP(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCell>(dataLayout, useNewton3), _functor(functor) {}
 
   /**
@@ -24,7 +30,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    return std::make_unique<LCC08Traversal<ParticleCell, Functor>>(
+    return std::make_unique<LCC04HCPTraversal<ParticleCell, Functor>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
   }
@@ -34,26 +40,54 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
     if (not this->isApplicable()) {
       utils::ExceptionHandler::exception("Not supported with hgrid_color");
     }
-    autopas::utils::Timer crosslevel, intralevel, initTraversal;
+    //autopas::utils::Timer crosslevel, intralevel, initTraversal;
+    // 4D vector (hierarchy level, 3D cell index) to store next non-empty cell in increasing x direction for each cell
+    std::vector<std::vector<std::vector<std::vector<size_t>>>> nextNonEmpty(this->_numLevels);
     // computeInteractions for each level independently first
     std::vector<std::unique_ptr<TraversalInterface>> traversals(this->_numLevels);
     for (size_t level = 0; level < this->_numLevels; level++) {
+      // TODO: Do this nextNonEmpty calculation after rebuilds in container code, not every iteration, as it only
+      // changes after a rebuild
+      const auto dim = this->getTraversalSelectorInfo(level).cellsPerDim;
+
+      nextNonEmpty[level] = std::vector<std::vector<std::vector<size_t>>>(
+        dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
+      const auto &cellBlock = this->_levels->at(level)->getCellBlock();
+      // calculate next non-empty cell in increasing x direction for each cell
+      AUTOPAS_OPENMP(parallel for collapse(2))
+      for (size_t z = 0; z < dim[2]; ++z) {
+        for (size_t y = 0; y < dim[1]; ++y) {
+          // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
+          size_t index1D = utils::ThreeDimensionalMapping::threeToOneD({dim[0] - 1, y, z}, dim);
+          std::vector<size_t> &nextRef = nextNonEmpty[level][z][y];
+          nextRef[dim[0] - 1] = dim[0];
+          for (int x = dim[0] - 2; x >= 0; --x, --index1D) {
+            if (cellBlock.getCell(index1D).isEmpty()) {
+              // if the next cell is empty, set nextRef[x] to nextRef[x + 1]
+              nextRef[x] = nextRef[x + 1];
+            } else {
+              // if next cell is not empty, set nextRef[x] to x + 1 as it is the next non-empty cell
+              nextRef[x] = x + 1;
+            }
+          }
+        }
+      }
 
       // generate new traversal, load cells into it, if dataLayout is SoA also load SoA, but do not store SoA
       // as they can still be later used for cross-level interactions
       traversals[level] = generateNewTraversal(level);
       TraversalInterface *temp = traversals[level].get();
       this->_levels->at(level)->prepareTraversal(temp);
-      initTraversal.start();
+      //initTraversal.start();
       traversals[level]->initTraversal();
-      initTraversal.stop();
-      intralevel.start();
+      //initTraversal.stop();
+      //intralevel.start();
       traversals[level]->traverseParticles();
-      intralevel.stop();
+      //intralevel.stop();
       // do not call endTraversal as SoA's should be stored after cross-level interactions are calculated
       // this->_levels->at(level)->computeInteractions(traversals[level].get());
     }
-    crosslevel.start();
+    //crosslevel.start();
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
       // only look top-down if newton3 is enabled, both ways otherwise
@@ -138,33 +172,33 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
                 // variable to determine if we are only interested in owned particles in the lower level
                 const bool containToOwnedOnly = isHalo && this->_useNewton3;
                 if (this->_dataLayout == DataLayoutOption::aos) {
-                  // for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
-                  //   const std::array<double, 3> &pos = p1Ptr->getR();
-                  //   auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
-                  //   auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
-                  //   // skip halo cells if we need to consider only owned particles
-                  //   if (containToOwnedOnly) {
-                  //     startIndex3D = this->getMax(startIndex3D, lowerBound);
-                  //     stopIndex3D = this->getMin(stopIndex3D, upperBound);
-                  //   }
-                  //   for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
-                  //     for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                  //       std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
-                  //       for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
-                  //         const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
-                  //         auto &lowerCell = lowerLevelCB.getCell(lowerCellIndex);
-                  //         // skip if cell is farther than interactionLength
-                  //         if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
-                  //             interactionLengthSquared) {
-                  //           continue;
-                  //         }
-                  //         for (auto &p : lowerCell) {
-                  //           this->_functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
-                  //         }
-                  //       }
-                  //     }
-                  //   }
-                  // }
+                  for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
+                    const std::array<double, 3> &pos = p1Ptr->getR();
+                    auto startIndex3D = lowerLevelCB.get3DIndexOfPosition(pos - dir);
+                    auto stopIndex3D = lowerLevelCB.get3DIndexOfPosition(pos + dir);
+                    // skip halo cells if we need to consider only owned particles
+                    if (containToOwnedOnly) {
+                      startIndex3D = this->getMax(startIndex3D, lowerBound);
+                      stopIndex3D = this->getMin(stopIndex3D, upperBound);
+                    }
+                    for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+                      for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+                        std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
+                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+                          const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+                          auto &lowerCell = lowerLevelCB.getCell(lowerCellIndex);
+                          // skip if cell is farther than interactionLength
+                          if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
+                              interactionLengthSquared) {
+                            continue;
+                          }
+                          for (auto &p : lowerCell) {
+                            this->_functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
+                          }
+                        }
+                      }
+                    }
+                  }
                 } else {
                   auto &soa = cell._particleSoABuffer;
                   const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -181,7 +215,8 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
                     }
                     for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
                       for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
+                        std::vector<size_t> &nextRef = nextNonEmpty[lowerLevel][zl][yl];
+                        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
                           const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
                           // skip if cell is farther than interactionLength
                           if (this->getMinDistBetweenCellAndPointSquared(lowerLevelCB, lowerCellIndex, pos) >
@@ -203,18 +238,19 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell>, public HGTraversal
         }
       }
     }
-    crosslevel.stop();
-    AutoPasLog(INFO, "intralevel: {}s interlevel: {}s initTraversal: {}s", intralevel.getTotalTime() / 1000000000.0,
-               crosslevel.getTotalTime() / 1000000000.0, initTraversal.getTotalTime() / 1000000000.0);
+    //crosslevel.stop();
+    // AutoPasLog(INFO, "intralevel: {} interlevel: {} initTraversal: {}",
+    //   intralevel.getTotalTime() / 1000000000.0, crosslevel.getTotalTime() / 1000000000.0,
+    //   initTraversal.getTotalTime() / 1000000000.0);
     // store SoA now if SoA is used
     for (size_t level = 0; level < this->_numLevels; level++) {
       traversals[level]->endTraversal();
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_color_c04_HCP; };
 
-  [[nodiscard]] bool isApplicable() const override { return this->_dataLayout == DataLayoutOption::soa; }
+  [[nodiscard]] bool isApplicable() const override { return true; }
 
   void initTraversal() override {}
 

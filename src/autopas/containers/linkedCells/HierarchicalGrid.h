@@ -132,9 +132,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   HierarchicalGrid &operator=(const HierarchicalGrid &other) = delete;
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getCutoff()
+   * For Hierarchical Grid the cutoff is the cutoff of the level that is the largest
+   * @return the largest cutoff
    */
-  [[nodiscard]] double getCutoff() const final { return _baseCutoff; }
+  [[nodiscard]] double getCutoff() const final { return _cutoffs.back(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()

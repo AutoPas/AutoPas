@@ -51,7 +51,7 @@ class ParticleContainerInterface {
    * Constructor
    * @param skin Skin distance a particle is allowed to move.
    */
-  ParticleContainerInterface(double skin) : _maxDisplacement(skin), _skin(skin) {}
+  ParticleContainerInterface(double skin) : _maxDisplacement(0), _skin(skin) {}
 
   /**
    * Destructor of ParticleContainerInterface.

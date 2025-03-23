@@ -100,10 +100,6 @@ class HGridTraversalComparison : public AutoPasTestBase, public ::testing::WithP
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};
 
-  static constexpr double _eps{1.};
-  static constexpr double _sig{1.};
-  static constexpr double _nu{1.};
-
   static std::shared_ptr<ParticlePropertiesLibrary<>> _particlePropertiesLibrary;
 
   static inline std::map<mykey_t, std::vector<std::array<double, 3>>> _forcesReference{};

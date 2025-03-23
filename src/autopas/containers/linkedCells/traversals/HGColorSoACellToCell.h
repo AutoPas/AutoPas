@@ -195,10 +195,10 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell>, public HGTrav
           }
         }
       }
-      // store SoA now if SoA is used
-      for (size_t level = 0; level < this->_numLevels; level++) {
-        traversals[level]->endTraversal();
-      }
+    }
+    // store SoA now if SoA is used
+    for (size_t level = 0; level < this->_numLevels; level++) {
+      traversals[level]->endTraversal();
     }
   }
 

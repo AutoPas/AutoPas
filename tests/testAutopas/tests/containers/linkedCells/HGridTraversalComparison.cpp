@@ -148,30 +148,33 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
         interactionType] = key;
 
   // Construct container
-  autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff, {_cutoff / 2, _cutoff}};
+  autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff, {0.5, 1., 1.5}};
   constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
   selector.selectContainer(containerOption,
                            autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
-  const auto numParticles1 = numParticles / 2;
-  const auto numParticles2 = numParticles - numParticles1;
-  const auto numHaloParticles1 = numHaloParticles / 2;
-  const auto numHaloParticles2 = numHaloParticles - numHaloParticles1;
-  autopasTools::generators::UniformGenerator::fillWithParticles(container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
-                                                                container.getBoxMin(), container.getBoxMax(),
-                                                                numParticles1, 1);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles1, 1), container.getBoxMin(), container.getBoxMax(),
-      numParticles2, 2);
+  std::array<size_t, 3> numParticlesArr = {numParticles / 3, numParticles / 3, numParticles - 2 * (numParticles / 3)};
+  std::array<size_t, 3> numHaloParticlesArr = {numHaloParticles / 3, numHaloParticles / 3,
+                                               numHaloParticles - 2 * (numHaloParticles / 3)};
+  unsigned long moleculeId = 0;
+  for (size_t i = 0; i < 3; ++i) {
+    autopasTools::generators::UniformGenerator::fillWithParticles(
+        container, Molecule({0., 0., 0.}, {0., 0., 0.}, moleculeId, i), container.getBoxMin(), container.getBoxMax(),
+        numParticlesArr[i], i);
+    moleculeId += numParticlesArr[i];
+  }
+
   EXPECT_EQ(container.size(), numParticles) << "Wrong number of molecules inserted!";
-  autopasTools::generators::UniformGenerator::fillWithHaloParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/, 0), container.getCutoff(),
-      numHaloParticles1, static_cast<unsigned int>(3));
-  autopasTools::generators::UniformGenerator::fillWithHaloParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles + numHaloParticles1 /*initial ID*/, 1),
-      container.getCutoff(), numHaloParticles2, static_cast<unsigned int>(4));
+
+  for (size_t i = 0; i < 3; ++i) {
+    autopasTools::generators::UniformGenerator::fillWithHaloParticles(
+        container, Molecule({0., 0., 0.}, {0., 0., 0.}, moleculeId, i), container.getCutoff(), numHaloParticlesArr[i],
+        static_cast<unsigned int>(i));
+    moleculeId += numHaloParticlesArr[i];
+  }
+
   EXPECT_EQ(container.size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
@@ -199,7 +202,9 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
   container.rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
-    executeShift(container, skin * rebuildFrequency / 2, numParticles + numHaloParticles);
+    // need to set max displacement because particles will get shifted
+    container.setMaxDisplacement(skin / 2);
+    executeShift(container, skin / 2, numParticles + numHaloParticles);
   }
 
   if (particleDeletionPosition & DeletionPosition::afterLists) {
@@ -338,17 +343,17 @@ static auto toString = [](const auto &info) {
  */
 auto HGridTraversalComparison::getTestParams() {
   // initialize site Ids with mandatory mass parameter
-  for (auto [siteTypeId, mass] : std::vector<std::pair<int, double>>{{0, 1.}, {1, 2.}}) {
+  for (auto [siteTypeId, mass] : std::vector<std::pair<int, double>>{{0, 1.}, {1, 2.}, {2, 1.}}) {
     _particlePropertiesLibrary->addSiteType(siteTypeId, mass);
   }
   // initialize LJ parameters
   for (auto [siteTypeId, eps_sigma] :
-       std::vector<std::pair<int, std::pair<double, double>>>{{0, {1., 1.}}, {1, {1., 0.5}}}) {
+       std::vector<std::pair<int, std::pair<double, double>>>{{0, {1., 1.5}}, {1, {1., 1.}}, {2, {1., 0.5}}}) {
     auto [epsilon, sigma] = eps_sigma;
     _particlePropertiesLibrary->addLJParametersToSite(siteTypeId, epsilon, sigma);
   }
   // initialize AT parameters
-  for (auto [siteTypeId, nu] : std::vector<std::pair<int, double>>{{0, 1.}, {1, 1.}}) {
+  for (auto [siteTypeId, nu] : std::vector<std::pair<int, double>>{{0, 1.}, {1, 1.}, {2, 1.}}) {
     _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
   }
   _particlePropertiesLibrary->calculateMixingCoefficients(true);

@@ -216,6 +216,10 @@ class TraversalOption : public Option<TraversalOption> {
      */
     hgrid_color_soa_cell,
     hgrid_test,
+    hgrid_color_c04,
+    hgrid_color_c18,
+    hgrid_color_c04_combined,
+    hgrid_color_c04_HCP
   };
 
   /**
@@ -357,6 +361,10 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::hgrid_color, "hgrid_color"},
         {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
         {TraversalOption::hgrid_test, "hgrid_test"},
+        {TraversalOption::hgrid_color_c04, "hgrid_color_c04"},
+        {TraversalOption::hgrid_color_c04_combined, "hgrid_color_c04_combined"},
+        {TraversalOption::hgrid_color_c04_HCP, "hgrid_color_c04_HCP"},
+        {TraversalOption::hgrid_color_c18, "hgrid_color_c18"},
     };
   };
 

@@ -16,6 +16,10 @@
 #include "autopas/containers/linkedCells/traversals/HGC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/HGColorSoACellToCell.h"
 #include "autopas/containers/linkedCells/traversals/HGColorTraversal.h"
+#include "autopas/containers/linkedCells/traversals/HGColorTraversalC04.h"
+#include "autopas/containers/linkedCells/traversals/HGColorTraversalC04Combined.h"
+#include "autopas/containers/linkedCells/traversals/HGColorTraversalC04HCP.h"
+#include "autopas/containers/linkedCells/traversals/HGColorTraversalC18.h"
 #include "autopas/containers/linkedCells/traversals/HGTestTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
@@ -315,6 +319,22 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     }
     case TraversalOption::hgrid_test: {
       return std::make_unique<HGTestTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_color_c04: {
+      return std::make_unique<HGColorTraversalC04<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                                  useNewton3);
+    }
+    case TraversalOption::hgrid_color_c04_combined: {
+      return std::make_unique<HGColorTraversalC04Combined<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                                          useNewton3);
+    }
+    case TraversalOption::hgrid_color_c04_HCP: {
+      return std::make_unique<HGColorTraversalC04HCP<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                                     useNewton3);
+    }
+    case TraversalOption::hgrid_color_c18: {
+      return std::make_unique<HGColorTraversalC18<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                                  useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",

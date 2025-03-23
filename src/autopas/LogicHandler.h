@@ -1175,7 +1175,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   else {
     // set maxDisplacement to the square root of the maximum over all particles
     // trim if displacement is larger than skin/2 (can cause problems in some tests otherwise)
-    getContainer().setMaxDisplacement(std::max(skin / 2, std::sqrt(maxDistanceSquare) + 1e-15));
+    getContainer().setMaxDisplacement(std::min(skin / 2, std::sqrt(maxDistanceSquare) + 1e-15));
   }
 
 #endif
@@ -1294,6 +1294,10 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
+
+  AutoPasLog(INFO, "ComputeInteractions: {}s, container {}, traversal {}, stepsSinceRebuild {} CellSizeFactor {}" , timerComputeInteractions.getTotalTime() / 1000000000.0,
+    _containerSelector.getCurrentContainer().getContainerType().to_string(), traversal.getTraversalType().to_string(), _stepsSinceLastListRebuild,
+    autoTuner.getCurrentConfig().cellSizeFactor);
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
@@ -1953,6 +1957,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                                 measurements);
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
+  AutoPasLog(INFO, "FLOPS: {}, hitrate: {}", functor->getNumFLOPs(), functor->getHitRate());
 
   /// Pass on measurements
   // if this was a major iteration add measurements
