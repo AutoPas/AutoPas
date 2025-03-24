@@ -350,21 +350,6 @@ class LiveInfo {
 
  private:
   /**
-   * Private helper to calculate the particle size needed by a functor. This is the sum of the size of the type of all
-   * needed attributes.
-   * @tparam Particle_T The type of the Particle
-   * @tparam PairwiseFunctor The Functor
-   * @tparam Idx An index sequence for all elements of PairwiseFunctor::getNeededAttr() elements.
-   * @return The number of bytes needed by the information of a particle the functor needs.
-   */
-  template <class Particle_T, class PairwiseFunctor, size_t... Idx>
-  constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
-    return (0 + ... +
-            sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
-                                               typename Particle_T::SoAArraysType>::type::value_type));
-  }
-
-  /**
    * If the template argument Idx is equal to the function argument idx, the method reads in Type from in and stores it
    * in var.
    * @tparam Variant The Variant to return (through var).
