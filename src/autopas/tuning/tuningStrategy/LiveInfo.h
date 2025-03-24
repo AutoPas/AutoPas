@@ -131,26 +131,23 @@ class LiveInfo {
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
    */
   template <class Particle_T>
-  void gather(const autopas::ParticleContainerInterface<Particle_T> &container, ContainerIterator<Particle_T, true, false> particleIter,
+  void gather(const ParticleContainerInterface<Particle_T> &container, ContainerIterator<Particle_T, true, false> particleIter,
               size_t rebuildFrequency, size_t numOwnedParticles) {
-    using namespace autopas::utils::ArrayMath::literals;
-    using autopas::utils::ArrayMath::castedCeil;
+    using namespace utils::ArrayMath::literals;
+    using utils::ArrayMath::castedCeil;
 
     // Aliases and info of particle distribution independent information
-
-    // Some aliases for quicker access
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
     const auto cutoff = container.getCutoff();
     const auto skin = container.getVerletSkin();
     const auto interactionLength = cutoff + skin;
-    const auto interactionLengthInv = 1. / interactionLength;
 
     infos["cutoff"] = cutoff;
     infos["skin"] = container.getVerletSkin();
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
     infos["particleSize"] = sizeof(Particle_T);
-    infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
+    infos["threadCount"] = static_cast<size_t>(autopas_get_max_threads());
 
     infos["numOwnedParticles"] = numOwnedParticles;
 
@@ -160,14 +157,11 @@ class LiveInfo {
     infos["domainSizeZ"] = domainSize[2];
 
 
-    // ---- Build Cell-Bin Structure ----
+    // Build bin structures
     auto cellBinStruct = buildCellBinStructure(domainSize, interactionLength, boxMin, boxMax, cutoff);
+    auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax, cutoff);
 
     infos["numCells"] = cellBinStruct.getNumberOfBins();
-    const auto cellVolume = cellBinStruct.getBinVolume();
-
-    // ---- Build Blurred Bin Structure ----
-    auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax, cutoff);
 
     // Count the number of owned particles per bin for each bin structure. Also include total count for halo particles.
     size_t numOwnedParticlesCount = 0;
@@ -205,12 +199,20 @@ class LiveInfo {
     infos["medianParticlesPerCell"] = cellBinStruct.getMedianParticlesPerBin();
     infos["lowerQuartileParticlesPerCell"] = cellBinStruct.getLowerQuartileParticlesPerBin();
     infos["upperQuartileParticlesPerCell"] = cellBinStruct.getUpperQuartileParticlesPerBin();
-    infos["relativeParticlesPerCellStdDev"] = cellBinStruct.getRelStdDevParticlesPerBin();
     infos["meanParticlesPerCell"] = cellBinStruct.getMeanParticlesPerBin();
+    infos["relativeParticlesPerCellStdDev"] = cellBinStruct.getRelStdDevParticlesPerBin();
+    infos["particlesPerCellStdDev"] = cellBinStruct.getStdDevParticlesPerBin();
     infos["estimatedNumNeighborInteractions"] = cellBinStruct.getEstimatedNumberOfNeighborInteractions();
 
     // write blurred bin statistics to live info
-    infos["relativeParticlesPerBlurredCellStdDev"] = blurredBinStruct.getRelStdDevParticlesPerBin();
+    infos["maxParticlesPerBlurredBin"] = cellBinStruct.getMaxParticlesPerBin();
+    infos["minParticlesPerBlurredBin"] = cellBinStruct.getMinParticlesPerBin();
+    infos["medianParticlesPerBlurredBin"] = cellBinStruct.getMedianParticlesPerBin();
+    infos["lowerQuartileParticlesPerBlurredBin"] = cellBinStruct.getLowerQuartileParticlesPerBin();
+    infos["upperQuartileParticlesPerBlurredBin"] = cellBinStruct.getUpperQuartileParticlesPerBin();
+    infos["meanParticlesPerBlurredBin"] = cellBinStruct.getMeanParticlesPerBin();
+    infos["relativeParticlesPerBlurredBinStdDev"] = cellBinStruct.getRelStdDevParticlesPerBin();
+    infos["particlesPerBlurredBinStdDev"] = cellBinStruct.getStdDevParticlesPerBin();
   }
 
   /**
