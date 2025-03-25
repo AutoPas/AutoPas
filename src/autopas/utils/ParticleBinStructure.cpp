@@ -28,6 +28,7 @@ ParticleBinStructure::ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, 
   _binLengthReciprocal = 1. / binLength;
   _boxMin = boxMin;
   _boxMax = boxMax;
+  _cutoff = cutoff;
 }
 
 
