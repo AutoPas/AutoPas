@@ -57,10 +57,17 @@ void ParticleBinStructure::countParticle(const std::array<double, 3> &particlePo
         newBinIndex3D[dim] = std::clamp(binIndex3DUnsafe[dim], 0UL, _numBinsPerDim[dim] - 1);
       } else {
         AutoPasLog(WARN, "Particle being counted is outside the box and will be ignored.");
+        // Assign index beyond domain to indicate invalidity
+        newBinIndex3D[dim] = _numBinsPerDim[dim];
       }
     }
     return newBinIndex3D;
   }();
+
+  // If the particle is outside the domain, ignore it
+  if (binIndex3DSafe[0] == _numBinsPerDim[0] or binIndex3DSafe[1] == _numBinsPerDim[1] or binIndex3DSafe[2] == _numBinsPerDim[2]) {
+    return;
+  }
 
   // Get the 1D index
   const auto binIndex1DSafe = utils::ThreeDimensionalMapping::threeToOneD<size_t>(binIndex3DSafe, _numBinsPerDim);
