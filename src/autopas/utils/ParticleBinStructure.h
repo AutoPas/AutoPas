@@ -84,13 +84,19 @@ class ParticleBinStructure{
    * Getter for the total number of particles counted
    * @return
    */
-  const size_t &getTotalParticleCount() const;
+  [[nodiscard]] const size_t &getTotalParticleCount() const;
+
+  /**
+   * Getter for the particle counts.
+   * @return
+   */
+  [[nodiscard]] const std::vector<size_t> &getParticleCounts() const;
 
   /**
    * Getter for the number of bins per dimension
    * @return
    */
-  const std::array<std::size_t, 3> &getNumBinsPerDim() const;
+  [[nodiscard]] const std::array<std::size_t, 3> &getNumBinsPerDim() const;
 
   /**
    * Setter for the number of bins per dimension
@@ -102,13 +108,13 @@ class ParticleBinStructure{
    * Getter for the dimensions of each bin.
    * @return
    */
-  const std::array<double, 3> &getBinLength() const;
+  [[nodiscard]] const std::array<double, 3> &getBinLength() const;
 
   /**
    * Getter for the reciprocal of the dimensions of each bin.
    * @return
    */
-  const std::array<double, 3> &getBinLengthReciprocal() const;
+  [[nodiscard]] const std::array<double, 3> &getBinLengthReciprocal() const;
 
   /**
    * Setter for the dimension of each bin. Also sets the reciprocal of these lengths.
@@ -120,7 +126,7 @@ class ParticleBinStructure{
    * Getter for the box min.
    * @return
    */
-  const std::array<double, 3> &getBoxMin() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
 
   /**
    * Setter for the box min.
@@ -132,7 +138,7 @@ class ParticleBinStructure{
    * Getter for the box max.
    * @return
    */
-  const std::array<double, 3> &getBoxMax() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
 
   /**
    * Setter for the box max.
@@ -144,7 +150,7 @@ class ParticleBinStructure{
    * Getter for the number of bins.
    * @return
    */
-  std::size_t getNumberOfBins() const;
+  [[nodiscard]] std::size_t getNumberOfBins() const;
 
   /**
    * Resizes the particle count structure.
@@ -155,7 +161,7 @@ class ParticleBinStructure{
    * Getter for the volume of each bin.
    * @return
    */
-  double getBinVolume() const;
+  [[nodiscard]] double getBinVolume() const;
 
   /**
    * Returns the mean number of particles per bins.

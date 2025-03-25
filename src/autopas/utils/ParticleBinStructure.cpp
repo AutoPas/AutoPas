@@ -153,6 +153,10 @@ const size_t &ParticleBinStructure::getTotalParticleCount() const {
   return _totalParticleCount;
 }
 
+const std::vector<size_t> &ParticleBinStructure::getParticleCounts() const {
+  return _particleCounts;
+}
+
 const std::array<std::size_t, 3> &ParticleBinStructure::getNumBinsPerDim() const {
   return _numBinsPerDim;
 }
