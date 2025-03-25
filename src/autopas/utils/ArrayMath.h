@@ -420,6 +420,23 @@ template <class T>
   return arraysAreEqual;
 }
 
+/**
+ * static_casts all elements of an array to a new type.
+ * @tparam new_T
+ * @tparam old_T
+ * @tparam SIZE
+ * @param a Old Array
+ * @return
+ */
+template <typename new_T, typename old_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<new_T, SIZE> staticCastArray(const std::array<old_T, SIZE> &a) {
+  std::array<new_T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<new_T>(a[d]);
+  }
+  return result;
+}
+
 // namespace for templated operators
 inline namespace literals {
 
