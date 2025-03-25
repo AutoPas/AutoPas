@@ -24,7 +24,6 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1850,20 +1849,26 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
+    const auto needsDensityStatistics = autoTuner.needsDomainSimilarityStatisticsBeforePrepare();
+    const auto needsLiveInfo = autoTuner.needsLiveInfo();
+    if (needsDensityStatistics or needsLiveInfo) {
+      // Gather Live Info
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
-      const auto &container = _containerSelector.getCurrentContainer();
-      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
+      auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+      info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency,
+        getNumberOfParticlesOwned());
       timerCalculateHomogeneity.stop();
-      autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
-    }
-
-    const auto needsLiveInfo = autoTuner.prepareIteration();
-
-    if (needsLiveInfo) {
-      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      autoTuner.receiveLiveInfo(info);
+      if (needsDensityStatistics) {
+        const auto meanParticlesPerCell = info.template get<double>("meanParticlesPerCell");
+        const auto relativeParticlesPerCellStdDev = info.template get<double>("relativeParticlesPerCellStdDev");
+        autoTuner.addDomainSimilarityStatistics(meanParticlesPerCell, relativeParticlesPerCellStdDev,
+                                              timerCalculateHomogeneity.getTotalTime());
+        autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
+      }
+      if (needsLiveInfo) {
+        autoTuner.receiveLiveInfo(info);
+      }
     }
 
     std::tie(configuration, stillTuning) = autoTuner.getNextConfig();
@@ -1885,7 +1890,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
-    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+    info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency,
+      getNumberOfParticlesOwned());
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
