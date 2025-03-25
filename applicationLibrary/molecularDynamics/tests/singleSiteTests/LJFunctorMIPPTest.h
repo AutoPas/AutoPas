@@ -4,10 +4,11 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/SoA.h"
+#include "molecularDynamicsLibrary/LJFunctorMIPP.h"
 #include "molecularDynamics/molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using LJFunctorMIPPTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
+using LJFunctorMIPPTestingTuple = std::tuple<bool /*mixing*/, bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
 
 class LJFunctorMIPPTest : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorMIPPTestingTuple> {
  public:
@@ -29,6 +30,7 @@ class LJFunctorMIPPTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
@@ -42,6 +44,7 @@ class LJFunctorMIPPTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
@@ -49,6 +52,7 @@ class LJFunctorMIPPTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param newton3
    * @param doDeleteSomeParticles
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool doDeleteSomeParticles);
 
   /**
@@ -56,6 +60,7 @@ class LJFunctorMIPPTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param newton3
    * @param doDeleteSomeParticles
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDeleteSomeParticles);
 
   /**

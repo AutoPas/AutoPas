@@ -2,10 +2,11 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/SoA.h"
-#include "molecularDynamics/molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/LJFunctorXSIMD.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using LJFunctorXSIMDTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
+using LJFunctorXSIMDTestingTuple = std::tuple<bool /*mixing*/, bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
 
 class LJFunctorXSIMDTest : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorXSIMDTestingTuple> {
  public:
@@ -16,8 +17,6 @@ class LJFunctorXSIMDTest : public AutoPasTestBase, public ::testing::WithParamIn
    */
   constexpr static double _maxError = 1e-12;
 
-  // void testLJFunctorVSLJFunctorXSIMDKernel(bool newton3);
-
   /**
    * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
@@ -25,10 +24,12 @@ class LJFunctorXSIMDTest : public AutoPasTestBase, public ::testing::WithParamIn
    *
    * Checks SoAFunctorPair(soa1, soa2, newton3)
    *
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
@@ -38,24 +39,30 @@ class LJFunctorXSIMDTest : public AutoPasTestBase, public ::testing::WithParamIn
    *
    * Checks SoAFunctorSingle(soa, newton3)
    *
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
    * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Create two cells and compare AoSFunctor
+   * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    */
+  template <bool mixing>
   void testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doDeleteSomeParticles);
 
   /**

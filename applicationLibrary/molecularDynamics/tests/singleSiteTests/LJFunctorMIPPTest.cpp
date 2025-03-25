@@ -5,8 +5,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/UniformGenerator.h"
-#include "molecularDynamics/molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctorAVX.h"
 
 template <class SoAType>
 bool LJFunctorMIPPTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -75,6 +74,7 @@ bool LJFunctorMIPPTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   return ret;
 }
 
+template <bool mixing>
 void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool doDeleteSomeParticles,
                                                              bool useUnalignedViews) {
   FMCell cell1MIPP;
@@ -82,18 +82,42 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
 
   size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(
       cell1MIPP, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2MIPP, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
-  if (doDeleteSomeParticles) {
-    for (auto &particle : cell1MIPP) {
+  for (auto &particle : cell1MIPP) {
+    if (doDeleteSomeParticles) {
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
     }
-    for (auto &particle : cell2MIPP) {
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
+  }
+
+  for (auto &particle : cell2MIPP) {
+    if (doDeleteSomeParticles) {
       if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
     }
   }
 
@@ -102,12 +126,29 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
   FMCell cell2NoMIPP(cell2MIPP);
 
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
-  ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
-  ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  auto ljFunctorNoMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
 
+  auto ljFunctorMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  if constexpr (not mixing) {
+    ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
+  
   ljFunctorMIPP.initTraversal();
   ljFunctorNoMIPP.initTraversal();
 
@@ -154,30 +195,67 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
   EXPECT_NEAR(ljFunctorMIPP.getVirial(), ljFunctorNoMIPP.getVirial(), tolerance) << "global virial";
 }
 
+template <bool mixing>
 void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool doDeleteSomeParticles,
                                                             bool useUnalignedViews) {
   FMCell cellMIPP;
 
   size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
-  if (doDeleteSomeParticles) {
-    for (auto &particle : cellMIPP) {
+  for (auto &particle : cellMIPP) {
+    if (doDeleteSomeParticles) {
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
     }
   }
 
   // copy cells
   FMCell cellNoMIPP(cellMIPP);
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
-  ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
-  ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+  auto ljFunctorNoMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  auto ljFunctorMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  if constexpr (not mixing) {
+    ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
 
   ASSERT_TRUE(AoSParticlesEqual(cellMIPP, cellNoMIPP)) << "Cells not equal after copy initialization.";
 
@@ -213,6 +291,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool d
   EXPECT_NEAR(ljFunctorMIPP.getVirial(), ljFunctorNoMIPP.getVirial(), tolerance) << "global virial";
 }
 
+template <bool mixing>
 void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool doDeleteSomeParticles) {
   using namespace autopas::utils::ArrayMath::literals;
 
@@ -220,14 +299,31 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
 
   constexpr size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
-  if (doDeleteSomeParticles) {
-    // mark some particles as deleted to test if the functor handles them correctly
-    for (auto &particle : cellMIPP) {
+  for (auto &particle : cellMIPP) {
+    if (doDeleteSomeParticles) {
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
     }
   }
 
@@ -249,14 +345,30 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
   // copy cells
   FMCell cellNoMIPP(cellMIPP);
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoMIPP(
-      _cutoff);
-  ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorMIPP(
-      _cutoff);
-  ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  
+  auto ljFunctorNoMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  auto ljFunctorMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  if constexpr (not mixing) {
+    ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
 
   ASSERT_TRUE(AoSParticlesEqual(cellMIPP, cellNoMIPP)) << "Cells not equal after copy initialization.";
 
@@ -290,30 +402,66 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
   EXPECT_NEAR(ljFunctorMIPP.getVirial(), ljFunctorNoMIPP.getVirial(), tolerance) << "global virial";
 }
 
+template <bool mixing>
 void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellMIPP;
 
   constexpr size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  if constexpr (mixing) {
+    PPL.addSiteType(0, 1.);
+    PPL.addLJParametersToSite(0, 1., 1.);
+    PPL.addSiteType(1, 1.5);
+    PPL.addLJParametersToSite(1, 2., 1.);
+    PPL.addSiteType(2, 2.);
+    PPL.addLJParametersToSite(2, 1., 1.);
+    PPL.addSiteType(3, 2.5);
+    PPL.addLJParametersToSite(3, 2., 1.);
+    PPL.addSiteType(4, 3.);
+    PPL.addLJParametersToSite(4, 1., 1.);
+    PPL.calculateMixingCoefficients();
+  }
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
-  if (doDeleteSomeParticles) {
-    // mark some particles as deleted to test if the functor handles them correctly
-    for (auto &particle : cellMIPP) {
+  for (auto &particle : cellMIPP) {
+    if (doDeleteSomeParticles) {
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
     }
   }
 
   // copy cells
   FMCell cellNoMIPP(cellMIPP);
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
-  ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
-  ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  
+  auto ljFunctorNoMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  auto ljFunctorMIPP = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+    }
+    else {
+      return mdLib::LJFunctorMIPP<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  if constexpr (not mixing) {
+    ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
 
   ASSERT_TRUE(AoSParticlesEqual(cellMIPP, cellNoMIPP)) << "Cells not equal after copy initialization.";
 
@@ -341,47 +489,77 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDel
 }
 
 TEST_P(LJFunctorMIPPTest, testLJFunctorVSLJFunctorMIPPAoS) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorMIPPAoS(newton3, doDeleteSomeParticle);
+  auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorMIPPAoS<true>(newton3, doDeleteSomeParticle);
+  }
+  else {
+    testLJFunctorVSLJFunctorMIPPAoS<false>(newton3, doDeleteSomeParticle);
+  }
 }
 
 TEST_P(LJFunctorMIPPTest, testLJFunctorVSLJFunctorMIPPVerlet) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorMIPPVerlet(newton3, doDeleteSomeParticle);
+  auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorMIPPVerlet<true>(newton3, doDeleteSomeParticle);
+  }
+  else {
+    testLJFunctorVSLJFunctorMIPPVerlet<false>(newton3, doDeleteSomeParticle);
+  }
 }
 
 TEST_P(LJFunctorMIPPTest, testLJFunctorVSLJFunctorMIPPOneCellAlignedAccess) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorMIPPOneCell(newton3, doDeleteSomeParticle, false);
+  auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorMIPPOneCell<true>(newton3, doDeleteSomeParticle, false);
+  }
+  else {
+    testLJFunctorVSLJFunctorMIPPOneCell<false>(newton3, doDeleteSomeParticle, false);
+  }
 }
 
 TEST_P(LJFunctorMIPPTest, testLJFunctorVSLJFunctorMIPPOneCellUseUnalignedViews) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorMIPPOneCell(newton3, doDeleteSomeParticle, true);
+  auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorMIPPOneCell<true>(newton3, doDeleteSomeParticle, true);
+  }
+  else {
+    testLJFunctorVSLJFunctorMIPPOneCell<false>(newton3, doDeleteSomeParticle, true);
+  }
 }
 
 TEST_P(LJFunctorMIPPTest, testLJFunctorVSLJFunctorMIPPTwoCellsAlignedAccess) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorMIPPTwoCells(newton3, doDeleteSomeParticle, false);
+  auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorMIPPTwoCells<true>(newton3, doDeleteSomeParticle, false);
+  }
+  else {
+    testLJFunctorVSLJFunctorMIPPTwoCells<false>(newton3, doDeleteSomeParticle, false);
+  }
 }
 
 TEST_P(LJFunctorMIPPTest, testLJFunctorVSLJFunctorMIPPTwoCellsUseUnalignedViews) {
-  auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorMIPPTwoCells(newton3, doDeleteSomeParticle, true);
+  auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
+  if (mixing) {
+    testLJFunctorVSLJFunctorMIPPTwoCells<true>(newton3, doDeleteSomeParticle, true);
+  }
+  else {
+    testLJFunctorVSLJFunctorMIPPTwoCells<false>(newton3, doDeleteSomeParticle, true);
+  }
 }
 
 /**
  * Lambda to generate a readable string out of the parameters of this test.
  */
 static auto toString = [](const auto &info) {
-  auto [newton3, doDeleteSomeParticle] = info.param;
+  auto [mixing, newton3, doDeleteSomeParticle] = info.param;
   std::stringstream resStream;
-  resStream << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
+  resStream << (mixing ? "mixing" : "NoMixing") << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
   return res;
 };
 
-INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorMIPPTest, ::testing::Combine(::testing::Bool(), ::testing::Bool()),
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorMIPPTest, ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool()),
                          toString);
