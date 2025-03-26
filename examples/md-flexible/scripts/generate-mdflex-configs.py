@@ -9,6 +9,10 @@ It is not simply the cross product of the range of parameters below,
 but also tries to exclude unfeasible combinations, e.g. huge particle
 numbers in tiny domains.
 
+These exclusion criteria may not be appropriate for your test cases.
+E.g. they assume a sigma of no smaller than one and a cutoff of no 
+larger than 3.
+
 The files are generated in the folder where the script is executed.
 
 """
@@ -197,7 +201,7 @@ def isInteresting(domainSizeName,
     # volume=math.prod(domainSize)
     # density=particleCounts[numParticlesName]/volume
 
-    # Exclusion rules. Mostly to avoid scenarios that take forever to test.
+    # Exclusion rules. Mostly to avoid scenarios that take forever to test. Warning: These parameters may not be appropriate for your test cases.
     return not (False
                 # avoid insanely dense scenarios
                 or uniformAvgParticlesPerCell > 150
