@@ -13,6 +13,7 @@ The basic idea is that the [AutoTuner](https://github.com/AutoPas/AutoPas/blob/m
 In order to determine the optimal configuration, the AutoTuner has a queue of candidates that it tries out by using it for one interaction computation in order to measure their performance.
 Those iterations while candidate configurations are evaluated are referred to as tuning phase.
 AutoPas works on the assumption that particle simulations evolve very slow and thus the simulation state of subsequent iterations is sufficiently similar to compare the configurations' performances.
+Therefore, the simulation can advance with each iteration during tuning and doesn't have to pause.
 When the queue is fully processed, the configuration with the optimal measurement is determined to be the current algorithm optimum and is used until the start of the next tuning phase.
 
 ### Tuning Interval
