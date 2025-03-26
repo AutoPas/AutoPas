@@ -9,17 +9,17 @@
 #include "testingHelpers/commonTypedefs.h"
 
 TEST_F(FullParticleCellTest, testRangeBasedLoop) {
-  autopas::FullParticleCell<Particle> cell({1., 1., 1.});
+  autopas::FullParticleCell<ParticleFP64> cell({1., 1., 1.});
 
-  Particle p({.1, .2, .3}, {0., 0., 0.}, 0);
+  ParticleFP64 p({.1, .2, .3}, {0., 0., 0.}, 0);
   cell.addParticle(p);
 
-  Particle p2({.5, .2, .2}, {0., 0., 0.}, 1);
+  ParticleFP64 p2({.5, .2, .2}, {0., 0., 0.}, 1);
   cell.addParticle(p2);
 
   EXPECT_EQ(cell.size(), 2);
 
-  for (Particle &particle : cell) {
+  for (ParticleFP64 &particle : cell) {
     particle.setF({42., 42., 42.});
   }
 

@@ -29,6 +29,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
+      _earlyStoppingFactor(autoTunerInfo.earlyStoppingFactor),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
@@ -38,7 +39,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
-      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
+      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
+      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
@@ -137,6 +139,7 @@ bool AutoTuner::tuneConfiguration() {
   } else {
     // CASE: somewhere in a tuning phase
     _isTuning = true;
+
     AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before optimizeSuggestions: (Size={}) {}", _configQueue.size(),
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                             [](const auto &conf) { return conf.toShortString(false); }));
@@ -175,13 +178,14 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
     return {getCurrentConfig(), false};
-  } else if (getCurrentNumSamples() < _maxSamples) {
+  } else if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
     // If we are still collecting samples from one config return immediately.
     return {getCurrentConfig(), true};
   } else {
     // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
     // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
     const bool stillTuning = tuneConfiguration();
+    _earlyStoppingOfResampling = false;
     return {getCurrentConfig(), stillTuning};
   }
 }
@@ -237,11 +241,14 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   } else {
     _samplesNotRebuildingNeighborLists.push_back(sample);
   }
+
+  checkEarlyStoppingCondition();
+
   // if this was the last sample for this configuration:
   //  - calculate the evidence from the collected samples
   //  - log what was collected
   //  - remove the configuration from the queue
-  if (getCurrentNumSamples() == _maxSamples) {
+  if (getCurrentNumSamples() == _maxSamples or _earlyStoppingOfResampling) {
     const long reducedValue = estimateRuntimeFromSamples();
     _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
 
@@ -285,8 +292,16 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
           return ss.str();
         }());
 
-    _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists, _samplesNotRebuildingNeighborLists,
-                                    _iteration, reducedValue, smoothedValue);
+    auto samplesRebuildingNeighborLists = _samplesRebuildingNeighborLists;
+    auto samplesNotRebuildingNeighborLists = _samplesNotRebuildingNeighborLists;
+
+    if (_earlyStoppingOfResampling) {
+      // pad sample vectors to length of maxSamples to ensure correct logging
+      samplesNotRebuildingNeighborLists.resize(_maxSamples - samplesRebuildingNeighborLists.size(), -1);
+    }
+
+    _tuningDataLogger.logTuningData(currentConfig, samplesRebuildingNeighborLists, samplesNotRebuildingNeighborLists,
+                                    _iteration, reducedValue, smoothedValue, _rebuildFrequency);
   }
 }
 
@@ -311,51 +326,30 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  // What is the rebuild rhythm?
-  const auto iterationsPerRebuild = this->inTuningPhase() ? _maxSamples : _rebuildFrequency;
+  // if next iteration is start of new tuning phase, we need to rebuild, since the container may change
+  // _iteration + 1 since we want to look ahead to the next iteration
+  if ((_iteration + 1) % _tuningInterval == 0) {
+    return true;
+  }
+
+  // AutoTuner only triggers rebuild during the tuning phase
+  const auto iterationsPerConfig = this->inTuningPhase() ? _maxSamples : std::numeric_limits<unsigned int>::max();
   // _iterationBaseLine + 1 since we want to look ahead to the next iteration
   const auto iterationBaselineNextStep = _forceRetune ? _iterationBaseline : _iterationBaseline + 1;
-  return (iterationBaselineNextStep % iterationsPerRebuild) == 0;
+  return (iterationBaselineNextStep % iterationsPerConfig) == 0;
 }
 
 bool AutoTuner::initEnergy() {
   // Try to initialize the raplMeter
-  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
+  return _energySensor.init(_tuningMetric == TuningMetricOption::energy);
 }
 
-bool AutoTuner::resetEnergy() {
-  if (_energyMeasurementPossible) {
-    try {
-      _raplMeter.reset();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      /**
-       * very unlikely to happen, as check was performed at initialisation of autotuner
-       * but may occur if permissions are changed during runtime.
-       */
-      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
-      _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      }
-    }
-  }
-  return _energyMeasurementPossible;
-}
+bool AutoTuner::resetEnergy() { return _energySensor.startMeasurement(); }
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
-  if (_energyMeasurementPossible) {
-    try {
-      _raplMeter.sample();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
-      _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      }
-    }
-  }
-  return {_raplMeter.get_psys_energy(), _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy(),
-          _raplMeter.get_total_energy()};
+  _energySensor.endMeasurement();
+  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getEnergyDeltaT(),
+          _energySensor.getNanoJoules()};
 }
 
 size_t AutoTuner::getCurrentNumSamples() const {
@@ -441,7 +435,44 @@ bool AutoTuner::inTuningPhase() const {
   return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
+bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
+
+bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
+
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
 bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
+
+void AutoTuner::setRebuildFrequency(double rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
+
+void AutoTuner::checkEarlyStoppingCondition() {
+  if (_samplesNotRebuildingNeighborLists.empty()) {
+    // Wait until a sample without the expensive rebuilding has occurred to compare the configurations based on
+    // estimated runtime for the non-tuning phase. This should generally happen in the second sample.
+    return;
+  }
+
+  if (_iterationBaseline < _maxSamples) {
+    // Since there is no prior evidence, we must fully evaluate the first configuration.
+    return;
+  }
+
+  long preliminaryEstimate = estimateRuntimeFromSamples();
+
+  auto [_, bestEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+
+  double slowdownFactor = static_cast<double>(preliminaryEstimate) / static_cast<double>(bestEvidence.value);
+
+  if (slowdownFactor > _earlyStoppingFactor) {
+    AutoPasLog(DEBUG,
+               "Configuration is {} times slower than the current fastest traversal time. This is higher than the "
+               "earlyStoppingFactor factor of {}. Further samples of this configuration will be skipped.",
+               slowdownFactor, _earlyStoppingFactor);
+    _earlyStoppingOfResampling = true;
+
+    // Add the number of skipped samples to _iterationBaseline, to trigger a rebuild in the next iteration
+    size_t skippedSamples = (_maxSamples - (_iterationBaseline % _maxSamples)) - 1;
+    _iterationBaseline += skippedSamples;
+  }
+}
 }  // namespace autopas
