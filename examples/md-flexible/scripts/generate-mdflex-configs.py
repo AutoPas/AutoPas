@@ -46,7 +46,7 @@ functor                          :  Lennard-Jones (12-6) AVX
 #   - PairwiseVerletLists   : Uses too much memory resulting in chrashes
 container                        :  [LinkedCells, VerletLists, VarVerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  20
-verlet-skin-radius-per-timestep  :  0.0075
+verlet-skin-radius               :  0.15
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [all]
@@ -143,10 +143,8 @@ def generate(domainSize,
     data = yaml.load(template, Loader=SafeLoader)
     data['box-max'] = domainSize
     data['cutoff'] = cutoff
-    skin = cutoff * skinFactor
-    rebuildFrequency = int(invMaxParticleSpeed * skinFactor)
-    data['verlet-skin-radius-per-timestep'] = skin / rebuildFrequency
-    data['verlet-rebuild-frequency'] = rebuildFrequency
+    data['verlet-skin-radius'] = cutoff * skinFactor
+    data['verlet-rebuild-frequency'] = int(invMaxParticleSpeed * skinFactor)
     data['functor'] = functor
     data['cell-size'] = [cellSizeFactor]
     data['Objects'] = make_object(domainSize, numParticles, distribution)
