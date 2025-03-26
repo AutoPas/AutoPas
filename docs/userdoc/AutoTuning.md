@@ -29,7 +29,7 @@ For example, the predictive tuning strategy can use evidence from past tuning ph
 Tuning strategies can also use live information about the current state of the domain, such as density or homoegeneity, to filter the queue. 
 For example, the rules-based tuning strategy can be used to filter out the Direct Sum container if the simulation has enough particles.
 Multiple strategies can be activated at the same time.
-They are all applied in every decision process in the order they are specified in the vector of `ConfigurationOption`s passed to AutoPas.
+They are all applied in every decision process in the order they are specified in the vector of `TuningStrategyOption`s passed to AutoPas.
 
 ### Sampling, Selecting, and Smoothing
 For each evidence, AutoPas combines multiple subsequent measurements, called samples.
