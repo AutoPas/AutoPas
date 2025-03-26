@@ -54,9 +54,8 @@ class LJFunctorSIMDe
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctorSIMDe(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<
-            Particle, LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
-            cutoff),
+      : autopas::PairwiseFunctor<Particle, LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                          countFLOPs, relevantForTuning>>(cutoff),
         _cutoffsquare{simde_mm256_set1_pd(cutoff * cutoff)},
         _cutoffsquareAoS(cutoff * cutoff),
         _upotSum{0.},

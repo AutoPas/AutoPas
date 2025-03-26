@@ -7,6 +7,7 @@
 #pragma once
 
 #include <set>
+
 #include "autopas/options/Option.h"
 
 namespace autopas {

@@ -142,8 +142,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   auto ljFunctorAVX = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -151,8 +150,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -250,12 +248,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
   // copy cells
   FMCell cellNoHWY(cellHWY);
   constexpr bool shifting = true;
-  
+
   auto ljFunctorAVX = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -263,8 +260,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -370,8 +366,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
   auto ljFunctorAVX = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -379,8 +374,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -462,12 +456,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   // copy cells
   FMCell cellNoHWY(cellHWY);
   constexpr bool shifting = true;
-  
+
   auto ljFunctorAVX = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -475,8 +468,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -516,8 +508,7 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
   if (mixing) {
     testLJFunctorAVXvsLJFunctorHWYAoS<true>(newton3, doDeleteSomeParticle);
-  }
-  else {
+  } else {
     testLJFunctorAVXvsLJFunctorHWYAoS<false>(newton3, doDeleteSomeParticle);
   }
 }
@@ -527,8 +518,7 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
   if (mixing) {
     testLJFunctorAVXvsLJFunctorHWYVerlet<true>(newton3, doDeleteSomeParticle);
-  }
-  else {
+  } else {
     testLJFunctorAVXvsLJFunctorHWYVerlet<false>(newton3, doDeleteSomeParticle);
   }
 }
@@ -537,8 +527,7 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorAVXvsLJFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, false, vecPattern);
-  }
-  else {
+  } else {
     testLJFunctorAVXvsLJFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, false, vecPattern);
   }
 }
@@ -547,8 +536,7 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorAVXvsLJFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, true, vecPattern);
-  }
-  else {
+  } else {
     testLJFunctorAVXvsLJFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, true, vecPattern);
   }
 }
@@ -557,8 +545,7 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorAVXvsLJFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, false, vecPattern);
-  }
-  else {
+  } else {
     testLJFunctorAVXvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, false, vecPattern);
   }
 }
@@ -567,16 +554,13 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorAVXvsLJFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, true, vecPattern);
-  }
-  else {
+  } else {
     testLJFunctorAVXvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, true, vecPattern);
   }
 }
 
-std::vector<VectorizationPattern> patterns{
-    VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2, VectorizationPattern::pVecDiv2x2,
-    VectorizationPattern::pVecx1
-};
+std::vector<VectorizationPattern> patterns{VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2,
+                                           VectorizationPattern::pVecDiv2x2, VectorizationPattern::pVecx1};
 
 std::map<VectorizationPattern, std::string> patternsToString{{VectorizationPattern::p1xVec, "1xVec"},
                                                              {VectorizationPattern::p2xVecDiv2, "2xVec_2"},
@@ -595,5 +579,6 @@ static auto toString = [](const auto &info) {
 };
 
 INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorTestHWY,
-                         ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool(), ::testing::ValuesIn(patterns)),
+                         ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool(),
+                                            ::testing::ValuesIn(patterns)),
                          toString);

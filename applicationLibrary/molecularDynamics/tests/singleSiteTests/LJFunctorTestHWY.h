@@ -14,7 +14,8 @@
 
 using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 
-using LJFunctorHWYTestingTuple = std::tuple<bool /*mixing*/, bool /*newton3*/, bool /*doDeleteSomeParticles*/, VectorizationPattern>;
+using LJFunctorHWYTestingTuple =
+    std::tuple<bool /*mixing*/, bool /*newton3*/, bool /*doDeleteSomeParticles*/, VectorizationPattern>;
 
 class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorHWYTestingTuple> {
  public:

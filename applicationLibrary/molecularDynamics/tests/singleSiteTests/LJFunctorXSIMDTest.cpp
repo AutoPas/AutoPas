@@ -126,12 +126,11 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
   FMCell cell2NoXSIMD(cell2XSIMD);
 
   constexpr bool shifting = true;
-  
+
   auto ljFunctorNoXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -139,8 +138,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
   auto ljFunctorXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -234,12 +232,11 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool
   // copy cells
   FMCell cellNoXSIMD(cellXSIMD);
   constexpr bool shifting = true;
-  
+
   auto ljFunctorNoXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -247,8 +244,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool
   auto ljFunctorXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -351,8 +347,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool 
   auto ljFunctorNoXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -360,8 +355,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool 
   auto ljFunctorXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -436,7 +430,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doD
       particle.setTypeId(particle.getID() % 5);
     }
   }
-  
+
   // copy cells
   FMCell cellNoXSIMD(cellXSIMD);
   constexpr bool shifting = true;
@@ -444,8 +438,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doD
   auto ljFunctorNoXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -453,8 +446,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doD
   auto ljFunctorXSIMD = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    }
-    else {
+    } else {
       return mdLib::LJFunctorXSIMD<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
@@ -493,8 +485,7 @@ TEST_P(LJFunctorXSIMDTest, testLJFunctorVSLJFunctorXSIMDAoS) {
   auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
     testLJFunctorVSLJFunctorXSIMDAoS<true>(newton3, doDeleteSomeParticle);
-  }
-  else {
+  } else {
     testLJFunctorVSLJFunctorXSIMDAoS<false>(newton3, doDeleteSomeParticle);
   }
 }
@@ -503,8 +494,7 @@ TEST_P(LJFunctorXSIMDTest, testLJFunctorVSLJFunctorXSIMDVerlet) {
   auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
     testLJFunctorVSLJFunctorXSIMDVerlet<true>(newton3, doDeleteSomeParticle);
-  }
-  else {
+  } else {
     testLJFunctorVSLJFunctorXSIMDVerlet<false>(newton3, doDeleteSomeParticle);
   }
 }
@@ -513,8 +503,7 @@ TEST_P(LJFunctorXSIMDTest, testLJFunctorVSLJFunctorXSIMDOneCellAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
     testLJFunctorVSLJFunctorXSIMDOneCell<true>(newton3, doDeleteSomeParticle, false);
-  }
-  else {
+  } else {
     testLJFunctorVSLJFunctorXSIMDOneCell<false>(newton3, doDeleteSomeParticle, false);
   }
 }
@@ -523,8 +512,7 @@ TEST_P(LJFunctorXSIMDTest, testLJFunctorVSLJFunctorXSIMDOneCellUseUnalignedViews
   auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
     testLJFunctorVSLJFunctorXSIMDOneCell<true>(newton3, doDeleteSomeParticle, true);
-  }
-  else {
+  } else {
     testLJFunctorVSLJFunctorXSIMDOneCell<false>(newton3, doDeleteSomeParticle, true);
   }
 }
@@ -533,8 +521,7 @@ TEST_P(LJFunctorXSIMDTest, testLJFunctorVSLJFunctorXSIMDTwoCellsAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
     testLJFunctorVSLJFunctorXSIMDTwoCells<true>(newton3, doDeleteSomeParticle, false);
-  }
-  else {
+  } else {
     testLJFunctorVSLJFunctorXSIMDTwoCells<false>(newton3, doDeleteSomeParticle, false);
   }
 }
@@ -543,8 +530,7 @@ TEST_P(LJFunctorXSIMDTest, testLJFunctorVSLJFunctorXSIMDTwoCellsUseUnalignedView
   auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
     testLJFunctorVSLJFunctorXSIMDTwoCells<true>(newton3, doDeleteSomeParticle, true);
-  }
-  else {
+  } else {
     testLJFunctorVSLJFunctorXSIMDTwoCells<false>(newton3, doDeleteSomeParticle, true);
   }
 }
@@ -555,12 +541,13 @@ TEST_P(LJFunctorXSIMDTest, testLJFunctorVSLJFunctorXSIMDTwoCellsUseUnalignedView
 static auto toString = [](const auto &info) {
   auto [mixing, newton3, doDeleteSomeParticle] = info.param;
   std::stringstream resStream;
-  resStream << (mixing ? "mixing" : "NoMixing") << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
+  resStream << (mixing ? "mixing" : "NoMixing") << (newton3 ? "N3" : "noN3") << "_"
+            << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
   return res;
 };
 
-INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorXSIMDTest, ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool()),
-                         toString);
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorXSIMDTest,
+                         ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool()), toString);

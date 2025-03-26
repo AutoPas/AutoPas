@@ -4,8 +4,8 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/SoA.h"
-#include "molecularDynamicsLibrary/LJFunctorMIPP.h"
 #include "molecularDynamics/molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/LJFunctorMIPP.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using LJFunctorMIPPTestingTuple = std::tuple<bool /*mixing*/, bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
