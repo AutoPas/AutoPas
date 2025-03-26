@@ -24,7 +24,10 @@ Should the tuning take longer than one interval, the subsequent tuning phases ar
 ### Tuning Strategies
 By default, the AutoTuner configuration queue is filled with all applicable configurations and processed sequentially.
 Tuning strategies can filter, reorder, or otherwise modify this queue.
-After each sampling of a configuration, they receive the measurement, called evidence, and some live information about the current state of the domain.
+After each sampling of a configuration, tuning strategies receive the measurement, called evidence, which they can use to change how they modify the queue. 
+For example, the predictive tuning strategy can use evidence from past tuning phases to filter the current tuning phase's queue.
+Tuning strategies can also use live information about the current state of the domain, such as density or homoegeneity, to filter the queue. 
+For example, the rules-based tuning strategy can be used to filter out the Direct Sum container if the simulation has enough particles.
 Multiple strategies can be activated at the same time.
 They are all applied in every decision process in the order they are specified in the vector of `ConfigurationOption`s passed to AutoPas.
 
