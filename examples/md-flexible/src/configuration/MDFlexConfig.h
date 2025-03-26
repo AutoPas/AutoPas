@@ -15,6 +15,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -330,6 +331,13 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
+   * enerySensorOption
+   */
+  MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
+      autopas::EnergySensorOption::rapl, "energy-sensor", true,
+      "Sensor used for energy consumption measurement. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::EnergySensorOption::getAllOptions(), " ", {"(", ")"})};
+  /**
    * ruleFilename
    */
   MDFlexOption<std::string, __LINE__> ruleFilename{
@@ -366,6 +374,16 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
                                                      "Number of samples to collect per configuration."};
+
+  /**
+   * EarlyStoppingFactor
+   */
+  MDFlexOption<double, __LINE__> earlyStoppingFactor{
+      std::numeric_limits<double>::infinity(), "early-stopping-factor", false,
+      "EarlyStoppingFactor for the auto-tuner. A configuration seeming to perform worse than the "
+      "previously best configuration "
+      "by this factor will not be sampled again during that tuning phase."};
+
   /**
    * useLOESSSmoothening
    */

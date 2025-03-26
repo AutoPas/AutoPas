@@ -12,7 +12,7 @@
 using namespace autopas;
 
 // Define different kind of Functors for testing
-class PairwiseTestFunctor : public PairwiseFunctor<Particle, PairwiseTestFunctor> {
+class PairwiseTestFunctor : public PairwiseFunctor<ParticleFP64, PairwiseTestFunctor> {
  public:
   PairwiseTestFunctor() : PairwiseFunctor(1.0){};
   std::string getName() override { return "PairwiseTestFunctor"; };
@@ -20,7 +20,7 @@ class PairwiseTestFunctor : public PairwiseFunctor<Particle, PairwiseTestFunctor
   bool allowsNonNewton3() override { return true; };
   bool isRelevantForTuning() override { return true; };
 };
-class TriwiseTestFunctor : public TriwiseFunctor<Particle, TriwiseTestFunctor> {
+class TriwiseTestFunctor : public TriwiseFunctor<ParticleFP64, TriwiseTestFunctor> {
  public:
   TriwiseTestFunctor() : TriwiseFunctor(1.0){};
   std::string getName() override { return "TriwiseTestFunctor"; };
@@ -31,7 +31,7 @@ class TriwiseTestFunctor : public TriwiseFunctor<Particle, TriwiseTestFunctor> {
 
 class ChildPairwiseTestFunctor : public PairwiseTestFunctor {};
 class ChildTriwiseTestFunctor : public PairwiseTestFunctor {};
-class BaseTestFunctor : public Functor<Particle, BaseTestFunctor> {};
+class BaseTestFunctor : public Functor<ParticleFP64, BaseTestFunctor> {};
 class InvalidFunctor {};
 
 // Test that only a pairwise functor is recognized as PairwiseFunctor

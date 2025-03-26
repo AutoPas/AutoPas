@@ -297,6 +297,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.energySensorOption.name) {
+        expected = "Exactly one energy sensor out of the possible options.";
+        description = config.energySensorOption.description;
+        const auto parsedOptions = autopas::EnergySensorOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!"));
+        config.energySensorOption.value = *parsedOptions.begin();
       } else if (key == config.pauseSimulationDuringTuning.name) {
         expected = "Boolean Value";
         description = config.pauseSimulationDuringTuning.description;
@@ -355,6 +361,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.tuningSamples.value = node[key].as<int>();
         if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
+        }
+      } else if (key == config.earlyStoppingFactor.name) {
+        expected = "Floating point value > 1";
+        description = config.earlyStoppingFactor.description;
+
+        config.earlyStoppingFactor.value = node[key].as<double>();
+        if (config.earlyStoppingFactor.value <= 1) {
+          throw std::runtime_error("EarlyStoppingFactor has to be greater than 1!");
         }
       } else if (key == config.useLOESSSmoothening.name) {
         expected = "Boolean Value";
