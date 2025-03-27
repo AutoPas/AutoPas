@@ -34,6 +34,11 @@
 #include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+#include "demLibrary/GranularDEM.h"
+#include "demLibrary/DEMFunctor.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -50,6 +55,8 @@ using FloatPrecision = double;
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+using ParticleType = demLib::GranularDEM;
 #else
 using ParticleType = mdLib::MoleculeLJ;
 #endif
