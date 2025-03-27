@@ -1,5 +1,5 @@
 /**
-* @file GranularDEM.h
+* @file GranularDEM.cpp
 * @author Joon Kim
 * @date 27/03/2025
  */

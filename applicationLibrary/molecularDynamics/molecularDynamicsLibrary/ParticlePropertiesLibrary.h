@@ -79,6 +79,15 @@ class ParticlePropertiesLibrary {
   void addATParametersToSite(const intType siteId, const floatType nu);
 
   /**
+   * Adds the DEM properties of a single site type to the library.
+   *
+   * @param siteId
+   * @param radius
+   * @param specificHeat
+   */
+  void addDEMParametersToSite(const intType siteId, const floatType radius, const floatType specificHeat);
+
+  /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
    * diagonalized moment of inertia.
    *
@@ -151,6 +160,20 @@ class ParticlePropertiesLibrary {
    * @return mass_i
    */
   floatType getSiteMass(intType i) const;
+
+  /**
+   * Getter for the site's radius.
+   * @param i
+   * @return
+   */
+  floatType getRadius(intType i) const;
+
+  /**
+   * Getter for the site's specific heat.
+   * @param i
+   * @return
+   */
+   floatType getSpecificHeat(intType i) const;
 
   /**
    * Getter for a molecules' mass.
@@ -307,6 +330,9 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
   std::vector<floatType> _nus;  // Factor for AxilrodTeller potential
+  // Factors for DEM
+  std::vector<floatType> _siteRadii;
+  std::vector<floatType> _siteSpecificHeats;
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -320,6 +346,7 @@ class ParticlePropertiesLibrary {
   // Allocate memory for the respective parameters
   bool _storeLJData{false};
   bool _storeATData{false};
+  bool _storeDEMData{false};
 
   struct PackedLJMixingData {
     floatType epsilon24;
@@ -390,6 +417,27 @@ void ParticlePropertiesLibrary<floatType, intType>::addATParametersToSite(intTyp
     _nus.resize(_numRegisteredSiteTypes);
   }
   _nus[siteID] = nu;
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addDEMParametersToSite(intType siteID, floatType radius,
+                                                                           floatType specificHeat) {
+  if (siteID >= _numRegisteredSiteTypes) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addDEMParametersToSite(): Trying to set the DEM parameter for a site "
+        "type with id {},"
+        " which has not been registered yet. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  _storeDEMData = true;
+  if (_siteRadii.size() != _numRegisteredSiteTypes) {
+    _siteRadii.resize(_numRegisteredSiteTypes);
+  }
+  if (_siteSpecificHeats.size() != _numRegisteredSiteTypes) {
+    _siteSpecificHeats.resize(_numRegisteredSiteTypes);
+  }
+  _siteRadii[siteID] = radius;
+  _siteSpecificHeats[siteID] = specificHeat;
 }
 
 template <typename floatType, typename intType>
@@ -547,6 +595,16 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) con
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getNu(intType i) const {
   return _nus[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getRadius(intType i) const {
+  return _siteRadii[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getSpecificHeat(intType i) const {
+  return _siteSpecificHeats[i];
 }
 
 template <typename floatType, typename intType>
