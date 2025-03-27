@@ -51,7 +51,7 @@ See [Building](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/Build
 ## Multiple Interaction Types
 Since PR [751](https://github.com/AutoPas/AutoPas/pull/751), AutoPas also supports algorithms for 3-body interactions.
 Oftentimes, these are used additionally to standard pairwise interactions. For such simulations, AutoPas runs two separate AutoTuners, one for pairwise and one for triwise interaction.
-Both AutoTuners will start their tuning phases at the same iterations by setting the start of the [tuning interval](#tuning-interval) when both AutoTuners finish tuning over their search space.  
+Both AutoTuners will start their tuning phases at the same iterations by setting the start of the tuning interval when both AutoTuners finish tuning over their search space.  
 _Note: Performance may vary if the AutoTuners end up with configurations that use a different [container option](https://github.com/AutoPas/AutoPas/blob/tuningDoc/src/autopas/options/ContainerOption.h). 
 In this case, AutoPas has to rebuild neighbor lists every time the interaction type changes._
 
