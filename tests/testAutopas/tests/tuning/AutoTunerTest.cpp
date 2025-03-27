@@ -63,7 +63,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
+      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise,
+      autopas::VectorizationPatternOption::getAllOptions());
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
