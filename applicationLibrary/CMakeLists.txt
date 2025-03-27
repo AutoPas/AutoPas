@@ -35,6 +35,21 @@ target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
 
+# --- dem ---
+
+file(
+        GLOB_RECURSE
+        LIB_DEM_SRC
+        "dem/demLibrary/*.h"
+        "dem/demLibrary/*.cpp"
+)
+
+add_library(demLibrary STATIC ${LIB_DEM_SRC})
+
+target_link_libraries(demLibrary PUBLIC autopas)
+
+target_include_directories(demLibrary PUBLIC ./dem)
+
 # --- sph ---
 
 file(
