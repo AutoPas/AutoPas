@@ -12,7 +12,13 @@ RDF::RDF(const std::shared_ptr<autopas::AutoPas<ParticleType>> autoPasContainer,
       _radiusMax{radiusMax},
       _numBins{numBins},
       _guardArea{guardArea},
-      _periodicBoundaries{periodicBoundaries} {}
+      _periodicBoundaries{periodicBoundaries} {
+  _finalRdf.resize(_numBins);
+  for (size_t i = 0; i < _numBins; ++i) {
+    _finalRdf[i] = std::pair<double, double>{static_cast<double>(i + 1) / static_cast<double>(_numBins) * _radiusMax,
+                                             0.001 * _numBins};
+  }
+}
 
 RDF::RDF(const std::string &filename) {
   std::ifstream file(filename);
@@ -45,6 +51,16 @@ RDF::RDF(const std::string &filename) {
   file.close();
 
   _rdfFinished = true;
+}
+
+void RDF::reset() {
+  _rdfFinished = false;
+  _finalRdf.clear();
+  _finalRdf.resize(_numBins);
+  for (size_t i = 0; i < _numBins; ++i) {
+    _finalRdf[i] = std::pair<double, double>{static_cast<double>(i + 1) / static_cast<double>(_numBins) * _radiusMax,
+                                             0.001 * _numBins};
+  }
 }
 
 void RDF::captureRDF() {
@@ -148,31 +164,17 @@ void RDF::captureRDF() {
 
   // compute RDF
   for (size_t i = 0; i < _numBins; ++i) {
-    rdf[i] = (static_cast<double>(rdfBins[i]) / static_cast<double>(totalNumParticlesInInnerArea)) /
-             (static_cast<double>(totalNumParticlesInInnerArea - 1) * (shellVolumes[i] / volumeInnerArea));
+    _finalRdf[i].second +=
+        (static_cast<double>(rdfBins[i]) / static_cast<double>(totalNumParticlesInInnerArea)) /
+        (static_cast<double>(totalNumParticlesInInnerArea - 1) * (shellVolumes[i] / volumeInnerArea));
   }
 
-  _rdfs.emplace_back(rdf);
+  _numRDFs++;
 }
 
 void RDF::computeFinalRDF() {
-  const double binWidth = (_radiusMax - _radiusMin) / _numBins;
-
-  _finalRdf.resize(_numBins);
-
   for (size_t i = 0; i < _numBins; ++i) {
-    _finalRdf[i] =
-        std::pair<double, double>{static_cast<double>(i + 1) / static_cast<double>(_numBins) * _radiusMax, 0};
-  }
-
-  for (const auto &rdf : _rdfs) {
-    for (size_t i = 0; i < _numBins; ++i) {
-      _finalRdf[i].second += rdf[i];
-    }
-  }
-
-  for (size_t i = 0; i < _numBins; ++i) {
-    _finalRdf[i].second /= static_cast<double>(_rdfs.size());
+    _finalRdf[i].second /= static_cast<double>(_numRDFs);
   }
 
   _rdfFinished = true;

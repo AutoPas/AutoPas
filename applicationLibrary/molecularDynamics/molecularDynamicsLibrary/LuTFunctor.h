@@ -135,13 +135,28 @@ class LuTFunctor
     }
 
     double r = std::sqrt(dr2);
-    double potential = _lookupTable->interpolate(r);
+    // double potential = _lookupTable->interpolate(r);
 
     // Calculation of the force: F = -dU/dr, here approximation with difference quotient
     double h = 1e-5;
     double potentialPlus = _lookupTable->interpolate(r + h);
     double potentialMinus = _lookupTable->interpolate(r - h);
     double forceMagnitude = -(potentialPlus - potentialMinus) / (2 * h);
+
+    if (forceMagnitude > 10000000) {
+      double invdr2 = 1. / dr2;
+      double lj6 = 1.0 * invdr2;
+      lj6 = lj6 * lj6 * lj6;
+      double lj12 = lj6 * lj6;
+      double lj12m6 = lj12 - lj6;
+      double fac = 24.0 * (lj12 + lj12m6) * invdr2;
+      // auto f = dr * fac;
+
+      std::cout << std::setprecision(15) << "force between " << i.getID() << " and " << j.getID() << " is "
+                << (forceMagnitude / r) << ", potentialPlus: " << potentialPlus
+                << ", potentialMinus: " << potentialMinus << ", 2h: " << (2 * h) << ", LJ force is " << fac
+                << std::endl;
+    }
 
     auto forceVec = (forceMagnitude / r) * dr;
     i.addF(forceVec);

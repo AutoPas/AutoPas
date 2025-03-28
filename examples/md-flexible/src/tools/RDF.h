@@ -68,6 +68,11 @@ class RDF {
    */
   void writeToCSV(std::string outputFolder, std::string filename);
 
+  /**
+   * Resets the RDF
+   */
+  void reset();
+
  protected:
   /**
    * The the nodes' AutoPas container used for simulation.
@@ -100,9 +105,9 @@ class RDF {
    */
   bool _rdfFinished{false};
   /**
-   * Stores the snap shots of captureRDF.
+   * Stores the number of captured RDFs
    */
-  std::vector<std::vector<double>> _rdfs;
+  size_t _numRDFs{0};
   /**
    * Stores the final RDF.
    */

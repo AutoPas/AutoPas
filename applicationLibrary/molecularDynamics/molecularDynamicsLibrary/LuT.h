@@ -31,6 +31,13 @@ class LookupTable {
         [](const std::pair<double, double> &a, const std::pair<double, double> &b) { return a.first < b.first; });
     auto lower = upper - 1;
 
+    // size_t index = std::distance(std::begin(table), lower);
+    // if (index < 1000) {
+    //   std::cout << "problem index " << index << ", U1: " << lower->second << ", U2: " << upper->second << std::endl;
+    // }
+
+    // std::cout << "r: " << r << ", r1: " << lower->first << ", r2: " << upper->first << std::endl;
+
     // Lineare Interpolation
     double r1 = lower->first, U1 = lower->second;
     double r2 = upper->first, U2 = upper->second;
