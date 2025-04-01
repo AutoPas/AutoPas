@@ -1856,8 +1856,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-      info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency,
-        getNumberOfParticlesOwned());
+      info.gather(_containerSelector.getCurrentContainer(), particleIter,  _neighborListRebuildFrequency,
+                  getNumberOfParticlesOwned());
       timerCalculateHomogeneity.stop();
       if (needsDensityStatistics) {
         const auto meanParticlesPerCell = info.template get<double>("meanParticlesPerCell");
@@ -1891,7 +1891,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
     auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-    info.gather(_containerSelector.getCurrentContainer(), particleIter, functor, _neighborListRebuildFrequency,
+    info.gather(_containerSelector.getCurrentContainer(), particleIter, _neighborListRebuildFrequency,
       getNumberOfParticlesOwned());
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);

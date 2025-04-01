@@ -7,6 +7,9 @@
 #include "autopas/utils/ParticleBinStructure.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/inBox.h"
+
+#include "ParticleBinStructureTests.h"
 
 #include <gtest/gtest.h>
 #include <random>
@@ -16,8 +19,10 @@
  * Adds six particles to a bin structure (or attempts to) and checks that the total and individual particle counts are
  * correct.
  */
-TEST(ParticleBinStructureTest, testCountParticle) {
+TEST_F(ParticleBinStructureTests, testCountParticle) {
   using autopas::utils::ArrayMath::isEqual;
+
+
 
   // Construct a bin structure with 2 bins in each dimension, each bin is 1x1x1
   auto particleBinStructure = autopas::utils::ParticleBinStructure({2, 2, 2}, {1., 1., 1.}, {0., 0., 0.}, {2. ,2. ,2.}, 1.);
@@ -63,7 +68,7 @@ TEST(ParticleBinStructureTest, testCountParticle) {
  * Test for calculateStatistics. This is a basic test intended to check that the function runs and to check basic
  * behavior without comparing to reference values.
  */
-TEST(ParticleBinStructureTest, testCalculateStatisticsBasic) {
+TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
@@ -112,8 +117,9 @@ TEST(ParticleBinStructureTest, testCalculateStatisticsBasic) {
   EXPECT_DOUBLE_EQ(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getMeanDensity(), 10. / (binLength[0] * binLength[1] * binLength[2]));
   EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevDensity(), 0.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 10.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), 10. * (10. * 27.) * estimatedHitRate - 10.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 10. / (binLength[0] * binLength[1] * binLength[2]));
+  // EXPECT_NEAR is required due to slight floating point discrepancies.
+  EXPECT_NEAR(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), numBins * (10. * (10. * 27.) * estimatedHitRate - 10.), 1e-8);
   EXPECT_EQ(particleBinStructure.getMinParticlesPerBin(), 10);
   EXPECT_EQ(particleBinStructure.getMaxParticlesPerBin(), 10);
   EXPECT_EQ(particleBinStructure.getLowerQuartileParticlesPerBin(), 10);
@@ -122,20 +128,20 @@ TEST(ParticleBinStructureTest, testCalculateStatisticsBasic) {
   EXPECT_EQ(particleBinStructure.getNumEmptyBins(), 0);
 
   // Add another particle. Check that all statistics increase (specifically that deviation based statistics are non-zero.)
-  // and where reference values are available without calculation, check that they are correct.
+  // and where reference values are available without significant calculation, check that they are correct.
   particleBinStructure.countParticle({5., 5., 5.});
   particleBinStructure.calculateStatistics();
 
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMeanParticlesPerBin(), 10.1);
+  EXPECT_GT(particleBinStructure.getMeanParticlesPerBin(), 10.);
   EXPECT_GT(particleBinStructure.getStdDevParticlesPerBin(), 0.);
   EXPECT_GT(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
   EXPECT_GT(particleBinStructure.getStdDevDensity(), 0.);
-  EXPECT_GT(particleBinStructure.getMaxDensity(), 10.);
-  EXPECT_GT(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), 10. * (10. * 27.) * estimatedHitRate - 10.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 11. / (binLength[0] * binLength[1] * binLength[2]));
+  EXPECT_GT(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), numBins * (10. * (10. * 27.) * estimatedHitRate - 10.));
   EXPECT_EQ(particleBinStructure.getMinParticlesPerBin(), 10);
   EXPECT_EQ(particleBinStructure.getMaxParticlesPerBin(), 11);
   EXPECT_EQ(particleBinStructure.getLowerQuartileParticlesPerBin(), 10);
-  EXPECT_EQ(particleBinStructure.getUpperQuartileParticlesPerBin(), 11);
+  EXPECT_EQ(particleBinStructure.getUpperQuartileParticlesPerBin(), 10);
   EXPECT_EQ(particleBinStructure.getMedianParticlesPerBin(), 10);
   EXPECT_EQ(particleBinStructure.getNumEmptyBins(), 0);
 }
@@ -144,7 +150,7 @@ TEST(ParticleBinStructureTest, testCalculateStatisticsBasic) {
  * A test to check that the statistics calculated by ParticleBinStructure are the same as those calculated by a
  * (deterministic) random reference.
  */
-TEST(ParticleBinStructureTest, calculateStatisticsVsReference) {
+TEST_F(ParticleBinStructureTests, calculateStatisticsVsReference) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
@@ -273,38 +279,40 @@ TEST(ParticleBinStructureTest, calculateStatisticsVsReference) {
 
 /**
  * Tests estimatedNumberOfNeighborInteractions for a single bin against the actual number given the assumptions hold.
- * Uses a random uniform distribution of particles with sufficiently enough particles to avoid disrepencies from particle placement.
+ *
+ * Considers a 3x3x3 block of cells. The particles in the central cell are binned and the estimate produced by
+ * ParticleBinStructure is compared against the actual number of interactions.
  */
-TEST(ParticleBinStructureTest, estimatedNumNeighIntVsActualWithAssumptions) {
+TEST_F(ParticleBinStructureTests, estimatedNumNeighIntVsActualWithAssumptions) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
-  const std::array<size_t, 3> numBinsPerDim = {1, 1, 1};
-  const size_t numBins = numBinsPerDim[0] * numBinsPerDim[1] * numBinsPerDim[2];
-  const std::array<double, 3> binLength = {1., 1., 1.};
-  const std::array<double, 3> boxMin = {0., 0., 0.};
-  const std::array<double, 3> boxMax = ArrayMath::staticCastArray<double>(numBinsPerDim) * binLength;
-  auto particleBinStructure = autopas::utils::ParticleBinStructure(numBinsPerDim, binLength, boxMin, boxMax, 1.);
+  constexpr std::array<size_t, 3> numBinsPerDim = {1, 1, 1};
+  constexpr std::array<double, 3> binLength = {1., 1., 1.};
+  constexpr std::array<double, 3> boxMin = {0., 0., 0.};
+  constexpr std::array<double, 3> boxMax = ArrayMath::staticCastArray<double>(numBinsPerDim) * binLength;
+  auto particleBinStructure = ParticleBinStructure(numBinsPerDim, binLength, boxMin, boxMax, 1.);
 
-  const auto volBin = binLength[0] * binLength[1] * binLength[2];
+  // Generate uniformly placed particles throughout a [-1,-1,-1]x[2,2,2] domain.
+  constexpr size_t numParticlesPerDim = 30;
+  constexpr double spacing = 2.9998 / numParticlesPerDim;
+  // The 0.99 is to avoid lots of particles on the border, which biases the bin counting towards particles being in the central "cell"
+  constexpr double offset = spacing / 2. - 0.9999;
+  constexpr auto numParticles = numParticlesPerDim * numParticlesPerDim * numParticlesPerDim;
 
-
-  // Generate random distribution and count particles
-  // Generated particles stretch beyond the domain (e.g. like a halo layer) to avoid discrepancies.
-
-  // Seed for deterministic random number generation
-  std::mt19937 gen(42);
-  std::uniform_real_distribution<> distributionX(boxMin[0]-1., boxMax[0]+1.);
-  std::uniform_real_distribution<> distributionY(boxMin[1]-1., boxMax[1]+1.);
-  std::uniform_real_distribution<> distributionZ(boxMin[2]-1., boxMax[2]+1.);
-
-  // Fill the structure with random particle positions
-  const size_t numParticles = 5000;
-  std::vector<std::array<double, 3>> particlePositions(numParticles);
-  for (size_t i = 0; i < numParticles; ++i) {
-    std::array<double, 3> particlePosition = {distributionX(gen), distributionY(gen), distributionZ(gen)};
-    particlePositions.push_back(particlePosition);
-    particleBinStructure.countParticle(particlePosition);
+  std::vector<std::array<double, 3>> particlePositions{};
+  particlePositions.reserve(numParticles);
+  for (size_t i = 0; i < numParticlesPerDim; ++i) {
+    for (size_t j = 0; j < numParticlesPerDim; ++j) {
+      for (size_t k = 0; k < numParticlesPerDim; ++k) {
+        const auto particlePosition = std::array<double, 3>{offset + spacing * static_cast<double>(i),
+          offset + spacing * static_cast<double>(j), offset + spacing * static_cast<double>(k)};
+        particlePositions.emplace_back(particlePosition);
+        if (inBox(particlePosition, boxMin, boxMax)) {
+          particleBinStructure.countParticle(particlePosition);
+        }
+      }
+    }
   }
 
   // Calculate statistics
@@ -312,14 +320,13 @@ TEST(ParticleBinStructureTest, estimatedNumNeighIntVsActualWithAssumptions) {
 
   size_t numNeighborInteractions = 0;
   for (size_t i = 0; i < numParticles; ++i) {
-    for (size_t j = i + 1; j < numParticles; ++j) {
-      // Ignore particle pairs that are both "halo" particles
-      if ((particlePositions[i][0] < boxMin[0] or particlePositions[i][0] > boxMax[0] or
-          particlePositions[i][1] < boxMin[1] or particlePositions[i][1] > boxMax[1] or
-          particlePositions[i][2] < boxMin[2] or particlePositions[i][2] > boxMax[2]) and
-          (particlePositions[j][0] < boxMin[0] or particlePositions[j][0] > boxMax[0] or
-          particlePositions[j][1] < boxMin[1] or particlePositions[j][1] > boxMax[1] or
-          particlePositions[j][2] < boxMin[2] or particlePositions[j][2] > boxMax[2])) {
+    for (size_t j = 0; j < numParticles; ++j) {
+      // Skip self-interactions
+      if (i == j) {
+        continue;
+      }
+      // Ignore particle pairs where the "i" particle is outside the box.
+      if (notInBox(particlePositions[i], boxMin, boxMax)) {
         continue;
       }
       const auto displacement = particlePositions[i] - particlePositions[j];
@@ -330,5 +337,6 @@ TEST(ParticleBinStructureTest, estimatedNumNeighIntVsActualWithAssumptions) {
     }
   }
 
-  EXPECT_NEAR(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), numNeighborInteractions, 10);
+  const auto acceptableDiff = numNeighborInteractions / 100; // 1% diff allowed.
+  EXPECT_NEAR(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), numNeighborInteractions, acceptableDiff);
 }

@@ -52,13 +52,17 @@ void ParticleBinStructure::countParticle(const std::array<double, 3> &particlePo
   const auto binIndex3DSafe = [&]() {
     auto newBinIndex3D = binIndex3DUnsafe;
     for (int dim = 0; dim < 3; ++dim) {
-      if (particlePosition[dim] > _boxMin[dim] or particlePosition[dim] < _boxMax[dim]) {
-        // Todo C++23 Use the size_t literal 0z
-        newBinIndex3D[dim] = std::clamp(binIndex3DUnsafe[dim], 0UL, _numBinsPerDim[dim] - 1);
-      } else {
-        AutoPasLog(WARN, "Particle being counted is outside the box and will be ignored.");
-        // Assign index beyond domain to indicate invalidity
-        newBinIndex3D[dim] = _numBinsPerDim[dim];
+      // Note: the following check also checks for "negative" indices (due to underflow.)
+      if (binIndex3DUnsafe[dim] >= _numBinsPerDim[dim]) {
+        // Add a little tolerance to what is considered inside the domain.
+        if (particlePosition[dim] > _boxMin[dim] - 1e-12 and particlePosition[dim] < _boxMax[dim] + 1e-12) {
+          // Todo C++23 Use the size_t literal 0z
+          newBinIndex3D[dim] = std::clamp(binIndex3DUnsafe[dim], 0UL, _numBinsPerDim[dim] - 1);
+        } else {
+          AutoPasLog(WARN, "Particle being counted is outside the box and will be ignored.");
+          // Assign index beyond domain to indicate invalidity
+          newBinIndex3D[dim] = _numBinsPerDim[dim];
+        }
       }
     }
     return newBinIndex3D;
@@ -126,7 +130,7 @@ void ParticleBinStructure::calculateStatistics() {
       // In a very sparse situation, with a large potentialInteractionVolume and small particleCount, this could lead
       // to a negative estimate, so just take 0.
       estimatedNumNeighborInteractionsSum += std::max(
-          static_cast<double>(particleCount * (particleCount * 27)) * estimatedHitRate  - particleCount, 0.);
+          static_cast<double>(particleCount * (particleCount * 27)) * estimatedHitRate  - static_cast<double>(particleCount), 0.);
     }
 
     const auto numParticlesDiffFromMean = particleCount - _meanParticlesPerBin;
