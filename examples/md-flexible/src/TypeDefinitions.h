@@ -144,6 +144,20 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
 
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+/**
+ * Type of DEMFunctor used in md-flexible.
+ */
+#if MMD_FLEXIBLE_MODE == MULTISITE
+#error "The DEM functor des not have support for multisite molecules!"
+#else
+using DEMFunctorType =
+    demLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+
+#endif
+
+#endif
+
 /**
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.

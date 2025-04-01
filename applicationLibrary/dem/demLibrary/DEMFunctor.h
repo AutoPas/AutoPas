@@ -194,6 +194,8 @@ class DEMFunctor
     _PPLibrary = &particlePropertiesLibrary;
   }
 
+  std::string getName() final { return "DEMFunctor"; }
+
   bool isRelevantForTuning() final { return relevantForTuning; }
 
   bool allowsNewton3() final {

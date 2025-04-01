@@ -173,6 +173,16 @@ class MDFlexConfig {
   void addATParametersToSite(unsigned long siteId, double nu);
 
   /**
+   * Adds the DEM parameters to the specified site.
+   * Checks if the given site exists and if the parameters were already specified.
+   *
+   * @param siteId unique site type id
+   * @param radius
+   * @param specificHeat
+   */
+  void addDEMParametersToSite(unsigned long siteId, double radius, double specificHeat);
+
+  /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
    *
    * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
@@ -204,7 +214,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, dem };
 
   /**
    * Choice of the Triwise functor
@@ -642,6 +652,19 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+
+  /**
+   * radiusMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> radiusMap{
+      {{0ul, 1.}}, "radius", true, "Mapping from site type to a radius value."};
+
+  /**
+   * specificHeatMap
+   */
+   MDFlexOption<std::map<unsigned long, double>, 0> specificHeatMap{
+      {{0ul, 1.}}, "specific-heat", true, "Mapping from site type to a specific heat value."};
+
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

@@ -373,6 +373,8 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << nuMap.name << ":  " << nuMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << radiusMap.name << ":  " << radiusMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << specificHeatMap.name << ":  " << specificHeatMap.value.at(siteId) << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE
   os << setw(valueOffset) << left << "Molecules:" << endl;
@@ -549,6 +551,25 @@ void MDFlexConfig::addATParametersToSite(unsigned long siteId, double nu) {
   }
 }
 
+void MDFlexConfig::addDEMParametersToSite(unsigned long siteId, double radius, double specificHeat) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (radiusMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNearRel(radiusMap.value.at(siteId), radius) and
+          autopas::utils::Math::isNearRel(specificHeatMap.value.at(siteId), specificHeat)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      radiusMap.value.emplace(siteId, radius);
+      specificHeatMap.value.emplace(siteId, specificHeat);
+    }
+  } else {
+    throw std::runtime_error("Initializing DEM parameters to a non existing site-ID");
+  }
+}
+
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
                               const std::vector<std::array<double, 3>> &relSitePos,
                               std::array<double, 3> momentOfInertia) {
@@ -596,6 +617,11 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   // initialize AT parameters
   for (auto [siteTypeId, nu] : nuMap.value) {
     _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
+  }
+
+  // initialize DEM parameters
+  for (auto [siteTypeId, radius] : radiusMap.value) {
+    _particlePropertiesLibrary->addDEMParametersToSite(siteTypeId, radius, specificHeatMap.value.at(siteTypeId));
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

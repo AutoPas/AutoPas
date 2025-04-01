@@ -819,6 +819,15 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::dem: {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+      return f(DEMFunctorType{cutoff, particlePropertiesLibrary});
+#else
+        throw std::runtime_error(
+            "MD-Flexible was not compiled with support for DEMFunctor. Activate it via `cmake "
+            "-DMD_FLEXIBLE_FUNCTOR_DEM=ON`.");
+#endif
+    }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
