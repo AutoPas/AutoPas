@@ -1856,12 +1856,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-      info.gather(_containerSelector.getCurrentContainer(), particleIter,  _neighborListRebuildFrequency,
-                  getNumberOfParticlesOwned());
+      info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+      _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
       timerCalculateHomogeneity.stop();
       if (needsDensityStatistics) {
-        const auto meanParticlesPerCell = info.template get<double>("meanParticlesPerCell");
-        const auto relativeParticlesPerCellStdDev = info.template get<double>("relativeParticlesPerCellStdDev");
+        const auto meanParticlesPerCell = info.get<double>("meanParticlesPerCell");
+        const auto relativeParticlesPerCellStdDev = info.get<double>("relativeParticlesPerCellStdDev");
         autoTuner.addDomainSimilarityStatistics(meanParticlesPerCell, relativeParticlesPerCellStdDev,
                                               timerCalculateHomogeneity.getTotalTime());
         autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
@@ -1891,8 +1891,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
     auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-    info.gather(_containerSelector.getCurrentContainer(), particleIter, _neighborListRebuildFrequency,
-      getNumberOfParticlesOwned());
+    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+      _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif

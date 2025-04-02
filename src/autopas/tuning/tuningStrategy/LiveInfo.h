@@ -131,21 +131,17 @@ class LiveInfo {
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
    */
   template <class Particle_T>
-  void gather(const ParticleContainerInterface<Particle_T> &container, ContainerIterator<Particle_T, true, false> particleIter,
-              size_t rebuildFrequency, size_t numOwnedParticles) {
+  void gather(ContainerIterator<Particle_T, true, false> particleIter, size_t rebuildFrequency,
+    size_t numOwnedParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double skin) {
     using namespace utils::ArrayMath::literals;
     using utils::ArrayMath::castedCeil;
 
     // Aliases and info of particle distribution independent information
-    const auto &boxMin = container.getBoxMin();
-    const auto &boxMax = container.getBoxMax();
-    const auto cutoff = container.getCutoff();
-    const auto skin = container.getVerletSkin();
     const auto interactionLength = cutoff + skin;
 
     infos["cutoff"] = cutoff;
-    infos["skin"] = container.getVerletSkin();
-    infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
+    infos["skin"] = skin;
+    infos["rebuildFrequency"] = rebuildFrequency;
     infos["particleSize"] = sizeof(Particle_T);
     infos["threadCount"] = static_cast<size_t>(autopas_get_max_threads());
 
