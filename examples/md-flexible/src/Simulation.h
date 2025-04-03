@@ -365,6 +365,15 @@ class Simulation {
   void calculateGlobalForces(const std::array<double, 3> &globalForce);
 
   /**
+   * Adds background friction to the particles in the container.
+   * @param forceDampingCoeff
+   * @param torqueDampingCoeff
+   * @param particlePropertiesLib
+   */
+  void applyBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,
+                                   ParticlePropertiesLibraryType &particlePropertiesLib);
+
+  /**
    * Indicates if enough iterations were completed yet.
    * Uses class member variables.
    * @return

@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -279,6 +279,11 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+    applyBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
+                            _configuration.backgroundTorqueFrictionCoeff.value,
+                            *_configuration.getParticlePropertiesLibrary());
+#endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
@@ -536,6 +541,20 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
+  }
+}
+
+void Simulation::applyBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,
+                                         ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using namespace autopas::utils::ArrayMath::literals;
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const std::array<double, 3> forceDamping = particle->getV() * forceDampingCoeff;
+    particle->subF(forceDamping);
+
+    const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
+    const std::array<double, 3> torqueDamping = particle->getAngularVel() * (radius * radius * torqueDampingCoeff);
+    particle->subTorque(torqueDamping);
   }
 }
 
@@ -823,9 +842,9 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
       return f(DEMFunctorType{cutoff, particlePropertiesLibrary});
 #else
-        throw std::runtime_error(
-            "MD-Flexible was not compiled with support for DEMFunctor. Activate it via `cmake "
-            "-DMD_FLEXIBLE_FUNCTOR_DEM=ON`.");
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for DEMFunctor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_DEM=ON`.");
 #endif
     }
     default: {

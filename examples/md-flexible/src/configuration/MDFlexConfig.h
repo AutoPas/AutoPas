@@ -814,6 +814,18 @@ class MDFlexConfig {
       "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
 
   /**
+   * Background friction force coefficient
+   */
+  MDFlexOption<double, __LINE__> backgroundForceFrictionCoeff{0., "backgroundForceFrictionCoeff", true,
+                                                              "Background force friction coefficient. Default: 0."};
+
+  /**
+   * Background friction torque coefficient
+   */
+  MDFlexOption<double, __LINE__> backgroundTorqueFrictionCoeff{0., "backgroundTorqueFrictionCoeff", true,
+                                                               "Background friction torque coefficient. Default: 0."};
+
+  /**
    * Convenience function testing if the global force contains only 0 entries.
    * @return false if any entry in globalForce.value is != 0.
    */

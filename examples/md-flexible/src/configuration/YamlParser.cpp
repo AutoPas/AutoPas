@@ -594,6 +594,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.globalForce.description;
 
         config.globalForce.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == config.backgroundForceFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.backgroundForceFrictionCoeff.description;
+
+        config.backgroundForceFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.backgroundTorqueFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.backgroundTorqueFrictionCoeff.description;
+
+        config.backgroundTorqueFrictionCoeff.value = node[key].as<double>();
       } else if (key == MDFlexConfig::siteStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";
