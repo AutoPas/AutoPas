@@ -1,13 +1,12 @@
 # This yaml file is for DEM simulation.
 container                        :  [DirectSum, LinkedCells, LinkedCellsReferences]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius-per-timestep  :  0.1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
-traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18]
-tuning-metric                        :  time
-tuning-strategies                    :  [slow-config-filter, predictive-tuning]
+traversal                        :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18]
+tuning-metric                    :  time
+tuning-strategies                :  [slow-config-filter, predictive-tuning]
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
@@ -21,19 +20,21 @@ deltaT                           :  0.00005
 iterations                       :  50000
 boundary-type                    :  [reflective,periodic,reflective]
 globalForce                      :  [0,-9.8,0]
-backgroundForceFrictionCoeff      :  0.
-backgroundTorqueFrictionCoeff     :  0.
+backgroundForceFrictionCoeff     :  0.
+backgroundTorqueFrictionCoeff    :  0.
 Sites:
   0:
     epsilon                      :  1.
     sigma                        :  1.
     mass                         :  1.
     radius                       :  0.75
+    specific-heat                :  1
   1:
-    epsilon: 1.
-    sigma: 1.
-    mass: 0.001
-    radius: 0.1
+    epsilon                      : 1.
+    sigma                        : 1.
+    mass                         : 0.001
+    radius                       : 0.1
+    specific-heat                :  1
 Objects:
   CubeClosestPacked:
     0:
@@ -43,11 +44,11 @@ Objects:
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
     1:
-      particle-spacing: 0.85
-      bottomLeftCorner: [ 0., 9., 0. ]
+      particle-spacing           : 0.85
+      bottomLeftCorner           : [ 0., 9., 0. ]
       box-length                 :  [25, 16, 25]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 1
+      velocity                   : [ 0, 0, 0 ]
+      particle-type-id           : 1
 vtk-filename                     :  Fluidized_Bed
 vtk-write-frequency              :  2000
 vtk-output-folder                :  vtkOutputFolder

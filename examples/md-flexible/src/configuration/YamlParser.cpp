@@ -230,6 +230,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("dem") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::dem;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -650,9 +652,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
           // Check DEM parameters
           const auto radius = parseComplexTypeValueSingle<double>(siteIterator->second, config.radiusMap.name.c_str(),
-                                                                   siteErrors, false);
-          const auto specificHeat = parseComplexTypeValueSingle<double>(siteIterator->second, config.specificHeatMap.name.c_str(),
-                                                                 siteErrors, false);
+                                                                  siteErrors, false);
+          const auto specificHeat = parseComplexTypeValueSingle<double>(
+              siteIterator->second, config.specificHeatMap.name.c_str(), siteErrors, false);
           config.addDEMParametersToSite(siteID, radius, specificHeat);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
