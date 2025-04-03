@@ -294,6 +294,9 @@ void Simulation::run() {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+      updateAngularVelocities();
+      updateTemperatures();
 #endif
       updateThermostat();
     }
@@ -507,6 +510,13 @@ void Simulation::updateAngularVelocities() {
   TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                  deltaT);
   _timers.angularVelocityUpdate.stop();
+}
+
+void Simulation::updateTemperatures() {
+  const double deltaT = _configuration.deltaT.value;
+
+  TimeDiscretization::calculateTemperatures(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                            deltaT);
 }
 
 void Simulation::updateThermostat() {

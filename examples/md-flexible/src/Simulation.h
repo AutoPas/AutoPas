@@ -312,6 +312,11 @@ class Simulation {
   void updateAngularVelocities();
 
   /**
+   * Updates the temperatures of the particles in the local AutoPas container.
+   */
+  void updateTemperatures();
+
+  /**
    * Updates the thermostat of for the local domain.
    * @todo The thermostat should act globally and therefore needs to be communicated to all processes.
    */
