@@ -41,8 +41,8 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 }
 
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const RegularGridDecomposition &decomposition) const {
-  recordParticleStates(currentIteration, autoPasContainer);
+                                       const RegularGridDecomposition &decomposition, const ParticlePropertiesLibraryType &particlePropertiesLib) const {
+  recordParticleStates(currentIteration, autoPasContainer, particlePropertiesLib);
   const auto currentConfig = autoPasContainer.getCurrentConfigs();
   recordDomainSubdivision(currentIteration, currentConfig, decomposition);
 }
@@ -53,7 +53,8 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
 void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
-                                             const autopas::AutoPas<ParticleType> &autoPasContainer) const {
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                             const ParticlePropertiesLibraryType &particlePropertiesLib) const {
   if (_mpiRank == 0) {
     createParticlesPvtuFile(currentIteration);
   }
@@ -117,6 +118,22 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto torque = particle->getTorque();
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+#elif defined (MD_FLEXIBLE_FUNCTOR_DEM)
+  // print radii
+  timestepFile << "        <DataArray Name=\"radii\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto radius = particlePropertiesLib.getRadius(particle->getTypeId());
+    timestepFile << "        " << radius << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print temperatures
+  timestepFile << "        <DataArray Name=\"temperatures\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float64\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto temperature = particle->getTemperature();
+    timestepFile << "        " << temperature << "\n";
   }
   timestepFile << "        </DataArray>\n";
 #endif
