@@ -97,7 +97,6 @@ void ParticleBinStructure::calculateStatistics() {
 
   // Determine the mean number of particles and density
   _meanParticlesPerBin = static_cast<double>(_totalParticleCount) / static_cast<double>(getNumberOfBins());
-  _meanDensity = _meanParticlesPerBin / getBinVolume();
 
 
   // For the estimated number of neighbor interactions calculations, determine the estimated hit rate if the Linked
@@ -112,9 +111,7 @@ void ParticleBinStructure::calculateStatistics() {
   // bins, and the estimated number of neighbor interactions
   double estimatedNumNeighborInteractionsSum = 0.;
   double numParticlesVarianceSum = 0.;
-  double densityVarianceSum = 0.;
   size_t emptyBinCount = 0;
-  double maximumDensity = 0;
   for (auto &particleCount : _particleCounts) {
     if (particleCount == 0) {
       ++emptyBinCount;
@@ -135,20 +132,12 @@ void ParticleBinStructure::calculateStatistics() {
 
     const auto numParticlesDiffFromMean = particleCount - _meanParticlesPerBin;
     numParticlesVarianceSum += numParticlesDiffFromMean * numParticlesDiffFromMean;
-
-    const auto density = particleCount / getBinVolume();
-    const auto densityDiffFromMean = density - _meanDensity;
-    densityVarianceSum += densityDiffFromMean * densityDiffFromMean;
-
-    maximumDensity = std::max(maximumDensity, density);
   }
 
   _estimatedNumberOfNeighborInteractions = estimatedNumNeighborInteractionsSum;
   _stdDevParticlesPerBin = std::sqrt(numParticlesVarianceSum / static_cast<double>(getNumberOfBins()));
   _relStdDevParticlesPerBin = noParticles ? 0 : _stdDevParticlesPerBin / _meanParticlesPerBin;
-  _stdDevDensity = std::sqrt(densityVarianceSum / static_cast<double>(getNumberOfBins()));
   _numEmptyBins = emptyBinCount;
-  _maxDensity = maximumDensity;
 
   _statisticsCalculated = true;
 }
@@ -232,27 +221,6 @@ double ParticleBinStructure::getRelStdDevParticlesPerBin() const {
     AutoPasLog(WARN, "Statistics have not been calculated yet.");
   }
   return _relStdDevParticlesPerBin;
-}
-
-double ParticleBinStructure::getMeanDensity() const {
-  if (not _statisticsCalculated) {
-    AutoPasLog(WARN, "Statistics have not been calculated yet.");
-  }
-  return _meanDensity;
-}
-
-double ParticleBinStructure::getStdDevDensity() const {
-  if (!_statisticsCalculated) {
-    AutoPasLog(WARN, "Statistics have not been calculated yet.");
-  }
-  return _stdDevDensity;
-}
-
-double ParticleBinStructure::getMaxDensity() const {
-  if (not _statisticsCalculated) {
-    AutoPasLog(WARN, "Statistics have not been calculated yet.");
-  }
-  return _maxDensity;
 }
 
 size_t ParticleBinStructure::getMaxParticlesPerBin() const {

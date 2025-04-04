@@ -90,9 +90,6 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
   EXPECT_DOUBLE_EQ(particleBinStructure.getMeanParticlesPerBin(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevParticlesPerBin(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMeanDensity(), 0.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevDensity(), 0.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), 0.);
   EXPECT_EQ(particleBinStructure.getMinParticlesPerBin(), 0);
   EXPECT_EQ(particleBinStructure.getMaxParticlesPerBin(), 0);
@@ -115,9 +112,6 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
   EXPECT_DOUBLE_EQ(particleBinStructure.getMeanParticlesPerBin(), 10.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevParticlesPerBin(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMeanDensity(), 10. / (binLength[0] * binLength[1] * binLength[2]));
-  EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevDensity(), 0.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 10. / (binLength[0] * binLength[1] * binLength[2]));
   // EXPECT_NEAR is required due to slight floating point discrepancies.
   EXPECT_NEAR(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), numBins * (10. * (10. * 27.) * estimatedHitRate - 10.), 1e-8);
   EXPECT_EQ(particleBinStructure.getMinParticlesPerBin(), 10);
@@ -135,8 +129,6 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
   EXPECT_GT(particleBinStructure.getMeanParticlesPerBin(), 10.);
   EXPECT_GT(particleBinStructure.getStdDevParticlesPerBin(), 0.);
   EXPECT_GT(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
-  EXPECT_GT(particleBinStructure.getStdDevDensity(), 0.);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 11. / (binLength[0] * binLength[1] * binLength[2]));
   EXPECT_GT(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), numBins * (10. * (10. * 27.) * estimatedHitRate - 10.));
   EXPECT_EQ(particleBinStructure.getMinParticlesPerBin(), 10);
   EXPECT_EQ(particleBinStructure.getMaxParticlesPerBin(), 11);
@@ -235,25 +227,6 @@ TEST_F(ParticleBinStructureTests, calculateStatisticsVsReference) {
     return sortedCounts[3 * sortedCounts.size() / 4];
   }();
   EXPECT_EQ(particleBinStructure.getUpperQuartileParticlesPerBin(), expectedUpperQuartile);
-
-  // Mean Density
-  const auto expectedMeanDensity = static_cast<double>(numParticles) / (boxMax[0] * boxMax[1] * boxMax[2]);
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMeanDensity(), expectedMeanDensity);
-
-  // Std. Dev. Density
-  const auto expectedStdDevDensity = [&]() {
-    double sum = 0.;
-    for (size_t i = 0; i < numBins; ++i) {
-      const auto diff = (static_cast<double>(particleCounts[i]) / volBin) - expectedMeanDensity;
-      sum += diff * diff;
-    }
-    return std::sqrt(sum / static_cast<double>(numBins));
-  }();
-  EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevDensity(), expectedStdDevDensity);
-
-  // Max Density
-  const auto expectedMaxDensity = static_cast<double>(expectedMax) / volBin;
-  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), expectedMaxDensity);
 
   // Num Empty Bins
   const auto expectedNumEmptyBins = std::count(particleCounts.begin(), particleCounts.end(), 0);
