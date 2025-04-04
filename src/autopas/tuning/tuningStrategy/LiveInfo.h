@@ -201,14 +201,14 @@ class LiveInfo {
     infos["estimatedNumNeighborInteractions"] = cellBinStruct.getEstimatedNumberOfNeighborInteractions();
 
     // write blurred bin statistics to live info
-    infos["maxParticlesPerBlurredBin"] = cellBinStruct.getMaxParticlesPerBin();
-    infos["minParticlesPerBlurredBin"] = cellBinStruct.getMinParticlesPerBin();
-    infos["medianParticlesPerBlurredBin"] = cellBinStruct.getMedianParticlesPerBin();
-    infos["lowerQuartileParticlesPerBlurredBin"] = cellBinStruct.getLowerQuartileParticlesPerBin();
-    infos["upperQuartileParticlesPerBlurredBin"] = cellBinStruct.getUpperQuartileParticlesPerBin();
-    infos["meanParticlesPerBlurredBin"] = cellBinStruct.getMeanParticlesPerBin();
-    infos["relativeParticlesPerBlurredBinStdDev"] = cellBinStruct.getRelStdDevParticlesPerBin();
-    infos["particlesPerBlurredBinStdDev"] = cellBinStruct.getStdDevParticlesPerBin();
+    infos["maxParticlesPerBlurredBin"] = blurredBinStruct.getMaxParticlesPerBin();
+    infos["minParticlesPerBlurredBin"] = blurredBinStruct.getMinParticlesPerBin();
+    infos["medianParticlesPerBlurredBin"] = blurredBinStruct.getMedianParticlesPerBin();
+    infos["lowerQuartileParticlesPerBlurredBin"] = blurredBinStruct.getLowerQuartileParticlesPerBin();
+    infos["upperQuartileParticlesPerBlurredBin"] = blurredBinStruct.getUpperQuartileParticlesPerBin();
+    infos["meanParticlesPerBlurredBin"] = blurredBinStruct.getMeanParticlesPerBin();
+    infos["relativeParticlesPerBlurredBinStdDev"] = blurredBinStruct.getRelStdDevParticlesPerBin();
+    infos["particlesPerBlurredBinStdDev"] = blurredBinStruct.getStdDevParticlesPerBin();
   }
 
   /**
