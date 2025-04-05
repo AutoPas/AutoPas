@@ -281,7 +281,9 @@ void Simulation::run() {
 
     updateInteractionForces();
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-    applyBackgroundFriction(_configuration.demParameters.value, *_configuration.getParticlePropertiesLibrary());
+    applyBackgroundFriction(_configuration.demBackgroundForceFrictionCoeff.value,
+                            _configuration.demBackgroundTorqueFrictionCoeff.value,
+                            *_configuration.getParticlePropertiesLibrary());
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
@@ -554,22 +556,19 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   }
 }
 
-void Simulation::applyBackgroundFriction(const std::array<double, 13> &demParameters,
+void Simulation::applyBackgroundFriction(const double backgroundForceFrictionCoeff,
+                                         const double backgroundTorqueFrictionCoeff,
                                          ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  const size_t numDemParameters = demParameters.size();
-  // The last two values are the damping coeffs.
-  const double forceDampingCoeff = demParameters.at(numDemParameters - 2);
-  const double torqueDampingCoeff = demParameters.at(numDemParameters - 1);
-
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    const std::array<double, 3> forceDamping = particle->getV() * forceDampingCoeff;
+    const std::array<double, 3> forceDamping = particle->getV() * backgroundForceFrictionCoeff;
     particle->subF(forceDamping);
 
     const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
-    const std::array<double, 3> torqueDamping = particle->getAngularVel() * (radius * radius * torqueDampingCoeff);
+    const std::array<double, 3> torqueDamping =
+        particle->getAngularVel() * (radius * radius * backgroundTorqueFrictionCoeff);
     particle->subTorque(torqueDamping);
   }
 }
@@ -856,8 +855,14 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::dem: {
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-      const auto &demParameters = _configuration.demParameters.value;
-      return f(DEMFunctorType{cutoff, particlePropertiesLibrary});
+      demLib::DEMParameters demParameters{
+          _configuration.demElasticStiffness.value,     _configuration.demNormalViscosity.value,
+          _configuration.demFrictionViscosity.value,    _configuration.demRollingViscosity.value,
+          _configuration.demTorsionViscosity.value,     _configuration.demStaticFrictionCoeff.value,
+          _configuration.demDynamicFrictionCoeff.value, _configuration.demRollingFrictionCoeff.value,
+          _configuration.demTorsionFrictionCoeff.value, _configuration.demHeatConductivity.value,
+          _configuration.demHeatGenerationFactor.value};
+      return f(DEMFunctorType{cutoff, demParameters, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for DEMFunctor. Activate it via `cmake "

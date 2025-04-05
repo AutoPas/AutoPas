@@ -108,9 +108,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -814,17 +812,93 @@ class MDFlexConfig {
       "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
 
   /**
-   * DEM parameters
+   * Following options are DEM (Discrete Element Method) specific parameters.
    *
-   * for detailed explanation of the parameters see: https://mediatum.ub.tum.de/doc/1773224/1773224.pdf
+   * For detailed explanation of the parameters see: https://mediatum.ub.tum.de/doc/1773224/1773224.pdf
+   *
+   * DEM-elasticStiffness
    */
-  MDFlexOption<std::array<double, 13>, __LINE__> demParameters{
-      {100., 1e-3, 0.1, 0.01, 0.01, 7.5, 5, 5, 5, 1, 0.1, 0.01, 0.01},  // default parameter setting
-      "dem-parameters",
-      true,
-      "DEM paramters: [elasticStiffness, normalViscosity, frictionViscosity, rollingViscosity, torsionViscosity, "
-      "staticFrictionCoefficient, dynamicFrictionCoefficient, rollingFrictionCoefficient, torsionFrictionCoefficient, "
-      "conductivity, heatGenerationFactor, backgroundForceFrictionCoefficient, backgroundTorqueFrictionCoefficient] "};
+  MDFlexOption<double, __LINE__> demElasticStiffness{100., "demElasticStiffness", true,
+                                                     "DEM-parameter for elastic stiffness used in normal force model."};
+
+  /**
+   * DEM-parameter for normal viscosity.
+   */
+  MDFlexOption<double, __LINE__> demNormalViscosity{1e-3, "demNormalViscosity", true,
+                                                    "DEM-parameter for normal viscosity used in normal force model."};
+
+  /**
+   * DEM-parameter for friction viscosity.
+   */
+  MDFlexOption<double, __LINE__> demFrictionViscosity{
+      0.1, "demFrictionViscosity", true, "DEM-parameter for friction viscosity used in frictional force model."};
+
+  /**
+   * DEM-parameter for rolling viscosity.
+   */
+  MDFlexOption<double, __LINE__> demRollingViscosity{
+      0.01, "demRollingViscosity", true, "DEM-parameter for rolling viscosity used in rolling resistance model."};
+
+  /**
+   * DEM-parameter for torsion viscosity.
+   */
+  MDFlexOption<double, __LINE__> demTorsionViscosity{
+      0.01, "demTorsionViscosity", true, "DEM-parameter for torsion viscosity used in torsion resistance model."};
+
+  /**
+   * DEM-parameter for static friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demStaticFrictionCoeff{
+      7.5, "demStaticFrictionCoeff", true,
+      "DEM-parameter for static friction coefficient used in frictional force model."};
+
+  /**
+   * DEM-parameter for dynamic friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demDynamicFrictionCoeff{
+      5, "demDynamicFrictionCoeff", true,
+      "DEM-parameter for dynamic friction coefficient used in frictional force model."};
+
+  /**
+   * DEM-parameter for rolling friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demRollingFrictionCoeff{
+      5, "demRollingFrictionCoeff", true,
+      "DEM-parameter for rolling friction coefficient used in rolling resistance model."};
+
+  /**
+   * DEM-parameter for torsion friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demTorsionFrictionCoeff{
+      5, "demTorsionFrictionCoeff", true,
+      "DEM-parameter for torsion friction coefficient used in torsion resistance model."};
+
+  /**
+   * DEM-parameter for heat conductivity.
+   */
+  MDFlexOption<double, __LINE__> demHeatConductivity{
+      1, "demHeatConductivity", true, "DEM-parameter for heat conductivity used in heat transfer model."};
+
+  /**
+   * DEM-parameter for heat generation factor.
+   */
+  MDFlexOption<double, __LINE__> demHeatGenerationFactor{
+      0.1, "demHeatGenerationFactor", true,
+      "DEM-parameter for heat generation factor used in heat generation model (drawn from frictional forces)."};
+
+  /**
+   * DEM-parameter for background friction coefficient regarding forces.
+   */
+  MDFlexOption<double, __LINE__> demBackgroundForceFrictionCoeff{
+      0.01, "demBackgroundForceFrictionCoeff", true,
+      "DEM-parameter for background friction regarding forces used in background friction model."};
+
+  /**
+   * DEM-parameter for background torque coefficient regarding forces.
+   */
+  MDFlexOption<double, __LINE__> demBackgroundTorqueFrictionCoeff{
+      0.01, "demBackgroundTorqueFrictionCoeff", true,
+      "DEM-parameter for background friction regarding torques used in background friction model."};
 
   /**
    * Convenience function testing if the global force contains only 0 entries.

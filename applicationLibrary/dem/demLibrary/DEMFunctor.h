@@ -16,6 +16,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "DEMParameters.h"
 
 namespace demLib {
 
@@ -59,13 +60,23 @@ class DEMFunctor
    * @param demParameters Includes [elasticStiffness, normalViscosity, frictionViscosity, rollingViscosity, torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff, torsionFrictionCoeff, conductivity, heatGenerationFactor]
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit DEMFunctor(double cutoff, std::array<double, 11> &demParameters, void * /*dummy*/)
+  explicit DEMFunctor(double cutoff, DEMParameters &demParameters, void * /*dummy*/)
       : autopas::PairwiseFunctor<
             Particle, DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
             cutoff),
         _radius{cutoff / 5.},  // default initialization, can be changed by ParticlePropertiesLibrary
         _cutoff{cutoff},
-        _demParameters{demParameters},
+        _elasticStiffness{demParameters.getElasticStiffness()},
+        _normalViscosity{demParameters.getNormalViscosity()},
+        _frictionViscosity{demParameters.getFrictionViscosity()},
+        _rollingViscosity{demParameters.getRollingViscosity()},
+        _torsionViscosity{demParameters.getTorsionViscosity()},
+        _staticFrictionCoeff{demParameters.getStaticFrictionCoeff()},
+        _dynamicFrictionCoeff{demParameters.getDynamicFrictionCoeff()},
+        _rollingFrictionCoeff{demParameters.getRollingFrictionCoeff()},
+        _torsionFrictionCoeff{demParameters.getTorsionFrictionCoeff()},
+        _heatConductivity{demParameters.getHeatConductivity()},
+        _heatGenerationFactor{demParameters.getHeatGenerationFactor()},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
@@ -79,62 +90,14 @@ class DEMFunctor
 
  public:
   /**
-   * Minimal Constructor for Functor with mixing disabled. Other Parameters are set with default values.
-   * Values taken from https://www2.msm.ctw.utwente.nl/sluding/PAPERS/Alert_Luding2008.pdf page 15.
+   * Minimal Constructor for Functor with mixing disabled.
    *
    * @note Only to be used with mixing == false;
    *
    * @param cutoff
+   * @param demParameters
    */
-  explicit DEMFunctor(double cutoff) : DEMFunctor(cutoff, 100., 5, 5, 1e-3, 0.1, 0.01, 0.01, 7.5, 5, 5, 5, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
-
-  /**
-   * Minimal Constructor for Functor with mixing disabled. Other Parameters are set with default values.
-   * Values taken from https://www2.msm.ctw.utwente.nl/sluding/PAPERS/Alert_Luding2008.pdf page 15.
-   *
-   * @note Only to be used with mixing == true.
-   *
-   * @param cutoff
-   * @param particlePropertiesLibrary
-   */
-  explicit DEMFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, 100., 5, 5, 1e-3, 0.1, 0.01, 0.01, 7.5, 5, 5, 5, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
-  }
-
-  /**
-   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
-   * setParticleProperties() to set internal constants because it does not use a particle properties library.
-   *
-   * @note Only to be used with mixing == false.
-   *
-   * @param cutoff
-   * @param elasticStiffness
-   * @param adhesiveStiffness
-   * @param frictionStiffness
-   * @param normalViscosity
-   * @param frictionViscosity
-   * @param rollingViscosity
-   * @param torsionViscosity
-   * @param staticFrictionCoeff
-   * @param dynamicFrictionCoeff
-   * @param rollingFrictionCoeff
-   * @param torsionFrictionCoeff
-   */
-  explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
-                      double normalViscosity, double frictionViscosity, double rollingViscosity,
-                      double torsionViscosity, double staticFrictionCoeff, double dynamicFrictionCoeff,
-                      double rollingFrictionCoeff, double torsionFrictionCoeff)
-      : DEMFunctor(cutoff, elasticStiffness, adhesiveStiffness, frictionStiffness, normalViscosity, frictionViscosity,
-                   rollingViscosity, torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff,
-                   torsionFrictionCoeff, nullptr) {
+  explicit DEMFunctor(double cutoff, DEMParameters &demParameters) : DEMFunctor(cutoff, demParameters, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -143,28 +106,14 @@ class DEMFunctor
   /**
    * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
    * properties like radius.
+   *
    * @param cutoff
-   * @param elasticStiffness
-   * @param adhesiveStiffness
-   * @param frictionStiffness
-   * @param normalViscosity
-   * @param frictionViscosity
-   * @param rollingViscosity
-   * @param torsionViscosity
-   * @param staticFrictionCoeff
-   * @param dynamicFrictionCoeff
-   * @param rollingFrictionCoeff
-   * @param torsionFrictionCoeff
+   * @param demParameters
    * @param particlePropertiesLibrary
    */
-  explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
-                      double normalViscosity, double frictionViscosity, double rollingViscosity,
-                      double torsionViscosity, double staticFrictionCoeff, double dynamicFrictionCoeff,
-                      double rollingFrictionCoeff, double torsionFrictionCoeff,
+  explicit DEMFunctor(double cutoff, DEMParameters &demParameters,
                       ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : DEMFunctor(cutoff, elasticStiffness, adhesiveStiffness, frictionStiffness, normalViscosity, frictionViscosity,
-                   rollingViscosity, torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff,
-                   torsionFrictionCoeff, nullptr) {
+      : DEMFunctor(cutoff, demParameters, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -311,7 +260,7 @@ class DEMFunctor
     // Heat Transfer (2 + 4 + 2 + 1 = 9 FLOPS, for newton3 additional 1 FLOP)
     const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
     const double conductance =
-        2. * _conductivity * std::pow((3. * elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
+        2. * _heatConductivity * std::pow((3. * elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
     const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
 
     // Heat Generation (12 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)
@@ -596,7 +545,7 @@ class DEMFunctor
         // Compute Heat Transfer (2 + 3 + 2 + 2 = 9 FLOPS)
         const SoAFloatPrecision geometricMeanRadius = std::sqrt(radiusI * radiusJ);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
+            2. * _heatConductivity * std::pow((3. * elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[i]);
 
         // Compute Heat Generation (12 + 1 = 13 FLOPS)
@@ -1183,7 +1132,7 @@ class DEMFunctor
         // Compute heat flux
         const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
         const SoAFloatPrecision conductance =
-            2. * _conductivity * std::pow((3. * elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
+            2. * _heatConductivity * std::pow((3. * elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr2[j] - temperaturePtr1[i]);
 
         const SoAFloatPrecision heatFluxGenerated =
@@ -1538,7 +1487,7 @@ class DEMFunctor
           // Compute heat flux
           const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
           const SoAFloatPrecision conductance =
-              2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
+              2. * _heatConductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
           const SoAFloatPrecision heatFluxI = conductance * (temperatureArr[j] - temperaturetmp[j]);
 
           const SoAFloatPrecision heatFluxGenerated =
@@ -1778,7 +1727,7 @@ class DEMFunctor
       // Compute heat flux
       const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
       const SoAFloatPrecision conductance =
-          2. * _conductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
+          2. * _heatConductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
       const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[indexFirst]);
 
       const SoAFloatPrecision heatFluxGenerated =
@@ -1926,10 +1875,7 @@ class DEMFunctor
   // static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoff;
-  const std::array<double, 11> _demParameters;
   const double _elasticStiffness;
-  const double _adhesiveStiffness;
-  const double _frictionStiffness;
   const double _normalViscosity;
   const double _frictionViscosity;
   const double _rollingViscosity;
@@ -1938,13 +1884,11 @@ class DEMFunctor
   const double _dynamicFrictionCoeff;
   const double _rollingFrictionCoeff;
   const double _torsionFrictionCoeff;
+  const double _heatConductivity;
+  const double _heatGenerationFactor;
   // not const because they might be reset through PPL
   double _epsilon6, _sigma, _radius = 0;
   const double preventDivisionByZero = 1e-6;
-  const double _conductivity = 1;
-  const double _heatGenerationFactor = 0.1;
-  const double _coefficientFactor = 1.;
-  const bool isWallSimulation = false;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
@@ -2017,7 +1961,7 @@ class DEMFunctor
         autopas::utils::ArrayMath::cross(normalUnit * radiusJReduced, j.getAngularVel());                   // 30 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * relVelNormalDotNormalUnit;                      // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                          // 3 FLOPS
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);  // 3 FLOPS
 
     const std::array<double, 3> tanF = tanVel * (-_frictionViscosity);  // 3 FLOPS
     const double tanFMag = autopas::utils::ArrayMath::L2Norm(tanF);     // 6 FLOPS
@@ -2025,7 +1969,7 @@ class DEMFunctor
       // 3 + 3 + 3 = 9 FLOPS
       //++_aosThreadDataFLOPs[threadnum].numOverlapCalls;
       const std::array<double, 3> tanFUnit = tanF / tanFMag;
-      const double scale = _dynamicFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+      const double scale = _dynamicFrictionCoeff * (normalContactFMag);
       return tanFUnit * scale;
     } else {
       return tanF;
@@ -2065,11 +2009,11 @@ class DEMFunctor
     std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);   // 3 FLOPS
     const double rollingFMag = autopas::utils::ArrayMath::L2Norm(rollingF);  // 6 FLOPS
 
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);  // 3 FLOPS
     if (rollingFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
       ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;
       const std::array<double, 3> rollingFUnit = rollingF / rollingFMag;
-      const double scale = _rollingFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+      const double scale = _rollingFrictionCoeff * (normalContactFMag);
       rollingF = rollingFUnit * scale;
     }
     return autopas::utils::ArrayMath::cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
@@ -2095,11 +2039,11 @@ class DEMFunctor
     std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);   // 3 FLOPS
     const double torsionFMag = autopas::utils::ArrayMath::L2Norm(torsionF);  // 6 FLOPS
 
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);  // 3 FLOPS
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);  // 3 FLOPS
     if (torsionFMag > coulombLimit) {  // 3 + 3 + 3 = 9 FLOPS
       ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;
       const std::array<double, 3> torsionFUnit = torsionF / torsionFMag;
-      const double scale = _torsionFrictionCoeff * (normalContactFMag + _adhesiveStiffness * overlap);
+      const double scale = _torsionFrictionCoeff * (normalContactFMag);
       torsionF = torsionFUnit * scale;
     }
     return torsionF * radiusReduced;  // 3 = 3 FLOPS

@@ -371,10 +371,11 @@ class Simulation {
 
   /**
    * Adds background friction to the particles in the container.
-   * @param demParameters The last two values are the force and torque damping coefficients.
+   * @param backgroundForceFrictionCoeff Damping coefficient for the forces.
+   * @param backgroundTorqueFrictionCoeff Damping coefficient for the torques.
    * @param particlePropertiesLib
    */
-  void applyBackgroundFriction(const std::array<double, 13> &demParameters,
+  void applyBackgroundFriction(const double backgroundForceFrictionCoeff, const double backgroundTorqueFrictionCoeff,
                                    ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
