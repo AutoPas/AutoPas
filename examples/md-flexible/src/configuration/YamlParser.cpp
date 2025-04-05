@@ -596,16 +596,71 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.globalForce.description;
 
         config.globalForce.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
-      } else if (key == config.demParameters.name) {
-        expected =
-            "YAML-sequence of 13 floats. Example: [100., 1e-3, 0.1, 0.01, 0.01, 7.5, 5, 5, 5, 1, 0.1, 0.01, 0.01].";
-        description = config.demParameters.description;
+      } else if (key == config.demElasticStiffness.name) {
+        expected = "Double Value";
+        description = config.demElasticStiffness.description;
 
-        config.demParameters.value = {node[key][0].as<double>(), node[key][1].as<double>(),  node[key][2].as<double>(),
-                                      node[key][3].as<double>(), node[key][4].as<double>(),  node[key][5].as<double>(),
-                                      node[key][6].as<double>(), node[key][7].as<double>(),  node[key][8].as<double>(),
-                                      node[key][9].as<double>(), node[key][10].as<double>(), node[key][11].as<double>(),
-                                      node[key][12].as<double>()};
+        config.demElasticStiffness.value = node[key].as<double>();
+      } else if (key == config.demNormalViscosity.name) {
+        expected = "Double Value";
+        description = config.demNormalViscosity.description;
+
+        config.demNormalViscosity.value = node[key].as<double>();
+      } else if (key == config.demFrictionViscosity.name) {
+        expected = "Double Value";
+        description = config.demFrictionViscosity.description;
+
+        config.demFrictionViscosity.value = node[key].as<double>();
+      } else if (key == config.demRollingViscosity.name) {
+        expected = "Double Value";
+        description = config.demRollingViscosity.description;
+
+        config.demRollingViscosity.value = node[key].as<double>();
+      } else if (key == config.demTorsionViscosity.name) {
+        expected = "Double Value";
+        description = config.demTorsionViscosity.description;
+
+        config.demTorsionViscosity.value = node[key].as<double>();
+      } else if (key == config.demStaticFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demStaticFrictionCoeff.description;
+
+        config.demStaticFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demDynamicFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demDynamicFrictionCoeff.description;
+
+        config.demDynamicFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demRollingFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demRollingFrictionCoeff.description;
+
+        config.demRollingFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demTorsionFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demTorsionFrictionCoeff.description;
+
+        config.demTorsionFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demHeatConductivity.name) {
+        expected = "Double Value";
+        description = config.demHeatConductivity.description;
+
+        config.demHeatConductivity.value = node[key].as<double>();
+      } else if (key == config.demHeatGenerationFactor.name) {
+        expected = "Double Value";
+        description = config.demHeatGenerationFactor.description;
+
+        config.demHeatGenerationFactor.value = node[key].as<double>();
+      } else if (key == config.demBackgroundForceFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demBackgroundForceFrictionCoeff.description;
+
+        config.demBackgroundForceFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demBackgroundTorqueFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demBackgroundTorqueFrictionCoeff.description;
+
+        config.demBackgroundTorqueFrictionCoeff.value = node[key].as<double>();
       } else if (key == MDFlexConfig::siteStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";

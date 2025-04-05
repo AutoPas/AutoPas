@@ -420,7 +420,19 @@ std::string MDFlexConfig::to_string() const {
   }
 
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-  printOption(demParameters);
+  printOption(demElasticStiffness);
+  printOption(demNormalViscosity);
+  printOption(demFrictionViscosity);
+  printOption(demRollingViscosity);
+  printOption(demTorsionViscosity);
+  printOption(demStaticFrictionCoeff);
+  printOption(demDynamicFrictionCoeff);
+  printOption(demRollingFrictionCoeff);
+  printOption(demTorsionFrictionCoeff);
+  printOption(demHeatConductivity);
+  printOption(demHeatGenerationFactor);
+  printOption(demBackgroundForceFrictionCoeff);
+  printOption(demBackgroundTorqueFrictionCoeff);
 #endif
 
   if (useThermostat.value) {
