@@ -30,7 +30,7 @@ FetchContent_Declare(
         # better error handling
         # the patch can found under AutoPas/libs/patches/patch-file-pmt-for-autopas.patch
         ${AUTOPAS_SOURCE_DIR}/libs/pmt-master.zip
-        URL_HASH MD5=3c60096bf151e11cde6efc6e5ede1195
+        URL_HASH MD5=51615324cd7f641d3101c6bafd988c1f
 )
 
 FetchContent_MakeAvailable(pmt)

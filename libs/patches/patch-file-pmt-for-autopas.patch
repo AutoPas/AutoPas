@@ -12,10 +12,20 @@ index 426b10f..68b5eba 100644
  set(CMAKE_CXX_EXTENSIONS OFF)
  
 diff --git a/common/PMT.cpp b/common/PMT.cpp
-index 5b8a6ab..3368d11 100644
+index 5b8a6ab..34ce7f3 100644
 --- a/common/PMT.cpp
 +++ b/common/PMT.cpp
-@@ -24,8 +24,6 @@ bool isNumber(const std::string &s) {
+@@ -6,7 +6,8 @@
+ #include <cstring>
+ #include <iomanip>
+ 
+-#include <pmt.h>
++#include <PMT.h>
++#include <dummy/Dummy.h>
+ 
+ #include "common/PMT.h"
+ namespace {
+@@ -24,8 +25,6 @@ bool isNumber(const std::string &s) {
  namespace pmt {
  
  PMT::~PMT() {
@@ -24,7 +34,7 @@ index 5b8a6ab..3368d11 100644
  };
  
  double PMT::seconds(const Timestamp &timestamp) {
-@@ -79,39 +77,6 @@ float State::watts(int i) {
+@@ -79,39 +78,6 @@ float State::watts(int i) {
    return watt_[i];
  }
  
@@ -64,7 +74,7 @@ index 5b8a6ab..3368d11 100644
  void PMT::StartDump(const char *filename) {
    const char *filename_ = std::getenv(kDumpFilenameVariable.c_str());
    if (filename_) {
-@@ -187,13 +152,8 @@ void PMT::SetMeasurementInterval(unsigned int milliseconds) {
+@@ -187,13 +153,8 @@ void PMT::SetMeasurementInterval(unsigned int milliseconds) {
  Timestamp PMT::GetTime() { return std::chrono::system_clock::now(); }
  
  State PMT::Read() {
@@ -140,6 +150,16 @@ index 2794e2a..10696de 100644
          continue;
        }
        throw std::system_error(
+diff --git a/dummy/Dummy.cpp b/dummy/Dummy.cpp
+index 9a05449..9655a6f 100644
+--- a/dummy/Dummy.cpp
++++ b/dummy/Dummy.cpp
+@@ -1,4 +1,4 @@
+-#include <ext/alloc_traits.h>
++//#include <ext/alloc_traits.h>
+ #include <vector>
+ 
+ #include "Dummy.h"
 diff --git a/rapl/RaplImpl.cpp b/rapl/RaplImpl.cpp
 index 369502c..ff000e4 100644
 --- a/rapl/RaplImpl.cpp
