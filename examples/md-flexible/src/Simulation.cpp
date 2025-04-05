@@ -281,9 +281,7 @@ void Simulation::run() {
 
     updateInteractionForces();
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-    applyBackgroundFriction(_configuration.backgroundForceFrictionCoeff.value,
-                            _configuration.backgroundTorqueFrictionCoeff.value,
-                            *_configuration.getParticlePropertiesLibrary());
+    applyBackgroundFriction(_configuration.demParameters.value, *_configuration.getParticlePropertiesLibrary());
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
@@ -556,9 +554,15 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   }
 }
 
-void Simulation::applyBackgroundFriction(const double forceDampingCoeff, const double torqueDampingCoeff,
+void Simulation::applyBackgroundFriction(const std::array<double, 13> &demParameters,
                                          ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
+
+  const size_t numDemParameters = demParameters.size();
+  // The last two values are the damping coeffs.
+  const double forceDampingCoeff = demParameters.at(numDemParameters - 2);
+  const double torqueDampingCoeff = demParameters.at(numDemParameters - 1);
+
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const std::array<double, 3> forceDamping = particle->getV() * forceDampingCoeff;
@@ -852,6 +856,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::dem: {
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+      const auto &demParameters = _configuration.demParameters.value;
       return f(DEMFunctorType{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(

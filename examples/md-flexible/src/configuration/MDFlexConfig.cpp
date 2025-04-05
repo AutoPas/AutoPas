@@ -225,6 +225,8 @@ std::string MDFlexConfig::to_string() const {
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   os << "# Running multi-site MD simulation.\n" << endl;
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  os << "# Running DEM simulation.\n" << endl;
 #else
   os << "# Running single-site MD simulation.\n" << endl;
 #endif
@@ -417,8 +419,9 @@ std::string MDFlexConfig::to_string() const {
     printOption(globalForce);
   }
 
-  printOption(backgroundForceFrictionCoeff);
-  printOption(backgroundTorqueFrictionCoeff);
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  printOption(demParameters);
+#endif
 
   if (useThermostat.value) {
     os << useThermostat.name << ":" << endl;

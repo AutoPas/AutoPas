@@ -662,7 +662,7 @@ class MDFlexConfig {
   /**
    * specificHeatMap
    */
-   MDFlexOption<std::map<unsigned long, double>, 0> specificHeatMap{
+  MDFlexOption<std::map<unsigned long, double>, 0> specificHeatMap{
       {{0ul, 1.}}, "specific-heat", true, "Mapping from site type to a specific heat value."};
 
   // Molecule Type Generation
@@ -814,16 +814,17 @@ class MDFlexConfig {
       "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
 
   /**
-   * Background friction force coefficient
+   * DEM parameters
+   *
+   * for detailed explanation of the parameters see: https://mediatum.ub.tum.de/doc/1773224/1773224.pdf
    */
-  MDFlexOption<double, __LINE__> backgroundForceFrictionCoeff{0., "backgroundForceFrictionCoeff", true,
-                                                              "Background force friction coefficient. Default: 0."};
-
-  /**
-   * Background friction torque coefficient
-   */
-  MDFlexOption<double, __LINE__> backgroundTorqueFrictionCoeff{0., "backgroundTorqueFrictionCoeff", true,
-                                                               "Background friction torque coefficient. Default: 0."};
+  MDFlexOption<std::array<double, 13>, __LINE__> demParameters{
+      {100., 1e-3, 0.1, 0.01, 0.01, 7.5, 5, 5, 5, 1, 0.1, 0.01, 0.01},  // default parameter setting
+      "dem-parameters",
+      true,
+      "DEM paramters: [elasticStiffness, normalViscosity, frictionViscosity, rollingViscosity, torsionViscosity, "
+      "staticFrictionCoefficient, dynamicFrictionCoefficient, rollingFrictionCoefficient, torsionFrictionCoefficient, "
+      "conductivity, heatGenerationFactor, backgroundForceFrictionCoefficient, backgroundTorqueFrictionCoefficient] "};
 
   /**
    * Convenience function testing if the global force contains only 0 entries.

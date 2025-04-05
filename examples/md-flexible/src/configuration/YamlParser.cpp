@@ -596,16 +596,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.globalForce.description;
 
         config.globalForce.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
-      } else if (key == config.backgroundForceFrictionCoeff.name) {
-        expected = "Double Value";
-        description = config.backgroundForceFrictionCoeff.description;
+      } else if (key == config.demParameters.name) {
+        expected =
+            "YAML-sequence of 13 floats. Example: [100., 1e-3, 0.1, 0.01, 0.01, 7.5, 5, 5, 5, 1, 0.1, 0.01, 0.01].";
+        description = config.demParameters.description;
 
-        config.backgroundForceFrictionCoeff.value = node[key].as<double>();
-      } else if (key == config.backgroundTorqueFrictionCoeff.name) {
-        expected = "Double Value";
-        description = config.backgroundTorqueFrictionCoeff.description;
-
-        config.backgroundTorqueFrictionCoeff.value = node[key].as<double>();
+        config.demParameters.value = {node[key][0].as<double>(), node[key][1].as<double>(),  node[key][2].as<double>(),
+                                      node[key][3].as<double>(), node[key][4].as<double>(),  node[key][5].as<double>(),
+                                      node[key][6].as<double>(), node[key][7].as<double>(),  node[key][8].as<double>(),
+                                      node[key][9].as<double>(), node[key][10].as<double>(), node[key][11].as<double>(),
+                                      node[key][12].as<double>()};
       } else if (key == MDFlexConfig::siteStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";

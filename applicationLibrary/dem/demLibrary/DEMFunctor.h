@@ -1,7 +1,7 @@
 /**
-* @file DEMFunctor.h
-* @author Joon Kim
-* @date 27/03/2025
+ * @file DEMFunctor.h
+ * @author Joon Kim
+ * @date 27/03/2025
  */
 
 #pragma once
@@ -56,39 +56,16 @@ class DEMFunctor
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param elasticStiffness
-   * @param adhesiveStiffness (not used)
-   * @param frictionStiffness (not used)
-   * @param normalViscosity
-   * @param frictionViscosity
-   * @param rollingViscosity
-   * @param torsionViscosity
-   * @param staticFrictionCoeff
-   * @param dynamicFrictionCoeff
-   * @param rollingFrictionCoeff
-   * @param torsionFrictionCoeff
+   * @param demParameters Includes [elasticStiffness, normalViscosity, frictionViscosity, rollingViscosity, torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff, torsionFrictionCoeff, conductivity, heatGenerationFactor]
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit DEMFunctor(double cutoff, double elasticStiffness, double adhesiveStiffness, double frictionStiffness,
-                      double normalViscosity, double frictionViscosity, double rollingViscosity,
-                      double torsionViscosity, double staticFrictionCoeff, double dynamicFrictionCoeff,
-                      double rollingFrictionCoeff, double torsionFrictionCoeff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle,
-                         DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
+  explicit DEMFunctor(double cutoff, std::array<double, 11> &demParameters, void * /*dummy*/)
+      : autopas::PairwiseFunctor<
+            Particle, DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
             cutoff),
         _radius{cutoff / 5.},  // default initialization, can be changed by ParticlePropertiesLibrary
         _cutoff{cutoff},
-        _elasticStiffness{elasticStiffness},
-        _adhesiveStiffness{adhesiveStiffness},
-        _frictionStiffness{frictionStiffness},
-        _normalViscosity{normalViscosity},
-        _frictionViscosity{frictionViscosity},
-        _rollingViscosity{rollingViscosity},
-        _torsionViscosity{torsionViscosity},
-        _staticFrictionCoeff{staticFrictionCoeff},
-        _dynamicFrictionCoeff{dynamicFrictionCoeff},
-        _rollingFrictionCoeff{rollingFrictionCoeff},
-        _torsionFrictionCoeff{torsionFrictionCoeff},
+        _demParameters{demParameters},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
@@ -277,13 +254,13 @@ class DEMFunctor
                                             cross(normalUnit * radiusJReduced, j.getAngularVel());  // 30 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                  // 3 FLOPS
-    const double coulombLimit = staticFrictionCoeff * (normalContactFMag);                         // 1 FLOPS
-    std::array<double, 3> tanF = tanVel * (-frictionViscosity);                                    // 3 FLOPS
+    const double coulombLimit = staticFrictionCoeff * (normalContactFMag);                          // 1 FLOPS
+    std::array<double, 3> tanF = tanVel * (-frictionViscosity);                                     // 3 FLOPS
     const double tanFMag = L2Norm(tanF);                                                            // 6 FLOPS
     if (tanFMag > coulombLimit) {
       ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;  // -> additional 5 FLOPS
       const double scale = dynamicFrictionCoeff * (normalContactFMag) / (tanFMag + preventDivisionByZero);  // 2 FLOPS
-      tanF = tanF * scale;                                                                                   // 3 FLOPS
+      tanF = tanF * scale;                                                                                  // 3 FLOPS
     }
 
     // Compute total force (3 FLOPS)
@@ -302,7 +279,7 @@ class DEMFunctor
     // Compute rolling torque (15 + 3 + 6 + 12 = 36 FLOPS)
     const std::array<double, 3> rollingRelVel =
         cross(normalUnit, (i.getAngularVel() - j.getAngularVel())) * (-radiusReduced);  // 15 FLOPS
-    std::array<double, 3> rollingF = rollingRelVel * (-rollingViscosity);              // 3 FLOPS
+    std::array<double, 3> rollingF = rollingRelVel * (-rollingViscosity);               // 3 FLOPS
     const double rollingFMag = L2Norm(rollingF);                                        // 6 FLOPS
     if (rollingFMag > coulombLimit) {
       ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;  // -> additional 5 FLOPS
@@ -314,9 +291,9 @@ class DEMFunctor
 
     // Compute torsional torque (11 + 3 + 6 + 3 = 23 FLOPS)
     const std::array<double, 3> torsionRelVel = normalUnit * dot(normalUnit, (i.getAngularVel() - j.getAngularVel())) *
-                                                radiusReduced;              // 1 + 3 + 5 + 2 = 11 FLOPS
+                                                radiusReduced;             // 1 + 3 + 5 + 2 = 11 FLOPS
     std::array<double, 3> torsionF = torsionRelVel * (-torsionViscosity);  // 3 FLOPS
-    const double torsionFMag = L2Norm(torsionF);                            // 6 FLOPS
+    const double torsionFMag = L2Norm(torsionF);                           // 6 FLOPS
     if (torsionFMag > coulombLimit) {
       ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;  // -> additional 5 FLOPS
       const double scale =
@@ -446,7 +423,6 @@ class DEMFunctor
           continue;  // VdW deactivated
         }
 
-
         double coefficientFactor = 1.0;
         const SoAFloatPrecision elasticStiffness = _elasticStiffness * coefficientFactor;
         const SoAFloatPrecision normalViscosity = _normalViscosity * coefficientFactor;
@@ -496,8 +472,7 @@ class DEMFunctor
         const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - relVelDotNormalUnit * normalUnitZ;
 
         // Compute normal force as sum of contact force and long-range force (VdW).
-        const SoAFloatPrecision normalContactFMag =
-            elasticStiffness * overlap - normalViscosity * relVelDotNormalUnit;
+        const SoAFloatPrecision normalContactFMag = elasticStiffness * overlap - normalViscosity * relVelDotNormalUnit;
         const SoAFloatPrecision normalFMag = normalContactFMag;  // VdW deactivated
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
@@ -1038,7 +1013,6 @@ class DEMFunctor
         const SoAFloatPrecision torsionViscosity = _torsionViscosity * coefficientFactor;
         const SoAFloatPrecision torsionFrictionCoeff = _torsionFrictionCoeff * coefficientFactor;
 
-
         const SoAFloatPrecision invDist = 1.0 / (dist + preventDivisionByZero);
         const SoAFloatPrecision invDistSquared = 1.0 / distSquared;
         const SoAFloatPrecision normalUnitX = drx * invDist;
@@ -1077,8 +1051,7 @@ class DEMFunctor
         const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - relVelDotNormalUnit * normalUnitZ;
 
         // Compute normal force
-        const SoAFloatPrecision normalContactFMag =
-            elasticStiffness * overlap - normalViscosity * relVelDotNormalUnit;
+        const SoAFloatPrecision normalContactFMag = elasticStiffness * overlap - normalViscosity * relVelDotNormalUnit;
         const SoAFloatPrecision normalFMag = normalContactFMag;  // VdW deactivated
 
         const SoAFloatPrecision normalFX = normalFMag * normalUnitX;
@@ -1953,6 +1926,7 @@ class DEMFunctor
   // static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoff;
+  const std::array<double, 11> _demParameters;
   const double _elasticStiffness;
   const double _adhesiveStiffness;
   const double _frictionStiffness;
