@@ -330,7 +330,7 @@ template <class T, std::size_t SIZE>
  * @param a input array
  * @return New array with floored elements of new type.
  */
-template <class targetType=int, class floatType, std::size_t SIZE>
+template <class targetType = int, class floatType, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<targetType, SIZE> castedFloor(const std::array<floatType, SIZE> &a) {
   std::array<targetType, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
@@ -348,7 +348,7 @@ template <class targetType=int, class floatType, std::size_t SIZE>
  * @param a input array
  * @return New array with ceiled elements of new type.
  */
-template <class targetType=int, class floatType, std::size_t SIZE>
+template <class targetType = int, class floatType, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<targetType, SIZE> castedCeil(const std::array<floatType, SIZE> &a) {
   std::array<targetType, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {

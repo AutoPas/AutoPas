@@ -397,7 +397,6 @@ void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
       tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
     }
   }
-
 }
 
 bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {

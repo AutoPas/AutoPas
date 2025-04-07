@@ -1,8 +1,8 @@
 /**
-* @file ParticleBinStructure.h
-* @author S. Newcome
-* @date 13/12/2024
-*/
+ * @file ParticleBinStructure.h
+ * @author S. Newcome
+ * @date 13/12/2024
+ */
 
 #pragma once
 
@@ -31,7 +31,7 @@ namespace autopas::utils {
  * The purpose of this is to calculate all statistics together because it is rather trivial and efficient but provides
  * getters for individual statistics in case some are not desired.
  */
-class ParticleBinStructure{
+class ParticleBinStructure {
  public:
   /**
    * Constructor, that takes 3D array of the number of bins in each dimension and the dimensions of each bin, and
@@ -40,7 +40,8 @@ class ParticleBinStructure{
    * @param binLength
    * @param cutoff Not needed for particle counting, but needed for estimatedNumberOfNeighborInteractions statistic.
    */
-  ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff);
+  ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength,
+                       std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff);
 
   /**
    * Constructor, for if there are the same number of bins in each dimension. Takes a number of bins and the dimensions
@@ -49,8 +50,9 @@ class ParticleBinStructure{
    * @param binLength
    * @param cutoff Not needed for particle counting, but needed for estimatedNumberOfNeighborInteractions statistic.
    */
-  ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff)
-   : ParticleBinStructure({numBinsPerDim, numBinsPerDim, numBinsPerDim}, binLength, boxMin, boxMax, cutoff) {};
+  ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin,
+                       std::array<double, 3> boxMax, double cutoff)
+      : ParticleBinStructure({numBinsPerDim, numBinsPerDim, numBinsPerDim}, binLength, boxMin, boxMax, cutoff){};
 
   /**
    * Adds to the counter for the bin the particle falls into.
@@ -259,27 +261,27 @@ class ParticleBinStructure{
   /**
    * The number of bins per dimension.
    */
-  std::array<std::size_t,3> _numBinsPerDim{};
+  std::array<std::size_t, 3> _numBinsPerDim{};
 
   /**
    * The length of each bin in each dimension.
    */
-  std::array<double,3> _binLength{};
+  std::array<double, 3> _binLength{};
 
   /**
    * The reciprocal of the length of each bin in each dimension.
    */
-  std::array<double,3> _binLengthReciprocal{};
+  std::array<double, 3> _binLengthReciprocal{};
 
   /**
    * The lower left corner of the box which the bin structure partitions.
    */
-  std::array<double,3> _boxMin{};
+  std::array<double, 3> _boxMin{};
 
   /**
    * The upper right corner of the box which the bin structure partitions.
    */
-  std::array<double,3> _boxMax{};
+  std::array<double, 3> _boxMax{};
 
   /**
    * Cutoff. Only needed for the statistics.
@@ -350,7 +352,4 @@ class ParticleBinStructure{
    */
   double _estimatedNumberOfNeighborInteractions{};
 };
-}
-
-
-
+}  // namespace autopas::utils

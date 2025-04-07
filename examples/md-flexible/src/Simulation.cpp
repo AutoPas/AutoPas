@@ -236,7 +236,6 @@ void Simulation::run() {
     _timers.updateContainer.stop();
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing

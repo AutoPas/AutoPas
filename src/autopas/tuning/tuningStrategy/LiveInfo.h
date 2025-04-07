@@ -12,16 +12,16 @@
 #include <limits>
 #include <variant>
 
-#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/CellBlock3D.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/ParticleBinStructure.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -35,7 +35,6 @@ class LiveInfo {
   // ParticleBase would suffice, but iteration doesn't work that way at the moment.
 
  private:
-
   /**
    * Returns a particle bin structure that mimics a Linked Cells container with cell size factor 1.
    *
@@ -43,7 +42,10 @@ class LiveInfo {
    * @param interactionLength interaction length (cutoff + skin)
    * @return
    */
-  static utils::ParticleBinStructure buildCellBinStructure(const std::array<double, 3> &domainSize, const double interactionLength, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
+  static utils::ParticleBinStructure buildCellBinStructure(const std::array<double, 3> &domainSize,
+                                                           const double interactionLength,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax, double cutoff) {
     std::array<size_t, 3> cellsPerDim{};
     std::array<double, 3> cellLength{};
 
@@ -64,14 +66,15 @@ class LiveInfo {
    * @param numParticles number of particles
    * @return
    */
-  static utils::ParticleBinStructure buildBlurredBinStructure(const std::array<double, 3> &domainSize, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
+  static utils::ParticleBinStructure buildBlurredBinStructure(const std::array<double, 3> &domainSize,
+                                                              const std::array<double, 3> &boxMin,
+                                                              const std::array<double, 3> &boxMax, double cutoff) {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto binLength = domainSize / 3.;
 
     return {3, binLength, boxMin, boxMax, cutoff};
   }
-
 
  public:
   /**
@@ -131,7 +134,8 @@ class LiveInfo {
    */
   template <class Particle_T>
   void gather(ContainerIterator<Particle_T, true, false> particleIter, size_t rebuildFrequency,
-    size_t numOwnedParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double skin) {
+              size_t numOwnedParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
+              double skin) {
     using namespace utils::ArrayMath::literals;
     using utils::ArrayMath::castedCeil;
 
@@ -151,7 +155,6 @@ class LiveInfo {
     infos["domainSizeY"] = domainSize[1];
     infos["domainSizeZ"] = domainSize[2];
 
-
     // Build bin structures
     auto cellBinStruct = buildCellBinStructure(domainSize, interactionLength, boxMin, boxMax, cutoff);
     auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax, cutoff);
@@ -169,15 +172,17 @@ class LiveInfo {
           cellBinStruct.countParticle(particlePos);
           blurredBinStruct.countParticle(particlePos);
         }
-      } else if (particleIter->isHalo()){
+      } else if (particleIter->isHalo()) {
         numHaloParticlesCount++;
       }
     }
 
     // Sanity Check
     if (numOwnedParticlesCount != numOwnedParticles) {
-      AutoPasLog(ERROR, "Number of owned particles tracked by AutoPas ({}) does not match number of owned particles "
-                 "counted using the iterator ({}).", numOwnedParticles, numOwnedParticlesCount);
+      AutoPasLog(ERROR,
+                 "Number of owned particles tracked by AutoPas ({}) does not match number of owned particles "
+                 "counted using the iterator ({}).",
+                 numOwnedParticles, numOwnedParticlesCount);
     }
 
     infos["numOwnedParticles"] = numOwnedParticlesCount;

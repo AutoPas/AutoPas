@@ -1,14 +1,14 @@
 /**
-* @file ParticleBinStructure.cpp
-* @author S. Newcome
-* @date 13/12/2024
+ * @file ParticleBinStructure.cpp
+ * @author S. Newcome
+ * @date 13/12/2024
  */
-
 
 #include "ParticleBinStructure.h"
 
 namespace autopas::utils {
-ParticleBinStructure::ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff) {
+ParticleBinStructure::ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength,
+                                           std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff) {
   using namespace ArrayMath::literals;
   const auto numBins = numBinsPerDim[0] * numBinsPerDim[1] * numBinsPerDim[2];
   // Some error checking
@@ -30,7 +30,6 @@ ParticleBinStructure::ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, 
   _boxMax = boxMax;
   _cutoff = cutoff;
 }
-
 
 void ParticleBinStructure::countParticle(const std::array<double, 3> &particlePosition) {
   using namespace ArrayMath::literals;
@@ -69,7 +68,8 @@ void ParticleBinStructure::countParticle(const std::array<double, 3> &particlePo
   }();
 
   // If the particle is outside the domain, ignore it
-  if (binIndex3DSafe[0] == _numBinsPerDim[0] or binIndex3DSafe[1] == _numBinsPerDim[1] or binIndex3DSafe[2] == _numBinsPerDim[2]) {
+  if (binIndex3DSafe[0] == _numBinsPerDim[0] or binIndex3DSafe[1] == _numBinsPerDim[1] or
+      binIndex3DSafe[2] == _numBinsPerDim[2]) {
     return;
   }
 
@@ -86,7 +86,8 @@ void ParticleBinStructure::calculateStatistics() {
   std::vector<std::size_t> sortedParticleCounts(_particleCounts);
   std::sort(sortedParticleCounts.begin(), sortedParticleCounts.end());
 
-  const bool noParticles = std::all_of(sortedParticleCounts.begin(), sortedParticleCounts.end(), [](auto count) { return count == 0; });
+  const bool noParticles =
+      std::all_of(sortedParticleCounts.begin(), sortedParticleCounts.end(), [](auto count) { return count == 0; });
 
   // Get the minimum, maximum, median, and quartile particle counts
   _minimumParticlesPerBin = noParticles ? 0 : sortedParticleCounts.front();
@@ -97,7 +98,6 @@ void ParticleBinStructure::calculateStatistics() {
 
   // Determine the mean number of particles and density
   _meanParticlesPerBin = static_cast<double>(_totalParticleCount) / static_cast<double>(getNumberOfBins());
-
 
   // For the estimated number of neighbor interactions calculations, determine the estimated hit rate if the Linked
   // Cells method with cells the size of these bins was used, assuming a homogeneous distribution.
@@ -117,17 +117,18 @@ void ParticleBinStructure::calculateStatistics() {
       ++emptyBinCount;
     } else {
       // Using the estimateHitRate, the number of particles in this cell, and the assumptions that particles are evenly
-      // distributed within a bin and that this even distribution extends into neighboring bins and that newton3 isn't used, calculate the
-      // number of neighbor interactions.
-      // This is
+      // distributed within a bin and that this even distribution extends into neighboring bins and that newton3 isn't
+      // used, calculate the number of neighbor interactions. This is
       // - for every particle in this bin: [particleCount * ...]
       //   - it has distance checks with every particle in this bin and neighboring bin [... * (particleCount * 27)]
       //   - these checks have a hit rate of `estimatedHitRate`
       // - remove self interactions [... - particleCount]
       // In a very sparse situation, with a large potentialInteractionVolume and small particleCount, this could lead
       // to a negative estimate, so just take 0.
-      estimatedNumNeighborInteractionsSum += std::max(
-          static_cast<double>(particleCount * (particleCount * 27)) * estimatedHitRate  - static_cast<double>(particleCount), 0.);
+      estimatedNumNeighborInteractionsSum +=
+          std::max(static_cast<double>(particleCount * (particleCount * 27)) * estimatedHitRate -
+                       static_cast<double>(particleCount),
+                   0.);
     }
 
     const auto numParticlesDiffFromMean = particleCount - _meanParticlesPerBin;
@@ -150,29 +151,19 @@ void ParticleBinStructure::resetCounters() {
   _statisticsCalculated = false;
 }
 
-const size_t &ParticleBinStructure::getTotalParticleCount() const {
-  return _totalParticleCount;
-}
+const size_t &ParticleBinStructure::getTotalParticleCount() const { return _totalParticleCount; }
 
-const std::vector<size_t> &ParticleBinStructure::getParticleCounts() const {
-  return _particleCounts;
-}
+const std::vector<size_t> &ParticleBinStructure::getParticleCounts() const { return _particleCounts; }
 
-const std::array<std::size_t, 3> &ParticleBinStructure::getNumBinsPerDim() const {
-  return _numBinsPerDim;
-}
+const std::array<std::size_t, 3> &ParticleBinStructure::getNumBinsPerDim() const { return _numBinsPerDim; }
 
 void ParticleBinStructure::setCellsPerDim(const std::array<std::size_t, 3> &numBinsPerDim) {
   _numBinsPerDim = numBinsPerDim;
 }
 
-const std::array<double, 3> &ParticleBinStructure::getBinLength() const {
-  return _binLength;
-}
+const std::array<double, 3> &ParticleBinStructure::getBinLength() const { return _binLength; }
 
-const std::array<double, 3> &ParticleBinStructure::getBinLengthReciprocal() const {
-  return _binLengthReciprocal;
-}
+const std::array<double, 3> &ParticleBinStructure::getBinLengthReciprocal() const { return _binLengthReciprocal; }
 
 void ParticleBinStructure::setBinLength(const std::array<double, 3> &binLength) {
   using namespace ArrayMath::literals;
@@ -180,25 +171,17 @@ void ParticleBinStructure::setBinLength(const std::array<double, 3> &binLength) 
   _binLengthReciprocal = 1. / binLength;
 }
 
-const std::array<double, 3> &ParticleBinStructure::getBoxMin() const {
-  return _boxMin;
-}
+const std::array<double, 3> &ParticleBinStructure::getBoxMin() const { return _boxMin; }
 
-void ParticleBinStructure::setBoxMin(const std::array<double, 3> &boxMin) {
-  _boxMin = boxMin;
-}
+void ParticleBinStructure::setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
 
-const std::array<double, 3> &ParticleBinStructure::getBoxMax() const {
-  return _boxMax;
-}
+const std::array<double, 3> &ParticleBinStructure::getBoxMax() const { return _boxMax; }
 
-void ParticleBinStructure::setBoxMax(const std::array<double, 3> &boxMax) {
-  _boxMax = boxMax;
-}
+void ParticleBinStructure::setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
 
 std::size_t ParticleBinStructure::getNumberOfBins() const { return _particleCounts.size(); }
 
-void ParticleBinStructure::resize() {_particleCounts.resize(getNumberOfBins());}
+void ParticleBinStructure::resize() { _particleCounts.resize(getNumberOfBins()); }
 
 double ParticleBinStructure::getBinVolume() const { return _binLength[0] * _binLength[1] * _binLength[2]; }
 
@@ -272,5 +255,4 @@ double ParticleBinStructure::getEstimatedNumberOfNeighborInteractions() const {
   return _estimatedNumberOfNeighborInteractions;
 }
 
-
-}
+}  // namespace autopas::utils
