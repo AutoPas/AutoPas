@@ -560,7 +560,7 @@ void Simulation::applyBackgroundFriction(const double backgroundForceFrictionCoe
                                          const double backgroundTorqueFrictionCoeff,
                                          ParticlePropertiesLibraryType &particlePropertiesLib) {
   using namespace autopas::utils::ArrayMath::literals;
-
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const std::array<double, 3> forceDamping = particle->getV() * backgroundForceFrictionCoeff;
@@ -571,6 +571,10 @@ void Simulation::applyBackgroundFriction(const double backgroundForceFrictionCoe
         particle->getAngularVel() * (radius * radius * backgroundTorqueFrictionCoeff);
     particle->subTorque(torqueDamping);
   }
+#else
+  autopas::utils::ExceptionHandler::exception(
+      "Attempting to perform DEM temperature integrations when md-flexible has not been compiled with DEM functor!");
+#endif
 }
 
 void Simulation::logSimulationState() {

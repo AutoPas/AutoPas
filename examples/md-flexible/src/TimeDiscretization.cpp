@@ -212,6 +212,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
 void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
                            const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const double mass = particlePropertiesLibrary.getSiteMass(iter->getTypeId());
@@ -222,6 +223,10 @@ void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
 
     iter->addTemperature(deltaTemperature);
   }
+#else
+  autopas::utils::ExceptionHandler::exception(
+      "Attempting to perform DEM temperature integrations when md-flexible has not been compiled with DEM functor!");
+#endif
 }
 
 }  // namespace TimeDiscretization
