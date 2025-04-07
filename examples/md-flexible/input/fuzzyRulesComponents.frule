@@ -1,6 +1,12 @@
 # NOTE: These rules have been automatically generated using a data centric approach developed in
 # https://github.com/ManuelLerchner/AutoPas-FuzzyTuning-Bachelor-Thesis/tree/main/data-analysis/cluster-examples-pause
 
+# WARNING: This frule file was developed using data from the deactivated CoolMUC2 cluster, which used a rather old
+# architecture and may not be relevant on modern architectures. Furthermore, since the frule file was written, the
+# LiveInfo statistic "homogeneity" was removed (similar to "relativeParticlesPerCellStdDev", but with bin sizes which
+# varied depending on how many particles there were). As such, this file is remains to provide an example of a frule
+# file, but may not be performant.
+
 # The file describes different Fuzzy Systems each one trying to optimize a different component of the configuration.
 # For example one Fuzzy System tries to optimize the Container and DataLayout, another one the Traversal another whether
 # Newton 3 should be enabled or not.
@@ -23,12 +29,6 @@ FuzzySystemSettings:
 # Each fuzzy variable can have multiple fuzzy sets. Each fuzzy set is defined by a name and a membership function.
 
 ## Inputs
-
-FuzzyVariable: domain: "homogeneity" range: (-0.009356649898708463, 0.14862964989870847)
-	"lower than 0.049":     SigmoidFinite(0.09149464989870847, 0.049, 0.006505350101291538)
-	"lower than 0.041":     SigmoidFinite(0.08349464989870847, 0.04100000000000001, -0.0014946498987084625)
-	"higher than 0.049":    SigmoidFinite(0.006505350101291538, 0.049, 0.09149464989870847)
-	"higher than 0.041":    SigmoidFinite(-0.0014946498987084625, 0.04100000000000001, 0.08349464989870847)
 
 FuzzyVariable: domain: "threadCount" range: (-19.938962749166983, 48.93896274916698)
 	"lower than 18.0":      SigmoidFinite(38.93896274916698, 18.0, -2.9389627491669827)
@@ -161,16 +161,6 @@ OutputMapping:
 
 ## Container_DataLayout
 
-if ("homogeneity" == "lower than 0.049") && ("threadCount" == "lower than 18.0")
-	then ("Container_DataLayout" == "VerletClusterLists_SoA, VerletListsCells_AoS")
-if ("homogeneity" == "higher than 0.049") && ("particlesPerCellStdDev" == "higher than 0.038") && ("threadCount" == "lower than 18.0")
-	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA")
-if ("homogeneity" == "lower than 0.049") && ("threadCount" == "higher than 18.0")
-	then ("Container_DataLayout" == "VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA")
-if ("homogeneity" == "higher than 0.049") && ("particlesPerCellStdDev" == "higher than 0.038") && ("threadCount" == "higher than 18.0")
-	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA, VerletLists_SoA")
-if ("homogeneity" == "higher than 0.049") && ("particlesPerCellStdDev" == "lower than 0.038")
-	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS")
 if ("particlesPerCellStdDev" == "lower than 0.014") && ("avgParticlesPerCell" == "lower than 1.553") && ("threadCount" == "lower than 18.0")
 	then ("Container_DataLayout" == "VerletClusterLists_SoA, VerletListsCells_AoS")
 if ("particlesPerCellStdDev" == "lower than 0.015") && ("avgParticlesPerCell" == "lower than 1.553") && ("threadCount" == "higher than 18.0")
@@ -232,8 +222,4 @@ if ("threadCount" == "higher than 26.0") && ("particlesPerCellStdDev" == "lower 
 if ("threadCount" == "higher than 18.0") && ("threadCount" == "lower than 26.0") && ("particlesPerCellStdDev" == "higher than 0.013") && ("particlesPerCellStdDev" == "lower than 0.013")
 	then ("Newton 3" == "enabled")
 if ("threadCount" == "lower than 8.0")
-	then ("Newton 3" == "enabled")
-if ("threadCount" == "lower than 18.0") && ("threadCount" == "higher than 8.0") && ("homogeneity" == "higher than 0.041")
-	then ("Newton 3" == "enabled")
-if ("threadCount" == "lower than 18.0") && ("threadCount" == "higher than 8.0") && ("homogeneity" == "lower than 0.041")
 	then ("Newton 3" == "enabled")
