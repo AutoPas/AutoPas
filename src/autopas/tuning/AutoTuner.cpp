@@ -32,7 +32,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _earlyStoppingFactor(autoTunerInfo.earlyStoppingFactor),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
-          [](auto &tuningStrat) { return tuningStrat->needsDomainSimilarityStatistics(); })),
+          [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
       _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
@@ -42,8 +42,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
       _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
-  _meanParticlesPerCellOfLastTenIterations.reserve(10);
-  _relStdDevParticlesPerCellOfLastTenIterations.reserve(10);
+  _homogeneitiesOfLastTenIterations.reserve(10);
+  _maxDensitiesOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
@@ -56,9 +56,9 @@ AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
   return *this;
 }
 
-void AutoTuner::addDomainSimilarityStatistics(double meanParticlesPerCell, double relStdDevParticlesPerCell, long time) {
-  _meanParticlesPerCellOfLastTenIterations.push_back(meanParticlesPerCell);
-  _relStdDevParticlesPerCellOfLastTenIterations.push_back(relStdDevParticlesPerCell);
+void AutoTuner::addHomogeneityAndMaxDensity(double homogeneity, double maxDensity, long time) {
+  _homogeneitiesOfLastTenIterations.push_back(homogeneity);
+  _maxDensitiesOfLastTenIterations.push_back(maxDensity);
   _timerCalculateHomogeneity.addTime(time);
 }
 
@@ -379,11 +379,11 @@ void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
   if (startOfTuningPhase) {
     // If needed, calculate homogeneity and maxDensity, and reset buffers.
     const auto [homogeneity, maxDensity] = [&]() {
-      const auto retTuple = std::make_tuple(OptimumSelector::medianValue(_meanParticlesPerCellOfLastTenIterations),
-                                            OptimumSelector::medianValue(_relStdDevParticlesPerCellOfLastTenIterations));
-      _meanParticlesPerCellOfLastTenIterations.clear();
-      _relStdDevParticlesPerCellOfLastTenIterations.clear();
-      AutoPasLog(DEBUG, "Calculating domain similarity statistics over 10 iterations took in total {} ns on rank {}.",
+      const auto retTuple = std::make_tuple(OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
+                                            OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations));
+      _homogeneitiesOfLastTenIterations.clear();
+      _maxDensitiesOfLastTenIterations.clear();
+      AutoPasLog(DEBUG, "Calculating homogeneities over 10 iterations took in total {} ns on rank {}.",
                  _timerCalculateHomogeneity.getTotalTime(), []() {
                    int rank{0};
                    AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
@@ -394,13 +394,13 @@ void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
 
     // pass homogeneity and maxDensity info if needed
     for (const auto &tuningStrat : _tuningStrategies) {
-      tuningStrat->receiveDomainSimilarityStatistics(homogeneity, maxDensity);
+      tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
     }
   }
 
 }
 
-bool AutoTuner::needsDomainSimilarityStatisticsBeforePrepare() const {
+bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
   // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
   constexpr size_t numIterationsForHomogeneity = 10;
   return _needsHomogeneityAndMaxDensity and

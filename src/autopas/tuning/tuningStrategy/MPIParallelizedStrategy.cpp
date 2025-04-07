@@ -142,9 +142,9 @@ bool MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::v
   return false;
 }
 
-bool MPIParallelizedStrategy::needsDomainSimilarityStatistics() const { return true; }
+bool MPIParallelizedStrategy::needsSmoothedHomogeneityAndMaxDensity() const { return true; }
 
-void MPIParallelizedStrategy::receiveDomainSimilarityStatistics(double homogeneity, double maxDensity) {
+void MPIParallelizedStrategy::receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity) {
   _smoothedHomogeneity = homogeneity;
   _maxDensity = maxDensity;
 }

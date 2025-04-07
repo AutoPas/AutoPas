@@ -24,6 +24,7 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1849,26 +1850,25 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    const auto needsDensityStatistics = autoTuner.needsDomainSimilarityStatisticsBeforePrepare();
-    const auto needsLiveInfo = autoTuner.needsLiveInfo();
-    if (needsDensityStatistics or needsLiveInfo) {
-      // Gather Live Info
+    const auto needsDensityStatistics = autoTuner.needsHomogeneityAndMaxDensityBeforePrepare();
+    if (needsDensityStatistics) {
+      // Gather homogeneity and max density
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
+      const auto &container = _containerSelector.getCurrentContainer();
+      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
+      timerCalculateHomogeneity.stop();
+      autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+    }
+    const auto needsLiveInfo = autoTuner.needsLiveInfo();
+    if (needsLiveInfo) {
+      // Gather Live Info
+      utils::Timer timerCalculateLiveInfo;
+      timerCalculateLiveInfo.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
       _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-      timerCalculateHomogeneity.stop();
-      if (needsDensityStatistics) {
-        const auto meanParticlesPerCell = info.get<double>("meanParticlesPerCell");
-        const auto relativeParticlesPerCellStdDev = info.get<double>("relativeParticlesPerCellStdDev");
-        autoTuner.addDomainSimilarityStatistics(meanParticlesPerCell, relativeParticlesPerCellStdDev,
-                                              timerCalculateHomogeneity.getTotalTime());
-        autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
-      }
-      if (needsLiveInfo) {
-        autoTuner.receiveLiveInfo(info);
-      }
+      autoTuner.receiveLiveInfo(info);
     }
 
     std::tie(configuration, stillTuning) = autoTuner.getNextConfig();

@@ -86,11 +86,10 @@ class AutoTuner {
   void receiveLiveInfo(const LiveInfo &liveInfo);
 
   /**
-   * Indicator whether tuner needs domain similarity statistics (mean and relative standard deviation number of particles
-   * per CSF1 cell-bin.)
-   * @return true if any strategy requires these and AutoPas is within 10 iterations of the start of the next tuning phase.
+   * Indicator whether tuner needs homogeneity and max density information before the next call to prepareIteration().
+   * @return
    */
-  [[nodiscard]] bool needsDomainSimilarityStatisticsBeforePrepare() const;
+  bool needsHomogeneityAndMaxDensityBeforePrepare() const;
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
@@ -196,13 +195,12 @@ class AutoTuner {
   void addMeasurement(long sample, bool neighborListRebuilt);
 
   /**
-   * Adds measurements of mean and relative (to mean) standard deviation of particles per cell-bin (mimicking a CSF1 cell)
-   * to the vector of measurements, which can be smoothed for use in MPI Tuning to find similar domains.
-   * @param meanParticlesPerCell
-   * @param relStdDevParticlesPerCell
+   * Adds measurements of homogeneity and maximal density to the vector of measurements.
+   * @param homogeneity
+   * @param maxDensity
    * @param time Time it took to obtain these measurements.
    */
-  void addDomainSimilarityStatistics(double meanParticlesPerCell, double relStdDevParticlesPerCell, long time);
+  void addHomogeneityAndMaxDensity(double homogeneity, double maxDensity, long time);
 
   /**
    * Getter for the current queue of configurations.
@@ -365,16 +363,14 @@ class AutoTuner {
   bool _needsLiveInfo;
 
   /**
-   * Buffer for the mean particles per cell-bin (mimicking a cell size factor 1 cell) of the last ten Iterations. Used
-   * in MPI Tuning.
+   * Buffer for the homogeneities of the last ten Iterations
    */
-  std::vector<double> _meanParticlesPerCellOfLastTenIterations{};
+  std::vector<double> _homogeneitiesOfLastTenIterations{};
 
   /**
-   * Buffer for the relative (to the mean) standard deviation in particles per cell-bin (mimicking a cell size factor 1
-   * cell) of the last ten Iterations. Used in MPI Tuning.
+   * Buffer for the maximum densities of the last ten Iterations.
    */
-  std::vector<double> _relStdDevParticlesPerCellOfLastTenIterations{};
+  std::vector<double> _maxDensitiesOfLastTenIterations{};
 
   /**
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists are

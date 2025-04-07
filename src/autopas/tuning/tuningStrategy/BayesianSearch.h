@@ -73,7 +73,7 @@ class BayesianSearch final : public TuningStrategyInterface {
   bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
 
-  bool needsDomainSimilarityStatistics() const override;
+  bool needsSmoothedHomogeneityAndMaxDensity() const override;
 
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
