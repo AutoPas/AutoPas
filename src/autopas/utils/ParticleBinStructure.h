@@ -69,8 +69,6 @@ class ParticleBinStructure {
    * - Mean number of particles per bin
    * - Standard deviation in number of particles per bin
    * - Standard deviation in number of particles per bin relative to the mean.
-   * - Mean bin density (#particles/bin volume)
-   * - Standard deviation in bin density
    * - Maximum number of particles per bin
    * - Minimum number of particles per bin
    * - Median number of particles per bin
@@ -106,7 +104,7 @@ class ParticleBinStructure {
 
   /**
    * Setter for the number of bins per dimension
-   * @param newCellsPerDim
+   * @param numBinsPerDim
    */
   void setCellsPerDim(const std::array<std::size_t, 3> &numBinsPerDim);
 
