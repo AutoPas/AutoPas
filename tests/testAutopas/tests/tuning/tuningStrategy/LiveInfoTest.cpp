@@ -157,3 +157,72 @@ TEST_F(LiveInfoTest, NoMissingLiveInfoStatisticsUnitTests) {
   EXPECT_EQ(size(liveInfo.get()), 29) << "LiveInfoTest is missing a test for one of the LiveInfo statistics, or"
                                          " includes a test for a statistic that no longer exists.";
 }
+
+/**
+ * Tests LiveInfo in the case that there are no particles.
+ */
+TEST_F(LiveInfoTest, NoParticleTest) {
+  using namespace autopas::utils::ArrayMath;
+  using namespace literals;
+
+
+  autopas::LiveInfo liveInfo;
+
+  constexpr double cutoff{2.0};
+  constexpr double skin{0.1};
+  constexpr std::array<double, 3> boxMin{0., 0., 0.};
+  constexpr std::array<double, 3> boxMax{10., 10., 10.};
+  constexpr auto boxSize = boxMax - boxMin;
+  constexpr size_t rebuildFrequency{10};
+
+  const auto numCellBinsPerDim =  castedFloor<size_t>(boxSize / (cutoff + skin));
+  const auto numCells = numCellBinsPerDim[0] * numCellBinsPerDim[1] * numCellBinsPerDim[2];
+
+  auto container = autopas::AutoPas<ParticleFP64>();
+
+  container.setCutoff(cutoff);
+  container.setVerletSkin(skin);
+  container.setBoxMin(boxMin);
+  container.setBoxMax(boxMax);
+  container.setVerletRebuildFrequency(rebuildFrequency);
+
+  container.init();
+
+  // Gather information from the container
+  liveInfo.gather(container.begin(), container.getVerletRebuildFrequency(), container.getNumberOfParticles(), container.getBoxMin(),
+                  container.getBoxMax(), container.getCutoff(), container.getVerletSkin());
+
+  // Compare directly calculated LiveInfo statistics
+  EXPECT_EQ(liveInfo.get<size_t>("numOwnedParticles"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("numHaloParticles"), 0);
+  EXPECT_EQ(liveInfo.get<double>("cutoff"), cutoff);
+  EXPECT_EQ(liveInfo.get<double>("skin"), skin);
+  EXPECT_EQ(liveInfo.get<size_t>("rebuildFrequency"), rebuildFrequency);
+  EXPECT_EQ(liveInfo.get<size_t>("particleSize"), sizeof(ParticleFP64));
+  EXPECT_EQ(liveInfo.get<size_t>("threadCount"), static_cast<size_t>(autopas::autopas_get_max_threads()));
+  EXPECT_EQ(liveInfo.get<double>("domainSizeX"), boxSize[0]);
+  EXPECT_EQ(liveInfo.get<double>("domainSizeY"), boxSize[1]);
+  EXPECT_EQ(liveInfo.get<double>("domainSizeZ"), boxSize[2]);
+  EXPECT_EQ(liveInfo.get<size_t>("numCells"), numCells);
+
+  // Compare LiveInfo statistics calculated through ParticleBinStructure
+  EXPECT_EQ(liveInfo.get<size_t>("numEmptyCells"), numCells);
+  EXPECT_EQ(liveInfo.get<size_t>("maxParticlesPerCell"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("minParticlesPerCell"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("medianParticlesPerCell"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("lowerQuartileParticlesPerCell"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("upperQuartileParticlesPerCell"), 0);
+  EXPECT_DOUBLE_EQ(liveInfo.get<double>("meanParticlesPerCell"), 0.);
+  EXPECT_DOUBLE_EQ(liveInfo.get<double>("relativeParticlesPerCellStdDev"), 0.);
+  EXPECT_DOUBLE_EQ(liveInfo.get<double>("particlesPerCellStdDev"), 0.);
+  EXPECT_DOUBLE_EQ(liveInfo.get<double>("estimatedNumNeighborInteractions"), 0.);
+
+  EXPECT_EQ(liveInfo.get<size_t>("maxParticlesPerBlurredBin"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("minParticlesPerBlurredBin"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("medianParticlesPerBlurredBin"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("lowerQuartileParticlesPerBlurredBin"), 0);
+  EXPECT_EQ(liveInfo.get<size_t>("upperQuartileParticlesPerBlurredBin"), 0);
+  EXPECT_DOUBLE_EQ(liveInfo.get<double>("meanParticlesPerBlurredBin"), 0.);
+  EXPECT_DOUBLE_EQ(liveInfo.get<double>("relativeParticlesPerBlurredBinStdDev"), 0.);
+  EXPECT_DOUBLE_EQ(liveInfo.get<double>("particlesPerBlurredBinStdDev"), 0.);
+}
