@@ -81,22 +81,12 @@ class LiveInfo {
                                 DataLayoutOption, Newton3Option>;
 
   /**
-   * Gathers important information from a particle container and functor.
-   *
-   * The gathered information should allow to estimate the performance of different configurations.
+   * Gathers key statistics that define the computational profile of the simulation, in order to provide lower
+   * dimensional and human understandable inputs for the tuning strategies.
    *
    * A lot of the information is based on a couple of different spatial bin resolutions:
    * - cells: Bin dimensions are the same as cells in the Linked Cells container with CSF 1.
-   * - particleDependentBins: Bin dimensions are designed such that the are approximately 10 particles per bin.
    * - blurredBins: The domain is divided equally into 3x3x3 "blurred" bins
-   *
-   * @note It is not clear how useful the statistics derived from the particleDependentBins are, as the "resolution"
-   * varies depending on the number of particles. E.g. Consider a sparse simulation with a "macroscopic" heterogeneity
-   * and a dense simulation with a "microscopic" heterogeneity but at a "macroscopic" level is rather homogeneous.
-   * These could have the same particleDependentBin homogeneity (relative std. dev. of bin counts) but would respond
-   * to traversals very differently. This could, however, provide a useful metric for homogeneity which is somewhat
-   * independent of particle density (e.g. could be useful for determining the best traversal with one statistic
-   * independently of what cell-size factor is chosen)
    *
    * Currently, it provides:
    * ---- Bin Independent Statistics ----
@@ -108,23 +98,32 @@ class LiveInfo {
    * - domainSizeY: The size of the domain on the y-axis.
    * - domainSizeZ: The size of the domain on the z-axis.
    * - particleSize: The number of bytes one particle in AoS layout needs.
-   * - particleSizeNeededByFunctor: The number of bytes the information needed by the functor from each particle
-   * occupies. Important for the SoA data layout, but irrelevant for the AoS data layout.
-   * - threadCount: The number of threads that can be used.
+   * - threadCount: The number of OMP threads that can be used.
    * - rebuildFrequency: The current verlet-rebuild-frequency of the simulation.
    * ---- Cell Statistics ----
    * - numCells: The number of cell-bins in the domain.
-   * - emptyCellRatio: The ratio of cells that are empty.
-   * - minParticlesPerCell: The minimum number of particles a cell in the domain contains.
-   * - maxParticlesPerCell: The maximum number of particles a cell in the domain contains.
-   * - avgParticlesPerCell: The average number of particles per cell.
+   * - numEmptyCells: The number of cell-bins that are empty.
+   * - minParticlesPerCell: The minimum number of particles in a cell-bin.
+   * - maxParticlesPerCell: The maximum number of particles in a cell-bin.
+   * - medianParticlesPerCell: The median number of particles per cell-bin.
+   * - lowerQuartileParticlesPerCell: The lower quartile number of particles per cell-bin.
+   * - upperQuartileParticlesPerCell: The upper quartile number of particles per cell-bin.
+   * - meanParticlesPerCell: The average number of particles per cell-bin.
+   * - particlesPerCellStdDev: The standard deviation in the number of particles per cell-bin.
+   * - relativeParticlesPerCellStdDev: The, relative to the mean, standard deviation in the number of particles per
+   * cell-bin.
    * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
-   * cells contain roughly the same number of particles. Estimation does not work well if this is not the case.
-   * - percentParticlesPerCellStdDev: The standard deviation of the number of particles in each cell from the
-   * average number of particles per cell, divided by the avgParticlesPerCell.
+   * cell-bins contain roughly the same number of particles. Estimation does not work well if this is not the case.
    * ---- Blurred Bin Statistics ----
-   * -percentParticlesPerBlurredCellStdDev: The standard deviation of the number of particles in each blurred cell,
-   * divided by the average number of particles per blurred cell. A blurred cell is exactly 1/27th of the domain.
+   * - maxParticlesPerBlurredBin: The maximum number of particles in a blurred bin.
+   * - minParticlesPerBlurredBin: The minimum number of particles in a blurred bin.
+   * - medianParticlesPerBlurredBin: The median number of particles per blurred bin.
+   * - lowerQuartileParticlesPerBlurredBin: The lower quartile number of particles per blurred bin.
+   * - upperQuartileParticlesPerBlurredBin: The upper quartile number of particles per blurred bin.
+   * - meanParticlesPerBlurredBin: The mean number of particles per blurred bin.
+   * - particlesPerBlurredBinStdDev: The standard deviation in the number of particles per blurred bin.
+   * - relativeParticlesPerBlurredBinStdDev: The, relative to the mean, standard deviation in the number of particles
+   * per blurred bin.
    *
    * @tparam Particle_T The type of particle the container stores.
    * @param container The container to gather the infos from.
