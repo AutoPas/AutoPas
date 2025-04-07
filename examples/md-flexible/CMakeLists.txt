@@ -32,7 +32,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_DEM>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_DEM}>:MD_FLEXIBLE_FUNCTOR_DEM>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
@@ -46,6 +46,9 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
         message(WARNING "Axilrod Teller functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_DEM)
+        message(WARNING "Discrete Element Method functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 

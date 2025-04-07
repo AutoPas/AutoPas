@@ -319,6 +319,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
         break;
       }
+      case FunctorOption::dem: {
+        os << "Discrete Element Method" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions, -indentWidth);
