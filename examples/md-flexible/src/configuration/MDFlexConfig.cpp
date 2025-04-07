@@ -380,7 +380,8 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << nuMap.name << ":  " << nuMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << radiusMap.name << ":  " << radiusMap.value.at(siteId) << endl;
-    os << "    " << setw(valueOffset - 4) << left << specificHeatMap.name << ":  " << specificHeatMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << specificHeatMap.name << ":  " << specificHeatMap.value.at(siteId)
+       << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE
   os << setw(valueOffset) << left << "Molecules:" << endl;

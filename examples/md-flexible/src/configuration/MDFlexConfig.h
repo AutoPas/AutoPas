@@ -108,7 +108,9 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
+      struct option retStruct {
+        name.c_str(), requiresArgument, nullptr, getOptChar
+      };
       return retStruct;
     }
   };

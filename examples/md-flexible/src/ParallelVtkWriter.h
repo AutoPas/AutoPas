@@ -53,7 +53,7 @@ class ParallelVtkWriter {
    * @return True iff the file exists.
    */
   static bool checkFileExists(const std::string &filename) {
-    struct stat buffer{};
+    struct stat buffer {};
     return (stat(filename.c_str(), &buffer) == 0);
   }
 

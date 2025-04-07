@@ -41,7 +41,8 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 }
 
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const RegularGridDecomposition &decomposition, const ParticlePropertiesLibraryType &particlePropertiesLib) const {
+                                       const RegularGridDecomposition &decomposition,
+                                       const ParticlePropertiesLibraryType &particlePropertiesLib) const {
   recordParticleStates(currentIteration, autoPasContainer, particlePropertiesLib);
   const auto currentConfig = autoPasContainer.getCurrentConfigs();
   recordDomainSubdivision(currentIteration, currentConfig, decomposition);
@@ -120,7 +121,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
-#elif defined (MD_FLEXIBLE_FUNCTOR_DEM)
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
   // print radii
   timestepFile << "        <DataArray Name=\"radii\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
@@ -130,7 +131,8 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile << "        </DataArray>\n";
 
   // print temperatures
-  timestepFile << "        <DataArray Name=\"temperatures\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float64\">\n";
+  timestepFile
+      << "        <DataArray Name=\"temperatures\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float64\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto temperature = particle->getTemperature();
     timestepFile << "        " << temperature << "\n";

@@ -173,7 +173,7 @@ class ParticlePropertiesLibrary {
    * @param i
    * @return
    */
-   floatType getSpecificHeat(intType i) const;
+  floatType getSpecificHeat(intType i) const;
 
   /**
    * Getter for a molecules' mass.

@@ -1,15 +1,21 @@
 /**
-* @file GranularDEM.cpp
-* @author Joon Kim
-* @date 27/03/2025
+ * @file GranularDEM.cpp
+ * @author Joon Kim
+ * @date 27/03/2025
  */
 
 #include "GranularDEM.h"
 
 namespace demLib {
 GranularDEM::GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v,
-                         std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId, double temperature)
-    : autopas::ParticleBaseFP64(pos, v, particleId), _angularVel(angularVel), _torque({0., 0., 0.}), _typeId(typeId), _temperature(temperature), _heatFlux(0.) {}
+                         std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId,
+                         double temperature)
+    : autopas::ParticleBaseFP64(pos, v, particleId),
+      _angularVel(angularVel),
+      _torque({0., 0., 0.}),
+      _typeId(typeId),
+      _temperature(temperature),
+      _heatFlux(0.) {}
 
 const std::array<double, 3> &GranularDEM::getOldF() const { return _oldF; }
 void GranularDEM::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }

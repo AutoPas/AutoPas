@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "DEMParameters.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -16,7 +17,6 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "DEMParameters.h"
 
 namespace demLib {
 
@@ -57,7 +57,9 @@ class DEMFunctor
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param demParameters Includes [elasticStiffness, normalViscosity, frictionViscosity, rollingViscosity, torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff, torsionFrictionCoeff, conductivity, heatGenerationFactor]
+   * @param demParameters Includes [elasticStiffness, normalViscosity, frictionViscosity, rollingViscosity,
+   * torsionViscosity, staticFrictionCoeff, dynamicFrictionCoeff, rollingFrictionCoeff, torsionFrictionCoeff,
+   * conductivity, heatGenerationFactor]
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit DEMFunctor(double cutoff, DEMParameters &demParameters, void * /*dummy*/)
@@ -189,13 +191,13 @@ class DEMFunctor
                                             cross(normalUnit * radiusJReduced, j.getAngularVel());  // 30 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                  // 3 FLOPS
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);                          // 1 FLOPS
-    std::array<double, 3> tanF = tanVel * (-_frictionViscosity);                                     // 3 FLOPS
+    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);                         // 1 FLOPS
+    std::array<double, 3> tanF = tanVel * (-_frictionViscosity);                                    // 3 FLOPS
     const double tanFMag = L2Norm(tanF);                                                            // 6 FLOPS
     if (tanFMag > coulombLimit) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;  // -> additional 5 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;                        // -> additional 5 FLOPS
       const double scale = _dynamicFrictionCoeff * (normalContactFMag) / tanFMag;  // 2 FLOPS
-      tanF = tanF * scale;                                                                                  // 3 FLOPS
+      tanF = tanF * scale;                                                         // 3 FLOPS
     }
 
     // Compute total force (3 FLOPS)
@@ -214,25 +216,23 @@ class DEMFunctor
     // Compute rolling torque (15 + 3 + 6 + 12 = 36 FLOPS)
     const std::array<double, 3> rollingRelVel =
         cross(normalUnit, (i.getAngularVel() - j.getAngularVel())) * (-radiusReduced);  // 15 FLOPS
-    std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);               // 3 FLOPS
+    std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);              // 3 FLOPS
     const double rollingFMag = L2Norm(rollingF);                                        // 6 FLOPS
     if (rollingFMag > coulombLimit) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;  // -> additional 5 FLOPS
-      const double scale =
-          _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;  // 2 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;                        // -> additional 5 FLOPS
+      const double scale = _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;  // 2 FLOPS
       rollingF = rollingF * scale;
     }
     const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
 
     // Compute torsional torque (11 + 3 + 6 + 3 = 23 FLOPS)
     const std::array<double, 3> torsionRelVel = normalUnit * dot(normalUnit, (i.getAngularVel() - j.getAngularVel())) *
-                                                radiusReduced;             // 1 + 3 + 5 + 2 = 11 FLOPS
+                                                radiusReduced;              // 1 + 3 + 5 + 2 = 11 FLOPS
     std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
-    const double torsionFMag = L2Norm(torsionF);                           // 6 FLOPS
+    const double torsionFMag = L2Norm(torsionF);                            // 6 FLOPS
     if (torsionFMag > coulombLimit) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;  // -> additional 5 FLOPS
-      const double scale =
-          _torsionFrictionCoeff * (normalContactFMag) / torsionFMag;  // 2 FLOPS
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;                        // -> additional 5 FLOPS
+      const double scale = _torsionFrictionCoeff * (normalContactFMag) / torsionFMag;  // 2 FLOPS
       torsionF = torsionF * scale;
     }
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
@@ -394,7 +394,8 @@ class DEMFunctor
         const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - relVelDotNormalUnit * normalUnitZ;
 
         // Compute normal force as sum of contact force.
-        const SoAFloatPrecision normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+        const SoAFloatPrecision normalContactFMag =
+            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
 
         const SoAFloatPrecision normalFX = normalContactFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalContactFMag * normalUnitY;
@@ -411,8 +412,7 @@ class DEMFunctor
           if constexpr (countFLOPs) {
             ++numInnerIfTanFCallsSum;
           }
-          const SoAFloatPrecision scale =
-              _dynamicFrictionCoeff * normalContactFMag / tanFMag;
+          const SoAFloatPrecision scale = _dynamicFrictionCoeff * normalContactFMag / tanFMag;
           tanFX *= scale;
           tanFY *= scale;
           tanFZ *= scale;
@@ -462,8 +462,7 @@ class DEMFunctor
           if constexpr (countFLOPs) {
             ++numInnerIfRollingQCallsSum;
           }
-          const SoAFloatPrecision scale =
-              _rollingFrictionCoeff * normalContactFMag / rollingFMag;
+          const SoAFloatPrecision scale = _rollingFrictionCoeff * normalContactFMag / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -493,8 +492,7 @@ class DEMFunctor
           if constexpr (countFLOPs) {
             ++numInnerIfTorsionQCallsSum;
           }
-          const SoAFloatPrecision scale =
-              _torsionFrictionCoeff * normalContactFMag / torsionFMag;
+          const SoAFloatPrecision scale = _torsionFrictionCoeff * normalContactFMag / torsionFMag;
           torsionFX *= scale;
           torsionFY *= scale;
           torsionFZ *= scale;
@@ -529,7 +527,7 @@ class DEMFunctor
         // Apply Heat Flux
         heatFluxAcc += (heatFluxI + heatFluxGenerated);
         heatFluxPtr[j] += (-heatFluxI + heatFluxGenerated);  // "newton 3"
-      }  // end of j loop
+      }                                                      // end of j loop
 
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
@@ -588,9 +586,7 @@ class DEMFunctor
    *
    * @param radius
    */
-  void setParticleProperties(SoAFloatPrecision radius) {
-    _radius = radius;
-  }
+  void setParticleProperties(SoAFloatPrecision radius) { _radius = radius; }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -671,7 +667,8 @@ class DEMFunctor
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-    if (calculateGloabls) {}
+    if (calculateGloabls) {
+    }
   }
 
   [[nodiscard]] size_t getNumFLOPs() const override {
@@ -910,7 +907,8 @@ class DEMFunctor
         const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - relVelDotNormalUnit * normalUnitZ;
 
         // Compute normal force
-        const SoAFloatPrecision normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+        const SoAFloatPrecision normalContactFMag =
+            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
 
         const SoAFloatPrecision normalFX = normalContactFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalContactFMag * normalUnitY;
@@ -919,8 +917,7 @@ class DEMFunctor
         // Compute tangential force
         const SoAFloatPrecision tanFUnitMag = std::sqrt(
             tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY + tanRelVelTotalZ * tanRelVelTotalZ);
-        const SoAFloatPrecision tanFScale =
-            _dynamicFrictionCoeff * normalContactFMag / tanFUnitMag;
+        const SoAFloatPrecision tanFScale = _dynamicFrictionCoeff * normalContactFMag / tanFUnitMag;
 
         SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
         SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
@@ -933,8 +930,7 @@ class DEMFunctor
           if constexpr (countFLOPs) {
             ++numInnerIfTanFCallsSum;
           }
-          const SoAFloatPrecision scale =
-              _dynamicFrictionCoeff * normalContactFMag / tanFMag;
+          const SoAFloatPrecision scale = _dynamicFrictionCoeff * normalContactFMag / tanFMag;
           tanFX *= scale;
           tanFY *= scale;
           tanFZ *= scale;
@@ -985,8 +981,7 @@ class DEMFunctor
           if constexpr (countFLOPs) {
             ++numInnerIfRollingQCallsSum;
           }
-          const SoAFloatPrecision scale =
-              _rollingFrictionCoeff * normalContactFMag / rollingFMag;
+          const SoAFloatPrecision scale = _rollingFrictionCoeff * normalContactFMag / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -1016,8 +1011,7 @@ class DEMFunctor
           if constexpr (countFLOPs) {
             ++numInnerIfTorsionQCallsSum;
           }
-          const SoAFloatPrecision scale =
-              _torsionFrictionCoeff * normalContactFMag / torsionFMag;
+          const SoAFloatPrecision scale = _torsionFrictionCoeff * normalContactFMag / torsionFMag;
           torsionFX *= scale;
           torsionFY *= scale;
           torsionFZ *= scale;
@@ -1290,8 +1284,7 @@ class DEMFunctor
             if constexpr (countFLOPs) {
               ++numInnerIfTanFCallsSum;
             }
-            const SoAFloatPrecision scale =
-                _dynamicFrictionCoeff * normalContactFMag / tanFMag;
+            const SoAFloatPrecision scale = _dynamicFrictionCoeff * normalContactFMag / tanFMag;
             tanFX *= scale;
             tanFY *= scale;
             tanFZ *= scale;
@@ -1338,8 +1331,7 @@ class DEMFunctor
             if constexpr (countFLOPs) {
               ++numInnerIfRollingQCallsSum;
             }
-            const SoAFloatPrecision scale =
-                _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;
+            const SoAFloatPrecision scale = _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;
             rollingFX *= scale;
             rollingFY *= scale;
             rollingFZ *= scale;
@@ -1368,8 +1360,7 @@ class DEMFunctor
             if constexpr (countFLOPs) {
               ++numInnerIfTorsionQCallsSum;
             }
-            const SoAFloatPrecision scale =
-                _torsionFrictionCoeff * (normalContactFMag) / torsionFMag;
+            const SoAFloatPrecision scale = _torsionFrictionCoeff * (normalContactFMag) / torsionFMag;
             torsionFX *= scale;
             torsionFY *= scale;
             torsionFZ *= scale;
@@ -1424,8 +1415,8 @@ class DEMFunctor
             heatFluxPtr[j] += heatFluxArr[tmpj];
           }
         }  // end of newton3 force / torque application
-      }  // end of joff loop
-    }  // end of vectorized part
+      }    // end of joff loop
+    }      // end of vectorized part
 
     // loop over the remaining particles in the verlet list (without optimization)
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
@@ -1576,8 +1567,7 @@ class DEMFunctor
         if constexpr (countFLOPs) {
           ++numInnerIfRollingQCallsSum;
         }
-        const SoAFloatPrecision scale =
-            _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;
+        const SoAFloatPrecision scale = _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;
         rollingFX *= scale;
         rollingFY *= scale;
         rollingFZ *= scale;
@@ -1606,8 +1596,7 @@ class DEMFunctor
         if constexpr (countFLOPs) {
           ++numInnerIfTorsionQCallsSum;
         }
-        const SoAFloatPrecision scale =
-            _torsionFrictionCoeff * normalContactFMag / torsionFMag;
+        const SoAFloatPrecision scale = _torsionFrictionCoeff * normalContactFMag / torsionFMag;
         torsionFX *= scale;
         torsionFY *= scale;
         torsionFZ *= scale;
@@ -1690,8 +1679,8 @@ class DEMFunctor
    * This class stores internal data for FLOP counters for each thread. Make sure that this data has proper size, i.e.
    * k*64 Bytes!
    * The FLOP count and HitRate are not counted/calculated directly, but through helper counters (numKernelCallsNoN3,
-   * numKernelCallsN3, numDistCalls, numGlobalCalcs, etc.) to reduce computational cost in the functors themselves and to
-   * improve maintainability (e.g. if the cost of a kernel call changes).
+   * numKernelCallsN3, numDistCalls, numGlobalCalcs, etc.) to reduce computational cost in the functors themselves and
+   * to improve maintainability (e.g. if the cost of a kernel call changes).
    */
   class AoSThreadDataFLOPs {
    public:

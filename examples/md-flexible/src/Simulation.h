@@ -376,7 +376,7 @@ class Simulation {
    * @param particlePropertiesLib
    */
   void applyBackgroundFriction(const double backgroundForceFrictionCoeff, const double backgroundTorqueFrictionCoeff,
-                                   ParticlePropertiesLibraryType &particlePropertiesLib);
+                               ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Indicates if enough iterations were completed yet.

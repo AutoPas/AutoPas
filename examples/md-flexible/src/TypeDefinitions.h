@@ -35,9 +35,9 @@
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-#include "demLibrary/GranularDEM.h"
 #include "demLibrary/DEMFunctor.h"
 #include "demLibrary/DEMParameters.h"
+#include "demLibrary/GranularDEM.h"
 #endif
 
 #endif

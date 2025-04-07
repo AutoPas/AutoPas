@@ -1,8 +1,8 @@
 /**
-* @file GranularDEM.h
-* @author Joon Kim
-* @date 27/03/2025
-*/
+ * @file GranularDEM.h
+ * @author Joon Kim
+ * @date 27/03/2025
+ */
 
 #pragma once
 
@@ -329,7 +329,6 @@ class GranularDEM : public autopas::ParticleBaseFP64 {
    * @param heatFlux
    */
   void subHeatFlux(double heatFlux);
-
 
   /**
    * Creates a string containing all data of the particle.

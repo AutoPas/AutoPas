@@ -1,8 +1,8 @@
 /**
-* @file DEMParameters.h
-* @author Joon Kim
-* @date 27/03/2025
-*/
+ * @file DEMParameters.h
+ * @author Joon Kim
+ * @date 27/03/2025
+ */
 
 #pragma once
 
@@ -19,16 +19,9 @@ class DEMParameters {
    * Constructor of the DEMParameters class.
    * Initializes all DEM-specific parameters.
    */
-  DEMParameters(double elasticStiffness,
-                double normalViscosity,
-                double frictionViscosity,
-                double rollingViscosity,
-                double torsionViscosity,
-                double staticFrictionCoeff,
-                double dynamicFrictionCoeff,
-                double rollingFrictionCoeff,
-                double torsionFrictionCoeff,
-                double heatConductivity,
+  DEMParameters(double elasticStiffness, double normalViscosity, double frictionViscosity, double rollingViscosity,
+                double torsionViscosity, double staticFrictionCoeff, double dynamicFrictionCoeff,
+                double rollingFrictionCoeff, double torsionFrictionCoeff, double heatConductivity,
                 double heatGenerationFactor)
       : _elasticStiffness(elasticStiffness),
         _normalViscosity(normalViscosity),
@@ -79,6 +72,5 @@ class DEMParameters {
   const double _heatConductivity;
   const double _heatGenerationFactor;
 };
-
 
 }  // namespace demLib
