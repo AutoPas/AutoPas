@@ -149,11 +149,11 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
 /**
  * Type of DEMFunctor used in md-flexible.
  */
-#if MMD_FLEXIBLE_MODE == MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
 #error "The DEM functor des not have support for multisite molecules!"
 #else
 using DEMFunctorType =
-    demLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+    demLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
 
 #endif
 
