@@ -36,8 +36,10 @@ class ParticleBinStructure {
   /**
    * Constructor, that takes 3D array of the number of bins in each dimension and the dimensions of each bin, and
    * resizes space in the particle count structure as well as setting other relevant statistics.
-   * @param numBinsPerDim
-   * @param binLength
+   * @param numBinsPerDim Number of bins per dimension.
+   * @param binLength Dimensions of each bin.
+   * @param boxMin Lower left corner of region considered for particle binning.
+   * @param boxMax Upper right corner of region considered for particle binning.
    * @param cutoff Not needed for particle counting, but needed for estimatedNumberOfNeighborInteractions statistic.
    */
   ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength,
@@ -46,8 +48,10 @@ class ParticleBinStructure {
   /**
    * Constructor, for if there are the same number of bins in each dimension. Takes a number of bins and the dimensions
    * of each bin, and resizes space in the particle count structure as well as setting other relevant statistics.
-   * @param numBinsPerDim
-   * @param binLength
+   * @param numBinsPerDim Number of bins per dimension
+   * @param binLength Dimensions of each bin.
+   * @param boxMin Lower left corner of region considered for particle binning.
+   * @param boxMax Upper right corner of region considered for particle binning.
    * @param cutoff Not needed for particle counting, but needed for estimatedNumberOfNeighborInteractions statistic.
    */
   ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin,

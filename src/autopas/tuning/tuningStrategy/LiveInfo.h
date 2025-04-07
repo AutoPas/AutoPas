@@ -38,8 +38,11 @@ class LiveInfo {
   /**
    * Returns a particle bin structure that mimics a Linked Cells container with cell size factor 1.
    *
-   * @param domainSize size of (sub)domain
-   * @param interactionLength interaction length (cutoff + skin)
+   * @param domainSize Size of (sub)domain.
+   * @param interactionLength Interaction length (cutoff + skin).
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff Cutoff.
    * @return
    */
   static utils::ParticleBinStructure buildCellBinStructure(const std::array<double, 3> &domainSize,
@@ -63,7 +66,9 @@ class LiveInfo {
    * Returns a bin structure the domain is divided into 3x3x3 uniform bins.
    *
    * @param domainSize size of (sub)domain
-   * @param numParticles number of particles
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff Cutoff.
    * @return
    */
   static utils::ParticleBinStructure buildBlurredBinStructure(const std::array<double, 3> &domainSize,
@@ -129,8 +134,13 @@ class LiveInfo {
    * per blurred bin.
    *
    * @tparam Particle_T The type of particle the container stores.
-   * @param container The container to gather the infos from.
+   * @param particleIter Iterator to the first particle in the AutoPas container.
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
+   * @param numOwnedParticles The number of owned particles in the container.
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff The cutoff.
+   * @param skin The (Verlet) skin.
    */
   template <class Particle_T>
   void gather(ContainerIterator<Particle_T, true, false> particleIter, size_t rebuildFrequency,

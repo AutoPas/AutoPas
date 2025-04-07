@@ -94,6 +94,7 @@ class AutoTuner {
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
    * a tuning phase.
+   * @return True if the AutoTuner needs live info.
    */
   [[nodiscard]] bool needsLiveInfo() const;
 
