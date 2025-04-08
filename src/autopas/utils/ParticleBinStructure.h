@@ -1,8 +1,8 @@
 /**
-* @file ParticleBinStructure.h
-* @author S. Newcome
-* @date 13/12/2024
-*/
+ * @file ParticleBinStructure.h
+ * @author S. Newcome
+ * @date 13/12/2024
+ */
 
 #pragma once
 
@@ -31,26 +31,32 @@ namespace autopas::utils {
  * The purpose of this is to calculate all statistics together because it is rather trivial and efficient but provides
  * getters for individual statistics in case some are not desired.
  */
-class ParticleBinStructure{
+class ParticleBinStructure {
  public:
   /**
    * Constructor, that takes 3D array of the number of bins in each dimension and the dimensions of each bin, and
    * resizes space in the particle count structure as well as setting other relevant statistics.
-   * @param numBinsPerDim
-   * @param binLength
+   * @param numBinsPerDim Number of bins per dimension.
+   * @param binLength Dimensions of each bin.
+   * @param boxMin Lower left corner of region considered for particle binning.
+   * @param boxMax Upper right corner of region considered for particle binning.
    * @param cutoff Not needed for particle counting, but needed for estimatedNumberOfNeighborInteractions statistic.
    */
-  ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff);
+  ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, std::array<double, 3> binLength,
+                       std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff);
 
   /**
    * Constructor, for if there are the same number of bins in each dimension. Takes a number of bins and the dimensions
    * of each bin, and resizes space in the particle count structure as well as setting other relevant statistics.
-   * @param numBinsPerDim
-   * @param binLength
+   * @param numBinsPerDim Number of bins per dimension
+   * @param binLength Dimensions of each bin.
+   * @param boxMin Lower left corner of region considered for particle binning.
+   * @param boxMax Upper right corner of region considered for particle binning.
    * @param cutoff Not needed for particle counting, but needed for estimatedNumberOfNeighborInteractions statistic.
    */
-  ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff)
-   : ParticleBinStructure({numBinsPerDim, numBinsPerDim, numBinsPerDim}, binLength, boxMin, boxMax, cutoff) {};
+  ParticleBinStructure(size_t numBinsPerDim, std::array<double, 3> binLength, std::array<double, 3> boxMin,
+                       std::array<double, 3> boxMax, double cutoff)
+      : ParticleBinStructure({numBinsPerDim, numBinsPerDim, numBinsPerDim}, binLength, boxMin, boxMax, cutoff){};
 
   /**
    * Adds to the counter for the bin the particle falls into.
@@ -63,8 +69,6 @@ class ParticleBinStructure{
    * - Mean number of particles per bin
    * - Standard deviation in number of particles per bin
    * - Standard deviation in number of particles per bin relative to the mean.
-   * - Mean bin density (#particles/bin volume)
-   * - Standard deviation in bin density
    * - Maximum number of particles per bin
    * - Minimum number of particles per bin
    * - Median number of particles per bin
@@ -84,17 +88,23 @@ class ParticleBinStructure{
    * Getter for the total number of particles counted
    * @return
    */
-  const size_t &getTotalParticleCount() const;
+  [[nodiscard]] const size_t &getTotalParticleCount() const;
+
+  /**
+   * Getter for the particle counts.
+   * @return
+   */
+  [[nodiscard]] const std::vector<size_t> &getParticleCounts() const;
 
   /**
    * Getter for the number of bins per dimension
    * @return
    */
-  const std::array<std::size_t, 3> &getNumBinsPerDim() const;
+  [[nodiscard]] const std::array<std::size_t, 3> &getNumBinsPerDim() const;
 
   /**
    * Setter for the number of bins per dimension
-   * @param newCellsPerDim
+   * @param numBinsPerDim
    */
   void setCellsPerDim(const std::array<std::size_t, 3> &numBinsPerDim);
 
@@ -102,13 +112,13 @@ class ParticleBinStructure{
    * Getter for the dimensions of each bin.
    * @return
    */
-  const std::array<double, 3> &getBinLength() const;
+  [[nodiscard]] const std::array<double, 3> &getBinLength() const;
 
   /**
    * Getter for the reciprocal of the dimensions of each bin.
    * @return
    */
-  const std::array<double, 3> &getBinLengthReciprocal() const;
+  [[nodiscard]] const std::array<double, 3> &getBinLengthReciprocal() const;
 
   /**
    * Setter for the dimension of each bin. Also sets the reciprocal of these lengths.
@@ -120,7 +130,7 @@ class ParticleBinStructure{
    * Getter for the box min.
    * @return
    */
-  const std::array<double, 3> &getBoxMin() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
 
   /**
    * Setter for the box min.
@@ -132,7 +142,7 @@ class ParticleBinStructure{
    * Getter for the box max.
    * @return
    */
-  const std::array<double, 3> &getBoxMax() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
 
   /**
    * Setter for the box max.
@@ -144,7 +154,7 @@ class ParticleBinStructure{
    * Getter for the number of bins.
    * @return
    */
-  std::size_t getNumberOfBins() const;
+  [[nodiscard]] std::size_t getNumberOfBins() const;
 
   /**
    * Resizes the particle count structure.
@@ -155,7 +165,7 @@ class ParticleBinStructure{
    * Getter for the volume of each bin.
    * @return
    */
-  double getBinVolume() const;
+  [[nodiscard]] double getBinVolume() const;
 
   /**
    * Returns the mean number of particles per bins.
@@ -180,28 +190,6 @@ class ParticleBinStructure{
    * @return The relative standard deviation of the number of particles per bin.
    */
   [[nodiscard]] double getRelStdDevParticlesPerBin() const;
-
-  /**
-   * Returns the mean density of particles per bins.
-   * Logs a warning if statistics have not been calculated yet.
-   *
-   * @return The mean density of particles.
-   */
-  [[nodiscard]] double getMeanDensity() const;
-
-  /**
-   * Returns the standard deviation of the density per bins.
-   * Logs a warning if statistics have not been calculated yet.
-   *
-   * @return The standard deviation of densities.
-   */
-  [[nodiscard]] double getStdDevDensity() const;
-
-  /**
-   * Returns the maximum density of any bin.
-   * @return
-   */
-  [[nodiscard]] double getMaxDensity() const;
 
   /**
    * Returns the maximum number of particles in a single bin.
@@ -275,27 +263,27 @@ class ParticleBinStructure{
   /**
    * The number of bins per dimension.
    */
-  std::array<std::size_t,3> _numBinsPerDim{};
+  std::array<std::size_t, 3> _numBinsPerDim{};
 
   /**
    * The length of each bin in each dimension.
    */
-  std::array<double,3> _binLength{};
+  std::array<double, 3> _binLength{};
 
   /**
    * The reciprocal of the length of each bin in each dimension.
    */
-  std::array<double,3> _binLengthReciprocal{};
+  std::array<double, 3> _binLengthReciprocal{};
 
   /**
    * The lower left corner of the box which the bin structure partitions.
    */
-  std::array<double,3> _boxMin{};
+  std::array<double, 3> _boxMin{};
 
   /**
    * The upper right corner of the box which the bin structure partitions.
    */
-  std::array<double,3> _boxMax{};
+  std::array<double, 3> _boxMax{};
 
   /**
    * Cutoff. Only needed for the statistics.
@@ -318,11 +306,6 @@ class ParticleBinStructure{
   double _meanParticlesPerBin{};
 
   /**
-   * Mean density (#particles in a bin / bin volume) per bin.
-   */
-  double _meanDensity{};
-
-  /**
    * Standard deviation in the number of particles per bin.
    */
   double _stdDevParticlesPerBin{};
@@ -331,16 +314,6 @@ class ParticleBinStructure{
    * Standard deviation in the number of particles per bin relative to the number of particles.
    */
   double _relStdDevParticlesPerBin{};
-
-  /**
-   * Standard deviation in the bin density per bin.
-   */
-  double _stdDevDensity{};
-
-  /**
-   * Maximum density in any bin.
-   */
-  double _maxDensity{};
 
   /**
    * Maximum number of particles that any bin has.
@@ -381,7 +354,4 @@ class ParticleBinStructure{
    */
   double _estimatedNumberOfNeighborInteractions{};
 };
-}
-
-
-
+}  // namespace autopas::utils

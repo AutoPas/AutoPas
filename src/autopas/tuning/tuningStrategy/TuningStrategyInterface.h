@@ -98,7 +98,7 @@ class TuningStrategyInterface {
    * Indicate whether the strategy needs smoothed values of homogeneity and max density
    * @return
    */
-  virtual bool needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+  [[nodiscard]] virtual bool needsSmoothedHomogeneityAndMaxDensity() const { return false; }
 
   /**
    * Method to pass smoothed homogeneity and the maximal density to the tuning strategy.
