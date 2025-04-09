@@ -16,11 +16,11 @@ namespace autopas {
  * Traversal for VerletClusterLists. Does not support newton 3.
  *
  * It uses a static scheduling that gives each thread about the same amount of cluster pairs to handle.
- * @tparam ParticleCell
+ * @tparam Particle_T Particle Type.
  * @tparam PairwiseFunctor The type of the functor.
  */
-template <class Particle, class PairwiseFunctor>
-class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalInterface<Particle> {
+template <class Particle_T, class PairwiseFunctor>
+class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalInterface<Particle_T> {
  public:
   /**
    * Constructor of the VCLC01BalancedTraversal.
@@ -44,26 +44,26 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
   void initTraversal() override {
     if (_dataLayout != DataLayoutOption::soa) return;
 
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<Particle_T>::_verletClusterLists;
     clusterList.loadParticlesIntoSoAs(_functor);
   }
 
   void endTraversal() override {
     if (_dataLayout != DataLayoutOption::soa) return;
 
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<Particle_T>::_verletClusterLists;
     clusterList.extractParticlesFromSoAs(_functor);
   }
 
   void traverseParticles() override {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<Particle_T>::_verletClusterLists;
     auto &clusterThreadPartition = clusterList.getClusterThreadPartition();
 
     auto numThreads = clusterThreadPartition.size();
     AUTOPAS_OPENMP(parallel num_threads(numThreads)) {
       auto threadNum = autopas_get_thread_num();
       const auto &clusterRange = clusterThreadPartition[threadNum];
-      auto &towers = *VCLTraversalInterface<Particle>::_towers;
+      auto &towers = *VCLTraversalInterface<Particle_T>::_towers;
       size_t clusterCount = 0;
       for (size_t towerIndex = clusterRange.startTowerIndex;
            clusterCount < clusterRange.numClusters and towerIndex < towers.size(); towerIndex++) {
@@ -91,6 +91,6 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
 
  private:
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
+  internal::VCLClusterFunctor<Particle_T, PairwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas
