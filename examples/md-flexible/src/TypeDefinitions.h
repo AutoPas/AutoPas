@@ -78,8 +78,8 @@ constexpr bool calcGlobals =
 #endif
 }  // namespace mdFlexibleTypeDefs
 
-using LuTFunctorType = mdLib::LuTFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                     mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LuTFunctorType = mdLib::LuTFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                                         mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**

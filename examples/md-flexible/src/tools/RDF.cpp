@@ -15,8 +15,8 @@ RDF::RDF(const std::shared_ptr<autopas::AutoPas<ParticleType>> autoPasContainer,
       _periodicBoundaries{periodicBoundaries} {
   _finalRdf.resize(_numBins);
   for (size_t i = 0; i < _numBins; ++i) {
-    _finalRdf[i] = std::pair<double, double>{static_cast<double>(i + 1) / static_cast<double>(_numBins) * _radiusMax,
-                                             0.001 * _numBins};
+    _finalRdf[i] =
+        std::pair<double, double>{static_cast<double>(i + 1) / static_cast<double>(_numBins) * _radiusMax, 0};
   }
 }
 
@@ -57,13 +57,18 @@ void RDF::reset() {
   _rdfFinished = false;
   _finalRdf.clear();
   _finalRdf.resize(_numBins);
+  _numRDFs = 0;
   for (size_t i = 0; i < _numBins; ++i) {
-    _finalRdf[i] = std::pair<double, double>{static_cast<double>(i + 1) / static_cast<double>(_numBins) * _radiusMax,
-                                             0.001 * _numBins};
+    _finalRdf[i] =
+        std::pair<double, double>{static_cast<double>(i + 1) / static_cast<double>(_numBins) * _radiusMax, 0};
   }
 }
 
 void RDF::captureRDF() {
+  if (_rdfFinished) {
+    throw std::runtime_error("Final RDF is already computed!");
+  }
+
   // Parameters for RDF calculation
   const double binWidth = (_radiusMax - _radiusMin) / _numBins;
 
@@ -180,7 +185,7 @@ void RDF::computeFinalRDF() {
   _rdfFinished = true;
 }
 
-std::vector<std::pair<double, double>> RDF::getFinalRDF() {
+std::vector<std::pair<double, double>> &RDF::getFinalRDF() {
   if (_rdfFinished) {
     return _finalRdf;
   } else {

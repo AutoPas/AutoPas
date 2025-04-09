@@ -1,70 +1,87 @@
+/**
+ * @file RDF.h
+ * @author D. Martin
+ * @date 07.03.2025
+ */
+
 #pragma once
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
+namespace mdLib {
+/**
+ * Stores potential values and derivatives to be used in the LuTFunctor
+ */
 class LookupTable {
  public:
-  LookupTable(const std::vector<std::pair<double, double>> &data) : table(data) {
-    // Sortiere die Tabelle nach den Abständen (r-Werten), falls nicht bereits sortiert
-    std::sort(table.begin(), table.end());
+  LookupTable(const std::vector<std::pair<double, double>> &data) : potentialValues(data) {
+    // Sort the table according to the distances (r-values), if not already sorted
+    std::sort(potentialValues.begin(), potentialValues.end());
   }
 
   LookupTable() {}
 
-  // Lineare Interpolation für einen gegebenen Abstand r
+  // Linear interpolation for a given distance r
   double interpolate(double r) const {
-    if (table.empty()) {
+    if (potentialValues.empty()) {
       throw std::runtime_error("Lookup table is empty!");
     }
 
-    // Falls r außerhalb des Bereichs liegt, nutze die Randwerte
-    if (r <= table.front().first) return table.front().second;
-    if (r >= table.back().first) return table.back().second;
+    // If r is outside the range, use the boundary values
+    if (r <= potentialValues.front().first) return potentialValues.front().second;
+    if (r >= potentialValues.back().first) return potentialValues.back().second;
 
-    // Finde die benachbarten Punkte
+    // Find the neighboring points
     auto upper = std::lower_bound(
-        table.begin(), table.end(), std::make_pair(r, 0.0),
+        potentialValues.begin(), potentialValues.end(), std::make_pair(r, 0.0),
         [](const std::pair<double, double> &a, const std::pair<double, double> &b) { return a.first < b.first; });
     auto lower = upper - 1;
 
-    // size_t index = std::distance(std::begin(table), lower);
-    // if (index < 1000) {
-    //   std::cout << "problem index " << index << ", U1: " << lower->second << ", U2: " << upper->second << std::endl;
-    // }
-
-    // std::cout << "r: " << r << ", r1: " << lower->first << ", r2: " << upper->first << std::endl;
-
-    // Lineare Interpolation
+    // Linear interpolation
     double r1 = lower->first, U1 = lower->second;
     double r2 = upper->first, U2 = upper->second;
     return U1 + (U2 - U1) * (r - r1) / (r2 - r1);
   }
 
-  // Update der Lookup-Tabelle zur Laufzeit
+  // Update the lookup table at runtime
   void updateTable(const std::vector<std::pair<double, double>> &newData) {
-    table = newData;
-    std::sort(table.begin(), table.end());
+    potentialValues = newData;
+    std::sort(potentialValues.begin(), potentialValues.end());
   }
 
   double &operator[](size_t index) {
-    if (index >= table.size()) {
+    if (index >= potentialValues.size()) {
       throw std::out_of_range("LookupTable index out of range!");
     }
-    return table[index].second;
+    return potentialValues[index].second;
   }
 
-  void saveToCSV(const std::string &filename) const {
-    std::ofstream file(filename);
+  void writeToCSV(std::string outputFolder, std::string filename) {
+    // Ensure the output folder exists
+    std::filesystem::create_directories(outputFolder);
+
+    // Construct the full file path
+    std::string filePath = outputFolder + "/" + filename + ".csv";
+
+    std::ofstream file(filePath);
     if (!file.is_open()) {
-      throw std::runtime_error("Failed to open file for writing: " + filename);
+      std::cerr << "Error: Could not open file " << filePath << " for writing." << std::endl;
+      return;
     }
-    for (const auto &entry : table) {
-      file << entry.first << "," << entry.second << "\n";
+
+    // Write header
+    file << "distance,value\n";
+
+    // Write data
+    for (const auto &[distance, value] : potentialValues) {
+      file << distance << "," << value << "\n";
     }
+
     file.close();
   }
 
@@ -89,5 +106,7 @@ class LookupTable {
   }
 
  private:
-  std::vector<std::pair<double, double>> table;
+  std::vector<std::pair<double, double>> potentialValues;
+  std::vector<std::pair<double, double>> derivativeValues;
 };
+}  // namespace mdLib

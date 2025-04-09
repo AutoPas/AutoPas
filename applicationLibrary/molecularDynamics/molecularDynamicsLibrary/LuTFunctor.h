@@ -1,8 +1,7 @@
 /**
- * @file LuTFunctor.h
- *
- * @date 17 Jan 2018
- * @author tchipevn
+ * @file RDF.h
+ * @author D. Martin
+ * @date 07.03.2025
  */
 
 #pragma once
@@ -22,24 +21,17 @@
 namespace mdLib {
 
 /**
- * A functor to handle lennard-jones interactions between two particles (molecules).
- * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
- * scheme.
+ * A functor to return interpolated force values from a lookup table
  * @tparam Particle The type of particle.
- * @tparam applyShift Switch for the lj potential to be truncated shifted.
- * @tparam useMixing Switch for the functor to be used with multiple particle types.
- * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, bool applyShift = false, bool useMixing = false,
-          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true>
-class LuTFunctor
-    : public autopas::PairwiseFunctor<Particle, LuTFunctor<Particle, applyShift, useMixing, useNewton3,
-                                                           calculateGlobals, countFLOPs, relevantForTuning>> {
+template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool countFLOPs = false, bool relevantForTuning = true>
+class LuTFunctor : public autopas::PairwiseFunctor<
+                       Particle, LuTFunctor<Particle, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -63,8 +55,9 @@ class LuTFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LuTFunctor(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle, LuTFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                      countFLOPs, relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle,
+                                 LuTFunctor<Particle, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -86,25 +79,7 @@ class LuTFunctor
    *
    * @param cutoff
    */
-  explicit LuTFunctor(double cutoff) : LuTFunctor(cutoff, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
-
-  /**
-   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
-   * properties like sigma, epsilon and shift.
-   * @param cutoff
-   * @param particlePropertiesLibrary
-   */
-  explicit LuTFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LuTFunctor(cutoff, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
-  }
+  explicit LuTFunctor(double cutoff) : LuTFunctor(cutoff, nullptr) {}
 
   void setLuT(std::shared_ptr<LookupTable> lookupTable) { _lookupTable = lookupTable; }
 
@@ -127,7 +102,9 @@ class LuTFunctor
       return;
     }
 
-    auto dr = j.getR() - i.getR();
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
@@ -135,33 +112,38 @@ class LuTFunctor
     }
 
     double r = std::sqrt(dr2);
-    // double potential = _lookupTable->interpolate(r);
 
     // Calculation of the force: F = -dU/dr, here approximation with difference quotient
-    double h = 1e-5;
+    double h = 1e-3;
     double potentialPlus = _lookupTable->interpolate(r + h);
     double potentialMinus = _lookupTable->interpolate(r - h);
-    double forceMagnitude = -(potentialPlus - potentialMinus) / (2 * h);
+    double forceMagnitude = -((potentialPlus - potentialMinus) / (2.0 * h));
 
-    if (forceMagnitude > 10000000) {
-      double invdr2 = 1. / dr2;
-      double lj6 = 1.0 * invdr2;
-      lj6 = lj6 * lj6 * lj6;
-      double lj12 = lj6 * lj6;
-      double lj12m6 = lj12 - lj6;
-      double fac = 24.0 * (lj12 + lj12m6) * invdr2;
-      // auto f = dr * fac;
-
-      std::cout << std::setprecision(15) << "force between " << i.getID() << " and " << j.getID() << " is "
-                << (forceMagnitude / r) << ", potentialPlus: " << potentialPlus
-                << ", potentialMinus: " << potentialMinus << ", 2h: " << (2 * h) << ", LJ force is " << fac
-                << std::endl;
+    auto f = (forceMagnitude / r) * dr;
+    i.addF(f);
+    if (newton3) {
+      j.subF(f);
     }
 
-    auto forceVec = (forceMagnitude / r) * dr;
-    i.addF(forceVec);
-    if (newton3) {
-      j.subF(forceVec);
+    if constexpr (calculateGlobals) {
+      // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
+      // Potential energy has an additional factor of 6, which is also handled in endTraversal().
+
+      auto virial = dr * f;
+      double potentialEnergy = _lookupTable->interpolate(r);
+
+      if (i.isOwned()) {
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
+      }
+      // for non-newton3 the second particle will be considered in a separate calculation
+      if (newton3 and j.isOwned()) {
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
+      }
+      if constexpr (countFLOPs) {
+        // not implemented yet
+      }
     }
   }
 
@@ -169,26 +151,18 @@ class LuTFunctor
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
    */
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {}
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("LuTFunctor::SoAFunctorSingle() is not yet implemented.");
+  }
 
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                      const bool newton3) final {}
+                      const bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("LuTFunctor::SoAFunctorPair() is not yet implemented.");
+  }
 
- private:
-  /**
-   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
-   *
-   * @tparam newton3
-   * @param soa1
-   * @param soa2
-   */
-  template <bool newton3>
-  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {}
-
- public:
   // clang-format off
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
@@ -198,17 +172,9 @@ class LuTFunctor
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {}
-
-  /**
-   * Sets the particle properties constants for this functor.
-   *
-   * This is only necessary if no particlePropertiesLibrary is used.
-   *
-   * @param epsilon24
-   * @param sigmaSquared
-   */
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {}
+                        bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("LuTFunctor::SoAFunctorVerlet() is not yet implemented.");
+  }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -236,12 +202,6 @@ class LuTFunctor
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   }
-
-  /**
-   *
-   * @return useMixing
-   */
-  constexpr static bool getMixing() { return useMixing; }
 
   /**
    * Reset the global values.
@@ -284,8 +244,6 @@ class LuTFunctor
       _potentialEnergySum *= 0.5;
       _virialSum *= 0.5;
 
-      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
-      _potentialEnergySum /= 6.;
       _postProcessed = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
@@ -331,30 +289,6 @@ class LuTFunctor
   /**
    * Gets the number of useful FLOPs.
    *
-   * For the distance squared calculation, this is:
-   * - Displacement: 3
-   * - DistanceSquared in each dimension: 3
-   * - DistanceSquared Total: 2
-   * - Total: 8
-   *
-   * For the force kernel, this is:
-   * - inverse distance squared: 1 (assume division is 1 FLOP)
-   * - lj2: 1
-   * - lj6: 2
-   * - lj12: 1
-   * - lj12m6: 1
-   * - scalar factor: 3
-   * - force: 3
-   * - accumulate force on mol i: 3
-   * - accumulate force on mol j if n3: 3
-   * - Total: 15 without n3, 18 with n3
-   *
-   * For the globals calculation, this is:
-   * - virial: 3
-   * - potential: 1, or 2 with shift
-   * - accumulation: 4 without n3, 8 with n3
-   * - Total: 8 or 9 without n3, 12 or 13 with n3
-   *
    * Caveats:
    *
    * This function is supposed to return useful FLOPs, e.g. without counting masked vector instructions.
@@ -366,31 +300,7 @@ class LuTFunctor
    */
   [[nodiscard]] size_t getNumFLOPs() const override {
     if constexpr (countFLOPs) {
-      const size_t numDistCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
-      const size_t numKernelCallsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
-      const size_t numKernelCallsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
-      const size_t numGlobalCalcsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsN3; });
-      const size_t numGlobalCalcsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
-
-      constexpr size_t numFLOPsPerDistanceCall = 8;
-      constexpr size_t numFLOPsPerN3KernelCall = 18;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 15;
-      constexpr size_t numFLOPsPerN3GlobalCalc = applyShift ? 13 : 12;
-      constexpr size_t numFLOPsPerNoN3GlobalCalc = applyShift ? 9 : 8;
-
-      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
-             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
-             numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
+      // not implemented yet
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();
@@ -399,18 +309,7 @@ class LuTFunctor
 
   [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {
-      const size_t numDistCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
-      const size_t numKernelCallsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
-      const size_t numKernelCallsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
-
-      return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
-             (static_cast<double>(numDistCallsAcc));
+      // not implemented yet
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<double>::quiet_NaN();
@@ -418,10 +317,6 @@ class LuTFunctor
   }
 
  private:
-  template <bool newton3>
-  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {}
-
   /**
    * This class stores internal data for global calculations for each thread. Make sure that this data has proper size,
    * i.e. k*64 Bytes!
@@ -507,10 +402,6 @@ class LuTFunctor
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
-  // not const because they might be reset through PPL
-  double _epsilon24, _sigmaSquared, _shift6 = 0;
-
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
@@ -525,6 +416,7 @@ class LuTFunctor
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 
+  // stores the lookup table with force values
   std::shared_ptr<LookupTable> _lookupTable;
 };
 }  // namespace mdLib

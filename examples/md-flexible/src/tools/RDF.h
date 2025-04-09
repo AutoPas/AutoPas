@@ -59,7 +59,7 @@ class RDF {
    * Returns the final RDF
    * @return returns the RDF as pairs of distance and value
    */
-  std::vector<std::pair<double, double>> getFinalRDF();
+  std::vector<std::pair<double, double>> &getFinalRDF();
 
   /**
    * Writes the final RDF to a CSV file

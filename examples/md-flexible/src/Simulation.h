@@ -254,7 +254,7 @@ class Simulation {
   /**
    * Stores a radial distribution function
    */
-  std::shared_ptr<RDF> _rdf;
+  std::shared_ptr<RDF> _rdfCG;
 
   /**
    * Stores a radial distribution function from an initial simulation

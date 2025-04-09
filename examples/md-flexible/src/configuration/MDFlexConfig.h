@@ -443,7 +443,7 @@ class MDFlexConfig {
   /**
    * rdfFileName
    */
-  MDFlexOption<std::string, __LINE__> rdfFileName{"", "rdf-filename", true, "Filename for the RDF output CSV."};
+  MDFlexOption<std::string, __LINE__> rdfFileName{"rdf", "rdf-filename", true, "Filename for the RDF output CSV."};
   /**
    * rdfRadius
    */
@@ -468,17 +468,36 @@ class MDFlexConfig {
   MDFlexOption<size_t, __LINE__> rdfEndIteration{0, "rdf-end-iteration", true,
                                                  "Iteration number after which RDF capturing is disabled."};
   /**
+   * ibiEquilibrateIterations
+   */
+  MDFlexOption<size_t, __LINE__> ibiEquilibrateIterations{0, "ibi-equilibrate-iterations", true,
+                                                          "IBI iterations before capturing the RDF"};
+  /**
+   * ibiConvergenceThreshold
+   */
+  MDFlexOption<double, __LINE__> ibiConvergenceThreshold{
+      0.99, "ibi-convergence-threshold", true,
+      "Convergence threshold for the IBI process. A value of 1 would be a perfect match between the CG RDF and the "
+      "reference RDF"};
+  /**
+   * ibiUpdateAlpha
+   */
+  MDFlexOption<double, __LINE__> ibiUpdateAlpha{
+      1.0, "ibi-update-alpha", true, "Scaling factor used to avoid overshooting. Usually between 0.2 and 1.0"};
+  /**
    * rdfGuardArea
    */
   MDFlexOption<double, __LINE__> rdfGuardArea{0, "rdf-guard-area", true, "Guard area to use for the RDF calculation."};
   /**
-   * rdf
+   * lutOutputFolder
    */
-  MDFlexOption<std::string, __LINE__> rdf{"", "rdf", true, "RDF input file."};
+  MDFlexOption<std::string, __LINE__> lutOutputFolder{"output", "lut-output-folder", true,
+                                                      "The location where the lookup table output will be created."};
   /**
-   * lut
+   * lutFileName
    */
-  MDFlexOption<std::string, __LINE__> lut{"", "lut", true, "Lookup table input file."};
+  MDFlexOption<std::string, __LINE__> lutFileName{"lut", "lut-filename", true,
+                                                  "Filename for the lookup table output CSV."};
   /**
    * verletClusterSize
    */
