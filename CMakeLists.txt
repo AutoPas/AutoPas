@@ -40,7 +40,7 @@ if (NOT CYGWIN)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif ()
 
-set(SUPPORTED_COMPILERS "GNU;IntelLLVM;Clang")
+set(SUPPORTED_COMPILERS "GNU;IntelLLVM;Clang;AppleClang")
 
 if (NOT CMAKE_CXX_COMPILER_ID IN_LIST SUPPORTED_COMPILERS)
     message(WARNING "Compiler " ${CMAKE_CXX_COMPILER_ID} " not supported!")
