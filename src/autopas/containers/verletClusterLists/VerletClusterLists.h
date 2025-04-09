@@ -109,7 +109,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @return load estimator function object.
    */
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
-    switch (this->_loadEstimator) {
+    // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
+    switch (static_cast<LoadEstimatorOption::Value>(this->_loadEstimator)) {
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
@@ -371,9 +372,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     std::vector<Particle_T> invalidParticles;
 
     // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
-    AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \
-                                     std::vector<Particle_T> :                                            \
-                                         omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+    AUTOPAS_OPENMP(declare reduction(
+        vecMergeParticle : std::vector<Particle_T> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
     AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : invalidParticles)) {
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
