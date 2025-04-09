@@ -176,7 +176,7 @@ jobs:
         # To use GNU gcc, we need to explicitly point to the installation directory or use the versioned
         # executable as installed by brew (in this workflow gcc@14)
         compiler: [ [ clang, clang++ ], [ gcc-14, g++-14 ] ]
-    name: Build and Compile using ${{matrix.compiler[0]}}
+    name: macOS Build, Compile, and Run using ${{matrix.compiler[0]}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
