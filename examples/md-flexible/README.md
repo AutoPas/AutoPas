@@ -46,6 +46,8 @@ The DEM functor can be activated by switching on `MD_FLEXIBLE_FUNCTOR_DEM` via `
 cmake -DMD_FLEXIBLE_FUNCTOR_DEM=ON ..
 ```
 
+Furthermore, the user has to select the DEM functor in the input file. Refer to `AllOptions.yaml` for details.
+
 Currently, only the `SINGLESITE` mode is supported for DEM.
 
 ### Compiling with MPI
