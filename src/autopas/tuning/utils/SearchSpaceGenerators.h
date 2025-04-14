@@ -38,6 +38,12 @@ struct OptionSpace {
    * Available traversal options.
    */
   std::set<TraversalOption> traversalOptions;
+
+  /**
+   * Available Vectorization Pattern options
+   */
+  std::set<VectorizationPatternOption> vecPatternOptions;
+
   /**
    * Available loadEstimator options.
    */
@@ -66,6 +72,7 @@ struct OptionSpace {
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
  * @param interactionType
+ * @param allowedVecPatternOptions
  * @return A set containing all valid configurations.
  */
 std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
@@ -74,7 +81,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
-                                         const InteractionTypeOption &interactionType);
+                                         const InteractionTypeOption &interactionType,
+                                         const std::set<VectorizationPatternOption> &allowedVecPatternOptions);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.
