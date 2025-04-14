@@ -150,7 +150,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
-  _autoPasContainer->setCutoff(_configuration.cutoff.value);
+  _autoPasContainer->setCutoff(_configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
   _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
@@ -523,6 +523,11 @@ long Simulation::accumulateTime(const long &time) {
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+  wasTuningIteration |= applyWithChosenFunctorElectrostatic<bool>(
+      [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+#endif
   return wasTuningIteration;
 }
 
@@ -824,6 +829,20 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
     }
   }
+}
+
+template <class ReturnType, class FunctionType>
+ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f) {
+  const double cutoff = _configuration.cutoff.value * _configuration.cutoff.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+  return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+#else
+  throw std::runtime_error(
+      "MD-Flexible was not compiled with support for Coulomb interactions. Activate it via `cmake "
+      "-DMD_FLEXIBLE_FUNCTOR_COULOMB=ON`.");
+#endif
 }
 
 template <class ReturnType, class FunctionType>
