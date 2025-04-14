@@ -1,4 +1,4 @@
-if (AUTOPAS_ENABLE_ENERGY_MEASUREMENT)
+if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
     option(pmt_ForceBundled "Do not look for an installed version, always used bundled." ON)
 
