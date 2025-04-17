@@ -80,6 +80,7 @@ constexpr bool calcGlobals =
 
 using LuTFunctorType = mdLib::LuTFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
                                          mdFlexibleTypeDefs::countFLOPs>;
+using LookupTableType = mdLib::LookupTable;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**

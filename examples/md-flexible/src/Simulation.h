@@ -264,7 +264,7 @@ class Simulation {
   /**
    * Stores a lookup table for the IBI potential
    */
-  std::shared_ptr<LookupTable> _lut;
+  std::shared_ptr<LookupTableType> _lut;
 
  private:
   /**

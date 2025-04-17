@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w{};
+      struct winsize w {};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -376,7 +376,7 @@ void Simulation::run() {
       }
 
       // generate initial cg_potential
-      _lut = std::make_shared<LookupTable>();
+      _lut = std::make_shared<LookupTableType>();
 
       // this assumes normalized values for the temperature. Therefore the value equals temperature * boltzmannConstant
       const double kT = _configuration.targetTemperature.value;
