@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "molecularDynamicsLibrary/LuTFunctor.h"
+
 #if MD_FLEXIBLE_MODE == MULTISITE
 
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
@@ -76,6 +78,10 @@ constexpr bool calcGlobals =
 #endif
 }  // namespace mdFlexibleTypeDefs
 
+using LuTFunctorType = mdLib::LuTFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                                         mdFlexibleTypeDefs::countFLOPs>;
+using LookupTableType = mdLib::LookupTable;
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
  * Type of LJFunctorTypeAutovec used in md-flexible.
@@ -85,6 +91,7 @@ constexpr bool calcGlobals =
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;

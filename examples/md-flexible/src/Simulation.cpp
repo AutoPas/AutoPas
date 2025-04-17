@@ -202,6 +202,34 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   _timers.initialization.stop();
+
+  // if an RDF should be created init it here
+  const bool captureRDF = _configuration.rdfRadius.value > 0;
+  if (captureRDF) {
+    _rdfAA = std::make_shared<RDF>(
+        _autoPasContainer, 0, _configuration.rdfRadius.value, _configuration.rdfNumBins.value,
+        _configuration.rdfGuardArea.value,
+        std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                    [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })
+            ? true
+            : false);
+    // if end iteration is not specified capture until end
+    if (_configuration.rdfEndIteration.value == 0) {
+      _configuration.rdfEndIteration.value = _configuration.iterations.value;
+    }
+  }
+
+  // check if IBI should be used
+  const bool ibiSimulation = _configuration.ibiEquilibrateIterations.value > 0;
+  if (ibiSimulation) {
+    _rdfCG = std::make_shared<RDF>(
+        _autoPasContainer, 0, _configuration.rdfRadius.value, _configuration.rdfNumBins.value,
+        _configuration.rdfGuardArea.value,
+        std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                    [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })
+            ? true
+            : false);
+  }
 }
 
 void Simulation::finalize() {
@@ -214,11 +242,34 @@ void Simulation::finalize() {
 
 void Simulation::run() {
   _timers.simulate.start();
+  // Vector to store particle snapshot for IBI fitting
+  std::vector<ParticleType> particleCopy;
+
+  bool equilibrate{false};
+  size_t equilibrateIterations{0};
+  size_t cgMeasureIterations{0};
+  size_t ibiIterations{0};
+  const size_t rdfNumBins = _configuration.rdfNumBins.value;
+  bool ibiConvergenceReached{false};
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
+    }
+
+    if (_rdfCG and _iteration >= _configuration.rdfStartIteration.value and
+        _iteration < _configuration.rdfEndIteration.value and
+        _iteration % _configuration.rdfCaptureFreuency.value == 0) {
+      _rdfAA->captureRDF();
+    }
+
+    // capture CG RDF
+    if (_rdfCG and _iteration > _configuration.rdfEndIteration.value and not equilibrate and
+        not ibiConvergenceReached) {
+      _rdfCG->captureRDF();
+      cgMeasureIterations++;
     }
 
     _timers.computationalLoad.start();
@@ -307,6 +358,131 @@ void Simulation::run() {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
       if (not _configuration.dontShowProgressBar.value) {
         printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+      }
+    }
+
+    // capture the last RDF from original simulation
+    if (_rdfCG and _iteration == _configuration.rdfEndIteration.value) {
+      // std::cout << "capture RDF of LJ simulation!" << std::endl;
+      _rdfAA->captureRDF();
+      _rdfAA->computeFinalRDF();
+
+      _rdfAA->writeToCSV(_configuration.rdfOutputFolder.value,
+                         _configuration.rdfFileName.value + "_" + std::to_string(_iteration));
+
+      // create a copy of the current simulation state
+      for (auto particle1 = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle1.isValid();
+           ++particle1) {
+        particleCopy.push_back(*particle1);
+      }
+
+      // generate initial cg_potential
+      _lut = std::make_shared<LookupTableType>();
+
+      // this assumes normalized values for the temperature. Therefore the value equals temperature * boltzmannConstant
+      const double kT = _configuration.targetTemperature.value;
+
+      std::vector<std::pair<double, double>> initialPotential(rdfNumBins, std::pair<double, double>(0, 0));
+      initialPotential.resize(rdfNumBins);
+      int minIdx = -1;
+      for (int i = 0; i < rdfNumBins; i++) {
+        initialPotential[i].first =
+            _configuration.rdfRadius.value / static_cast<double>(rdfNumBins) * static_cast<double>(i + 1);
+        if (_rdfAA->getFinalRDF()[i].second > 0.0) {
+          initialPotential[i].second = -kT * std::log(_rdfAA->getFinalRDF()[i].second);
+        } else {
+          minIdx = i;
+        }
+      }
+      if (minIdx != -1) {
+        const double dy = initialPotential[minIdx + 2].second - initialPotential[minIdx + 1].second;
+        double yVal = initialPotential[minIdx + 1].second;
+        for (int idx = minIdx + 1; idx >= 0; idx--) {
+          initialPotential[idx].second = yVal;
+          yVal -= dy;
+        }
+      }
+
+      _lut->updateTable(initialPotential);
+      _lut->writeToCSV(_configuration.lutOutputFolder.value, _configuration.lutFileName.value + "_0");
+
+      equilibrate = true;
+      // std::cout << "start equilibrating!" << std::endl;
+    }
+
+    if (_rdfCG and _iteration > _configuration.rdfEndIteration.value and equilibrate) {
+      equilibrateIterations++;
+      if (equilibrateIterations == _configuration.ibiEquilibrateIterations.value) {
+        equilibrate = false;
+        equilibrateIterations = 0;
+        // std::cout << "stop equilibrating!" << std::endl;
+      }
+    }
+
+    // get the CG RDF and compare it to the AA RDF
+    if (_rdfCG and
+        cgMeasureIterations == (_configuration.rdfEndIteration.value - _configuration.rdfStartIteration.value) and
+        not ibiConvergenceReached) {
+      // std::cout << "capture CG RDF!" << std::endl;
+      _rdfCG->captureRDF();
+      _rdfCG->computeFinalRDF();
+
+      _rdfCG->writeToCSV(_configuration.rdfOutputFolder.value,
+                         _configuration.rdfFileName.value + "_" + std::to_string(_iteration));
+
+      const auto rdfCGValues = _rdfCG->getFinalRDF();
+      const auto rdfRefValues = _rdfAA->getFinalRDF();
+
+      // this assumes normalized values for the temperature. Therefore the value equals temperature * boltzmannConstant
+      const auto kT = _configuration.targetTemperature.value;
+
+      const auto tolerance = _configuration.ibiConvergenceThreshold.value;
+
+      const auto updateAlpha = _configuration.ibiUpdateAlpha.value;
+
+      // Update the CG potential
+      int minIdx = -1;
+      for (int i = 0; i < rdfNumBins; i++) {
+        if (rdfRefValues[i].second > 0.0 and rdfCGValues[i].second > 0.0) {
+          double update = updateAlpha * kT * std::log(rdfCGValues[i].second / rdfRefValues[i].second);
+          (*_lut)[i] += update;
+        } else {
+          minIdx = i;
+        }
+      }
+      // add correction for values where RDF is 0
+      if (minIdx != -1) {
+        const double dy = (*_lut)[minIdx + 2] - (*_lut)[minIdx + 1];
+        double yVal = (*_lut)[minIdx + 1];
+        for (int idx = minIdx + 1; idx >= 0; idx--) {
+          (*_lut)[idx] = yVal;
+          yVal -= dy;
+        }
+      }
+
+      // convergence check
+      double sum0{0};
+      double sum1{0};
+      for (size_t i = 0; i < rdfNumBins; ++i) {
+        sum0 += std::abs(rdfCGValues[i].second - rdfRefValues[i].second);
+        sum1 += (std::abs(rdfCGValues[i].second) + std::abs(rdfRefValues[i].second));
+      }
+      double convergenceResult = 1.0 - sum0 / sum1;
+
+      ibiIterations++;
+
+      _lut->writeToCSV(_configuration.lutOutputFolder.value,
+                       _configuration.lutFileName.value + "_" + std::to_string(ibiIterations));
+
+      // continue with CG fitting or stop if convergence reached
+      if (convergenceResult < tolerance) {
+        _rdfCG->reset();
+        cgMeasureIterations = 0;
+        equilibrate = true;
+        std::cout << "IBI: still fitting! convergenceResult: " << convergenceResult << std::endl;
+      } else {
+        ibiConvergenceReached = true;
+        std::cout << "IBI: convergence reached!" << std::endl;
       }
     }
   }
@@ -791,6 +967,11 @@ template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+  if (_configuration.ibiEquilibrateIterations.value > 0 and _iteration > _configuration.rdfEndIteration.value) {
+    auto func = LuTFunctorType{cutoff};
+    func.setLuT(_lut);
+    return f(func);
+  }
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
