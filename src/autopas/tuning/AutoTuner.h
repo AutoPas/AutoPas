@@ -92,13 +92,17 @@ class AutoTuner {
   bool needsHomogeneityAndMaxDensityBeforePrepare() const;
 
   /**
-   * Determines what live infos are needed and passes collected live info to the tuning strategies.
-   *
-   * @note The live info is not gathered here because then we would need the container.
-   *
-   * @return Bool indicating if live Infos are needed before the next call to tune
+   * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
+   * a tuning phase.
+   * @return True if the AutoTuner needs live info.
    */
-  bool prepareIteration();
+  [[nodiscard]] bool needsLiveInfo() const;
+
+  /**
+   * Sends smoothed mean and relative (to mean) number of particles per cell-bin (mimicking a CSF1 bin) to tuning
+   * strategies if it is the start of a tuning phase. Used to find similar domains e.g. for MPI Tuning.
+   */
+  void sendDomainSimilarityStatisticsAtStartOfTuningPhase();
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
