@@ -217,7 +217,8 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition,
+                                 *_configuration.getParticlePropertiesLibrary());
       _timers.vtk.stop();
     }
 
@@ -279,6 +280,11 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+    applyBackgroundFriction(_configuration.demBackgroundForceFrictionCoeff.value,
+                            _configuration.demBackgroundTorqueFrictionCoeff.value,
+                            *_configuration.getParticlePropertiesLibrary());
+#endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
@@ -289,6 +295,9 @@ void Simulation::run() {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+      updateAngularVelocities();
+      updateTemperatures();
 #endif
       updateThermostat();
     }
@@ -314,7 +323,8 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition,
+                               *_configuration.getParticlePropertiesLibrary());
   }
 }
 
@@ -504,6 +514,13 @@ void Simulation::updateAngularVelocities() {
   _timers.angularVelocityUpdate.stop();
 }
 
+void Simulation::updateTemperatures() {
+  const double deltaT = _configuration.deltaT.value;
+
+  TimeDiscretization::calculateTemperatures(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                            deltaT);
+}
+
 void Simulation::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
     _timers.thermostat.start();
@@ -537,6 +554,27 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }
+}
+
+void Simulation::applyBackgroundFriction(const double backgroundForceFrictionCoeff,
+                                         const double backgroundTorqueFrictionCoeff,
+                                         ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using namespace autopas::utils::ArrayMath::literals;
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const std::array<double, 3> forceDamping = particle->getV() * backgroundForceFrictionCoeff;
+    particle->subF(forceDamping);
+
+    const double radius = particlePropertiesLib.getRadius(particle->getTypeId());
+    const std::array<double, 3> torqueDamping =
+        particle->getAngularVel() * (radius * radius * backgroundTorqueFrictionCoeff);
+    particle->subTorque(torqueDamping);
+  }
+#else
+  autopas::utils::ExceptionHandler::exception(
+      "Attempting to perform DEM temperature integrations when md-flexible has not been compiled with DEM functor!");
+#endif
 }
 
 void Simulation::logSimulationState() {
@@ -817,6 +855,22 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::dem: {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+      demLib::DEMParameters demParameters{
+          _configuration.demElasticStiffness.value,     _configuration.demNormalViscosity.value,
+          _configuration.demFrictionViscosity.value,    _configuration.demRollingViscosity.value,
+          _configuration.demTorsionViscosity.value,     _configuration.demStaticFrictionCoeff.value,
+          _configuration.demDynamicFrictionCoeff.value, _configuration.demRollingFrictionCoeff.value,
+          _configuration.demTorsionFrictionCoeff.value, _configuration.demHeatConductivity.value,
+          _configuration.demHeatGenerationFactor.value};
+      return f(DEMFunctorType{cutoff, demParameters, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for DEMFunctor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_DEM=ON`.");
 #endif
     }
     default: {
