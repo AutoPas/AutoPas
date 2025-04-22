@@ -95,7 +95,7 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
    * @param p2
    * @return
    */
-  bool particleEqual(Particle &p1, Particle &p2);
+  bool particleEqual(Molecule &p1, Molecule &p2);
 
   constexpr static double _cutoff{6.};
   constexpr static double _skin{2.};

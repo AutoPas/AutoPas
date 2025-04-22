@@ -16,7 +16,7 @@
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/options/Newton3Option.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -211,9 +211,9 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(ruf->getBoxMax(), max);
 }
 
-template <typename Particle>
-static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeInterface<Particle> *node,
-                               autopas::OctreeNodeInterface<Particle> *neighbor) {
+template <typename Particle_T>
+static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeInterface<Particle_T> *node,
+                               autopas::OctreeNodeInterface<Particle_T> *neighbor) {
   using namespace autopas;
 
   int touchAxis = getAxis(face);
@@ -266,9 +266,9 @@ static std::array<double, 3> random3D(std::array<double, 3> min, std::array<doub
  * @param max The maximum coordinate of the cube from which the position is sampled
  * @return A particle with no speed and id 0
  */
-static autopas::ParticleFP64 getRandomlyDistributedParticle(std::array<double, 3> min, std::array<double, 3> max) {
+static autopas::ParticleBaseFP64 getRandomlyDistributedParticle(std::array<double, 3> min, std::array<double, 3> max) {
   auto randomPosition = random3D(min, max);
-  return autopas::ParticleFP64(randomPosition, {0, 0, 0}, 0);
+  return autopas::ParticleBaseFP64(randomPosition, {0, 0, 0}, 0);
 }
 
 /**
@@ -278,10 +278,10 @@ static autopas::ParticleFP64 getRandomlyDistributedParticle(std::array<double, 3
  * @param max The maximum coordinate of the octree's bounding box
  * @param randomParticleCount How many particles should be spawned
  */
-static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> createRandomOctree(
+static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleBaseFP64>> createRandomOctree(
     std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount, int treeSplitThreshold = 16) {
   using namespace autopas;
-  std::unique_ptr<OctreeNodeInterface<autopas::ParticleFP64>> root =
+  std::unique_ptr<OctreeNodeInterface<autopas::ParticleBaseFP64>> root =
       std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, treeSplitThreshold, 1, 1.0);
   for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
     auto randomParticle = getRandomlyDistributedParticle(min, max);

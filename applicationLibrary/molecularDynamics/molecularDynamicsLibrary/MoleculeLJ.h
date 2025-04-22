@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace mdLib {
@@ -18,7 +18,7 @@ namespace mdLib {
 /**
  * Molecule class for the LJFunctor.
  */
-class MoleculeLJ : public autopas::Particle {
+class MoleculeLJ : public autopas::ParticleBaseFP64 {
  public:
   MoleculeLJ() = default;
 

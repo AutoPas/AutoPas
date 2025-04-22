@@ -19,6 +19,8 @@ Please keep in mind the following notes while working.
 
 ### Code Style
 * Private attributes are prefixed with `_`.
+* Postfix template class/typename parameters with `_T`. (This has not been applied retroactively and so there are plenty
+  of cases where this is not yet the case, but should be applied for new contributions.
 * Every (abstract) class gets its own file, named exactly like the class.
 * Class names start with a capital letter.
 * Use `camelCase` over `snake_case`.

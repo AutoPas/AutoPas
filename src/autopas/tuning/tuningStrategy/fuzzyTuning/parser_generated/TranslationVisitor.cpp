@@ -201,7 +201,7 @@ auto makeLiteral(const std::string &optionType, const std::string &optionValue) 
   } else if (optionType == "newton3") {
     literal = Newton3Option::parseOptionExact(optionValue);
   } else if (optionType == "cellSizeFactor") {
-    literal = RuleVM::MemoryCell{static_cast<size_t>(std::stoull(optionValue))};
+    literal = RuleVM::MemoryCell{std::stod(optionValue)};
   } else {
     throw std::runtime_error("Unknown option type: " + optionType + " with value: " + optionValue);
   }

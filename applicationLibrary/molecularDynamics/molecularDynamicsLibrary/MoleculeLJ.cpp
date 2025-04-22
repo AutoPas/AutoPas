@@ -9,7 +9,7 @@
 namespace mdLib {
 MoleculeLJ::MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
                        unsigned long typeId)
-    : autopas::Particle(pos, v, moleculeId), _typeId(typeId) {}
+    : autopas::ParticleBaseFP64(pos, v, moleculeId), _typeId(typeId) {}
 
 const std::array<double, 3> &MoleculeLJ::getOldF() const { return _oldF; }
 void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }

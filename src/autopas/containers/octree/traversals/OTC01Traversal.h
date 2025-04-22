@@ -22,17 +22,17 @@ namespace autopas {
 /**
  * This traversal is capable of iterating over particles stored in the Octree data structure.
  *
- * @tparam Particle
+ * @tparam Particle_T
  * @tparam PairwiseFunctor
  */
-template <class Particle, class PairwiseFunctor>
-class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
-                       public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
+template <class Particle_T, class PairwiseFunctor>
+class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
+                       public OTTraversalInterface<OctreeNodeWrapper<Particle_T>> {
  public:
   /**
    * A shortcut to specify the type of the actual iterated cell
    */
-  using ParticleCell = OctreeLeafNode<Particle>;
+  using ParticleCell = OctreeLeafNode<Particle_T>;
 
   /**
    * Constructor for the Octree traversal.
@@ -45,7 +45,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
                           DataLayoutOption dataLayout, bool useNewton3)
       : CellTraversal<ParticleCell>({2, 1, 1}),
-        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength, dataLayout, useNewton3),
+        OTTraversalInterface<OctreeNodeWrapper<Particle_T>>(interactionLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
@@ -75,20 +75,20 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
 
     auto *haloWrapper = this->getHalo();
 
-    OctreeLogger<Particle>::octreeToJSON(this->getOwned()->getRaw(), this->getHalo()->getRaw(), this->_ownedLeaves,
-                                         this->_haloLeaves);
+    OctreeLogger<Particle_T>::octreeToJSON(this->getOwned()->getRaw(), this->getHalo()->getRaw(), this->_ownedLeaves,
+                                           this->_haloLeaves);
 
     // Get neighboring cells for each leaf
     // #pragma omp parallel for
     for (int i = 0; i < this->_ownedLeaves.size(); ++i) {
-      OctreeLeafNode<Particle> *leaf = this->_ownedLeaves[i];
+      OctreeLeafNode<Particle_T> *leaf = this->_ownedLeaves[i];
 
       // Process cell itself
       _cellFunctor.processCell(*leaf);
 
       // Process connection to all neighbors in this octree
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
-      for (OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
+      for (OctreeLeafNode<Particle_T> *neighborLeaf : uniqueNeighboringLeaves) {
         _cellFunctor.processCellPair(*leaf, *neighborLeaf);
       }
 
@@ -97,7 +97,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
       auto max = leaf->getBoxMax() + this->_interactionLength;
       auto haloNeighbors = haloWrapper->getLeavesInRange(min, max);
 
-      for (OctreeLeafNode<Particle> *neighborLeaf : haloNeighbors) {
+      for (OctreeLeafNode<Particle_T> *neighborLeaf : haloNeighbors) {
         _cellFunctor.processCellPair(*leaf, *neighborLeaf);
       }
     }

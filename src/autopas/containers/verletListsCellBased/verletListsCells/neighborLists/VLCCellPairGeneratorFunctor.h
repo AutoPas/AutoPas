@@ -15,11 +15,11 @@ namespace autopas {
 /**
  * This functor generates pairwise verlet lists (a verlet list attached to every pair of neighboring cells).
  */
-template <class Particle>
+template <class Particle_T>
 
-class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
-  using PairwiseNeighborListsType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle>;
-  using SoAArraysType = typename Particle::SoAArraysType;
+class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle_T, VLCCellPairGeneratorFunctor<Particle_T>> {
+  using PairwiseNeighborListsType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T>;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
  public:
   /**
@@ -30,9 +30,9 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
    * @param cutoffskin cutoff + skin
    */
   VLCCellPairGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
-                              std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
+                              std::unordered_map<Particle_T *, std::pair<size_t, size_t>> &particleToCellMap,
                               std::vector<std::unordered_map<size_t, size_t>> &globalToLocalIndex, double cutoffskin)
-      : PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>>(0.),
+      : PairwiseFunctor<Particle_T, VLCCellPairGeneratorFunctor<Particle_T>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _globalToLocalIndex(globalToLocalIndex),
@@ -62,7 +62,7 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
   /**
    * @copydoc PairwiseFunctor::AoSFunctor()
    */
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
@@ -97,10 +97,10 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;
 
-    auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict__ ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
+    double *const __restrict__ xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1ptr, same for 2
     auto cell = _particleToCellMap.at(ptrptr[0]).first;
@@ -153,15 +153,15 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict__ ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
+    double *const __restrict__ x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict__ y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict__ z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
 
-    auto **const __restrict__ ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict__ ptr2ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
+    double *const __restrict__ x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict__ y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict__ z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1ptr, same for 2
     size_t cell1 = _particleToCellMap.at(ptr1ptr[0]).first;
@@ -204,24 +204,24 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
    * @copydoc Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 4>{
-        Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ};
+    return std::array<typename Particle_T::AttributeNames, 4>{
+        Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+        Particle_T::AttributeNames::posZ};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 4>{
-        Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ};
+    return std::array<typename Particle_T::AttributeNames, 4>{
+        Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+        Particle_T::AttributeNames::posZ};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static auto getComputedAttr() { return std::array<typename Particle::AttributeNames, 0>{}; }
+  constexpr static auto getComputedAttr() { return std::array<typename Particle_T::AttributeNames, 0>{}; }
 
  private:
   /**
@@ -233,7 +233,7 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
   /**
    * Mapping of each particle to its corresponding cell and id within this cell.
    */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> &_particleToCellMap;
+  std::unordered_map<Particle_T *, std::pair<size_t, size_t>> &_particleToCellMap;
   /**
    * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
    * index in cell1's neighbors.
