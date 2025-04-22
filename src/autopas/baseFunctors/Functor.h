@@ -33,16 +33,16 @@ enum class FunctorN3Modes {
  * non-newton3 version. Instead you can specify, which version you use by
  * overriding allowsNonNewton3 resp. allowsNewton3
  *
- * @tparam Particle the type of Particle
+ * @tparam Particle_T the type of Particle
  * @tparam CRTP_T the actual type of the functor
  */
-template <class Particle, class CRTP_T>
+template <class Particle_T, class CRTP_T>
 class Functor {
  public:
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   /**
    * Make the Implementation type template publicly available.
@@ -74,8 +74,8 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 0>{};
+  constexpr static std::array<typename Particle_T::AttributeNames, 0> getNeededAttr() {
+    return std::array<typename Particle_T::AttributeNames, 0>{};
   }
 
   /**
@@ -83,7 +83,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename Particle_T::AttributeNames, 0> getNeededAttr(std::false_type) {
     return Functor_T::getNeededAttr();
   }
 
@@ -92,8 +92,8 @@ class Functor {
    * @return Attributes computed by this functor.
    * @todo C++20: make this function virtual
    */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 0>{};
+  constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle_T::AttributeNames, 0>{};
   }
 
   /**

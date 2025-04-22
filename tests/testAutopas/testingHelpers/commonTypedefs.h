@@ -7,22 +7,22 @@
 #pragma once
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "mocks/MockTriwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
-// a place for usings that are commonly used in tests
+// a place for aliases that are commonly used in tests
 
 /**
- * Short for AutoPas Particle
+ * Short for AutoPas ParticleBaseFP64
  */
-using Particle = autopas::Particle;
+using ParticleFP64 = autopas::ParticleBaseFP64;
 /**
- * Short for a FullParticle Cell with the AutoPas Particle
+ * Short for a FullParticle Cell with the AutoPas ParticleFP64
  */
-using FPCell = autopas::FullParticleCell<autopas::Particle>;
+using FPCell = autopas::FullParticleCell<ParticleFP64>;
 
 /**
  * Short for the AutoPas single site Lennard-Jones molecule
@@ -37,11 +37,11 @@ using FMCell = autopas::FullParticleCell<Molecule>;
 /**
  * Short for Mock Pairwise Functor
  */
-using MPairwiseFunctor = MockPairwiseFunctor<autopas::Particle>;
+using MPairwiseFunctor = MockPairwiseFunctor<ParticleFP64>;
 /**
  * Short for Mock Triwise Functor
  */
-using MTriwiseFunctor = MockTriwiseFunctor<autopas::Particle>;
+using MTriwiseFunctor = MockTriwiseFunctor<ParticleFP64>;
 
 /**
  * Helper alias for LJFunctor, with more defaults geared towards testing.

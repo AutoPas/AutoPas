@@ -28,13 +28,13 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin.
- * @tparam Particle
+ * @tparam Particle_T
  * @tparam NeighborList The neighbor list used by this container.
  */
 
-template <class Particle, class NeighborList>
-class VerletListsCells : public VerletListsLinkedBase<Particle> {
-  using ParticleCell = FullParticleCell<Particle>;
+template <class Particle_T, class NeighborList>
+class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
+  using ParticleCell = FullParticleCell<Particle_T>;
 
  public:
   /**
@@ -54,8 +54,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers::VLCBuildType dataLayoutDuringListRebuild =
                        VerletListsCellsHelpers::VLCBuildType::soaBuild)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                        compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
+                                          compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
         _dataLayoutDuringListRebuild(dataLayoutDuringListRebuild) {}
 
@@ -69,7 +69,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @return load estimator function object.
    */
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
-    switch (this->_loadEstimator) {
+    // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
+    switch (static_cast<LoadEstimatorOption::Value>(this->_loadEstimator)) {
       case LoadEstimatorOption::squaredParticlesPerCell: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
@@ -80,8 +81,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength<Particle, NeighborList>(_neighborList, cellsPerDimension,
-                                                                            lowerCorner, upperCorner);
+          return loadEstimators::neighborListLength<Particle_T, NeighborList>(_neighborList, cellsPerDimension,
+                                                                              lowerCorner, upperCorner);
         };
       }
 
@@ -112,7 +113,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param particle
    * @return the size of the neighbor list(s) of this particle
    */
-  size_t getNumberOfPartners(const Particle *particle) const { return _neighborList.getNumberOfPartners(particle); }
+  size_t getNumberOfPartners(const Particle_T *particle) const { return _neighborList.getNumberOfPartners(particle); }
 
   /**
    * Rebuilds the neighbor lists and marks them valid

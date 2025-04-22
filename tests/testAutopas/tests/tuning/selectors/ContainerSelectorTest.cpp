@@ -7,7 +7,7 @@
 #include "ContainerSelectorTest.h"
 
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
-  autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelector<ParticleFP64> containerSelector(bBoxMin, bBoxMax, cutoff);
   autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency, 64,
                                                autopas::LoadEstimatorOption::none);
 

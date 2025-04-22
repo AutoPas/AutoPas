@@ -18,21 +18,21 @@ namespace autopas {
 template <class ParticleCell>
 class TraversalSelector;
 
-template <class Particle>
+template <class Particle_T>
 class VLCCellPairTraversalInterface;
 /**
  * Neighbor list to be used with VerletListsCells container.
  * Pairwise verlet lists iterates through each pair of neighboring cells
  * and generates a neighbor list for each particle from cell1, which consists of its (potential) partners from cell2.
- * @tparam Particle Type of particle to be used for this neighbor list.
+ * @tparam Particle_T Type of particle to be used for this neighbor list.
  */
-template <class Particle>
-class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
+template <class Particle_T>
+class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
  public:
   /**
    * Type of the data structure used to save the neighbor lists.
    */
-  using listType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle>;
+  using ListType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T>;
 
   /**
    * Helper type definition. Pair of particle and neighbor list for SoA layout.
@@ -47,7 +47,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
-  size_t getNumberOfPartners(const Particle *particle) const override {
+  size_t getNumberOfPartners(const Particle_T *particle) const override {
     size_t listSize{0};
     bool particleFound{false};
     for (auto &neighborListsForOneCell : _aosNeighborList) {
@@ -77,7 +77,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    */
-  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> &getAoSNeighborList() {
+  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T> &getAoSNeighborList() {
     return _aosNeighborList;
   }
 
@@ -90,7 +90,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    */
-  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle> &linkedCells, bool useNewton3) {
+  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle_T> &linkedCells, bool useNewton3) {
     using namespace utils::ArrayMath::literals;
     // Sanity check.
     if (linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
@@ -167,7 +167,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           neighbors.reserve(listLengthEstimate);
           neighbors.push_back(&p2);
         } else {
-          neighborList.emplace_back(&p1, std::vector<Particle *>{});
+          neighborList.emplace_back(&p1, std::vector<Particle_T *>{});
           neighborList.back().second.reserve(listLengthEstimate);
           neighborList.back().second.push_back(&p2);
         }
@@ -290,11 +290,11 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) override {
+  void generateSoAFromAoS(LinkedCells<Particle_T> &linkedCells) override {
     _soaNeighborList.clear();
 
     // particle pointer to global index of particle
-    std::unordered_map<Particle *, size_t> particlePtrToIndex;
+    std::unordered_map<Particle_T *, size_t> particlePtrToIndex;
     particlePtrToIndex.reserve(linkedCells.size());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
@@ -337,12 +337,13 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   void setUpTraversal(TraversalInterface *traversal) override {
-    auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
+    auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle_T> *>(traversal);
 
     if (vTraversal) {
       vTraversal->setVerletList(*this);
     } else {
-      auto traversal2 = dynamic_cast<VLCTraversalInterface<Particle, VLCCellPairNeighborList<Particle>> *>(traversal);
+      auto traversal2 =
+          dynamic_cast<VLCTraversalInterface<Particle_T, VLCCellPairNeighborList<Particle_T>> *>(traversal);
       if (traversal2) {
         traversal2->setVerletList(*this);
       } else {
@@ -357,8 +358,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell pair.
    */
-  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> _aosNeighborList =
-      std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>();
+  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T> _aosNeighborList =
+      std::vector<std::vector<std::vector<std::pair<Particle_T *, std::vector<Particle_T *>>>>>();
 
   /**
    * Internal neighbor list structure in SoA format - Verlet lists for each particle for each cell pair.

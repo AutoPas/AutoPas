@@ -25,21 +25,21 @@ namespace autopas {
 template <class ParticleCell>
 class TraversalSelector;
 
-template <class Particle, class NeighborList>
+template <class Particle_T, class NeighborList>
 class VLCTraversalInterface;
 
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
  * cells.
- * @tparam Particle Type of particle to be used for this neighbor list.
+ * @tparam Particle_T Type of particle to be used for this neighbor list.
  */
-template <class Particle>
-class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
+template <class Particle_T>
+class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle_T> {
  public:
   /**
    * Type of the data structure used to save the neighbor lists.
    */
-  using listType = typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle>;
+  using ListType = typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle_T>;
 
   /**
    * Helper type definition. Pair of particle and neighbor list for SoA layout.
@@ -60,12 +60,12 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    */
-  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle> &linkedCells, bool useNewton3) {
+  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle_T> &linkedCells, bool useNewton3) {
     using namespace utils::ArrayMath::literals;
     // Sanity check.
     if (linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
       utils::ExceptionHandler::exception(
-          "VLCAlleCellsNeighborLists::buildAoSNeighborList() was called with a CSF < 1 but it only supports CSF>=1.");
+          "VLCAllCellsNeighborLists::buildAoSNeighborList() was called with a CSF < 1 but it only supports CSF>=1.");
     }
     // Define some aliases
     auto &neighborLists = getAoSNeighborList();
@@ -127,7 +127,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
             neighbors.reserve(listLengthEstimate);
             neighbors.push_back(&p2);
           } else {
-            neighborList.emplace_back(&p1, std::vector<Particle *>{});
+            neighborList.emplace_back(&p1, std::vector<Particle_T *>{});
             neighborList.back().second.reserve(listLengthEstimate);
             neighborList.back().second.push_back(&p2);
           }
@@ -183,7 +183,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
           }
           // For any remaining particles without (size non-zero) neighbor lists, reserve the estimated list length.
           for (size_t i = minNumParticlesVsNumLists; i < baseCell.size(); ++i) {
-            baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
+            baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle_T *>{});
             baseCellsLists.back().second.reserve(listLengthEstimate);
           }
 
@@ -261,7 +261,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * @copydoc VLCNeighborListInterface::getNumberOfPartners()
    */
-  size_t getNumberOfPartners(const Particle *particle) const override {
+  size_t getNumberOfPartners(const Particle_T *particle) const override {
     for (const auto &cellsLists : _aosNeighborList) {
       for (const auto &particlesLists : cellsLists) {
         if (particlesLists.first == particle) {
@@ -276,7 +276,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    */
-  typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle> &getAoSNeighborList() {
+  typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle_T> &getAoSNeighborList() {
     return _aosNeighborList;
   }
 
@@ -289,11 +289,11 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * @copydoc VLCNeighborListInterface::generateSoAFromAoS()
    */
-  void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) override {
+  void generateSoAFromAoS(LinkedCells<Particle_T> &linkedCells) override {
     _soaNeighborList.clear();
 
     // particle pointer to global index of particle
-    std::unordered_map<Particle *, size_t> particlePtrToIndex;
+    std::unordered_map<Particle_T *, size_t> particlePtrToIndex;
     particlePtrToIndex.reserve(linkedCells.size());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
@@ -329,7 +329,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   void setUpTraversal(TraversalInterface *traversal) override {
-    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
+    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle_T, VLCAllCellsNeighborList<Particle_T>> *>(traversal);
 
     if (vTraversal) {
       vTraversal->setVerletList(*this);
@@ -344,12 +344,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
    */
-  typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle> _aosNeighborList{};
-
-  /**
-   * Mapping of each particle to its corresponding cell and id within this cell.
-   */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap{};
+  typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle_T> _aosNeighborList{};
 
   /**
    * Internal neighbor list structure in SoA format - Verlet lists for each particle for each cell.

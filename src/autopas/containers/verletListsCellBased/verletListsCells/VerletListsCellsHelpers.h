@@ -20,24 +20,25 @@ namespace autopas::VerletListsCellsHelpers {
  * Cell wise verlet lists for neighbors from all adjacent cells: For every cell, a vector of pairs.
  * Each pair maps a particle to a vector of its neighbors.
  *
- * @note From a content view, this is similar to an vector<unstructured_map<Particle*, std::vector<Particle *>>>.
+ * @note From a content view, this is similar to an vector<unstructured_map<Particle_T*, std::vector<Particle *>>>.
  * However since we need to access all keys sequentially during the force computation this is faster,
  * even when the lookup of keys is slower.
  *
- * @tparam Particle
+ * @tparam Particle_T
  */
-template <class Particle>
-using AllCellsNeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
+template <class Particle_T>
+using AllCellsNeighborListsType = std::vector<std::vector<std::pair<Particle_T *, std::vector<Particle_T *>>>>;
 
 /**
  * Pairwise verlet lists: For every cell a vector, for every neighboring cell a vector of particle-neighborlist pairs.
  * Each pair maps a particle to a vector of its neighbor particles.
  * Cells<NeighboringCells<Particle,NeighborParticles>>
  *
- * @tparam Particle
+ * @tparam Particle_T
  */
-template <class Particle>
-using PairwiseNeighborListsType = std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
+template <class Particle_T>
+using PairwiseNeighborListsType =
+    std::vector<std::vector<std::vector<std::pair<Particle_T *, std::vector<Particle_T *>>>>>;
 
 /**
  * Indicates which build functor should be used for the generation of the neighbor list.
