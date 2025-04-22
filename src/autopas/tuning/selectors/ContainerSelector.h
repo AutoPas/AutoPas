@@ -176,7 +176,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     case ContainerOption::hierarchicalGrid: {
       if (_cutoffs.empty() && _cutoff > 0) {
         // if cutoffs for levels are not provided, set scaling cutoff to 1 and cutoff levels to 1 level with _cutoff
-        _cutoffs = { _cutoff};
+        _cutoffs = {_cutoff};
         cutoff = 1;
       } else {
         // set scaling cutoff multiplier to _cutoff

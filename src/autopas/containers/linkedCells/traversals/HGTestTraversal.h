@@ -117,13 +117,11 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
                     if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
                       continue;
                     }
-                    AUTOPAS_OPENMP(task depend(
-                        in
-                        : (taskDepend.data())[index(col - 1, xi, yi, zi)],
-                          (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0], yi + colorDiff[col - 1][1],
-                                                    zi + colorDiff[col - 1][2])])
-                                       depend(out
-                                              : (taskDepend.data())[index(col, xi, yi, zi)])) {
+                    AUTOPAS_OPENMP(
+                        task depend(in : (taskDepend.data())[index(col - 1, xi, yi, zi)],
+                                    (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0],
+                                                              yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])])
+                            depend(out : (taskDepend.data())[index(col, xi, yi, zi)])) {
                       for (unsigned long z = z_start; z < z_start + group[2]; ++z)
                         for (unsigned long y = y_start; y < y_start + group[1]; ++y)
                           for (unsigned long x = x_start; x < x_start + group[0]; ++x) {

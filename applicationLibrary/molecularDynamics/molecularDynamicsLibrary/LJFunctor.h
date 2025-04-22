@@ -598,8 +598,8 @@ class LJFunctor
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared,
-                                                                                     _cutoffSquared, scalingCutoffT);
+      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared,
+                                                                      scalingCutoffT);
     } else {
       _shift6 = 0.;
     }
