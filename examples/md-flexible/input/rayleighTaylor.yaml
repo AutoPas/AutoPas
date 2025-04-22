@@ -29,15 +29,12 @@ globalForce: [ 0, 0, -12.44 ]
 data-layout: [ SoA ]
 traversal:
   [
-#     hgrid_test2
-    lc_c08, hgrid_color_c04_HCP, hgrid_test, hgrid_test2,
-    hgrid_color,
-    hgrid_color_soa_cell
+    hgrid_color, hgrid_task, hgrid_task_soa_cell, hgrid_test
   ]
 newton3: [ enabled ]
-cell-size: [ 0.5, 1 ]
-tuning-interval: 100
-tuning-samples: 5
+cell-size: [ 0.5 ]
+tuning-interval: 5
+tuning-samples: 1
 Sites:
   0:
     epsilon: 1.
@@ -51,14 +48,14 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id: 0
-      box-length: [ 40, 40, 20 ]
-      particle-spacing: 0.56
+      box-length: [ 80, 80, 40 ]
+      particle-spacing: 0.60
       bottomLeftCorner: [ 0, 0, 0 ]
       velocity: [ 0, 0, 0 ]
     1:
       particle-type-id: 1
-      box-length: [ 40, 40, 20 ]
-      particle-spacing: 0.56125
+      box-length: [ 80, 80, 40 ]
+      particle-spacing: 0.38
       bottomLeftCorner: [ 0, 0, 0 ]
       velocity: [ 0, 0, 0 ]
 thermostat:
@@ -72,3 +69,4 @@ load-balancing-interval: 10000
 subdivide-dimension: [ false, false, true ]
 no-progress-bar: true
 fastParticlesThrow: true
+

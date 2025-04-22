@@ -27,6 +27,7 @@ auto HGridIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::Contai
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
+  autoPas.setCutoffs({0.25, 0.50, 0.75, 1});
   autoPas.setVerletSkin(0.4);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);

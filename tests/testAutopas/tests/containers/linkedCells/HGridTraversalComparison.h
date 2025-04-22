@@ -17,7 +17,6 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/UniformGenerator.h"
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

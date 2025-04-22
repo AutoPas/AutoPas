@@ -612,7 +612,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
 #endif
   // using scaling cutoff if cutoffs value was set in the config file
-  _particlePropertiesLibrary->calculateMixingCoefficients(!cutoffs.value.empty());
+  _particlePropertiesLibrary->calculateMixingCoefficients(mdFlexibleTypeDefs::scalingCutoff);
 }
 
 void MDFlexConfig::initializeObjects() {

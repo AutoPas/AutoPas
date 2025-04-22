@@ -1,3 +1,9 @@
+/**
+ * @file HGTaskTraversal.h
+ * @author atacann
+ * @date 02.01.2025
+ */
+
 #pragma once
 
 #include "HGTraversalBase.h"
@@ -9,11 +15,11 @@
 namespace autopas {
 
 template <class ParticleCellT, class FunctorT>
-class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
+class HGTaskTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCellT::ParticleType;
 
-  explicit HGTestTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGTaskTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCellT>(dataLayout, useNewton3), _functor(functor) {}
 
   void traverseParticles() override {
@@ -49,7 +55,8 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
         lowerBound += lowerLevelCB.getCellsPerInteractionLength();
         upperBound -= lowerLevelCB.getCellsPerInteractionLength();
 
-        const long targetBlocksPerColor = static_cast<unsigned long>(autopas_get_max_threads());
+        const long targetBlocksPerColor =
+            static_cast<unsigned long>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
 
         unsigned long smallestCriterion = 1e15;
         std::array<unsigned long, 3> bestGroup = {1, 1, 1};
@@ -62,9 +69,9 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
                 testStride[i] = 1 + static_cast<unsigned long>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
                 num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
               }
-              const unsigned long numColors = testStride[0] * testStride[1] * testStride[2];
+              const long numColors = testStride[0] * testStride[1] * testStride[2];
               const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
-              const unsigned long criterion = numColors * std::abs(numBlocksPerColor - targetBlocksPerColor);
+              const unsigned long criterion = std::abs(numBlocksPerColor * numColors - targetBlocksPerColor);
               if (criterion < smallestCriterion) {
                 smallestCriterion = criterion;
                 bestGroup = group;
@@ -130,8 +137,14 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
                             if (!(x < end[0] && y < end[1] && z < end[2])) {
                               continue;
                             }
-                            this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                         interactionLengthSquared, dir, lowerBound, upperBound, true);
+                            if (this->_dataLayout == DataLayoutOption::aos) {
+                              this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
+                                                 interactionLengthSquared, dir, lowerBound, upperBound, true);
+                            } else {
+                              this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor,
+                                                               lowerLevel, interactionLengthSquared, dir, lowerBound,
+                                                               upperBound, true);
+                            }
                           }
                     }
                   }
@@ -144,9 +157,9 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_task; };
 
-  [[nodiscard]] bool isApplicable() const override { return this->_dataLayout == DataLayoutOption::soa; }
+  [[nodiscard]] bool isApplicable() const override { return true; }
 
  protected:
   FunctorT *_functor;

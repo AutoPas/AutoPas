@@ -12,8 +12,9 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/HGTraversalBase.h"
+#include "autopas/containers/linkedCells/traversals/HGTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
-#include "traversals/HGC01Traversal.h"
 
 namespace autopas {
 
@@ -47,8 +48,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double baseCutoff,
-                   const std::vector<double> &cutoffs, const double skin,
-                   const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
+                   const std::vector<double> &cutoffs, const double skin, const unsigned int rebuildFrequency,
+                   const double cellSizeFactor = 1.0)
       : ParticleContainerInterface<Particle>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -59,9 +60,11 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
         _cutoffs(cutoffs) {
     /*
-     * TODO: add auto cutoff? We need to know particles sizes beforehand
-     * if we know, then let m = avg particle per cell, L = number of levels
-     * try to make m for each hierarchy close, then minimize L*m
+     * NOTE: In the future add auto cutoff? We need to know particles sizes beforehand.
+     * Not relevant for md simulations but can be useful for DEM simulations.
+     * Good heuristic for auto cutoffs:
+     * Let m = avg particle per cell, L = number of levels
+     * try to make m for each hierarchy level close, then minimize L*m
      * prob works -> ternary search for m, for fixed m binary search over particle array sorted by size to find L
      */
     // resize iteration storage variables
@@ -106,9 +109,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       // cellSizeFactor for each LinkedCells so that the cellLength is equal to actual interaction length of that level
       const double interactionLengthLevel = _cutoffs[i] + _skin;
       const double ratio = interactionLengthLevel / interactionLengthLargest;
-      _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(
-          _boxMin, _boxMax, _cutoffs.back(), skin, rebuildFrequency, _cellSizeFactor * ratio));
+      _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _cutoffs.back(), skin,
+                                                                            rebuildFrequency, _cellSizeFactor * ratio));
     }
+    this->computeNextNonEmpty();
   }
 
   /**
@@ -179,8 +183,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     using utils::ArrayUtils::operator<<;
     std::ostringstream text;
     text << "\n------------------------------------------\nHierarchicalGrid sizes: [";
-    text << utils::ArrayUtils::to_string(_cutoffs, ", ",
-                                             {"Cutoffs [ ", " ]\n"});
+    text << utils::ArrayUtils::to_string(_cutoffs, ", ", {"Cutoffs [ ", " ]\n"});
     text << "BoxMin: " << getBoxMin() << " BoxMax: " << getBoxMax() << "\n";
     for (size_t i = 0; i < _numLevels; ++i) {
       auto &cellBlock = _levels[i]->getCellBlock();
@@ -271,7 +274,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // nothing to do.
+    // nothing to do
   }
 
   void computeInteractions(TraversalInterface *traversal) override {
@@ -294,6 +297,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       invalidParticles.insert(invalidParticles.end(), std::make_move_iterator(invalidParticlesSingle.begin()),
                               std::make_move_iterator(invalidParticlesSingle.end()));
     }
+    // recompute empty cells
+    this->computeNextNonEmpty();
     return invalidParticles;
   }
 
@@ -535,7 +540,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
-      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, this->getMaxDisplacement());
+      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, &_nextNonEmpty, this->getMaxDisplacement());
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",
@@ -543,8 +548,43 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     }
   }
 
+  void computeNextNonEmpty() {
+    this->_nextNonEmpty.resize(this->_levels.size());
+    for (size_t level = 0; level < this->_numLevels; level++) {
+      const auto dim = this->_levels[level]->getTraversalSelectorInfo().cellsPerDim;
+
+      if (this->_nextNonEmpty[level].empty()) {
+        // we need to allocate only on first function call
+        this->_nextNonEmpty[level] = std::vector<std::vector<std::vector<size_t>>>(
+            dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
+      }
+      const auto &cellBlock = this->_levels[level]->getCellBlock();
+      // calculate next non-empty cell in increasing x direction for each cell
+      AUTOPAS_OPENMP(parallel for collapse(2))
+      for (size_t z = 0; z < dim[2]; ++z) {
+        for (size_t y = 0; y < dim[1]; ++y) {
+          // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
+          size_t index1D = utils::ThreeDimensionalMapping::threeToOneD({dim[0] - 1, y, z}, dim);
+          std::vector<size_t> &nextRef = this->_nextNonEmpty[level][z][y];
+          nextRef[dim[0] - 1] = dim[0];
+          for (int x = dim[0] - 2; x >= 0; --x, --index1D) {
+            if (cellBlock.getCell(index1D).isEmpty()) {
+              // if the next cell is empty, set nextRef[x] to nextRef[x + 1]
+              nextRef[x] = nextRef[x + 1];
+            } else {
+              // if next cell is not empty, set nextRef[x] to x + 1 as it is the next non-empty cell
+              nextRef[x] = x + 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
   std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
   std::vector<double> _cutoffs;
+  // A vector to store the next non-empty cell in increasing x direction for each cell
+  std::vector<std::vector<std::vector<std::vector<size_t>>>> _nextNonEmpty;
 };
 
 }  // namespace autopas

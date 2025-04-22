@@ -140,10 +140,10 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allHGCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::hgrid_c01_iterator, TraversalOption::hgrid_color,
-      TraversalOption::hgrid_color_soa_cell, TraversalOption::hgrid_test, TraversalOption::hgrid_test2,
-      TraversalOption::hgrid_color_c04,      TraversalOption::hgrid_color_c04_combined,
-      TraversalOption::hgrid_color_c18,      TraversalOption::hgrid_color_c04_HCP};
+  static const std::set<TraversalOption> s{TraversalOption::hgrid_color,        TraversalOption::hgrid_color_soa_cell,
+                                           TraversalOption::hgrid_test,         TraversalOption::hgrid_block_soa_cell,
+                                           TraversalOption::hgrid_task,         TraversalOption::hgrid_block,
+                                           TraversalOption::hgrid_task_soa_cell};
   return s;
 }
 
@@ -159,8 +159,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
           TraversalOption::vlc_c01,
-          TraversalOption::vlp_c01,
-          TraversalOption::hgrid_c01_iterator};
+          TraversalOption::vlp_c01};
 };
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
@@ -175,11 +174,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
-  return {
-      TraversalOption::hgrid_c01_iterator,
-  };
-};
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return
@@ -188,8 +183,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   return {
       TraversalOption::lc_c01_combined_SoA,
       TraversalOption::lc_c04_combined_SoA,
-      TraversalOption::hgrid_color_soa_cell,
-      TraversalOption::hgrid_test,
+      TraversalOption::hgrid_color_soa_cell, TraversalOption::hgrid_block_soa_cell,
+      TraversalOption::hgrid_task_soa_cell,  TraversalOption::hgrid_test,
   };
 };
 

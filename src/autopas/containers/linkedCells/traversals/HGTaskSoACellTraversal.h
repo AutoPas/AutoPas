@@ -9,11 +9,11 @@
 namespace autopas {
 
 template <class ParticleCellT, class FunctorT>
-class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
+class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCellT::ParticleType;
 
-  explicit HGTestTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGTaskSoACellTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCellT>(dataLayout, useNewton3), _functor(functor) {}
 
   void traverseParticles() override {
@@ -49,7 +49,8 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
         lowerBound += lowerLevelCB.getCellsPerInteractionLength();
         upperBound -= lowerLevelCB.getCellsPerInteractionLength();
 
-        const long targetBlocksPerColor = static_cast<unsigned long>(autopas_get_max_threads());
+        const long targetBlocksPerColor =
+            static_cast<unsigned long>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
 
         unsigned long smallestCriterion = 1e15;
         std::array<unsigned long, 3> bestGroup = {1, 1, 1};
@@ -62,9 +63,9 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
                 testStride[i] = 1 + static_cast<unsigned long>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
                 num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
               }
-              const unsigned long numColors = testStride[0] * testStride[1] * testStride[2];
+              const long numColors = testStride[0] * testStride[1] * testStride[2];
               const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
-              const unsigned long criterion = numColors * std::abs(numBlocksPerColor - targetBlocksPerColor);
+              const unsigned long criterion = std::abs(numBlocksPerColor * numColors - targetBlocksPerColor);
               if (criterion < smallestCriterion) {
                 smallestCriterion = criterion;
                 bestGroup = group;
@@ -144,7 +145,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_task_soa_cell; };
 
   [[nodiscard]] bool isApplicable() const override { return this->_dataLayout == DataLayoutOption::soa; }
 
@@ -154,6 +155,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
    * @param level which HGrid level to generate a traversal for
+   * @param traversalInfo traversal info to generate the new traversal
    * @return A new traversal that is applicable to a specific LinkedCells level
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {

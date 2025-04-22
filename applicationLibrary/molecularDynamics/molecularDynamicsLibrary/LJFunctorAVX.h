@@ -38,10 +38,11 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
+ * @tparam scalingCutoffT If set to true, the cutoff will be scaled by the sigma of the particles.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true>
+          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoffT = false>
 class LJFunctorAVX
     : public autopas::PairwiseFunctor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
                                                              calculateGlobals, countFLOPs, relevantForTuning>> {
@@ -103,16 +104,13 @@ class LJFunctorAVX
    * properties like sigma, epsilon and shift.
    * @param cutoff
    * @param particlePropertiesLibrary
-   * * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
-  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
-                        bool scalingCutoff = false)
+  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctorAVX(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
-    _scalingCutoff = scalingCutoff;
   }
 
   std::string getName() final { return "LJFunctorAVX"; }
@@ -138,7 +136,7 @@ class LJFunctorAVX
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      if (_scalingCutoff) {
+      if constexpr (scalingCutoffT) {
         cutoffSquared = _cutoffSquaredAoS * sigmaSquared;
       }
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
@@ -490,7 +488,7 @@ class LJFunctorAVX
           not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
           not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
           _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
-      if (_scalingCutoff) {
+      if constexpr (scalingCutoffT) {
         cutoffSquared = _mm256_mul_pd(_cutoffSquared, sigmaSquareds);
       }
       if constexpr (applyShift) {
@@ -948,8 +946,8 @@ class LJFunctorAVX
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquared = _mm256_set1_pd(sigmaSquared);
     if constexpr (applyShift) {
-      _shift6 = _mm256_set1_pd(
-          ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared[0]));
+      _shift6 = _mm256_set1_pd(ParticlePropertiesLibrary<double, size_t>::calcShift6(
+          epsilon24, sigmaSquared, _cutoffSquared[0], scalingCutoffT));
     } else {
       _shift6 = _mm256_setzero_pd();
     }
@@ -958,7 +956,8 @@ class LJFunctorAVX
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
+      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared,
+                                                                                        _cutoffSquaredAoS, scalingCutoffT);
     } else {
       _shift6AoS = 0.;
     }
@@ -1045,7 +1044,5 @@ class LJFunctorAVX
   // number of double values that fit into a vector register.
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
-
-  bool _scalingCutoff;
 };
 }  // namespace mdLib

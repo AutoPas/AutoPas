@@ -13,15 +13,13 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGC01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/HGBlockSoACellTraversal.h"
+#include "autopas/containers/linkedCells/traversals/HGBlockTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGColorSoACellToCell.h"
 #include "autopas/containers/linkedCells/traversals/HGColorTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGColorTraversalC04.h"
-#include "autopas/containers/linkedCells/traversals/HGColorTraversalC04Combined.h"
-#include "autopas/containers/linkedCells/traversals/HGColorTraversalC04HCP.h"
-#include "autopas/containers/linkedCells/traversals/HGColorTraversalC18.h"
+#include "autopas/containers/linkedCells/traversals/HGTaskSoACellTraversal.h"
+#include "autopas/containers/linkedCells/traversals/HGTaskTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGTestTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGTestTraversal2.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -307,9 +305,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
     }
     // Hierarchical Grid
-    case TraversalOption::hgrid_c01_iterator: {
-      return std::make_unique<HGC01Traversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
-    }
     case TraversalOption::hgrid_color: {
       return std::make_unique<HGColorTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
                                                                                useNewton3);
@@ -321,24 +316,20 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     case TraversalOption::hgrid_test: {
       return std::make_unique<HGTestTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
     }
-    case TraversalOption::hgrid_test2: {
-      return std::make_unique<HGTestTraversal2<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    case TraversalOption::hgrid_block_soa_cell: {
+      return std::make_unique<HGBlockSoACellTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                                      useNewton3);
     }
-    case TraversalOption::hgrid_color_c04: {
-      return std::make_unique<HGColorTraversalC04<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
-                                                                                  useNewton3);
-    }
-    case TraversalOption::hgrid_color_c04_combined: {
-      return std::make_unique<HGColorTraversalC04Combined<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
-                                                                                          useNewton3);
-    }
-    case TraversalOption::hgrid_color_c04_HCP: {
-      return std::make_unique<HGColorTraversalC04HCP<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+    case TraversalOption::hgrid_task_soa_cell: {
+      return std::make_unique<HGTaskSoACellTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
                                                                                      useNewton3);
     }
-    case TraversalOption::hgrid_color_c18: {
-      return std::make_unique<HGColorTraversalC18<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
-                                                                                  useNewton3);
+    case TraversalOption::hgrid_block: {
+      return std::make_unique<HGBlockTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                               useNewton3);
+    }
+    case TraversalOption::hgrid_task: {
+      return std::make_unique<HGTaskTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",

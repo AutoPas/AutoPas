@@ -74,6 +74,13 @@ constexpr bool calcGlobals =
 #else
     false;
 #endif
+
+constexpr bool scalingCutoff =
+#ifdef MD_FLEXIBLE_SCALING_CUTOFF
+    true;
+#else
+    false;
+#endif
 }  // namespace mdFlexibleTypeDefs
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
@@ -86,8 +93,9 @@ constexpr bool calcGlobals =
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
-using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAutovec =
+    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                     mdFlexibleTypeDefs::countFLOPs, true, mdFlexibleTypeDefs::scalingCutoff>;
 #endif
 
 #endif
@@ -102,8 +110,9 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
-using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                             mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAVX =
+    mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                        mdFlexibleTypeDefs::countFLOPs, true, mdFlexibleTypeDefs::scalingCutoff>;
 #endif
 
 #endif
@@ -141,4 +150,5 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
  */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
+using ParticlePropertiesLibraryType =
+    ParticlePropertiesLibrary<FloatPrecision, size_t>;

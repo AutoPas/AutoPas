@@ -9,17 +9,17 @@
 namespace autopas {
 
 template <class ParticleCellT, class FunctorT>
-class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
+class HGBlockSoACellTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCellT::ParticleType;
 
-  explicit HGTestTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGBlockSoACellTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCellT>(dataLayout, useNewton3), _functor(functor) {}
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
     if (not this->isApplicable()) {
-      utils::ExceptionHandler::exception("Not supported with hgrid_task");
+      utils::ExceptionHandler::exception("Not supported with hgrid_block");
     }
     this->computeIntraLevelInteractions();
     // computeInteractions across different levels
@@ -41,15 +41,15 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
 
         // get cellBlocks of upper and lower levels
         const auto &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock();
-        auto &lowerLevelLC = *(this->_levels->at(lowerLevel));
-        const auto &lowerLevelCB = lowerLevelLC.getCellBlock();
+        const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
 
         // lower bound and upper bound of the owned region of the lower level
         std::array<size_t, 3> lowerBound = {0, 0, 0}, upperBound = lowerLevelCB.getCellsPerDimensionWithHalo();
         lowerBound += lowerLevelCB.getCellsPerInteractionLength();
         upperBound -= lowerLevelCB.getCellsPerInteractionLength();
 
-        const long targetBlocksPerColor = static_cast<unsigned long>(autopas_get_max_threads());
+        const long targetBlocksPerColor =
+            static_cast<unsigned long>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
 
         unsigned long smallestCriterion = 1e15;
         std::array<unsigned long, 3> bestGroup = {1, 1, 1};
@@ -79,60 +79,24 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
         const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
         const unsigned long numColors = stride[0] * stride[1] * stride[2];
 
-        // We need extra space as in the vector example
-        const size_t size0 = num_index[0] + 2;
-        const size_t size1 = num_index[1] + 2;
-        const size_t size2 = num_index[2] + 2;
-        const size_t numColorsPlusOne = numColors + 1;
-
-        // Total number of dependency elements.
-        const size_t totalDeps = numColorsPlusOne * size0 * size1 * size2;
-
-        // Create a contiguous dependency array.
-        std::vector<char> taskDepend(totalDeps, false);
-
-        // Function to compute the 1D index from 4D coordinates.
-        auto index = [=](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
-          return ((col * size0 + xi) * size1 + yi) * size2 + zi;
-        };
-
-        std::vector<std::array<unsigned long, 3>> startIndex(numColors);
-        std::vector<std::array<unsigned long, 3>> colorDiff(numColors);
-        startIndex = this->oneToThreeDForStartSnakyPattern(stride);
-        for (int i = 1; i < numColors; i++) {
-          colorDiff[i] = startIndex[i] - startIndex[i - 1];
-        }
-        colorDiff[0] = {0, 0, 0};
-
-        // do the colored traversal
-        AUTOPAS_OPENMP(parallel) {
-          AUTOPAS_OPENMP(single) {
-            for (unsigned long col = 1; col <= numColors; ++col) {
-              for (unsigned long zi = 1; zi <= num_index[2]; zi++) {
-                for (unsigned long yi = 1; yi <= num_index[1]; yi++) {
-                  for (unsigned long xi = 1; xi <= num_index[0]; xi++) {
-                    unsigned long z_start = startIndex[col - 1][2] * group[2] + ((zi - 1) * stride_z * group[2]);
-                    unsigned long y_start = startIndex[col - 1][1] * group[1] + ((yi - 1) * stride_y * group[1]);
-                    unsigned long x_start = startIndex[col - 1][0] * group[0] + ((xi - 1) * stride_x * group[0]);
-                    if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
-                      continue;
-                    }
-                    AUTOPAS_OPENMP(task depend(
-                        in
-                        : (taskDepend.data())[index(col - 1, xi, yi, zi)],
-                          (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0], yi + colorDiff[col - 1][1],
-                                                    zi + colorDiff[col - 1][2])])
-                                       depend(out
-                                              : (taskDepend.data())[index(col, xi, yi, zi)])) {
-                      for (unsigned long z = z_start; z < z_start + group[2]; ++z)
-                        for (unsigned long y = y_start; y < y_start + group[1]; ++y)
-                          for (unsigned long x = x_start; x < x_start + group[0]; ++x) {
-                            if (!(x < end[0] && y < end[1] && z < end[2])) {
-                              continue;
-                            }
-                            this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                         interactionLengthSquared, dir, lowerBound, upperBound, true);
-                          }
+        AUTOPAS_OPENMP(parallel)
+        for (unsigned long col = 0; col < numColors; ++col) {
+          const std::array<unsigned long, 3> startIndex(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
+          AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
+          for (unsigned long zi = 0; zi < num_index[2]; ++zi) {
+            for (unsigned long yi = 0; yi < num_index[1]; ++yi) {
+              for (unsigned long xi = 0; xi < num_index[0]; ++xi) {
+                unsigned long start_z = startIndex[2] * group[2] + (zi * stride_z * group[2]);
+                unsigned long start_y = startIndex[1] * group[1] + (yi * stride_y * group[1]);
+                unsigned long start_x = startIndex[0] * group[0] + (xi * stride_x * group[0]);
+                for (unsigned long z = start_z; z < start_z + group[2]; ++z) {
+                  for (unsigned long y = start_y; y < start_y + group[1]; ++y) {
+                    for (unsigned long x = start_x; x < start_x + group[0]; ++x) {
+                      if (!(x < end[0] && y < end[1] && z < end[2])) {
+                        continue;
+                      }
+                      this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
+                                                   interactionLengthSquared, dir, lowerBound, upperBound, true);
                     }
                   }
                 }
@@ -144,7 +108,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_block_soa_cell; };
 
   [[nodiscard]] bool isApplicable() const override { return this->_dataLayout == DataLayoutOption::soa; }
 

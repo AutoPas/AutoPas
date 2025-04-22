@@ -97,7 +97,7 @@ class ParticlePropertiesLibrary {
    * Calculates the actual mixing coefficients.
    * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
-  void calculateMixingCoefficients(bool scalingCutoff = false);
+  void calculateMixingCoefficients(bool scalingCutoff);
 
   ~ParticlePropertiesLibrary() = default;
 
@@ -273,7 +273,7 @@ class ParticlePropertiesLibrary {
    * @param scalingCutoff if true, the cutoff will be scaled by the sigma of the particles
    * @return shift multiplied by 6
    */
-  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared, bool scalingCutoff = false);
+  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared, bool scalingCutoff);
 
   /**
    * Returns the precomputed mixed epsilon * 24.

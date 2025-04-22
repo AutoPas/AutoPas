@@ -131,9 +131,9 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<Particle>>(
-          _boxMin, _boxMax, cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-          containerInfo.cellSizeFactor);
+      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, cutoff, containerInfo.verletSkin,
+                                                                    containerInfo.verletRebuildFrequency,
+                                                                    containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletLists: {
@@ -175,15 +175,16 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     }
     case ContainerOption::hierarchicalGrid: {
       if (_cutoffs.empty() && _cutoff > 0) {
-        // placeholder cutoffs if not provided by user
-        _cutoffs = {_cutoff / 4, _cutoff / 3, _cutoff / 2, _cutoff};
-      }
-      else {
-        // set scaling cutoff to _cutoff
+        // if cutoffs for levels are not provided, set scaling cutoff to 1 and cutoff levels to 1 level with _cutoff
+        _cutoffs = { _cutoff};
+        cutoff = 1;
+      } else {
+        // set scaling cutoff multiplier to _cutoff
         cutoff = _cutoff;
       }
       container = std::make_unique<HierarchicalGrid<Particle>>(
-          _boxMin, _boxMax, cutoff, _cutoffs, containerInfo.verletSkin, containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+          _boxMin, _boxMax, cutoff, _cutoffs, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
+          containerInfo.cellSizeFactor);
       break;
     }
     default: {

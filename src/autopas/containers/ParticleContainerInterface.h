@@ -302,9 +302,7 @@ class ParticleContainerInterface {
    *
    * @param maxDisplacement the maximum displacement of any particle in the container
    */
-  virtual void setMaxDisplacement(double maxDisplacement) {
-    _maxDisplacement = maxDisplacement;
-  }
+  virtual void setMaxDisplacement(double maxDisplacement) { _maxDisplacement = maxDisplacement; }
 
   /**
    * @return the maximum displacement of any particle in the container

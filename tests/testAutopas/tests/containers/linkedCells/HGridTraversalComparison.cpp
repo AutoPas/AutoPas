@@ -108,13 +108,8 @@ HGridTraversalComparison::calculateForces(autopas::ContainerOption containerOpti
 
   if (interactionType == autopas::InteractionTypeOption::pairwise) {
     mdLib::LJFunctor<Molecule, true /*applyShift*/, true /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     globals /*calculateGlobals*/>
-        functor{_cutoff, *_particlePropertiesLibrary, true};
-    std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
-        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
-  } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-    mdLib::AxilrodTellerFunctor<Molecule, true /*useMixing*/, autopas::FunctorN3Modes::Both,
-                                globals /*calculateGlobals*/>
+                     globals /*calculateGlobals*/, false /* countFLOPs */, true /* relevantForTuning */,
+                     true /* scalingCutoff */>
         functor{_cutoff, *_particlePropertiesLibrary};
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
         functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
@@ -151,9 +146,8 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff, {0.5, 1., 1.5}};
   constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
-  selector.selectContainer(containerOption,
-                           autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
-                                                          autopas::LoadEstimatorOption::none});
+  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
+                                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
   std::array<size_t, 3> numParticlesArr = {numParticles / 3, numParticles / 3, numParticles - 2 * (numParticles / 3)};
   std::array<size_t, 3> numHaloParticlesArr = {numHaloParticles / 3, numHaloParticles / 3,
@@ -246,10 +240,6 @@ void HGridTraversalComparison::generateReference(mykey_t key) {
       std::tie(calculatedForces, calculatedGlobals) =
           calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., key, false);
-    } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-      std::tie(calculatedForces, calculatedGlobals) =
-          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., key, false);
     }
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
@@ -262,11 +252,6 @@ void HGridTraversalComparison::generateReference(mykey_t key) {
 TEST_P(HGridTraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = GetParam();
-  // Todo: Remove this when the AxilrodTeller functor implements SoA
-  if (interactionType == autopas::InteractionTypeOption::triwise and
-      dataLayoutOption == autopas::DataLayoutOption::soa) {
-    GTEST_SKIP_("SoAs are not yet implemented for triwise traversals/functors.");
-  }
 
   HGridTraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,
                                         globals,      interactionType};
@@ -360,7 +345,7 @@ auto HGridTraversalComparison::getTestParams() {
   Molecule::particlePropertiesLibrary = _particlePropertiesLibrary;
   std::vector<TestingTuple> testParams{};
   for (auto containerOption : {autopas::ContainerOption::hierarchicalGrid}) {
-    for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
+    for (auto interactionType : {autopas::InteractionTypeOption::pairwise}) {
       for (auto traversalOption :
            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
         for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
@@ -393,18 +378,14 @@ auto HGridTraversalComparison::getTestParams() {
 }
 
 std::unordered_map<autopas::InteractionTypeOption::Value, HGridTraversalComparison::TraversalTestParams>
-    HGridTraversalComparison::params = {{autopas::InteractionTypeOption::pairwise,
-                                         {30.,                              // deletionPercentage
-                                          {100, 2000},                      // numParticles
-                                          {200},                            // numHaloParticles
-                                          {{3., 3., 3.}, {10., 10., 10.}},  // boxMax
-                                          {0.5, 1., 2.}}},                  // cellSizeFactor
-                                        {autopas::InteractionTypeOption::triwise,
-                                         {10.,                           // deletionPercentage
-                                          {100, 400},                    // numParticles
-                                          {200},                         // numHaloParticles
-                                          {{3., 3., 3.}, {6., 6., 6.}},  // boxMax
-                                          {0.5, 1., 1.5}}}};             // cellSizeFactor
+    HGridTraversalComparison::params = {
+        {autopas::InteractionTypeOption::pairwise,
+         {30.,                              // deletionPercentage
+          {100, 2000},                      // numParticles
+          {200},                            // numHaloParticles
+          {{3., 3., 3.}, {10., 10., 10.}},  // boxMax
+          {0.5, 1., 2.}}},                  // cellSizeFactor
+};
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridTraversalComparison,
                          ::testing::ValuesIn(HGridTraversalComparison::getTestParams()), toString);
