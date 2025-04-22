@@ -38,11 +38,11 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
- * @tparam scalingCutoffT If set to true, the cutoff will be scaled by the sigma of the particles.
+ * @tparam scalingCutoff_T If set to true, the cutoff will be scaled by the sigma of the particles.
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoffT = false>
+          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoff_T = false>
 class LJFunctorAVX
     : public autopas::PairwiseFunctor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3,
                                                                calculateGlobals, countFLOPs, relevantForTuning>> {
@@ -135,7 +135,7 @@ class LJFunctorAVX
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      if constexpr (scalingCutoffT) {
+      if constexpr (scalingCutoff_T) {
         cutoffSquared = _cutoffSquaredAoS * sigmaSquared;
       }
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
@@ -487,7 +487,7 @@ class LJFunctorAVX
           not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
           not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
           _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
-      if constexpr (scalingCutoffT) {
+      if constexpr (scalingCutoff_T) {
         cutoffSquared = _mm256_mul_pd(_cutoffSquared, sigmaSquareds);
       }
       if constexpr (applyShift) {
@@ -952,7 +952,7 @@ class LJFunctorAVX
     _sigmaSquared = _mm256_set1_pd(sigmaSquared);
     if constexpr (applyShift) {
       _shift6 = _mm256_set1_pd(ParticlePropertiesLibrary<double, size_t>::calcShift6(
-          epsilon24, sigmaSquared, _cutoffSquared[0], scalingCutoffT));
+          epsilon24, sigmaSquared, _cutoffSquared[0], scalingCutoff_T));
     } else {
       _shift6 = _mm256_setzero_pd();
     }
@@ -962,7 +962,7 @@ class LJFunctorAVX
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
       _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared,
-                                                                                        _cutoffSquaredAoS, scalingCutoffT);
+                                                                                        _cutoffSquaredAoS, scalingCutoff_T);
     } else {
       _shift6AoS = 0.;
     }

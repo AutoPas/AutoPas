@@ -14,13 +14,13 @@
 
 namespace autopas {
 
-template <class ParticleCellT, class FunctorT>
-class HGTaskTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
+template <class ParticleCell_T, class Functor_T>
+class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
  public:
-  using Particle = typename ParticleCellT::ParticleType;
+  using Particle = typename ParticleCell_T::ParticleType;
 
-  explicit HGTaskTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
-      : HGTraversalBase<ParticleCellT>(dataLayout, useNewton3), _functor(functor) {}
+  explicit HGTaskTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
+      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _functor(functor) {}
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -160,7 +160,7 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
   [[nodiscard]] bool isApplicable() const override { return true; }
 
  protected:
-  FunctorT *_functor;
+  Functor_T *_functor;
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
@@ -169,7 +169,7 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversa
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    return std::make_unique<LCC08Traversal<ParticleCellT, FunctorT>>(
+    return std::make_unique<LCC08Traversal<ParticleCell_T, Functor_T>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
   }

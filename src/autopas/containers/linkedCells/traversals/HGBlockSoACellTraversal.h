@@ -8,13 +8,13 @@
 
 namespace autopas {
 
-template <class ParticleCellT, class FunctorT>
-class HGBlockSoACellTraversal : public HGTraversalBase<ParticleCellT>, public HGTraversalInterface {
+template <class ParticleCell_T, class Functor_T>
+class HGBlockSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
  public:
-  using Particle = typename ParticleCellT::ParticleType;
+  using Particle = typename ParticleCell_T::ParticleType;
 
-  explicit HGBlockSoACellTraversal(FunctorT *functor, DataLayoutOption dataLayout, bool useNewton3)
-      : HGTraversalBase<ParticleCellT>(dataLayout, useNewton3), _functor(functor) {}
+  explicit HGBlockSoACellTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
+      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _functor(functor) {}
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -113,7 +113,7 @@ class HGBlockSoACellTraversal : public HGTraversalBase<ParticleCellT>, public HG
   [[nodiscard]] bool isApplicable() const override { return this->_dataLayout == DataLayoutOption::soa; }
 
  protected:
-  FunctorT *_functor;
+  Functor_T *_functor;
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
@@ -122,7 +122,7 @@ class HGBlockSoACellTraversal : public HGTraversalBase<ParticleCellT>, public HG
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    return std::make_unique<LCC08Traversal<ParticleCellT, FunctorT>>(
+    return std::make_unique<LCC08Traversal<ParticleCell_T, Functor_T>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
   }

@@ -56,7 +56,7 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
     case ContainerOption::octree:
       return function(dynamic_cast<autopas::Octree<Particle_T> &>(container));
     case ContainerOption::hierarchicalGrid:
-      return function(dynamic_cast<autopas::HierarchicalGrid<Particle> &>(container));
+      return function(dynamic_cast<autopas::HierarchicalGrid<Particle_T> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container.getContainerType());

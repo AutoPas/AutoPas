@@ -12,15 +12,16 @@
 namespace autopas {
 /**
  * Class for common operations of HGridTraversal classes. It should be a parent class for all HGrid traversals.
- * @tparam ParticleCellT type of Particle cell
+ * @tparam ParticleCell_T type of Particle cell
  */
-template <class ParticleCellT>
+template <class ParticleCell_T>
 class HGTraversalBase : public TraversalInterface {
  public:
-  using Particle = typename ParticleCellT::ParticleType;
+  using Particle = typename ParticleCell_T::ParticleType;
 
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0), _maxDisplacement(0) {}
+      : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0), _maxDisplacement(0),
+        _nextNonEmpty(){}
 
   /**
    * Store HGrid data
