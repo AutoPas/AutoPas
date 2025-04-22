@@ -81,7 +81,7 @@ struct BaseStepOffsets {
 };
 
 /**
- * Builds the list of offsets from the base cell for the c08 and c01 base step.
+ * Builds the list of offsets from the base cell for the c01, c08, and c18 base step.
  * A offset pair are two cell indices relative to the base cell index that have to interact.
  *
  * The third tuple entry is an estimation factor on the fraction of particles that will end up needing a neighbor list
@@ -93,7 +93,7 @@ struct BaseStepOffsets {
  *       For CSF < 1 more factors (and different) are needed if more neighbor cells interact with the base cell.
  *
  * @param cellsPerDim Number of cells per dimension including halo.
- * @param traversal The TraversalOption for which the offsets should be generated (currently c08 or c18).
+ * @param traversal The TraversalOption for which the offsets should be generated (currently c01, c08, or c18).
  * @return Vector of tuples<offset1, offset2, listEstimateFactor>
  */
 std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim, const TraversalOption traversal);

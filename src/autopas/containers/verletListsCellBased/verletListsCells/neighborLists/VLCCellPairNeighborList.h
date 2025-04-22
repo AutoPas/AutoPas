@@ -48,19 +48,26 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
   size_t getNumberOfPartners(const Particle *particle) const override {
-    size_t listSize = 0;
-    for (auto &neighborCellsLists : _aosNeighborList) {
-      for (const auto &cellsLists : neighborCellsLists) {
-        for (size_t i{0}; i < cellsLists.size(); ++i) {
-          if (cellsLists[i].first == particle) {
-            for (const auto &cellsLists2 : neighborCellsLists) {
-              if (cellsLists2.size() > i) {
-                listSize += cellsLists2[i].second.size();
-              }
-            }
-            return listSize;
+    size_t listSize{0};
+    bool particleFound{false};
+    for (auto &neighborListsForOneCell : _aosNeighborList) {
+      for (const auto &neighborListsForCellCellPair : neighborListsForOneCell) {
+        // Check for the desired particle in the first cell. We check all "partner" cells because the particle might not
+        // have any particles from one "partner" cell in its list.
+        for (size_t i{0}; i < neighborListsForCellCellPair.size(); ++i) {
+          if (neighborListsForCellCellPair[i].first == particle) {
+            particleFound = true;
+            // We accumulate the number of partners. Partners can be in all lists of neighboring cells (middle for loop)
+            listSize += neighborListsForCellCellPair[i].second.size();
+            // Since we found the particle, we can skip all the other particles in the current list
+            break;
           }
         }
+      }
+      if (particleFound) {
+        // We've found the particle in the cell with neighbor lists neighborListsForOneCell. So we can skip all the
+        // other cells (outer for loop)
+        return listSize;
       }
     }
     return 0lu;
@@ -88,7 +95,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     // Sanity check.
     if (linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
       utils::ExceptionHandler::exception(
-          "VLCCellPairNeighborList::rebuildNeighborListsVLC() was called with a CSF < 1 but it only supports CSF>=1.");
+          "VLCCellPairNeighborList::buildAoSNeighborList() was called with a CSF < 1 but it only supports CSF>=1.");
     }
     // Define some aliases
     auto &neighborLists = getAoSNeighborList();
@@ -169,7 +176,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
     const auto &cellsPerDim =
         utils::ArrayUtils::static_cast_copy_array<int>(linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
-    // Vector of offsets from the base cell for the c08 base step
+    // Vector of offsets from the base cell for the given base step
     // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
     const auto offsets = VerletListsCellsHelpers::buildBaseStep(cellsPerDim, vlcTraversalOpt);
 
@@ -202,42 +209,43 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           auto &baseCellsLists = neighborLists[cellIndexBase];
           auto threadNum = autopas_get_thread_num();
 
-          // Build c08 lists for this base step according to predefined cell pairs
+          // Build lists for this base step according to predefined cell pairs
           for (const auto &[offset1, offset2, _] : offsets) {
-            const auto cellIndex1 = cellIndexBase + offset1;
-            const auto cellIndex2 = cellIndexBase + offset2;
-            auto &cell1List = neighborLists[cellIndex1];
-            auto &cell2List = neighborLists[cellIndex2];
+            const auto cell1Index1D = cellIndexBase + offset1;
+            const auto cell2Index1D = cellIndexBase + offset2;
+            auto &cell1List = neighborLists[cell1Index1D];
+            auto &cell2List = neighborLists[cell2Index1D];
 
             // For all traversals ensures the partner cell is not outside the boundary
-            const auto cell2Coords = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, cellsPerDim);
-            if (cell2Coords[0] >= cellsPerDim[0] or cell2Coords[0] < 0 or cell2Coords[1] >= cellsPerDim[1] or
-                cell2Coords[1] < 0 or cell2Coords[2] >= cellsPerDim[2] or cell2Coords[2] < 0) {
+            const auto cell2Index3D = utils::ThreeDimensionalMapping::oneToThreeD(cell2Index1D, cellsPerDim);
+            if (cell2Index3D[0] >= cellsPerDim[0] or cell2Index3D[0] < 0 or cell2Index3D[1] >= cellsPerDim[1] or
+                cell2Index3D[1] < 0 or cell2Index3D[2] >= cellsPerDim[2] or cell2Index3D[2] < 0) {
               continue;
             }
 
-            // Skip if both cells only contain halos
-            if (not(cells[cellIndex1].getPossibleParticleOwnerships() == OwnershipState::owned) and
-                not(cells[cellIndex2].getPossibleParticleOwnerships() == OwnershipState::owned)) {
+            // Skip if both cells only contain halos or dummys
+            if (not(cells[cell1Index1D].getPossibleParticleOwnerships() == OwnershipState::owned) and
+                not(cells[cell2Index1D].getPossibleParticleOwnerships() == OwnershipState::owned)) {
               continue;
             }
 
             // Go over all particle pairs in the two cells and insert close pairs into their respective lists
-            for (size_t particleIndexCell1 = 0; particleIndexCell1 < cells[cellIndex1].size(); ++particleIndexCell1) {
-              auto &p1 = cells[cellIndex1][particleIndexCell1];
+            for (size_t particleIndexCell1 = 0; particleIndexCell1 < cells[cell1Index1D].size(); ++particleIndexCell1) {
+              auto &p1 = cells[cell1Index1D][particleIndexCell1];
 
-              // Determine starting index for the second particle in the second cell
-              // If both cells are the same start after the current particle in the first cell.
-              // For vlc_c01 we have to iterate over all pairs like p1<->p2 and p2<->p1 because we do not make use of
-              // newton3
+              // Determine the starting index for the second particle in the pair.
+              // If both cells are the same and the traversal is newton3 compatible, this is the next particle in the
+              // cell. If the cells are different or the traversal is not newton3 compatible, this is index 0. For
+              // non-newton 3 compatible traversals (vlp_c01) we have to consider the interaction in both directions, so
+              // we always start from index 0.
               size_t startIndexCell2 = 0;
-              if (cellIndex1 == cellIndex2 and vlcTraversalOpt != TraversalOption::vlp_c01) {
+              if (cell1Index1D == cell2Index1D and vlcTraversalOpt != TraversalOption::vlp_c01) {
                 startIndexCell2 = particleIndexCell1 + 1;
               }
 
-              for (size_t particleIndexCell2 = startIndexCell2; particleIndexCell2 < cells[cellIndex2].size();
+              for (size_t particleIndexCell2 = startIndexCell2; particleIndexCell2 < cells[cell2Index1D].size();
                    ++particleIndexCell2) {
-                auto &p2 = cells[cellIndex2][particleIndexCell2];
+                auto &p2 = cells[cell2Index1D][particleIndexCell2];
                 // Ignore dummies and self interaction
                 if (&p1 == &p2 or p1.isDummy() or p2.isDummy()) {
                   continue;
@@ -248,14 +256,16 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
                 const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
                 if (distSquared < interactionLengthSquared) {
                   {
-                    const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cellIndex1, cellIndex2);
+                    const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cell1Index1D, cell2Index1D);
                     insert(p1, p2, cell1List[secondCellIndexInFirst]);
                   }
-                  // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's
-                  // list
+                  // If the traversal is Newton3 compatible, Newton3 is used for building regardless of if the actual
+                  // interactions will use Newton3. In the case that Newton3 will not be used, the inverse interaction
+                  // also needs to be stored in p2's list. If the traversal is Newton3 incompatible, the insertion into
+                  // p2's list will occur when the p2 particle is p1. This is ensured above by the startIndexCell2.
                   if (not useNewton3 and not(vlcTraversalOpt == TraversalOption::vlp_c01)) {
                     {
-                      const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cellIndex2, cellIndex1);
+                      const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cell2Index1D, cell1Index1D);
                       insert(p2, p1, cell2List[secondCellIndexInFirst]);
                     }
                   }

@@ -48,8 +48,11 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
     // execute the traversal-specific logic for the loop body
     func(baseCell, partnerCell);
 
-    // Count number of non-aligned dimensions
-    const auto factor = estimatorFactors[std::abs(x) + std::abs(y) + std::abs(z)];
+    // Count the number of non-aligned dimensions
+    const auto numNonAlignedDims = std::abs(x) + std::abs(y) + std::abs(z);
+    // Get the corresponding factor
+    const auto factor = estimatorFactors[numNonAlignedDims];
+
     if (traversal != TraversalOption::vlc_c01 and traversal != TraversalOption::vlp_c01) {
       const auto &[smallerIndex, biggerIndex] = std::minmax(baseCell, partnerCell);
       // Check if this offset tuple is already in the offsets list and if not add it.
@@ -92,7 +95,7 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
   };
 
   auto buildC18Offsets = [&]() {
-    // In 3D each base cell has 13 neighboring interaction cells + the interaction with it self in the C18 traversal
+    // In 3D each base cell has 13 neighboring interaction cells + the interaction with itself in the C18 traversal
     offsets.reserve(14);
     // Outgoing from a base cell with coordinates [0, 0, 0] find all interaction cells for a c18 base step
     for (int z = 0; z <= interactionCellsPerDim; ++z) {
@@ -105,7 +108,7 @@ std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim
   };
 
   auto buildC01Offsets = [&]() {
-    // In 3D each base cell has 13 neighboring interaction cells + the interaction with it self in the C01 traversal
+    // In 3D each base cell has 26 neighboring interaction cells + the interaction with itself in the C01 traversal
     offsets.reserve(27);
     // Outgoing from a base cell with coordinates [0, 0, 0] find all interaction cells for a c01 base step
     for (int z = -interactionCellsPerDim; z <= interactionCellsPerDim; ++z) {
