@@ -858,7 +858,8 @@ class LJFunctorSVE
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS, false);
+      _shift6AoS =
+          ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS, false);
     } else {
       _shift6AoS = 0.;
     }

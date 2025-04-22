@@ -96,8 +96,8 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
           return ((col * size0 + xi) * size1 + yi) * size2 + zi;
         };
 
-        std::vector<std::array<unsigned long, 3>> startIndex(numColors);
-        std::vector<std::array<unsigned long, 3>> colorDiff(numColors);
+        std::vector<std::array<long, 3>> startIndex(numColors);
+        std::vector<std::array<long, 3>> colorDiff(numColors);
         startIndex = this->oneToThreeDForStartSnakyPattern(stride);
         for (int i = 1; i < numColors; i++) {
           colorDiff[i] = startIndex[i] - startIndex[i - 1];
@@ -117,11 +117,13 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                     if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
                       continue;
                     }
-                    AUTOPAS_OPENMP(
-                        task depend(in : (taskDepend.data())[index(col - 1, xi, yi, zi)],
-                                    (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0],
-                                                              yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])])
-                            depend(out : (taskDepend.data())[index(col, xi, yi, zi)])) {
+                    AUTOPAS_OPENMP(task depend(
+                        in
+                        : (taskDepend.data())[index(col - 1, xi, yi, zi)],
+                          (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0], yi + colorDiff[col - 1][1],
+                                                    zi + colorDiff[col - 1][2])])
+                                       depend(out
+                                              : (taskDepend.data())[index(col, xi, yi, zi)])) {
                       for (unsigned long z = z_start; z < z_start + group[2]; ++z)
                         for (unsigned long y = y_start; y < y_start + group[1]; ++y)
                           for (unsigned long x = x_start; x < x_start + group[0]; ++x) {

@@ -105,7 +105,6 @@ HGridTraversalComparison::calculateForces(autopas::ContainerOption containerOpti
         interactionType] = key;
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
-
   if (interactionType == autopas::InteractionTypeOption::pairwise) {
     mdLib::LJFunctor<Molecule, true /*applyShift*/, true /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/, false /* countFLOPs */, true /* relevantForTuning */,

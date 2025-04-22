@@ -35,7 +35,6 @@ namespace autopas {
  * This class selects the optimal container and delegates the choice of the optimal traversal down to this container.
  *
  * @tparam Particle_T
- * @tparam ParticleCell
  */
 template <class Particle_T>
 class ContainerSelector {
@@ -127,13 +126,13 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
     case ContainerOption::linkedCells: {
       container = std::make_unique<LinkedCells<Particle_T>>(_boxMin, _boxMax, cutoff, containerInfo.verletSkin,
                                                             containerInfo.verletRebuildFrequency,
-                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
+                                                            containerInfo.cellSizeFactor, containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::linkedCellsReferences: {
       container = std::make_unique<LinkedCellsReferences<Particle_T>>(
           _boxMin, _boxMax, cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-                                                                    containerInfo.cellSizeFactor);
+          containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletLists: {
@@ -174,8 +173,9 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
       break;
     }
     case ContainerOption::hierarchicalGrid: {
-      if (_cutoffs.empty() && _cutoff > 0) {
-        // if cutoffs for levels are not provided, set scaling cutoff to 1 and cutoff levels to 1 level with _cutoff
+      if (_cutoffs.empty()) {
+        // if cutoffs for levels are not provided, set scaling cutoff to 1 and cutoff levels to a single level with
+        // _cutoff
         _cutoffs = {_cutoff};
         cutoff = 1;
       } else {

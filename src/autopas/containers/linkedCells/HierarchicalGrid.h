@@ -112,7 +112,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _cutoffs.back(), skin,
                                                                             rebuildFrequency, _cellSizeFactor * ratio));
     }
-    this->computeNextNonEmpty();
   }
 
   /**
@@ -274,7 +273,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // nothing to do
+    // recompute empty cells
+    this->computeNextNonEmpty();
   }
 
   void computeInteractions(TraversalInterface *traversal) override {
@@ -282,8 +282,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     traversal->initTraversal();
     traversal->traverseParticles();
     traversal->endTraversal();
-    // AutoPasLog(INFO, "After computeInteractions");
-    // AutoPasLog(INFO, toString());
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
@@ -297,8 +295,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       invalidParticles.insert(invalidParticles.end(), std::make_move_iterator(invalidParticlesSingle.begin()),
                               std::make_move_iterator(invalidParticlesSingle.end()));
     }
-    // recompute empty cells
-    this->computeNextNonEmpty();
     return invalidParticles;
   }
 

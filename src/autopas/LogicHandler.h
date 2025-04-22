@@ -1298,12 +1298,6 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
-  AutoPasLog(INFO, "ComputeInteractions: {}s, container {}, traversal {}, stepsSinceRebuild {} CellSizeFactor {}",
-             timerComputeInteractions.getTotalTime() / 1000000000.0,
-             _containerSelector.getCurrentContainer().getContainerType().to_string(),
-             traversal.getTraversalType().to_string(), _stepsSinceLastListRebuild,
-             autoTuner.getCurrentConfig().cellSizeFactor);
-
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
   return {timerComputeInteractions.getTotalTime(),

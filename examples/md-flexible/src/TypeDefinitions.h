@@ -150,5 +150,4 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
  */
-using ParticlePropertiesLibraryType =
-    ParticlePropertiesLibrary<FloatPrecision, size_t>;
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;

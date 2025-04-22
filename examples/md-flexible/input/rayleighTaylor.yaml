@@ -29,7 +29,7 @@ globalForce: [ 0, 0, -12.44 ]
 data-layout: [ SoA ]
 traversal:
   [
-    hgrid_color, hgrid_task, hgrid_task_soa_cell, hgrid_test
+    hgrid_block, hgrid_task
   ]
 newton3: [ enabled ]
 cell-size: [ 0.5 ]
@@ -49,13 +49,13 @@ Objects:
     0:
       particle-type-id: 0
       box-length: [ 80, 80, 40 ]
-      particle-spacing: 0.60
+      particle-spacing: 0.90
       bottomLeftCorner: [ 0, 0, 0 ]
       velocity: [ 0, 0, 0 ]
     1:
       particle-type-id: 1
       box-length: [ 80, 80, 40 ]
-      particle-spacing: 0.38
+      particle-spacing: 0.50
       bottomLeftCorner: [ 0, 0, 0 ]
       velocity: [ 0, 0, 0 ]
 thermostat:

@@ -39,12 +39,12 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell_T>, public HGTr
         const double interactionLength = this->getInteractionLength(lowerLevel, upperLevel);
         const double interactionLengthSquared = interactionLength * interactionLength;
 
-        std::array<unsigned long, 3> stride = this->computeStride(interactionLength, lowerLevel, upperLevel);
+        std::array<size_t, 3> stride = this->computeStride(interactionLength, lowerLevel, upperLevel);
 
         const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
 
         const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
-        const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+        const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
         // get cellBlocks of upper and lower levels
         const auto &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock();
@@ -56,18 +56,18 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell_T>, public HGTr
         upperBound -= lowerLevelCB.getCellsPerInteractionLength();
 
         // do the colored traversal
-        const unsigned long numColors = stride[0] * stride[1] * stride[2];
+        const size_t numColors = stride[0] * stride[1] * stride[2];
         AUTOPAS_OPENMP(parallel)
         for (unsigned long col = 0; col < numColors; ++col) {
           const std::array<unsigned long, 3> start(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
 
-          const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
-          const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
+          const size_t start_x = start[0], start_y = start[1], start_z = start[2];
+          const size_t end_x = end[0], end_y = end[1], end_z = end[2];
 
           AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
-          for (unsigned long z = start_z; z < end_z; z += stride_z) {
-            for (unsigned long y = start_y; y < end_y; y += stride_y) {
-              for (unsigned long x = start_x; x < end_x; x += stride_x) {
+          for (size_t z = start_z; z < end_z; z += stride_z) {
+            for (size_t y = start_y; y < end_y; y += stride_y) {
+              for (size_t x = start_x; x < end_x; x += stride_x) {
                 this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
                                              interactionLengthSquared, dir, lowerBound, upperBound, true);
               }

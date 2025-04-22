@@ -181,8 +181,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlySoA() {
   return {
-      TraversalOption::lc_c01_combined_SoA,
-      TraversalOption::lc_c04_combined_SoA,
+      TraversalOption::lc_c01_combined_SoA,  TraversalOption::lc_c04_combined_SoA,
       TraversalOption::hgrid_color_soa_cell, TraversalOption::hgrid_block_soa_cell,
       TraversalOption::hgrid_task_soa_cell,  TraversalOption::hgrid_test,
   };

@@ -20,8 +20,12 @@ class HGTraversalBase : public TraversalInterface {
   using Particle = typename ParticleCell_T::ParticleType;
 
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0), _maxDisplacement(0),
-        _nextNonEmpty(){}
+      : TraversalInterface(dataLayout, useNewton3),
+        _numLevels(0),
+        _levels(nullptr),
+        _skin(0),
+        _maxDisplacement(0),
+        _nextNonEmpty() {}
 
   /**
    * Store HGrid data
@@ -91,24 +95,24 @@ class HGTraversalBase : public TraversalInterface {
    * @param upperLevel The upper level index.
    * @return The stride for each dimension.
    */
-  std::array<unsigned long, 3> computeStride(const double interactionLength, const size_t lowerLevel,
-                                             const size_t upperLevel) {
+  std::array<size_t, 3> computeStride(const double interactionLength, const size_t lowerLevel,
+                                      const size_t upperLevel) {
     const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
     const std::array<double, 3> lowerLength = this->_levels->at(lowerLevel)->getTraversalSelectorInfo().cellLength;
-    std::array<unsigned long, 3> stride{};
+    std::array<size_t, 3> stride{};
     for (size_t i = 0; i < 3; i++) {
       if (this->_useNewton3) {
         // find out the stride so that cells we check on lowerLevel do not intersect
         if (this->_dataLayout == DataLayoutOption::soa) {
-          stride[i] = 1 + static_cast<unsigned long>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
-                                                               lowerLength[i] / upperLength[i]));
-        }
-        // the stride calculation below can result in less colors, but two different threads can operate on SoA
-        // Buffer of the same cell at the same time. They won't update the same value at the same time, but
-        // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
-        // again).
-        else {
-          stride[i] = 1 + static_cast<unsigned long>(std::ceil(interactionLength * 2 / upperLength[i]));
+          stride[i] = 1 + static_cast<size_t>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
+                                                        lowerLength[i] / upperLength[i]));
+          // the stride calculation below can result in less colors, but two different threads can operate on SoA
+          // buffer of the same cell at the same time. They won't update the same value at the same time, but
+          // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
+          // again).
+          // stride[i] = 1 + static_cast<size_t>(std::ceil(interactionLength * 2 / upperLength[i]));
+        } else {
+          stride[i] = 1 + static_cast<size_t>(std::ceil(interactionLength * 2 / upperLength[i]));
         }
       } else {
         // do c01 traversal if newton3 is disabled
@@ -146,14 +150,13 @@ class HGTraversalBase : public TraversalInterface {
    * @return A vector that contains the 3d indexes for each 1d index.
    */
   template <typename T>
-  constexpr std::vector<std::array<T, 3>> oneToThreeDForStartSnakyPattern(const std::array<T, 3> &dims) {
-    static_assert(std::is_integral_v<T>, "oneToThreeD requires integral types");
-    std::vector<std::array<T, 3>> coords(dims[0] * dims[1] * dims[2]);
+  std::vector<std::array<long, 3>> oneToThreeDForStartSnakyPattern(const std::array<T, 3> &dims) {
+    std::vector<std::array<long, 3>> coords(dims[0] * dims[1] * dims[2]);
     for (T z = 0; z < dims[2]; ++z) {
       for (T y = 0; y < dims[1]; ++y) {
         for (T x = 0; x < dims[0]; ++x) {
           int idx = computeIndex(x, y, z, dims[0], dims[1]);
-          coords[idx] = {x, y, z};
+          coords[idx] = {static_cast<long>(x), static_cast<long>(y), static_cast<long>(z)};
         }
       }
     }
@@ -301,6 +304,7 @@ class HGTraversalBase : public TraversalInterface {
                     const std::array<double, 3> dir, const std::array<size_t, 3> &lowerBound,
                     const std::array<size_t, 3> &upperBound, bool distanceCheck) {
     using namespace autopas::utils::ArrayMath::literals;
+    using utils::ArrayUtils::operator<<;
 
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
@@ -468,6 +472,55 @@ class HGTraversalBase : public TraversalInterface {
         }
       }
     }
+  }
+
+  static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(long targetBlocksPerColor,
+                                                                        const std::array<size_t, 3> &stride,
+                                                                        const std::array<unsigned long, 3> &end) {
+    unsigned long smallestCriterion = 1e15;
+    std::array<size_t, 3> bestGroup = {1, 1, 1};
+    for (size_t x_group = 1; x_group <= stride[0]; ++x_group)
+      for (size_t y_group = 1; y_group <= stride[1]; ++y_group)
+        for (size_t z_group = 1; z_group <= stride[2]; ++z_group) {
+          std::array<size_t, 3> group = {x_group, y_group, z_group};
+          std::array<size_t, 3> num_index{}, testStride{};
+          for (size_t i = 0; i < 3; i++) {
+            testStride[i] = 1 + static_cast<size_t>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
+            num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
+          }
+          const size_t numColors = testStride[0] * testStride[1] * testStride[2];
+          const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
+          const unsigned long criterion = numColors * std::abs(numBlocksPerColor - targetBlocksPerColor);
+          if (criterion < smallestCriterion) {
+            smallestCriterion = criterion;
+            bestGroup = group;
+          }
+        }
+    return bestGroup;
+  }
+
+  static std::array<size_t, 3> findBestGroupSizeForTargetBlocks(long targetBlocks, const std::array<size_t, 3> &stride,
+                                                                const std::array<unsigned long, 3> &end) {
+    unsigned long smallestCriterion = 1e15;
+    std::array<size_t, 3> bestGroup = {1, 1, 1};
+    for (size_t x_group = 1; x_group <= stride[0]; ++x_group)
+      for (size_t y_group = 1; y_group <= stride[1]; ++y_group)
+        for (size_t z_group = 1; z_group <= stride[2]; ++z_group) {
+          std::array<size_t, 3> group = {x_group, y_group, z_group};
+          std::array<size_t, 3> num_index{}, testStride{};
+          for (size_t i = 0; i < 3; i++) {
+            testStride[i] = 1 + static_cast<size_t>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
+            num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
+          }
+          const long numColors = testStride[0] * testStride[1] * testStride[2];
+          const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
+          const unsigned long criterion = std::abs(numBlocksPerColor * numColors - targetBlocks);
+          if (criterion < smallestCriterion) {
+            smallestCriterion = criterion;
+            bestGroup = group;
+          }
+        }
+    return bestGroup;
   }
 };
 }  // namespace autopas

@@ -961,8 +961,8 @@ class LJFunctorAVX
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared,
-                                                                                        _cutoffSquaredAoS, scalingCutoff_T);
+      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS,
+                                                                         scalingCutoff_T);
     } else {
       _shift6AoS = 0.;
     }
