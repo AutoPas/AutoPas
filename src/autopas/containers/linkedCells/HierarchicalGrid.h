@@ -112,6 +112,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _cutoffs.back(), skin,
                                                                             rebuildFrequency, _cellSizeFactor * ratio));
     }
+    computeNextNonEmpty();
   }
 
   /**

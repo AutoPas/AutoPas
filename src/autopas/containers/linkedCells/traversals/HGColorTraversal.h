@@ -58,8 +58,8 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
         // do the colored traversal
         const size_t numColors = stride[0] * stride[1] * stride[2];
         AUTOPAS_OPENMP(parallel)
-        for (unsigned long col = 0; col < numColors; ++col) {
-          const std::array<unsigned long, 3> start(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
+        for (size_t col = 0; col < numColors; ++col) {
+          const std::array<size_t, 3> start(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
 
           const size_t start_x = start[0], start_y = start[1], start_z = start[2];
           const size_t end_x = end[0], end_y = end[1], end_z = end[2];
