@@ -208,10 +208,10 @@ class LJFunctorXSIMD
 
     const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-    xsimd::batch<double> virialSumX{0};
-    xsimd::batch<double> virialSumY{0};
-    xsimd::batch<double> virialSumZ{0};
-    xsimd::batch<double> upotSum{0};
+    xsimd::batch<double> virialSumX{0.};
+    xsimd::batch<double> virialSumY{0.};
+    xsimd::batch<double> virialSumZ{0.};
+    xsimd::batch<double> upotSum{0.};
 
     for (size_t i = soa.size() - 1; (long)i >= 0; --i) {
       if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
@@ -223,9 +223,9 @@ class LJFunctorXSIMD
 
       xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr[i])};
 
-      xsimd::batch<double> fxacc{0};
-      xsimd::batch<double> fyacc{0};
-      xsimd::batch<double> fzacc{0};
+      xsimd::batch<double> fxacc{0.};
+      xsimd::batch<double> fyacc{0.};
+      xsimd::batch<double> fzacc{0.};
 
       xsimd::batch<double> x1 = xsimd::broadcast(xptr[i]);
       xsimd::batch<double> y1 = xsimd::broadcast(yptr[i]);
@@ -301,10 +301,10 @@ class LJFunctorXSIMD
     const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
     const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
-    xsimd::batch<double> virialSumX{0};
-    xsimd::batch<double> virialSumY{0};
-    xsimd::batch<double> virialSumZ{0};
-    xsimd::batch<double> upotSum{0};
+    xsimd::batch<double> virialSumX{0.};
+    xsimd::batch<double> virialSumY{0.};
+    xsimd::batch<double> virialSumZ{0.};
+    xsimd::batch<double> upotSum{0.};
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
@@ -312,9 +312,9 @@ class LJFunctorXSIMD
         continue;
       }
 
-      xsimd::batch<double> fxacc{0};
-      xsimd::batch<double> fyacc{0};
-      xsimd::batch<double> fzacc{0};
+      xsimd::batch<double> fxacc{0.};
+      xsimd::batch<double> fyacc{0.};
+      xsimd::batch<double> fzacc{0.};
 
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
@@ -432,9 +432,9 @@ class LJFunctorXSIMD
     xsimd::batch<double> z2;
     // load only masked values
     if (remainderIsMasked) {
-      double x2_a[vecLength] = {0};
-      double y2_a[vecLength] = {0};
-      double z2_a[vecLength] = {0};
+      double x2_a[vecLength] = {0.};
+      double y2_a[vecLength] = {0.};
+      double z2_a[vecLength] = {0.};
 
       for (int i = 0; _masks[rest - 1].get(i); ++i) {
         x2_a[i] = x2ptr[j + i];
@@ -508,9 +508,9 @@ class LJFunctorXSIMD
       xsimd::batch<double> fz2;
 
       if (remainderIsMasked) {
-        double fx2_a[vecLength] = {0};
-        double fy2_a[vecLength] = {0};
-        double fz2_a[vecLength] = {0};
+        double fx2_a[vecLength] = {0.};
+        double fy2_a[vecLength] = {0.};
+        double fz2_a[vecLength] = {0.};
 
         for (int i = 0; _masks[rest - 1].get(i); ++i) {
           fx2_a[i] = fx2ptr[j + i];
@@ -532,9 +532,9 @@ class LJFunctorXSIMD
 
       // store only masked values
       if (remainderIsMasked) {
-        double fx2tmp[vecLength] = {0};
-        double fy2tmp[vecLength] = {0};
-        double fz2tmp[vecLength] = {0};
+        double fx2tmp[vecLength] = {0.};
+        double fy2tmp[vecLength] = {0.};
+        double fz2tmp[vecLength] = {0.};
         xsimd::store_unaligned(fx2tmp, fx2new);
         xsimd::store_unaligned(fy2tmp, fy2new);
         xsimd::store_unaligned(fz2tmp, fz2new);
@@ -613,13 +613,13 @@ class LJFunctorXSIMD
     const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     // accumulators
-    xsimd::batch<double> virialSumX{0};
-    xsimd::batch<double> virialSumY{0};
-    xsimd::batch<double> virialSumZ{0};
-    xsimd::batch<double> upotSum{0};
-    xsimd::batch<double> fxacc{0};
-    xsimd::batch<double> fyacc{0};
-    xsimd::batch<double> fzacc{0};
+    xsimd::batch<double> virialSumX{0.};
+    xsimd::batch<double> virialSumY{0.};
+    xsimd::batch<double> virialSumZ{0.};
+    xsimd::batch<double> upotSum{0.};
+    xsimd::batch<double> fxacc{0.};
+    xsimd::batch<double> fyacc{0.};
+    xsimd::batch<double> fzacc{0.};
 
     // broadcast particle 1
     const xsimd::batch<double> x1 = xsimd::broadcast(xptr[indexFirst]);
