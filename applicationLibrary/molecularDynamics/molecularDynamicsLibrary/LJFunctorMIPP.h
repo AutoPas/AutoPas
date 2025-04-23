@@ -241,15 +241,15 @@ class LJFunctorMIPP
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
-                               &virialSumY, &virialSumZ, &upotSum, 0);
+                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc,
+                               &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc, &virialSumX,
                               &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
@@ -328,14 +328,14 @@ class LJFunctorMIPP
       unsigned int j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                  fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                 fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
       fx1ptr[i] += sum(fxacc);
       fy1ptr[i] += sum(fyacc);
@@ -400,11 +400,11 @@ class LJFunctorMIPP
     Reg<double> sigmaSquares = _sigmaSquare;
     Reg<double> shift6s = _shift6;
     if (useMixing) {
-      double epsilon_buf[vecLength] = {0};
-      double sigma_buf[vecLength] = {0};
-      double shift_buf[vecLength] = {0};
+      double epsilon_buf[vecLength] = {0.};
+      double sigma_buf[vecLength] = {0.};
+      double shift_buf[vecLength] = {0.};
 
-      for (int i = 0; (remainderIsMasked ? _masks[rest - 1][i] : i < vecLength); ++i) {
+      for (int i = 0; (remainderIsMasked ? (i < rest) : (i < vecLength)); ++i) {
         epsilon_buf[i] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + i));
         sigma_buf[i] = _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + i));
         if constexpr (applyShift) {

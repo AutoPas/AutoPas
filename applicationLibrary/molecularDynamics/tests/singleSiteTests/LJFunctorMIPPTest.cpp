@@ -82,7 +82,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
 
   size_t numParticles = 7;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -200,7 +200,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool d
 
   size_t numParticles = 7;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -295,7 +295,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
 
   constexpr size_t numParticles = 7;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -402,7 +402,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDel
 
   constexpr size_t numParticles = 7;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);

@@ -90,7 +90,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
 
   size_t numParticles = 23;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -215,7 +215,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
 
   size_t numParticles = 23;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -314,7 +314,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 
   constexpr size_t numParticles = 23;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -423,7 +423,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
 
   constexpr size_t numParticles = 23;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);

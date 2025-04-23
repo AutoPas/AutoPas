@@ -82,7 +82,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
 
   size_t numParticles = 7;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -201,7 +201,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool
 
   size_t numParticles = 7;
 
-   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
