@@ -1104,7 +1104,7 @@ class LJFunctorHWY
     HWY_ALIGN double fy2Tmp[_vecLengthDouble] = {0.};
     HWY_ALIGN double fz2Tmp[_vecLengthDouble] = {0.};
     HWY_ALIGN size_t typeID2Tmp[_vecLengthDouble] = {0};
-    HWY_ALIGN autopas::OwnershipState ownedStates2Tmp[_vecLengthDouble] = {0};
+    HWY_ALIGN autopas::OwnershipState ownedStates2Tmp[_vecLengthDouble] = {autopas::OwnershipState::dummy};
     // alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
     // alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
     // alignas(64) std::array<double, _vecLengthDouble> z2Tmp{};
