@@ -408,9 +408,9 @@ class LJFunctorXSIMD
     xsimd::batch<double> shift6s;
 
     if (useMixing) {
-      double epsilon_buf[vecLength] = {0};
-      double sigma_buf[vecLength] = {0};
-      double shift_buf[vecLength] = {0};
+      double epsilon_buf[vecLength] = {0.};
+      double sigma_buf[vecLength] = {0.};
+      double shift_buf[vecLength] = {0.};
 
       for (int i = 0; (remainderIsMasked ? _masks[rest - 1].get(i) : i < vecLength); ++i) {
         epsilon_buf[i] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + i));

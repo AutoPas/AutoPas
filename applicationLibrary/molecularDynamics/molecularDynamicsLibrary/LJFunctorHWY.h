@@ -1097,14 +1097,14 @@ class LJFunctorHWY
     const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
     const MaskDouble ownedMaskI = highway::Ne(ownedStateI, _zeroDouble);
 
-    HWY_ALIGN double x2Tmp[_vecLengthDouble];
-    HWY_ALIGN double y2Tmp[_vecLengthDouble];
-    HWY_ALIGN double z2Tmp[_vecLengthDouble];
-    HWY_ALIGN double fx2Tmp[_vecLengthDouble];
-    HWY_ALIGN double fy2Tmp[_vecLengthDouble];
-    HWY_ALIGN double fz2Tmp[_vecLengthDouble];
-    HWY_ALIGN size_t typeID2Tmp[_vecLengthDouble];
-    HWY_ALIGN autopas::OwnershipState ownedStates2Tmp[_vecLengthDouble];
+    HWY_ALIGN double x2Tmp[_vecLengthDouble] = {0.};
+    HWY_ALIGN double y2Tmp[_vecLengthDouble] = {0.};
+    HWY_ALIGN double z2Tmp[_vecLengthDouble] = {0.};
+    HWY_ALIGN double fx2Tmp[_vecLengthDouble] = {0.};
+    HWY_ALIGN double fy2Tmp[_vecLengthDouble] = {0.};
+    HWY_ALIGN double fz2Tmp[_vecLengthDouble] = {0.};
+    HWY_ALIGN size_t typeID2Tmp[_vecLengthDouble] = {0};
+    HWY_ALIGN autopas::OwnershipState ownedStates2Tmp[_vecLengthDouble] = {0};
     // alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
     // alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
     // alignas(64) std::array<double, _vecLengthDouble> z2Tmp{};
