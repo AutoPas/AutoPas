@@ -89,7 +89,7 @@ class LJFunctorXSIMDTest : public AutoPasTestBase, public ::testing::WithParamIn
    * @param p2
    * @return
    */
-  bool particleEqual(Particle &p1, Particle &p2);
+  bool particleEqual(Molecule &p1, Molecule &p2);
 
   constexpr static double _cutoff{6.};
   constexpr static double _skinPerTimestep{0.1};

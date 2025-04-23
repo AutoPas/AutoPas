@@ -3,7 +3,7 @@
 #include "LJFunctorMIPPTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctorAVX.h"
 
@@ -12,22 +12,22 @@ bool LJFunctorMIPPTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
   EXPECT_GT(soa1.size(), 0);
   EXPECT_EQ(soa1.size(), soa2.size());
 
-  unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
-  unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
+  unsigned long *const __restrict idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
+  unsigned long *const __restrict idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
 
-  double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-  double *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-  double *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
-  double *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-  double *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-  double *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+  double *const __restrict xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
+  double *const __restrict yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
+  double *const __restrict zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
+  double *const __restrict xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
+  double *const __restrict yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
+  double *const __restrict zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
 
-  double *const __restrict fxptr1 = soa1.template begin<Particle::AttributeNames::forceX>();
-  double *const __restrict fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
-  double *const __restrict fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
-  double *const __restrict fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
-  double *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
-  double *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
+  double *const __restrict fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
+  double *const __restrict fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
+  double *const __restrict fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
+  double *const __restrict fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
+  double *const __restrict fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
+  double *const __restrict fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
 
   for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
@@ -45,7 +45,7 @@ bool LJFunctorMIPPTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
   // clang-format on
 }
 
-bool LJFunctorMIPPTest::particleEqual(Particle &p1, Particle &p2) {
+bool LJFunctorMIPPTest::particleEqual(Molecule &p1, Molecule &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
   double tolerance = 1e-8;
@@ -82,7 +82,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
 
   size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -200,7 +200,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool d
 
   size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -295,7 +295,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
 
   constexpr size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -402,7 +402,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDel
 
   constexpr size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);

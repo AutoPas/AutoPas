@@ -42,7 +42,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
 
   bool AoSParticlesEqual(FMCell &cell1, FMCell &cell2);
 
-  bool particleEqual(Particle &p1, Particle &p2);
+  bool particleEqual(Molecule &p1, Molecule &p2);
 
   constexpr static double _cutoff{6.};
   constexpr static double _skinPerTimestep{0.1};
