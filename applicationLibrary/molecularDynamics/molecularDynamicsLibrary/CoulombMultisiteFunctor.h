@@ -1,7 +1,7 @@
 /**
  * @file CoulombMultisiteFunctor.h
- * @date 21/02/2022
- * @author S. Newcome
+ * @date 23/04/2025
+ * @author D. Martin
  */
 
 #pragma once
@@ -24,10 +24,9 @@
 namespace mdLib {
 
 /**
- * A functor to handle Lennard-Jones interactions between two Multisite Molecules.
+ * A functor to handle Coulomb interactions between two Multisite Molecules.
  *
  * @tparam Particle The type of particle.
- * @tparam applyShift Flag for the LJ potential to have a truncated shift.
  * @tparam useMixing Flag for if the functor is to be used with multiple particle types. If set to false, _epsilon and
  * _sigma need to be set and the constructor with PPL can be omitted.
  * @warning: Whilst this class allows for mixing to be disabled, this feature is not of much value in real applications
@@ -39,13 +38,12 @@ namespace mdLib {
  * @tparam countFLOPs counts FLOPs and hitrate. Currently not implemented as this functor is problematically bad and
  * will be replaced.
  */
-template <class Particle, bool applyShift = false, bool useMixing = false,
-          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true>
+template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool countFLOPs = false, bool relevantForTuning = true>
 class CoulombMultisiteFunctor
-    : public autopas::PairwiseFunctor<Particle,
-                                      CoulombMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
-                                                              calculateGlobals, relevantForTuning, countFLOPs>> {
+    : public autopas::PairwiseFunctor<
+          Particle,
+          CoulombMultisiteFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -62,24 +60,19 @@ class CoulombMultisiteFunctor
   const double _cutoffSquared;
 
   /**
-   * epsilon x 24. Not constant as may be reset through PPL.
+   * Coulomb epsilon. Not constant as may be reset through PPL.
    */
-  double _epsilon24;
+  double _coulombEpsilon;
 
   /**
-   * sigma^2. Not constant as may be reset through PPL.
+   * Charge. Not constant as may be reset through PPL.
    */
-  double _sigmaSquared;
-
-  /**
-   * Not constant as may be reset through PPL.
-   */
-  double _shift6 = 0;
+  double _charge;
 
   /**
    * List of relative unrotated LJ Site Positions. This is to be used when there is no mixing of molecules.
    */
-  const std::vector<std::array<double, 3>> _sitePositionsLJ{};
+  const std::vector<std::array<double, 3>> _sitePositionsCoulomb{};
 
   /**
    * Particle property library. Not used if all sites are of the same species.
@@ -114,9 +107,8 @@ class CoulombMultisiteFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit CoulombMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle, CoulombMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
-                                                                   calculateGlobals, relevantForTuning, countFLOPs>>(
-            cutoff),
+      : autopas::PairwiseFunctor<Particle, CoulombMultisiteFunctor<Particle, useMixing, useNewton3, calculateGlobals,
+                                                                   relevantForTuning, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -192,8 +184,8 @@ class CoulombMultisiteFunctor
     }
 
     // get number of sites
-    const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
-    const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
+    const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsCoulomb.size();
+    const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsCoulomb.size();
 
     // get siteIds
     const std::vector<size_t> siteIdsA =
@@ -203,9 +195,9 @@ class CoulombMultisiteFunctor
 
     // get unrotated relative site positions
     const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
-        useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
+        useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsCoulomb;
     const std::vector<std::array<double, 3>> unrotatedSitePositionsB =
-        useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsLJ;
+        useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsCoulomb;
 
     // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
@@ -223,12 +215,12 @@ class CoulombMultisiteFunctor
           continue;
         }
 
-        const auto coulombEpsilon = useMixing ? _PPLibrary->getCoulombEpsilon(siteIdsA[i]) : 0;
+        const auto coulombEpsilon = useMixing ? _PPLibrary->getCoulombEpsilon(siteIdsA[i]) : _coulombEpsilon;
+        const double chargeA = useMixing ? _PPLibrary->getCharge(siteIdsA[i]) : _charge;
+        const double chargeB = useMixing ? _PPLibrary->getCharge(siteIdsB[j]) : _charge;
 
         const double invDist = 1.0 / std::sqrt(distanceSquared);
         const double coulombFactor = 1.0 / (4.0 * M_PI * coulombEpsilon);
-        const double chargeA = _PPLibrary->getCharge(siteIdsA[i]);
-        const double chargeB = _PPLibrary->getCharge(siteIdsB[j]);
 
         const double forceMagnitude = coulombFactor * chargeA * chargeB * invDist * invDist;
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, forceMagnitude);
@@ -266,12 +258,16 @@ class CoulombMultisiteFunctor
    * This functor will always use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {}
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("CoulombMultisiteFunctor::SoAFunctorSingle() is not yet implemented.");
+  }
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                      const bool newton3) final {}
+                      const bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("CoulombMultisiteFunctor::SoAFunctorPair() is not yet implemented.");
+  }
 
   // clang-format off
   /**
@@ -280,18 +276,24 @@ class CoulombMultisiteFunctor
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {}
+                        bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("CoulombMultisiteFunctor::SoAFunctorVerlet() is not yet implemented.");
+  }
 
   /**
    * Sets the molecule properties constants for this functor.
    *
    * This is only necessary if no particlePropertiesLibrary is used.
-   * @param epsilon24 epsilon * 24
-   * @param sigmaSquared sigma^2
-   * @param sitePositionsLJ vector of 3D relative unrotated untranslated site positions
+   * @param coulombEpsilon epsilon
+   * @param charge charge
+   * @param sitePositionsCoulomb vector of 3D relative unrotated untranslated site positions
    */
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared,
-                             std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsLJ) {}
+  void setParticleProperties(SoAFloatPrecision coulombEpsilon, SoAFloatPrecision charge,
+                             std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsCoulomb) {
+    _coulombEpsilon = coulombEpsilon;
+    _charge = charge;
+    _sitePositionsCoulomb = sitePositionsCoulomb;
+  }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -348,15 +350,8 @@ class CoulombMultisiteFunctor
    * @return Number of FLOPs
    */
   unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
-    // Site-to-site displacement: 6 (3 in the SoA case, but this requires O(N) precomputing site positions)
-    // Site-to-site distance squared: 4
-    // Compute scale: 9
-    // Apply scale to force: With newton3: 6, Without: 3
-    // Apply scale to torque: With newton3 18, Without: 9 (0 in SoA case, with O(N) post computing)
-    // Site-to-site total: With newton3: 33, Without: 26
-    // (SoA total: With N3L: 22, Without N3L: 19)
-    // Above multiplied by number sites of i * number sites of j
-    const unsigned long siteToSiteFlops = newton3 ? 33ul : 26ul;
+    // not implemented yet
+    const unsigned long siteToSiteFlops = newton3 ? 0 : 0;
     return _PPLibrary->getNumSites(molAType) * _PPLibrary->getNumSites(molBType) * siteToSiteFlops;
   }
 
@@ -395,8 +390,6 @@ class CoulombMultisiteFunctor
       _potentialEnergySum *= 0.5;
       _virialSum *= 0.5;
 
-      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
-      _potentialEnergySum /= 6.;
       _postProcessed = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
@@ -441,19 +434,6 @@ class CoulombMultisiteFunctor
   }
 
  private:
-  /**
-   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
-   * @tparam newton3 flag for if newton's third law is used
-   * @param soaA structure of arrays A
-   * @param soaB structure of arrays B
-   */
-  template <bool newton3>
-  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {}
-
-  template <bool newton3>
-  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexPrime,
-                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {}
-
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */

@@ -90,8 +90,8 @@ using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
 using CoulombFunctorTypeAutovec =
-    mdLib::CoulombMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::CoulombMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                                   mdFlexibleTypeDefs::countFLOPs>;
 #endif
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,

@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -832,7 +832,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value * _configuration.cutoff.value;
+  const double cutoff = _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
