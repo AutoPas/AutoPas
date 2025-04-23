@@ -71,14 +71,14 @@ class LiveInfo {
    * - threadCount: The number of threads that can be used.
    * - rebuildFrequency: The current verlet-rebuild-frequency of the simulation.
    *
-   * @tparam Particle The type of particle the container stores.
+   * @tparam Particle_T The type of particle the container stores.
    * @tparam PairwiseFunctor The type of functor.
    * @param container The container to gather the infos from.
    * @param functor The functor to gather the infos from.
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
    */
-  template <class Particle, class PairwiseFunctor>
-  void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor,
+  template <class Particle_T, class PairwiseFunctor>
+  void gather(const autopas::ParticleContainerInterface<Particle_T> &container, const PairwiseFunctor &functor,
               unsigned int rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
     using autopas::utils::ArrayMath::ceilToInt;
@@ -101,7 +101,7 @@ class LiveInfo {
     infos["domainSizeY"] = domainSize[1];
     infos["domainSizeZ"] = domainSize[2];
 
-    infos["particleSize"] = sizeof(Particle);
+    infos["particleSize"] = sizeof(Particle_T);
 
     // Calculate number of cells for a linked cells container, assuming cell size factor == 1
     const auto cellsPerDim = ceilToInt(domainSize * cutoffInv);
@@ -116,7 +116,7 @@ class LiveInfo {
     std::vector<size_t> particleBinsBlurred;
     particleBinsBlurred.resize(27);
     const auto blurredCellDimsReciproc = std::array<double, 3>{3.0, 3.0, 3.0} / domainSize;
-    for (const Particle &particle : container) {
+    for (const Particle_T &particle : container) {
       if (utils::inBox(particle.getR(), boxMin, boxMax)) {
         // find the actual cell
         const auto offsetIntoBox = particle.getR() - boxMin;
@@ -211,7 +211,7 @@ class LiveInfo {
 
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
 
-    constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle, PairwiseFunctor>(
+    constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle_T, PairwiseFunctor>(
         std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>());
     infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;
   }
@@ -331,16 +331,16 @@ class LiveInfo {
   /**
    * Private helper to calculate the particle size needed by a functor. This is the sum of the size of the type of all
    * needed attributes.
-   * @tparam Particle The type of the Particle
+   * @tparam Particle_T The type of the Particle
    * @tparam PairwiseFunctor The Functor
    * @tparam Idx An index sequence for all elements of PairwiseFunctor::getNeededAttr() elements.
    * @return The number of bytes needed by the information of a particle the functor needs.
    */
-  template <class Particle, class PairwiseFunctor, size_t... Idx>
+  template <class Particle_T, class PairwiseFunctor, size_t... Idx>
   constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
     return (0 + ... +
             sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
-                                               typename Particle::SoAArraysType>::type::value_type));
+                                               typename Particle_T::SoAArraysType>::type::value_type));
   }
 
   /**

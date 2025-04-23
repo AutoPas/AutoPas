@@ -391,6 +391,16 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
                                                      "Number of samples to collect per configuration."};
+
+  /**
+   * EarlyStoppingFactor
+   */
+  MDFlexOption<double, __LINE__> earlyStoppingFactor{
+      std::numeric_limits<double>::infinity(), "early-stopping-factor", false,
+      "EarlyStoppingFactor for the auto-tuner. A configuration seeming to perform worse than the "
+      "previously best configuration "
+      "by this factor will not be sampled again during that tuning phase."};
+
   /**
    * useLOESSSmoothening
    */
