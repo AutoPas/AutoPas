@@ -700,13 +700,9 @@ bool Simulation::calculatePairwiseForces() {
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
 
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-  std::cout << "MD_FLEXIBLE_FUNCTOR_COULOMB" << std::endl;
   if (_configuration.ibiEquilibrateIterations.value == 0 or _iteration <= _configuration.rdfEndIteration.value) {
     wasTuningIteration |= applyWithChosenFunctorElectrostatic<bool>(
         [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
-    std::cout << "apply coulomb functor" << std::endl;
-  } else {
-    std::cout << "do not apply coulomb functor" << std::endl;
   }
 #endif
   return wasTuningIteration;

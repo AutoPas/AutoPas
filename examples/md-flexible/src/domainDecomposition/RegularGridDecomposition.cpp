@@ -265,9 +265,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
                                           _receivedParticlesBuffer, leftNeighbor, rightNeighbor);
       // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
-      AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \
-                                       std::remove_reference_t<decltype(emigrants)> :                     \
-                                           omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+      AUTOPAS_OPENMP(declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(
+          omp_out.end(), omp_in.begin(), omp_in.end())))
       // make sure each buffer gets filled equally while not inducing scheduling overhead
       AUTOPAS_OPENMP(parallel for reduction(vecMergeParticle : emigrants) \
                                   schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / autopas::autopas_get_max_threads())))
@@ -283,21 +282,21 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
     }
   }
   // sanity check: if the simulation is a closed system there should be no emigrants left at this point.
-  // if (std::all_of(_boundaryType.begin(), _boundaryType.end(),
-  //                 [](const auto &boundary) {
-  //                   return boundary == options::BoundaryTypeOption::periodic or
-  //                          boundary == options::BoundaryTypeOption::reflective;
-  //                 }) and
-  //     not emigrants.empty()) {
-  //   using autopas::utils::ArrayUtils::operator<<;
-  //   std::stringstream ss;
-  //   ss << "Rank " << _domainIndex << ": All boundaries are periodic or reflective but " << emigrants.size()
-  //      << " migrants could not be re-inserted:\n"
-  //      << autopas::utils::ArrayUtils::to_string(emigrants, "\n", {"", ""}) << "\n\n"
-  //      << "Local box min: " << _localBoxMin << "\n"
-  //      << "Local box max: " << _localBoxMax;
-  //   throw std::runtime_error(ss.str());
-  // }
+  if (std::all_of(_boundaryType.begin(), _boundaryType.end(),
+                  [](const auto &boundary) {
+                    return boundary == options::BoundaryTypeOption::periodic or
+                           boundary == options::BoundaryTypeOption::reflective;
+                  }) and
+      not emigrants.empty()) {
+    using autopas::utils::ArrayUtils::operator<<;
+    std::stringstream ss;
+    ss << "Rank " << _domainIndex << ": All boundaries are periodic or reflective but " << emigrants.size()
+       << " migrants could not be re-inserted:\n"
+       << autopas::utils::ArrayUtils::to_string(emigrants, "\n", {"", ""}) << "\n\n"
+       << "Local box min: " << _localBoxMin << "\n"
+       << "Local box max: " << _localBoxMax;
+    throw std::runtime_error(ss.str());
+  }
 }
 
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
