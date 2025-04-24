@@ -466,12 +466,21 @@ class LJFunctorXSIMD
 
     const xsimd::batch_bool<double> cutoffMask = xsimd::le(dr2, _cutoffsquare);
     const xsimd::batch<int64_t> _zeroI = xsimd::to_int(_zero);
-    const xsimd::batch<int64_t> ownedStateJ = remainderIsMasked
-                                                  ? xsimd::select(xsimd::batch_bool_cast<int64_t>(_masks[rest - 1]),
-                                                                  xsimd::load_unaligned(&ownedStatePtr2[j]), _zeroI)
-                                                  : xsimd::load_unaligned(&ownedStatePtr2[j]);
-    const xsimd::batch_bool<double> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
 
+    xsimd::batch<int64_t> ownedStateJ {0};
+
+    if constexpr (remainderIsMasked) {
+      int64_t owned2 [vecLength] = {0};
+      for (int i = 0; _masks[rest - 1].get(i); ++i) {
+        owned2[i] = ownedStatePtr2[j+i];
+      }
+      ownedStateJ = xsimd::load_unaligned(owned2);
+    }
+    else {
+      ownedStateJ = xsimd::load_unaligned(&ownedStatePtr2[j]);
+    }
+
+    const xsimd::batch_bool<double> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
     const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
 
     // if everything is masked away return from this function.
