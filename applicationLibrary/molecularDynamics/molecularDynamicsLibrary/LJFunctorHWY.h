@@ -1180,17 +1180,7 @@ class LJFunctorHWY
     fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
 
     if constexpr (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_num_threads();
-
-      double globals[] = {highway::ReduceSum(tag_double, virialSumX), highway::ReduceSum(tag_double, virialSumY),
-                          highway::ReduceSum(tag_double, virialSumZ), highway::ReduceSum(tag_double, uPotSum)};
-
-      double factor = 1.;
-      factor *= newton3 ? .5 : 1.;
-      _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-      _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-      _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-      _aosThreadData[threadnum].uPotSum += globals[3] * factor;
+      computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -1377,7 +1367,7 @@ class LJFunctorHWY
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
   double _uPotSum{0.};
   std::array<double, 3> _virialSum;
-  std::vector<AoSThreadData> _aosThreadData;
+  std::vector<AoSThreadData> _aosThreadData {};
   bool _postProcessed;
   bool _masksInitialized{false};
 
