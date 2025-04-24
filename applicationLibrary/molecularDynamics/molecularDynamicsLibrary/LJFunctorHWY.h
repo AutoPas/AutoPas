@@ -1367,7 +1367,7 @@ class LJFunctorHWY
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
   double _uPotSum{0.};
   std::array<double, 3> _virialSum;
-  std::vector<AoSThreadData> _aosThreadData {};
+  std::vector<AoSThreadData> _aosThreadData{};
   bool _postProcessed;
   bool _masksInitialized{false};
 
