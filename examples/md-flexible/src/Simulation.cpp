@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -698,6 +698,17 @@ long Simulation::accumulateTime(const long &time) {
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+  std::cout << "MD_FLEXIBLE_FUNCTOR_COULOMB" << std::endl;
+  if (_configuration.ibiEquilibrateIterations.value == 0 or _iteration <= _configuration.rdfEndIteration.value) {
+    wasTuningIteration |= applyWithChosenFunctorElectrostatic<bool>(
+        [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+    std::cout << "apply coulomb functor" << std::endl;
+  } else {
+    std::cout << "do not apply coulomb functor" << std::endl;
+  }
+#endif
   return wasTuningIteration;
 }
 
@@ -1004,6 +1015,20 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
     }
   }
+}
+
+template <class ReturnType, class FunctionType>
+ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f) {
+  const double cutoff = _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+  return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+#else
+  throw std::runtime_error(
+      "MD-Flexible was not compiled with support for Coulomb interactions. Activate it via `cmake "
+      "-DMD_FLEXIBLE_FUNCTOR_COULOMB=ON`.");
+#endif
 }
 
 template <class ReturnType, class FunctionType>

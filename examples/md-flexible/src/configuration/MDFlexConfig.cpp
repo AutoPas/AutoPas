@@ -371,6 +371,13 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << nuMap.name << ":  " << nuMap.value.at(siteId) << endl;
+    if (coulombEpsilonMap.value.count(siteId) > 0) {
+      os << "    " << setw(valueOffset - 4) << left << coulombEpsilonMap.name << ":  "
+         << coulombEpsilonMap.value.at(siteId) << endl;
+    }
+    if (chargeMap.value.count(siteId) > 0) {
+      os << "    " << setw(valueOffset - 4) << left << chargeMap.name << ":  " << chargeMap.value.at(siteId) << endl;
+    }
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -545,6 +552,20 @@ void MDFlexConfig::addATParametersToSite(unsigned long siteId, double nu) {
     }
   } else {
     throw std::runtime_error("Initializing AT parameters to a non existing site-ID");
+  }
+}
+
+void MDFlexConfig::addCoulombParametersToSite(unsigned long siteId, double epsilon, double charge) {
+  // check if siteId was already declared and mass was specified
+  if (coulombEpsilonMap.value.count(siteId) == 1) {
+    if (autopas::utils::Math::isNearRel(chargeMap.value.at(siteId), charge)) {
+      return;
+    } else {
+      throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+    }
+  } else {
+    coulombEpsilonMap.value.emplace(siteId, epsilon);
+    chargeMap.value.emplace(siteId, charge);
   }
 }
 

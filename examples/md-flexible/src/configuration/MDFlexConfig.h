@@ -108,9 +108,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -171,6 +169,16 @@ class MDFlexConfig {
    * @param nu
    */
   void addATParametersToSite(unsigned long siteId, double nu);
+
+  /**
+   * Adds the Coulomb parameters specified site.
+   * Checks if the given site exists and if the parameter was already specified.
+   *
+   * @param siteId unique site type id
+   * @param epsilon
+   * @param charge
+   */
+  void addCoulombParametersToSite(unsigned long siteId, double epsilon, double charge);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
@@ -565,6 +573,9 @@ class MDFlexConfig {
   /**
    * cutoff factor for electro statics
    */
+  MDFlexOption<double, __LINE__> cutoffFactorElectrostatics{
+      1., "cutoff-factor-electrostatics", true,
+      "The cutoff is multiplied with this value and used as the electrostatics cutoff"};
   /**
    * functorOption
    */
@@ -698,6 +709,16 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  /**
+   * chargeMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> chargeMap{
+      {}, "charge", true, "Mapping from site type to a charge value."};
+  /**
+   * coulombEpsilonMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> coulombEpsilonMap{
+      {}, "coulomb-epsilon", true, "Mapping from site type to an coulomb epsilon value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**
