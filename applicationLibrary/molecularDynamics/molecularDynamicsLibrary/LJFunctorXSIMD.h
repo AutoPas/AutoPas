@@ -403,9 +403,9 @@ class LJFunctorXSIMD
                         xsimd::batch<double> &fyacc, xsimd::batch<double> &fzacc, xsimd::batch<double> *virialSumX,
                         xsimd::batch<double> *virialSumY, xsimd::batch<double> *virialSumZ,
                         xsimd::batch<double> *upotSum, const unsigned int rest = 0) {
-    xsimd::batch<double> epsilon24s;
-    xsimd::batch<double> sigmaSquares;
-    xsimd::batch<double> shift6s;
+    xsimd::batch<double> epsilon24s {0.};
+    xsimd::batch<double> sigmaSquares {0.};
+    xsimd::batch<double> shift6s {0.};
 
     if (useMixing) {
       double epsilon_buf[vecLength] = {0.};
@@ -427,9 +427,9 @@ class LJFunctorXSIMD
       sigmaSquares = _sigmaSquare;
       shift6s = _shift6;
     }
-    xsimd::batch<double> x2;
-    xsimd::batch<double> y2;
-    xsimd::batch<double> z2;
+    xsimd::batch<double> x2 {0.};
+    xsimd::batch<double> y2 {0.};
+    xsimd::batch<double> z2 {0.};
     // load only masked values
     if (remainderIsMasked) {
       double x2_a[vecLength] = {0.};
@@ -503,9 +503,9 @@ class LJFunctorXSIMD
 
     // if newton 3 is used subtract fD from particle j
     if (newton3) {
-      xsimd::batch<double> fx2;
-      xsimd::batch<double> fy2;
-      xsimd::batch<double> fz2;
+      xsimd::batch<double> fx2 {0.};
+      xsimd::batch<double> fy2 {0.};
+      xsimd::batch<double> fz2 {0.};
 
       if (remainderIsMasked) {
         double fx2_a[vecLength] = {0.};
