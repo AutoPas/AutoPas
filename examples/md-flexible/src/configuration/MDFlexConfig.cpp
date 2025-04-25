@@ -204,6 +204,8 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   initializeParticlePropertiesLibrary();
 
   initializeObjects();
+
+  // @todo filter vec patterns here to avoid non-HWY functors searching for patterns?
 }
 
 std::string MDFlexConfig::to_string() const {
