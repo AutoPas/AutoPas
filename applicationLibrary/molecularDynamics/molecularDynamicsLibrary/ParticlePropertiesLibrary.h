@@ -427,7 +427,6 @@ void ParticlePropertiesLibrary<floatType, intType>::addATParametersToSite(intTyp
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addCoulombParametersToSite(intType siteID, floatType epsilon,
                                                                                floatType charge) {
-  std::cout << "ParticlePropertiesLibrary::addCoulombParametersToSite" << std::endl;
   if (siteID >= _numRegisteredSiteTypes) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addCoulombParametersToSite(): Trying to set coulomb parameters for a site type "

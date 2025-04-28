@@ -234,6 +234,16 @@ class Simulation {
      * Records the time required for the update of the AutoPas container.
      */
     autopas::utils::Timer updateContainer;
+
+    /**
+     * Records the time required for equilibration of the system with the FP potential.
+     */
+    autopas::utils::Timer fpEquilibrateTimer;
+
+    /**
+     * Records the time required for equilibration of the system with the CG potential.
+     */
+    autopas::utils::Timer cgEquilibrateTimer;
   };
 
   /**

@@ -219,10 +219,10 @@ class CoulombMultisiteFunctor
         const double chargeA = useMixing ? _PPLibrary->getCharge(siteIdsA[i]) : _charge;
         const double chargeB = useMixing ? _PPLibrary->getCharge(siteIdsB[j]) : _charge;
 
-        const double invDist = 1.0 / std::sqrt(distanceSquared);
-        const double coulombFactor = 1.0 / (4.0 * M_PI * coulombEpsilon);
+        const double invDistSquared = 1.0 / distanceSquared;
+        const double coulombFactor = coulombEpsilon; //67.63;  // 1.0 / (4.0 * M_PI * coulombEpsilon);
 
-        const double forceMagnitude = coulombFactor * chargeA * chargeB * invDist * invDist;
+        const double forceMagnitude = coulombFactor * chargeA * chargeB * invDistSquared;
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, forceMagnitude);
 
         particleA.addF(force);
@@ -236,7 +236,7 @@ class CoulombMultisiteFunctor
         }
 
         if (calculateGlobals) {
-          const double potentialEnergy = coulombFactor * chargeA * chargeB * invDist;
+          const double potentialEnergy = coulombFactor * chargeA * chargeB * std::sqrt(invDistSquared);
           const auto virial = displacement * force;
           const auto threadNum = autopas::autopas_get_thread_num();
 

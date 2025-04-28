@@ -617,6 +617,10 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   for (auto [siteTypeId, nu] : nuMap.value) {
     _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
   }
+  // initialize Coulomb parameters
+  for (auto [siteTypeId, coulombEpsilon] : coulombEpsilonMap.value) {
+    _particlePropertiesLibrary->addCoulombParametersToSite(siteTypeId, coulombEpsilon, chargeMap.value.at(siteTypeId));
+  }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
 #if MD_FLEXIBLE_MODE == MULTISITE

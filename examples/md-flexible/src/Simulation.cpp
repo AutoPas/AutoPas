@@ -150,7 +150,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
-  _autoPasContainer->setCutoff(_configuration.cutoff.value);
+  _autoPasContainer->setCutoff(_configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
   _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
@@ -251,11 +251,21 @@ void Simulation::run() {
   const size_t rdfNumBins = _configuration.rdfNumBins.value;
   bool ibiConvergenceReached{false};
 
+  if (_rdfCG) {
+    _timers.fpEquilibrateTimer.start();
+  }
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
+    }
+
+    if (_configuration.rdfStartIteration.value > 0 and _iteration == _configuration.rdfStartIteration.value) {
+      _timers.fpEquilibrateTimer.stop();
+      const auto time = _timers.fpEquilibrateTimer.getTotalTime();
+      std::cout << "FP equilibration took " << time << " ns" << std::endl;
     }
 
     if (_rdfCG and _iteration >= _configuration.rdfStartIteration.value and
@@ -406,6 +416,7 @@ void Simulation::run() {
       _lut->writeToCSV(_configuration.lutOutputFolder.value, _configuration.lutFileName.value + "_0");
 
       equilibrate = true;
+      _timers.cgEquilibrateTimer.start();
       // std::cout << "start equilibrating!" << std::endl;
     }
 
@@ -414,6 +425,10 @@ void Simulation::run() {
       if (equilibrateIterations == _configuration.ibiEquilibrateIterations.value) {
         equilibrate = false;
         equilibrateIterations = 0;
+        _timers.cgEquilibrateTimer.stop();
+        const auto time = _timers.cgEquilibrateTimer.getTotalTime();
+        _timers.cgEquilibrateTimer.reset();
+        std::cout << "CG equilibrating took " << time << " ns" << std::endl;
         // std::cout << "stop equilibrating!" << std::endl;
       }
     }
@@ -478,6 +493,7 @@ void Simulation::run() {
         _rdfCG->reset();
         cgMeasureIterations = 0;
         equilibrate = true;
+        _timers.cgEquilibrateTimer.start();
         std::cout << "IBI: still fitting! convergenceResult: " << convergenceResult << std::endl;
       } else {
         ibiConvergenceReached = true;
@@ -696,7 +712,7 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
+  auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
 
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
