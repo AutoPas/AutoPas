@@ -13,11 +13,13 @@
 
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
+#include "molecularDynamicsLibrary/LuT.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+#include "tools/RDF.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
@@ -232,6 +234,16 @@ class Simulation {
      * Records the time required for the update of the AutoPas container.
      */
     autopas::utils::Timer updateContainer;
+
+    /**
+     * Records the time required for equilibration of the system with the FP potential.
+     */
+    autopas::utils::Timer fpEquilibrateTimer;
+
+    /**
+     * Records the time required for equilibration of the system with the CG potential.
+     */
+    autopas::utils::Timer cgEquilibrateTimer;
   };
 
   /**
@@ -248,6 +260,21 @@ class Simulation {
    * Defines, if vtk files should be created or not.
    */
   bool _createVtkFiles;
+
+  /**
+   * Stores a radial distribution function
+   */
+  std::shared_ptr<RDF> _rdfCG;
+
+  /**
+   * Stores a radial distribution function from an initial simulation
+   */
+  std::shared_ptr<RDF> _rdfAA;
+
+  /**
+   * Stores a lookup table for the IBI potential
+   */
+  std::shared_ptr<LookupTableType> _lut;
 
  private:
   /**
@@ -408,4 +435,17 @@ class Simulation {
    */
   template <class ReturnType, class FunctionType>
   ReturnType applyWithChosenFunctor3B(FunctionType f);
+
+  /**
+   *
+   * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
+   * @note This templated function is private and hence implemented in the .cpp
+   *
+   * @tparam ReturnType Return type of f.
+   * @tparam FunctionType Function type ReturnType f(auto functor).
+   * @param f lambda function.
+   * @return Return value of f.
+   */
+  template <class ReturnType, class FunctionType>
+  ReturnType applyWithChosenFunctorElectrostatic(FunctionType f);
 };
