@@ -794,7 +794,12 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+      LJFunctorTypeAutovec ljFunc {cutoff, particlePropertiesLibrary};
+      return f(LJInterpolantFunctorType{ljFunc, cutoff, _configuration.interpolationNodes.value, particlePropertiesLibrary});
+#else
       return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+#endif
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "

@@ -22,6 +22,10 @@
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+#include "molecularDynamicsLibrary/PairwiseInterpolantFunctor.h"
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #endif
@@ -87,6 +91,9 @@ using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+
+using LJInterpolantFunctorType = mdLib::PairwiseInterpolantFunctor<LJFunctorTypeAutovec, ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 

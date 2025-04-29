@@ -255,6 +255,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw std::runtime_error("The number of iterations has to be a positive integer > 0.");
         }
 
+      } else if (key == config.interpolationNodes.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.interpolationNodes.description;
+
+        config.interpolationNodes.value = node[key].as<long>();
+        if (config.interpolationNodes.value < 0) {
+          throw std::runtime_error("The number of interpolation nodes has to be a \"positive\" integer >= 0.");
+        }
       } else if (key == config.tuningPhases.name) {
         expected = "Unsigned Integer";
         description = config.tuningPhases.description;

@@ -531,6 +531,12 @@ class MDFlexConfig {
    */
   MDFlexOption<size_t, __LINE__> tuningPhases{
       0, "tuning-phases", true, "Number of tuning phases to simulate. This option overwrites --iterations."};
+
+  /**
+   * interpolation nodes
+   */
+  MDFlexOption<size_t, __LINE__> interpolationNodes{0, "interpolation-nodes", true, "Number of interpolation nodes."};
+
   /**
    * Boundary types.
    */
