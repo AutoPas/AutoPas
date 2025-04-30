@@ -207,8 +207,8 @@ class LJFunctorHWY
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
     // first attempt at pattern selection
-    size_t length1 = soa1.getLength();
-    size_t length2 = soa2.getLength();
+    size_t length1 = soa1.size();
+    size_t length2 = soa2.size();
 
     setVecPattern(VectorizationPattern::p1xVec);
 
