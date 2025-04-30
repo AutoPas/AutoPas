@@ -270,6 +270,8 @@ std::string MDFlexConfig::to_string() const {
   printOption(tuningSamples);
   printOption(earlyStoppingFactor);
   printOption(useLOESSSmoothening);
+  printOption(interpolationNodes);
+  printOption(interpolationStart);
   if (tuningStrategyOptionsContainAnyOf({
           autopas::TuningStrategyOption::randomSearch,
           autopas::TuningStrategyOption::bayesianSearch,
@@ -315,6 +317,14 @@ std::string MDFlexConfig::to_string() const {
       }
       case FunctorOption::lj12_6_SVE: {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
+        break;
+      }
+      case FunctorOption::krypton: {
+        os << "Krypton Pair Functor" << endl;
+        break;
+      }
+      case FunctorOption::argon: {
+        os << "Argon Pair Functor" << endl;
         break;
       }
     }

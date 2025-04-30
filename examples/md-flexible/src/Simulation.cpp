@@ -7,7 +7,6 @@
 
 #include <algorithm>
 
-#include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
@@ -19,6 +18,9 @@
 extern template class autopas::AutoPas<ParticleType>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovec *);
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJInterpolantFunctorType *);
+#endif
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAVX *);
@@ -85,7 +87,20 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+      _interpolantLJFunctor{
+          mdLib::LJKernel{*_configuration.getParticlePropertiesLibrary()},
+          _configuration.cutoff.value, _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
+          *_configuration.getParticlePropertiesLibrary()},
+      _argonPairInterpolantFunctor{
+          mdLib::ArgonKernel{}, _configuration.cutoff.value, _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
+          *_configuration.getParticlePropertiesLibrary()},
+      _kryptonPairInterpolantFunctor{
+          mdLib::KryptonKernel{}, _configuration.cutoff.value, _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
+          *_configuration.getParticlePropertiesLibrary()}
+#endif
+{
   _timers.total.start();
   _timers.initialization.start();
 
@@ -522,7 +537,7 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor<bool>([&](auto &functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -795,10 +810,10 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
-      LJFunctorTypeAutovec ljFunc {cutoff, particlePropertiesLibrary};
-      return f(LJInterpolantFunctorType{ljFunc, cutoff, _configuration.interpolationNodes.value, particlePropertiesLibrary});
+      return f(_interpolantLJFunctor);
 #else
-      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      auto func = LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary};
+      return f(func);
 #endif
 #else
       throw std::runtime_error(
@@ -808,7 +823,8 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
+      auto func = LJFunctorTypeAVX{cutoff, particlePropertiesLibrary};
+      return f(func);
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
@@ -817,11 +833,28 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
+      auto func = LJFunctorTypeSVE{cutoff, particlePropertiesLibrary};
+      return f(func);
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::argon: {
+#if defined (MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+      return f(_argonPairInterpolantFunctor);
+#else
+throw std::runtime_error(
+          "No non-interpolation Argon Functor available, sorry!");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::krypton: {
+#if defined (MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+      return f(_kryptonPairInterpolantFunctor);
+#else
+throw std::runtime_error(
+          "No non-interpolation Krypton Functor available, sorry!");
 #endif
     }
     default: {

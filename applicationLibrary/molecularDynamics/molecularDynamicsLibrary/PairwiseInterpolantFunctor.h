@@ -20,12 +20,12 @@
 
 namespace mdLib {
 
-template <class ActualFunctor, class Particle_T, bool applyShift = false, bool useMixing = false,
+template <class PairwiseKernel, class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class PairwiseInterpolantFunctor
     : public autopas::PairwiseFunctor<
-          Particle_T, PairwiseInterpolantFunctor<ActualFunctor, Particle_T, applyShift, useMixing, useNewton3,
+          Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, applyShift, useMixing, useNewton3,
                                                  calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
@@ -35,16 +35,18 @@ class PairwiseInterpolantFunctor
   PairwiseInterpolantFunctor() = delete;
 
  private:
-  explicit PairwiseInterpolantFunctor(ActualFunctor &f, double cutoff, size_t nNodes, void * /*dummy*/)
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, size_t nNodes, void * /*dummy*/)
       : autopas::PairwiseFunctor<
-            Particle_T, PairwiseInterpolantFunctor<ActualFunctor, Particle_T, applyShift, useMixing, useNewton3,
+            Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, applyShift, useMixing, useNewton3,
                                                    calculateGlobals, countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _numNodes{nNodes},
-        _b{cutoff},
+        _a{a},
+        _b{cutoff + 0.1*cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
-        _postProcessed{false} {
+        _postProcessed{false},
+        _kernel{f} {
     if constexpr (calculateGlobals) {
       _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
     }
@@ -53,17 +55,22 @@ class PairwiseInterpolantFunctor
       _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
     }
 
-    _functor = &f;
     _coefficients.resize(nNodes);
     constructPolynomial();
   }
 
   double evaluateChebyshev(int n, double x) {
-        
     if (n == 0) return 1.;
     if (n == 1) return x;
 
-    return 2 * x * evaluateChebyshev(n-1, x) - evaluateChebyshev(n-2, x);
+    return 2 * x * evaluateChebyshev(n - 1, x) - evaluateChebyshev(n - 2, x);
+  }
+
+  double evaluateChebyshev(int n, double x, const std::vector<double>& coeffs) {
+    if (n == 0) return coeffs[0];
+    if (n == 1) return x * coeffs[1];
+
+    return 2 * x * evaluateChebyshev(n - 1, x) * coeffs[n-1] - evaluateChebyshev(n - 2, x) * coeffs[n-2];
   }
 
   float evaluateChebyshevFast(double x) {
@@ -71,16 +78,16 @@ class PairwiseInterpolantFunctor
     double b_n = 0;
     double b_n1 = 0;
     double b_n2 = 0;
-    for (int k = _numNodes-1; k > 0; --k) {
-        b_n = _coefficients[k] + 2.*x*b_n1 - b_n2;
-        b_n2 = b_n1;
-        b_n1 = b_n;
-    } 
+    for (int k = _numNodes - 1; k > 0; --k) {
+      b_n = _coefficients[k] + 2. * x * b_n1 - b_n2;
+      b_n2 = b_n1;
+      b_n1 = b_n;
+    }
 
     /*Special Treatment of k=0 because of c0 (has 1/2 in the formula)*/
-    b_n = 2. * _coefficients[0] + 2.*x*b_n1 - b_n2;
+    b_n = 2. * _coefficients[0] + 2. * x * b_n1 - b_n2;
     return (b_n - b_n2) / 2.;
-}
+  }
 
   double mapToInterval(float x) {
     float intermediate = x + 1;
@@ -94,49 +101,46 @@ class PairwiseInterpolantFunctor
     return newX;
   }
 
-  void dct (const std::vector<double>& values) {
+  void dct(const std::vector<double> &values) {
     for (int i = 0; i < _numNodes; ++i) {
       float coefficient = 0.;
       for (int k = 0; k < _numNodes; ++k) {
-          coefficient += values[k] * std::cos(PI * i * (2*k+1)/(2*_numNodes));
+        coefficient += values[k] * std::cos(PI * i * (2 * k + 1) / (2 * _numNodes));
       }
-      _coefficients[i] = coefficient * 2./_numNodes;
+      _coefficients[i] = coefficient * 2. / _numNodes;
     }
     _coefficients[0] = _coefficients[0] / 2.;
   }
 
   void constructPolynomial() {
-    std::vector<double> values {};
+    std::cout << "Constructing" << std::endl;
+    std::vector<double> values{};
     values.resize(_numNodes);
 
     // evaluate Functor at optimal Chebyshev nodes
     for (int i = 0; i < _numNodes; ++i) {
-      double x = ((2*i+1.) / (2.*(_numNodes))) * PI;
+      double x = ((2 * i + 1.) / (2. * (_numNodes))) * PI;
       double node = std::cos(x);
       double d = mapToInterval(node);
 
-      /*Construct dummy particle pair with 'node' as the distance*/
-      Particle_T p1 {{0.,0.,0.}, {0.,0.,0.}, 0, 0};
-      Particle_T p2 {{d,0.,0.}, {0.,0.,0.}, 0, 0};
-      _functor->AoSFunctor(p1, p2, true);
-
-      double value = p2.getF()[0];
-      values[i] = value / d;
+      double value = _kernel.calculate(d);
+      values[i] = value;
     }
 
     dct(values);
   }
 
  public:
-  explicit PairwiseInterpolantFunctor(ActualFunctor& f, double cutoff, size_t nNodes) : PairwiseInterpolantFunctor(f, cutoff, nNodes, nullptr) {
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, size_t nNodes)
+      : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, nullptr) {
     static_assert(not useMixing,
                   "Mixing without ParticlePropertiesLibrary is not possible! Use a different constructor or set mixing "
                   "to false.");
   }
 
-  explicit PairwiseInterpolantFunctor(ActualFunctor& f, double cutoff, size_t nNodes,
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, size_t nNodes,
                                       ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : PairwiseInterpolantFunctor(f, cutoff, nNodes, nullptr) {
+      : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -169,14 +173,19 @@ class PairwiseInterpolantFunctor
       return;
     }
 
-    double fac = evaluateChebyshevFast(mapToCheb(std::sqrt(dr2)));
+    double d = std::sqrt(dr2);
+
+    double fac = evaluateChebyshevFast(mapToCheb(d));
+    // TODO: find way to record benchmarking and switch it off and on (compiler flag)
+    double real_fac = _kernel.calculate(d);
     auto f = dr * fac;
 
     i.addF(f);
     if (newton3) {
       j.subF(f);
     }
-    
+
+    // TODO: compute globals
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {}
@@ -184,10 +193,9 @@ class PairwiseInterpolantFunctor
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {}
 
-  void SoAFunctorVerlet(
-      autopas::SoAView<SoAArraysType> soa,
-      const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-      const bool newton3) final {}
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        const bool newton3) final {}
 
   void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
     _epsilon24 = epsilon24;
@@ -197,8 +205,7 @@ class PairwiseInterpolantFunctor
     } else {
       _shift6 = 0.;
     }
-
-    _functor->setParticleProperties(epsilon24, sigmaSquared);
+    // TODO: set kernel values
   }
 
   constexpr static auto getNeededAttr() {
@@ -394,11 +401,11 @@ class PairwiseInterpolantFunctor
 
   /* Interpolation Parameters */
   const float PI = 2 * std::acos(0.0);
-  const double _a {0.65};
+  const double _a;
   const double _b;
   const size_t _numNodes;
   std::vector<double> _coefficients{};
-  ActualFunctor* _functor = nullptr;
+  PairwiseKernel _kernel;
 
   const double _cutoffSquared;
   // not const because they might be reset through PPL

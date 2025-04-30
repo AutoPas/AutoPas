@@ -24,6 +24,9 @@
 
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
 #include "molecularDynamicsLibrary/PairwiseInterpolantFunctor.h"
+#include "molecularDynamicsLibrary/interpolationKernels/ArgonKernel.h"
+#include "molecularDynamicsLibrary/interpolationKernels/KryptonKernel.h"
+#include "molecularDynamicsLibrary/interpolationKernels/LJKernel.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
@@ -93,8 +96,18 @@ using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true,
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
-using LJInterpolantFunctorType = mdLib::PairwiseInterpolantFunctor<LJFunctorTypeAutovec, ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+using LJInterpolantFunctorType =
+    mdLib::PairwiseInterpolantFunctor<mdLib::LJKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using ArgonPairInterpolantFunctorType =
+    mdLib::PairwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using KryptonPairInterpolantFunctorType =
+    mdLib::PairwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif

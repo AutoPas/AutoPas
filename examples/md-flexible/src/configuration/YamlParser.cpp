@@ -230,6 +230,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("argon") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::argon;
+        } else if (strArg.find("krypton") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::krypton;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -254,7 +258,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.iterations.value < 1) {
           throw std::runtime_error("The number of iterations has to be a positive integer > 0.");
         }
-
       } else if (key == config.interpolationNodes.name) {
         expected = "Unsigned Integer >= 0";
         description = config.interpolationNodes.description;
@@ -263,7 +266,17 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.interpolationNodes.value < 0) {
           throw std::runtime_error("The number of interpolation nodes has to be a \"positive\" integer >= 0.");
         }
-      } else if (key == config.tuningPhases.name) {
+      } else if (key == config.interpolationStart.name) {
+        expected = "Double >= 0";
+        description = config.interpolationStart.description;
+
+        config.interpolationStart.value = node[key].as<double>();
+        if (config.interpolationStart.value < 0.) {
+          throw std::runtime_error("The start of the interpolation interval has to be a \"positive\" double >= 0.");
+        }
+      }
+      
+      else if (key == config.tuningPhases.name) {
         expected = "Unsigned Integer";
         description = config.tuningPhases.description;
 

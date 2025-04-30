@@ -204,7 +204,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, argon, krypton };
 
   /**
    * Choice of the Triwise functor
@@ -515,7 +515,7 @@ class MDFlexConfig {
   MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
                                                       FunctorOption::none, "functor", true,
                                                       "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals argon krypton)"};
   /**
    * functorOption3B
    */
@@ -536,6 +536,12 @@ class MDFlexConfig {
    * interpolation nodes
    */
   MDFlexOption<size_t, __LINE__> interpolationNodes{0, "interpolation-nodes", true, "Number of interpolation nodes."};
+
+  /**
+   * Interpolation Area Start
+   */
+  MDFlexOption<double, __LINE__> interpolationStart{0.0, "interpolation-start", true,
+    "Start Point for the interpolation interval, adjust according to physical parameters."};
 
   /**
    * Boundary types.

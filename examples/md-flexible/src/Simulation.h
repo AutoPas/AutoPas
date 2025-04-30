@@ -12,6 +12,7 @@
 #include <tuple>
 
 #include "TimeDiscretization.h"
+#include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
@@ -81,6 +82,12 @@ class Simulation {
    * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
    */
   std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
+
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+  LJInterpolantFunctorType _interpolantLJFunctor;
+  ArgonPairInterpolantFunctorType _argonPairInterpolantFunctor;
+  KryptonPairInterpolantFunctorType _kryptonPairInterpolantFunctor;
+#endif
 
   /**
    * Shared pointer to the logfile.
