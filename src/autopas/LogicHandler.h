@@ -1175,9 +1175,9 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
     // will be rebuilt, set max displacement to 0
     getContainer().setMaxDisplacement(0);
   } else {
-    // set maxDisplacement to the square root of the maximum over all particles
+    // set maxDisplacement to the maximum over all particles
     // trim if displacement is larger than skin/2 (can cause problems in some tests otherwise)
-    getContainer().setMaxDisplacement(std::min(skin / 2, std::sqrt(maxDistanceSquare) + 1e-15));
+    getContainer().setMaxDisplacement(std::sqrt(maxDistanceSquare) + 1e-15);
   }
 
 #endif
@@ -1297,6 +1297,12 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
+
+  AutoPasLog(INFO, "ComputeInteractions: {}s, container {}, traversal {}, stepsSinceRebuild {}, CellSizeFactor {}, newton3 {}, dataLayout {}",
+           timerComputeInteractions.getTotalTime() / 1000000000.0,
+           _containerSelector.getCurrentContainer().getContainerType().to_string(),
+           traversal.getTraversalType().to_string(), _stepsSinceLastListRebuild,
+           autoTuner.getCurrentConfig().cellSizeFactor, newton3, dataLayout.to_string());
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();

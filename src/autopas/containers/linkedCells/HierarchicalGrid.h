@@ -112,7 +112,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _cutoffs.back(), skin,
                                                                             rebuildFrequency, _cellSizeFactor * ratio));
     }
-    computeNextNonEmpty();
   }
 
   /**
@@ -170,6 +169,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @param stepsSinceLastRebuild steps since last neighbor list rebuild
    */
   void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
+    AutoPasLog(INFO, "Steps since rebuild {}", stepsSinceLastRebuild);
     for (const auto &linkedCells : _levels) {
       linkedCells->setStepsSinceLastRebuild(stepsSinceLastRebuild);
     }
@@ -193,7 +193,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
            << " InteractionLength: " << _levels[i]->getInteractionLength()
            << "\nCellsPerInteractionLength: " << cellBlock.getCellsPerInteractionLength()
            << " NumCells: " << cellBlock.getNumCells() << "\n"
-           << "CellsPerDimensionWithHalo: " << cellBlock.getCellsPerDimensionWithHalo() << "\n";
+           << "CellsPerDimensionWithHalo: " << cellBlock.getCellsPerDimensionWithHalo() << "\n"
+           << "Particle Density " << 1.0 * _levels[i]->size() / cellBlock.getNumCells() << "\n";
       // _levels[i]->forEach(
       //     [&](Particle &p) {
       //       text << "Cell index: " << cellBlock.get3DIndexOfPosition(p.getR()) << "\n" << p.toString() << "\n\n";
@@ -273,16 +274,15 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     }
   }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // recompute empty cells
-    this->computeNextNonEmpty();
-  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
   void computeInteractions(TraversalInterface *traversal) override {
+    computeNextNonEmpty();
     prepareTraversal(traversal);
     traversal->initTraversal();
     traversal->traverseParticles();
     traversal->endTraversal();
+    //AutoPasLog(INFO, toString());
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {

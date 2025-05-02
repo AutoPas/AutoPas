@@ -30,44 +30,45 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     this->computeIntraLevelInteractions();
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
+      // calculate stride for current level
+      std::array<size_t, 3> stride = this->computeStrideAgainstAll(upperLevel);
+      const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+
+      const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
+      const size_t end_x = end[0], end_y = end[1], end_z = end[2];
+
+      const auto &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock();
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
-      for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
-        if (lowerLevel == upperLevel) {
-          continue;
-        }
-        const double interactionLength = this->getInteractionLength(lowerLevel, upperLevel);
-        const double interactionLengthSquared = interactionLength * interactionLength;
 
-        std::array<size_t, 3> stride = this->computeStride(interactionLength, lowerLevel, upperLevel);
+      // do the colored traversal
+      const size_t numColors = stride_x * stride_y * stride_z;
+      AUTOPAS_OPENMP(parallel)
+      for (size_t col = 0; col < numColors; ++col) {
+        const std::array<size_t, 3> start(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
 
-        const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
+        const size_t start_x = start[0], start_y = start[1], start_z = start[2];
 
-        const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
-        const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+        AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
+        for (size_t z = start_z; z < end_z; z += stride_z) {
+          for (size_t y = start_y; y < end_y; y += stride_y) {
+            for (size_t x = start_x; x < end_x; x += stride_x) {
+              for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
+                if (lowerLevel == upperLevel) {
+                  continue;
+                }
+                const double interactionLength = this->getInteractionLength(lowerLevel, upperLevel);
+                const double interactionLengthSquared = interactionLength * interactionLength;
 
-        // get cellBlocks of upper and lower levels
-        const auto &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock();
-        const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
+                const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
 
-        // lower bound and upper bound of the owned region of the lower level
-        std::array<size_t, 3> lowerBound = {0, 0, 0}, upperBound = lowerLevelCB.getCellsPerDimensionWithHalo();
-        lowerBound += lowerLevelCB.getCellsPerInteractionLength();
-        upperBound -= lowerLevelCB.getCellsPerInteractionLength();
+                // get cellBlocks of upper and lower levels
+                const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
 
-        // do the colored traversal
-        const size_t numColors = stride[0] * stride[1] * stride[2];
-        AUTOPAS_OPENMP(parallel)
-        for (size_t col = 0; col < numColors; ++col) {
-          const std::array<size_t, 3> start(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
-
-          const size_t start_x = start[0], start_y = start[1], start_z = start[2];
-          const size_t end_x = end[0], end_y = end[1], end_z = end[2];
-
-          AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
-          for (size_t z = start_z; z < end_z; z += stride_z) {
-            for (size_t y = start_y; y < end_y; y += stride_y) {
-              for (size_t x = start_x; x < end_x; x += stride_x) {
+                // lower bound and upper bound of the owned region of the lower level
+                std::array<size_t, 3> lowerBound = {0, 0, 0}, upperBound = lowerLevelCB.getCellsPerDimensionWithHalo();
+                lowerBound += lowerLevelCB.getCellsPerInteractionLength();
+                upperBound -= lowerLevelCB.getCellsPerInteractionLength();
                 if (this->_dataLayout == DataLayoutOption::aos) {
                   this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
                                      interactionLengthSquared, dir, lowerBound, upperBound, true);

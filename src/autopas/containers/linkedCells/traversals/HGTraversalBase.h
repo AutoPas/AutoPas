@@ -74,17 +74,54 @@ class HGTraversalBase : public TraversalInterface {
    * @param upperLevel The upper level index.
    * @return The interaction length for the given level pair.
    */
-  [[nodiscard]] double getInteractionLength(const size_t lowerLevel, const size_t upperLevel) {
+  [[nodiscard]] double getInteractionLength(const size_t lowerLevel, const size_t upperLevel) const {
     const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
     // We only need to check at most distance cutoff + max displacement of any particle in the container if dynamic
     // containers are used.
     // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
     // always cutoff + _skin.
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    return cutoff + this->_maxDisplacement * 2;
+    return cutoff + std::min(this->_maxDisplacement * 2, this->_skin);
 #else
     return cutoff + this->_skin;
 #endif
+  }
+
+  std::array<size_t, 3> computeStrideAgainstAll(const size_t level) {
+    const std::array<double, 3> levelLength = this->_levels->at(level)->getTraversalSelectorInfo().cellLength;
+    std::array<size_t, 3> stride{1, 1, 1};
+    for (size_t otherLevel = 0; otherLevel < this->_numLevels; ++otherLevel) {
+      if (otherLevel == level) {
+        continue;
+      }
+      if (this->_useNewton3 && otherLevel >= level) {
+        continue;
+      }
+      const double interactionLength = this->getInteractionLength(level, otherLevel);
+      const std::array<double, 3> otherLevelLength =
+          this->_levels->at(otherLevel)->getTraversalSelectorInfo().cellLength;
+      std::array<size_t, 3> tempStride{};
+      for (size_t i = 0; i < 3; i++) {
+        if (this->_useNewton3) {
+          // find out the stride so that cells we check on lowerLevel do not intersect
+          if (this->_dataLayout == DataLayoutOption::soa) {
+            tempStride[i] = 1 + static_cast<size_t>(std::ceil(std::ceil(interactionLength / otherLevelLength[i]) * 2 *
+                                                          otherLevelLength[i] / levelLength[i]));
+            // the stride calculation below can result in less colors, but two different threads can operate on SoA
+            // buffer of the same cell at the same time. They won't update the same value at the same time, but
+            // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
+            // again).
+          } else {
+            tempStride[i] = 1 + static_cast<size_t>(std::ceil(interactionLength * 2 / levelLength[i]));
+          }
+        } else {
+          // do c01 traversal if newton3 is disabled
+          tempStride[i] = 1;
+        }
+        stride[i] = std::max(stride[i], tempStride[i]);
+      }
+    }
+    return stride;
   }
 
   /**
@@ -110,7 +147,6 @@ class HGTraversalBase : public TraversalInterface {
           // buffer of the same cell at the same time. They won't update the same value at the same time, but
           // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
           // again).
-          // stride[i] = 1 + static_cast<size_t>(std::ceil(interactionLength * 2 / upperLength[i]));
         } else {
           stride[i] = 1 + static_cast<size_t>(std::ceil(interactionLength * 2 / upperLength[i]));
         }
@@ -247,10 +283,9 @@ class HGTraversalBase : public TraversalInterface {
     // return traversal info of hierarchy with biggest interactionLength
     const auto temp = _levels->at(level)->getTraversalSelectorInfo();
     // adjust interactionLength to actual value
-    // TODO: _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual
-    // interactionlength
-    // TODO: so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo cells
-    const TraversalSelectorInfo ret{temp.cellsPerDim, _cutoffs[level] + _maxDisplacement * 2, temp.cellLength,
+    // _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual
+    // interactionlength so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo cells
+    const TraversalSelectorInfo ret{temp.cellsPerDim, this->getInteractionLength(level, level), temp.cellLength,
                                     temp.clusterSize};
     return ret;
   }
@@ -331,12 +366,12 @@ class HGTraversalBase : public TraversalInterface {
           std::vector<size_t> &nextRef = (*this->_nextNonEmpty)[lowerLevel][zl][yl];
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
             const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
-            auto &lowerCell = lowerCB.getCell(lowerCellIndex);
             // skip if cell is farther than interactionLength
-            if (distanceCheck &&
+            if (distanceCheck and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, lowerCellIndex, pos) > interactionLengthSquared) {
               continue;
             }
+            auto &lowerCell = lowerCB.getCell(lowerCellIndex);
             for (auto &p : lowerCell) {
               functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
             }
@@ -400,7 +435,7 @@ class HGTraversalBase : public TraversalInterface {
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
             const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
             // skip if cell is farther than interactionLength
-            if (distanceCheck,
+            if (distanceCheck and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, lowerCellIndex, pos) > interactionLengthSquared) {
               continue;
             }
@@ -463,7 +498,7 @@ class HGTraversalBase : public TraversalInterface {
         std::vector<size_t> &nextRef = (*this->_nextNonEmpty)[lowerLevel][zl][yl];
         for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
           // skip if min distance between the two cells is bigger than interactionLength
-          if (distanceCheck, this->getMinDistBetweenCellsSquared(upperCB, upperCellCoords, lowerCB, {xl, yl, zl}) >
+          if (distanceCheck and this->getMinDistBetweenCellsSquared(upperCB, upperCellCoords, lowerCB, {xl, yl, zl}) >
                                  interactionLengthSquared) {
             continue;
           }
@@ -474,6 +509,15 @@ class HGTraversalBase : public TraversalInterface {
     }
   }
 
+  /**
+   * Finds the best group size for a given target number of blocks per color.
+   * A block is a unit of work that is assigned to a thread in an OpenMP loop.
+   * A group of blocks of 3d size x,y,z will be assigned to a thread per openmp loop iteration.
+   * @param targetBlocksPerColor The target number of blocks per color.
+   * @param stride The stride for each dimension.
+   * @param end The end coordinates for each dimension.
+   * @return The best group size for the given target number of blocks per color.
+   */
   static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(long targetBlocksPerColor,
                                                                         const std::array<size_t, 3> &stride,
                                                                         const std::array<unsigned long, 3> &end) {
@@ -499,6 +543,15 @@ class HGTraversalBase : public TraversalInterface {
     return bestGroup;
   }
 
+  /**
+   * Finds the best group size for a given target number of blocks across all colors.
+   * A block is a unit of work that is assigned to a thread in an OpenMP loop.
+   * A group of blocks of 3d size x,y,z will be assigned to a thread per openmp loop iteration.
+   * @param targetBlocks The target number of blocks.
+   * @param stride The stride for each dimension.
+   * @param end The end coordinates for each dimension.
+   * @return The best group size for the given target number of blocks per color.
+   */
   static std::array<size_t, 3> findBestGroupSizeForTargetBlocks(long targetBlocks, const std::array<size_t, 3> &stride,
                                                                 const std::array<unsigned long, 3> &end) {
     unsigned long smallestCriterion = 1e15;
