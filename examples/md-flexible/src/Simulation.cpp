@@ -32,6 +32,8 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
 //! @endcond
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ArgonPairAbInitioFunctorType *);
+//! @endcond
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -87,18 +89,18 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr),
+      _vtkWriter(nullptr)
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
-      _interpolantLJFunctor{
-          mdLib::LJKernel{*_configuration.getParticlePropertiesLibrary()},
-          _configuration.cutoff.value, _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
-          *_configuration.getParticlePropertiesLibrary()},
-      _argonPairInterpolantFunctor{
-          mdLib::ArgonKernel{}, _configuration.cutoff.value, _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
-          *_configuration.getParticlePropertiesLibrary()},
-      _kryptonPairInterpolantFunctor{
-          mdLib::KryptonKernel{}, _configuration.cutoff.value, _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
-          *_configuration.getParticlePropertiesLibrary()}
+      ,
+      _interpolantLJFunctor{mdLib::LJKernel{*_configuration.getParticlePropertiesLibrary()},
+                            _configuration.cutoff.value, _configuration.interpolationStart.value,
+                            _configuration.interpolationNodes.value, *_configuration.getParticlePropertiesLibrary()},
+      _argonPairInterpolantFunctor{mdLib::ArgonKernel{}, _configuration.cutoff.value,
+                                   _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
+                                   *_configuration.getParticlePropertiesLibrary()},
+      _kryptonPairInterpolantFunctor{mdLib::KryptonKernel{}, _configuration.cutoff.value,
+                                     _configuration.interpolationStart.value, _configuration.interpolationNodes.value,
+                                     *_configuration.getParticlePropertiesLibrary()}
 #endif
 {
   _timers.total.start();
@@ -842,19 +844,18 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 #endif
     }
     case MDFlexConfig::FunctorOption::argon: {
-#if defined (MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
       return f(_argonPairInterpolantFunctor);
 #else
-throw std::runtime_error(
-          "No non-interpolation Argon Functor available, sorry!");
+      auto func = ArgonPairAbInitioFunctorType{cutoff};
+      return f(func);
 #endif
     }
     case MDFlexConfig::FunctorOption::krypton: {
-#if defined (MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
       return f(_kryptonPairInterpolantFunctor);
 #else
-throw std::runtime_error(
-          "No non-interpolation Krypton Functor available, sorry!");
+      throw std::runtime_error("No non-interpolation Krypton Functor available, sorry!");
 #endif
     }
     default: {

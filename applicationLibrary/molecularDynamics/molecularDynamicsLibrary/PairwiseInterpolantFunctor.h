@@ -42,7 +42,7 @@ class PairwiseInterpolantFunctor
         _cutoffSquared{cutoff * cutoff},
         _numNodes{nNodes},
         _a{a},
-        _b{cutoff + 0.1*cutoff},
+        _b{cutoff + 0.1 * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false},
@@ -66,11 +66,11 @@ class PairwiseInterpolantFunctor
     return 2 * x * evaluateChebyshev(n - 1, x) - evaluateChebyshev(n - 2, x);
   }
 
-  double evaluateChebyshev(int n, double x, const std::vector<double>& coeffs) {
+  double evaluateChebyshev(int n, double x, const std::vector<double> &coeffs) {
     if (n == 0) return coeffs[0];
     if (n == 1) return x * coeffs[1];
 
-    return 2 * x * evaluateChebyshev(n - 1, x) * coeffs[n-1] - evaluateChebyshev(n - 2, x) * coeffs[n-2];
+    return 2 * x * evaluateChebyshev(n - 1, x) * coeffs[n - 1] - evaluateChebyshev(n - 2, x) * coeffs[n - 2];
   }
 
   float evaluateChebyshevFast(double x) {
@@ -166,6 +166,12 @@ class PairwiseInterpolantFunctor
       return;
     }
 
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    if constexpr (countFLOPs) {
+      ++_aosThreadDataFLOPs[threadnum].numDistCalls;
+    }
+
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
@@ -177,7 +183,6 @@ class PairwiseInterpolantFunctor
 
     double fac = evaluateChebyshevFast(mapToCheb(d));
     // TODO: find way to record benchmarking and switch it off and on (compiler flag)
-    double real_fac = _kernel.calculate(d);
     auto f = dr * fac;
 
     i.addF(f);
@@ -185,7 +190,27 @@ class PairwiseInterpolantFunctor
       j.subF(f);
     }
 
-    // TODO: compute globals
+    if constexpr (countFLOPs) {
+      if (newton3) {
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
+      } else {
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      // TODO: delegate potential energy to kernel?
+      double potentialEnergy = 0.;
+      auto virial = dr * f;
+      if (i.isOwned()) {
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
+      }
+      if (newton3 and j.isOwned()) {
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
+      }
+    }
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {}

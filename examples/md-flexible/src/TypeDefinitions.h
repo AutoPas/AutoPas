@@ -43,6 +43,7 @@
 
 #endif
 
+#include "molecularDynamicsLibrary/AbInitioArgonPairFunctor.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
@@ -101,16 +102,20 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
 using LJInterpolantFunctorType =
     mdLib::PairwiseInterpolantFunctor<mdLib::LJKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+                                      mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 using ArgonPairInterpolantFunctorType =
     mdLib::PairwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+                                      mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 using KryptonPairInterpolantFunctorType =
     mdLib::PairwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+                                      mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
+
+using ArgonPairAbInitioFunctorType =
+    mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                                    mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**

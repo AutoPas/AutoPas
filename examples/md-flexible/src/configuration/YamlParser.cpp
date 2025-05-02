@@ -275,7 +275,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw std::runtime_error("The start of the interpolation interval has to be a \"positive\" double >= 0.");
         }
       }
-      
+
       else if (key == config.tuningPhases.name) {
         expected = "Unsigned Integer";
         description = config.tuningPhases.description;

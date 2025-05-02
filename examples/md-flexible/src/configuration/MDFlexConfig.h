@@ -512,10 +512,11 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
-                                                      FunctorOption::none, "functor", true,
-                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals argon krypton)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+      // Default is a dummy option
+      FunctorOption::none, "functor", true,
+      "Pairwise force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals argon krypton)"};
   /**
    * functorOption3B
    */
@@ -540,8 +541,9 @@ class MDFlexConfig {
   /**
    * Interpolation Area Start
    */
-  MDFlexOption<double, __LINE__> interpolationStart{0.0, "interpolation-start", true,
-    "Start Point for the interpolation interval, adjust according to physical parameters."};
+  MDFlexOption<double, __LINE__> interpolationStart{
+      0.0, "interpolation-start", true,
+      "Start Point for the interpolation interval, adjust according to physical parameters."};
 
   /**
    * Boundary types.
