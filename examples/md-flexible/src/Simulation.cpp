@@ -33,6 +33,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #endif
 //! @endcond
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ArgonPairAbInitioFunctorType *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonPairAbInitioFunctorType *);
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -855,7 +856,8 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
       return f(_kryptonPairInterpolantFunctor);
 #else
-      throw std::runtime_error("No non-interpolation Krypton Functor available, sorry!");
+      auto func = KryptonPairAbInitioFunctorType{cutoff};
+      return f(func);
 #endif
     }
     default: {

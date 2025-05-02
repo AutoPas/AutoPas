@@ -44,6 +44,8 @@
 #endif
 
 #include "molecularDynamicsLibrary/AbInitioArgonPairFunctor.h"
+#include "molecularDynamicsLibrary/AbInitioKryptonPairFunctor.h"
+
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
@@ -115,6 +117,10 @@ using KryptonPairInterpolantFunctorType =
 
 using ArgonPairAbInitioFunctorType =
     mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                                    mdFlexibleTypeDefs::countFLOPs>;
+
+using KryptonPairAbInitioFunctorType =
+    mdLib::AbInitioKryptonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
                                     mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
