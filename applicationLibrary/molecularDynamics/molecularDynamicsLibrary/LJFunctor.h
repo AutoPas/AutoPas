@@ -605,11 +605,6 @@ class LJFunctor
     }
   }
 
-  void setCutoff(double cutoff) override {
-    this->_cutoff = cutoff;
-    _cutoffSquared = cutoff * cutoff;
-  }
-
   /**
    * @copydoc autopas::Functor::getNeededAttr()
    */

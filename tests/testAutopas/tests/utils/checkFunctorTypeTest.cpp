@@ -19,7 +19,6 @@ class PairwiseTestFunctor : public PairwiseFunctor<ParticleFP64, PairwiseTestFun
   bool allowsNewton3() override { return true; };
   bool allowsNonNewton3() override { return true; };
   bool isRelevantForTuning() override { return true; };
-  void setCutoff(double cutoff) override { this->_cutoff = cutoff; };
 };
 class TriwiseTestFunctor : public TriwiseFunctor<ParticleFP64, TriwiseTestFunctor> {
  public:
@@ -28,7 +27,6 @@ class TriwiseTestFunctor : public TriwiseFunctor<ParticleFP64, TriwiseTestFuncto
   bool allowsNewton3() override { return true; };
   bool allowsNonNewton3() override { return true; };
   bool isRelevantForTuning() override { return true; };
-  void setCutoff(double cutoff) override { this->_cutoff = cutoff; };
 };
 
 class ChildPairwiseTestFunctor : public PairwiseTestFunctor {};

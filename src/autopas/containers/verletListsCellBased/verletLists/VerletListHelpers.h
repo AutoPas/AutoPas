@@ -47,11 +47,6 @@ class VerletListHelpers {
 
     std::string getName() override { return "VerletListGeneratorFunctor"; }
 
-    void setCutoff(double cutoff) override {
-      this->_cutoff = cutoff;
-      _interactionLengthSquared = cutoff * cutoff;
-    }
-
     bool isRelevantForTuning() override { return false; }
 
     bool allowsNewton3() override {

@@ -169,11 +169,6 @@ class LJMultisiteFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void setCutoff(double cutoff) override {
-    this->_cutoff = cutoff;
-    this->_cutoffSquared = cutoff * cutoff;
-  }
-
   /**
    * Functor for arrays of structures (AoS).
    *

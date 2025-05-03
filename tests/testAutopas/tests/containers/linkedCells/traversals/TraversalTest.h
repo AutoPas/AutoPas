@@ -54,11 +54,6 @@ class TraversalTest
 
     bool isRelevantForTuning() override { return true; }
 
-    void setCutoff(double cutoff) override {
-      this->_cutoff = cutoff;
-      _cutoffSquare = cutoff * cutoff;
-    }
-
     bool allowsNewton3() override { return true; }
 
     bool allowsNonNewton3() override { return true; }

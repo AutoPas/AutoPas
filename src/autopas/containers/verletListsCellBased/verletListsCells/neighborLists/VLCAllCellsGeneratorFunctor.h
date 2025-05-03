@@ -47,11 +47,6 @@ class VLCAllCellsGeneratorFunctor
 
   bool isRelevantForTuning() override { return false; }
 
-  void setCutoff(double cutoff) override {
-    this->_cutoff = cutoff;
-    _cutoffSkinSquared = cutoff * cutoff;
-  }
-
   bool allowsNewton3() override {
     utils::ExceptionHandler::exception(
         "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");

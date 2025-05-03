@@ -170,11 +170,6 @@ class AxilrodTellerFunctor
 
   bool isRelevantForTuning() final { return true; }
 
-  void setCutoff(double cutoff) override {
-    this->_cutoffSquared = cutoff * cutoff;
-    this->_cutoff = cutoff;
-  };
-
   bool allowsNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
   }

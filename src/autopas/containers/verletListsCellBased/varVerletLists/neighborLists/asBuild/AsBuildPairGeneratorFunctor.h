@@ -72,11 +72,6 @@ class AsBuildPairGeneratorFunctor
 
   std::string getName() override { return "AsBuildPairGeneratorFunctor"; }
 
-  void setCutoff(double cutoff) override {
-    this->_cutoff = cutoff;
-    _cutoffskinsquared = cutoff * cutoff;
-  }
-
   [[nodiscard]] bool isRelevantForTuning() override { return false; }
 
   /**
