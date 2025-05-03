@@ -273,7 +273,7 @@ class ParticlePropertiesLibrary {
    * @param scalingCutoff if true, the cutoff will be scaled by the sigma of the particles
    * @return shift multiplied by 6
    */
-  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared, bool scalingCutoff);
+  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared, bool scalingCutoff = false);
 
   /**
    * Returns the precomputed mixed epsilon * 24.

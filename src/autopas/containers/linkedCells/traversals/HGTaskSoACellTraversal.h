@@ -35,7 +35,7 @@ class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HG
         continue;
       }
       // calculate stride for current level
-      std::array<size_t, 3> stride = this->computeStrideAgainstAll(upperLevel);
+      std::array<size_t, 3> stride = this->computeStride(upperLevel);
 
       const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
 

@@ -24,8 +24,7 @@ class HGTraversalBase : public TraversalInterface {
         _numLevels(0),
         _levels(nullptr),
         _skin(0),
-        _maxDisplacement(0),
-        _nextNonEmpty() {}
+        _maxDisplacement(0) {}
 
   /**
    * Store HGrid data
@@ -38,13 +37,12 @@ class HGTraversalBase : public TraversalInterface {
    * used
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs, double skin,
-                 std::vector<std::vector<std::vector<std::vector<size_t>>>> *nextNonEmpty, double maxDisplacement) {
+                 double maxDisplacement) {
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
     _levels = levels;
     _skin = skin;
     _maxDisplacement = maxDisplacement;
-    _nextNonEmpty = nextNonEmpty;
   }
 
  protected:
@@ -53,8 +51,6 @@ class HGTraversalBase : public TraversalInterface {
   std::vector<double> _cutoffs;
   double _skin;
   double _maxDisplacement;
-  // A vector to store the next non-empty cell in increasing x direction for each cell
-  std::vector<std::vector<std::vector<std::vector<size_t>>>> *_nextNonEmpty;
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
 
@@ -87,7 +83,13 @@ class HGTraversalBase : public TraversalInterface {
 #endif
   }
 
-  std::array<size_t, 3> computeStrideAgainstAll(const size_t level) {
+  /**
+   * Compute the color for the given level.
+   * Computed the needed stride by checking all lower levels and takes the maximum for each dimension.
+   * @param level The hierarchy level to compute the stride for.
+   * @return The stride for each dimension.
+   */
+  std::array<size_t, 3> computeStride(const size_t level) {
     const std::array<double, 3> levelLength = this->_levels->at(level)->getTraversalSelectorInfo().cellLength;
     std::array<size_t, 3> stride{1, 1, 1};
     for (size_t otherLevel = 0; otherLevel < this->_numLevels; ++otherLevel) {
@@ -119,40 +121,6 @@ class HGTraversalBase : public TraversalInterface {
           tempStride[i] = 1;
         }
         stride[i] = std::max(stride[i], tempStride[i]);
-      }
-    }
-    return stride;
-  }
-
-  /**
-   * Compute the stride for the given interaction length and cell lengths.
-   * Upper levels have higher cutoffs than lower levels.
-   * @param interactionLength The interaction length.
-   * @param lowerLevel The lower level index.
-   * @param upperLevel The upper level index.
-   * @return The stride for each dimension.
-   */
-  std::array<size_t, 3> computeStride(const double interactionLength, const size_t lowerLevel,
-                                      const size_t upperLevel) {
-    const std::array<double, 3> upperLength = this->_levels->at(upperLevel)->getTraversalSelectorInfo().cellLength;
-    const std::array<double, 3> lowerLength = this->_levels->at(lowerLevel)->getTraversalSelectorInfo().cellLength;
-    std::array<size_t, 3> stride{};
-    for (size_t i = 0; i < 3; i++) {
-      if (this->_useNewton3) {
-        // find out the stride so that cells we check on lowerLevel do not intersect
-        if (this->_dataLayout == DataLayoutOption::soa) {
-          stride[i] = 1 + static_cast<size_t>(std::ceil(std::ceil(interactionLength / lowerLength[i]) * 2 *
-                                                        lowerLength[i] / upperLength[i]));
-          // the stride calculation below can result in less colors, but two different threads can operate on SoA
-          // buffer of the same cell at the same time. They won't update the same value at the same time, but
-          // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
-          // again).
-        } else {
-          stride[i] = 1 + static_cast<size_t>(std::ceil(interactionLength * 2 / upperLength[i]));
-        }
-      } else {
-        // do c01 traversal if newton3 is disabled
-        stride[i] = 1;
       }
     }
     return stride;
@@ -363,8 +331,7 @@ class HGTraversalBase : public TraversalInterface {
       }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          std::vector<size_t> &nextRef = (*this->_nextNonEmpty)[lowerLevel][zl][yl];
-          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
             const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
             // skip if cell is farther than interactionLength
             if (distanceCheck and
@@ -431,8 +398,7 @@ class HGTraversalBase : public TraversalInterface {
       }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          std::vector<size_t> &nextRef = (*this->_nextNonEmpty)[lowerLevel][zl][yl];
-          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
             const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
             // skip if cell is farther than interactionLength
             if (distanceCheck and
@@ -495,8 +461,7 @@ class HGTraversalBase : public TraversalInterface {
 
     for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
       for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-        std::vector<size_t> &nextRef = (*this->_nextNonEmpty)[lowerLevel][zl][yl];
-        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+        for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
           // skip if min distance between the two cells is bigger than interactionLength
           if (distanceCheck and this->getMinDistBetweenCellsSquared(upperCB, upperCellCoords, lowerCB, {xl, yl, zl}) >
                                  interactionLengthSquared) {
@@ -556,9 +521,9 @@ class HGTraversalBase : public TraversalInterface {
                                                                 const std::array<unsigned long, 3> &end) {
     unsigned long smallestCriterion = 1e15;
     std::array<size_t, 3> bestGroup = {1, 1, 1};
-    for (size_t x_group = 1; x_group <= stride[0]; ++x_group)
-      for (size_t y_group = 1; y_group <= stride[1]; ++y_group)
-        for (size_t z_group = 1; z_group <= stride[2]; ++z_group) {
+    for (size_t x_group = 1; x_group <= stride[0] * 2; ++x_group)
+      for (size_t y_group = 1; y_group <= stride[1] * 2; ++y_group)
+        for (size_t z_group = 1; z_group <= stride[2] * 2; ++z_group) {
           std::array<size_t, 3> group = {x_group, y_group, z_group};
           std::array<size_t, 3> num_index{}, testStride{};
           for (size_t i = 0; i < 3; i++) {

@@ -31,7 +31,7 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
       // calculate stride for current level
-      std::array<size_t, 3> stride = this->computeStrideAgainstAll(upperLevel);
+      std::array<size_t, 3> stride = this->computeStride(upperLevel);
       const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
       const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;

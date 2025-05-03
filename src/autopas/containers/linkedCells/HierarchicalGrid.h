@@ -277,7 +277,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
   void computeInteractions(TraversalInterface *traversal) override {
-    computeNextNonEmpty();
     prepareTraversal(traversal);
     traversal->initTraversal();
     traversal->traverseParticles();
@@ -537,7 +536,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
-      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, &_nextNonEmpty, this->getMaxDisplacement());
+      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, this->getMaxDisplacement());
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",
@@ -545,43 +544,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     }
   }
 
-  void computeNextNonEmpty() {
-    this->_nextNonEmpty.resize(this->_levels.size());
-    for (size_t level = 0; level < this->_numLevels; level++) {
-      const auto dim = this->_levels[level]->getTraversalSelectorInfo().cellsPerDim;
-
-      if (this->_nextNonEmpty[level].empty()) {
-        // we need to allocate only on first function call
-        this->_nextNonEmpty[level] = std::vector<std::vector<std::vector<size_t>>>(
-            dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
-      }
-      const auto &cellBlock = this->_levels[level]->getCellBlock();
-      // calculate next non-empty cell in increasing x direction for each cell
-      AUTOPAS_OPENMP(parallel for collapse(2))
-      for (size_t z = 0; z < dim[2]; ++z) {
-        for (size_t y = 0; y < dim[1]; ++y) {
-          // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
-          size_t index1D = utils::ThreeDimensionalMapping::threeToOneD({dim[0] - 1, y, z}, dim);
-          std::vector<size_t> &nextRef = this->_nextNonEmpty[level][z][y];
-          nextRef[dim[0] - 1] = dim[0];
-          for (int x = dim[0] - 2; x >= 0; --x, --index1D) {
-            if (cellBlock.getCell(index1D).isEmpty()) {
-              // if the next cell is empty, set nextRef[x] to nextRef[x + 1]
-              nextRef[x] = nextRef[x + 1];
-            } else {
-              // if next cell is not empty, set nextRef[x] to x + 1 as it is the next non-empty cell
-              nextRef[x] = x + 1;
-            }
-          }
-        }
-      }
-    }
-  }
-
   std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
   std::vector<double> _cutoffs;
-  // A vector to store the next non-empty cell in increasing x direction for each cell
-  std::vector<std::vector<std::vector<std::vector<size_t>>>> _nextNonEmpty;
 };
 
 }  // namespace autopas
