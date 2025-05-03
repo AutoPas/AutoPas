@@ -44,6 +44,7 @@ class PairwiseInterpolantFunctor
         _a{a},
         _b{cutoff + 0.1 * cutoff},
         _potentialEnergySum{0.},
+        _errorSum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false},
         _kernel{f} {
@@ -182,8 +183,13 @@ class PairwiseInterpolantFunctor
     double d = std::sqrt(dr2);
 
     double fac = evaluateChebyshevFast(mapToCheb(d));
-    // TODO: find way to record benchmarking and switch it off and on (compiler flag)
+    double interpolationError = 0.;
     auto f = dr * fac;
+
+#if defined (MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
+    double real_fac = _kernel.calculate(d);
+    interpolationError = std::abs(real_fac - fac);
+#endif
 
     i.addF(f);
     if (newton3) {
@@ -205,6 +211,7 @@ class PairwiseInterpolantFunctor
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadDataGlobals[threadnum].virialSum += virial;
+        _aosThreadDataGlobals[threadnum].errorSum += interpolationError;
       }
       if (newton3 and j.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
@@ -261,6 +268,7 @@ class PairwiseInterpolantFunctor
 
   void initTraversal() final {
     _potentialEnergySum = 0.;
+    _errorSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     if constexpr (calculateGlobals) {
@@ -286,6 +294,7 @@ class PairwiseInterpolantFunctor
       for (const auto &data : _aosThreadDataGlobals) {
         _potentialEnergySum += data.potentialEnergySum;
         _virialSum += data.virialSum;
+        _errorSum += data.errorSum;
       }
       // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
       // contribution is only counted once per pair.
@@ -298,6 +307,7 @@ class PairwiseInterpolantFunctor
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
       AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final approx. error    {}", _errorSum);
     }
   }
 
@@ -383,19 +393,22 @@ class PairwiseInterpolantFunctor
 
   class AoSThreadDataGlobals {
    public:
-    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, errorSum{0.}, __remainingTo64{} {}
+    
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;
+      errorSum = 0.;
     }
 
     // variables
     std::array<double, 3> virialSum;
     double potentialEnergySum;
+    double errorSum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 5 * sizeof(double)) / sizeof(double)];
   };
 
   class AoSThreadDataFLOPs {
@@ -440,6 +453,7 @@ class PairwiseInterpolantFunctor
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
+  double _errorSum;
 
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
