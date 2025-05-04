@@ -182,7 +182,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   std::string toString() const {
     using utils::ArrayUtils::operator<<;
     std::ostringstream text;
-    text << "\n------------------------------------------\nHierarchicalGrid sizes: [";
+    text << "\n------------------------------------------\nHierarchicalGrid sizes: ";
     text << utils::ArrayUtils::to_string(_cutoffs, ", ", {"Cutoffs [ ", " ]\n"});
     text << "BoxMin: " << getBoxMin() << " BoxMax: " << getBoxMax() << "\n";
     for (size_t i = 0; i < _numLevels; ++i) {
