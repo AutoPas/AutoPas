@@ -44,7 +44,7 @@ class HGBlockSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public H
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
       const long targetBlocksPerColor =
-            static_cast<size_t>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
+          static_cast<size_t>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
       const std::array<size_t, 3> group =
           this->findBestGroupSizeForTargetBlocksPerColor(targetBlocksPerColor, stride, end);
 
@@ -93,7 +93,7 @@ class HGBlockSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public H
                         continue;
                       }
                       this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                       interactionLengthSquared, dir, lowerBound, upperBound, true);
+                                                   interactionLengthSquared, dir, lowerBound, upperBound, true);
                     }
                   }
                 }

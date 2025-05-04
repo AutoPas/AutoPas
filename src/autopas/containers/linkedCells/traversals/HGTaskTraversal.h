@@ -43,8 +43,7 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
-      const long targetBlocks =
-            static_cast<unsigned long>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
+      const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
       const std::array<size_t, 3> group = this->findBestGroupSizeForTargetBlocks(targetBlocks, stride, end);
 
       std::array<size_t, 3> num_index{};
@@ -93,13 +92,13 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
                     continue;
                   }
-                  AUTOPAS_OPENMP(task depend(
-                      in
-                      : (taskDepend.data())[index(col - 1, xi, yi, zi)],
-                        (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0], yi + colorDiff[col - 1][1],
-                                                  zi + colorDiff[col - 1][2])])
-                                     depend(out
-                                            : (taskDepend.data())[index(col, xi, yi, zi)])) {
+                  AUTOPAS_OPENMP(
+                      task depend(in
+                                  : (taskDepend.data())[index(col - 1, xi, yi, zi)],
+                                    (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0],
+                                                              yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])])
+                          depend(out
+                                 : (taskDepend.data())[index(col, xi, yi, zi)])) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
@@ -113,7 +112,8 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                       const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
 
                       // lower bound and upper bound of the owned region of the lower level
-                      std::array<size_t, 3> lowerBound = {0, 0, 0}, upperBound = lowerLevelCB.getCellsPerDimensionWithHalo();
+                      std::array<size_t, 3> lowerBound = {0, 0, 0},
+                                            upperBound = lowerLevelCB.getCellsPerDimensionWithHalo();
                       lowerBound += lowerLevelCB.getCellsPerInteractionLength();
                       upperBound -= lowerLevelCB.getCellsPerInteractionLength();
 

@@ -20,11 +20,7 @@ class HGTraversalBase : public TraversalInterface {
   using Particle = typename ParticleCell_T::ParticleType;
 
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        _numLevels(0),
-        _levels(nullptr),
-        _skin(0),
-        _maxDisplacement(0) {}
+      : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0), _maxDisplacement(0) {}
 
   /**
    * Store HGrid data
@@ -108,7 +104,7 @@ class HGTraversalBase : public TraversalInterface {
           // find out the stride so that cells we check on lowerLevel do not intersect
           if (this->_dataLayout == DataLayoutOption::soa) {
             tempStride[i] = 1 + static_cast<size_t>(std::ceil(std::ceil(interactionLength / otherLevelLength[i]) * 2 *
-                                                          otherLevelLength[i] / levelLength[i]));
+                                                              otherLevelLength[i] / levelLength[i]));
             // the stride calculation below can result in less colors, but two different threads can operate on SoA
             // buffer of the same cell at the same time. They won't update the same value at the same time, but
             // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
@@ -252,7 +248,8 @@ class HGTraversalBase : public TraversalInterface {
     const auto temp = _levels->at(level)->getTraversalSelectorInfo();
     // adjust interactionLength to actual value
     // _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual
-    // interactionlength so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo cells
+    // interactionlength so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo
+    // cells
     const TraversalSelectorInfo ret{temp.cellsPerDim, this->getInteractionLength(level, level), temp.cellLength,
                                     temp.clusterSize};
     return ret;
@@ -464,7 +461,7 @@ class HGTraversalBase : public TraversalInterface {
         for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
           // skip if min distance between the two cells is bigger than interactionLength
           if (distanceCheck and this->getMinDistBetweenCellsSquared(upperCB, upperCellCoords, lowerCB, {xl, yl, zl}) >
-                                 interactionLengthSquared) {
+                                    interactionLengthSquared) {
             continue;
           }
           // n to n SoAFunctorPair
