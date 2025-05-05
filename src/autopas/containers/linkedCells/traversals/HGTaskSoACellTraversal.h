@@ -92,13 +92,11 @@ class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HG
                   if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
                     continue;
                   }
-                  AUTOPAS_OPENMP(
-                      task depend(in
-                                  : (taskDepend.data())[index(col - 1, xi, yi, zi)],
-                                    (taskDepend.data())[index(col - 1, xi + colorDiff[col - 1][0],
-                                                              yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])])
-                          depend(out
-                                 : (taskDepend.data())[index(col, xi, yi, zi)])) {
+                  const auto &sameGroup = taskDepend[index(col - 1, xi, yi, zi)];
+                  const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
+                                                              yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
+                  const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
+                  AUTOPAS_OPENMP(task depend(in: sameGroup, diffGroup) depend(out: currentTask)) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
