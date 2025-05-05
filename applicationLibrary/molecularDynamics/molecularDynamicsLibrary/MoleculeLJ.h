@@ -23,11 +23,6 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   MoleculeLJ() = default;
 
   /**
-   * A static refernce to particlePropertiesLibrary so that sigma of particles can be used in getSize() function.
-   */
-  static std::shared_ptr<ParticlePropertiesLibrary<> > particlePropertiesLibrary;
-
-  /**
    * Constructor of lennard jones molecule with initialization of typeID.
    * @param pos Position of the molecule.
    * @param v Velocity of the molecule.
@@ -203,6 +198,22 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    */
   [[nodiscard]] std::string toString() const override;
 
+  /**
+ * Set the particle properties library.
+ * @param particlePropertiesLibrary Shared pointer to the particle properties library.
+ */
+  static void setParticlePropertiesLibrary(const std::shared_ptr<ParticlePropertiesLibrary<> > &particlePropertiesLibrary) {
+    _particlePropertiesLibrary = particlePropertiesLibrary;
+  }
+
+  /**
+   * Set the cutoff multiplier.
+   * @param cutoffMultiplier The new cutoff multiplier value.
+   */
+  static void setCutoffMultiplier(double cutoffMultiplier) {
+    _cutoffMultiplier = cutoffMultiplier;
+  }
+
  protected:
   /**
    * Molecule type id. In single-site simulations, this is used as a siteId to look up site attributes in the particle
@@ -217,6 +228,15 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Old Force of the particle experiences as 3D vector.
    */
   std::array<double, 3> _oldF = {0., 0., 0.};
+
+  /**
+   * A static refernce to particlePropertiesLibrary so that sigma of particles can be used in getSize() function.
+   */
+  static std::shared_ptr<ParticlePropertiesLibrary<> > _particlePropertiesLibrary;
+  /**
+   * The multiplier the sigma values will be scaled by.
+   */
+  static double _cutoffMultiplier;
 };
 
 }  // namespace mdLib

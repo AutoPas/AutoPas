@@ -174,16 +174,12 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
     }
     case ContainerOption::hierarchicalGrid: {
       if (_cutoffs.empty()) {
-        // if cutoffs for levels are not provided, set scaling cutoff to 1 and cutoff levels to a single level with
-        // _cutoff
+        // if cutoffs for levels are not provided, set cutoff levels to a single level with value _cutoff
+        // this way, Hgrid will behave same as LinkedCells
         _cutoffs = {_cutoff};
-        cutoff = 1;
-      } else {
-        // set scaling cutoff multiplier to _cutoff
-        cutoff = _cutoff;
       }
       container = std::make_unique<HierarchicalGrid<Particle_T>>(
-          _boxMin, _boxMax, cutoff, _cutoffs, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
+          _boxMin, _boxMax, _cutoffs, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor);
       break;
     }

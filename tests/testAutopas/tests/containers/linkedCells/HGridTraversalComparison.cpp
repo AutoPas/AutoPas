@@ -341,7 +341,8 @@ auto HGridTraversalComparison::getTestParams() {
     _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
   }
   _particlePropertiesLibrary->calculateMixingCoefficients(true);
-  Molecule::particlePropertiesLibrary = _particlePropertiesLibrary;
+  Molecule::setParticlePropertiesLibrary(_particlePropertiesLibrary);
+  Molecule::setCutoffMultiplier(1.0);
   std::vector<TestingTuple> testParams{};
   for (auto containerOption : {autopas::ContainerOption::hierarchicalGrid}) {
     for (auto interactionType : {autopas::InteractionTypeOption::pairwise}) {

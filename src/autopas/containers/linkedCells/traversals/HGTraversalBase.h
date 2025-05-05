@@ -33,12 +33,14 @@ class HGTraversalBase : public TraversalInterface {
    * used
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs, double skin,
-                 double maxDisplacement) {
+                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency) {
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
     _levels = levels;
     _skin = skin;
     _maxDisplacement = maxDisplacement;
+    _stepsSinceLastRebuild = stepsSinceLastRebuild;
+    _rebuildFrequency = rebuildFrequency;
   }
 
  protected:
@@ -47,6 +49,8 @@ class HGTraversalBase : public TraversalInterface {
   std::vector<double> _cutoffs;
   double _skin;
   double _maxDisplacement;
+  unsigned int _stepsSinceLastRebuild;
+  unsigned int _rebuildFrequency;
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
 
@@ -75,7 +79,7 @@ class HGTraversalBase : public TraversalInterface {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     return cutoff + std::min(this->_maxDisplacement * 2, this->_skin);
 #else
-    return cutoff + this->_skin;
+    return cutoff + std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild, this->_skin);
 #endif
   }
 
@@ -485,9 +489,9 @@ class HGTraversalBase : public TraversalInterface {
                                                                         const std::array<unsigned long, 3> &end) {
     unsigned long smallestCriterion = 1e15;
     std::array<size_t, 3> bestGroup = {1, 1, 1};
-    for (size_t x_group = 1; x_group <= stride[0]; ++x_group)
-      for (size_t y_group = 1; y_group <= stride[1]; ++y_group)
-        for (size_t z_group = 1; z_group <= stride[2]; ++z_group) {
+    for (size_t x_group = 1; x_group <= std::max(stride[0] - 1, static_cast<size_t>(1)); ++x_group)
+      for (size_t y_group = 1; y_group <= std::max(stride[1] - 1, static_cast<size_t>(1)); ++y_group)
+        for (size_t z_group = 1; z_group <= std::max(stride[2] - 1, static_cast<size_t>(1)); ++z_group) {
           std::array<size_t, 3> group = {x_group, y_group, z_group};
           std::array<size_t, 3> num_index{}, testStride{};
           for (size_t i = 0; i < 3; i++) {
@@ -502,6 +506,7 @@ class HGTraversalBase : public TraversalInterface {
             bestGroup = group;
           }
         }
+    AutoPasLog(INFO, "For block: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1], bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
     return bestGroup;
   }
 
@@ -535,6 +540,7 @@ class HGTraversalBase : public TraversalInterface {
             bestGroup = group;
           }
         }
+    AutoPasLog(INFO, "For task: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1], bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
     return bestGroup;
   }
 };

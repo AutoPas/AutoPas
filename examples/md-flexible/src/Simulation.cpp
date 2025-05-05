@@ -179,8 +179,9 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
-  // set particlePropertiesLibrary of MoleculeLJ
-  ParticleType::particlePropertiesLibrary = _configuration.getParticlePropertiesLibrary();
+  // set data of MoleculeLJ for MD_FLEXIBLE_SCALING_CUTOFF
+  ParticleType::setParticlePropertiesLibrary(_configuration.getParticlePropertiesLibrary());
+  ParticleType::setCutoffMultiplier(_configuration.cutoff.value);
 
   _autoPasContainer->init();
 

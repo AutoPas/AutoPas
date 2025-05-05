@@ -17,13 +17,15 @@ void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldFor
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 
-std::shared_ptr<ParticlePropertiesLibrary<> > mdLib::MoleculeLJ::particlePropertiesLibrary = nullptr;
+std::shared_ptr<ParticlePropertiesLibrary<> > MoleculeLJ::_particlePropertiesLibrary = nullptr;
+double MoleculeLJ::_cutoffMultiplier = 1.0;
 
 double MoleculeLJ::getSize() const {
-  if (particlePropertiesLibrary == nullptr) {
-    return 1.0;
+  if (_particlePropertiesLibrary == nullptr) {
+    // if particlePropertiesLibrary is not set then we are not using scaling cutoff, return default value
+    return 1.0 * _cutoffMultiplier;
   }
-  return particlePropertiesLibrary->getSigma(_typeId);
+  return  _particlePropertiesLibrary->getSigma(_typeId) * _cutoffMultiplier;
 }
 
 std::string MoleculeLJ::toString() const {

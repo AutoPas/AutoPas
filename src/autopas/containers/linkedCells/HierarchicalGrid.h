@@ -41,23 +41,22 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * Constructor of the HierarchicalGrid class.
    * @param boxMin
    * @param boxMax
-   * @param baseCutoff base cutoff for each particle, it will be scaled by the size of a Particle
    * @param cutoffs cutoffs for each level of the hierarchy
-   * @param skin
-   * @param rebuildFrequency
+   * @param skin verlet skin
+   * @param rebuildFrequency the frequency the container will be definitely rebuilt
    * @param cellSizeFactor cell size factor relative to cutoff
    */
-  HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double baseCutoff,
+  HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                    const std::vector<double> &cutoffs, const double skin, const unsigned int rebuildFrequency,
                    const double cellSizeFactor = 1.0)
       : ParticleContainerInterface<Particle>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
-        _baseCutoff(baseCutoff),
         _skin(skin),
         _numLevels(cutoffs.size()),
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
+        _rebuildFrequency(rebuildFrequency),
         _cutoffs(cutoffs) {
     /*
      * NOTE: In the future add auto cutoff? We need to know particles sizes beforehand.
@@ -143,7 +142,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(const double cutoff) final { _baseCutoff = cutoff; }
+  void setCutoff(const double cutoff) final { }
 
   [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
@@ -169,7 +168,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @param stepsSinceLastRebuild steps since last neighbor list rebuild
    */
   void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
-    AutoPasLog(INFO, "Steps since rebuild {}", stepsSinceLastRebuild);
     for (const auto &linkedCells : _levels) {
       linkedCells->setStepsSinceLastRebuild(stepsSinceLastRebuild);
     }
@@ -498,7 +496,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
  private:
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
-  double _baseCutoff;
   double _skin;
   size_t _numLevels;
   const double _cellSizeFactor;
@@ -506,6 +503,9 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   mutable std::vector<size_t> _currentLevel;
   mutable std::vector<size_t> _prevCells;
   const size_t _cacheOffset;
+  const unsigned int _rebuildFrequency;
+  std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
+  std::vector<double> _cutoffs;
 
   /**
    *
@@ -513,9 +513,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @return which Hierarchy the particle belongs to
    */
   size_t getHierarchyLevel(const ParticleType &p) const {
-    // scale size by baseCutoff
-    const double cutoff = p.getSize() * _baseCutoff;
-    // AutoPasLog(INFO, "Adding particle with size {}\n{}", ParticleType::getSizeFunctor(&p), p.toString());
+    const double cutoff = p.getSize();
     for (size_t i = 0; i < _numLevels; ++i) {
       if (_cutoffs[i] >= cutoff) {
         return i;
@@ -536,16 +534,14 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
-      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, this->getMaxDisplacement());
+      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, this->getMaxDisplacement(), this->_stepsSinceLastRebuild,
+                                _rebuildFrequency);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",
           traversal->getTraversalType());
     }
   }
-
-  std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
-  std::vector<double> _cutoffs;
 };
 
 }  // namespace autopas
