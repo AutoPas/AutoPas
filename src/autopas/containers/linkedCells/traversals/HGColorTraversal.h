@@ -60,8 +60,6 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
                 const double interactionLength = this->getInteractionLength(lowerLevel, upperLevel);
                 const double interactionLengthSquared = interactionLength * interactionLength;
 
-                const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
-
                 // get cellBlocks of upper and lower levels
                 const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
 
@@ -71,10 +69,10 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
                 upperBound -= lowerLevelCB.getCellsPerInteractionLength();
                 if (this->_dataLayout == DataLayoutOption::aos) {
                   this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                     interactionLengthSquared, dir, lowerBound, upperBound, false);
+                                     interactionLengthSquared, lowerBound, upperBound, false);
                 } else {
                   this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                   interactionLengthSquared, dir, lowerBound, upperBound, false);
+                                                   interactionLengthSquared, lowerBound, upperBound, false);
                 }
               }
             }

@@ -72,14 +72,18 @@ class HGTraversalBase : public TraversalInterface {
    */
   [[nodiscard]] double getInteractionLength(const size_t lowerLevel, const size_t upperLevel) const {
     const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
+    return cutoff + currentSkin();
+  }
+
+  [[nodiscard]] double currentSkin() const {
     // We only need to check at most distance cutoff + max displacement of any particle in the container if dynamic
     // containers are used.
     // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
     // always cutoff + _skin.
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    return cutoff + std::min(this->_maxDisplacement * 2, this->_skin);
+    return std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
 #else
-    return cutoff + std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild, this->_skin);
+    return std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild + 1e-9, this->_skin);
 #endif
   }
 
@@ -305,8 +309,8 @@ class HGTraversalBase : public TraversalInterface {
   template <class Functor>
   void AoSTraversal(const CellBlock &lowerCB, const CellBlock &upperCB, const std::array<size_t, 3> upperCellCoords,
                     Functor *functor, size_t lowerLevel, double interactionLengthSquared,
-                    const std::array<double, 3> dir, const std::array<size_t, 3> &lowerBound,
-                    const std::array<size_t, 3> &upperBound, bool distanceCheck) {
+                    const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound,
+                    bool distanceCheck) {
     using namespace autopas::utils::ArrayMath::literals;
     using utils::ArrayUtils::operator<<;
 
@@ -319,12 +323,16 @@ class HGTraversalBase : public TraversalInterface {
     if (isHalo && !this->_useNewton3) {
       return;
     }
+    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
+    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
     // variable to determine if we are only interested in owned particles in the lower level
     const bool containToOwnedOnly = isHalo && this->_useNewton3;
     for (auto p1Ptr = upperCell.begin(); p1Ptr != upperCell.end(); ++p1Ptr) {
       const std::array<double, 3> &pos = p1Ptr->getR();
-      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - dir);
-      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + dir);
+      const double radius = p1Ptr->getSize() / 2;
+      const std::array<double, 3> interactionLength = lowerDir + std::array<double, 3>{radius, radius, radius};
+      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
+      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
       // skip halo cells if we need to consider only owned particles
       if (containToOwnedOnly) {
         startIndex3D = this->getMax(startIndex3D, lowerBound);
@@ -368,9 +376,8 @@ class HGTraversalBase : public TraversalInterface {
   template <class Functor>
   void SoATraversalParticleToCell(const CellBlock &lowerCB, const CellBlock &upperCB,
                                   const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
-                                  double interactionLengthSquared, const std::array<double, 3> dir,
-                                  const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound,
-                                  bool distanceCheck) {
+                                  double interactionLengthSquared, const std::array<size_t, 3> &lowerBound,
+                                  const std::array<size_t, 3> &upperBound, bool distanceCheck) {
     using namespace autopas::utils::ArrayMath::literals;
 
     auto &upperCell = upperCB.getCell(upperCellCoords);
@@ -388,11 +395,17 @@ class HGTraversalBase : public TraversalInterface {
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
+    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+
     for (int idx = 0; idx < upperCell.size(); ++idx) {
       const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
+      const double radius = upperCell[idx].getSize() / 2;
+      const std::array<double, 3> interactionLength = lowerDir + std::array<double, 3>{radius, radius, radius};
       auto soaSingleParticle = soa.constructView(idx, idx + 1);
-      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - dir);
-      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + dir);
+      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
+      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
       if (containToOwnedOnly) {
         startIndex3D = this->getMax(startIndex3D, lowerBound);
         stopIndex3D = this->getMin(stopIndex3D, upperBound);

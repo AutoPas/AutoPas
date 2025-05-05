@@ -42,7 +42,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @param boxMin
    * @param boxMax
    * @param cutoffs cutoffs for each level of the hierarchy
-   * @param skin verlet skin
+   * @param skin Verlet skin
    * @param rebuildFrequency the frequency the container will be definitely rebuilt
    * @param cellSizeFactor cell size factor relative to cutoff
    */

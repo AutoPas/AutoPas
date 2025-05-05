@@ -94,17 +94,15 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   }
                   const auto &sameGroup = taskDepend[index(col - 1, xi, yi, zi)];
                   const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
-                                                              yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
+                                                           yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
                   const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
-                  AUTOPAS_OPENMP(task depend(in: sameGroup, diffGroup) depend(out: currentTask)) {
+                  AUTOPAS_OPENMP(task depend(in : sameGroup, diffGroup) depend(out : currentTask)) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
                       }
                       const double interactionLength = this->getInteractionLength(lowerLevel, upperLevel);
                       const double interactionLengthSquared = interactionLength * interactionLength;
-
-                      const std::array<double, 3> dir = {interactionLength, interactionLength, interactionLength};
 
                       // get cellBlocks of upper and lower levels
                       const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
@@ -123,10 +121,10 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                             }
                             if (this->_dataLayout == DataLayoutOption::aos) {
                               this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                 interactionLengthSquared, dir, lowerBound, upperBound, false);
+                                                 interactionLengthSquared, lowerBound, upperBound, false);
                             } else {
                               this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor,
-                                                               lowerLevel, interactionLengthSquared, dir, lowerBound,
+                                                               lowerLevel, interactionLengthSquared, lowerBound,
                                                                upperBound, false);
                             }
                           }
