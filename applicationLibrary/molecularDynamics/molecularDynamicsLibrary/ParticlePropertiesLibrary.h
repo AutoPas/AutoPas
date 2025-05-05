@@ -97,7 +97,7 @@ class ParticlePropertiesLibrary {
    * Calculates the actual mixing coefficients.
    * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
-  void calculateMixingCoefficients(bool scalingCutoff);
+  void calculateMixingCoefficients(bool scalingCutoff = false);
 
   ~ParticlePropertiesLibrary() = default;
 
