@@ -199,10 +199,11 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   [[nodiscard]] std::string toString() const override;
 
   /**
- * Set the particle properties library.
- * @param particlePropertiesLibrary Shared pointer to the particle properties library.
- */
-  static void setParticlePropertiesLibrary(const std::shared_ptr<ParticlePropertiesLibrary<> > &particlePropertiesLibrary) {
+   * Set the particle properties library.
+   * @param particlePropertiesLibrary Shared pointer to the particle properties library.
+   */
+  static void setParticlePropertiesLibrary(
+      const std::shared_ptr<ParticlePropertiesLibrary<> > &particlePropertiesLibrary) {
     _particlePropertiesLibrary = particlePropertiesLibrary;
   }
 
@@ -210,9 +211,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Set the cutoff multiplier.
    * @param cutoffMultiplier The new cutoff multiplier value.
    */
-  static void setCutoffMultiplier(double cutoffMultiplier) {
-    _cutoffMultiplier = cutoffMultiplier;
-  }
+  static void setCutoffMultiplier(double cutoffMultiplier) { _cutoffMultiplier = cutoffMultiplier; }
 
  protected:
   /**

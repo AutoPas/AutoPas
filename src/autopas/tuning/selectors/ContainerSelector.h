@@ -178,9 +178,9 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
         // this way, Hgrid will behave same as LinkedCells
         _cutoffs = {_cutoff};
       }
-      container = std::make_unique<HierarchicalGrid<Particle_T>>(
-          _boxMin, _boxMax, _cutoffs, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-          containerInfo.cellSizeFactor);
+      container = std::make_unique<HierarchicalGrid<Particle_T>>(_boxMin, _boxMax, _cutoffs, containerInfo.verletSkin,
+                                                                 containerInfo.verletRebuildFrequency,
+                                                                 containerInfo.cellSizeFactor);
       break;
     }
     default: {

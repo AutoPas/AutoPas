@@ -142,7 +142,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(const double cutoff) final { }
+  void setCutoff(const double cutoff) final {}
 
   [[nodiscard]] double getVerletSkin() const final { return _skin; }
 

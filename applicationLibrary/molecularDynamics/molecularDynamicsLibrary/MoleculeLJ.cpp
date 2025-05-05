@@ -25,7 +25,7 @@ double MoleculeLJ::getSize() const override {
     // if particlePropertiesLibrary is not set then we are not using scaling cutoff, return default value
     return 1.0 * _cutoffMultiplier;
   }
-  return  _particlePropertiesLibrary->getSigma(_typeId) * _cutoffMultiplier;
+  return _particlePropertiesLibrary->getSigma(_typeId) * _cutoffMultiplier;
 }
 
 std::string MoleculeLJ::toString() const {

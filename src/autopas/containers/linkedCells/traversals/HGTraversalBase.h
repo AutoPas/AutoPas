@@ -506,7 +506,8 @@ class HGTraversalBase : public TraversalInterface {
             bestGroup = group;
           }
         }
-    AutoPasLog(INFO, "For block: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1], bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
+    AutoPasLog(INFO, "For block: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1],
+               bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
     return bestGroup;
   }
 
@@ -540,7 +541,8 @@ class HGTraversalBase : public TraversalInterface {
             bestGroup = group;
           }
         }
-    AutoPasLog(INFO, "For task: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1], bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
+    AutoPasLog(INFO, "For task: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1],
+               bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
     return bestGroup;
   }
 };
