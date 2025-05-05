@@ -223,10 +223,19 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
-    // reserve overestimates because reserve is designed for only one hierarchy
-    // can get size() for each hierarchy and scale numParticles, numParticlesHaloEstimate proportionally?
+    // reserve on each level proportionally to their number of cells
+    double total = 0;
     for (size_t i = 0; i < _numLevels; ++i) {
-      _levels[i]->reserve(numParticles, numParticlesHaloEstimate);
+      const auto cellsPerDim = _levels[i]->getTraversalSelectorInfo().cellsPerDim;
+      total += 1.0 * cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2];
+    }
+    for (size_t i = 0; i < _numLevels; ++i) {
+      const auto cellsPerDim = _levels[i]->getTraversalSelectorInfo().cellsPerDim;
+      size_t numParticlesEstimatePerLevel =
+          numParticles * (1.0 * cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]) / total;
+      size_t numHaloParticlesEstimatePerLevel =
+          numParticlesHaloEstimate * (1.0 * cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]) / total;
+      _levels[i]->reserve(numParticlesEstimatePerLevel, numHaloParticlesEstimatePerLevel);
     }
   }
 
