@@ -71,10 +71,10 @@ class HGColorTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
                 upperBound -= lowerLevelCB.getCellsPerInteractionLength();
                 if (this->_dataLayout == DataLayoutOption::aos) {
                   this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                     interactionLengthSquared, dir, lowerBound, upperBound, true);
+                                     interactionLengthSquared, dir, lowerBound, upperBound, false);
                 } else {
                   this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                   interactionLengthSquared, dir, lowerBound, upperBound, true);
+                                                   interactionLengthSquared, dir, lowerBound, upperBound, false);
                 }
               }
             }

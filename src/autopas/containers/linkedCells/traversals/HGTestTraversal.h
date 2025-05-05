@@ -19,34 +19,50 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
     if (not this->isApplicable()) {
-      utils::ExceptionHandler::exception("Not supported with hgrid_color");
+      utils::ExceptionHandler::exception("Not supported with hgrid_block");
     }
     this->computeIntraLevelInteractions();
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
+      if (this->_useNewton3 && upperLevel == 0) {
+        // skip the first level as we go top-down only with newton3
+        continue;
+      }
       // calculate stride for current level
       std::array<size_t, 3> stride = this->computeStride(upperLevel);
-      const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
       const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
-      const size_t end_x = end[0], end_y = end[1], end_z = end[2];
 
       const auto &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock();
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
+      const long targetBlocksPerColor =
+          static_cast<size_t>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
+      const std::array<size_t, 3> group =
+          this->findBestGroupSizeForTargetBlocksPerColor(targetBlocksPerColor, stride, end);
+
+      std::array<size_t, 3> num_index{};
+      // calculate openmp for loop bound and actual strides with new block length
+      for (size_t i = 0; i < 3; i++) {
+        stride[i] = 1 + static_cast<size_t>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
+        num_index[i] = (end[i] + (stride[i] * group[i]) - 1) / (stride[i] * group[i]);
+      }
+      const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+
       // do the colored traversal
       const size_t numColors = stride_x * stride_y * stride_z;
       AUTOPAS_OPENMP(parallel)
       for (size_t col = 0; col < numColors; ++col) {
-        const std::array<size_t, 3> start(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
-
-        const size_t start_x = start[0], start_y = start[1], start_z = start[2];
+        const std::array<size_t, 3> startIndex(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
 
         AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
-        for (size_t z = start_z; z < end_z; z += stride_z) {
-          for (size_t y = start_y; y < end_y; y += stride_y) {
-            for (size_t x = start_x; x < end_x; x += stride_x) {
+        for (size_t zi = 0; zi < num_index[2]; ++zi) {
+          for (size_t yi = 0; yi < num_index[1]; ++yi) {
+            for (size_t xi = 0; xi < num_index[0]; ++xi) {
+              size_t start_z = startIndex[2] * group[2] + (zi * stride_z * group[2]);
+              size_t start_y = startIndex[1] * group[1] + (yi * stride_y * group[1]);
+              size_t start_x = startIndex[0] * group[0] + (xi * stride_x * group[0]);
               for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                 if (lowerLevel == upperLevel) {
                   continue;
@@ -63,12 +79,22 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                 std::array<size_t, 3> lowerBound = {0, 0, 0}, upperBound = lowerLevelCB.getCellsPerDimensionWithHalo();
                 lowerBound += lowerLevelCB.getCellsPerInteractionLength();
                 upperBound -= lowerLevelCB.getCellsPerInteractionLength();
-                if (this->_dataLayout == DataLayoutOption::aos) {
-                  this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                     interactionLengthSquared, dir, lowerBound, upperBound, false);
-                } else {
-                  this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                   interactionLengthSquared, dir, lowerBound, upperBound, false);
+
+                for (size_t z = start_z; z < start_z + group[2]; ++z) {
+                  for (size_t y = start_y; y < start_y + group[1]; ++y) {
+                    for (size_t x = start_x; x < start_x + group[0]; ++x) {
+                      if (!(x < end[0] && y < end[1] && z < end[2])) {
+                        continue;
+                      }
+                      if (this->_dataLayout == DataLayoutOption::aos) {
+                        this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
+                                           interactionLengthSquared, dir, lowerBound, upperBound, false);
+                      } else {
+                        this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
+                                                         interactionLengthSquared, dir, lowerBound, upperBound, false);
+                      }
+                    }
+                  }
                 }
               }
             }
