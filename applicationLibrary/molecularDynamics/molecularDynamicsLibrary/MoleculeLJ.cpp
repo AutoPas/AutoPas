@@ -20,7 +20,7 @@ void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 std::shared_ptr<ParticlePropertiesLibrary<> > MoleculeLJ::_particlePropertiesLibrary = nullptr;
 double MoleculeLJ::_cutoffMultiplier = 1.0;
 
-double MoleculeLJ::getSize() const override {
+double MoleculeLJ::getSize() const {
   if (_particlePropertiesLibrary == nullptr) {
     // if particlePropertiesLibrary is not set then we are not using scaling cutoff, return default value
     return 1.0 * _cutoffMultiplier;
