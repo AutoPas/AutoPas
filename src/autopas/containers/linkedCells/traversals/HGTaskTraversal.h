@@ -28,6 +28,9 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       utils::ExceptionHandler::exception("Not supported with hgrid_task");
     }
     this->computeIntraLevelInteractions();
+    if (this->_numLevels == 1) {
+      return;
+    }
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
       if (this->_useNewton3 && upperLevel == 0) {
@@ -43,7 +46,7 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
-      const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
+      const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * 64);
       const std::array<size_t, 3> group = this->findBestGroupSizeForTargetBlocks(targetBlocks, stride, end);
 
       std::array<size_t, 3> num_index{};
@@ -92,11 +95,42 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
                     continue;
                   }
-                  const auto &sameGroup = taskDepend[index(col - 1, xi, yi, zi)];
-                  const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
-                                                           yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
+                  // All 27 combinations of +1, 0, -1 in 3D space
+                  const auto &diffGroup1 = taskDepend[index(col - 1, xi + 1, yi + 1, zi + 1)];
+                  const auto &diffGroup2 = taskDepend[index(col - 1, xi + 1, yi + 1, zi)];
+                  const auto &diffGroup3 = taskDepend[index(col - 1, xi + 1, yi + 1, zi - 1)];
+                  const auto &diffGroup4 = taskDepend[index(col - 1, xi + 1, yi, zi + 1)];
+                  const auto &diffGroup5 = taskDepend[index(col - 1, xi + 1, yi, zi)];
+                  const auto &diffGroup6 = taskDepend[index(col - 1, xi + 1, yi, zi - 1)];
+                  const auto &diffGroup7 = taskDepend[index(col - 1, xi + 1, yi - 1, zi + 1)];
+                  const auto &diffGroup8 = taskDepend[index(col - 1, xi + 1, yi - 1, zi)];
+                  const auto &diffGroup9 = taskDepend[index(col - 1, xi + 1, yi - 1, zi - 1)];
+                  const auto &diffGroup10 = taskDepend[index(col - 1, xi, yi + 1, zi + 1)];
+                  const auto &diffGroup11 = taskDepend[index(col - 1, xi, yi + 1, zi)];
+                  const auto &diffGroup12 = taskDepend[index(col - 1, xi, yi + 1, zi - 1)];
+                  const auto &diffGroup13 = taskDepend[index(col - 1, xi, yi, zi + 1)];
+                  const auto &diffGroup14 = taskDepend[index(col - 1, xi, yi, zi)];
+                  const auto &diffGroup15 = taskDepend[index(col - 1, xi, yi, zi - 1)];
+                  const auto &diffGroup16 = taskDepend[index(col - 1, xi, yi - 1, zi + 1)];
+                  const auto &diffGroup17 = taskDepend[index(col - 1, xi, yi - 1, zi)];
+                  const auto &diffGroup18 = taskDepend[index(col - 1, xi, yi - 1, zi - 1)];
+                  const auto &diffGroup19 = taskDepend[index(col - 1, xi - 1, yi + 1, zi + 1)];
+                  const auto &diffGroup20 = taskDepend[index(col - 1, xi - 1, yi + 1, zi)];
+                  const auto &diffGroup21 = taskDepend[index(col - 1, xi - 1, yi + 1, zi - 1)];
+                  const auto &diffGroup22 = taskDepend[index(col - 1, xi - 1, yi, zi + 1)];
+                  const auto &diffGroup23 = taskDepend[index(col - 1, xi - 1, yi, zi)];
+                  const auto &diffGroup24 = taskDepend[index(col - 1, xi - 1, yi, zi - 1)];
+                  const auto &diffGroup25 = taskDepend[index(col - 1, xi - 1, yi - 1, zi + 1)];
+                  const auto &diffGroup26 = taskDepend[index(col - 1, xi - 1, yi - 1, zi)];
+                  const auto &diffGroup27 = taskDepend[index(col - 1, xi - 1, yi - 1, zi - 1)];
+                  
                   const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
-                  AUTOPAS_OPENMP(task depend(in : sameGroup, diffGroup) depend(out : currentTask)) {
+                  AUTOPAS_OPENMP(task depend(in : diffGroup1, diffGroup2, diffGroup3, diffGroup4, diffGroup5,
+                                             diffGroup6, diffGroup7, diffGroup8, diffGroup9, diffGroup10, diffGroup11,
+                                             diffGroup12, diffGroup13, diffGroup14, diffGroup15, diffGroup16, diffGroup17,
+                                             diffGroup18, diffGroup19, diffGroup20, diffGroup21, diffGroup22, diffGroup23,
+                                             diffGroup24, diffGroup25, diffGroup26, diffGroup27)
+                      depend(out : currentTask)) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;

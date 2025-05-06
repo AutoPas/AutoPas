@@ -529,7 +529,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
       }
     }
     AutoPasLog(ERROR,
-               "Size of Particle times baseCutoff is bigger than biggest cutoff of HierarchicalGrid, "
+               "Size of Particle is bigger than biggest cutoff of HierarchicalGrid, "
                "will result in wrong interaction calculation.");
     return _numLevels - 1;
   }

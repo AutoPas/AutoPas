@@ -28,6 +28,9 @@ class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HG
       utils::ExceptionHandler::exception("Not supported with hgrid_task_soa_cell");
     }
     this->computeIntraLevelInteractions();
+    if (this->_numLevels == 1) {
+      return;
+    }
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
       if (this->_useNewton3 && upperLevel == 0) {
