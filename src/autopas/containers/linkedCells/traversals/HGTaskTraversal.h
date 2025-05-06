@@ -100,7 +100,10 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   const size_t diffGroup = index(col - 1, xi + colorDiff[col - 1][0],
                                                            yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2]);
                   const size_t currentTask = index(col, xi, yi, zi);
-                  AUTOPAS_OPENMP(task depend(in : taskDepend2[sameGroup], taskDepend2[diffGroup]) depend(out : taskDepend2[currentTask])) {
+                  char *ptrSame = &taskDepend2[sameGroup];
+                  char *ptrDiff = &taskDepend2[diffGroup];
+                  char *ptrCurr = &taskDepend2[currentTask];
+                  AUTOPAS_OPENMP(task depend(in : *ptrSame, *ptrDiff) depend(out : *ptrCurr)) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
