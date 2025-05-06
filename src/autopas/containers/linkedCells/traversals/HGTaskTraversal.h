@@ -69,11 +69,6 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       // Create a contiguous dependency array.
       std::vector<char> taskDepend(totalDeps, false);
 
-      // Function to compute the 1D index from 4D coordinates.
-      auto index = [size0, size1, size2](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
-        return ((col * size0 + xi) * size1 + yi) * size2 + zi;
-      };
-
       std::vector<std::array<long, 3>> startIndex(numColors);
       std::vector<std::array<long, 3>> colorDiff(numColors);
       startIndex = this->oneToThreeDForStartSnakyPattern(stride);
@@ -95,10 +90,11 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
                     continue;
                   }
-                  const auto &sameGroup = taskDepend[index(col - 1, xi, yi, zi)];
-                  const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
-                                                           yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
-                  const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
+                  const auto &sameGroup = taskDepend[((col - 1) * size0 + xi) * size1 * size2 + yi * size2 + zi];
+                  const auto &diffGroup = taskDepend[((col - 1) * size0 + (xi + colorDiff[col - 1][0])) * size1 * size2 + 
+                                                    (yi + colorDiff[col - 1][1]) * size2 + 
+                                                    (zi + colorDiff[col - 1][2])];
+                  const auto &currentTask = taskDepend[(col * size0 + xi) * size1 * size2 + yi * size2 + zi];
                   // Old clang compilers need firstprivate clause
                   AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start, col, xi, yi, zi)
                     depend(in : sameGroup, diffGroup) depend(out : currentTask)) {
