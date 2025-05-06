@@ -133,6 +133,7 @@ class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HG
               }
             }
           }
+          AUTOPAS_OPENMP(taskwait)
         }
       }
     }
