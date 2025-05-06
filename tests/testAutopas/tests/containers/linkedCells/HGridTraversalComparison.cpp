@@ -260,6 +260,7 @@ TEST_P(HGridTraversalComparison, traversalTest) {
   // (and OK to do so)
   constexpr double rel_err_tolerance = 1.0e-10;
   constexpr double rel_err_tolerance_globals = 1.0e-10;
+  Molecule::setParticlePropertiesLibrary(_particlePropertiesLibrary);
 
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
