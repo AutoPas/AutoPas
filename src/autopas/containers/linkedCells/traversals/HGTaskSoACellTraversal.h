@@ -70,7 +70,7 @@ class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HG
       std::vector<char> taskDepend(totalDeps, false);
 
       // Function to compute the 1D index from 4D coordinates.
-      auto index = [=](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
+      auto index = [size0, size1, size2](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
         return ((col * size0 + xi) * size1 + yi) * size2 + zi;
       };
 
