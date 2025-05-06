@@ -142,7 +142,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
 
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
-  Molecule::setParticlePropertiesLibrary(nullptr); // unset PPL from old tests
+  Molecule::setParticlePropertiesLibrary(nullptr);  // unset PPL from old tests
   constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
   selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
