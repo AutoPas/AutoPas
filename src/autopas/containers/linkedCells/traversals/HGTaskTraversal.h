@@ -68,6 +68,7 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
 
       // Create a contiguous dependency array.
       std::vector<char> taskDepend(totalDeps, false);
+      char taskDepend2[10000];
 
       // Function to compute the 1D index from 4D coordinates.
       auto index = [=](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
@@ -95,11 +96,11 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   if (!(x_start < end[0] && y_start < end[1] && z_start < end[2])) {
                     continue;
                   }
-                  const auto &sameGroup = taskDepend[index(col - 1, xi, yi, zi)];
-                  const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
-                                                           yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
-                  const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
-                  AUTOPAS_OPENMP(task depend(in : sameGroup, diffGroup) depend(out : currentTask)) {
+                  const auto &sameGroup = index(col - 1, xi, yi, zi);
+                  const auto &diffGroup = index(col - 1, xi + colorDiff[col - 1][0],
+                                                           yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2]);
+                  const auto &currentTask = index(col, xi, yi, zi);
+                  AUTOPAS_OPENMP(task depend(in : taskDepend2[sameGroup], taskDepend2[diffGroup]) depend(out : taskDepend2[currentTask])) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
