@@ -100,7 +100,7 @@ class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HG
                                                            yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
                   const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
                   // Old clang compilers need firstprivate clause
-                  AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start, col, xi, yi, zi)
+                  AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start)
                     depend(in : sameGroup, diffGroup) depend(out : currentTask)) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
