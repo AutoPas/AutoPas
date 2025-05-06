@@ -128,6 +128,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
               }
             }
           }
+          AUTOPAS_OPENMP(taskwait)
         }
       }
     }
