@@ -136,6 +136,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all traversal options applicable for the HierarchicalGrid container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allHGCompatibleTraversals() {
+  static const auto s = filterAllOptions("hgrid_", InteractionTypeOption::pairwise);
+  return s;
+}
+
+/**
  * Provides a set of all traversals that only support Newton3 mode disabled.
  * @return
  */
@@ -169,8 +178,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlySoA() {
   return {
-      TraversalOption::lc_c01_combined_SoA,
-      TraversalOption::lc_c04_combined_SoA,
+      TraversalOption::lc_c01_combined_SoA,  TraversalOption::lc_c04_combined_SoA,
+      TraversalOption::hgrid_color_soa_cell, TraversalOption::hgrid_block_soa_cell,
+      TraversalOption::hgrid_task_soa_cell,  TraversalOption::hgrid_test,
   };
 };
 
@@ -212,6 +222,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::octree: {
           return allOTCompatibleTraversals();
+        }
+        case ContainerOption::hierarchicalGrid: {
+          return allHGCompatibleTraversals();
         }
       }
     }

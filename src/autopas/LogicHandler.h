@@ -60,7 +60,8 @@ class LogicHandler {
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
-        _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
+        _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff,
+                           logicHandlerInfo.cutoffs),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
@@ -1161,13 +1162,24 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+  double maxDistanceSquare = 0;
+  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild) reduction(max : maxDistanceSquare))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+    maxDistanceSquare = std::max(maxDistanceSquare, distanceSquare);
   }
+  if (_neighborListInvalidDoDynamicRebuild) {
+    // will be rebuilt, set max displacement to 0
+    getContainer().setMaxDisplacement(0);
+  } else {
+    // set maxDisplacement to the maximum over all particles
+    // trim if displacement is larger than skin/2 (can cause problems in some tests otherwise)
+    getContainer().setMaxDisplacement(std::sqrt(maxDistanceSquare) + 1e-15);
+  }
+
 #endif
 }
 
@@ -1286,6 +1298,14 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
+  AutoPasLog(INFO,
+             "ComputeInteractions: {}s, container {}, traversal {}, stepsSinceRebuild {}, CellSizeFactor {}, newton3 "
+             "{}, dataLayout {}",
+             timerComputeInteractions.getTotalTime() / 1000000000.0,
+             _containerSelector.getCurrentContainer().getContainerType().to_string(),
+             traversal.getTraversalType().to_string(), _stepsSinceLastListRebuild,
+             autoTuner.getCurrentConfig().cellSizeFactor, newton3, dataLayout.to_string());
+
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
   return {timerComputeInteractions.getTotalTime(),
@@ -1345,7 +1365,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // in three helper functions.
 
   // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   autopas::utils::Timer timerBufferContainer;
   autopas::utils::Timer timerPBufferPBuffer;
   autopas::utils::Timer timerPBufferHBuffer;
@@ -1360,7 +1380,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // which don't have an SoA interface.
   remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   timerBufferContainer.stop();
   timerBufferSoAConversion.start();
 #endif
@@ -1373,7 +1393,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
       f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
     }
   }
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   timerBufferSoAConversion.stop();
   timerPBufferPBuffer.start();
 #endif
@@ -1381,7 +1401,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // step 3. particleBuffer with itself and all other buffers
   remainderHelperBufferBuffer<newton3>(f, particleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   timerPBufferPBuffer.stop();
   timerPBufferHBuffer.start();
 #endif
@@ -1389,7 +1409,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // step 4. particleBuffer with haloParticleBuffer
   remainderHelperBufferHaloBuffer(f, particleBuffers, haloParticleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   timerPBufferHBuffer.stop();
 #endif
 
@@ -1400,10 +1420,21 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
     }
   }
 
-  AutoPasLog(TRACE, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer    (  3): {}", timerPBufferPBuffer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer    (  4): {}", timerPBufferHBuffer.getTotalTime());
-  AutoPasLog(TRACE, "Timer Load and extract SoA buffers: {}", timerBufferSoAConversion.getTotalTime());
+  size_t particleBufferSize = 0;
+  for (const auto &buffer : particleBuffers) {
+    particleBufferSize += buffer.size();
+  }
+  size_t haloParticleBufferSize = 0;
+  for (const auto &buffer : haloParticleBuffers) {
+    haloParticleBufferSize += buffer.size();
+  }
+  AutoPasLog(INFO, "BufferContainer: {} particles, {} halo particles, {} buffers, {} halo buffers", particleBufferSize,
+             haloParticleBufferSize, particleBuffers.size(), haloParticleBuffers.size());
+
+  AutoPasLog(INFO, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime() / 1000000000.0);
+  AutoPasLog(INFO, "Timer PBuffers<-> PBuffer    (  3): {}", timerPBufferPBuffer.getTotalTime() / 1000000000.0);
+  AutoPasLog(INFO, "Timer PBuffers<-> HBuffer    (  4): {}", timerPBufferHBuffer.getTotalTime() / 1000000000.0);
+  AutoPasLog(INFO, "Timer Load and extract SoA buffers: {}", timerBufferSoAConversion.getTotalTime() / 1000000000.0);
 
   // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }

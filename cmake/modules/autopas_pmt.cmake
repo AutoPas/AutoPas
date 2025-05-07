@@ -12,11 +12,11 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
             message(STATUS "pmt - using installed version ${pmt_VERSION}")
             set_target_properties(pmt::pmt PROPERTIES "IMPORTED_GLOBAL" "TRUE")
             return()
-        else()
+        else ()
             message(STATUS "pmt - no system version compatible to version ${expectedVersion} found")
             message(STATUS "pmt - if you want to use your version point the cmake variable pmt_DIR to the directory containing pmtConfig.cmake in order to find package")
-        endif()
-    endif()
+        endif ()
+    endif ()
 
     message(STATUS "pmt - using bundled version (commit 7a56fa3a) and patch")
 
@@ -53,7 +53,7 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
     if (IS_DIRECTORY "${pmt_SOURCE_DIR}")
         set_property(DIRECTORY ${pmt_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
-    endif()
+    endif ()
 
     target_compile_options(pmt PUBLIC -w -DCMAKE_INSTALL_PREFIX="./build")
 

@@ -196,6 +196,40 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+    // HierarchicalGrid Traversals:
+    /**
+     * HGColorTraversal: For each level, LCC08Traversal is used. For the cross-level interactions, for each level x only
+     * smaller levels are iterated. The cells on level x are iterated with colors (dynamic color count based on ratio
+     * of cell lengths between level x and y) so that the cells on the lower level y
+     * that are considered for each cell on level x do not intersect.
+     */
+    hgrid_color,
+    /**
+     * HGColorSoACellToCell: Same as HGColorTraversal but during cross-level traversals SoA cell to cell functor is
+     * used. (Instead of 1 particle in upper cell <-> full cell in lower level like in HGColorTraversal)
+     */
+    hgrid_color_soa_cell,
+    hgrid_test,
+    /**
+     * Similar to hgrid_block but instead of fully waiting for a color to end to start the next color, openmp task with
+     * dependencies is used. The basic idea is that if the cells with the previous color around the cell is computed,
+     * the cell with the next color can start computing.
+     */
+    hgrid_task,
+    /**
+     * Same as hgrid_color but to reduce number of colors and increase memory efficiency, instead of only 1 upper
+     * level cell a block of cells is assigned to a thread at a time. The size of block is calculated dynamically
+     * by considering upper and lower cell lengths and number of threads.
+     */
+    hgrid_block,
+    /**
+     * Same as hgrid_block but with SoA cell to cell functor.
+     */
+    hgrid_block_soa_cell,
+    /**
+     * Same as hgrid_task but with SoA cell to cell functor.
+     */
+    hgrid_task_soa_cell,
   };
 
   /**
@@ -331,6 +365,15 @@ class TraversalOption : public Option<TraversalOption> {
         // Octree Traversals:
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
+
+        // HierarchicalGrid Traversals:
+        {TraversalOption::hgrid_color, "hgrid_color"},
+        {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
+        {TraversalOption::hgrid_test, "hgrid_test"},
+        {TraversalOption::hgrid_block_soa_cell, "hgrid_block_soa_cell"},
+        {TraversalOption::hgrid_task_soa_cell, "hgrid_task_soa_cell"},
+        {TraversalOption::hgrid_task, "hgrid_task"},
+        {TraversalOption::hgrid_block, "hgrid_block"},
     };
   };
 
