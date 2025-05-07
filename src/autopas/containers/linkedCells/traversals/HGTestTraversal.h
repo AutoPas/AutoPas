@@ -22,6 +22,9 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       utils::ExceptionHandler::exception("Not supported with hgrid_task");
     }
     this->computeIntraLevelInteractions();
+    if (this->_numLevels == 1) {
+      return;
+    }
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
       if (this->_useNewton3 && upperLevel == 0) {
@@ -37,7 +40,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
-      const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * 32);
+      const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * autopas_get_max_threads());
       const std::array<size_t, 3> group = this->findBestGroupSizeForTargetBlocks(targetBlocks, stride, end);
 
       std::array<size_t, 3> num_index{};
@@ -61,7 +64,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       std::vector<char> taskDepend(totalDeps, false);
 
       // Function to compute the 1D index from 4D coordinates.
-      auto index = [=](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
+      auto index = [size0, size1, size2](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
         return ((col * size0 + xi) * size1 + yi) * size2 + zi;
       };
 
@@ -90,7 +93,11 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
                                                            yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
                   const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
-                  AUTOPAS_OPENMP(task depend(in : sameGroup, diffGroup) depend(out : currentTask)) {
+                  // Old clang compilers need firstprivate clause
+                  AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start) depend(in
+                                                                                     : sameGroup, diffGroup)
+                                     depend(out
+                                            : currentTask)) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
