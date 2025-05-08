@@ -50,8 +50,8 @@ if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
         ExternalProject_Add(
             utf8cpp_bundled
             PREFIX          ${CMAKE_CURRENT_BINARY_DIR}/utf8cpp
-            URL             ${PROJECT_SOURCE_DIR}/libs/utfcpp-3.1.1.zip
-            URL_HASH        MD5=a2cf6db2ee03ccdcf5308793400acfe1
+            URL             ${PROJECT_SOURCE_DIR}/libs/utfcpp-4.0.6.zip
+            URL_HASH        MD5=352a44ae1d2c655872774369b4b649bb
             BUILD_IN_SOURCE TRUE
             INSTALL_DIR     "install"
             CMAKE_ARGS      -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${UTFCPP_DIR}/install -DUTF8_TESTS=off -DUTF8_SAMPLES=off
