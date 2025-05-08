@@ -732,11 +732,9 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
  */
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   const unsigned int verletRebuildFrequency = 20;
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .selectorStrategy = autopas::options::SelectorStrategyOption::fastestMean,
-      .tuningInterval = 1000,
-      .maxSamples = 3
-  };
+  const autopas::AutoTunerInfo autoTunerInfo{.selectorStrategy = autopas::options::SelectorStrategyOption::fastestMean,
+                                             .tuningInterval = 1000,
+                                             .maxSamples = 3};
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   // Use configurations with N3, otherwise there are more calls to AoSFunctor
   const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
