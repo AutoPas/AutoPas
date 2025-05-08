@@ -51,11 +51,7 @@ mark_as_advanced(
     YAML_CPP_CLANG_FORMAT_EXE
 )
 
-FetchContent_GetProperties(yaml-cpp)
-if (NOT yaml-cpp_POPULATED)
-    FetchContent_Populate(yaml-cpp)
-    add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif ()
+FetchContent_MakeAvailable(yaml-cpp QUIET)
 
 # Disable warnings
 target_compile_options(yaml-cpp PRIVATE -w)
