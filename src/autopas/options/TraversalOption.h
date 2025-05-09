@@ -210,6 +210,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     hgrid_color_soa_cell,
     hgrid_test,
+    hgrid_test2,
+    hgrid_test3,
+    hgrid_test4,
+    hgrid_test5,
+    hgrid_test6,
     /**
      * Similar to hgrid_block but instead of fully waiting for a color to end to start the next color, openmp task with
      * dependencies is used. The basic idea is that if the cells with the previous color around the cell is computed,
@@ -369,11 +374,16 @@ class TraversalOption : public Option<TraversalOption> {
         // HierarchicalGrid Traversals:
         {TraversalOption::hgrid_color, "hgrid_color"},
         {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
-        {TraversalOption::hgrid_test, "hgrid_test"},
         {TraversalOption::hgrid_block_soa_cell, "hgrid_block_soa_cell"},
         {TraversalOption::hgrid_task_soa_cell, "hgrid_task_soa_cell"},
         {TraversalOption::hgrid_task, "hgrid_task"},
         {TraversalOption::hgrid_block, "hgrid_block"},
+        {TraversalOption::hgrid_test, "hgrid_test"},
+        {TraversalOption::hgrid_test2, "hgrid_test2"},
+        {TraversalOption::hgrid_test3, "hgrid_test3"},
+        {TraversalOption::hgrid_test4, "hgrid_test4"},
+        {TraversalOption::hgrid_test5, "hgrid_test5"},
+        {TraversalOption::hgrid_test6, "hgrid_test6"},
     };
   };
 

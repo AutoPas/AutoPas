@@ -9,11 +9,11 @@
 namespace autopas {
 
 template <class ParticleCell_T, class Functor_T>
-class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
+class HGTestTraversal5 : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
  public:
   using Particle = typename ParticleCell_T::ParticleType;
 
-  explicit HGTestTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGTestTraversal5(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _functor(functor) {}
 
   void traverseParticles() override {
@@ -79,7 +79,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test5; };
 
   [[nodiscard]] bool isApplicable() const override { return true; }
 

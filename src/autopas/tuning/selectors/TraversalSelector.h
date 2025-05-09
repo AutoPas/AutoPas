@@ -20,6 +20,11 @@
 #include "autopas/containers/linkedCells/traversals/HGTaskSoACellTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGTaskTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGTestTraversal.h"
+#include "autopas/containers/linkedCells/traversals/HGTestTraversal2.h"
+#include "autopas/containers/linkedCells/traversals/HGTestTraversal3.h"
+#include "autopas/containers/linkedCells/traversals/HGTestTraversal4.h"
+#include "autopas/containers/linkedCells/traversals/HGTestTraversal5.h"
+#include "autopas/containers/linkedCells/traversals/HGTestTraversal6.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -315,6 +320,21 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     }
     case TraversalOption::hgrid_test: {
       return std::make_unique<HGTestTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_test2: {
+      return std::make_unique<HGTestTraversal2<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_test3: {
+      return std::make_unique<HGTestTraversal3<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_test4: {
+      return std::make_unique<HGTestTraversal4<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_test5: {
+      return std::make_unique<HGTestTraversal5<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::hgrid_test6: {
+      return std::make_unique<HGTestTraversal6<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3);
     }
     case TraversalOption::hgrid_block_soa_cell: {
       return std::make_unique<HGBlockSoACellTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,

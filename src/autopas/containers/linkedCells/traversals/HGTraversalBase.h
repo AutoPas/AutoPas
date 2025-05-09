@@ -181,11 +181,11 @@ class HGTraversalBase : public TraversalInterface {
    */
   double getMinDistBetweenCellsSquared(const CellBlock &upperCB, const std::array<size_t, 3> &upperCell,
                                        const CellBlock &lowerCB, const std::array<size_t, 3> &lowerCell) {
-    const auto posX = upperCB.getCellBoundingBox(upperCell);
-    const auto posY = lowerCB.getCellBoundingBox(lowerCell);
+    const auto cellPos1 = upperCB.getCellBoundingBox(upperCell);
+    const auto cellPos2 = lowerCB.getCellBoundingBox(lowerCell);
     double totalDist = 0;
     for (size_t i = 0; i < 3; ++i) {
-      const auto dist = std::max(0.0, std::max(posX.first[i] - posY.second[i], posY.first[i] - posX.second[i]));
+      const auto dist = std::max(0.0, std::max(cellPos1.first[i] - cellPos2.second[i], cellPos2.first[i] - cellPos1.second[i]));
       totalDist += dist * dist;
     }
     return totalDist;
@@ -200,10 +200,10 @@ class HGTraversalBase : public TraversalInterface {
    */
   double getMinDistBetweenCellAndPointSquared(const CellBlock &CB, const std::array<size_t, 3> &cellIndex,
                                               const std::array<double, 3> &point) {
-    const auto posX = CB.getCellBoundingBox(cellIndex);
+    const auto cellPos = CB.getCellBoundingBox(cellIndex);
     double totalDist = 0;
     for (size_t i = 0; i < 3; ++i) {
-      const auto dist = std::max(0.0, std::max(posX.first[i] - point[i], point[i] - posX.second[i]));
+      const auto dist = std::max(0.0, std::max(cellPos.first[i] - point[i], point[i] - cellPos.second[i]));
       totalDist += dist * dist;
     }
     return totalDist;
@@ -271,6 +271,10 @@ class HGTraversalBase : public TraversalInterface {
       // We do not simply call computeInteractions() here as we want to store SoA after inter-level traversals are
       // computed. They will be loaded in HGTraversalBase::endTraversal().
       TraversalInterface *temp = this->_traversals[level].get();
+      // set actual halo region length of the traversal
+      // this will let traversal skip going through unnecessary halo cells
+      const double haloRegionLength = _cutoffs.back() + _skin;
+      temp->setHaloRegionLength(haloRegionLength);
       this->_levels->at(level)->prepareTraversal(temp);
       this->_traversals[level]->initTraversal();
       this->_traversals[level]->traverseParticles();
@@ -300,7 +304,6 @@ class HGTraversalBase : public TraversalInterface {
    * @param functor functor to apply
    * @param lowerLevel lower level index
    * @param interactionLengthSquared squared interaction length
-   * @param dir maximum range of the interaction, a 3d array where each element is equal to the interaction length
    * @param lowerBound lower bound of the coordinates of lower level cells that contain owned particles
    * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
    * @param distanceCheck if true, checks if the minimum distance between upper level particle and lower level cell is
@@ -311,6 +314,8 @@ class HGTraversalBase : public TraversalInterface {
                     Functor *functor, size_t lowerLevel, double interactionLengthSquared,
                     const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound,
                     bool distanceCheck) {
+    // can also use sorted cell optimization? need to be careful to sort only once per upper cell, to not sort for each
+    // particle in the upper cell
     using namespace autopas::utils::ArrayMath::literals;
     using utils::ArrayUtils::operator<<;
 
@@ -330,7 +335,7 @@ class HGTraversalBase : public TraversalInterface {
     for (auto p1Ptr = upperCell.begin(); p1Ptr != upperCell.end(); ++p1Ptr) {
       const std::array<double, 3> &pos = p1Ptr->getR();
       const double radius = p1Ptr->getSize() / 2;
-      const std::array<double, 3> interactionLength = lowerDir + std::array<double, 3>{radius, radius, radius};
+      const std::array<double, 3> interactionLength = lowerDir + radius;
       auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
       auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
       // skip halo cells if we need to consider only owned particles
@@ -367,7 +372,6 @@ class HGTraversalBase : public TraversalInterface {
    * @param functor functor to apply
    * @param lowerLevel lower level index
    * @param interactionLengthSquared squared interaction length
-   * @param dir maximum range of the interaction, a 3d array where each element is equal to the interaction length
    * @param lowerBound lower bound of the coordinates of lower level cells that contain owned particles
    * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
    * @param distanceCheck if true, checks if the minimum distance between upper level particle and lower level cell is
@@ -402,7 +406,7 @@ class HGTraversalBase : public TraversalInterface {
     for (int idx = 0; idx < upperCell.size(); ++idx) {
       const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
       const double radius = upperCell[idx].getSize() / 2;
-      const std::array<double, 3> interactionLength = lowerDir + std::array<double, 3>{radius, radius, radius};
+      const std::array<double, 3> interactionLength = lowerDir + radius;
       auto soaSingleParticle = soa.constructView(idx, idx + 1);
       auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
       auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
