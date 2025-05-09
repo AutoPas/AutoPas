@@ -108,9 +108,6 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                       if (lowerLevel == upperLevel) {
                         continue;
                       }
-                      const double interactionLength = this->getInteractionLength(lowerLevel, upperLevel);
-                      const double interactionLengthSquared = interactionLength * interactionLength;
-
                       // get cellBlocks of upper and lower levels
                       const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
 
@@ -128,10 +125,10 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                             }
                             if (this->_dataLayout == DataLayoutOption::aos) {
                               this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                 interactionLengthSquared, lowerBound, upperBound, false);
+                                                 lowerBound, upperBound, false);
                             } else {
                               this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor,
-                                                               lowerLevel, interactionLengthSquared, lowerBound,
+                                                               lowerLevel, lowerBound,
                                                                upperBound, false);
                             }
                           }

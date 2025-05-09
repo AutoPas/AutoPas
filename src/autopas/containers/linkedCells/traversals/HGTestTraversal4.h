@@ -37,6 +37,13 @@ class HGTestTraversal4 : public HGTraversalBase<ParticleCell_T>, public HGTraver
       const auto &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock();
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
+      std::vector<std::vector<std::tuple<int, int, int>>> offsets(levelLimit);
+      for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
+        if (lowerLevel == upperLevel) {
+          continue;
+        }
+        offsets[lowerLevel] = this->getOffsets(upperLevel, lowerLevel);
+      }
 
       // do the colored traversal
       const size_t numColors = stride_x * stride_y * stride_z;
@@ -54,8 +61,6 @@ class HGTestTraversal4 : public HGTraversalBase<ParticleCell_T>, public HGTraver
                 if (lowerLevel == upperLevel) {
                   continue;
                 }
-                const double interactionLength = this->getInteractionLength(lowerLevel, upperLevel);
-                const double interactionLengthSquared = interactionLength * interactionLength;
 
                 // get cellBlocks of upper and lower levels
                 const auto &lowerLevelCB = this->_levels->at(lowerLevel)->getCellBlock();
@@ -66,10 +71,10 @@ class HGTestTraversal4 : public HGTraversalBase<ParticleCell_T>, public HGTraver
                 upperBound -= lowerLevelCB.getCellsPerInteractionLength();
                 if (this->_dataLayout == DataLayoutOption::aos) {
                   this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                     interactionLengthSquared, lowerBound, upperBound, false);
+                                     lowerBound, upperBound, false);
                 } else {
-                  this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                   interactionLengthSquared, lowerBound, upperBound, false);
+                  this->SoATraversalParticleToCellUsingOffsets(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
+                                                   lowerBound, upperBound, offsets[lowerLevel]);
                 }
               }
             }

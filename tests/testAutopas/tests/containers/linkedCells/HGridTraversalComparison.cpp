@@ -384,7 +384,7 @@ std::unordered_map<autopas::InteractionTypeOption::Value, HGridTraversalComparis
          {30.,                              // deletionPercentage
           {100, 2000},                      // numParticles
           {200},                            // numHaloParticles
-          {{3., 3., 3.}, {10., 10., 10.}},  // boxMax
+          {{3., 3.5, 4.}, {10., 10., 10.}},  // boxMax
           {0.5, 1., 2.}}},                  // cellSizeFactor
 };
 
