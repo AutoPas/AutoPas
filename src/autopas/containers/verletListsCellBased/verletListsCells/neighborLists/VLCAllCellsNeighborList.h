@@ -147,7 +147,11 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle_T> {
 
     switch (vlcTraversalOpt) {
       case TraversalOption::vlc_c08:
-        // Go over all cells except the very last layer and create lists per base step.
+        // cellsPerDim includes halo cells, so outermost cells are halo.
+        // Only owned-halo interactions are needed, not halo-halo.
+        // c08 is forward-looking: halo base cells only interact with other halo cells -> can skip.
+        // Other traversals like C01 and C18 are backward-looking: halo base cells may interact with owned cells -> must
+        // keep.
         xEnd = cellsPerDim[0] - 1;
         yEnd = cellsPerDim[1] - 1;
         zEnd = cellsPerDim[2] - 1;
