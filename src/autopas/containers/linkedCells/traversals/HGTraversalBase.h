@@ -20,7 +20,14 @@ public:
   using Particle = typename ParticleCell_T::ParticleType;
 
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), _numLevels(0), _levels(nullptr), _skin(0), _maxDisplacement(0) {}
+      : TraversalInterface(dataLayout, useNewton3),
+        _numLevels(0),
+        _levels(nullptr),
+        _skin(0),
+        _maxDisplacement(0),
+        _stepsSinceLastRebuild(0),
+        _rebuildFrequency(1),
+        _nextNonEmpty() {}
 
   /**
    * Store HGrid data
@@ -33,7 +40,8 @@ public:
    * used
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs, double skin,
-                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency) {
+                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency,
+                 std::vector<std::vector<std::vector<std::vector<size_t>>>> *nextNonEmpty) {
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
     _levels = levels;
@@ -41,6 +49,7 @@ public:
     _maxDisplacement = maxDisplacement;
     _stepsSinceLastRebuild = stepsSinceLastRebuild;
     _rebuildFrequency = rebuildFrequency;
+    _nextNonEmpty = nextNonEmpty;
   }
 
 protected:
@@ -53,6 +62,8 @@ protected:
   unsigned int _rebuildFrequency;
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
+  // A vector to store the next non-empty cell in increasing x direction for each cell
+  std::vector<std::vector<std::vector<std::vector<size_t>>>> *_nextNonEmpty;
 
   using CellBlock = internal::CellBlock3D<FullParticleCell<Particle>>;
 
@@ -210,6 +221,24 @@ protected:
   }
 
   /**
+ *
+ * @param CB cell block that contains the cell
+ * @param cellIndex 1d cell index of cell belonging to first CellBlock3D
+ * @param point
+ * @return minimum distance between a cell and a point squared
+ */
+  double getMinDistBetweenCellAndPointSquared(const CellBlock &CB, const size_t cellIndex,
+                                              const std::array<double, 3> &point) {
+    const auto cellPos = CB.getCellBoundingBox(cellIndex);
+    double totalDist = 0;
+    for (size_t i = 0; i < 3; ++i) {
+      const auto dist = std::max(0.0, std::max(cellPos.first[i] - point[i], point[i] - cellPos.second[i]));
+      totalDist += dist * dist;
+    }
+    return totalDist;
+  }
+
+  /**
    *
    * @tparam T type of elements in arrays
    * @tparam SIZE size of arrays
@@ -295,6 +324,39 @@ protected:
     }
   }
 
+  void computeNextNonEmpty() {
+    this->_nextNonEmpty->resize(this->_levels.size());
+    for (size_t level = 0; level < this->_numLevels; level++) {
+      const auto dim = this->_levels[level]->getTraversalSelectorInfo().cellsPerDim;
+
+      if (this->_nextNonEmpty->at(level).empty()) {
+        // we need to allocate only on first function call
+        this->_nextNonEmpty->at(level) = std::vector<std::vector<std::vector<size_t>>>(
+            dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
+      }
+      const auto &cellBlock = this->_levels[level]->getCellBlock();
+      // calculate next non-empty cell in increasing x direction for each cell
+      AUTOPAS_OPENMP(parallel for collapse(2) schedule(static, 50))
+      for (size_t z = 0; z < dim[2]; ++z) {
+        for (size_t y = 0; y < dim[1]; ++y) {
+          // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
+          size_t index1D = utils::ThreeDimensionalMapping::threeToOneD({dim[0] - 1, y, z}, dim);
+          std::vector<size_t> &nextRef = this->_nextNonEmpty->at(level)[z][y];
+          nextRef[dim[0] - 1] = dim[0];
+          for (int x = dim[0] - 2; x >= 0; --x, --index1D) {
+            if (cellBlock.getCell(index1D).isEmpty()) {
+              // if the next cell is empty, set nextRef[x] to nextRef[x + 1]
+              nextRef[x] = nextRef[x + 1];
+            } else {
+              // if next cell is not empty, set nextRef[x] to x + 1 as it is the next non-empty cell
+              nextRef[x] = x + 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
   std::vector<std::tuple<int, int, int> > getOffsets(const size_t level, const size_t otherLevel) {
     std::vector<std::tuple<int, int, int> > ret{};
     const double interactionLength = getInteractionLength(level, otherLevel);
@@ -335,12 +397,10 @@ protected:
         );
 
         for (int x = 0; x <= xMax; ++x) {
-          // For (x,y,z) in the first octant, reflect across axes
-          for (int sx : {x == 0 ? 0 : -1, 1}) {
-            for (int sy : {y == 0 ? 0 : -1, 1}) {
-              for (int sz : {z == 0 ? 0 : -1, 1}) {
-                ret.emplace_back(sz * z, sy * y, sx * x);
-              }
+          // for x dimension, just store the max dist
+          for (int sy : {y == 0 ? 0 : -1, 1}) {
+            for (int sz : {z == 0 ? 0 : -1, 1}) {
+              ret.emplace_back(sz * z, sy * y, xMax);
             }
           }
         }
@@ -361,6 +421,7 @@ protected:
                                   const std::array<size_t, 3> &upperBound,
                                   const std::vector<std::tuple<int, int, int>> &offsets) {
     using namespace autopas::utils::ArrayMath::literals;
+    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
 
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
@@ -380,6 +441,8 @@ protected:
 
     const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+    int x_start, x_end;
+    size_t cellIndex1D;
 
     for (int idx = 0; idx < upperCell.size(); ++idx) {
       const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
@@ -393,17 +456,86 @@ protected:
         stopIndex3D = this->getMin(stopIndex3D, upperBound);
       }
       const auto cellIndex = lowerCB.get3DIndexOfPosition(pos);
-      for (auto [z, y, x]: offsets) {
+      for (auto [z, y, xRange]: offsets) {
         z += static_cast<int>(cellIndex[2]);
         y += static_cast<int>(cellIndex[1]);
-        x += static_cast<int>(cellIndex[0]);
-        if (z >= 0 && y >= 0 && x >= 0 && z >= startIndex3D[2] && z <= stopIndex3D[2] && y >= startIndex3D[1] &&
-            y <= stopIndex3D[1] && x >= startIndex3D[0] && x <= stopIndex3D[0]) {
-          const std::array<unsigned long, 3> lowerCellIndex =
-            {static_cast<unsigned long>(x), static_cast<unsigned long>(y), static_cast<unsigned long>(z)};
-          // 1 to n SoAFunctorPair
-          functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(lowerCellIndex)._particleSoABuffer,
-                                  this->_useNewton3);
+        if (z >= 0 && y >= 0 && z >= startIndex3D[2] && z <= stopIndex3D[2] && y >= startIndex3D[1] &&
+            y <= stopIndex3D[1]) {
+          x_start = static_cast<int>(cellIndex[0]) - xRange;
+          x_start = std::max(x_start, static_cast<int>(startIndex3D[0]));
+          x_end = static_cast<int>(cellIndex[0]) + xRange;
+          x_end = std::min(x_end, static_cast<int>(stopIndex3D[0]));
+          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(x_start), static_cast<size_t>(y), static_cast<size_t>(z)}, lowerLevelDims);
+          for (; x_start <= x_end; ++x_start, ++cellIndex1D) {
+            // 1 to n SoAFunctorPair
+            functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(cellIndex1D)._particleSoABuffer,
+                                    this->_useNewton3);
+          }
+        }
+      }
+    }
+  }
+
+  template <class Functor>
+  void SoATraversalParticleToCellUsingOffsetsDistCheck(const CellBlock &lowerCB, const CellBlock &upperCB,
+                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
+                                  const std::array<size_t, 3> &lowerBound,
+                                  const std::array<size_t, 3> &upperBound,
+                                  const std::vector<std::tuple<int, int, int>> &offsets) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
+
+    auto &upperCell = upperCB.getCell(upperCellCoords);
+    if (upperCell.isEmpty()) {
+      return;
+    }
+    // skip if cell is a halo cell and newton3 is disabled
+    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
+    if (isHalo && !this->_useNewton3) {
+      return;
+    }
+    // variable to determine if we are only interested in owned particles in the lower level
+    const bool containToOwnedOnly = isHalo && this->_useNewton3;
+    auto &soa = upperCell._particleSoABuffer;
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
+    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+    int x_start, x_end;
+    size_t cellIndex1D;
+
+    for (int idx = 0; idx < upperCell.size(); ++idx) {
+      const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
+      const double radius = upperCell[idx].getSize() / 2;
+      const std::array<double, 3> interactionLength = lowerDir + radius;
+      const double interactionLengthSquared = interactionLength[0] * interactionLength[0];
+      auto soaSingleParticle = soa.constructView(idx, idx + 1);
+      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
+      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
+      if (containToOwnedOnly) {
+        startIndex3D = this->getMax(startIndex3D, lowerBound);
+        stopIndex3D = this->getMin(stopIndex3D, upperBound);
+      }
+      const auto cellIndex = lowerCB.get3DIndexOfPosition(pos);
+      for (auto [z, y, xRange]: offsets) {
+        z += static_cast<int>(cellIndex[2]);
+        y += static_cast<int>(cellIndex[1]);
+        if (z >= 0 && y >= 0 && z >= startIndex3D[2] && z <= stopIndex3D[2] && y >= startIndex3D[1] &&
+            y <= stopIndex3D[1]) {
+          x_start = static_cast<int>(cellIndex[0]) - xRange;
+          x_start = std::max(x_start, static_cast<int>(startIndex3D[0]));
+          x_end = static_cast<int>(cellIndex[0]) + xRange;
+          x_end = std::min(x_end, static_cast<int>(stopIndex3D[0]));
+          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(x_start), static_cast<size_t>(y), static_cast<size_t>(z)}, lowerLevelDims);
+          for (; x_start <= x_end; ++x_start, ++cellIndex1D) {
+            if (getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) < interactionLengthSquared) {
+              // 1 to n SoAFunctorPair
+              functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(cellIndex1D)._particleSoABuffer,
+                                      this->_useNewton3);
+            }
+          }
         }
       }
     }
@@ -580,6 +712,7 @@ protected:
                                   const std::array<size_t, 3> &upperBound, bool distanceCheck) {
     using namespace autopas::utils::ArrayMath::literals;
 
+    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
       return;
@@ -598,6 +731,7 @@ protected:
 
     const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+    size_t cellIndex1D;
 
     for (int idx = 0; idx < upperCell.size(); ++idx) {
       const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
@@ -613,15 +747,15 @@ protected:
       }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
-            const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
+          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
+          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
             // skip if cell is farther than interactionLength
             if (distanceCheck and
-                this->getMinDistBetweenCellAndPointSquared(lowerCB, lowerCellIndex, pos) > interactionLengthSquared) {
+                this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
             }
             // 1 to n SoAFunctorPair
-            functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(lowerCellIndex)._particleSoABuffer,
+            functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(cellIndex1D)._particleSoABuffer,
                                     this->_useNewton3);
           }
         }
