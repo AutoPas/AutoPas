@@ -1380,7 +1380,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // which don't have an SoA interface.
   remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainer.stop();
   timerBufferSoAConversion.start();
 #endif
@@ -1393,7 +1393,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
       f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
     }
   }
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferSoAConversion.stop();
   timerPBufferPBuffer.start();
 #endif
@@ -1401,7 +1401,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // step 3. particleBuffer with itself and all other buffers
   remainderHelperBufferBuffer<newton3>(f, particleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferPBuffer.stop();
   timerPBufferHBuffer.start();
 #endif
@@ -1409,7 +1409,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // step 4. particleBuffer with haloParticleBuffer
   remainderHelperBufferHaloBuffer(f, particleBuffers, haloParticleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferHBuffer.stop();
 #endif
 
@@ -1428,13 +1428,11 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   for (const auto &buffer : haloParticleBuffers) {
     haloParticleBufferSize += buffer.size();
   }
-  AutoPasLog(INFO, "BufferContainer: {} particles, {} halo particles, {} buffers, {} halo buffers", particleBufferSize,
-             haloParticleBufferSize, particleBuffers.size(), haloParticleBuffers.size());
 
-  AutoPasLog(INFO, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime() / 1000000000.0);
-  AutoPasLog(INFO, "Timer PBuffers<-> PBuffer    (  3): {}", timerPBufferPBuffer.getTotalTime() / 1000000000.0);
-  AutoPasLog(INFO, "Timer PBuffers<-> HBuffer    (  4): {}", timerPBufferHBuffer.getTotalTime() / 1000000000.0);
-  AutoPasLog(INFO, "Timer Load and extract SoA buffers: {}", timerBufferSoAConversion.getTotalTime() / 1000000000.0);
+  AutoPasLog(TRACE, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer    (  3): {}", timerPBufferPBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer    (  4): {}", timerPBufferHBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Load and extract SoA buffers: {}", timerBufferSoAConversion.getTotalTime());
 
   // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }

@@ -26,22 +26,20 @@ public:
         _skin(0),
         _maxDisplacement(0),
         _stepsSinceLastRebuild(0),
-        _rebuildFrequency(1),
-        _nextNonEmpty() {}
+        _rebuildFrequency(1) {}
 
   /**
    * Store HGrid data
    * @param levels LinkedCells for each HGrid level
    * @param cutoffs cutoffs of each HGrid level
    * @param skin verlet skin of HGrid container
-   * @param nextNonEmpty A vector to store the x coordinate of next non-empty cell in increasing x direction for each
-   * cell
    * @param maxDisplacement maximum displacement of any particle in the container, ignored if dynamic containers is not
    * used
+   * @param stepsSinceLastRebuild number of time-steps since last rebuild
+   * @param rebuildFrequency frequency of rebuild
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs, double skin,
-                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency,
-                 std::vector<std::vector<std::vector<std::vector<size_t>>>> *nextNonEmpty) {
+                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency) {
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
     _levels = levels;
@@ -49,7 +47,6 @@ public:
     _maxDisplacement = maxDisplacement;
     _stepsSinceLastRebuild = stepsSinceLastRebuild;
     _rebuildFrequency = rebuildFrequency;
-    _nextNonEmpty = nextNonEmpty;
   }
 
 protected:
@@ -63,8 +60,6 @@ protected:
   const double distCheckRatio = 0.15;
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
-  // A vector to store the next non-empty cell in increasing x direction for each cell
-  std::vector<std::vector<std::vector<std::vector<size_t>>>> *_nextNonEmpty;
 
   using CellBlock = internal::CellBlock3D<FullParticleCell<Particle>>;
 
@@ -321,39 +316,6 @@ protected:
     }
   }
 
-  void computeNextNonEmpty() {
-    this->_nextNonEmpty->resize(this->_levels.size());
-    for (size_t level = 0; level < this->_numLevels; level++) {
-      const auto dim = this->_levels[level]->getTraversalSelectorInfo().cellsPerDim;
-
-      if (this->_nextNonEmpty->at(level).empty()) {
-        // we need to allocate only on first function call
-        this->_nextNonEmpty->at(level) = std::vector<std::vector<std::vector<size_t>>>(
-            dim[2], std::vector<std::vector<size_t>>(dim[1], std::vector<size_t>(dim[0])));
-      }
-      const auto &cellBlock = this->_levels[level]->getCellBlock();
-      // calculate next non-empty cell in increasing x direction for each cell
-      AUTOPAS_OPENMP(parallel for collapse(2) schedule(static, 50))
-      for (size_t z = 0; z < dim[2]; ++z) {
-        for (size_t y = 0; y < dim[1]; ++y) {
-          // calculate 1d index here to not convert from 3d to 1d every iteration of the loop below
-          size_t index1D = utils::ThreeDimensionalMapping::threeToOneD({dim[0] - 1, y, z}, dim);
-          std::vector<size_t> &nextRef = this->_nextNonEmpty->at(level)[z][y];
-          nextRef[dim[0] - 1] = dim[0];
-          for (int x = dim[0] - 2; x >= 0; --x, --index1D) {
-            if (cellBlock.getCell(index1D).isEmpty()) {
-              // if the next cell is empty, set nextRef[x] to nextRef[x + 1]
-              nextRef[x] = nextRef[x + 1];
-            } else {
-              // if next cell is not empty, set nextRef[x] to x + 1 as it is the next non-empty cell
-              nextRef[x] = x + 1;
-            }
-          }
-        }
-      }
-    }
-  }
-
   /**
    * Traverses a single upper level cell and a lower level cells that are in the interaction range using AoS.
    * @tparam Functor type of the functor
@@ -390,6 +352,7 @@ protected:
     const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
     size_t cellIndex1D;
+    std::array<size_t, 3> particleCellIndex3D;
     // variable to determine if we are only interested in owned particles in the lower level
     const bool containToOwnedOnly = isHalo && this->_useNewton3;
     for (auto p1Ptr = upperCell.begin(); p1Ptr != upperCell.end(); ++p1Ptr) {
@@ -404,6 +367,9 @@ protected:
         startIndex3D = this->getMax(startIndex3D, lowerBound);
         stopIndex3D = this->getMin(stopIndex3D, upperBound);
       }
+      if(distanceCheck) {
+        particleCellIndex3D = lowerCB.get3DIndexOfPosition(pos);
+      }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
           cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
@@ -417,73 +383,12 @@ protected:
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
             }
+            else if (distanceCheck and xl >= particleCellIndex3D[0]) {
+              break;
+            }
             for (auto &p : lowerCell) {
               functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
             }
-          }
-        }
-      }
-    }
-  }
-
-  template <class Functor>
-  void SoATraversalParticleToCellSkip(const CellBlock &lowerCB, const CellBlock &upperCB,
-                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel, size_t upperLevel,
-                                  const std::array<size_t, 3> &lowerBound,
-                                  const std::array<size_t, 3> &upperBound) {
-    using namespace autopas::utils::ArrayMath::literals;
-
-    bool distanceCheck = checkDistance(upperLevel, lowerLevel);
-    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
-    auto &upperCell = upperCB.getCell(upperCellCoords);
-    if (upperCell.isEmpty()) {
-      return;
-    }
-    // skip if cell is a halo cell and newton3 is disabled
-    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
-    if (isHalo && !this->_useNewton3) {
-      return;
-    }
-    // variable to determine if we are only interested in owned particles in the lower level
-    const bool containToOwnedOnly = isHalo && this->_useNewton3;
-    auto &soa = upperCell._particleSoABuffer;
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
-    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
-    size_t cellIndex1D, startCellIndex1D;
-
-    for (int idx = 0; idx < upperCell.size(); ++idx) {
-      const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
-      const double radius = upperCell[idx].getSize() / 2;
-      const std::array<double, 3> interactionLength = lowerDir + radius;
-      const double interactionLengthSquared = interactionLength[0] * interactionLength[0];
-      auto soaSingleParticle = soa.constructView(idx, idx + 1);
-      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
-      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
-      if (containToOwnedOnly) {
-        startIndex3D = this->getMax(startIndex3D, lowerBound);
-        stopIndex3D = this->getMin(stopIndex3D, upperBound);
-      }
-      for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
-        for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          startCellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
-          const auto &nextRef = this->_nextNonEmpty->at(lowerLevel)[zl][yl];
-          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
-            cellIndex1D = startCellIndex1D + xl - startIndex3D[0];
-            auto &lowerCell = lowerCB.getCell(cellIndex1D);
-            if (lowerCell.isEmpty()) {
-              continue;
-            }
-            // skip if cell is farther than interactionLength
-            if (distanceCheck and
-                this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
-              continue;
-            }
-            // 1 to n SoAFunctorPair
-            functor->SoAFunctorPair(soaSingleParticle, lowerCell._particleSoABuffer, this->_useNewton3);
           }
         }
       }
@@ -633,6 +538,9 @@ protected:
 
   /**
    * Finds the best group size for a given target number of blocks per color.
+   * The block size is selected so that the number of blocks per color is at least the target number, and the number of
+   * colors is the smallest possible. If there are two configurations with the same number of colors, the one with the
+   * highest number of blocks per color is selected.
    * A block is a unit of work that is assigned to a thread in an OpenMP loop.
    * A group of blocks of 3d size x,y,z will be assigned to a thread per openmp loop iteration.
    * @param targetBlocksPerColor The target number of blocks per color.
@@ -640,10 +548,11 @@ protected:
    * @param end The end coordinates for each dimension.
    * @return The best group size for the given target number of blocks per color.
    */
-  static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(long targetBlocksPerColor,
+  static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(int targetBlocksPerColor,
                                                                         const std::array<size_t, 3> &stride,
                                                                         const std::array<unsigned long, 3> &end) {
-    unsigned long smallestCriterion = 1e15;
+    unsigned long smallestNumColors = 1e15;
+    unsigned long largestBlocksPerColor = 0;
     std::array<size_t, 3> bestGroup = {1, 1, 1};
     for (size_t x_group = 1; x_group <= std::max(stride[0] - 1, static_cast<size_t>(1)); ++x_group)
       for (size_t y_group = 1; y_group <= std::max(stride[1] - 1, static_cast<size_t>(1)); ++y_group)
@@ -656,14 +565,13 @@ protected:
           }
           const size_t numColors = testStride[0] * testStride[1] * testStride[2];
           const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
-          const unsigned long criterion = numColors * std::abs(numBlocksPerColor - targetBlocksPerColor);
-          if (criterion < smallestCriterion) {
-            smallestCriterion = criterion;
+          if (numBlocksPerColor >= targetBlocksPerColor && (numColors < smallestNumColors || (
+              numColors == smallestNumColors && numBlocksPerColor > largestBlocksPerColor))) {
+            smallestNumColors = numColors;
+            largestBlocksPerColor = numBlocksPerColor;
             bestGroup = group;
           }
         }
-    AutoPasLog(INFO, "For block: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1],
-               bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
     return bestGroup;
   }
 
@@ -676,7 +584,7 @@ protected:
    * @param end The end coordinates for each dimension.
    * @return The best group size for the given target number of blocks per color.
    */
-  static std::array<size_t, 3> findBestGroupSizeForTargetBlocks(long targetBlocks, const std::array<size_t, 3> &stride,
+  static std::array<size_t, 3> findBestGroupSizeForTargetBlocks(int targetBlocks, const std::array<size_t, 3> &stride,
                                                                 const std::array<unsigned long, 3> &end) {
     unsigned long smallestCriterion = 1e15;
     std::array<size_t, 3> bestGroup = {1, 1, 1};
@@ -697,8 +605,6 @@ protected:
             bestGroup = group;
           }
         }
-    AutoPasLog(INFO, "For task: Best group: {} {} {}, stride: {} {} {}, end: {} {} {}", bestGroup[0], bestGroup[1],
-               bestGroup[2], stride[0], stride[1], stride[2], end[0], end[1], end[2]);
     return bestGroup;
   }
 };

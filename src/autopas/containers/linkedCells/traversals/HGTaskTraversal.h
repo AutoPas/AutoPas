@@ -19,8 +19,8 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
  public:
   using Particle = typename ParticleCell_T::ParticleType;
 
-  explicit HGTaskTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
-      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _functor(functor) {}
+  explicit HGTaskTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3, int taskMultiplier)
+      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _functor(functor), _taskMultiplier(taskMultiplier) {}
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -46,21 +46,21 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
-      const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * 64);
+      const int targetBlocks = autopas_get_max_threads() * _taskMultiplier;
       const std::array<size_t, 3> group = this->findBestGroupSizeForTargetBlocks(targetBlocks, stride, end);
 
-      std::array<size_t, 3> num_index{};
+      std::array<size_t, 3> blocksPerColorPerDim{};
       for (size_t i = 0; i < 3; i++) {
         stride[i] = 1 + static_cast<size_t>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
-        num_index[i] = (end[i] + (stride[i] * group[i]) - 1) / (stride[i] * group[i]);
+        blocksPerColorPerDim[i] = (end[i] + (stride[i] * group[i]) - 1) / (stride[i] * group[i]);
       }
       const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
       const size_t numColors = stride_x * stride_y * stride_z;
 
       // We need extra space as in the vector example
-      const size_t size0 = num_index[0] + 2;
-      const size_t size1 = num_index[1] + 2;
-      const size_t size2 = num_index[2] + 2;
+      const size_t size0 = blocksPerColorPerDim[0] + 2;
+      const size_t size1 = blocksPerColorPerDim[1] + 2;
+      const size_t size2 = blocksPerColorPerDim[2] + 2;
       const size_t numColorsPlusOne = numColors + 1;
 
       // Total number of dependency elements.
@@ -81,14 +81,16 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
         colorDiff[i] = startIndex[i] - startIndex[i - 1];
       }
       colorDiff[0] = {0, 0, 0};
+      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}", numColors, group[0], group[1], group[2],
+        blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2], blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
 
       // do the colored traversal
       AUTOPAS_OPENMP(parallel) {
         AUTOPAS_OPENMP(single) {
           for (size_t col = 1; col <= numColors; ++col) {
-            for (long zi = 1; zi <= num_index[2]; zi++) {
-              for (long yi = 1; yi <= num_index[1]; yi++) {
-                for (long xi = 1; xi <= num_index[0]; xi++) {
+            for (long zi = 1; zi <= blocksPerColorPerDim[2]; zi++) {
+              for (long yi = 1; yi <= blocksPerColorPerDim[1]; yi++) {
+                for (long xi = 1; xi <= blocksPerColorPerDim[0]; xi++) {
                   size_t z_start = startIndex[col - 1][2] * group[2] + ((zi - 1) * stride_z * group[2]);
                   size_t y_start = startIndex[col - 1][1] * group[1] + ((yi - 1) * stride_y * group[1]);
                   size_t x_start = startIndex[col - 1][0] * group[0] + ((xi - 1) * stride_x * group[0]);
@@ -144,12 +146,28 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_task; };
+  [[nodiscard]] TraversalOption getTraversalType() const override {
+    if (_taskMultiplier == 32) {
+      return TraversalOption::hgrid_task32;
+    }
+    else if (_taskMultiplier == 64) {
+      return TraversalOption::hgrid_task64;
+    }
+    else if (_taskMultiplier == 128) {
+      return TraversalOption::hgrid_task128;
+    }
+    else {
+      autopas::utils::ExceptionHandler::exception(
+          "hgrid_task multiplier is not 32, 64 or 128, taskMultiplier: {}", _taskMultiplier);
+      return TraversalOption::hgrid_task32;
+    }
+  };
 
   [[nodiscard]] bool isApplicable() const override { return true; }
 
  protected:
   Functor_T *_functor;
+  int _taskMultiplier;
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes

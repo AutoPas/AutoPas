@@ -19,8 +19,8 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
  public:
   using Particle = typename ParticleCell_T::ParticleType;
 
-  explicit HGBlockTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
-      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _functor(functor) {}
+  explicit HGBlockTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3, int blockMultiplier)
+      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _blockMultiplier(blockMultiplier), _functor(functor) {}
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -46,29 +46,30 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
-      const long targetBlocksPerColor =
-          static_cast<size_t>(autopas_get_max_threads() * sqrt(autopas_get_max_threads()));
+      const int targetBlocksPerColor = autopas_get_max_threads() * _blockMultiplier;
       const std::array<size_t, 3> group =
           this->findBestGroupSizeForTargetBlocksPerColor(targetBlocksPerColor, stride, end);
 
-      std::array<size_t, 3> num_index{};
+      std::array<size_t, 3> blocksPerColorPerDim{};
       // calculate openmp for loop bound and actual strides with new block length
       for (size_t i = 0; i < 3; i++) {
         stride[i] = 1 + static_cast<size_t>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
-        num_index[i] = (end[i] + (stride[i] * group[i]) - 1) / (stride[i] * group[i]);
+        blocksPerColorPerDim[i] = (end[i] + (stride[i] * group[i]) - 1) / (stride[i] * group[i]);
       }
       const size_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
       // do the colored traversal
       const size_t numColors = stride_x * stride_y * stride_z;
+      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}", numColors, group[0], group[1], group[2],
+        blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2]);
       AUTOPAS_OPENMP(parallel)
       for (size_t col = 0; col < numColors; ++col) {
         const std::array<size_t, 3> startIndex(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
 
         AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
-        for (size_t zi = 0; zi < num_index[2]; ++zi) {
-          for (size_t yi = 0; yi < num_index[1]; ++yi) {
-            for (size_t xi = 0; xi < num_index[0]; ++xi) {
+        for (size_t zi = 0; zi < blocksPerColorPerDim[2]; ++zi) {
+          for (size_t yi = 0; yi < blocksPerColorPerDim[1]; ++yi) {
+            for (size_t xi = 0; xi < blocksPerColorPerDim[0]; ++xi) {
               size_t start_z = startIndex[2] * group[2] + (zi * stride_z * group[2]);
               size_t start_y = startIndex[1] * group[1] + (yi * stride_y * group[1]);
               size_t start_x = startIndex[0] * group[0] + (xi * stride_x * group[0]);
@@ -109,11 +110,24 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     }
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_block; };
+  [[nodiscard]] TraversalOption getTraversalType() const override {
+    if (_blockMultiplier == 4) {
+      return TraversalOption::hgrid_block4;
+    }
+    else if (_blockMultiplier == 8) {
+      return TraversalOption::hgrid_block8;
+    }
+    else {
+      autopas::utils::ExceptionHandler::exception(
+          "hgrid_block multiplier is not 4 or 8, blockMultiplier: {}", _blockMultiplier);
+      return TraversalOption::hgrid_block4;
+    }
+  };
 
   [[nodiscard]] bool isApplicable() const override { return true; }
 
  protected:
+  int _blockMultiplier;
   Functor_T *_functor;
 
   /**

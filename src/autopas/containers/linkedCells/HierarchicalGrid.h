@@ -515,8 +515,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   const unsigned int _rebuildFrequency;
   std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
   std::vector<double> _cutoffs;
-  // A vector to store the next non-empty cell in increasing x direction for each cell
-  std::vector<std::vector<std::vector<std::vector<size_t>>>> _nextNonEmpty;
 
   /**
    *
@@ -547,7 +545,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
       hGridTraversal->setLevels(&_levels, _cutoffs, _skin, this->getMaxDisplacement(), this->_stepsSinceLastRebuild,
-                                _rebuildFrequency, &_nextNonEmpty);
+                                _rebuildFrequency);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",

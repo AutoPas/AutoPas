@@ -218,15 +218,20 @@ class TraversalOption : public Option<TraversalOption> {
     /**
      * Similar to hgrid_block but instead of fully waiting for a color to end to start the next color, openmp task with
      * dependencies is used. The basic idea is that if the cells with the previous color around the cell is computed,
-     * the cell with the next color can start computing.
+     * the cell with the next color can start computing. The numbers hgrid_taskX denote that the total number of
+     * OpenMP tasks should be as close to X * num_threads as possible.
      */
-    hgrid_task,
+    hgrid_task32,
+    hgrid_task64,
+    hgrid_task128,
     /**
      * Same as hgrid_color but to reduce number of colors and increase memory efficiency, instead of only 1 upper
      * level cell a block of cells is assigned to a thread at a time. The size of block is calculated dynamically
-     * by considering upper and lower cell lengths and number of threads.
+     * by considering upper and lower cell lengths and number of threads. The number of blocks per color is at least
+     * num_threads * 4 or 8, depending on the option.
      */
-    hgrid_block,
+    hgrid_block4,
+    hgrid_block8,
     /**
      * Same as hgrid_block but with SoA cell to cell functor.
      */
@@ -376,8 +381,11 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::hgrid_color_soa_cell, "hgrid_color_soa_cell"},
         {TraversalOption::hgrid_block_soa_cell, "hgrid_block_soa_cell"},
         {TraversalOption::hgrid_task_soa_cell, "hgrid_task_soa_cell"},
-        {TraversalOption::hgrid_task, "hgrid_task"},
-        {TraversalOption::hgrid_block, "hgrid_block"},
+        {TraversalOption::hgrid_task32, "hgrid_task32"},
+        {TraversalOption::hgrid_task64, "hgrid_task64"},
+        {TraversalOption::hgrid_task128, "hgrid_task128"},
+        {TraversalOption::hgrid_block4, "hgrid_block4"},
+        {TraversalOption::hgrid_block8, "hgrid_block8"},
         {TraversalOption::hgrid_test, "hgrid_test"},
         {TraversalOption::hgrid_test2, "hgrid_test2"},
         {TraversalOption::hgrid_test3, "hgrid_test3"},
