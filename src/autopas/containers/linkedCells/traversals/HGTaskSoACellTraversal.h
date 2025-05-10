@@ -129,7 +129,8 @@ class HGTaskSoACellTraversal : public HGTraversalBase<ParticleCell_T>, public HG
                               continue;
                             }
                             this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                         interactionLengthSquared, dir, lowerBound, upperBound, false);
+                                                         upperLevel, interactionLengthSquared, dir, lowerBound,
+                                                         upperBound);
                           }
                     }
                   }

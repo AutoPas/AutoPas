@@ -62,11 +62,11 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
                 lowerBound += lowerLevelCB.getCellsPerInteractionLength();
                 upperBound -= lowerLevelCB.getCellsPerInteractionLength();
                 if (this->_dataLayout == DataLayoutOption::aos) {
-                  this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                     lowerBound, upperBound, true);
+                  this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel, upperLevel,
+                                     lowerBound, upperBound);
                 } else {
                   this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                      lowerBound, upperBound, true);
+                                                    upperLevel, lowerBound, upperBound);
                 }
               }
             }

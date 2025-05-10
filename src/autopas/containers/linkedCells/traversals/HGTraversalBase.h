@@ -60,6 +60,7 @@ protected:
   double _maxDisplacement;
   unsigned int _stepsSinceLastRebuild;
   unsigned int _rebuildFrequency;
+  const double distCheckRatio = 0.15;
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
   // A vector to store the next non-empty cell in increasing x direction for each cell
@@ -84,6 +85,20 @@ protected:
   [[nodiscard]] double getInteractionLength(const size_t lowerLevel, const size_t upperLevel) const {
     const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
     return cutoff + currentSkin();
+  }
+
+  /**
+   * Check if ratio between two levels is small enough to consider checking distance of each cell to early break
+   * and not call functors.
+   * @param upperLevel The upper level index.
+   * @param lowerLevel The lower level index.
+   * @return True if the distance is small enough, false otherwise.
+   */
+  [[nodiscard]]
+  bool checkDistance(const size_t upperLevel, const size_t lowerLevel) const {
+    // size of the lower level cell divided by interactionLength
+    // We don't use cellLength because cellSizeFactor might have influenced it
+    return (_cutoffs[lowerLevel] + _skin) / getInteractionLength(lowerLevel, upperLevel) <= distCheckRatio;
   }
 
   [[nodiscard]] double currentSkin() const {
@@ -197,24 +212,6 @@ protected:
     double totalDist = 0;
     for (size_t i = 0; i < 3; ++i) {
       const auto dist = std::max(0.0, std::max(cellPos1.first[i] - cellPos2.second[i], cellPos2.first[i] - cellPos1.second[i]));
-      totalDist += dist * dist;
-    }
-    return totalDist;
-  }
-
-  /**
-   *
-   * @param CB cell block that contains the cell
-   * @param cellIndex 3d cell index of cell belonging to first CellBlock3D
-   * @param point
-   * @return minimum distance between a cell and a point squared
-   */
-  double getMinDistBetweenCellAndPointSquared(const CellBlock &CB, const std::array<size_t, 3> &cellIndex,
-                                              const std::array<double, 3> &point) {
-    const auto cellPos = CB.getCellBoundingBox(cellIndex);
-    double totalDist = 0;
-    for (size_t i = 0; i < 3; ++i) {
-      const auto dist = std::max(0.0, std::max(cellPos.first[i] - point[i], point[i] - cellPos.second[i]));
       totalDist += dist * dist;
     }
     return totalDist;
@@ -357,273 +354,6 @@ protected:
     }
   }
 
-  std::vector<std::tuple<int, int, int> > getOffsets(const size_t level, const size_t otherLevel) {
-    std::vector<std::tuple<int, int, int> > ret{};
-    const double interactionLength = getInteractionLength(level, otherLevel);
-    const double interactionLengthSquared = interactionLength * interactionLength;
-    const auto &otherLevelCB = this->_levels->at(otherLevel)->getCellBlock();
-    const auto &cellLength = otherLevelCB.getCellLength();
-    // precompute squared cell lengths
-    const std::array<double, 3> cl2 = {
-      cellLength[0] * cellLength[0],
-      cellLength[1] * cellLength[1],
-      cellLength[2] * cellLength[2]
-    };
-    // max distance in each dimension
-    const std::array<int, 3> maxDist = {
-      static_cast<int>(std::ceil(interactionLength / cellLength[0])),
-      static_cast<int>(std::ceil(interactionLength / cellLength[1])),
-      static_cast<int>(std::ceil(interactionLength / cellLength[2]))
-    };
-    // estimate reserve
-    ret.reserve((maxDist[0]+1)*(maxDist[1]+1)*(maxDist[2]+1)*5);
-
-    // Iterate only z>=0, y>=0, x>=0 region
-    for (int z = 0; z <= maxDist[2]; ++z) {
-      int distZ = std::max(0, z - 1);
-      double z2 = distZ*distZ*cl2[2];
-      if (z2 > interactionLengthSquared) break;
-
-      for (int y = 0; y <= maxDist[1]; ++y) {
-        int distY = std::max(0, y - 1);
-        double zy2 = z2 + distY*distY*cl2[1];
-        if (zy2 > interactionLengthSquared) break;
-
-        // max x for this (z,y)
-        double rem = interactionLengthSquared - zy2;
-        int xMax = std::min(
-            maxDist[0],
-            static_cast<int>(std::ceil(std::sqrt(rem / cl2[0])))
-        );
-
-        for (int x = 0; x <= xMax; ++x) {
-          // for x dimension, just store the max dist
-          for (int sy : {y == 0 ? 0 : -1, 1}) {
-            for (int sz : {z == 0 ? 0 : -1, 1}) {
-              ret.emplace_back(sz * z, sy * y, xMax);
-            }
-          }
-        }
-      }
-    }
-
-    // sort tuples and remove any duplicates (though
-    // there shouldn't be already, this is a safety net)
-    std::sort(ret.begin(), ret.end());
-    ret.erase(std::unique(ret.begin(), ret.end()), ret.end());
-    return ret;
-  }
-
-  template <class Functor>
-  void SoATraversalParticleToCellUsingOffsets(const CellBlock &lowerCB, const CellBlock &upperCB,
-                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
-                                  const std::array<size_t, 3> &lowerBound,
-                                  const std::array<size_t, 3> &upperBound,
-                                  const std::vector<std::tuple<int, int, int>> &offsets) {
-    using namespace autopas::utils::ArrayMath::literals;
-    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
-
-    auto &upperCell = upperCB.getCell(upperCellCoords);
-    if (upperCell.isEmpty()) {
-      return;
-    }
-    // skip if cell is a halo cell and newton3 is disabled
-    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
-    if (isHalo && !this->_useNewton3) {
-      return;
-    }
-    // variable to determine if we are only interested in owned particles in the lower level
-    const bool containToOwnedOnly = isHalo && this->_useNewton3;
-    auto &soa = upperCell._particleSoABuffer;
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
-    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
-    int x_start, x_end;
-    size_t cellIndex1D;
-
-    for (int idx = 0; idx < upperCell.size(); ++idx) {
-      const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
-      const double radius = upperCell[idx].getSize() / 2;
-      const std::array<double, 3> interactionLength = lowerDir + radius;
-      auto soaSingleParticle = soa.constructView(idx, idx + 1);
-      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
-      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
-      if (containToOwnedOnly) {
-        startIndex3D = this->getMax(startIndex3D, lowerBound);
-        stopIndex3D = this->getMin(stopIndex3D, upperBound);
-      }
-      const auto cellIndex = lowerCB.get3DIndexOfPosition(pos);
-      for (auto [z, y, xRange]: offsets) {
-        z += static_cast<int>(cellIndex[2]);
-        y += static_cast<int>(cellIndex[1]);
-        if (z >= 0 && y >= 0 && z >= startIndex3D[2] && z <= stopIndex3D[2] && y >= startIndex3D[1] &&
-            y <= stopIndex3D[1]) {
-          x_start = static_cast<int>(cellIndex[0]) - xRange;
-          x_start = std::max(x_start, static_cast<int>(startIndex3D[0]));
-          x_end = static_cast<int>(cellIndex[0]) + xRange;
-          x_end = std::min(x_end, static_cast<int>(stopIndex3D[0]));
-          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(x_start), static_cast<size_t>(y), static_cast<size_t>(z)}, lowerLevelDims);
-          for (; x_start <= x_end; ++x_start, ++cellIndex1D) {
-            // 1 to n SoAFunctorPair
-            functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(cellIndex1D)._particleSoABuffer,
-                                    this->_useNewton3);
-          }
-        }
-      }
-    }
-  }
-
-  template <class Functor>
-  void SoATraversalParticleToCellUsingOffsetsDistCheck(const CellBlock &lowerCB, const CellBlock &upperCB,
-                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
-                                  const std::array<size_t, 3> &lowerBound,
-                                  const std::array<size_t, 3> &upperBound,
-                                  const std::vector<std::tuple<int, int, int>> &offsets) {
-    using namespace autopas::utils::ArrayMath::literals;
-    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
-
-    auto &upperCell = upperCB.getCell(upperCellCoords);
-    if (upperCell.isEmpty()) {
-      return;
-    }
-    // skip if cell is a halo cell and newton3 is disabled
-    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
-    if (isHalo && !this->_useNewton3) {
-      return;
-    }
-    // variable to determine if we are only interested in owned particles in the lower level
-    const bool containToOwnedOnly = isHalo && this->_useNewton3;
-    auto &soa = upperCell._particleSoABuffer;
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
-    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
-    int x_start, x_end;
-    size_t cellIndex1D;
-
-    for (int idx = 0; idx < upperCell.size(); ++idx) {
-      const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
-      const double radius = upperCell[idx].getSize() / 2;
-      const std::array<double, 3> interactionLength = lowerDir + radius;
-      const double interactionLengthSquared = interactionLength[0] * interactionLength[0];
-      auto soaSingleParticle = soa.constructView(idx, idx + 1);
-      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
-      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
-      if (containToOwnedOnly) {
-        startIndex3D = this->getMax(startIndex3D, lowerBound);
-        stopIndex3D = this->getMin(stopIndex3D, upperBound);
-      }
-      const auto cellIndex = lowerCB.get3DIndexOfPosition(pos);
-      for (auto [z, y, xRange]: offsets) {
-        z += static_cast<int>(cellIndex[2]);
-        y += static_cast<int>(cellIndex[1]);
-        if (z >= 0 && y >= 0 && z >= startIndex3D[2] && z <= stopIndex3D[2] && y >= startIndex3D[1] &&
-            y <= stopIndex3D[1]) {
-          x_start = static_cast<int>(cellIndex[0]) - xRange;
-          x_start = std::max(x_start, static_cast<int>(startIndex3D[0]));
-          x_end = static_cast<int>(cellIndex[0]) + xRange;
-          x_end = std::min(x_end, static_cast<int>(stopIndex3D[0]));
-          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(x_start), static_cast<size_t>(y), static_cast<size_t>(z)}, lowerLevelDims);
-          for (; x_start <= x_end; ++x_start, ++cellIndex1D) {
-            if (getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) < interactionLengthSquared) {
-              // 1 to n SoAFunctorPair
-              functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(cellIndex1D)._particleSoABuffer,
-                                      this->_useNewton3);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  inline std::pair<size_t, size_t> getCellRange(const std::array<double, 3> &particlePos, const double interactionLengthSquared,
-      const CellBlock &CB, const std::array<size_t, 3> &cellIndex, size_t yl, size_t zl) {
-    const auto cellBoundaries = CB.getCellBoundingBox({0, yl, zl});
-    double distY, distZ;
-    if (yl  == cellIndex[1]) {
-      distY = 0;
-    } else {
-      distY = std::min(std::abs(cellBoundaries.first[1] - particlePos[1]), std::abs(cellBoundaries.second[1] - particlePos[1]));
-    }
-    if (zl == cellIndex[2]) {
-      distZ = 0;
-    } else {
-      distZ = std::min(std::abs(cellBoundaries.first[2] - particlePos[2]), std::abs(cellBoundaries.second[2] - particlePos[2]));
-    }
-    const double remainingLength = sqrt(interactionLengthSquared - distY * distY - distZ * distZ);
-    const int distInCells = std::ceil(remainingLength / CB.getCellLength()[0]);
-    size_t minIndex;
-    if (distInCells > cellIndex[0]) {
-      minIndex = 0;
-    }
-    else {
-      minIndex = cellIndex[0] - distInCells;
-    }
-    size_t maxIndex = cellIndex[0] + distInCells;
-    return {minIndex, maxIndex};
-  }
-
-  template <class Functor>
-  void SoATraversalParticleToCellUsingCellRange(const CellBlock &lowerCB, const CellBlock &upperCB,
-                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
-                                  const std::array<size_t, 3> &lowerBound,
-                                  const std::array<size_t, 3> &upperBound) {
-    using namespace autopas::utils::ArrayMath::literals;
-
-    auto &upperCell = upperCB.getCell(upperCellCoords);
-    if (upperCell.isEmpty()) {
-      return;
-    }
-    // skip if cell is a halo cell and newton3 is disabled
-    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
-    if (isHalo && !this->_useNewton3) {
-      return;
-    }
-    // variable to determine if we are only interested in owned particles in the lower level
-    const bool containToOwnedOnly = isHalo && this->_useNewton3;
-    auto &soa = upperCell._particleSoABuffer;
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
-    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
-
-    for (int idx = 0; idx < upperCell.size(); ++idx) {
-      const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
-      const double radius = upperCell[idx].getSize() / 2;
-      const std::array<double, 3> interactionLength = lowerDir + radius;
-      auto soaSingleParticle = soa.constructView(idx, idx + 1);
-      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
-      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
-      if (containToOwnedOnly) {
-        startIndex3D = this->getMax(startIndex3D, lowerBound);
-        stopIndex3D = this->getMin(stopIndex3D, upperBound);
-      }
-      const auto cellIndex = lowerCB.get3DIndexOfPosition(pos);
-      const auto il = lowerInteractionLength + radius;
-      const auto ilsq = il * il;
-      for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
-        for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          auto [start, end] = getCellRange(pos, ilsq, lowerCB, cellIndex, yl, zl);
-          start = std::max(start, startIndex3D[0]);
-          end = std::min(end, stopIndex3D[0]);
-          for (size_t xl = start; xl <= end; ++xl) {
-            const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
-            // 1 to n SoAFunctorPair
-            functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(lowerCellIndex)._particleSoABuffer,
-                                    this->_useNewton3);
-          }
-        }
-      }
-    }
-  }
-
   /**
    * Traverses a single upper level cell and a lower level cells that are in the interaction range using AoS.
    * @tparam Functor type of the functor
@@ -639,14 +369,15 @@ protected:
    */
   template <class Functor>
   void AoSTraversal(const CellBlock &lowerCB, const CellBlock &upperCB, const std::array<size_t, 3> upperCellCoords,
-                    Functor *functor, size_t lowerLevel,
-                    const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound,
-                    bool distanceCheck) {
+                    Functor *functor, size_t lowerLevel, size_t upperLevel,
+                    const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound) {
     // can also use sorted cell optimization? need to be careful to sort only once per upper cell, to not sort for each
     // particle in the upper cell
     using namespace autopas::utils::ArrayMath::literals;
     using utils::ArrayUtils::operator<<;
 
+    bool distanceCheck = checkDistance(upperLevel, lowerLevel);
+    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
       return;
@@ -658,6 +389,7 @@ protected:
     }
     const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+    size_t cellIndex1D;
     // variable to determine if we are only interested in owned particles in the lower level
     const bool containToOwnedOnly = isHalo && this->_useNewton3;
     for (auto p1Ptr = upperCell.begin(); p1Ptr != upperCell.end(); ++p1Ptr) {
@@ -674,14 +406,17 @@ protected:
       }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
-            const std::array<unsigned long, 3> lowerCellIndex = {xl, yl, zl};
-            // skip if cell is farther than interactionLength
-            if (distanceCheck and
-                this->getMinDistBetweenCellAndPointSquared(lowerCB, lowerCellIndex, pos) > interactionLengthSquared) {
+          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
+          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
+            auto &lowerCell = lowerCB.getCell(cellIndex1D);
+            if (lowerCell.isEmpty()) {
               continue;
             }
-            auto &lowerCell = lowerCB.getCell(lowerCellIndex);
+            // skip if cell is farther than interactionLength
+            if (distanceCheck and
+                this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
+              continue;
+            }
             for (auto &p : lowerCell) {
               functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
             }
@@ -690,6 +425,71 @@ protected:
       }
     }
   }
+
+  template <class Functor>
+  void SoATraversalParticleToCellSkip(const CellBlock &lowerCB, const CellBlock &upperCB,
+                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel, size_t upperLevel,
+                                  const std::array<size_t, 3> &lowerBound,
+                                  const std::array<size_t, 3> &upperBound) {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    bool distanceCheck = checkDistance(upperLevel, lowerLevel);
+    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
+    auto &upperCell = upperCB.getCell(upperCellCoords);
+    if (upperCell.isEmpty()) {
+      return;
+    }
+    // skip if cell is a halo cell and newton3 is disabled
+    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
+    if (isHalo && !this->_useNewton3) {
+      return;
+    }
+    // variable to determine if we are only interested in owned particles in the lower level
+    const bool containToOwnedOnly = isHalo && this->_useNewton3;
+    auto &soa = upperCell._particleSoABuffer;
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
+    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+    size_t cellIndex1D, startCellIndex1D;
+
+    for (int idx = 0; idx < upperCell.size(); ++idx) {
+      const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
+      const double radius = upperCell[idx].getSize() / 2;
+      const std::array<double, 3> interactionLength = lowerDir + radius;
+      const double interactionLengthSquared = interactionLength[0] * interactionLength[0];
+      auto soaSingleParticle = soa.constructView(idx, idx + 1);
+      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
+      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
+      if (containToOwnedOnly) {
+        startIndex3D = this->getMax(startIndex3D, lowerBound);
+        stopIndex3D = this->getMin(stopIndex3D, upperBound);
+      }
+      for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+        for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+          startCellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
+          const auto &nextRef = this->_nextNonEmpty->at(lowerLevel)[zl][yl];
+          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; xl = nextRef[xl]) {
+            cellIndex1D = startCellIndex1D + xl - startIndex3D[0];
+            auto &lowerCell = lowerCB.getCell(cellIndex1D);
+            if (lowerCell.isEmpty()) {
+              continue;
+            }
+            // skip if cell is farther than interactionLength
+            if (distanceCheck and
+                this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
+              continue;
+            }
+            // 1 to n SoAFunctorPair
+            functor->SoAFunctorPair(soaSingleParticle, lowerCell._particleSoABuffer, this->_useNewton3);
+          }
+        }
+      }
+    }
+  }
+
 
   /**
    * Traverses a single upper level cell and a lower level cells that are in the interaction range using SoA.
@@ -707,11 +507,12 @@ protected:
    */
   template <class Functor>
   void SoATraversalParticleToCell(const CellBlock &lowerCB, const CellBlock &upperCB,
-                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
+                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel, size_t upperLevel,
                                   const std::array<size_t, 3> &lowerBound,
-                                  const std::array<size_t, 3> &upperBound, bool distanceCheck) {
+                                  const std::array<size_t, 3> &upperBound) {
     using namespace autopas::utils::ArrayMath::literals;
 
+    bool distanceCheck = checkDistance(upperLevel, lowerLevel);
     const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
@@ -749,14 +550,17 @@ protected:
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
           cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
+            auto &lowerCell = lowerCB.getCell(cellIndex1D);
+            if (lowerCell.isEmpty()) {
+              continue;
+            }
             // skip if cell is farther than interactionLength
             if (distanceCheck and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
             }
             // 1 to n SoAFunctorPair
-            functor->SoAFunctorPair(soaSingleParticle, lowerCB.getCell(cellIndex1D)._particleSoABuffer,
-                                    this->_useNewton3);
+            functor->SoAFunctorPair(soaSingleParticle, lowerCell._particleSoABuffer, this->_useNewton3);
           }
         }
       }
@@ -781,12 +585,12 @@ protected:
    */
   template <class Functor>
   void SoATraversalCellToCell(const CellBlock &lowerCB, const CellBlock &upperCB,
-                              const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
+                              const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel, size_t upperLevel,
                               double interactionLengthSquared, const std::array<double, 3> dir,
-                              const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound,
-                              bool distanceCheck) {
+                              const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound) {
     using namespace autopas::utils::ArrayMath::literals;
 
+    bool distanceCheck = checkDistance(upperLevel, lowerLevel);
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
       return;
@@ -811,13 +615,17 @@ protected:
     for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
       for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
         for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl) {
+          auto &lowerCell = lowerCB.getCell({xl, yl, zl});
+          if (lowerCell.isEmpty()) {
+            continue;
+          }
           // skip if min distance between the two cells is bigger than interactionLength
           if (distanceCheck and this->getMinDistBetweenCellsSquared(upperCB, upperCellCoords, lowerCB, {xl, yl, zl}) >
                                     interactionLengthSquared) {
             continue;
           }
           // n to n SoAFunctorPair
-          functor->SoAFunctorPair(soa, lowerCB.getCell({xl, yl, zl})._particleSoABuffer, this->_useNewton3);
+          functor->SoAFunctorPair(soa, lowerCell._particleSoABuffer, this->_useNewton3);
         }
       }
     }

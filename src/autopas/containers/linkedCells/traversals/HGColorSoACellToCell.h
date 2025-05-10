@@ -72,8 +72,8 @@ class HGColorSoACellToCell : public HGTraversalBase<ParticleCell_T>, public HGTr
                 std::array<size_t, 3> lowerBound = {0, 0, 0}, upperBound = lowerLevelCB.getCellsPerDimensionWithHalo();
                 lowerBound += lowerLevelCB.getCellsPerInteractionLength();
                 upperBound -= lowerLevelCB.getCellsPerInteractionLength();
-                this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                             interactionLengthSquared, dir, lowerBound, upperBound, false);
+                this->SoATraversalCellToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel, upperLevel,
+                                             interactionLengthSquared, dir, lowerBound, upperBound);
               }
             }
           }
