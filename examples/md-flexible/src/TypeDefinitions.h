@@ -8,10 +8,16 @@
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+#include "proliferatingCellCollectivesLibrary/SpherocylinderCell.h"
+#include "proliferatingCellCollectivesLibrary/SpherocylinderCellFunctor.h"
+#else
+
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+#endif
 #endif
 
 #else
@@ -49,7 +55,11 @@ using FloatPrecision = double;
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+using ParticleType = pccLib::SpherocylinderCell;
+#else
 using ParticleType = mdLib::MultisiteMoleculeLJ;
+#endif
 #else
 using ParticleType = mdLib::MoleculeLJ;
 #endif
@@ -122,6 +132,15 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+/**
+ * Type of LJFunctorTypeDEM used in md-flexible.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+using PCCFunctor = pccLib::SpherocylinderCellFunctor;
+#endif
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
