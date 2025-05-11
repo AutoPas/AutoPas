@@ -180,8 +180,6 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   return {
       TraversalOption::lc_c01_combined_SoA,
       TraversalOption::lc_c04_combined_SoA,
-      TraversalOption::hgrid_block_soa_cell,
-      TraversalOption::hgrid_task_soa_cell,
   };
 };
 

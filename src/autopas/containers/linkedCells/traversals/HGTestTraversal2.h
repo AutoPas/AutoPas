@@ -33,6 +33,7 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
       }
       // calculate stride for current level
       std::array<size_t, 3> stride = this->computeStride(upperLevel);
+      AutoPasLog(INFO, "Actual stride {} {} {}", stride[0], stride[1], stride[2]);
 
       const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
 
@@ -40,8 +41,8 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
       // only look top-down if newton3 is enabled, both ways otherwise
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
-      const int targetBlocks = autopas_get_max_threads() * 32;
-      const std::array<size_t, 3> group = this->findBestGroupSizeForTargetBlocks(targetBlocks, stride, end);
+      const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * 64);
+      const std::array<size_t, 3> group = {2, 2, 2};
 
       std::array<size_t, 3> blocksPerColorPerDim{};
       for (size_t i = 0; i < 3; i++) {
@@ -62,8 +63,6 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
 
       // Create a contiguous dependency array.
       std::vector<char> taskDepend(totalDeps, false);
-      char *taskDependPtr = taskDepend.data();
-      std::vector<char> colorDepend(numColors + 2, false);
 
       // Function to compute the 1D index from 4D coordinates.
       auto index = [size0, size1, size2](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
@@ -75,15 +74,17 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
       startIndex = this->oneToThreeDForStartSnakyPattern(stride);
       for (int i = 1; i < numColors; i++) {
         colorDiff[i] = startIndex[i] - startIndex[i - 1];
+        assert(utils::ArrayMath::dot(colorDiff[i], colorDiff[i]) == 1);
       }
       colorDiff[0] = {0, 0, 0};
+      AutoPasLog(INFO, "New stride {} {} {}", stride_x, stride_y, stride_z);
       AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}",
                  numColors, group[0], group[1], group[2],
                  blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2],
                  blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
 
       // do the colored traversal
-      AUTOPAS_OPENMP(parallel) {
+      AUTOPAS_OPENMP(parallel num_threads(2)) {
         AUTOPAS_OPENMP(single) {
           for (size_t col = 1; col <= numColors; ++col) {
             for (long zi = 1; zi <= blocksPerColorPerDim[2]; zi++) {
@@ -99,12 +100,13 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
                   const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
                                                            yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
                   const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
-                  const auto &colorTwoBefore = colorDepend[col - 1];
                   // Old clang compilers need firstprivate clause
-                  AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start)
-                                     depend(in
-                                            : sameGroup, diffGroup, colorTwoBefore) depend(out
-                                                                                           : currentTask)) {
+                  AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start) depend(in
+                                                                                     : sameGroup, diffGroup)
+                                     depend(out
+                                            : currentTask)) {
+                    AutoPasLog(INFO, "Thread {}, UpperLevel {}, col {}, x_start {}, y_start {}, z_start {}",
+                               autopas_get_thread_num(), upperLevel, col, x_start, y_start, z_start);
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
@@ -137,20 +139,13 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
                 }
               }
             }
-            const int startIndex = index(col, 1, 1, 1);
-            const int endIndex = index(col, blocksPerColorPerDim[0], blocksPerColorPerDim[1], blocksPerColorPerDim[2]);
-            const int length = endIndex - startIndex + 1;
-            const auto &currentColor = colorDepend[col + 1];
-            const auto &prevColor = colorDepend[col];
-            AUTOPAS_OPENMP(task depend(in : taskDependPtr [startIndex:length], prevColor) depend(out : currentColor)) {
-              // do nothing
-            }
           }
           AUTOPAS_OPENMP(taskwait)
         }
       }
     }
   }
+
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgrid_test2; };
 
   [[nodiscard]] bool isApplicable() const override { return true; }

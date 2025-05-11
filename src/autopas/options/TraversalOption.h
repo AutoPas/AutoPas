@@ -224,14 +224,6 @@ class TraversalOption : public Option<TraversalOption> {
     hgrid_task32,
     hgrid_task64,
     hgrid_task128,
-    /**
-     * Same as hgrid_block but with SoA cell to cell functor.
-     */
-    hgrid_block_soa_cell,
-    /**
-     * Same as hgrid_task but with SoA cell to cell functor.
-     */
-    hgrid_task_soa_cell,
   };
 
   /**
@@ -369,8 +361,6 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::ot_c01, "ot_c01"},
 
         // HierarchicalGrid Traversals:
-        {TraversalOption::hgrid_block_soa_cell, "hgrid_block_soa_cell"},
-        {TraversalOption::hgrid_task_soa_cell, "hgrid_task_soa_cell"},
         {TraversalOption::hgrid_task32, "hgrid_task32"},
         {TraversalOption::hgrid_task64, "hgrid_task64"},
         {TraversalOption::hgrid_task128, "hgrid_task128"},

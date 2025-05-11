@@ -13,9 +13,7 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGBlockSoACellTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGBlockTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGTaskSoACellTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGTaskTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGTestTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGTestTraversal2.h"
@@ -330,14 +328,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     case TraversalOption::hgrid_test6: {
       return std::make_unique<HGTestTraversal6<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
                                                                                useNewton3);
-    }
-    case TraversalOption::hgrid_block_soa_cell: {
-      return std::make_unique<HGBlockSoACellTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
-                                                                                      useNewton3);
-    }
-    case TraversalOption::hgrid_task_soa_cell: {
-      return std::make_unique<HGTaskSoACellTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
-                                                                                     useNewton3);
     }
     case TraversalOption::hgrid_block4: {
       return std::make_unique<HGBlockTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3,
