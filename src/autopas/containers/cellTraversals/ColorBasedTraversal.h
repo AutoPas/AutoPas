@@ -84,7 +84,6 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
     }
   }
 
-
   void setHaloRegionLength(const double haloRegionLength) override {
     for (unsigned int d = 0; d < 3; d++) {
       _haloRegionLength[d] = std::ceil(haloRegionLength / _cellLength[d]);
