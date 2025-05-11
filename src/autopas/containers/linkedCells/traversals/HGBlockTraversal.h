@@ -13,7 +13,18 @@
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
-
+/**
+ * For each level, LCC08Traversal is used. For the cross-level interactions, for each level x only smaller levels
+ * are iterated (newton3 on only). The cells on level x are iterated with colors (dynamic color count based on ratio
+ * of cell lengths between level x and y) so that the cells on the lower level y
+ * that are considered for each cell on level x do not intersect.
+ * To reduce number of colors and increase memory efficiency, instead of only 1 upper
+ * level cell a block of cells is assigned to a thread at a time. The size of block is calculated dynamically
+ * by considering upper and lower cell lengths and number of threads. The number of blocks per color is at least
+ * num_threads * 4 or 8, depending on the option.
+ * @tparam ParticleCell_T type of Particle cell
+ * @tparam Functor_T type of Functor
+ */
 template <class ParticleCell_T, class Functor_T>
 class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
  public:
@@ -60,8 +71,8 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
 
       // do the colored traversal
       const size_t numColors = stride_x * stride_y * stride_z;
-      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}", numColors, group[0], group[1], group[2],
-        blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2]);
+      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}", numColors, group[0],
+                 group[1], group[2], blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2]);
       AUTOPAS_OPENMP(parallel)
       for (size_t col = 0; col < numColors; ++col) {
         const std::array<size_t, 3> startIndex(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
@@ -94,10 +105,10 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
                       }
                       if (this->_dataLayout == DataLayoutOption::aos) {
                         this->AoSTraversal(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel, upperLevel,
-                                            lowerBound, upperBound);
+                                           lowerBound, upperBound);
                       } else {
                         this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor, lowerLevel,
-                                                          upperLevel, lowerBound, upperBound);
+                                                         upperLevel, lowerBound, upperBound);
                       }
                     }
                   }
@@ -113,13 +124,11 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
   [[nodiscard]] TraversalOption getTraversalType() const override {
     if (_blockMultiplier == 4) {
       return TraversalOption::hgrid_block4;
-    }
-    else if (_blockMultiplier == 8) {
+    } else if (_blockMultiplier == 8) {
       return TraversalOption::hgrid_block8;
-    }
-    else {
-      autopas::utils::ExceptionHandler::exception(
-          "hgrid_block multiplier is not 4 or 8, blockMultiplier: {}", _blockMultiplier);
+    } else {
+      autopas::utils::ExceptionHandler::exception("hgrid_block multiplier is not 4 or 8, blockMultiplier: {}",
+                                                  _blockMultiplier);
       return TraversalOption::hgrid_block4;
     }
   };

@@ -41,7 +41,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
       const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * 64);
-      const std::array<size_t, 3> group = {1,1,1};
+      const std::array<size_t, 3> group = {1, 1, 1};
 
       std::array<size_t, 3> blocksPerColorPerDim{};
       for (size_t i = 0; i < 3; i++) {
@@ -75,8 +75,10 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
         colorDiff[i] = startIndex[i] - startIndex[i - 1];
       }
       colorDiff[0] = {0, 0, 0};
-      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}", numColors, group[0], group[1], group[2],
-        blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2], blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
+      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}",
+                 numColors, group[0], group[1], group[2],
+                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2],
+                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
 
       // do the colored traversal
       AUTOPAS_OPENMP(parallel) {
@@ -124,8 +126,7 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                                                  upperLevel, lowerBound, upperBound);
                             } else {
                               this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor,
-                                                               lowerLevel, upperLevel, lowerBound,
-                                                               upperBound);
+                                                               lowerLevel, upperLevel, lowerBound, upperBound);
                             }
                           }
                     }

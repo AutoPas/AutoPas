@@ -13,7 +13,14 @@
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
-
+/**
+ * Similar to hgrid_block but instead of fully waiting for a color to end to start the next color, openmp task with
+ * dependencies is used. The basic idea is that if the cells with the previous color around the cell is computed,
+ * the cell with the next color can start computing. The numbers hgrid_taskX denote that the total number of
+ * OpenMP tasks should be as close to X * num_threads as possible.
+ * @tparam ParticleCell_T type of Particle cell
+ * @tparam Functor_T type of Functor
+ */
 template <class ParticleCell_T, class Functor_T>
 class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
  public:
@@ -81,8 +88,10 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
         colorDiff[i] = startIndex[i] - startIndex[i - 1];
       }
       colorDiff[0] = {0, 0, 0};
-      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}", numColors, group[0], group[1], group[2],
-        blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2], blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
+      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}",
+                 numColors, group[0], group[1], group[2],
+                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2],
+                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
 
       // do the colored traversal
       AUTOPAS_OPENMP(parallel) {
@@ -130,8 +139,7 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                                                  upperLevel, lowerBound, upperBound);
                             } else {
                               this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor,
-                                                               lowerLevel, upperLevel, lowerBound,
-                                                               upperBound);
+                                                               lowerLevel, upperLevel, lowerBound, upperBound);
                             }
                           }
                     }
@@ -149,16 +157,13 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
   [[nodiscard]] TraversalOption getTraversalType() const override {
     if (_taskMultiplier == 32) {
       return TraversalOption::hgrid_task32;
-    }
-    else if (_taskMultiplier == 64) {
+    } else if (_taskMultiplier == 64) {
       return TraversalOption::hgrid_task64;
-    }
-    else if (_taskMultiplier == 128) {
+    } else if (_taskMultiplier == 128) {
       return TraversalOption::hgrid_task128;
-    }
-    else {
-      autopas::utils::ExceptionHandler::exception(
-          "hgrid_task multiplier is not 32, 64 or 128, taskMultiplier: {}", _taskMultiplier);
+    } else {
+      autopas::utils::ExceptionHandler::exception("hgrid_task multiplier is not 32, 64 or 128, taskMultiplier: {}",
+                                                  _taskMultiplier);
       return TraversalOption::hgrid_task32;
     }
   };

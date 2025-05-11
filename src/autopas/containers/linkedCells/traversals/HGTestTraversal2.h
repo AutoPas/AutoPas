@@ -33,6 +33,7 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
       }
       // calculate stride for current level
       std::array<size_t, 3> stride = this->computeStride(upperLevel);
+      AutoPasLog(INFO, "Actual stride {} {} {}", stride[0], stride[1], stride[2]);
 
       const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
 
@@ -41,7 +42,7 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
       const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
       const long targetBlocks = static_cast<unsigned long>(autopas_get_max_threads() * 64);
-      const std::array<size_t, 3> group = {2,2,2};
+      const std::array<size_t, 3> group = {2, 2, 2};
 
       std::array<size_t, 3> blocksPerColorPerDim{};
       for (size_t i = 0; i < 3; i++) {
@@ -75,11 +76,13 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
         colorDiff[i] = startIndex[i] - startIndex[i - 1];
       }
       colorDiff[0] = {0, 0, 0};
-      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}", numColors, group[0], group[1], group[2],
-        blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2], blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
+      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}",
+                 numColors, group[0], group[1], group[2],
+                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2],
+                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
 
       // do the colored traversal
-      AUTOPAS_OPENMP(parallel) {
+      AUTOPAS_OPENMP(parallel num_threads(2)) {
         AUTOPAS_OPENMP(single) {
           for (size_t col = 1; col <= numColors; ++col) {
             for (long zi = 1; zi <= blocksPerColorPerDim[2]; zi++) {
@@ -100,6 +103,8 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
                                                                                      : sameGroup, diffGroup)
                                      depend(out
                                             : currentTask)) {
+                    AutoPasLog(INFO, "Thread {}, UpperLevel {}, col {}, x_start {}, y_start {}, z_start {}",
+                               autopas_get_thread_num(), upperLevel, col, x_start, y_start, z_start);
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
@@ -124,8 +129,7 @@ class HGTestTraversal2 : public HGTraversalBase<ParticleCell_T>, public HGTraver
                                                  upperLevel, lowerBound, upperBound);
                             } else {
                               this->SoATraversalParticleToCell(lowerLevelCB, upperLevelCB, {x, y, z}, _functor,
-                                                               lowerLevel, upperLevel, lowerBound,
-                                                               upperBound);
+                                                               lowerLevel, upperLevel, lowerBound, upperBound);
                             }
                           }
                     }

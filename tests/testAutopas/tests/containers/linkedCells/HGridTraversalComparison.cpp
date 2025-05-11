@@ -381,11 +381,11 @@ auto HGridTraversalComparison::getTestParams() {
 std::unordered_map<autopas::InteractionTypeOption::Value, HGridTraversalComparison::TraversalTestParams>
     HGridTraversalComparison::params = {
         {autopas::InteractionTypeOption::pairwise,
-         {30.,                              // deletionPercentage
-          {100, 2000},                      // numParticles
-          {200},                            // numHaloParticles
+         {30.,                               // deletionPercentage
+          {100, 2000},                       // numParticles
+          {200},                             // numHaloParticles
           {{3., 3.5, 4.}, {10., 10., 10.}},  // boxMax
-          {0.5, 1., 2.}}},                  // cellSizeFactor
+          {0.5, 1., 2.}}},                   // cellSizeFactor
 };
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridTraversalComparison,

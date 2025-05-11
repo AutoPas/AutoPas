@@ -16,7 +16,7 @@ namespace autopas {
  */
 template <class ParticleCell_T>
 class HGTraversalBase : public TraversalInterface {
-public:
+ public:
   using Particle = typename ParticleCell_T::ParticleType;
 
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
@@ -49,7 +49,7 @@ public:
     _rebuildFrequency = rebuildFrequency;
   }
 
-protected:
+ protected:
   size_t _numLevels;
   std::vector<std::unique_ptr<LinkedCells<Particle>>> *_levels;
   std::vector<double> _cutoffs;
@@ -89,8 +89,7 @@ protected:
    * @param lowerLevel The lower level index.
    * @return True if the distance is small enough, false otherwise.
    */
-  [[nodiscard]]
-  bool checkDistance(const size_t upperLevel, const size_t lowerLevel) const {
+  [[nodiscard]] bool checkDistance(const size_t upperLevel, const size_t lowerLevel) const {
     // size of the lower level cell divided by interactionLength
     // We don't use cellLength because cellSizeFactor might have influenced it
     return (_cutoffs[lowerLevel] + _skin) / getInteractionLength(lowerLevel, upperLevel) <= distCheckRatio;
@@ -206,19 +205,20 @@ protected:
     const auto cellPos2 = lowerCB.getCellBoundingBox(lowerCell);
     double totalDist = 0;
     for (size_t i = 0; i < 3; ++i) {
-      const auto dist = std::max(0.0, std::max(cellPos1.first[i] - cellPos2.second[i], cellPos2.first[i] - cellPos1.second[i]));
+      const auto dist =
+          std::max(0.0, std::max(cellPos1.first[i] - cellPos2.second[i], cellPos2.first[i] - cellPos1.second[i]));
       totalDist += dist * dist;
     }
     return totalDist;
   }
 
   /**
- *
- * @param CB cell block that contains the cell
- * @param cellIndex 1d cell index of cell belonging to first CellBlock3D
- * @param point
- * @return minimum distance between a cell and a point squared
- */
+   *
+   * @param CB cell block that contains the cell
+   * @param cellIndex 1d cell index of cell belonging to first CellBlock3D
+   * @param point
+   * @return minimum distance between a cell and a point squared
+   */
   double getMinDistBetweenCellAndPointSquared(const CellBlock &CB, const size_t cellIndex,
                                               const std::array<double, 3> &point) {
     const auto cellPos = CB.getCellBoundingBox(cellIndex);
@@ -331,8 +331,8 @@ protected:
    */
   template <class Functor>
   void AoSTraversal(const CellBlock &lowerCB, const CellBlock &upperCB, const std::array<size_t, 3> upperCellCoords,
-                    Functor *functor, size_t lowerLevel, size_t upperLevel,
-                    const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound) {
+                    Functor *functor, size_t lowerLevel, size_t upperLevel, const std::array<size_t, 3> &lowerBound,
+                    const std::array<size_t, 3> &upperBound) {
     // can also use sorted cell optimization? need to be careful to sort only once per upper cell, to not sort for each
     // particle in the upper cell
     using namespace autopas::utils::ArrayMath::literals;
@@ -367,12 +367,13 @@ protected:
         startIndex3D = this->getMax(startIndex3D, lowerBound);
         stopIndex3D = this->getMin(stopIndex3D, upperBound);
       }
-      if(distanceCheck) {
+      if (distanceCheck) {
         particleCellIndex3D = lowerCB.get3DIndexOfPosition(pos);
       }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
+          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+              {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
             auto &lowerCell = lowerCB.getCell(cellIndex1D);
             if (lowerCell.isEmpty()) {
@@ -382,8 +383,7 @@ protected:
             if (distanceCheck and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
-            }
-            else if (distanceCheck and xl >= particleCellIndex3D[0]) {
+            } else if (distanceCheck and xl >= particleCellIndex3D[0]) {
               break;
             }
             for (auto &p : lowerCell) {
@@ -394,7 +394,6 @@ protected:
       }
     }
   }
-
 
   /**
    * Traverses a single upper level cell and a lower level cells that are in the interaction range using SoA.
@@ -412,11 +411,10 @@ protected:
    */
   template <class Functor>
   void SoATraversalParticleToCell(const CellBlock &lowerCB, const CellBlock &upperCB,
-                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel, size_t upperLevel,
-                                  const std::array<size_t, 3> &lowerBound,
+                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
+                                  size_t upperLevel, const std::array<size_t, 3> &lowerBound,
                                   const std::array<size_t, 3> &upperBound) {
     using namespace autopas::utils::ArrayMath::literals;
-
     bool distanceCheck = checkDistance(upperLevel, lowerLevel);
     const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
     auto &upperCell = upperCB.getCell(upperCellCoords);
@@ -453,7 +451,8 @@ protected:
       }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD({static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
+          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+              {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
             auto &lowerCell = lowerCB.getCell(cellIndex1D);
             if (lowerCell.isEmpty()) {
@@ -490,8 +489,8 @@ protected:
    */
   template <class Functor>
   void SoATraversalCellToCell(const CellBlock &lowerCB, const CellBlock &upperCB,
-                              const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel, size_t upperLevel,
-                              double interactionLengthSquared, const std::array<double, 3> dir,
+                              const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
+                              size_t upperLevel, double interactionLengthSquared, const std::array<double, 3> dir,
                               const std::array<size_t, 3> &lowerBound, const std::array<size_t, 3> &upperBound) {
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -565,8 +564,9 @@ protected:
           }
           const size_t numColors = testStride[0] * testStride[1] * testStride[2];
           const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
-          if (numBlocksPerColor >= targetBlocksPerColor && (numColors < smallestNumColors || (
-              numColors == smallestNumColors && numBlocksPerColor > largestBlocksPerColor))) {
+          if (numBlocksPerColor >= targetBlocksPerColor &&
+              (numColors < smallestNumColors ||
+               (numColors == smallestNumColors && numBlocksPerColor > largestBlocksPerColor))) {
             smallestNumColors = numColors;
             largestBlocksPerColor = numBlocksPerColor;
             bestGroup = group;
