@@ -75,6 +75,8 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
 
       // Create a contiguous dependency array.
       std::vector<char> taskDepend(totalDeps, false);
+      char *taskDependPtr = taskDepend.data();
+      std::vector<char> colorDepend(numColors + 2, false);
 
       // Function to compute the 1D index from 4D coordinates.
       auto index = [size0, size1, size2](size_t col, size_t xi, size_t yi, size_t zi) -> size_t {
@@ -110,11 +112,12 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   const auto &diffGroup = taskDepend[index(col - 1, xi + colorDiff[col - 1][0],
                                                            yi + colorDiff[col - 1][1], zi + colorDiff[col - 1][2])];
                   const auto &currentTask = taskDepend[index(col, xi, yi, zi)];
+                  const auto &colorTwoBefore = colorDepend[col - 1];
                   // Old clang compilers need firstprivate clause
-                  AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start) depend(in
-                                                                                     : sameGroup, diffGroup)
-                                     depend(out
-                                            : currentTask)) {
+                  AUTOPAS_OPENMP(task firstprivate(z_start, y_start, x_start)
+                                     depend(in
+                                            : sameGroup, diffGroup, colorTwoBefore) depend(out
+                                                                                           : currentTask)) {
                     for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
                       if (lowerLevel == upperLevel) {
                         continue;
@@ -146,6 +149,17 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                   }
                 }
               }
+            }
+            const int startIndexColor = index(col, 1, 1, 1);
+            const int endIndexColor =
+                index(col, blocksPerColorPerDim[0], blocksPerColorPerDim[1], blocksPerColorPerDim[2]);
+            const int length = endIndexColor - startIndexColor + 1;
+            const auto &currentColor = colorDepend[col + 1];
+            const auto &prevColor = colorDepend[col];
+            AUTOPAS_OPENMP(task depend(in
+                                       : taskDependPtr [startIndexColor:length], prevColor) depend(out
+                                                                                                   : currentColor)) {
+              // do nothing
             }
           }
           AUTOPAS_OPENMP(taskwait)
