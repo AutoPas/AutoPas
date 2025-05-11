@@ -57,7 +57,9 @@ class HGTraversalBase : public TraversalInterface {
   double _maxDisplacement;
   unsigned int _stepsSinceLastRebuild;
   unsigned int _rebuildFrequency;
-  const double distCheckRatio = 0.15;
+  // the ratio between cutoffs of levels from which point distance should be checked before checking distance of particles
+  // can do particle to level specific instead of level to level specific in the future
+  const double distCheckRatio = 0.2;
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
 
@@ -113,14 +115,14 @@ class HGTraversalBase : public TraversalInterface {
    * @param level The hierarchy level to compute the stride for.
    * @return The stride for each dimension.
    */
-  std::array<size_t, 3> computeStride(const size_t level) {
+  std::array<size_t, 3> computeStride(const size_t level, const bool topDown = true) {
     const std::array<double, 3> levelLength = this->_levels->at(level)->getTraversalSelectorInfo().cellLength;
     std::array<size_t, 3> stride{1, 1, 1};
     for (size_t otherLevel = 0; otherLevel < this->_numLevels; ++otherLevel) {
       if (otherLevel == level) {
         continue;
       }
-      if (this->_useNewton3 && otherLevel >= level) {
+      if (this->_useNewton3 && ( (otherLevel >= level && topDown) || (otherLevel <= level && !topDown))) {
         continue;
       }
       const double interactionLength = this->getInteractionLength(level, otherLevel);
@@ -436,6 +438,7 @@ class HGTraversalBase : public TraversalInterface {
     const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
     size_t cellIndex1D;
+    std::array<size_t, 3> particleCellIndex3D;
 
     for (int idx = 0; idx < upperCell.size(); ++idx) {
       const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
@@ -448,6 +451,9 @@ class HGTraversalBase : public TraversalInterface {
       if (containToOwnedOnly) {
         startIndex3D = this->getMax(startIndex3D, lowerBound);
         stopIndex3D = this->getMin(stopIndex3D, upperBound);
+      }
+      if (distanceCheck) {
+        particleCellIndex3D = lowerCB.get3DIndexOfPosition(pos);
       }
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
@@ -462,6 +468,9 @@ class HGTraversalBase : public TraversalInterface {
             if (distanceCheck and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
+            }
+            else if (distanceCheck and xl >= particleCellIndex3D[0]) {
+              break;
             }
             // 1 to n SoAFunctorPair
             functor->SoAFunctorPair(soaSingleParticle, lowerCell._particleSoABuffer, this->_useNewton3);

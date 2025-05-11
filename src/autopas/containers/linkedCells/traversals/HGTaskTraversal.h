@@ -90,10 +90,10 @@ class HGTaskTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
         colorDiff[i] = startIndex[i] - startIndex[i - 1];
       }
       colorDiff[0] = {0, 0, 0};
-      AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}",
-                 numColors, group[0], group[1], group[2],
-                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2],
-                 blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
+      // AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}, num_tasks: {}",
+      //            numColors, group[0], group[1], group[2],
+      //            blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2],
+      //            blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2] * numColors);
 
       // do the colored traversal
       AUTOPAS_OPENMP(parallel) {

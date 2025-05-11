@@ -288,7 +288,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     traversal->initTraversal();
     traversal->traverseParticles();
     traversal->endTraversal();
-    // AutoPasLog(INFO, toString());
+    //AutoPasLog(INFO, toString());
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {

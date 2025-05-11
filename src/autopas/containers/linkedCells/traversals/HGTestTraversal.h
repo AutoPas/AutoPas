@@ -25,20 +25,19 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
     if (this->_numLevels == 1) {
       return;
     }
+    const bool topDown = false;
     // computeInteractions across different levels
     for (size_t upperLevel = 0; upperLevel < this->_numLevels; upperLevel++) {
-      if (this->_useNewton3 && upperLevel == 0) {
+      if (this->_useNewton3 && upperLevel == this->_numLevels - 1) {
         // skip the first level as we go top-down only with newton3
         continue;
       }
       // calculate stride for current level
-      std::array<size_t, 3> stride = this->computeStride(upperLevel);
+      std::array<size_t, 3> stride = this->computeStride(upperLevel, false);
 
       const auto end = this->getTraversalSelectorInfo(upperLevel).cellsPerDim;
 
       const auto &upperLevelCB = this->_levels->at(upperLevel)->getCellBlock();
-      // only look top-down if newton3 is enabled, both ways otherwise
-      const size_t levelLimit = this->_useNewton3 ? upperLevel : this->_numLevels;
 
       const int targetBlocks = autopas_get_max_threads() * 32;
       const std::array<size_t, 3> group = this->findBestGroupSizeForTargetBlocks(targetBlocks, stride, end);
@@ -105,7 +104,10 @@ class HGTestTraversal : public HGTraversalBase<ParticleCell_T>, public HGTravers
                                      depend(in
                                             : sameGroup, diffGroup, colorTwoBefore) depend(out
                                                                                            : currentTask)) {
-                    for (size_t lowerLevel = 0; lowerLevel < levelLimit; lowerLevel++) {
+                    for (size_t lowerLevel = 0; lowerLevel < this->_numLevels; lowerLevel++) {
+                      if (this->_useNewton3 && ( (lowerLevel >= upperLevel && topDown) || (lowerLevel <= upperLevel && !topDown))) {
+                        continue;
+                      }
                       if (lowerLevel == upperLevel) {
                         continue;
                       }
