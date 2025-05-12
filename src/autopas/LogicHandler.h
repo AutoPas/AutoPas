@@ -1299,9 +1299,10 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerTotal.stop();
 
   AutoPasLog(INFO,
-             "ComputeInteractions: {}s, container {}, traversal {}, stepsSinceRebuild {}, CellSizeFactor {}, newton3 "
+             "ComputeInteractions: {}s, total: {}s, container {}, traversal {}, stepsSinceRebuild {}, CellSizeFactor {}, newton3 "
              "{}, dataLayout {}",
              timerComputeInteractions.getTotalTime() / 1000000000.0,
+             timerTotal.getTotalTime() / 1000000000.0,
              _containerSelector.getCurrentContainer().getContainerType().to_string(),
              traversal.getTraversalType().to_string(), _stepsSinceLastListRebuild,
              autoTuner.getCurrentConfig().cellSizeFactor, newton3, dataLayout.to_string());

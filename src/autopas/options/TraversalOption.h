@@ -197,12 +197,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vvl_as_built,
     // HierarchicalGrid Traversals:
-    hgrid_test,
-    hgrid_test2,
-    hgrid_test3,
-    hgrid_test4,
-    hgrid_test5,
-    hgrid_test6,
     /**
      * For each level, LCC08Traversal is used. For the cross-level interactions, for each level x only smaller levels
      * are iterated (newton3 on only). The cells on level x are iterated with colors (dynamic color count based on ratio
@@ -366,12 +360,6 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::hgrid_task128, "hgrid_task128"},
         {TraversalOption::hgrid_block4, "hgrid_block4"},
         {TraversalOption::hgrid_block8, "hgrid_block8"},
-        {TraversalOption::hgrid_test, "hgrid_test"},
-        {TraversalOption::hgrid_test2, "hgrid_test2"},
-        {TraversalOption::hgrid_test3, "hgrid_test3"},
-        {TraversalOption::hgrid_test4, "hgrid_test4"},
-        {TraversalOption::hgrid_test5, "hgrid_test5"},
-        {TraversalOption::hgrid_test6, "hgrid_test6"},
     };
   };
 
