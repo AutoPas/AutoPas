@@ -8,9 +8,9 @@
 
 #include <sys/stat.h>
 
+#include <list>
 #include <numeric>
 #include <utility>
-#include <list>
 
 #ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/OutputMapper.h"
@@ -269,10 +269,10 @@ FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
 
     // Translation
     TranslationVisitor visitor;
-    auto fuzzy_rule_program =
-      std::any_cast<std::tuple<std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<LinguisticVariable>>,
-                         std::map<std::string, std::shared_ptr<OutputMapper>>,
-                         std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>>(visitor.visit(tree));
+    auto fuzzy_rule_program = std::any_cast<
+        std::tuple<std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<LinguisticVariable>>,
+                   std::map<std::string, std::shared_ptr<OutputMapper>>,
+                   std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>>(visitor.visit(tree));
 
     return fuzzy_rule_program;
   } catch (const std::exception &e) {

@@ -189,9 +189,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
    * @param ctx The parser context.
    * @return The std::any containing the parsed AST result.
    */
-  std::any visitProperty_value(RuleLanguageParser::Property_valueContext *ctx) override {
-    return visitChildren(ctx);
-  }
+  std::any visitProperty_value(RuleLanguageParser::Property_valueContext *ctx) override { return visitChildren(ctx); }
 
   /**
    * Returns the list with the given name in the already parsed program.
@@ -275,7 +273,8 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   std::any visitStatement(RuleLanguageParser::StatementContext *ctx) override {
     auto res = visitChildren(ctx);
     if (res.type() == typeid(std::shared_ptr<Define>)) {
-      parserContext.definitions[any_cast<std::shared_ptr<Define>>(res)->variable] = any_cast<std::shared_ptr<Define>>(res).get();
+      parserContext.definitions[any_cast<std::shared_ptr<Define>>(res)->variable] =
+          any_cast<std::shared_ptr<Define>>(res).get();
     } else if (res.type() == typeid(std::shared_ptr<DefineList>)) {
       parserContext.lists[any_cast<std::shared_ptr<DefineList>>(res)->listName] =
           any_cast<std::shared_ptr<DefineList>>(res).get();

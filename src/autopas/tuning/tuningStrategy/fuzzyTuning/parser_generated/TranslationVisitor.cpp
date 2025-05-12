@@ -30,7 +30,8 @@ antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileC
   }
 
   // get the configuration mappings
-  const auto outputMapping = any_cast<std::map<std::string, std::shared_ptr<OutputMapper>>>(visit(context->output_mapping()));
+  const auto outputMapping =
+      any_cast<std::map<std::string, std::shared_ptr<OutputMapper>>>(visit(context->output_mapping()));
 
   // get the fuzzy rules
   for (auto *fuzzy_ruleContext : context->fuzzy_rule()) {
@@ -45,7 +46,7 @@ antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileC
     const auto dimensions = rule.getConsequent()->getCrispSet()->getDimensions();
     if (dimensions.size() != 1) {
       utils::ExceptionHandler::exception("Only rules with one dimensional output are supported! Rule: " +
-                                                  std::string(rule));
+                                         std::string(rule));
     }
     const auto output_domain = dimensions.begin()->first;
 
@@ -76,7 +77,7 @@ antlrcpp::Any TranslationVisitor::visitLinguistic_variable(FuzzyLanguageParser::
   // get the name and range of the linguistic variable
   const auto linguisticTerm = context->STRING()->getText();
   const std::pair<double, double> range = {std::stod(context->NUMBER(0)->getText()),
-                                     std::stod(context->NUMBER(1)->getText())};
+                                           std::stod(context->NUMBER(1)->getText())};
 
   auto linguisticVariable = std::make_shared<LinguisticVariable>(linguisticTerm, range);
 
@@ -165,7 +166,8 @@ antlrcpp::Any TranslationVisitor::visitOutput_entry(FuzzyLanguageParser::Output_
   std::vector<std::pair<double, std::vector<ConfigurationPattern>>> mappings;
 
   for (size_t i = 0; i < context->pattern_mapping().size(); ++i) {
-    const auto mapping = any_cast<std::pair<double, std::vector<ConfigurationPattern>>>(visit(context->pattern_mapping(i)));
+    const auto mapping =
+        any_cast<std::pair<double, std::vector<ConfigurationPattern>>>(visit(context->pattern_mapping(i)));
     mappings.push_back(mapping);
   }
 
