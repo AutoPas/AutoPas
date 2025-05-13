@@ -376,7 +376,6 @@ bool AutoTuner::isStartOfTuningPhase() const {
 }
 
 void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
-
   // first tuning iteration -> send statistics to tuning strategies and reset _homogeneitiesOfLastTenIterations and
   // _maxDensitiesOfLastTenIterations.
   if (isStartOfTuningPhase() and _needsHomogeneityAndMaxDensity) {
@@ -402,7 +401,8 @@ void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
 
     if (_forceRetune) {
       // If we have sent statistics because of a forced retune, throw a warning
-      AutoPasLog(WARN, "Due to a forced retune, domain similarity statistics, used by at least one tuning strategy, may"
+      AutoPasLog(WARN,
+                 "Due to a forced retune, domain similarity statistics, used by at least one tuning strategy, may"
                  "not be correct.");
     }
   }
@@ -415,9 +415,7 @@ bool AutoTuner::needsHomogeneityAndMaxDensity() const {
          _iteration % _tuningInterval > _tuningInterval - numIterationsForHomogeneity;
 }
 
-bool AutoTuner::needsLiveInfo() const {
-  return isStartOfTuningPhase() and _needsLiveInfo;
-}
+bool AutoTuner::needsLiveInfo() const { return isStartOfTuningPhase() and _needsLiveInfo; }
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 
