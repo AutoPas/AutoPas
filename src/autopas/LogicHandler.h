@@ -1851,7 +1851,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
         });
   } else {
     // Gather density statistics (if needed)
-    if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
+    if (autoTuner.needsHomogeneityAndMaxDensity()) {
       // Gather homogeneity and max density
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();

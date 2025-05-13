@@ -408,7 +408,7 @@ void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
   }
 }
 
-bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
+bool AutoTuner::needsHomogeneityAndMaxDensity() const {
   // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
   constexpr size_t numIterationsForHomogeneity = 10;
   return _needsHomogeneityAndMaxDensity and

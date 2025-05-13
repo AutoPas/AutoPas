@@ -97,7 +97,7 @@ class AutoTuner {
    * sendDomainSimilarityStatisticsAtStartOfTuningPhase().
    * @return
    */
-  bool needsHomogeneityAndMaxDensityBeforePrepare() const;
+  bool needsHomogeneityAndMaxDensity() const;
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
