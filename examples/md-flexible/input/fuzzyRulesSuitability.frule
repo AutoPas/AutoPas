@@ -3,8 +3,11 @@
 
 # WARNING: This frule file was developed using data from the deactivated CoolMUC2 cluster, which used a rather old
 # architecture and may not be relevant on modern architectures. Furthermore, since the frule file was written, the
-# LiveInfo statistic "homogeneity" and "maxDensity" were removed. As such, this file is remains to provide an example 
-of a frule file, but may not be performant.
+# LiveInfo statistic "homogeneity" and "maxDensity" were removed. This file remains only to provide an example of a
+# frule file and therefore is simply the original file generated using the approach above with all rules reffering to
+# "homogeneity" and "maxDensity" blindly removed. Therefore, do not expect this file to be performant and any comparison
+# to the data-driven fuzzy rules approach will be flawed if you do not generate new data and a new rule file. See the
+# above repository for details on how to do so.
 
 # The file describes a unique fuzzy system for each possible configuration. Each fuzzy system then tries to predict the
 # suitability of the corresponding configuration. The suitability is a value between 0 and 1, where 0 means that the
