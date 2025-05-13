@@ -35,43 +35,35 @@ class SpherocylinderCellFunctor : public autopas::PairwiseFunctor<Spherocylinder
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
 
-  // For demonstration, we use length as a proxy for density.
-  // In a real implementation, add a density member to SpherocylinderCell.
-
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
     if (i.isDummy() or j.isDummy()) return;
 
     auto collisionInfo = i.getCollisionInfo(j);
 
     if (collisionInfo) {
-      auto [overlap, normal, contactPoint] = collisionInfo.value();
+      auto [overlap, normal, qci, qcj] = collisionInfo.value();
 
-      // TODO: friction parameter
-      double FRICTION = 15;
+      double stressPenalty = 5 * (exp(overlap) - 1);
 
-      // TODO better stress model
-      double stressPenalty = exp(overlap) - exp(-0.5);
+      double E = 4e6;
+      double rc = 1;
+      double tc = 0.5;
+      double drag = 200;
+
+      std::array<double, 3> forceVector = normal * ((E * tc / (drag)) * std::pow(overlap, 1.5));
+
+      double Li = (i.getLength() / rc);
+      std::array<double, 3> torquei = cross(qci - i.getR(), forceVector);
+      i.addF(forceVector * (1 / Li));
+      i.addTorque(torquei * (12 / std::pow(Li, 3)));
       i.setStress(i.getStress() + stressPenalty);
+
       if (newton3) {
+        double Lj = (j.getLength() / rc);
+        std::array<double, 3> torquej = cross(qcj - j.getR(), forceVector);
+        j.subF(forceVector * (1 / Lj));
+        j.addTorque(torquej * (12 / std::pow(Lj, 3)));
         j.setStress(j.getStress() + stressPenalty);
-      }
-
-      // Calculate the force vector based on overlap and normal (use friction parameter)
-      std::array<double, 3> forceVector = normal * (FRICTION * std::pow(overlap, 1.5));
-      i.setF(i.getF() + forceVector);
-      if (newton3) {
-        j.setF(j.getF() - forceVector);
-      }
-
-      // Calculate the torque based on the contact point and normal
-      std::array<double, 3> r1 = contactPoint - i.getR();
-      std::array<double, 3> torque1 = cross(r1, forceVector);
-      i.setTorque(i.getTorque() + torque1);
-
-      if (newton3) {
-        std::array<double, 3> r2 = contactPoint - j.getR();
-        std::array<double, 3> torque2 = cross(r2, forceVector * (-1.0));
-        j.setTorque(j.getTorque() - torque2);
       }
     }
   }

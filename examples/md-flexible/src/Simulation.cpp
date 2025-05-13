@@ -279,17 +279,11 @@ void Simulation::run() {
     }
 
 #ifdef MD_FLEXIBLE_FUNCTOR_PCC
-    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setStress(0);
-    }
-#endif
-
-    updateInteractionForces();
-
-#ifdef MD_FLEXIBLE_FUNCTOR_PCC
     std::vector<ParticleType> newParticles;
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->grow(_configuration.deltaT.value, 30, 0.03);
+      particle->grow(_configuration.deltaT.value, 0.005, 0.05);
+      particle->setStress(0);
+
       auto newParticle = particle->divide();
 
       if (newParticle) {
@@ -300,6 +294,8 @@ void Simulation::run() {
       _autoPasContainer->addParticle(particle);
     }
 #endif
+
+    updateInteractionForces();
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag

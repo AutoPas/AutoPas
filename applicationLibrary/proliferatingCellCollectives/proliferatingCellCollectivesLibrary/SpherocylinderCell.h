@@ -41,11 +41,12 @@ class SpherocylinderCell : public mdLib::MultisiteMoleculeLJ {
    * @param angularVelocity Initial angular velocity (3D vector)
    * @param quaternion Initial orientation (quaternion, 4D)
    * @param length0 Initial length
+   * @param stress Initial stress
    * @param moleculeId Molecule ID
    */
   SpherocylinderCell(const std::array<double, 3> &position, const std::array<double, 3> &linearVelocity,
                      const std::array<double, 3> &angularVelocity, const std::array<double, 4> &quaternion,
-                     double length0, unsigned long moleculeId);
+                     double length0, double stress, unsigned long moleculeId);
   /**
    * @brief Destructor.
    */
@@ -262,10 +263,11 @@ class SpherocylinderCell : public mdLib::MultisiteMoleculeLJ {
   /**
    * @brief Calculate collision information between this spherocylinder and another.
    * @param other The other spherocylinder to check collision with
-   * @return Optional tuple containing (overlap amount, collision normal, contact point) if collision exists
+   * @return Optional tuple containing (overlap amount, collision normal, minimum distance point on this, minimum
+   * distance point on other) if collision exists
    */
-  std::optional<std::tuple<double, std::array<double, 3>, std::array<double, 3>>> getCollisionInfo(
-      const SpherocylinderCell &other) const;
+  std::optional<std::tuple<double, std::array<double, 3>, std::array<double, 3>, std::array<double, 3>>>
+  getCollisionInfo(const SpherocylinderCell &other) const;
 
   /** @brief Get the stress. */
   double getStress() const { return _stress; }
@@ -304,29 +306,5 @@ class SpherocylinderCell : public mdLib::MultisiteMoleculeLJ {
   /** @brief Type identifier for the cell */
   size_t _typeId = 0;
 };
-
-/**
- * @brief Helper: minimum distance between 3D line segments.
- *
- * Calculates the minimum distance between two line segments in 3D space, with optional clamping
- * at endpoints. This is used for collision detection between spherocylinders.
- * @param a0 First endpoint of segment A
- * @param a1 Second endpoint of segment A
- * @param b0 First endpoint of segment B
- * @param b1 Second endpoint of segment B
- * @param clampAll If true, enables all clamping flags (forces points to stay on segments)
- * @param clampA0 If true, clamps result on segment A to a0
- * @param clampA1 If true, clamps result on segment A to a1
- * @param clampB0 If true, clamps result on segment B to b0
- * @param clampB1 If true, clamps result on segment B to b1
- * @return Tuple containing:
- *         - Closest point on segment A
- *         - Closest point on segment B
- *         - Minimum distance between the segments
- */
-static std::tuple<std::array<double, 3>, std::array<double, 3>, double> minimumDistanceBetweenLineSegments(
-    const std::array<double, 3> &a0, const std::array<double, 3> &a1, const std::array<double, 3> &b0,
-    const std::array<double, 3> &b1, bool clampAll = false, bool clampA0 = false, bool clampA1 = false,
-    bool clampB0 = false, bool clampB1 = false);
 
 }  // namespace pccLib
