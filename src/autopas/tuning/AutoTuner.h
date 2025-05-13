@@ -86,7 +86,15 @@ class AutoTuner {
   void receiveLiveInfo(const LiveInfo &liveInfo);
 
   /**
-   * Indicator whether tuner needs homogeneity and max density information before the next call to prepareIteration().
+   * Returns true if the AutoTuner is about to calculate the first interactions of a tuning phase (i.e. the first
+   * iteration), before tuneConfiguration() has been called.
+   * @return
+   */
+  bool isStartOfTuningPhase() const;
+
+  /**
+   * Indicator whether homogeneity and max density information should be calculated in advance of the next call to
+   * sendDomainSimilarityStatisticsAtStartOfTuningPhase().
    * @return
    */
   bool needsHomogeneityAndMaxDensityBeforePrepare() const;
