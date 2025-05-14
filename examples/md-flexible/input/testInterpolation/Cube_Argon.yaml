@@ -12,15 +12,16 @@ tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  argon
-interpolation-nodes              :  32
+interpolation-nodes              :  [16, 18]
+interpolation-splits             :  [1.5]
 interpolation-start              :  1
 newton3                          :  [disabled, enabled]
-cutoff                           :  5
+cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [50, 50, 50]
 cell-size                        :  [1]
 deltaT                           :  0.000125
-iterations                       :  50000
+iterations                       :  20000
 energy-sensor                    :  rapl
 boundary-type                    :  [periodic,periodic,periodic]
 globalForce                      :  [0,0,0]
@@ -39,7 +40,7 @@ Objects:
   # "water"
   CubeClosestPacked:
     0:  
-      particle-spacing           :  1.2
+      particle-spacing           :  1.15
       bottomLeftCorner           :  [2, 2, 2]
       box-length                 :  [10, 10, 10]
       velocity                   :  [0, 0, 0]
@@ -51,8 +52,8 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  Cube_Argon_interpolated
-vtk-write-frequency              :  500
+vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  debug
-log-file                         :  log_argon-interpolated.out
+log-file                         :  log_argon_interpolation_1,5_split_16_18.out

@@ -536,7 +536,9 @@ class MDFlexConfig {
   /**
    * interpolation nodes
    */
-  MDFlexOption<size_t, __LINE__> interpolationNodes{0, "interpolation-nodes", true, "Number of interpolation nodes."};
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<size_t>>, __LINE__> interpolationNodes{
+      std::make_shared<autopas::NumberSetFinite<size_t>>(std::set<size_t>{0}), "interpolation-nodes", true,
+      "Number of interpolation nodes for each interpolation interval."};
 
   /**
    * Interpolation Area Start
@@ -544,6 +546,13 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> interpolationStart{
       0.0, "interpolation-start", true,
       "Start Point for the interpolation interval, adjust according to physical parameters."};
+
+  /**
+   * Splits for the interpolation interval
+   */
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> interpolationSplits{
+      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{}), "interpolation-splits", true,
+      "Split points for the interpolation interval"};
 
   /**
    * Boundary types.

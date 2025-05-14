@@ -194,7 +194,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
 
-        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet<double>(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.cellSizeFactors.value->isEmpty()) {
@@ -259,12 +259,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw std::runtime_error("The number of iterations has to be a positive integer > 0.");
         }
       } else if (key == config.interpolationNodes.name) {
-        expected = "Unsigned Integer >= 0";
+        expected = "List Unsigned Integer >= 0 with size > 0";
         description = config.interpolationNodes.description;
 
-        config.interpolationNodes.value = node[key].as<long>();
-        if (config.interpolationNodes.value < 0) {
-          throw std::runtime_error("The number of interpolation nodes has to be a \"positive\" integer >= 0.");
+        config.interpolationNodes.value = autopas::utils::StringUtils::parseNumberSet<size_t>(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.interpolationNodes.value->isEmpty()) {
+          throw std::runtime_error("Parsed interpolation nodes list is empty.");
         }
       } else if (key == config.interpolationStart.name) {
         expected = "Double >= 0";
@@ -274,9 +276,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.interpolationStart.value < 0.) {
           throw std::runtime_error("The start of the interpolation interval has to be a \"positive\" double >= 0.");
         }
-      }
+      } else if (key == config.interpolationSplits.name) {
+        expected = "YAML-sequence of floats.";
+        description = config.interpolationSplits.description;
 
-      else if (key == config.tuningPhases.name) {
+        config.interpolationSplits.value = autopas::utils::StringUtils::parseNumberSet<double>(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+      } else if (key == config.tuningPhases.name) {
         expected = "Unsigned Integer";
         description = config.tuningPhases.description;
 

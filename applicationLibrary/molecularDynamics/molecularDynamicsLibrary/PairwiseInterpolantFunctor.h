@@ -35,19 +35,26 @@ class PairwiseInterpolantFunctor
   PairwiseInterpolantFunctor() = delete;
 
  private:
-  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, size_t nNodes, void * /*dummy*/)
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::set<size_t> numNodes,
+                                      std::set<double> intervalSplits, void * /*dummy*/)
       : autopas::PairwiseFunctor<
             Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, applyShift, useMixing, useNewton3,
                                                    calculateGlobals, countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
-        _numNodes{nNodes},
+        _numNodes{numNodes.begin(), numNodes.end()},
+        _intervalSplits{intervalSplits.begin(), intervalSplits.end()},
         _a{a},
-        _b{cutoff + 0.1 * cutoff},
+        _b{cutoff},
         _potentialEnergySum{0.},
-        _errorSum{0.},
+        _absErrorSum{0.},
+        _relErrorSum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false},
         _kernel{f} {
+    if (_numNodes.size() != _intervalSplits.size() + 1) {
+      throw autopas::utils::ExceptionHandler::AutoPasException("Size of node list must be = size of intervals + 1");
+    }
+
     if constexpr (calculateGlobals) {
       _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
     }
@@ -56,7 +63,12 @@ class PairwiseInterpolantFunctor
       _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
     }
 
-    _coefficients.resize(nNodes);
+    _distanceStatistics.resize(autopas::autopas_get_max_threads());
+
+    int interval = 0;
+    for (size_t node : _numNodes) {
+      _coefficients.insert(std::pair<size_t, std::vector<double>>{interval++, std::vector<double>(node)});
+    }
     constructPolynomial();
   }
 
@@ -74,74 +86,83 @@ class PairwiseInterpolantFunctor
     return 2 * x * evaluateChebyshev(n - 1, x) * coeffs[n - 1] - evaluateChebyshev(n - 2, x) * coeffs[n - 2];
   }
 
-  float evaluateChebyshevFast(double x) {
+  float evaluateChebyshevFast(double x, int n, const std::vector<double> &coeff) {
     /*Following the Clenshaw Algorithm*/
     double b_n = 0;
     double b_n1 = 0;
     double b_n2 = 0;
-    for (int k = _numNodes - 1; k > 0; --k) {
-      b_n = _coefficients[k] + 2. * x * b_n1 - b_n2;
+    for (int k = n - 1; k > 0; --k) {
+      b_n = coeff[k] + 2. * x * b_n1 - b_n2;
       b_n2 = b_n1;
       b_n1 = b_n;
     }
 
     /*Special Treatment of k=0 because of c0 (has 1/2 in the formula)*/
-    b_n = 2. * _coefficients[0] + 2. * x * b_n1 - b_n2;
+    b_n = 2. * coeff[0] + 2. * x * b_n1 - b_n2;
     return (b_n - b_n2) / 2.;
   }
 
-  double mapToInterval(float x) {
+  double mapToInterval(double x, double a, double b) {
     float intermediate = x + 1;
-    float newX = _a + ((_b - _a) * intermediate) / 2.;
+    float newX = a + ((b - a) * intermediate) / 2.;
     return newX;
   }
 
-  double mapToCheb(double x) {
-    double intermediate = x - _a;
-    double newX = 2. * intermediate / (_b - _a) - 1.;
+  double mapToCheb(double x, double a, double b) {
+    double intermediate = x - a;
+    double newX = 2. * intermediate / (b - a) - 1.;
     return newX;
   }
 
-  void dct(const std::vector<double> &values) {
-    for (int i = 0; i < _numNodes; ++i) {
+  void dct(const std::vector<double> &values, int interval) {
+    for (int i = 0; i < _numNodes[interval]; ++i) {
       float coefficient = 0.;
-      for (int k = 0; k < _numNodes; ++k) {
-        coefficient += values[k] * std::cos(PI * i * (2 * k + 1) / (2 * _numNodes));
+      for (int k = 0; k < _numNodes[interval]; ++k) {
+        coefficient += values[k] * std::cos(PI * i * (2 * k + 1) / (2 * _numNodes[interval]));
       }
-      _coefficients[i] = coefficient * 2. / _numNodes;
+      _coefficients.at(interval)[i] = coefficient * 2. / _numNodes[interval];
     }
-    _coefficients[0] = _coefficients[0] / 2.;
+    _coefficients.at(interval)[0] = _coefficients.at(interval)[0] / 2.;
   }
 
   void constructPolynomial() {
     std::cout << "Constructing" << std::endl;
-    std::vector<double> values{};
-    values.resize(_numNodes);
 
-    // evaluate Functor at optimal Chebyshev nodes
-    for (int i = 0; i < _numNodes; ++i) {
-      double x = ((2 * i + 1.) / (2. * (_numNodes))) * PI;
-      double node = std::cos(x);
-      double d = mapToInterval(node);
+    double a = _a;
+    for (int interval = 0; interval < _numNodes.size(); ++interval) {
+      std::vector<double> values{};
+      values.resize(_numNodes[interval]);
 
-      double value = _kernel.calculate(d);
-      values[i] = value;
+      double b = _intervalSplits.size() > interval ? _intervalSplits[interval] : _b;
+
+      // evaluate Functor at optimal Chebyshev nodes
+      for (int i = 0; i < _numNodes[interval]; ++i) {
+        double x = ((2 * i + 1.) / (2. * (_numNodes[interval]))) * PI;
+        double node = std::cos(x);
+        double d = mapToInterval(node, a, b);
+
+        double value = _kernel.calculate(d);
+        values[i] = value;
+      }
+
+      dct(values, interval);
+      a = b;
     }
-
-    dct(values);
   }
 
  public:
-  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, size_t nNodes)
-      : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, nullptr) {
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::set<size_t> nNodes,
+                                      std::set<double> intervalSplits)
+      : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
     static_assert(not useMixing,
                   "Mixing without ParticlePropertiesLibrary is not possible! Use a different constructor or set mixing "
                   "to false.");
   }
 
-  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, size_t nNodes,
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::set<size_t> nNodes,
+                                      std::set<double> intervalSplits,
                                       ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, nullptr) {
+      : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -182,13 +203,34 @@ class PairwiseInterpolantFunctor
 
     double d = std::sqrt(dr2);
 
-    double fac = evaluateChebyshevFast(mapToCheb(d));
+#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
+    _distanceStatistics[threadnum].push_back(d);
+#endif
+
+    int interval = 0;
+    double a = _a;
+    double b = _b;
+    /* determine interval*/
+    for (; interval < _intervalSplits.size(); ++interval) {
+      if (d < _intervalSplits[interval]) {
+        b = _intervalSplits[interval];
+        break;
+      } else {
+        a = _intervalSplits[interval];
+      }
+    }
+
+    double fac = evaluateChebyshevFast(mapToCheb(d, a, b), _numNodes.at(interval), _coefficients.at(interval));
     double interpolationError = 0.;
+    double relInterpolationError = 0.;
     auto f = dr * fac;
 
-#if defined (MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
+#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
     double real_fac = _kernel.calculate(d);
     interpolationError = std::abs(real_fac - fac);
+    if (real_fac != 0.) {
+      relInterpolationError = std::abs(interpolationError / real_fac);
+    }
 #endif
 
     i.addF(f);
@@ -206,16 +248,20 @@ class PairwiseInterpolantFunctor
 
     if constexpr (calculateGlobals) {
       // TODO: delegate potential energy to kernel?
+      // TODO: find out what those values actually mean
       double potentialEnergy = 0.;
       auto virial = dr * f;
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadDataGlobals[threadnum].virialSum += virial;
-        _aosThreadDataGlobals[threadnum].errorSum += interpolationError;
+        _aosThreadDataGlobals[threadnum].absErrorSum += interpolationError;
+        _aosThreadDataGlobals[threadnum].relErrorSum += relInterpolationError;
       }
       if (newton3 and j.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadDataGlobals[threadnum].virialSum += virial;
+        _aosThreadDataGlobals[threadnum].absErrorSum += interpolationError;
+        _aosThreadDataGlobals[threadnum].relErrorSum += relInterpolationError;
       }
     }
   }
@@ -268,7 +314,8 @@ class PairwiseInterpolantFunctor
 
   void initTraversal() final {
     _potentialEnergySum = 0.;
-    _errorSum = 0.;
+    _absErrorSum = 0.;
+    _relErrorSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     if constexpr (calculateGlobals) {
@@ -280,6 +327,9 @@ class PairwiseInterpolantFunctor
       for (auto &data : _aosThreadDataFLOPs) {
         data.setZero();
       }
+    }
+    for (auto &stat : _distanceStatistics) {
+      stat.clear();
     }
   }
 
@@ -294,20 +344,48 @@ class PairwiseInterpolantFunctor
       for (const auto &data : _aosThreadDataGlobals) {
         _potentialEnergySum += data.potentialEnergySum;
         _virialSum += data.virialSum;
-        _errorSum += data.errorSum;
+        _absErrorSum += data.absErrorSum;
+        _relErrorSum += data.relErrorSum;
       }
       // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
       // contribution is only counted once per pair.
       _potentialEnergySum *= 0.5;
       _virialSum *= 0.5;
 
+      size_t numKernelCalls = 0;
+
+      for (const auto &data : _aosThreadDataFLOPs) {
+        numKernelCalls += data.numKernelCallsN3;
+        numKernelCalls += data.numKernelCallsNoN3;
+      }
+
       // We have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
+      size_t number = 0;
+      std::vector<double> cuts = {0.25, 0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.25, 2.5, 2.75, 3.};
+      double prev_cut = 0.;
+      for (auto cut : cuts) {
+        number = 0;
+        for (const auto &stat : _distanceStatistics) {
+          number += std::count_if(stat.begin(), stat.end(),
+                                  [cut, prev_cut](double value) { return value <= cut && value > prev_cut; });
+        }
+        AutoPasLog(DEBUG, "Distances below {} : {}", cut, number);
+        prev_cut = cut;
+      }
+      size_t total = 0;
+      for (auto &stat : _distanceStatistics) {
+        total += stat.size();
+      }
+      AutoPasLog(DEBUG, "Total number distances: {}", total);
+
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
       AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-      AutoPasLog(DEBUG, "Final approx. error    {}", _errorSum);
+      AutoPasLog(DEBUG, "Final absolute error   {}", _absErrorSum);
+      AutoPasLog(DEBUG, "Final relative error   {}", _relErrorSum);
+      AutoPasLog(DEBUG, "Number of kernel calls {}", numKernelCalls);
     }
   }
 
@@ -393,22 +471,24 @@ class PairwiseInterpolantFunctor
 
   class AoSThreadDataGlobals {
    public:
-    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, errorSum{0.}, __remainingTo64{} {}
-    
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, absErrorSum{0.}, __remainingTo64{} {}
+
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;
-      errorSum = 0.;
+      absErrorSum = 0.;
+      relErrorSum = 0.;
     }
 
     // variables
     std::array<double, 3> virialSum;
     double potentialEnergySum;
-    double errorSum;
+    double absErrorSum;
+    double relErrorSum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 5 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 6 * sizeof(double)) / sizeof(double)];
   };
 
   class AoSThreadDataFLOPs {
@@ -441,8 +521,9 @@ class PairwiseInterpolantFunctor
   const float PI = 2 * std::acos(0.0);
   const double _a;
   const double _b;
-  const size_t _numNodes;
-  std::vector<double> _coefficients{};
+  const std::vector<size_t> _numNodes;
+  const std::vector<double> _intervalSplits;
+  std::map<size_t, std::vector<double>> _coefficients{};
   PairwiseKernel _kernel;
 
   const double _cutoffSquared;
@@ -453,7 +534,8 @@ class PairwiseInterpolantFunctor
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
-  double _errorSum;
+  double _absErrorSum;
+  double _relErrorSum;
 
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
@@ -461,6 +543,8 @@ class PairwiseInterpolantFunctor
   // thread buffer for aos
   std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals{};
   std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
+
+  std::vector<std::vector<double>> _distanceStatistics{};
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;

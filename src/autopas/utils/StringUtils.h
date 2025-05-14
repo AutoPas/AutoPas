@@ -9,6 +9,7 @@
 #include <cmath>
 #include <regex>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -220,6 +221,29 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
   return doubles;
 }
 
+template <typename T>
+inline std::set<T> parseTs(const std::string &tString) {
+  std::set<T> result;
+  /* Exchange with generic regex string */
+  std::regex regexT(regexDoubleStr);
+
+  // use regex iter to find all doubles in the string.
+  for (auto number = std::sregex_iterator(tString.begin(), tString.end(), regexT); number != std::sregex_iterator();
+       ++number) {
+    try {
+      // https://gist.github.com/mark-d-holmberg/862733
+      std::istringstream ss(number->str());
+      T num;
+      ss >> num;
+      result.insert(num);
+    } catch (const std::exception &) {
+      autopas::utils::ExceptionHandler::exception("Failed to parse generic type from: {}", number->str());
+    }
+  }
+
+  return result;
+}
+
 /**
  * Converts a string to a NumberSet<double>.
  *
@@ -230,7 +254,9 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
  * @param setString String containing the set.
  * @return NumberSet<double>. If no valid double was found the empty set is returned.
  */
-inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString) {
+template <typename T>
+inline std::unique_ptr<autopas::NumberSet<T>> parseNumberSet(const std::string &setString) {
+  /*
   // try to match an interval x-y
   std::regex regexInterval("("                 // start of 1. capture
                            + regexDoubleStr +  // a double
@@ -248,14 +274,15 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::str
       // matchers has whole string as str(0) so start at 1
       double min = stod(matches.str(1));
       double max = stod(matches.str(2));
-      return std::make_unique<autopas::NumberInterval<double>>(min, max);
+      return std::make_unique<autopas::NumberInterval<T>>(min, max);
     } catch (const std::exception &) {
       // try parseDoubles instead
     }
   }
+  */
 
-  std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString);
-  return std::make_unique<autopas::NumberSetFinite<double>>(values);
+  std::set<T> values = autopas::utils::StringUtils::parseTs<T>(setString);
+  return std::make_unique<autopas::NumberSetFinite<T>>(values);
 }
 
 }  // namespace autopas::utils::StringUtils

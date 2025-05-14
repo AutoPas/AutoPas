@@ -45,7 +45,6 @@
 
 #include "molecularDynamicsLibrary/AbInitioArgonPairFunctor.h"
 #include "molecularDynamicsLibrary/AbInitioKryptonPairFunctor.h"
-
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
@@ -100,6 +99,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #endif
+#endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
 using LJInterpolantFunctorType =
@@ -113,15 +113,13 @@ using KryptonPairInterpolantFunctorType =
                                       mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
-#endif
-
 using ArgonPairAbInitioFunctorType =
     mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
                                     mdFlexibleTypeDefs::countFLOPs>;
 
 using KryptonPairAbInitioFunctorType =
     mdLib::AbInitioKryptonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
-                                    mdFlexibleTypeDefs::countFLOPs>;
+                                      mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
