@@ -372,7 +372,7 @@ long AutoTuner::estimateRuntimeFromSamples() const {
 }
 
 bool AutoTuner::isStartOfTuningPhase() const {
-  const bool startOfTuningPhase = (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
+  return (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
 }
 
 void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
