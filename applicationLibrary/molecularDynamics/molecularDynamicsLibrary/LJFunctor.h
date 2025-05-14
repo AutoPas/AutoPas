@@ -17,6 +17,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "src/LUT.h"
 
 namespace mdLib {
 
@@ -27,17 +28,18 @@ namespace mdLib {
  * @tparam Particle_T The type of particle.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
+ * @param useLUT
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle_T, bool applyShift = false, bool useMixing = false,
+template <class Particle_T, bool applyShift = false, bool useMixing = false, bool useLUT = false
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctor
-    : public autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3,
+    : public autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useLUT, useNewton3,
                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -62,7 +64,7 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
+      : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useLUT, useNewton3, calculateGlobals,
                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -105,6 +107,19 @@ class LJFunctor
     _PPLibrary = &particlePropertiesLibrary;
   }
 
+
+
+
+  //added for lut
+    explicit LJFunctor(double cutoff, LUT2B *lut2B =  nullptr,typename std::enable_if<!useMixing, T>::type* = nullptr)
+      : LJFunctor(cutoff, nullptr) {
+    static_assert(not useMixing,
+                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
+                  "mixing to false.");
+    if(lut){
+    _lut = lut2B;}}
+
+  //end of added for lut
   std::string getName() final { return "LJFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
@@ -147,12 +162,33 @@ class LJFunctor
       return;
     }
 
+
+    //added for lut by me
+        double fac;
+    double lj12m6;  // Otherwise we get an error in calculateGlobals
+        if constexpr (useLUT) {
+      // How to check for mixing if useMixing is always enabled?
+      AutoPasLog(DEBUG, "Used LUT with {}", dr2);
+      fac = _PPLibrary->_lut.retrieveValues(*this,dr2);
+      if (calculateGlobals) {
+        // this is a problem
+        AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
+        return;
+      }
+    }else{
+    //end added for lut
+
+
+
+
     double invdr2 = 1. / dr2;
     double lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+
+    }
     auto f = dr * fac;
     i.addF(f);
     if (newton3) {
@@ -585,6 +621,9 @@ class LJFunctor
   void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
+    if(useLUT){
+        _lut->fill< decltype(*this) >(*this, _cutoffSquared);
+    }
     if (applyShift) {
       _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
     } else {
@@ -1198,6 +1237,8 @@ class LJFunctor
   const double _cutoffSquared;
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
+    //lut added by me
+  LUT2B * _lut = nullptr;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
