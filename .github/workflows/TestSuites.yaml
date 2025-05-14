@@ -188,7 +188,7 @@ jobs:
           mkdir build && cd build
           CC=${{matrix.compiler[0]}} CXX=${{matrix.compiler[1]}} cmake .. -G Ninja \
             -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/libomp \
-            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_BUILD_TYPE=Release \
             -DAUTOPAS_LOG_ITERATIONS=ON \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
             -DMD_FLEXIBLE_FUNCTOR_AVX=OFF \
