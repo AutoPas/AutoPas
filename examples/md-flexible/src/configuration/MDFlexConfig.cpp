@@ -204,6 +204,8 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   initializeParticlePropertiesLibrary();
 
   initializeObjects();
+
+  // @todo filter vec patterns here to avoid non-HWY functors searching for patterns?
 }
 
 std::string MDFlexConfig::to_string() const {
@@ -315,6 +317,26 @@ std::string MDFlexConfig::to_string() const {
       }
       case FunctorOption::lj12_6_SVE: {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_Globals: {
+        os << "Lennard-Jones (12-6) with globals" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_XSIMD: {
+        os << "Lennard-Jones (12-6) XSIMD Wrapper" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_MIPP: {
+        os << "Lennard-Jones (12-6) MIPP Wrapper" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_SIMDe: {
+        os << "Lennard-Jones (12-6) SIMD Everywhere Wrapper" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_HWY: {
+        os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
         break;
       }
     }

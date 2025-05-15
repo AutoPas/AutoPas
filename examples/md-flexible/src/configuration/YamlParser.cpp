@@ -230,6 +230,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("xsimd") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_XSIMD;
+        } else if (strArg.find("mipp") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_MIPP;
+        } else if (strArg.find("simde") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
+        } else if (strArg.find("highway") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -282,6 +290,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             autopas::Newton3Option::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
         if (config.newton3Options.value.empty()) {
           throw std::runtime_error("Unknown Newton3 option!");
+        }
+      } else if (key == config.vecPatternOptions.name) {
+        expected = "One of the possible values.";
+        description = config.vecPatternOptions.description;
+
+        config.vecPatternOptions.value = autopas::VectorizationPatternOption::parseOptions(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.vecPatternOptions.value.empty()) {
+          throw std::runtime_error("Unknown VectorizationPattern option!");
         }
       } else if (key == config.newton3Options3B.name) {
         expected = "YAML-sequence of possible values.";
