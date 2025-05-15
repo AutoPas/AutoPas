@@ -80,4 +80,29 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
+/**
+ * Calculate and update the temperature for every particle using the first-order euler method.
+ *
+ * Specifically: T_{n+1} = T_n + delta_t * (Q_n / (mass * specificHeat))
+ *
+ * @param autoPasContainer
+ * @param particlePropertiesLibrary
+ * @param deltaT
+ */
+void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
+                           const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+
+/**
+ * Set torques of all particles to zero.
+ *
+ * @param autoPasContainer
+ */
+void setTorquesToZero(autopas::AutoPas<ParticleType> &autoPasContainer);
+
+/**
+ * Set heat fluxes of all particles to zero.
+ *
+ * @param autoPasContainer
+ */
+void setHeatFluxesToZero(autopas::AutoPas<ParticleType> &autoPasContainer);
 }  // namespace TimeDiscretization
