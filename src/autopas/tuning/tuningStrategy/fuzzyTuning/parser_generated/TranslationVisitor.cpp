@@ -12,43 +12,43 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 using namespace autopas;
+using std::any_cast;
 
 antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileContext *context) {
   std::vector<std::shared_ptr<LinguisticVariable>> linguisticVariables;
-  std::map<std::string, std::shared_ptr<OutputMapper>> outputMapping;
   std::vector<FuzzyRule> fuzzyRules;
 
   // get the settings
-  std::shared_ptr<FuzzyControlSettings> settings =
-      visit(context->settings()).as<std::shared_ptr<FuzzyControlSettings>>();
+  const auto settings = any_cast<std::shared_ptr<FuzzyControlSettings>>(visit(context->settings()));
 
   // get the linguistic variables
   for (auto *fuzzy_variableContext : context->linguistic_variable()) {
-    std::shared_ptr<LinguisticVariable> lv = visit(fuzzy_variableContext).as<std::shared_ptr<LinguisticVariable>>();
+    const auto lv = any_cast<std::shared_ptr<LinguisticVariable>>(visit(fuzzy_variableContext));
     linguisticVariables.push_back(lv);
 
     _state._linguisticVariables[lv->getName()] = lv;
   }
 
   // get the configuration mappings
-  outputMapping = visit(context->output_mapping()).as<std::map<std::string, std::shared_ptr<OutputMapper>>>();
+  const auto outputMapping =
+      any_cast<std::map<std::string, std::shared_ptr<OutputMapper>>>(visit(context->output_mapping()));
 
   // get the fuzzy rules
   for (auto *fuzzy_ruleContext : context->fuzzy_rule()) {
-    FuzzyRule rule = visit(fuzzy_ruleContext).as<FuzzyRule>();
-    fuzzyRules.push_back(std::move(rule));
+    const auto rule = any_cast<FuzzyRule>(visit(fuzzy_ruleContext));
+    fuzzyRules.push_back(rule);
   }
 
   // construct the fuzzy control systems
   std::map<std::string, std::shared_ptr<FuzzyControlSystem>> fuzzyControlSystems;
 
   for (auto &rule : fuzzyRules) {
-    auto dimensions = rule.getConsequent()->getCrispSet()->getDimensions();
+    const auto dimensions = rule.getConsequent()->getCrispSet()->getDimensions();
     if (dimensions.size() != 1) {
-      autopas::utils::ExceptionHandler::exception("Only rules with one dimensional output are supported! Rule: " +
-                                                  std::string(rule));
+      utils::ExceptionHandler::exception("Only rules with one dimensional output are supported! Rule: " +
+                                         std::string(rule));
     }
-    std::string output_domain = dimensions.begin()->first;
+    const auto output_domain = dimensions.begin()->first;
 
     if (fuzzyControlSystems.find(output_domain) == fuzzyControlSystems.end()) {
       fuzzyControlSystems[output_domain] = std::make_shared<FuzzyControlSystem>(settings);
@@ -61,7 +61,7 @@ antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileC
 };
 
 antlrcpp::Any TranslationVisitor::visitSettings(FuzzyLanguageParser::SettingsContext *ctx) {
-  std::shared_ptr<FuzzyControlSettings> settings = std::make_shared<FuzzyControlSettings>();
+  auto settings = std::make_shared<FuzzyControlSettings>();
 
   for (size_t i = 0; i < ctx->STRING().size(); ++i) {
     const auto key = ctx->IDENTIFIER(i)->getText();
@@ -75,15 +75,15 @@ antlrcpp::Any TranslationVisitor::visitSettings(FuzzyLanguageParser::SettingsCon
 
 antlrcpp::Any TranslationVisitor::visitLinguistic_variable(FuzzyLanguageParser::Linguistic_variableContext *context) {
   // get the name and range of the linguistic variable
-  std::string linguisticTerm = context->STRING()->getText();
-  std::pair<double, double> range = {std::stod(context->NUMBER(0)->getText()),
-                                     std::stod(context->NUMBER(1)->getText())};
+  const auto linguisticTerm = context->STRING()->getText();
+  const std::pair<double, double> range = {std::stod(context->NUMBER(0)->getText()),
+                                           std::stod(context->NUMBER(1)->getText())};
 
-  std::shared_ptr<LinguisticVariable> linguisticVariable = std::make_shared<LinguisticVariable>(linguisticTerm, range);
+  auto linguisticVariable = std::make_shared<LinguisticVariable>(linguisticTerm, range);
 
   // add all linguistic terms
   for (auto *fuzzy_termContext : context->fuzzy_term()) {
-    std::shared_ptr<FuzzySet> term = visit(fuzzy_termContext).as<std::shared_ptr<FuzzySet>>();
+    const auto term = any_cast<std::shared_ptr<FuzzySet>>(visit(fuzzy_termContext));
     linguisticVariable->addLinguisticTerm(term);
   }
 
@@ -91,37 +91,34 @@ antlrcpp::Any TranslationVisitor::visitLinguistic_variable(FuzzyLanguageParser::
 };
 
 antlrcpp::Any TranslationVisitor::visitFuzzy_term(FuzzyLanguageParser::Fuzzy_termContext *context) {
-  std::string linguisticTerm = context->STRING()->getText();
+  const std::string linguisticTerm = context->STRING()->getText();
 
-  auto function = visit(context->function());
-  auto [functionName, params] = function.as<std::pair<std::string, std::vector<double>>>();
+  const auto function = visit(context->function());
+  const auto [functionName, params] = any_cast<std::pair<std::string, std::vector<double>>>(function);
 
   return FuzzySetFactory::makeFuzzySet(linguisticTerm, functionName, params);
 };
 
 antlrcpp::Any TranslationVisitor::visitFunction(FuzzyLanguageParser::FunctionContext *context) {
-  std::string function = context->IDENTIFIER()->getText();
+  const std::string function = context->IDENTIFIER()->getText();
   std::vector<double> params;
   for (auto *number : context->NUMBER()) {
     params.push_back(std::stod(number->getText()));
   }
 
-  return std::pair<std::string, std::vector<double>>(function, params);
+  return std::pair(function, params);
 };
 
 antlrcpp::Any TranslationVisitor::visitFuzzy_rule(FuzzyLanguageParser::Fuzzy_ruleContext *context) {
-  std::shared_ptr<FuzzySet> antecedent;
-  std::shared_ptr<FuzzySet> consequent;
-
-  antecedent = visit(context->fuzzy_set(0)).as<std::shared_ptr<FuzzySet>>();
-  consequent = visit(context->fuzzy_set(1)).as<std::shared_ptr<FuzzySet>>();
+  const auto antecedent = any_cast<std::shared_ptr<FuzzySet>>(visit(context->fuzzy_set(0)));
+  const auto consequent = any_cast<std::shared_ptr<FuzzySet>>(visit(context->fuzzy_set(1)));
 
   return FuzzyRule(antecedent, consequent);
 };
 
 antlrcpp::Any TranslationVisitor::visitOr(FuzzyLanguageParser::OrContext *context) {
-  std::shared_ptr<FuzzySet> left = visit(context->fuzzy_set(0)).as<std::shared_ptr<FuzzySet>>();
-  std::shared_ptr<FuzzySet> right = visit(context->fuzzy_set(1)).as<std::shared_ptr<FuzzySet>>();
+  const auto left = any_cast<std::shared_ptr<FuzzySet>>(visit(context->fuzzy_set(0)));
+  const auto right = any_cast<std::shared_ptr<FuzzySet>>(visit(context->fuzzy_set(1)));
 
   return left || right;
 };
@@ -131,23 +128,23 @@ antlrcpp::Any TranslationVisitor::visitBrackets(FuzzyLanguageParser::BracketsCon
 };
 
 antlrcpp::Any TranslationVisitor::visitAnd(FuzzyLanguageParser::AndContext *context) {
-  std::shared_ptr<FuzzySet> left = visit(context->fuzzy_set(0)).as<std::shared_ptr<FuzzySet>>();
-  std::shared_ptr<FuzzySet> right = visit(context->fuzzy_set(1)).as<std::shared_ptr<FuzzySet>>();
+  const auto left = any_cast<std::shared_ptr<FuzzySet>>(visit(context->fuzzy_set(0)));
+  const auto right = any_cast<std::shared_ptr<FuzzySet>>(visit(context->fuzzy_set(1)));
 
   return left && right;
 };
 
 antlrcpp::Any TranslationVisitor::visitSelect(FuzzyLanguageParser::SelectContext *context) {
-  std::string lvName = context->STRING(0)->getText();
-  std::string termName = context->STRING(1)->getText();
+  const auto lvName = context->STRING(0)->getText();
+  const auto termName = context->STRING(1)->getText();
 
-  std::shared_ptr<LinguisticVariable> lv = _state._linguisticVariables[lvName];
+  const auto lv = _state._linguisticVariables[lvName];
 
   return lv->operator==(termName);
 };
 
 antlrcpp::Any TranslationVisitor::visitNegate(FuzzyLanguageParser::NegateContext *context) {
-  std::shared_ptr<FuzzySet> fuzzySet = visit(context->fuzzy_set()).as<std::shared_ptr<FuzzySet>>();
+  const auto fuzzySet = any_cast<std::shared_ptr<FuzzySet>>(visit(context->fuzzy_set()));
   return !fuzzySet;
 };
 
@@ -155,7 +152,7 @@ antlrcpp::Any TranslationVisitor::visitOutput_mapping(FuzzyLanguageParser::Outpu
   std::map<std::string, std::shared_ptr<OutputMapper>> outputMappings;
 
   for (size_t i = 0; i < context->output_entry().size(); ++i) {
-    auto mapping = visit(context->output_entry(i)).as<std::shared_ptr<OutputMapper>>();
+    const auto mapping = any_cast<std::shared_ptr<OutputMapper>>(visit(context->output_entry(i)));
 
     outputMappings[mapping->getOutputDomain()] = mapping;
   }
@@ -164,24 +161,25 @@ antlrcpp::Any TranslationVisitor::visitOutput_mapping(FuzzyLanguageParser::Outpu
 }
 
 antlrcpp::Any TranslationVisitor::visitOutput_entry(FuzzyLanguageParser::Output_entryContext *context) {
-  auto pattern = context->STRING()->getText();
+  const auto pattern = context->STRING()->getText();
 
   std::vector<std::pair<double, std::vector<ConfigurationPattern>>> mappings;
 
   for (size_t i = 0; i < context->pattern_mapping().size(); ++i) {
-    auto mapping = visit(context->pattern_mapping(i)).as<std::pair<double, std::vector<ConfigurationPattern>>>();
+    const auto mapping =
+        any_cast<std::pair<double, std::vector<ConfigurationPattern>>>(visit(context->pattern_mapping(i)));
     mappings.push_back(mapping);
   }
 
   return std::make_shared<OutputMapper>(pattern, mappings);
 }
 antlrcpp::Any TranslationVisitor::visitPattern_mapping(FuzzyLanguageParser::Pattern_mappingContext *context) {
-  double value = std::stod(context->NUMBER()->getText());
+  const double value = std::stod(context->NUMBER()->getText());
   std::vector<ConfigurationPattern> configurationPatterns;
 
   for (size_t i = 0; i < context->configuration_pattern().size(); ++i) {
     auto *val = context->configuration_pattern(i);
-    auto configurationPattern = visit(val).as<ConfigurationPattern>();
+    const auto configurationPattern = any_cast<ConfigurationPattern>(visit(val));
     configurationPatterns.push_back(configurationPattern);
   }
 
