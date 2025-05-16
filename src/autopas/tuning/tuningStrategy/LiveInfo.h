@@ -395,13 +395,6 @@ class LiveInfo {
     return var;
   }
 
-  template <class Variant, size_t... Idx>
-  static Variant g(std::istream &in, size_t idx, std::index_sequence<Idx...>) {
-    Variant var;
-    (readIndexHelper<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
-    return var;
-  }
-
   /**
    * The map that stores all infos gathered so far.
    */
