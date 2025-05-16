@@ -73,7 +73,7 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
   try {
     // Convert live info to JSON string
     nlohmann::json liveInfoJson = _currentLiveInfo;
-    std::string modelPath = std::string(AUTOPAS_SOURCE_DIR) + _modelFileName;
+    std::string modelPath = _modelFileName;
     // Call the Python function and get the result
     py::object result = _pythonMainFunc(modelPath, liveInfoJson.dump());
     return result.cast<std::string>();
