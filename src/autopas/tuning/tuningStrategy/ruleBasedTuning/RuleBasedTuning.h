@@ -6,14 +6,9 @@
 
 #pragma once
 
-#include <algorithm>
 #include <fstream>
-#include <iostream>
-#include <iterator>
 #include <list>
 #include <unordered_map>
-#include <unordered_set>
-#include <variant>
 
 #ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 #include "RuleBasedProgramParser.h"
