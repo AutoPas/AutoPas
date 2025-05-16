@@ -1850,8 +1850,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    const auto needsDensityStatistics = autoTuner.needsHomogeneityAndMaxDensityBeforePrepare();
-    if (needsDensityStatistics) {
+    // Gather density statistics (if needed)
+    if (autoTuner.needsHomogeneityAndMaxDensity()) {
       // Gather homogeneity and max density
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
@@ -1860,9 +1860,11 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       timerCalculateHomogeneity.stop();
       autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
-    const auto needsLiveInfo = autoTuner.needsLiveInfo();
-    if (needsLiveInfo) {
-      // Gather Live Info
+    // Tell AutoTuner to send density statistics to tuning strategies (if we are at the start of a tuning phase).
+    autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
+
+    // If the AutoTuner is at the start of a tuning phase and needs liveInfo, gather it and send it to the AutoTuner.
+    if (autoTuner.needsLiveInfo()) {
       utils::Timer timerCalculateLiveInfo;
       timerCalculateLiveInfo.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);

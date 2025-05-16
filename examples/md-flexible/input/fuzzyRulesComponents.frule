@@ -3,9 +3,11 @@
 
 # WARNING: This frule file was developed using data from the deactivated CoolMUC2 cluster, which used a rather old
 # architecture and may not be relevant on modern architectures. Furthermore, since the frule file was written, the
-# LiveInfo statistic "homogeneity" was removed (similar to "relativeParticlesPerCellStdDev", but with bin sizes which
-# varied depending on how many particles there were). As such, this file is remains to provide an example of a frule
-# file, but may not be performant.
+# LiveInfo statistic "homogeneity" and "maxDensity" were removed. This file remains only to provide an example of a
+# frule file and therefore is simply the original file generated using the approach above with all rules reffering to
+# "homogeneity" and "maxDensity" blindly removed. Therefore, do not expect this file to be performant and any comparison
+# to the data-driven fuzzy rules approach will be flawed if you do not generate new data and a new rule file. See the
+# above repository for details on how to do so.
 
 # The file describes different Fuzzy Systems each one trying to optimize a different component of the configuration.
 # For example one Fuzzy System tries to optimize the Container and DataLayout, another one the Traversal another whether

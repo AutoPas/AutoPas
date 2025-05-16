@@ -59,7 +59,8 @@ class ParticleBinStructure {
       : ParticleBinStructure({numBinsPerDim, numBinsPerDim, numBinsPerDim}, binLength, boxMin, boxMax, cutoff){};
 
   /**
-   * Adds to the counter for the bin the particle falls into.
+   * Determines the appropriate bin for the particle based on its position, and
+   * increments the corresponding bin counter to reflect one more particle in that bin.
    * @param particlePosition
    */
   void countParticle(const std::array<double, 3> &particlePosition);

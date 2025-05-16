@@ -110,7 +110,7 @@ bool AutoTuner::tuneConfiguration() {
   // Determine where in a tuning phase we are
   // If _iterationsInMostRecentTuningPhase >= _tuningInterval the current tuning phase takes more iterations than the
   // tuning interval -> continue tuning
-  if ((_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune) {
+  if (isStartOfTuningPhase()) {
     // CASE: Start of a new tuning phase
     _isTuning = true;
     _forceRetune = false;
@@ -371,12 +371,14 @@ long AutoTuner::estimateRuntimeFromSamples() const {
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
 }
 
-void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
-  // Flag if this is the first iteration in a new tuning phase
-  const bool startOfTuningPhase = _iteration % _tuningInterval == 0 and not _isTuning;
+bool AutoTuner::isStartOfTuningPhase() const {
+  return (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
+}
 
-  // first tuning iteration -> reset everything
-  if (startOfTuningPhase) {
+void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
+  // first tuning iteration -> send statistics to tuning strategies and reset _homogeneitiesOfLastTenIterations and
+  // _maxDensitiesOfLastTenIterations.
+  if (isStartOfTuningPhase() and _needsHomogeneityAndMaxDensity) {
     // If needed, calculate homogeneity and maxDensity, and reset buffers.
     const auto [homogeneity, maxDensity] = [&]() {
       const auto retTuple = std::make_tuple(OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
@@ -396,20 +398,24 @@ void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
     for (const auto &tuningStrat : _tuningStrategies) {
       tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
     }
+
+    if (_forceRetune) {
+      // If we have sent statistics because of a forced retune, throw a warning
+      AutoPasLog(WARN,
+                 "Due to a forced retune, domain similarity statistics, used by at least one tuning strategy, may"
+                 "not be correct.");
+    }
   }
 }
 
-bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
+bool AutoTuner::needsHomogeneityAndMaxDensity() const {
   // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
   constexpr size_t numIterationsForHomogeneity = 10;
   return _needsHomogeneityAndMaxDensity and
          _iteration % _tuningInterval > _tuningInterval - numIterationsForHomogeneity;
 }
 
-bool AutoTuner::needsLiveInfo() const {
-  const bool startOfTuningPhase = _iteration % _tuningInterval == 0 and not _isTuning;
-  return startOfTuningPhase and _needsLiveInfo;
-}
+bool AutoTuner::needsLiveInfo() const { return isStartOfTuningPhase() and _needsLiveInfo; }
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 
