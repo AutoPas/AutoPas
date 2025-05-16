@@ -19,6 +19,9 @@ namespace autopas::utils {
  * homogeneity > 0.0, normally < 1.0, but for extreme scenarios > 1.0
  * maxDensity > 0.0, normally < 3.0, but for extreme scenarios > 3.0
  *
+ * @warning This function is somewhat questionable. Firstly, it does not include buffer particles. Secondly, it is
+ * unclear if there are any advantages of this binning scheme over e.g. cell-bins in LiveInfo. Use with caution!
+ *
  * A homogeneity of 0 describes a perfectly homogeneous scenario, and as the scenario becomes more heterogeneous, this
  * becomes greater. If there are no particles, homogeneity is forced as 0 as this scenario is perfectly homogeneous.
  *
@@ -69,7 +72,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
     const auto &particleLocation = particleItr->getR();
 
     const auto binIndex3dUnsafe =
-        autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
+        autopas::utils::ArrayMath::castedFloor((particleLocation - container.getBoxMin()) / binDimensions);
 
     // It is possible that floating point errors result in out of bounds indices.
     // e.g. if there are 7 bins in the x dimension, and that particle is close to the right domain boundary, the

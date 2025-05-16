@@ -1850,7 +1850,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
+    // Gather density statistics (if needed)
+    if (autoTuner.needsHomogeneityAndMaxDensity()) {
+      // Gather homogeneity and max density
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
@@ -1858,11 +1860,16 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       timerCalculateHomogeneity.stop();
       autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
+    // Tell AutoTuner to send density statistics to tuning strategies (if we are at the start of a tuning phase).
+    autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
 
-    const auto needsLiveInfo = autoTuner.prepareIteration();
-
-    if (needsLiveInfo) {
-      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+    // If the AutoTuner is at the start of a tuning phase and needs liveInfo, gather it and send it to the AutoTuner.
+    if (autoTuner.needsLiveInfo()) {
+      utils::Timer timerCalculateLiveInfo;
+      timerCalculateLiveInfo.start();
+      auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+      info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
       autoTuner.receiveLiveInfo(info);
     }
 
@@ -1885,7 +1892,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
-    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
