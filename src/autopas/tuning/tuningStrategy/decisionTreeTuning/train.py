@@ -1,16 +1,19 @@
-# @File: predict.py
+# @File: train.py
 # @Author Abdulkadir Pazar
 # @Date 10-08-2024
 
 import os
+import argparse
+from pyexpat import features
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
+from sklearn.multioutput import MultiOutputClassifier
 import pickle
-import glob
-
+import numpy as np
 
 def extract_timestamp(filename: str) -> str:
     """
@@ -77,9 +80,6 @@ def load_data_from_directory(results_dir: str) -> pd.DataFrame:
             live_info_df = pd.read_csv(live_info_file)
             tuning_results_df = pd.read_csv(tuning_results_file)
 
-            # Combine tuning results into one column
-            tuning_results_df['combined'] = tuning_results_df['Container'] + ';' + tuning_results_df['Traversal'] + ';' + tuning_results_df['Load Estimator'] + ';' + tuning_results_df['Data Layout'] + ';' + tuning_results_df['Newton 3'] + ';' + tuning_results_df['CellSizeFactor'].map(str)
-
             # Merge them on 'Iteration' column
             merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
 
@@ -94,7 +94,8 @@ def load_data_from_directory(results_dir: str) -> pd.DataFrame:
 
     return final_merged_df
 
-def preprocess_data(merged_df: pd.DataFrame) -> tuple:
+
+def preprocess_data(merged_df: pd.DataFrame, features: list, targets: list) -> tuple:
     """
     Preprocess the merged DataFrame for model training.
 
@@ -104,103 +105,112 @@ def preprocess_data(merged_df: pd.DataFrame) -> tuple:
 
     Args:
         merged_df (pd.DataFrame): The merged DataFrame containing live info and tuning results.
+        features (list): List of column names to be used as features.
+        targets (list): List of column names to be used as targets.
 
     Returns:
         X (pd.DataFrame): A DataFrame of feature columns used for training.
         y (pd.DataFrame): A DataFrame of target columns to be predicted.
         label_encoders (dict): A dictionary of LabelEncoders used for encoding the target variables.
     """
-    # Select the features for training
-    features = ['meanParticlesPerCell', 'maxParticlesPerCell', 'relativeParticlesPerCellStdDev', 'threadCount', 'relativeParticlesPerBlurredCellStdDev', 'skin']
-
-    # Select the target
-    targets = ['combined']
-
-    # Encode using LabelEncoder
     label_encoders = {target: LabelEncoder() for target in targets}
-
     for target in targets:
         merged_df[target] = label_encoders[target].fit_transform(merged_df[target])
-
     X = merged_df[features]
     y = merged_df[targets]
-
     return X, y, label_encoders
 
 
-def train_model(X: pd.DataFrame, y: pd.DataFrame) -> dict:
+def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_iterations: int) -> MultiOutputClassifier:
     """
-    Train a RandomForestClassifier for each target variable.
+    Train a MultiOutputClassifier with a RandomForestClassifier for the target vector.
 
-    This function splits the data into training and testing sets and trains a RandomForestClassifier for each target
-    variable (e.g., 'Container', 'Traversal', etc.). It also evaluates each model by calculating the accuracy on
-    the test data.
+    This function splits the data into training and testing sets and trains a MultiOutputClassifier,
+    which supports multi-output classification by wrapping around a RandomForestClassifier.
+    It evaluates the model by calculating the accuracy on the test data for each target.
 
     Args:
         X (pd.DataFrame): The feature set for training the model.
         y (pd.DataFrame): The target set for training the model.
+        test_size (float): Fraction of data to be used for testing.
+        n_iterations (int): Number of estimators for the RandomForestClassifier.
 
     Returns:
-        models (dict): A dictionary of trained RandomForestClassifier models for each target variable.
+        MultiOutputClassifier: The trained MultiOutputClassifier model.
     """
-    # Split data into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+    base_model = RandomForestClassifier(n_estimators=n_iterations, random_state=42)
+    model = MultiOutputClassifier(base_model)
+    model.fit(X_train, y_train)
 
-    # Train a RandomForestClassifier for each target
-    models = {}
+    y_pred = model.predict(X_test)
     for i, column in enumerate(y.columns):
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train.iloc[:, i])
-        models[column] = model
-
-        # Test accuracy on test set for this model
-        y_pred = model.predict(X_test)
-        accuracy = accuracy_score(y_test.iloc[:, i], y_pred)
+        accuracy = accuracy_score(y_test.iloc[:, i], y_pred[:, i])
         print(f'Accuracy for {column}: {accuracy:.2f}')
 
-    return models
+    return model
 
 
-def save_model_and_encoders(models: dict, label_encoders: dict) -> None:
+def save_model_and_encoders(model: MultiOutputClassifier, label_encoders: dict, features: list, output_file: str) -> None:
     """
-    Save the trained models and LabelEncoders to a single file.
+    Save the trained model, LabelEncoders, and feature list to a file.
 
-    This function saves the trained models and LabelEncoders as a dictionary in a single pickle file
-    so they can be loaded together later for making predictions.
+    This function saves the trained MultiOutputClassifier model, LabelEncoders, and feature list as a dictionary
+    in a pickle file so they can be loaded together later for making predictions.
 
     Args:
-        models (dict): The trained models to be saved.
-        label_encoders (dict): The label encoders used for encoding target variables.
+        model (MultiOutputClassifier): The trained MultiOutputClassifier model.
+        label_encoders (dict): The LabelEncoders used for encoding target variables.
+        features (list): The list of feature column names.
+        output_file (str): Path to save the model, encoders, and features.
     """
-    # Combine models and label_encoders in a single dictionary
     combined_data = {
-        'models': models,
-        'label_encoders': label_encoders
+        'model': model,
+        'label_encoders': label_encoders,
+        'features': features
     }
-
-    # Save combined data to a single pickle file
-    with open('model.pkl', 'wb') as f:
+    print(combined_data)
+    with open(output_file, 'wb') as f:
         pickle.dump(combined_data, f)
 
-
-# Main function
-if __name__ == "__main__":
+def main():
     """
     Main execution function.
 
-    This function loads the live info and tuning result data from directories, preprocesses it, trains the models,
-    and saves both the models and label encoders in a single file. It prints completion messages after training and saving.
+    This function loads the live info and tuning result data from directories, preprocesses it, trains the model,
+    and saves both the model and label encoders in a single file. It prints completion messages after training and saving.
     """
+    parser = argparse.ArgumentParser(description="Train a RandomForestClassifier on merged AutoPas data.")
+    parser.add_argument('--live-info-dir', type=str, required=True, help="Directory containing live info CSV files.")
+    parser.add_argument('--tuning-results-dir', type=str, required=True,
+                        help="Directory containing tuning results CSV files.")
+    parser.add_argument('--features', type=str, nargs='+',
+                        default=['meanParticlesPerCell', 'maxParticlesPerCell', 'relativeParticlesPerCellStdDev',
+                                 'threadCount', 'relativeParticlesPerBlurredCellStdDev', 'skin'],
+                        help="List of feature columns for training.")
+    parser.add_argument('--targets', type=str, nargs='+',
+                        default=['Container', 'Traversal', 'Load Estimator', 'Data Layout', 'Newton 3', 'CellSizeFactor'],
+                        help="List of target columns to predict.")
+    parser.add_argument('--test-size', type=float, default=0.2, help="Test set size as a fraction (default: 0.2).")
+    parser.add_argument('--n-iterations', type=int, default=100,
+                        help="Number of iterations for RandomForest (default: 100).")
+    parser.add_argument('--output-file', type=str, default='model.pkl', help="Output file to save models and encoders.")
+    args = parser.parse_args()
 
-    # Load and preprocess the data
-    merged_df = load_data_from_directory('./data')
-    X, y, label_encoders = preprocess_data(merged_df)
+    print("Loading and merging data...")
+    merged_df = load_data_from_directory(args.live_info_dir, args.tuning_results_dir)
 
-    # Train the model
-    models = train_model(X, y)
+    print("Preprocessing data...")
+    X, y, label_encoders = preprocess_data(merged_df, args.features, args.targets)
 
-    # Save the trained models and encoders in a file
-    save_model_and_encoders(models, label_encoders)
+    print("Training model...")
+    model = train_model(X, y, args.test_size, args.n_iterations)
+
+    print(f"Saving model and encoders to {args.output_file}...")
+    save_model_and_encoders(model, label_encoders, args.features, args.output_file)
 
     print("Model training and saving complete.")
 
+
+if __name__ == "__main__":
+    main()

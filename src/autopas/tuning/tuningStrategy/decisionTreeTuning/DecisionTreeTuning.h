@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <Python.h>
+#include <pybind11/embed.h>
 
 #include <map>
 #include <set>
@@ -31,8 +31,10 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    * Constructor of DecisionTreeTuning.
    * @param searchSpace Set of configurations to be considered.
    * @param modelFileName Name of the file containing the decision tree model.
+   * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    */
-  DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName);
+  DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
+                     double confidenceThreshold);
 
   ~DecisionTreeTuning() override;
 
@@ -46,10 +48,6 @@ class DecisionTreeTuning : public TuningStrategyInterface {
                            const EvidenceCollection &evidenceCollection) override;
 
  private:
-  /**
-   * Load the Python script predict.py.
-   */
-  void loadScript();
   /**
    * Get the prediction from the Python script.
    * @return Prediction from the Python script.
@@ -74,11 +72,14 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    * Name of the file containing the decision tree model.
    */
   std::string _modelFileName;
-
   /**
-   * Pointer to the Python function main in the predict.py script.
+   * Confidence threshold for the prediction.
    */
-  PyObject *_pFunc;
+  double _confidenceThreshold;
+  /**
+   * Pybind11 object representing the Python function `main`.
+   */
+  pybind11::object _pythonMainFunc;
 };
 
 }  // namespace autopas

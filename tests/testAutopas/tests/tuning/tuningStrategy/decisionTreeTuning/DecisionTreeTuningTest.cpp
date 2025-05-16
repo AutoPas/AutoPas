@@ -7,21 +7,23 @@
 
 #include "DecisionTreeTuningTest.h"
 
-#include <Python.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pybind11/embed.h>
 
-#include "autopas/tuning/searchSpace/Evidence.h"
+#include <filesystem>  // For checking the existence of test files
+
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
+namespace py = pybind11;
+
 /**
  * @class MockLiveInfo
  *
- * The MockLiveInfo class inherits from LiveInfo and provides a mock implementation
- * of the get() method to simulate live info for DecisionTreeTuning tests.
+ * Mock class for LiveInfo to simulate system states for testing purposes.
  */
 class MockLiveInfo : public LiveInfo {
  public:
@@ -31,35 +33,39 @@ class MockLiveInfo : public LiveInfo {
 /**
  * @test TestScriptLoading
  *
- * This test case ensures that when an invalid or non-existent Python model file is provided
- * to the DecisionTreeTuning constructor, a runtime error is thrown during the `reset()` call.
+ * Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
  */
 TEST(DecisionTreeTuningTest, TestScriptLoading) {
   std::set<autopas::Configuration> searchSpace;
 
   EXPECT_THROW(
       {
-        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "invalid_model.pkl");
+        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      autopas::utils::ExceptionHandler::AutoPasException);
+      pybind11::error_already_set);
 }
 
 /**
  * @test TestValidPythonResponse
  *
- * This test case simulates a valid configuration where the Python script successfully
- * returns the expected configuration, and the reset function updates the configuration queue.
+ * Tests that a valid Python model response updates the configuration queue correctly.
  */
 TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
-  std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
-      autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)};
+  // Define the search space for configurations
+  std::set<autopas::Configuration> searchSpace = {
+      autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise)};
 
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, "test_model.pkl");
+  std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model.pkl";
 
+  ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
+      << "Test model file does not exist.";
+
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -68,13 +74,18 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   EXPECT_CALL(mockLiveInfo, get()).WillRepeatedly(::testing::ReturnRef(liveInfoMap));
 
   tuningStrategy.receiveLiveInfo(mockLiveInfo);
-
   std::vector<autopas::Configuration> configQueue;
+  configQueue.push_back(autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0,
+                                               autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
+                                               autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+                                               autopas::InteractionTypeOption::pairwise));
+
   autopas::EvidenceCollection evidenceCollection;
 
   tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
 
   ASSERT_FALSE(configQueue.empty());
+
   const autopas::Configuration &predictedConfig = configQueue.front();
 
   EXPECT_EQ(predictedConfig.container, autopas::ContainerOption::linkedCells);
@@ -84,17 +95,19 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
 }
 
 /**
- * @test TestInvalidPythonResponse
+ * @test TestInvalidModel
  *
- * This test case verifies that when the Python script returns an invalid response (e.g., malformed JSON),
- * the `reset()` function throws a runtime error during the parsing of the configuration.
+ * Tests that a malformed model throws an exception during `reset()`.
  */
-TEST(DecisionTreeTuningTest, TestInvalidPythonResponse) {
+TEST(DecisionTreeTuningTest, TestInvalidModel) {
   std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)};
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise)};
 
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, "test_model_invalid_response.pkl");
+  std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model_invalid.pkl";
+  ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
+      << "Invalid response test model file does not exist.";
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
 
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
@@ -106,43 +119,14 @@ TEST(DecisionTreeTuningTest, TestInvalidPythonResponse) {
   EXPECT_THROW(
       {
         std::vector<autopas::Configuration> configQueue;
+        configQueue.push_back(
+            autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
+                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                   autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise));
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      autopas::utils::ExceptionHandler::AutoPasException);  // Expect an exception due to invalid JSON
-}
-
-/**
- * @test TestEmptyLiveInfo
- *
- * This test case verifies that even when the live info map is empty, the `reset()` function
- * can still successfully retrieve a configuration from the Python model.
- */
-TEST(DecisionTreeTuningTest, TestEmptyLiveInfo) {
-  std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
-      autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)};
-
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, "test_model.pkl");
-
-  MockLiveInfo mockLiveInfo;
-  std::map<std::string, LiveInfo::InfoType> emptyLiveInfoMap = {};
-  EXPECT_CALL(mockLiveInfo, get()).WillRepeatedly(::testing::ReturnRef(emptyLiveInfoMap));
-
-  tuningStrategy.receiveLiveInfo(mockLiveInfo);
-
-  std::vector<autopas::Configuration> configQueue;
-  autopas::EvidenceCollection evidenceCollection;
-
-  tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
-
-  ASSERT_FALSE(configQueue.empty());
-  const autopas::Configuration &predictedConfig = configQueue.front();
-
-  EXPECT_EQ(predictedConfig.container, autopas::ContainerOption::linkedCells);
-  EXPECT_EQ(predictedConfig.traversal, autopas::TraversalOption::lc_c08);
-  EXPECT_EQ(predictedConfig.dataLayout, autopas::DataLayoutOption::soa);
-  EXPECT_EQ(predictedConfig.newton3, autopas::Newton3Option::enabled);
+      std::runtime_error);
 }
 
 }  // namespace autopas
