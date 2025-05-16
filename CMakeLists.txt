@@ -123,12 +123,5 @@ write_basic_package_version_file(
         # for now ExactVersion is used, as the interface might change.
 )
 
-# Find Pybind11 (system-installed)
-find_package(pybind11 REQUIRED)
-
-# Include Pybind11 for embedding or module creation
-add_library(autopas_python INTERFACE)
-target_link_libraries(autopas_python INTERFACE pybind11::embed) # For embedding Python
-target_link_libraries(autopas PRIVATE pybind11::embed)
 # We have to include coverage target after the CMakeFiles for the tests
 include(autopas_CodeCoverage)
