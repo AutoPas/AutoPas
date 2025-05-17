@@ -38,10 +38,11 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
+ * @tparam scalingCutoff_T If set to true, the cutoff will be scaled by the sigma of the particles.
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true>
+          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoff_T = false>
 class LJFunctorAVX
     : public autopas::PairwiseFunctor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3,
                                                                calculateGlobals, countFLOPs, relevantForTuning>> {
@@ -128,11 +129,15 @@ class LJFunctorAVX
     if (i.isDummy() or j.isDummy()) {
       return;
     }
+    auto cutoffSquared = _cutoffSquaredAoS;
     auto sigmaSquared = _sigmaSquaredAoS;
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      if constexpr (scalingCutoff_T) {
+        cutoffSquared = _cutoffSquaredAoS * sigmaSquared;
+      }
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
@@ -141,7 +146,7 @@ class LJFunctorAVX
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffSquaredAoS) {
+    if (dr2 > cutoffSquared) {
       return;
     }
 
@@ -469,6 +474,7 @@ class LJFunctorAVX
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
+    __m256d cutoffSquared = _cutoffSquared;
     if (useMixing) {
       // the first argument for set lands in the last bits of the register
       epsilon24s = _mm256_set_pd(
@@ -481,6 +487,9 @@ class LJFunctorAVX
           not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
           not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
           _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
+      if constexpr (scalingCutoff_T) {
+        cutoffSquared = _mm256_mul_pd(_cutoffSquared, sigmaSquareds);
+      }
       if constexpr (applyShift) {
         shift6s = _mm256_set_pd(
             (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
@@ -508,7 +517,7 @@ class LJFunctorAVX
     // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
     // signaling = throw error if NaN is encountered
     // dr2 <= _cutoffSquared ? 0xFFFFFFFFFFFFFFFF : 0
-    const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffSquared, _CMP_LE_OS);
+    const __m256d cutoffMask = _mm256_cmp_pd(dr2, cutoffSquared, _CMP_LE_OS);
 
     // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
     const __m256i ownedStateJ = remainderIsMasked
@@ -934,8 +943,8 @@ class LJFunctorAVX
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquared = _mm256_set1_pd(sigmaSquared);
     if constexpr (applyShift) {
-      _shift6 = _mm256_set1_pd(
-          ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared[0]));
+      _shift6 = _mm256_set1_pd(ParticlePropertiesLibrary<double, size_t>::calcShift6(
+          epsilon24, sigmaSquared, _cutoffSquared[0], scalingCutoff_T));
     } else {
       _shift6 = _mm256_setzero_pd();
     }
@@ -944,7 +953,8 @@ class LJFunctorAVX
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
+      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS,
+                                                                         scalingCutoff_T);
     } else {
       _shift6AoS = 0.;
     }
@@ -1005,13 +1015,13 @@ class LJFunctorAVX
   };
   const __m256i _ownedStateDummyMM256i{0x0};
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
-  const __m256d _cutoffSquared{};
+  __m256d _cutoffSquared{};
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};
   __m256d _sigmaSquared{};
 #endif
 
-  const double _cutoffSquaredAoS = 0;
+  double _cutoffSquaredAoS = 0;
   double _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
