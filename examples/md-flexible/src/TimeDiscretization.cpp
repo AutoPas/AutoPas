@@ -21,13 +21,17 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
-
-  const auto maxAllowedDistanceMoved = autoPasContainer.getVerletSkinPerTimestep() / 2.;
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  AUTOPAS_OPENMP(parallel)
+#else
+  const auto maxAllowedDistanceMoved =
+      autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency() / 2.;
   const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
 
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
+#endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto v = iter->getV();
@@ -37,6 +41,9 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    iter->addR(displacement);
+#else
     // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
     if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
         maxAllowedDistanceMovedSquared > 0) {
@@ -45,17 +52,20 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
       // the whole rebuild frequency is farther than the skin we lose interactions.
       AUTOPAS_OPENMP(critical)
       std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << distanceMoved << " > "
-                << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
+                << autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency()
+                << "/2 = " << maxAllowedDistanceMoved << "\n"
                 << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
       if (fastParticlesThrow) {
         throwException = true;
       }
     }
+#endif
   }
-
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (throwException) {
     throw std::runtime_error("At least one particle was too fast!");
   }
+#endif
 }
 
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,

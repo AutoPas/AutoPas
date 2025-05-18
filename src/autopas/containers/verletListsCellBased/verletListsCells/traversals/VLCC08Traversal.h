@@ -77,7 +77,7 @@ inline void VLCC08Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traver
     this->loadSoA(_functor, *(this->_verletList));
   }
 
-  this->template c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
+  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor>(*(this->_verletList), baseIndex, _functor, this->_dataLayout,
                                                      this->_useNewton3);

@@ -41,17 +41,17 @@ INSTANTIATE_TEST_SUITE_P(
           applicableCombinations;
 
       // container factory
-      autopas::ContainerSelector<Particle> containerSelector(
+      autopas::ContainerSelector<autopas::ParticleBaseFP64> containerSelector(
           Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff());
       autopas::ContainerSelectorInfo containerInfo(
-          Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkinPerTimestep(),
+          Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkin(),
           Newton3OnOffTest::getRebuildFrequency(), Newton3OnOffTest::getClusterSize(),
           autopas::LoadEstimatorOption::none);
 
       // generate for all containers
       for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
         containerSelector.selectContainer(containerOption, containerInfo);
-        autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
+        autopas::ParticleContainerInterface<ParticleFP64> &container = containerSelector.getCurrentContainer();
 
         for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
           for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
@@ -60,33 +60,34 @@ INSTANTIATE_TEST_SUITE_P(
               bool configOk = false;
 
               if (interactionType == autopas::InteractionTypeOption::pairwise) {
-                MockPairwiseFunctor<Particle> functor;
+                MockPairwiseFunctor<ParticleFP64> functor;
                 // generate both newton3 versions of the same traversal and check that both are applicable
-                configOk = autopas::utils::withStaticCellType<Particle>(
+                configOk = autopas::utils::withStaticCellType<ParticleFP64>(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
                       auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy)>();
                       auto traversalWithN3 =
-                          traversalSelector.template generateTraversal<MockPairwiseFunctor<Particle>>(
+                          traversalSelector.template generateTraversal<MockPairwiseFunctor<ParticleFP64>>(
                               traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
                               autopas::Newton3Option::enabled);
                       auto traversalWithoutN3 =
-                          traversalSelector.template generateTraversal<MockPairwiseFunctor<Particle>>(
+                          traversalSelector.template generateTraversal<MockPairwiseFunctor<ParticleFP64>>(
                               traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
                               autopas::Newton3Option::disabled);
 
                       return traversalWithN3->isApplicable() and traversalWithoutN3->isApplicable();
                     });
               } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-                MockTriwiseFunctor<Particle> functor;
+                MockTriwiseFunctor<ParticleFP64> functor;
                 // generate both newton3 versions of the same traversal and check that both are applicable
-                configOk = autopas::utils::withStaticCellType<Particle>(
+                configOk = autopas::utils::withStaticCellType<ParticleFP64>(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
                       auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy)>();
-                      auto traversalWithN3 = traversalSelector.template generateTraversal<MockTriwiseFunctor<Particle>>(
-                          traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
-                          autopas::Newton3Option::enabled);
+                      auto traversalWithN3 =
+                          traversalSelector.template generateTraversal<MockTriwiseFunctor<ParticleFP64>>(
+                              traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
+                              autopas::Newton3Option::enabled);
                       auto traversalWithoutN3 =
-                          traversalSelector.template generateTraversal<MockTriwiseFunctor<Particle>>(
+                          traversalSelector.template generateTraversal<MockTriwiseFunctor<ParticleFP64>>(
                               traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
                               autopas::Newton3Option::disabled);
 
@@ -117,14 +118,13 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   if (containerOption == autopas::ContainerOption::directSum and dataLayout == autopas::DataLayoutOption::soa) {
     return;
   }
-  autopas::ContainerSelector<Particle> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
-  const autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkinPerTimestep(),
-                                                     getRebuildFrequency(), getClusterSize(),
-                                                     autopas::LoadEstimatorOption::none);
+  autopas::ContainerSelector<ParticleFP64> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
+  const autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), getRebuildFrequency(),
+                                                     getClusterSize(), autopas::LoadEstimatorOption::none);
 
   containerSelector.selectContainer(containerOption, containerInfo);
 
-  autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
+  autopas::ParticleContainerInterface<ParticleFP64> &container = containerSelector.getCurrentContainer();
 
   const Molecule defaultParticle{};
   autopasTools::generators::UniformGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
@@ -143,7 +143,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // loader and extractor will be called, we don't care how often.
-    autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+    autopas::utils::withStaticCellType<ParticleFP64>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
       auto *expectation =
           &EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _, _))
                .Times(testing::AtLeast(1));
@@ -299,7 +299,7 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOpt
 
   auto traversalSelectorInfo = container.getTraversalSelectorInfo();
   // simulate iteration
-  autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+  autopas::utils::withStaticCellType<ParticleFP64>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
     iterate(container,
             autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<Functor>(
                 traversalOption, mockFunctor, traversalSelectorInfo, dataLayout, n3Option),

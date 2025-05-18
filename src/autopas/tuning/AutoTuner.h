@@ -17,7 +17,7 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
-#include "autopas/utils/RaplMeter.h"
+#include "autopas/utils/EnergySensor.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -107,10 +107,11 @@ class AutoTuner {
   void bumpIterationCounters(bool needToWait = false);
 
   /**
-   * Returns whether rebuildNeighborLists() will be triggered in the next iteration.
-   * This might also indicate a container change.
-   *
-   * @return True if the current iteration counters indicate a rebuild in the next iteration.
+   * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
+   * This indicates a configuration change.
+   * In the non-tuning phase, the rebuildNeighborLists() is triggered in LogicHandler.
+   * @return True if the current iteration counters indicate a rebuild in the next iteration due to a configuration
+   * change.
    */
   bool willRebuildNeighborLists() const;
 
@@ -161,8 +162,8 @@ class AutoTuner {
   void logTuningResult(bool tuningIteration, long tuningTime) const;
 
   /**
-   * Initialize rapl meter.
-   * @return True if energy measurements are possible on this system.
+   * Initialize pmt sensor.
+   * @return True if energy measurements are enabled and possible.
    */
   bool initEnergy();
 
@@ -217,6 +218,18 @@ class AutoTuner {
   bool inTuningPhase() const;
 
   /**
+   * Indicate if the tuner is in the first iteration of a tuning phase.
+   * @return
+   */
+  bool inFirstTuningIteration() const;
+
+  /**
+   * Indicate if the tuner is in the last iteration of the tuning phase.
+   * @return
+   */
+  bool inLastTuningIteration() const;
+
+  /**
    * Getter for the internal evidence collection.
    * @return
    */
@@ -228,12 +241,23 @@ class AutoTuner {
    */
   bool canMeasureEnergy() const;
 
- private:
   /**
-   * Measures consumed energy for tuning
+   * Sets the _rebuildFrequency. This is the average number of iterations per rebuild.
+   * This is used to dynamically change the _rebuildFrequency based on estimate in case of dynamic containers.
+   * @param rebuildFrequency Current rebuild frequency in this instance of autopas, used by autopas for weighing rebuild
+   * and non-rebuild iterations
    */
-  utils::RaplMeter _raplMeter;
+  void setRebuildFrequency(double rebuildFrequency);
 
+  /**
+   * Checks whether the current configuration performs so poorly that it shouldn't be resampled further within this
+   * tuning phase. If the currently sampled configuration is worse than the current best configuration by more than the
+   * earlyStoppingFactor factor, it will not be sampled again this tuning phase. Uses the _estimateRuntimeFromSamples()
+   * function to estimate the runtimes.
+   */
+  void checkEarlyStoppingCondition();
+
+ private:
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
@@ -308,13 +332,22 @@ class AutoTuner {
 
   /**
    * The rebuild frequency this instance of AutoPas uses.
+   * In the case of dynamic containers, this reflects the current estimate of the average rebuild frequency.
+   * As the estimate is an average of integers, it can be a fraction and so double is used here.
+   * In static containers, this is set to user-defined rebuild frequency.
    */
-  unsigned int _rebuildFrequency;
+  double _rebuildFrequency;
 
   /**
    * How many times each configuration should be tested.
    */
   size_t _maxSamples;
+
+  /**
+   * EarlyStoppingFactor for the auto-tuner. A configuration performing worse than the currently best configuration
+   * by more than this factor will not be sampled again this tuning phase.
+   */
+  double _earlyStoppingFactor;
 
   /**
    * Flag indicating if any tuning strategy needs the smoothed homogeneity and max density collected.
@@ -385,6 +418,11 @@ class AutoTuner {
   TuningDataLogger _tuningDataLogger;
 
   /**
+   * Sensor for energy measurement
+   */
+  utils::EnergySensor _energySensor;
+
+  /**
    * Is set to true during a tuning phase.
    */
   bool _isTuning{false};
@@ -403,8 +441,15 @@ class AutoTuner {
   bool _forceRetune{false};
 
   /**
-   * A counter incremented in every iteration and reset to zero at the beginning of a tuning phase and at the end of
-   * a tuning phase
+   * Is set to true if the current configuration should not be used to collect further samples because it is
+   * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
+   */
+  bool _earlyStoppingOfResampling{false};
+
+  /**
+   * Used only for triggering rebuilds when configurations switch during tuning phases, which occurs when
+   * _iterationBaseline % _maxSamples == 0. _iterationBaseline may therefore be modified to "skip" iterations e.g. when
+   * early stopping is used."
    */
   size_t _iterationBaseline{0};
 };

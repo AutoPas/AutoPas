@@ -30,7 +30,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
                               std::vector<Molecule> &particlesContainerHalo,
                               std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffers,
                               std::vector<autopas::FullParticleCell<Molecule>> &particlesHaloBuffers,
-                              autopas::Newton3Option n3) {
+                              autopas::Newton3Option n3, autopas::DataLayoutOption dataLayout) {
   // sanity check that there are exactly two particles in the test
   const auto numParticlesInBuffers = std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0,
                                                            std::plus<>(), [](const auto &cell) { return cell.size(); });
@@ -53,7 +53,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 2.5,
-      .verletSkinPerTimestep = 0.05,
+      .verletSkin = 0.5,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
@@ -63,8 +63,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
-        autopas::InteractionTypeOption::pairwise}});
+        autopas::LoadEstimatorOption::none, dataLayout, n3, autopas::InteractionTypeOption::pairwise}});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
       autopas::InteractionTypeOption::pairwise,
@@ -128,6 +127,10 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       4 * epsilon * (std::pow(sigma / expectedDist, 12.) - std::pow(sigma / expectedDist, 6.)) *
       ((numParticlesHaloBuffers != 0 or not particlesContainerHalo.empty()) ? 0.5 : 1);
   EXPECT_NEAR(expectedPotentialEnergy, functor.getPotentialEnergy(), 1e-12);
+
+  if (::testing::Test::HasFailure()) {
+    std::cout << "Failures occurred for DataLayout: " << dataLayout << std::endl;
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_container_NoN3) {
@@ -138,8 +141,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containe
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containerHalo_NoN3) {
@@ -151,8 +156,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containe
   };
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_container_NoN3) {
@@ -163,8 +170,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_con
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_containerHalo_NoN3) {
@@ -175,8 +184,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_con
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   particlesBuffers[0].addParticle(Molecule{{0.5, 1., 1.}, {0., 0., 0.}, 0, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferA_NoN3) {
@@ -186,8 +197,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_pa
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   particlesBuffers[0].addParticle(Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 
 // This test is not possible without OpenMP because there only exists one buffer
@@ -200,8 +213,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_pa
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   particlesBuffers[1].addParticle(Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers(2);
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 #endif
 
@@ -213,8 +228,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_contain
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   particlesHaloBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particleBuffer_NoN3) {
@@ -224,8 +241,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particl
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   particlesHaloBuffers[0].addParticle(Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0});
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::disabled, dataLayout);
+  }
 }
 
 /// Newton 3 enabled
@@ -237,8 +256,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containe
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containerHalo_N3) {
@@ -250,8 +271,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containe
   };
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_container_N3) {
@@ -262,8 +285,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_con
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_containerHalo_N3) {
@@ -274,8 +299,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_con
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   particlesBuffers[0].addParticle(Molecule{{0.5, 1., 1.}, {0., 0., 0.}, 0, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferA_N3) {
@@ -285,8 +312,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_pa
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   particlesBuffers[0].addParticle(Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 
 #ifdef AUTOPAS_USE_OPENMP
@@ -298,8 +327,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_pa
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   particlesBuffers[1].addParticle(Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers(2);
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 #endif
 
@@ -311,8 +342,10 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_contain
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   particlesHaloBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particleBuffer_N3) {
@@ -322,13 +355,16 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particl
   particlesBuffers[0].addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   particlesHaloBuffers[0].addParticle(Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0});
-  testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::enabled);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testIteratePairwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
+                             autopas::Newton3Option::enabled, dataLayout);
+  }
 }
 
 void testRemainderTraversal(const std::vector<Molecule> &particles, const std::vector<Molecule> &haloParticles,
                             std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffer,
-                            std::vector<autopas::FullParticleCell<Molecule>> &haloParticlesBuffer) {
+                            std::vector<autopas::FullParticleCell<Molecule>> &haloParticlesBuffer,
+                            autopas::DataLayoutOption dataLayout) {
   /// Setup AutoTuner
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
@@ -336,7 +372,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
       .boxMin{0., 0., 0.},
       .boxMax{9., 9., 9.},
       .cutoff = 2.5,
-      .verletSkinPerTimestep = 0.05,
+      .verletSkin = 0.5,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
@@ -346,7 +382,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+        autopas::LoadEstimatorOption::none, dataLayout, autopas::Newton3Option::enabled,
         autopas::InteractionTypeOption::pairwise}});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -376,14 +412,14 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   for (const auto &p : logicHandler.getContainer()) {
     EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))
         << "Particle in container had no interaction!\n"
-        << p;
+        << p << "\nwith Data Layout " << dataLayout;
   }
   const auto &[logicHandlerParticlesBuffer, logicHandlerHaloBuffer] = logicHandler.getParticleBuffers();
   for (const auto &buffer : logicHandlerParticlesBuffer) {
     for (const auto &p : buffer) {
       EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))
           << "Particle in particlesBuffer had no interaction!\n"
-          << p;
+          << p << "\nwith Data Layout " << dataLayout;
     }
   }
 }
@@ -437,7 +473,10 @@ TEST_P(RemainderTraversalTest, testRemainderTraversal) {
   }
 
   /// TEST
-  testRemainderTraversal(containerParticles, containerHaloParticles, bufferParticles, bufferHaloParticles);
+  for (const auto dataLayout : autopas::DataLayoutOption::getAllOptions()) {
+    testRemainderTraversal(containerParticles, containerHaloParticles, bufferParticles, bufferHaloParticles,
+                           dataLayout);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, RemainderTraversalTest,
