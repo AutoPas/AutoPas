@@ -61,6 +61,9 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     oldForceX,
     oldForceY,
     oldForceZ,
+    tempForceX,
+    tempForceY,
+    tempForceZ,
     quaternion0,
     quaternion1,
     quaternion2,
@@ -71,6 +74,9 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     torqueX,
     torqueY,
     torqueZ,
+    tempTorqueX,
+    tempTorqueY,
+    tempTorqueZ,
     typeId,
     ownershipState
   };
@@ -98,6 +104,9 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       double, // oldFx
       double, // oldFy
       double, // oldFz
+      double, // tempFx
+      double, // tempFy
+      double, // tempFz
       double, // q0
       double, // q1
       double, // q2
@@ -108,6 +117,9 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       double, // tx
       double, // ty
       double, // tz
+      double, // tempTx
+      double, // tempTy
+      double, // tempTz
       size_t, // typeid
       autopas::OwnershipState //ownerState
   >::Type;
@@ -158,6 +170,12 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       return getOldF()[1];
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       return getOldF()[2];
+    } else if constexpr (attribute == AttributeNames::tempForceX) {
+      return getTempF()[0];
+    } else if constexpr (attribute == AttributeNames::tempForceY) {
+      return getTempF()[1];
+    } else if constexpr (attribute == AttributeNames::tempForceZ) {
+      return getTempF()[2];
     } else if constexpr (attribute == AttributeNames::quaternion0) {
       return getQuaternion()[0];
     } else if constexpr (attribute == AttributeNames::quaternion1) {
@@ -178,6 +196,12 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       return getTorque()[1];
     } else if constexpr (attribute == AttributeNames::torqueZ) {
       return getTorque()[2];
+    } else if constexpr (attribute == AttributeNames::tempTorqueX) {
+      return getTempTorque()[0];
+    } else if constexpr (attribute == AttributeNames::tempTorqueY) {
+      return getTempTorque()[1];
+    } else if constexpr (attribute == AttributeNames::tempTorqueZ) {
+      return getTempTorque()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
       return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -222,6 +246,12 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       _oldF[1] = value;
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       _oldF[2] = value;
+    } else if constexpr (attribute == AttributeNames::tempForceX) {
+      _tempF[0] = value;
+    } else if constexpr (attribute == AttributeNames::tempForceY) {
+      _tempF[1] = value;
+    } else if constexpr (attribute == AttributeNames::tempForceZ) {
+      _tempF[2] = value;
     } else if constexpr (attribute == AttributeNames::quaternion0) {
       _q[0] = value;
     } else if constexpr (attribute == AttributeNames::quaternion1) {
@@ -242,6 +272,12 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       _torque[1] = value;
     } else if constexpr (attribute == AttributeNames::torqueZ) {
       _torque[2] = value;
+    } else if constexpr (attribute == AttributeNames::tempTorqueX) {
+      _tempTorque[0] = value;
+    } else if constexpr (attribute == AttributeNames::tempTorqueY) {
+      _tempTorque[1] = value;
+    } else if constexpr (attribute == AttributeNames::tempTorqueZ) {
+      _tempTorque[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       _typeId = value;
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -294,6 +330,18 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
   void setTorque(const std::array<double, 3> &torque);
 
   /**
+   * Get the temp torque.
+   * @return torque
+   */
+  [[nodiscard]] const std::array<double, 3> &getTempTorque() const;
+
+  /**
+   * Set the temp torque.
+   * @param torque
+   */
+  void setTempTorque(const std::array<double, 3> &torque);
+
+  /**
    * Adds given torque to the particle's torque.
    * @param torque torque to be added
    */
@@ -326,6 +374,11 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Torque applied to particle.
    */
   std::array<double, 3> _torque{};
+
+  /**
+   * Temp torque applied to particle.
+   */
+  std::array<double, 3> _tempTorque{};
 };
 
 }  // namespace mdLib

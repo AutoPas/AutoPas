@@ -76,6 +76,10 @@ constexpr bool calcGlobals =
 #endif
 }  // namespace mdFlexibleTypeDefs
 
+using LuTFunctorType = mdLib::LuTFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
+                                         mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LookupTableType = mdLib::LookupTable;
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
  * Type of LJFunctorTypeAutovec used in md-flexible.

@@ -448,6 +448,74 @@ class MDFlexConfig {
   MDFlexOption<size_t, __LINE__> vtkWriteFrequency{100, "vtk-write-frequency", true,
                                                    "Number of iterations after which a VTK file is written."};
   /**
+   * rdfOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> rdfOutputFolder{"output", "rdf-output-folder", true,
+                                                      "The location where the rdf output will be created."};
+  /**
+   * rdfFileName
+   */
+  MDFlexOption<std::string, __LINE__> rdfFileName{"rdf", "rdf-filename", true, "Filename for the RDF output CSV."};
+  /**
+   * rdfRadius
+   */
+  MDFlexOption<double, __LINE__> rdfRadius{0, "rdf-radius", true, "Radius for the RDF calculation."};
+  /**
+   * rdfNumBins
+   */
+  MDFlexOption<size_t, __LINE__> rdfNumBins{0, "rdf-num-bins", true, "Number of bins for the RDF calculation."};
+  /**
+   * rdfCaptureFreuency
+   */
+  MDFlexOption<size_t, __LINE__> rdfCaptureFreuency{1, "rdf-capture-frequency", true,
+                                                    "Number of iterations after which the RDF is captured."};
+  /**
+   * rdfStartIteration
+   */
+  MDFlexOption<size_t, __LINE__> rdfStartIteration{0, "rdf-start-iteration", true,
+                                                   "Iteration number after which RDF capturing is enabled"};
+  /**
+   * rdfEndIteration
+   */
+  MDFlexOption<size_t, __LINE__> rdfEndIteration{0, "rdf-end-iteration", true,
+                                                 "Iteration number after which RDF capturing is disabled."};
+  /**
+   * ibiEquilibrateIterations
+   */
+  MDFlexOption<size_t, __LINE__> ibiEquilibrateIterations{0, "ibi-equilibrate-iterations", true,
+                                                          "IBI iterations before capturing the RDF"};
+  /**
+   * ibiConvergenceThreshold
+   */
+  MDFlexOption<double, __LINE__> ibiConvergenceThreshold{
+      0.99, "ibi-convergence-threshold", true,
+      "Convergence threshold for the IBI process. A value of 1 would be a perfect match between the CG RDF and the "
+      "reference RDF"};
+  /**
+   * ibiUpdateAlpha
+   */
+  MDFlexOption<double, __LINE__> ibiUpdateAlpha{
+      1.0, "ibi-update-alpha", true, "Scaling factor used to avoid overshooting. Usually between 0.2 and 1.0"};
+  /**
+   * rdfGuardArea
+   */
+  MDFlexOption<double, __LINE__> rdfGuardArea{0, "rdf-guard-area", true, "Guard area to use for the RDF calculation."};
+  /**
+   * lutOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> lutOutputFolder{"output", "lut-output-folder", true,
+                                                      "The location where the lookup table output will be created."};
+  /**
+   * lutInputFile
+   */
+  MDFlexOption<std::string, __LINE__> lutInputFile{"", "lut-input-file", true,
+                                                   "CSV file to be loaded as lookup table input file."};
+  /**
+   * lutFileName
+   */
+  MDFlexOption<std::string, __LINE__> lutFileName{"lut", "lut-filename", true,
+                                                  "Filename for the lookup table output CSV."};
+  /**
    * verletClusterSize
    */
   MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,
@@ -575,6 +643,11 @@ class MDFlexConfig {
       "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
       "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
       "unnecessary distance checks."};
+
+  /**
+   * respaStepSize
+   */
+  MDFlexOption<size_t, __LINE__> respaStepSize{1, "respa-stepsize", true, "Stepsize for respa"};
 
   // Options for additional Object Generation on command line
   /**

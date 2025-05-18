@@ -66,7 +66,8 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
  * @param deltaT The time step width.
  */
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                         bool resetForces, const bool outerRespaStep = false, const size_t respaStepSize = 1);
 
 /**
  * Calculate and update the angular velocity for every particle.
@@ -78,6 +79,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param deltaT
  */
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                                bool resetTorques, const bool outerRespaStep = false, const size_t respaStepSize = 1);
 
 }  // namespace TimeDiscretization

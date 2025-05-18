@@ -313,6 +313,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.sortingThreshold.description;
 
         config.sortingThreshold.value = node[key].as<size_t>();
+      } else if (key == config.respaStepSize.name) {
+        expected = "Unsigned Integer >= 1.";
+        description = config.respaStepSize.description;
+
+        config.respaStepSize.value = node[key].as<size_t>();
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;
@@ -578,6 +583,119 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.vtkWriteFrequency.value = node[key].as<size_t>();
         if (config.vtkWriteFrequency.value < 1) {
           throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
+        }
+      } else if (key == config.rdfOutputFolder.name) {
+        expected = "String";
+        description = config.rdfOutputFolder.description;
+
+        config.rdfOutputFolder.value = node[key].as<std::string>();
+        if (config.rdfOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed RDF output folder name is empty");
+        }
+      } else if (key == config.rdfFileName.name) {
+        expected = "String";
+        description = config.rdfFileName.description;
+
+        config.rdfFileName.value = node[key].as<std::string>();
+        if (config.rdfFileName.value.empty()) {
+          throw std::runtime_error("Parsed RDF filename is empty!");
+        }
+      } else if (key == config.rdfNumBins.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.rdfNumBins.description;
+
+        config.rdfNumBins.value = node[key].as<size_t>();
+        if (config.rdfNumBins.value < 1) {
+          throw std::runtime_error("RDF num bins has to be a positive integer >= 1!");
+        }
+      } else if (key == config.rdfCaptureFreuency.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.rdfCaptureFreuency.description;
+
+        config.rdfCaptureFreuency.value = node[key].as<size_t>();
+        if (config.rdfCaptureFreuency.value < 1) {
+          throw std::runtime_error("RDF write frequency has to be a positive integer >= 1!");
+        }
+      } else if (key == config.rdfStartIteration.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.rdfStartIteration.description;
+
+        config.rdfStartIteration.value = node[key].as<size_t>();
+        if (config.rdfStartIteration.value < 0) {
+          throw std::runtime_error("RDF start iteration has to be a positive integer >= 0!");
+        }
+      } else if (key == config.rdfEndIteration.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.rdfEndIteration.description;
+
+        config.rdfEndIteration.value = node[key].as<size_t>();
+        if (config.rdfEndIteration.value < 0) {
+          throw std::runtime_error("RDF end iteration has to be a positive integer >= 0!");
+        }
+      } else if (key == config.rdfRadius.name) {
+        expected = "Positive floating-point value.";
+        description = config.rdfRadius.description;
+
+        config.rdfRadius.value = node[key].as<double>();
+        if (config.rdfRadius.value <= 0) {
+          throw std::runtime_error("RDF radius has to be a positive value > 0!");
+        }
+      } else if (key == config.rdfGuardArea.name) {
+        expected = "Positive floating-point value.";
+        description = config.rdfGuardArea.description;
+
+        config.rdfGuardArea.value = node[key].as<double>();
+        if (config.rdfGuardArea.value < 0) {
+          throw std::runtime_error("RDF guard area has to be a positive value >= 0!");
+        }
+      } else if (key == config.ibiEquilibrateIterations.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.ibiEquilibrateIterations.description;
+
+        config.ibiEquilibrateIterations.value = node[key].as<size_t>();
+        if (config.ibiEquilibrateIterations.value < 0) {
+          throw std::runtime_error("IBI equilibrate iterations has to be a positive integer >= 0!");
+        }
+      } else if (key == config.ibiConvergenceThreshold.name) {
+        expected = "double > 0 and <= 1";
+        description = config.ibiConvergenceThreshold.description;
+
+        config.ibiConvergenceThreshold.value = node[key].as<double>();
+        if (config.ibiConvergenceThreshold.value <= 0 or config.ibiConvergenceThreshold.value > 1.0) {
+          throw std::runtime_error("IBI convergence threshold has to be a positive double > 0 and <= 1!");
+        }
+      } else if (key == config.ibiUpdateAlpha.name) {
+        expected = "double > 0";
+        description = config.ibiUpdateAlpha.description;
+
+        config.ibiUpdateAlpha.value = node[key].as<double>();
+        if (config.ibiUpdateAlpha.value < 0) {
+          throw std::runtime_error("IBI update alpha has to be a positive double > 0!");
+        }
+      } else if (key == config.lutOutputFolder.name) {
+        expected = "String";
+        description = config.lutOutputFolder.description;
+
+        config.lutOutputFolder.value = node[key].as<std::string>();
+        if (config.lutOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed Lookup table output folder is empty");
+        }
+      } else if (key == config.lutInputFile.name) {
+        expected = "String";
+        description = config.lutInputFile.description;
+
+        config.lutInputFile.value = node[key].as<std::string>();
+        std::cout << "parsing file " << config.lutInputFile.value << std::endl;
+        if (config.lutInputFile.value.empty()) {
+          throw std::runtime_error("Parsed Lookup table input file is empty");
+        }
+      } else if (key == config.lutFileName.name) {
+        expected = "String";
+        description = config.lutFileName.description;
+
+        config.lutFileName.value = node[key].as<std::string>();
+        if (config.lutFileName.value.empty()) {
+          throw std::runtime_error("Parsed Lookup table file name is empty");
         }
       } else if (key == config.useTuningLogger.name) {
         expected = "Boolean Value";

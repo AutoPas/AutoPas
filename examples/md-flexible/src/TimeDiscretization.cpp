@@ -150,7 +150,8 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 }
 
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                         bool resetForces, const bool outerRespaStep, const size_t respaStepSize) {
   // helper declarations for operations with vector
   using namespace autopas::utils::ArrayMath::literals;
 
@@ -158,14 +159,27 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const auto force = iter->getF();
-    const auto oldForce = iter->getOldF();
-    const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
-    iter->addV(changeInVel);
+    if (not outerRespaStep) {
+      const auto oldForce = iter->getOldF();
+      const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
+      iter->addV(changeInVel);
+      if (resetForces) {
+        iter->setTempF(force);
+        iter->setF({0, 0, 0});
+      }
+    } else {
+      const auto changeInVel = (force * (1.0 / molecularMass)) * 0.5 * deltaT * static_cast<double>(respaStepSize);
+      iter->addV(changeInVel);
+      if (resetForces) {
+        iter->setF(iter->getTempF());
+      }
+    }
   }
 }
 
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                                bool resetTorques, const bool outerRespaStep, const size_t respaStepSize) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::quaternion::rotatePosition;
   using autopas::utils::quaternion::rotatePositionBackwards;
@@ -187,7 +201,18 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
     // convert to world-frame
     const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
 
-    iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
+    if (not outerRespaStep) {
+      iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
+      if (resetTorques) {
+        iter->setTempTorque(torqueW);
+        iter->setTorque({0, 0, 0});
+      }
+    } else {
+      iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT * static_cast<double>(respaStepSize));
+      if (resetTorques) {
+        iter->setTorque(iter->getTempTorque());
+      }
+    }
   }
 
 #else

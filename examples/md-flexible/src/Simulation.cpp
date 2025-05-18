@@ -199,9 +199,57 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     // Set the simulation directly to the desired initial temperature.
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
+
+    if (_configuration.respaStepSize.value > 1) {
+      if (_configuration.thermostatInterval.value % _configuration.respaStepSize.value != 0) {
+        throw std::runtime_error("The thermostat interval must be divisible by the respa-stepsize");
+      }
+    }
+
+    if (_configuration.respaStepSize.value > 1) {
+      if (_configuration.iterations.value % _configuration.respaStepSize.value != 0) {
+        throw std::runtime_error("The number of iterations must be divisible by the respa-stepsize");
+      }
+    }
   }
 
   _timers.initialization.stop();
+
+  // if an RDF should be created init it here
+  const bool captureRDF = _configuration.rdfRadius.value > 0;
+  if (captureRDF) {
+    _rdfAA = std::make_shared<RDF>(
+        _autoPasContainer, 0, _configuration.rdfRadius.value, _configuration.rdfNumBins.value,
+        _configuration.rdfGuardArea.value,
+        std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                    [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })
+            ? true
+            : false);
+    // if end iteration is not specified capture until end
+    if (_configuration.rdfEndIteration.value == 0) {
+      _configuration.rdfEndIteration.value = _configuration.iterations.value;
+    }
+  }
+
+  // check if IBI should be used
+  const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
+  if (ibiMeasureSimulation) {
+    _rdfCG = std::make_shared<RDF>(
+        _autoPasContainer, 0, _configuration.rdfRadius.value, _configuration.rdfNumBins.value,
+        _configuration.rdfGuardArea.value,
+        std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                    [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })
+            ? true
+            : false);
+  }
+
+  if (not _configuration.lutInputFile.value.empty()) {
+    std::cout << "Loading lookup table file: " << _configuration.lutInputFile.value << std::endl;
+    _lut = std::make_shared<LookupTableType>();
+    _lut->loadFromCSV(_configuration.lutInputFile.value);
+    _lut->computeDerivatives();
+    _cgSimulation = true;
+  }
 }
 
 void Simulation::finalize() {
@@ -214,6 +262,18 @@ void Simulation::finalize() {
 
 void Simulation::run() {
   _timers.simulate.start();
+
+  bool equilibrate{false};
+  size_t equilibrateIterations{0};
+  size_t cgMeasureIterations{0};
+  size_t ibiTrials{0};
+  const size_t rdfNumBins = _configuration.rdfNumBins.value;
+  bool ibiConvergenceReached{_cgSimulation ? true : false};
+  bool firstRespaIterationSkipped{false};
+  bool respaStarted{false};
+
+  auto respaActive = _configuration.respaStepSize.value > 1;
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -221,8 +281,44 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
+    const bool isRespaIteration = respaActive ? _iteration % _configuration.respaStepSize.value == 0 : false;
+    const bool nextIsRespaIteration = respaActive ? (_iteration + 1) % _configuration.respaStepSize.value == 0 : false;
+
+    if ((_rdfCG and _iteration >= _configuration.rdfStartIteration.value and
+         _iteration < _configuration.rdfEndIteration.value and
+         _iteration % _configuration.rdfCaptureFreuency.value == 0) or
+        (_rdfAA and not _rdfCG and _iteration >= _configuration.rdfStartIteration.value and
+         _iteration < _configuration.rdfEndIteration.value and
+         _iteration % _configuration.rdfCaptureFreuency.value == 0)) {
+      _rdfAA->captureRDF();
+    }
+
+    // capture CG RDF
+    if (_rdfCG and _iteration > _configuration.rdfEndIteration.value and not equilibrate and
+        not ibiConvergenceReached) {
+      _rdfCG->captureRDF();
+      cgMeasureIterations++;
+    }
+
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
+      if (respaActive and isRespaIteration and ibiConvergenceReached) {
+        if (firstRespaIterationSkipped) {
+          if (not respaStarted) {
+            // do a first force evalusation
+            updateInteractionForces(ForceType::FullParticle);
+            updateInteractionForces(ForceType::CoarseGrain, true);
+          }
+          updateVelocities(/*resetForce*/ true, RespaIterationType::OuterStep);
+#if MD_FLEXIBLE_MODE == MULTISITE
+          updateAngularVelocities(/*resetForce*/ false, RespaIterationType::OuterStep);
+#endif
+          respaStarted = true;
+        } else {
+          firstRespaIterationSkipped = true;
+        }
+      }
+
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
@@ -278,7 +374,12 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
-    updateInteractionForces();
+    if ((not respaActive and not _cgSimulation) or
+        (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation)) {
+      updateInteractionForces(ForceType::FullParticle);
+    } else {
+      updateInteractionForces(ForceType::CoarseGrain);
+    }
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
@@ -286,11 +387,32 @@ void Simulation::run() {
     }
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      updateVelocities();
+      updateVelocities(respaActive and nextIsRespaIteration and ibiConvergenceReached);
 #if MD_FLEXIBLE_MODE == MULTISITE
-      updateAngularVelocities();
+      if (not respaStarted) {
+        updateAngularVelocities(false);
+      }
 #endif
-      updateThermostat();
+      if (_configuration.useThermostat.value) {
+        if ((not respaActive or not respaStarted) and
+            ((_iteration + 1) % _configuration.thermostatInterval.value == 0)) {
+          updateThermostat(true);
+        }
+      }
+
+      if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
+        updateInteractionForces(ForceType::FullParticle);
+        updateInteractionForces(ForceType::CoarseGrain, true);
+        updateVelocities(false, RespaIterationType::OuterStep);
+#if MD_FLEXIBLE_MODE == MULTISITE
+        updateAngularVelocities(false, RespaIterationType::OuterStep);
+#endif
+        if (_configuration.useThermostat.value) {
+          if ((_iteration + 1) % _configuration.thermostatInterval.value == 0) {
+            updateThermostat(/*skipIterationCheck*/ true);
+          }
+        }
+      }
     }
     _timers.computationalLoad.stop();
 
@@ -307,6 +429,128 @@ void Simulation::run() {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
       if (not _configuration.dontShowProgressBar.value) {
         printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+      }
+    }
+
+    // capture the last RDF from original simulation
+    if (_rdfCG and _iteration == _configuration.rdfEndIteration.value) {
+      _rdfAA->captureRDF();
+      _rdfAA->computeFinalRDF();
+
+      _rdfAA->writeToCSV(_configuration.rdfOutputFolder.value,
+                         _configuration.rdfFileName.value + "_" + std::to_string(_iteration));
+
+      // generate initial cg_potential
+      _lut = std::make_shared<LookupTableType>();
+
+      // this assumes normalized values for the temperature. Therefore the value equals temperature * boltzmannConstant
+      const double kT = _configuration.targetTemperature.value;
+
+      std::vector<std::pair<double, double>> initialPotential(rdfNumBins, std::pair<double, double>(0, 0));
+      int minIdx = -1;
+      for (int i = 0; i < rdfNumBins; i++) {
+        initialPotential[i].first = std::pow(
+            _configuration.rdfRadius.value / static_cast<double>(rdfNumBins) * static_cast<double>(i + 1), 2.0);
+        if (_rdfAA->getFinalRDF()[i].second > 0.0) {
+          initialPotential[i].second = -kT * std::log(_rdfAA->getFinalRDF()[i].second);
+        } else {
+          minIdx = i;
+        }
+      }
+      if (minIdx != -1) {
+        const double dy = initialPotential[minIdx + 2].second - initialPotential[minIdx + 1].second;
+        double yVal = initialPotential[minIdx + 1].second;
+        for (int idx = minIdx + 1; idx >= 0; idx--) {
+          initialPotential[idx].second = yVal;
+          yVal -= dy;
+        }
+      }
+
+      _lut->updateTable(initialPotential);
+      _lut->writeToCSV(_configuration.lutOutputFolder.value, _configuration.lutFileName.value + "_0");
+
+      equilibrate = true;
+    }
+
+    if (_rdfAA and not _rdfCG and _iteration == _configuration.rdfEndIteration.value) {
+      _rdfAA->captureRDF();
+      _rdfAA->computeFinalRDF();
+
+      _rdfAA->writeToCSV(_configuration.rdfOutputFolder.value,
+                         _configuration.rdfFileName.value + "_" + std::to_string(_iteration));
+    }
+
+    if (_rdfCG and _iteration > _configuration.rdfEndIteration.value and equilibrate) {
+      equilibrateIterations++;
+      if (equilibrateIterations == _configuration.ibiEquilibrateIterations.value) {
+        equilibrate = false;
+        equilibrateIterations = 0;
+      }
+    }
+
+    // get the CG RDF and compare it to the AA RDF
+    if (_rdfCG and
+        cgMeasureIterations == (_configuration.rdfEndIteration.value - _configuration.rdfStartIteration.value) and
+        not ibiConvergenceReached) {
+      _rdfCG->captureRDF();
+      _rdfCG->computeFinalRDF();
+
+      _rdfCG->writeToCSV(_configuration.rdfOutputFolder.value,
+                         _configuration.rdfFileName.value + "_" + std::to_string(_iteration));
+
+      const auto rdfCGValues = _rdfCG->getFinalRDF();
+      const auto rdfRefValues = _rdfAA->getFinalRDF();
+
+      // this assumes normalized values for the temperature. Therefore the value equals temperature * boltzmannConstant
+      const auto kT = _configuration.targetTemperature.value;
+
+      const auto tolerance = _configuration.ibiConvergenceThreshold.value;
+
+      const auto updateAlpha = _configuration.ibiUpdateAlpha.value;
+
+      // Update the CG potential
+      int minIdx = -1;
+      for (int i = 0; i < rdfNumBins; i++) {
+        if (rdfRefValues[i].second > 0.0 and rdfCGValues[i].second > 0.0) {
+          double update = updateAlpha * kT * std::log(rdfCGValues[i].second / rdfRefValues[i].second);
+          (*_lut)[i] += update;
+        } else {
+          minIdx = i;
+        }
+      }
+      // add correction for values where RDF is 0
+      if (minIdx != -1) {
+        const double dy = (*_lut)[minIdx + 2] - (*_lut)[minIdx + 1];
+        double yVal = (*_lut)[minIdx + 1];
+        for (int idx = minIdx + 1; idx >= 0; idx--) {
+          (*_lut)[idx] = yVal;
+          yVal -= dy;
+        }
+      }
+
+      // convergence check
+      double sum0{0};
+      double sum1{0};
+      for (size_t i = 0; i < rdfNumBins; ++i) {
+        sum0 += std::abs(rdfCGValues[i].second - rdfRefValues[i].second);
+        sum1 += (std::abs(rdfCGValues[i].second) + std::abs(rdfRefValues[i].second));
+      }
+      double convergenceResult = 1.0 - sum0 / sum1;
+
+      ibiTrials++;
+
+      _lut->writeToCSV(_configuration.lutOutputFolder.value,
+                       _configuration.lutFileName.value + "_" + std::to_string(ibiTrials));
+
+      // continue with CG fitting or stop if convergence reached
+      if (convergenceResult < tolerance) {
+        _rdfCG->reset();
+        cgMeasureIterations = 0;
+        equilibrate = true;
+        std::cout << "IBI: still fitting! convergenceResult: " << convergenceResult << std::endl;
+      } else {
+        ibiConvergenceReached = true;
+        std::cout << "IBI: convergence reached!" << std::endl;
       }
     }
   }
@@ -448,7 +692,7 @@ void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.stop();
 }
 
-void Simulation::updateInteractionForces() {
+void Simulation::updateInteractionForces(ForceType forceTypeToCalculate, bool subtractForces) {
   _timers.forceUpdateTotal.start();
 
   _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
@@ -458,13 +702,13 @@ void Simulation::updateInteractionForces() {
   // Calculate pairwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
-    _currentIterationIsTuningIteration |= calculatePairwiseForces();
+    _currentIterationIsTuningIteration |= calculatePairwiseForces(forceTypeToCalculate, subtractForces);
     timeIteration += _timers.forceUpdatePairwise.stop();
   }
   // Calculate triwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     _timers.forceUpdateTriwise.start();
-    _currentIterationIsTuningIteration |= calculateTriwiseForces();
+    _currentIterationIsTuningIteration |= calculateTriwiseForces(forceTypeToCalculate);
     timeIteration += _timers.forceUpdateTriwise.stop();
   }
 
@@ -484,28 +728,46 @@ void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.stop();
 }
 
-void Simulation::updateVelocities() {
+void Simulation::updateVelocities(bool resetForces, RespaIterationType respaIterationType) {
   const double deltaT = _configuration.deltaT.value;
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                            deltaT);
+
+    if (respaIterationType == RespaIterationType::OuterStep) {
+      TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                              deltaT, resetForces, /*outerRespaStep*/ true,
+                                              _configuration.respaStepSize.value);
+    } else {
+      TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                              deltaT, resetForces);
+    }
+
     _timers.velocityUpdate.stop();
   }
 }
 
-void Simulation::updateAngularVelocities() {
+void Simulation::updateAngularVelocities(bool resetForces, RespaIterationType respaIterationType) {
   const double deltaT = _configuration.deltaT.value;
 
   _timers.angularVelocityUpdate.start();
-  TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                                 deltaT);
+
+  if (respaIterationType == RespaIterationType::OuterStep) {
+    TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                                   deltaT, resetForces, /*outerRespaStep*/ true,
+                                                   _configuration.respaStepSize.value);
+  } else {
+    TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                                   deltaT, resetForces);
+  }
+
   _timers.angularVelocityUpdate.stop();
 }
 
-void Simulation::updateThermostat() {
-  if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
+void Simulation::updateThermostat(bool skipIterationCheck) {
+  if (_configuration.useThermostat.value and
+      (skipIterationCheck or
+       ((not skipIterationCheck) and (_iteration % _configuration.thermostatInterval.value) == 0))) {
     _timers.thermostat.start();
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
@@ -520,13 +782,22 @@ long Simulation::accumulateTime(const long &time) {
   return reducedTime;
 }
 
-bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+bool Simulation::calculatePairwiseForces(ForceType forceType, bool subtractForces) {
+  const bool useCGFunctor = forceType == ForceType::CoarseGrain;
+  auto wasTuningIteration = applyWithChosenFunctor<bool>(
+      [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); }, useCGFunctor, subtractForces);
+
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+  if (_configuration.ibiEquilibrateIterations.value == 0 or _iteration <= _configuration.rdfEndIteration.value or
+      forceType == ForceType::FullParticle) {
+    wasTuningIteration |= applyWithChosenFunctorElectrostatic<bool>(
+        [&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  }
+#endif
   return wasTuningIteration;
 }
 
-bool Simulation::calculateTriwiseForces() {
+bool Simulation::calculateTriwiseForces(ForceType forceType) {
   const auto wasTuningIteration =
       applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
@@ -579,7 +850,7 @@ void Simulation::updateSimulationPauseState() {
     }
 
     // calculate the forces of the latest iteration again
-    updateInteractionForces();
+    updateInteractionForces(ForceType::FullParticle);
 
     _simulationIsPaused = false;
   }
@@ -788,9 +1059,14 @@ void Simulation::loadParticles() {
 }
 
 template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
+ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor, bool subtractForces) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+  if (useCGFunctor) {
+    auto func = LuTFunctorType{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
+    func.setLuT(_lut);
+    return f(func);
+  }
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
@@ -827,7 +1103,21 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 }
 
 template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
+ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f, bool useCGFunctor) {
+  const double cutoff = _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+
+#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
+  return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+#else
+  throw std::runtime_error(
+      "MD-Flexible was not compiled with support for Coulomb interactions. Activate it via `cmake "
+      "-DMD_FLEXIBLE_FUNCTOR_COULOMB=ON`.");
+#endif
+}
+
+template <class ReturnType, class FunctionType>
+ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f, bool useCGFunctor) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {

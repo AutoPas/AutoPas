@@ -57,6 +57,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.dataLayoutOptions3B,
       config.deltaT,
       config.sortingThreshold,
+      config.respaStepSize,
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
@@ -231,6 +232,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.sortingThreshold.value = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing value for sorting-threshold: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.respaStepSize)::getoptChar: {
+        try {
+          config.respaStepSize.value = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing value for respa-stepsize: " << optarg << endl;
           displayHelp = true;
         }
         break;

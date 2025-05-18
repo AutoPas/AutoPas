@@ -51,6 +51,9 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     oldForceX,
     oldForceY,
     oldForceZ,
+    tempForceX,
+    tempForceY,
+    tempForceZ,
     typeId,
     ownershipState
   };
@@ -66,7 +69,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+                                       double /*tempFx*/, double /*tempFy*/, double /*tempFz*/, size_t /*typeid*/,
+                                       autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -112,6 +116,12 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       return getOldF()[1];
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       return getOldF()[2];
+    } else if constexpr (attribute == AttributeNames::tempForceX) {
+      return getTempF()[0];
+    } else if constexpr (attribute == AttributeNames::tempForceY) {
+      return getTempF()[1];
+    } else if constexpr (attribute == AttributeNames::tempForceZ) {
+      return getTempF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
       return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -156,6 +166,12 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       _oldF[1] = value;
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       _oldF[2] = value;
+    } else if constexpr (attribute == AttributeNames::tempForceX) {
+      _tempF[0] = value;
+    } else if constexpr (attribute == AttributeNames::tempForceY) {
+      _tempF[1] = value;
+    } else if constexpr (attribute == AttributeNames::tempForceZ) {
+      _tempF[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -176,6 +192,18 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @param oldForce
    */
   void setOldF(const std::array<double, 3> &oldForce);
+
+  /**
+   * Get the temp force.
+   * @return
+   */
+  [[nodiscard]] const std::array<double, 3> &getTempF() const;
+
+  /**
+   * Set temp force.
+   * @param tempForce
+   */
+  void setTempF(const std::array<double, 3> &tempForce);
 
   /**
    * Get TypeId.
@@ -209,6 +237,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Old Force of the particle experiences as 3D vector.
    */
   std::array<double, 3> _oldF = {0., 0., 0.};
+
+  std::array<double, 3> _tempF = {0., 0., 0.};
 };
 
 }  // namespace mdLib

@@ -30,6 +30,9 @@ void MultisiteMoleculeLJ::subTorque(const std::array<double, 3> &torque) {
   _torque = autopas::utils::ArrayMath::sub(_torque, torque);
 }
 
+const std::array<double, 3> &MultisiteMoleculeLJ::getTempTorque() const { return _tempTorque; }
+void MultisiteMoleculeLJ::setTempTorque(const std::array<double, 3> &torque) { _tempTorque = torque; }
+
 std::string MultisiteMoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;

@@ -51,7 +51,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
   initPPL(*PPL);
 
   // First timestep
-  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1);
+  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected, as the force is initialized to point only in z-direction.
     EXPECT_EQ(iter->getV()[0], 0);
@@ -65,7 +65,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
   }
 
   // Second timestep
-  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1);
+  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getV()[0], 0);
@@ -248,7 +248,7 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   const auto angVelWFullStep2 = rotatePosition(mol2.getQuaternion(), angVelMFullStep2);
 
   // obtain angular velocities as determined by TimeDiscretization::calculateAngularVelocities
-  TimeDiscretization::calculateAngularVelocities(*autopasContainer, *PPL, deltaT);
+  TimeDiscretization::calculateAngularVelocities(*autopasContainer, *PPL, deltaT, false);
 
   // compare
   auto mol = autopasContainer->begin(autopas::IteratorBehavior::owned);
@@ -280,7 +280,7 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   autopasContainer->addParticle(mol1);
 
   // try to calculate angular velocity
-  EXPECT_ANY_THROW(TimeDiscretization::calculateAngularVelocities(*autopasContainer, *PPL, deltaT););
+  EXPECT_ANY_THROW(TimeDiscretization::calculateAngularVelocities(*autopasContainer, *PPL, deltaT, false););
 #endif
 }
 

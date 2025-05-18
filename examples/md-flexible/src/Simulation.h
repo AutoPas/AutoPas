@@ -25,6 +25,9 @@
  */
 class Simulation {
  public:
+  enum class ForceType : int64_t { FullParticle = 0b0001, CoarseGrain = 0b0010 };
+  enum class RespaIterationType : int64_t { NoRespa = 0b0000, OuterStep = 0b0001, InnerStep = 0b0010 };
+
   /**
    * Initializes the simulation on a domain according to the arguments passed to the main function.
    * @param configuration: The configuration of this simulation.
@@ -249,6 +252,23 @@ class Simulation {
    */
   bool _createVtkFiles;
 
+  /**
+   * Stores a radial distribution function
+   */
+  std::shared_ptr<RDF> _rdfCG;
+
+  /**
+   * Stores a radial distribution function from an initial simulation
+   */
+  std::shared_ptr<RDF> _rdfAA;
+
+  /**
+   * Stores a lookup table for the IBI potential
+   */
+  std::shared_ptr<LookupTableType> _lut;
+
+  bool _cgSimulation{false};
+
  private:
   /**
    * Load particles from this object's config into this object's AutoPas container.
@@ -299,23 +319,23 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  void updateInteractionForces();
+  void updateInteractionForces(ForceType forceTypeToCalculate, bool subtractForces = false);
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
    */
-  void updateVelocities();
+  void updateVelocities(bool resetForces, RespaIterationType respaIterationType = RespaIterationType::NoRespa);
 
   /**
    * Updates the angular velocities of the particles in the local AutoPas container.
    */
-  void updateAngularVelocities();
+  void updateAngularVelocities(bool resetForces, RespaIterationType respaIterationType = RespaIterationType::NoRespa);
 
   /**
    * Updates the thermostat of for the local domain.
    * @todo The thermostat should act globally and therefore needs to be communicated to all processes.
    */
-  void updateThermostat();
+  void updateThermostat(bool skipIterationCheck);
 
   /**
    * This simulation's domain decomposition.
@@ -350,13 +370,13 @@ class Simulation {
    * Calculates the pairwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  bool calculatePairwiseForces();
+  bool calculatePairwiseForces(ForceType forceType, bool subtractForces = false);
 
   /**
    * Calculates the triwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  bool calculateTriwiseForces();
+  bool calculateTriwiseForces(ForceType forceType);
 
   /**
    * Adds global forces to the particles in the container.
@@ -394,7 +414,7 @@ class Simulation {
    * @return Return value of f.
    */
   template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctor(FunctionType f);
+  ReturnType applyWithChosenFunctor(FunctionType f, bool useCGFunctor = false, bool subtractForces = false);
 
   /**
    *
@@ -407,5 +427,18 @@ class Simulation {
    * @return Return value of f.
    */
   template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctor3B(FunctionType f);
+  ReturnType applyWithChosenFunctor3B(FunctionType f, bool useCGFunctor = false);
+
+  /**
+   *
+   * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
+   * @note This templated function is private and hence implemented in the .cpp
+   *
+   * @tparam ReturnType Return type of f.
+   * @tparam FunctionType Function type ReturnType f(auto functor).
+   * @param f lambda function.
+   * @return Return value of f.
+   */
+  template <class ReturnType, class FunctionType>
+  ReturnType applyWithChosenFunctorElectrostatic(FunctionType f, bool useCGFunctor = false);
 };

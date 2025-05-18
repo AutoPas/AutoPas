@@ -358,6 +358,7 @@ std::string MDFlexConfig::to_string() const {
   printOption(deltaT);
   printOption(pauseSimulationDuringTuning);
   printOption(sortingThreshold);
+  printOption(respaStepSize);
   // simulation length is either dictated by tuning phases or iterations
   if (tuningPhases.value > 0) {
     printOption(tuningPhases);

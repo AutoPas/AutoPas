@@ -1,0 +1,65 @@
+functor                              :  lj
+container                            :  [LinkedCells]
+traversal                            :  [lc_c08]
+newton3                              :  [enabled]
+data-layout                          :  [AoS]
+
+verlet-rebuild-frequency             :  10
+verlet-skin-radius                   :  0.02
+selector-strategy                    :  Fastest-Absolute-Value
+tuning-strategies                    :  []
+tuning-interval                      :  2000
+tuning-samples                       :  3
+tuning-max-evidence                  :  10
+
+cutoff                               :  3
+cell-size                            :  [1]
+deltaT                               :  0.002
+iterations                           :  4000000
+boundary-type                        :  [periodic, periodic, periodic]
+fastParticlesThrow                   :  false
+
+Sites:
+  0:
+    epsilon                          :  0.01
+    sigma                            :  1.
+    mass                             :  1.
+Molecules:
+  0:
+    site-types                       : [0, 0, 0, 0]
+    relative-site-positions          : [[0.57735027,  0.0, -0.20412415], [-0.28867513,  0.25, -0.20412415], [-0.28867513, -0.25, -0.20412415], [0.0, 0.0, 0.61237244]]
+    moment-of-inertia                : [1, 1, 1]
+Objects:
+  CubeClosestPacked:
+    0:
+      box-length                     :  [36.845, 36.845, 36.845]
+      bottomLeftCorner               :  [0, 0, 0]
+      particle-spacing               :  2.35
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+thermostat:
+  initialTemperature                 :  1
+  targetTemperature                  :  1
+  deltaTemperature                   :  0.5
+  thermostatInterval                 :  20
+  addBrownianMotion                  :  true
+
+log-level                            :  info
+no-end-config                        :  true
+no-progress-bar                      :  false
+#vtk-filename                         :  IBIMultisiteTest
+#vtk-output-folder                    :  IBIMultisiteTestOutput
+#vtk-write-frequency                  :  1
+rdf-filename                         :  RDF
+rdf-output-folder                    :  IBIMultisiteTestOutput
+rdf-radius                           :  3
+rdf-num-bins                         :  200
+rdf-guard-area                       :  0
+rdf-capture-frequency                :  1
+rdf-start-iteration                  :  50000
+rdf-end-iteration                    :  100000
+ibi-equilibrate-iterations           :  50000
+ibi-update-alpha                     :  1
+ibi-convergence-threshold            :  0.99
+lut-filename                         :  LUT
+lut-output-folder                    :  IBIMultisiteTestOutput

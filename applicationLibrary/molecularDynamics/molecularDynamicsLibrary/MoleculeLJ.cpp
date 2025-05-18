@@ -14,6 +14,9 @@ MoleculeLJ::MoleculeLJ(const std::array<double, 3> &pos, const std::array<double
 const std::array<double, 3> &MoleculeLJ::getOldF() const { return _oldF; }
 void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
 
+const std::array<double, 3> &MoleculeLJ::getTempF() const { return _tempF; }
+void MoleculeLJ::setTempF(const std::array<double, 3> &tempForce) { _tempF = tempForce; }
+
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 
