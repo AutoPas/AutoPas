@@ -13,11 +13,13 @@
 
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
+#include "molecularDynamicsLibrary/LuT.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+#include "tools/RDF.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
