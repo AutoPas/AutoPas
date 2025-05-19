@@ -17,7 +17,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "src/LUT.h"
+#include "ParentLUT.h"
 
 namespace mdLib {
 
@@ -276,96 +276,150 @@ class AxilrodTellerFunctor
     if constexpr (useLUT) {
 
       const auto [factors, order] = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
-
+       double forceJ;
+       double forceK;
       // TODO: signs ?? this might already be solved check by calculating by hands this seems to be about of the placement of minus in the formulas underneath is correct
       const auto forceI = displacementIJ * factors[order[0]] - displacementKI * factors[order[2]];
       i.addF(forceI);
 
       if (newton3) {
-        const auto forceJ = displacementJK * factors[order[1]] - displacementIJ * factors[order[0]];
-        const auto forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
+//        const auto forceJ = displacementJK * factors[order[1]] - displacementIJ * factors[order[0]];
+         forceJ = displacementJK * factors[order[1]] - displacementIJ * factors[order[0]];
+//        const auto forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
+         forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
         j.addF(forceJ);
         k.addF(forceK);
       }
 
-    }
-    // end of added for lut by me
+
+      if constexpr (calculateGlobals) {
+
+        //added by me
+        // Calculate prefactor
+        const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+        const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+        const double factor = 3.0 * nu / allDistsTo5;
+
+        // Dot products of both distance vectors going from one particle
+        const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
+        const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
+        const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
+
+        const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
+
+        //end added by me
 
 
 
-    // Calculate prefactor
-    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-    const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-    const double factor = 3.0 * nu / allDistsTo5;
+        // Add 3 * potential energy to every owned particle of the interaction.
+        // Division to the correct value is handled in endTraversal().
+        const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
-    // Dot products of both distance vectors going from one particle
-    const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
-    const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
-    const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
+        // Virial is calculated as f_i * r_i
+        // see Thompson et al.: https://doi.org/10.1063/1.3245303
+        const auto virialI = forceI * i.getR();
+        if (i.isOwned()) {
+          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+          _aosThreadDataGlobals[threadnum].virialSum += virialI;
+        }
+        // for non-newton3 particles j and/or k will be considered in a separate calculation
+        if (newton3 and j.isOwned()) {
+          const auto virialJ = forceJ * j.getR();
+          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+          _aosThreadDataGlobals[threadnum].virialSum += virialJ;
+        }
+        if (newton3 and k.isOwned()) {
+          const auto virialK = forceK * k.getR();
+          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+          _aosThreadDataGlobals[threadnum].virialSum += virialK;
+        }
+        if constexpr (countFLOPs) {
+          if (newton3) {
+            ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+          } else {
+            ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+          }
+        }
+      }
 
-    const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
+    }else {
+      // end of added for lut by me
 
-    const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI);
-    const auto forceIDirectionIJ =
-        displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ);
-    const auto forceIDirectionKI =
-        displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
+      // Calculate prefactor
+      const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+      const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+      const double factor = 3.0 * nu / allDistsTo5;
 
-    const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
-    i.addF(forceI);
+      // Dot products of both distance vectors going from one particle
+      const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
+      const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
+      const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
 
-    auto forceJ = forceI;
-    auto forceK = forceI;
-    if (newton3) {
-      const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
-      const auto forceJDirectionIJ =
-          displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
-      const auto forceJDirectionJK =
-          displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
+      const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
 
-      forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
-      j.addF(forceJ);
+      const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI);
+      const auto forceIDirectionIJ =
+          displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ);
+      const auto forceIDirectionKI =
+          displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
 
-      forceK = (forceI + forceJ) * (-1.0);
-      k.addF(forceK);
-    }
+      const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
+      i.addF(forceI);
 
-    if constexpr (countFLOPs) {
+      auto forceJ = forceI;
+      auto forceK = forceI;
+
       if (newton3) {
-        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
-      } else {
-        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
-      }
-    }
+        const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
+        const auto forceJDirectionIJ = displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI -
+                                                         5.0 * allDotProducts / distSquaredIJ);
+        const auto forceJDirectionJK =
+            displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
 
-    if constexpr (calculateGlobals) {
-      // Add 3 * potential energy to every owned particle of the interaction.
-      // Division to the correct value is handled in endTraversal().
-      const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+        forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
+        j.addF(forceJ);
 
-      // Virial is calculated as f_i * r_i
-      // see Thompson et al.: https://doi.org/10.1063/1.3245303
-      const auto virialI = forceI * i.getR();
-      if (i.isOwned()) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
-        _aosThreadDataGlobals[threadnum].virialSum += virialI;
+        forceK = (forceI + forceJ) * (-1.0);
+        k.addF(forceK);
       }
-      // for non-newton3 particles j and/or k will be considered in a separate calculation
-      if (newton3 and j.isOwned()) {
-        const auto virialJ = forceJ * j.getR();
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
-        _aosThreadDataGlobals[threadnum].virialSum += virialJ;
-      }
-      if (newton3 and k.isOwned()) {
-        const auto virialK = forceK * k.getR();
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
-        _aosThreadDataGlobals[threadnum].virialSum += virialK;
-      }
+
       if constexpr (countFLOPs) {
         if (newton3) {
-          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+          ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
         } else {
-          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+          ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
+        }
+      }
+
+      if constexpr (calculateGlobals) {
+        // Add 3 * potential energy to every owned particle of the interaction.
+        // Division to the correct value is handled in endTraversal().
+        const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+
+        // Virial is calculated as f_i * r_i
+        // see Thompson et al.: https://doi.org/10.1063/1.3245303
+        const auto virialI = forceI * i.getR();
+        if (i.isOwned()) {
+          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+          _aosThreadDataGlobals[threadnum].virialSum += virialI;
+        }
+        // for non-newton3 particles j and/or k will be considered in a separate calculation
+        if (newton3 and j.isOwned()) {
+          const auto virialJ = forceJ * j.getR();
+          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+          _aosThreadDataGlobals[threadnum].virialSum += virialJ;
+        }
+        if (newton3 and k.isOwned()) {
+          const auto virialK = forceK * k.getR();
+          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+          _aosThreadDataGlobals[threadnum].virialSum += virialK;
+        }
+        if constexpr (countFLOPs) {
+          if (newton3) {
+            ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+          } else {
+            ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+          }
         }
       }
     }
