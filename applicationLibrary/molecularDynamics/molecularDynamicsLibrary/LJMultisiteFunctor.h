@@ -681,6 +681,12 @@ class LJMultisiteFunctor
   constexpr static bool getMixing() { return useMixing; }
 
   /**
+   *
+   * @return calculateGlobals
+   */
+  constexpr static bool getCalculateGlobals() { return calculateGlobals; }
+
+  /**
    * Get the number of flops used per kernel call - i.e. number of flops to calculate kernel *given* the two particles
    * lie within the cutoff (i.e. distance^2 / cutoff has been already been calculated).
    * Note: there is currently a large difference between AoS & SoA number of flops. This function returns the AoS

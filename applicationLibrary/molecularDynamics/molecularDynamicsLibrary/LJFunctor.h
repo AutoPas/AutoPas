@@ -632,6 +632,12 @@ class LJFunctor
   constexpr static bool getMixing() { return useMixing; }
 
   /**
+   *
+   * @return calculateGlobals
+   */
+  constexpr static bool getCalculateGlobals() { return calculateGlobals; }
+
+  /**
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */

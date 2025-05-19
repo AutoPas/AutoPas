@@ -732,6 +732,12 @@ class LJFunctorSVE
   constexpr static bool getMixing() { return useMixing; }
 
   /**
+   *
+   * @return calculateGlobals
+   */
+  constexpr static bool getCalculateGlobals() { return calculateGlobals; }
+
+  /**
    * Get the number of flops used per kernel call for a given particle pair. This should count the
    * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
    * distance.

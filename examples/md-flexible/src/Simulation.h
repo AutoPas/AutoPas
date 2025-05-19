@@ -271,6 +271,12 @@ class Simulation {
 
   bool _cgSimulation{false};
 
+  std::vector<double> _potentialEnergy;
+
+  std::vector<double> _totalEnergy;
+
+  std::vector<double> _kineticEnergy;
+
  private:
   /**
    * Load particles from this object's config into this object's AutoPas container.
@@ -321,7 +327,9 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  void updateInteractionForces(ForceType forceTypeToCalculate, bool subtractForces = false);
+  std::optional<double> updateInteractionForces(ForceType forceTypeToCalculate, bool subtractForces = false);
+
+  double calculateKineticEnergy();
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
@@ -372,13 +380,13 @@ class Simulation {
    * Calculates the pairwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  bool calculatePairwiseForces(ForceType forceType, bool subtractForces = false);
+  std::pair<bool, std::optional<double>> calculatePairwiseForces(ForceType forceType, bool subtractForces = false);
 
   /**
    * Calculates the triwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  bool calculateTriwiseForces(ForceType forceType);
+  std::pair<bool, std::optional<double>> calculateTriwiseForces(ForceType forceType);
 
   /**
    * Adds global forces to the particles in the container.

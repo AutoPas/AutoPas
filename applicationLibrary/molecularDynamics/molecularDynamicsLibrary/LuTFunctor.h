@@ -304,6 +304,12 @@ class LuTFunctor
   }
 
   /**
+   *
+   * @return calculateGlobals
+   */
+  constexpr static bool getCalculateGlobals() { return calculateGlobals; }
+
+  /**
    * Gets the number of useful FLOPs.
    *
    * Caveats:
