@@ -82,7 +82,6 @@ include(autopas_OpenMP)
 include(autopas_mpi)
 
 include(version.cmake)
-
 # libraries
 add_subdirectory(libs)
 
@@ -125,3 +124,7 @@ target_link_libraries(autopas_python INTERFACE Python3::Python)
 target_link_libraries(autopas PRIVATE Python3::Python)
 # We have to include coverage target after the CMakeFiles for the tests
 include(autopas_CodeCoverage)
+
+# include NlohmannJson for cluster-based-tuning
+include(FetchNlohmannJson)
+target_link_libraries(autopas PRIVATE nlohmann_json::nlohmann_json)

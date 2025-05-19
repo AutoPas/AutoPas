@@ -74,7 +74,7 @@ struct TuningStrategyFactoryInfo {
   /**
    * The name and path of the file where the model is stored for decision tree tuning.
    */
-  std::string modelFileName{"model.pkl"};
+  std::string modelFileName{"examples/md-flexible/scripts/model.pkl"};
   // MPI Tuning Options
   /**
    * If MPIParallelizedStrategy is in the list of strategies this should be set to true to notify other strategies
@@ -93,5 +93,16 @@ struct TuningStrategyFactoryInfo {
    * MPI Communicator used within AutoPas.
    */
   AutoPas_MPI_Comm autopasMpiCommunicator{AUTOPAS_MPI_COMM_NULL};
+
+  /**
+   * name and path of the model used for cluster based tuning prediction
+   */
+  std::string cluster_model_file_name{"examples/md-flexible/scripts/cluster-model.pkl"};
+
+  /**
+   * name and path of the configuration mapping used for cluster based tuning
+   */
+  std::string cluster_configuration_mapping{"examples/md-flexible/scripts/cluster_configuration_mapping.json"};
+
 };
 }  // namespace autopas

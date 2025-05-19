@@ -6,6 +6,7 @@
 
 #include "TuningStrategyFactory.h"
 
+#include "ClusterBasedTuning/ClusterBasedTuning.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
 #include "autopas/tuning/tuningStrategy/BayesianClusterSearch.h"
@@ -140,6 +141,10 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::sortByName: {
       tuningStrategy = std::make_unique<SortByName>();
+      break;
+    }
+    case TuningStrategyOption::clusterBasedTuning: {
+      tuningStrategy = std::make_unique<ClusterBasedTuning>(searchSpace, info.cluster_model_file_name, info.cluster_configuration_mapping);
       break;
     }
 

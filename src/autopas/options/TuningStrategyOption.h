@@ -81,6 +81,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * Decision tree based tuning strategy
      */
     decisionTreeTuning,
+
+    /**
+     *  Uses a k-means data based strategy
+     */
+    clusterBasedTuning,
   };
 
   /**
@@ -120,21 +125,20 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
    * @return map option -> string representation
    */
   static std::map<TuningStrategyOption, std::string> getOptionNames() {
-    return {
-        {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
-        {TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster-Search"},
-        {TuningStrategyOption::fullSearch, "full-Search"},
-        {TuningStrategyOption::randomSearch, "random-Search"},
-        {TuningStrategyOption::activeHarmony, "active-harmony"},
-        {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
-        {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
-        {TuningStrategyOption::fuzzyTuning, "fuzzy-tuning"},
-        {TuningStrategyOption::slowConfigFilter, "slow-config-filter"},
-        {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
-        {TuningStrategyOption::sortByName, "sort-by-name"},
-        {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
-        {TuningStrategyOption::decisionTreeTuning, "decision-tree-tuning"},
-    };
+    return {{TuningStrategyOption::bayesianSearch, "bayesian-Search"},
+            {TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster-Search"},
+            {TuningStrategyOption::fullSearch, "full-Search"},
+            {TuningStrategyOption::randomSearch, "random-Search"},
+            {TuningStrategyOption::activeHarmony, "active-harmony"},
+            {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
+            {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
+            {TuningStrategyOption::fuzzyTuning, "fuzzy-tuning"},
+            {TuningStrategyOption::slowConfigFilter, "slow-config-filter"},
+            {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
+            {TuningStrategyOption::sortByName, "sort-by-name"},
+            {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
+            {TuningStrategyOption::decisionTreeTuning, "decision-tree-tuning"},
+            {TuningStrategyOption::clusterBasedTuning, "cluster-based-tuning"}};
   }
 
  private:
