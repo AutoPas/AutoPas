@@ -29,7 +29,7 @@ class VerletListHelpers {
   /**
    * Neighbor pairs list AoS style.
    */
-  using NeighborPairsListAoSType = std::unordered_map<Particle *, std::vector<std::pair<Particle *, Particle *>>>;
+  using NeighborPairsListAoSType = std::unordered_map<Particle_T *, std::vector<std::pair<Particle_T *, Particle_T *>>>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
@@ -194,12 +194,12 @@ class VerletListHelpers {
   /**
    * This functor can generate verlet lists of neighbor pairs for a triwise traversal.
    */
-  class PairVerletListGeneratorFunctor : public TriwiseFunctor<Particle, PairVerletListGeneratorFunctor> {
+  class PairVerletListGeneratorFunctor : public TriwiseFunctor<Particle_T, PairVerletListGeneratorFunctor> {
    public:
     /**
      * Structure of the SoAs defined by the particle.
      */
-    using SoAArraysType = typename Particle::SoAArraysType;
+    using SoAArraysType = typename Particle_T::SoAArraysType;
 
     /**
      * Constructor
@@ -207,7 +207,7 @@ class VerletListHelpers {
      * @param interactionLength
      */
     PairVerletListGeneratorFunctor(NeighborPairsListAoSType &pairVerletListsAoS, double interactionLength)
-        : TriwiseFunctor<Particle, PairVerletListGeneratorFunctor>(interactionLength),
+        : TriwiseFunctor<Particle_T, PairVerletListGeneratorFunctor>(interactionLength),
           _pairVerletListsAoS(pairVerletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
@@ -227,7 +227,7 @@ class VerletListHelpers {
       return true;
     }
 
-    void AoSFunctor(Particle &i, Particle &j, Particle &k, bool /*newton3*/) override {
+    void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
 
       if (i.isDummy() or j.isDummy() or k.isDummy()) {
@@ -256,17 +256,17 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::Functor::getNeededAttr()
      */
-    constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
-      return std::array<typename Particle::AttributeNames, 4>{
-          Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-          Particle::AttributeNames::posZ};
+    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 4>{
+          Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ};
     }
 
     /**
      * @copydoc autopas::Functor::getComputedAttr()
      */
-    constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
-      return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
+    constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
     }
 
    private:

@@ -192,7 +192,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   virtual void updatePairVerletListsAoS3B(bool useNewton3) {
     updateVerletListsAoS<InteractionTypeOption::triwise>(false);
     generateAoSNeighborPairsLists();
-    typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists,
+    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists,
                                                                            this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
@@ -209,7 +209,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     }
 
     auto traversal = VLListIterationTraversal<LinkedParticleCell,
-                                              typename VerletListHelpers<Particle>::PairVerletListGeneratorFunctor>(
+                                              typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
         &f, dataLayout, useNewton3);
     this->computeInteractions(&traversal);
   }
@@ -290,7 +290,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Neighbor Pairs Lists: Map of particle pointers to vector of pairs of particle pointers. (To find triplets.)
    */
-  typename VerletListHelpers<Particle>::NeighborPairsListAoSType _aosNeighborPairsLists;
+  typename VerletListHelpers<Particle_T>::NeighborPairsListAoSType _aosNeighborPairsLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.
