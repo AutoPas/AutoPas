@@ -93,11 +93,11 @@ class AutoTuner {
   bool isStartOfTuningPhase() const;
 
   /**
-   * Indicator whether homogeneity and max density information should be calculated in advance of the next call to
+   * Indicator whether domain similarity statistics should be calculated in advance of the next call to
    * sendDomainSimilarityStatisticsAtStartOfTuningPhase().
    * @return
    */
-  bool needsHomogeneityAndMaxDensity() const;
+  bool needsDomainSimilarityStatistics() const;
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
@@ -204,12 +204,13 @@ class AutoTuner {
   void addMeasurement(long sample, bool neighborListRebuilt);
 
   /**
-   * Adds measurements of homogeneity and maximal density to the vector of measurements.
+   * Adds measurements of homogeneity and maximal density to the vector of measurements, which can be smoothed for use
+   * in MPI Tuning to find similar domains.
    * @param homogeneity
    * @param maxDensity
    * @param time Time it took to obtain these measurements.
    */
-  void addHomogeneityAndMaxDensity(double homogeneity, double maxDensity, long time);
+  void addDomainSimilarityStatistics(double homogeneity, double maxDensity, long time);
 
   /**
    * Getter for the current queue of configurations.

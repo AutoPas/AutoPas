@@ -95,16 +95,17 @@ class TuningStrategyInterface {
   virtual void rejectConfiguration(const Configuration &configuration, bool indefinitely){};
 
   /**
-   * Indicate whether the strategy needs smoothed values of homogeneity and max density
+   * Indicate whether the strategy needs domain similarity statistics (mean and relative std. dev. number of particles
+   * per cell-bin)
    * @return
    */
-  [[nodiscard]] virtual bool needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+  virtual bool needsDomainSimilarityStatistics() const { return false; }
 
   /**
-   * Method to pass smoothed homogeneity and the maximal density to the tuning strategy.
-   * @param homogeneity
-   * @param maxDensity
+   * Method to pass domain similarity statistics to tuning strategy.
+   * @param meanParticlesPerCell mean number of particles per cell-bin (mimicking a CSF1 cell).
+   * @param relStdDevParticlesPerCell relative standard deviation number of particles per cell-bin (mimicking a CSF1 cell).
    */
-  virtual void receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity){};
+  virtual void receiveDomainSimilarityStatistics(double meanParticlesPerCell, double relStdDevParticlesPerCell){};
 };
 }  // namespace autopas

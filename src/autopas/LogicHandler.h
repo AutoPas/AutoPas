@@ -24,7 +24,6 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1850,27 +1849,26 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    // Gather density statistics (if needed)
-    if (autoTuner.needsHomogeneityAndMaxDensity()) {
-      // Gather homogeneity and max density
+    const auto needsDensityStatistics = autoTuner.needsDomainSimilarityStatistics();
+    const auto needsLiveInfo = autoTuner.needsLiveInfo();
+    if (needsDensityStatistics or needsLiveInfo) {
+      // Gather Live Info
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
-      const auto &container = _containerSelector.getCurrentContainer();
-      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
-      timerCalculateHomogeneity.stop();
-      autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
-    }
-    // Tell AutoTuner to send density statistics to tuning strategies (if we are at the start of a tuning phase).
-    autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
-
-    // If the AutoTuner is at the start of a tuning phase and needs liveInfo, gather it and send it to the AutoTuner.
-    if (autoTuner.needsLiveInfo()) {
-      utils::Timer timerCalculateLiveInfo;
-      timerCalculateLiveInfo.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-      autoTuner.receiveLiveInfo(info);
+      _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+      timerCalculateHomogeneity.stop();
+      if (needsDensityStatistics) {
+        const auto meanParticlesPerCell = info.get<double>("meanParticlesPerCell");
+        const auto relativeParticlesPerCellStdDev = info.get<double>("relativeParticlesPerCellStdDev");
+        autoTuner.addDomainSimilarityStatistics(meanParticlesPerCell, relativeParticlesPerCellStdDev,
+                                              timerCalculateHomogeneity.getTotalTime());
+        autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
+      }
+      if (needsLiveInfo) {
+        autoTuner.receiveLiveInfo(info);
+      }
     }
 
     std::tie(configuration, stillTuning) = autoTuner.getNextConfig();
