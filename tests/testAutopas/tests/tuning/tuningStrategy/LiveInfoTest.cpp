@@ -57,7 +57,8 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
   const auto targetNumberOfPDBinsPerDim = std::cbrt(targetNumberOfPDBins);
   const auto numberOfPDBinsPerDim = static_cast<size_t>(std::floor(targetNumberOfPDBinsPerDim));
   const auto PDBinDimensions = boxSize / static_cast<double>(numberOfPDBinsPerDim);
-  auto particleDependentBins = autopas::utils::ParticleBinStructure(numberOfPDBinsPerDim, PDBinDimensions, boxMin, boxMax, cutoff);
+  auto particleDependentBins =
+      autopas::utils::ParticleBinStructure(numberOfPDBinsPerDim, PDBinDimensions, boxMin, boxMax, cutoff);
 
   constexpr auto blurredBinDims = boxSize / std::array<double, 3>{3., 3., 3.};
   auto blurredBins = autopas::utils::ParticleBinStructure({3, 3, 3}, blurredBinDims, boxMin, boxMax, cutoff);

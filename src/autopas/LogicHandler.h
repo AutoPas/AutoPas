@@ -1857,13 +1857,13 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       timerCalculateHomogeneity.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-      _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
       timerCalculateHomogeneity.stop();
       if (needsDensityStatistics) {
         const auto particleDependentBinDensityStdDev = info.get<double>("particleDependentBinDensityStdDev");
         const auto particleDependentBinMaxDensity = info.get<double>("particleDependentBinMaxDensity");
         autoTuner.addDomainSimilarityStatistics(particleDependentBinDensityStdDev, particleDependentBinMaxDensity,
-                                              timerCalculateHomogeneity.getTotalTime());
+                                                timerCalculateHomogeneity.getTotalTime());
         autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
       }
       if (needsLiveInfo) {

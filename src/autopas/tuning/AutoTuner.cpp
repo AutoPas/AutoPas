@@ -30,9 +30,9 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
       _earlyStoppingFactor(autoTunerInfo.earlyStoppingFactor),
-      _needsHomogeneityAndMaxDensity(std::transform_reduce(
-          _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
-          [](auto &tuningStrat) { return tuningStrat->needsDomainSimilarityStatistics(); })),
+      _needsHomogeneityAndMaxDensity(
+          std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
+                                [](auto &tuningStrat) { return tuningStrat->needsDomainSimilarityStatistics(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
       _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),

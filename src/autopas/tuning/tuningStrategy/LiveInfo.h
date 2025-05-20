@@ -75,7 +75,11 @@ class LiveInfo {
    * @param cutoff Cutoff.
    * @return
    */
-  static utils::ParticleBinStructure buildParticleDependentBinStructure(const std::array<double, 3> &domainSize, const size_t numParticles, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
+  static utils::ParticleBinStructure buildParticleDependentBinStructure(const std::array<double, 3> &domainSize,
+                                                                        const size_t numParticles,
+                                                                        const std::array<double, 3> &boxMin,
+                                                                        const std::array<double, 3> &boxMax,
+                                                                        double cutoff) {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto targetNumberOfBins = std::max(std::ceil(static_cast<double>(numParticles) / 10.), 1.);
@@ -205,7 +209,8 @@ class LiveInfo {
 
     // Build bin structures
     auto cellBinStruct = buildCellBinStructure(domainSize, interactionLength, boxMin, boxMax, cutoff);
-    auto particleDependentBinStruct = buildParticleDependentBinStructure(domainSize, numOwnedParticles, boxMin, boxMax, cutoff);
+    auto particleDependentBinStruct =
+        buildParticleDependentBinStructure(domainSize, numOwnedParticles, boxMin, boxMax, cutoff);
     auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax, cutoff);
 
     infos["numCells"] = cellBinStruct.getNumberOfBins();
