@@ -70,21 +70,19 @@ class LiveInfo {
    *
    * @param domainSize size of (sub)domain
    * @param numParticles number of particles
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff Cutoff.
    * @return
    */
   static utils::ParticleBinStructure buildParticleDependentBinStructure(const std::array<double, 3> &domainSize, const size_t numParticles, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto domainVolume = domainSize[0] * domainSize[1] * domainSize[2];
-
-    // Todo The choice of 10 is arbitrary and probably can be optimized
     const auto targetNumberOfBins = std::max(std::ceil(static_cast<double>(numParticles) / 10.), 1.);
     const auto targetNumberOfBinsPerDim = std::cbrt(targetNumberOfBins);
-    // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
+    // This is probably not an integer, so we floor to get more than 10 particles per bin
     const auto numberOfBinsPerDim = static_cast<size_t>(std::floor(targetNumberOfBinsPerDim));
     const auto binDimensions = domainSize / static_cast<double>(numberOfBinsPerDim);
-
-    const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
 
     return {numberOfBinsPerDim, binDimensions, boxMin, boxMax, cutoff};
   }
@@ -159,6 +157,9 @@ class LiveInfo {
    * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
    * cell-bins contain roughly the same number of particles. Estimation does not work well if this is not the case.
    * ---- Particle Dependent Bin Statistics ----
+   * - particleDependentBinMaxDensity: The maximum density of particles in a particle-dependent bin.
+   * - particleDependentBinDensityStdDev: The standard deviation in the density of particles in a particle-dependent
+   * bin. In earlier versions of AutoPas, this was referred to as "Homogeneity".
    * ---- Blurred Bin Statistics ----
    * - maxParticlesPerBlurredBin: The maximum number of particles in a blurred bin.
    * - minParticlesPerBlurredBin: The minimum number of particles in a blurred bin.
