@@ -1,7 +1,7 @@
 option(Eigen3_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${Eigen3_ForceBundled})
-    set(expectedVersion 3.3.4)
+    set(expectedVersion 3.4.0)
     # capital E actually required...
     find_package(Eigen3 ${expectedVersion} QUIET)
     # actually I don't know our minimal supported version but this is the one I tested.
