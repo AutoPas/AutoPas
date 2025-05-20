@@ -329,7 +329,7 @@ class ParticleBinStructure {
   double _meanParticlesPerBin{};
 
   /**
-   * Mean density (#particles in a bin / bin volume) per bin.
+   * Mean density (num particles in a bin / bin volume) per bin.
    */
   double _meanDensity{};
 
