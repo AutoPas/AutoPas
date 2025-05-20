@@ -193,6 +193,28 @@ class ParticleBinStructure {
   [[nodiscard]] double getRelStdDevParticlesPerBin() const;
 
   /**
+   * Returns the mean density of particles per bins.
+   * Logs a warning if statistics have not been calculated yet.
+   *
+   * @return The mean density of particles.
+   */
+  [[nodiscard]] double getMeanDensity() const;
+
+  /**
+   * Returns the standard deviation of the density per bins.
+   * Logs a warning if statistics have not been calculated yet.
+   *
+   * @return The standard deviation of densities.
+   */
+  [[nodiscard]] double getStdDevDensity() const;
+
+  /**
+   * Returns the maximum density of any bin.
+   * @return
+   */
+  [[nodiscard]] double getMaxDensity() const;
+
+  /**
    * Returns the maximum number of particles in a single bin.
    * Logs a warning if statistics have not been calculated yet.
    *
@@ -307,6 +329,11 @@ class ParticleBinStructure {
   double _meanParticlesPerBin{};
 
   /**
+   * Mean density (#particles in a bin / bin volume) per bin.
+   */
+  double _meanDensity{};
+
+  /**
    * Standard deviation in the number of particles per bin.
    */
   double _stdDevParticlesPerBin{};
@@ -315,6 +342,16 @@ class ParticleBinStructure {
    * Standard deviation in the number of particles per bin relative to the number of particles.
    */
   double _relStdDevParticlesPerBin{};
+
+  /**
+   * Standard deviation in the bin density per bin.
+   */
+  double _stdDevDensity{};
+
+  /**
+   * Maximum density in any bin.
+   */
+  double _maxDensity{};
 
   /**
    * Maximum number of particles that any bin has.
