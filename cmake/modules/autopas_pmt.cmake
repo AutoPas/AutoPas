@@ -1,3 +1,8 @@
+option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+        "Enables energy measurements and tuning using PMT library and enables the RAPL interface, by default, allowing for energy measurement on Intel and AMD hardware."
+        ON
+)
+
 if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
     option(pmt_ForceBundled "Do not look for an installed version, always used bundled." ON)
