@@ -147,7 +147,7 @@ class LiveInfo {
               size_t numOwnedParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
               double skin) {
     using namespace utils::ArrayMath::literals;
-    using utils::ArrayMath::castedCeil;
+    using utils::ArrayMath::ceilAndCast;
 
     // Aliases and info of particle distribution independent information
     const auto interactionLength = cutoff + skin;

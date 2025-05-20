@@ -47,7 +47,7 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
   container.init();
 
   // Create comparison bins
-  const auto numCellBinsPerDim = castedFloor<size_t>(boxSize / (cutoff + skin));
+  const auto numCellBinsPerDim = floorAndCast<size_t>(boxSize / (cutoff + skin));
   const auto numCells = numCellBinsPerDim[0] * numCellBinsPerDim[1] * numCellBinsPerDim[2];
   const auto cellBinDims = boxSize / staticCastArray<double>(numCellBinsPerDim);
   auto cellBins = autopas::utils::ParticleBinStructure(numCellBinsPerDim, cellBinDims, boxMin, boxMax, cutoff);
@@ -172,7 +172,7 @@ TEST_F(LiveInfoTest, NoParticleTest) {
   constexpr auto boxSize = boxMax - boxMin;
   constexpr size_t rebuildFrequency{10};
 
-  const auto numCellBinsPerDim = castedFloor<size_t>(boxSize / (cutoff + skin));
+  const auto numCellBinsPerDim = floorAndCast<size_t>(boxSize / (cutoff + skin));
   const auto numCells = numCellBinsPerDim[0] * numCellBinsPerDim[1] * numCellBinsPerDim[2];
 
   auto container = autopas::AutoPas<ParticleFP64>();

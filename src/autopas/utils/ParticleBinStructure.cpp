@@ -38,7 +38,7 @@ void ParticleBinStructure::countParticle(const std::array<double, 3> &particlePo
 
   // Determine the 3D index of the bin the particle falls into
   const auto offsetIntoBox = particlePosition - _boxMin;
-  const auto binIndex3DUnsafe = utils::ArrayMath::castedFloor<size_t>(offsetIntoBox * _binLengthReciprocal);
+  const auto binIndex3DUnsafe = utils::ArrayMath::floorAndCast<size_t>(offsetIntoBox * _binLengthReciprocal);
 
   // It is possible that floating point errors result in out of bounds indices.
   // e.g. if there are 7 bins in the x dimension, and that particle is close to the right domain boundary, the

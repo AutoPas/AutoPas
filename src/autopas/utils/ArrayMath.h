@@ -331,7 +331,7 @@ template <class T, std::size_t SIZE>
  * @return New array with floored elements of new type.
  */
 template <typename target_T = int, typename float_T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<target_T, SIZE> castedFloor(const std::array<float_T, SIZE> &a) {
+[[nodiscard]] constexpr std::array<target_T, SIZE> floorAndCast(const std::array<float_T, SIZE> &a) {
   std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = static_cast<target_T>(std::floor(a[d]));
@@ -349,7 +349,7 @@ template <typename target_T = int, typename float_T, std::size_t SIZE>
  * @return New array with ceiled elements of new type.
  */
 template <class target_T = int, class float_T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<target_T, SIZE> castedCeil(const std::array<float_T, SIZE> &a) {
+[[nodiscard]] constexpr std::array<target_T, SIZE> ceilAndCast(const std::array<float_T, SIZE> &a) {
   std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = static_cast<target_T>(std::ceil(a[d]));
