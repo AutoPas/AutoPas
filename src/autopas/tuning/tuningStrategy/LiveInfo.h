@@ -63,6 +63,33 @@ class LiveInfo {
   }
 
   /**
+   * Returns a bin structure where there are, on average, roughly ten particles per bin, and the bin dimensions are
+   * simply a scaling of the domain dimensions. Forces there to be at least one bin, e.g. in the case of no particles.
+   *
+   * Todo The choice of 10 is arbitrary and probably can be optimized.
+   *
+   * @param domainSize size of (sub)domain
+   * @param numParticles number of particles
+   * @return
+   */
+  static utils::ParticleBinStructure buildParticleDependentBinStructure(const std::array<double, 3> &domainSize, const size_t numParticles, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff) {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const auto domainVolume = domainSize[0] * domainSize[1] * domainSize[2];
+
+    // Todo The choice of 10 is arbitrary and probably can be optimized
+    const auto targetNumberOfBins = std::max(std::ceil(static_cast<double>(numParticles) / 10.), 1.);
+    const auto targetNumberOfBinsPerDim = std::cbrt(targetNumberOfBins);
+    // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
+    const auto numberOfBinsPerDim = static_cast<size_t>(std::floor(targetNumberOfBinsPerDim));
+    const auto binDimensions = domainSize / static_cast<double>(numberOfBinsPerDim);
+
+    const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
+
+    return {numberOfBinsPerDim, binDimensions, boxMin, boxMax, cutoff};
+  }
+
+  /**
    * Returns a bin structure the domain is divided into 3x3x3 uniform bins.
    *
    * @param domainSize size of (sub)domain
@@ -94,7 +121,16 @@ class LiveInfo {
    *
    * A lot of the information is based on a couple of different spatial bin resolutions:
    * - cells: Bin dimensions are the same as cells in the Linked Cells container with CSF 1.
+   * - particleDependentBins: Bin dimensions are designed such that the are approximately 10 particles per bin.
    * - blurredBins: The domain is divided equally into 3x3x3 "blurred" bins
+   *
+   * @note It is not clear how useful the statistics derived from the particleDependentBins are, as the "resolution"
+   * varies depending on the number of particles. E.g. Consider a sparse simulation with a "macroscopic" heterogeneity
+   * and a dense simulation with a "microscopic" heterogeneity but at a "macroscopic" level is rather homogeneous.
+   * These could have the same particleDependentBin homogeneity (relative std. dev. of bin counts) but would respond
+   * to traversals very differently. This could, however, provide a useful metric for homogeneity which is somewhat
+   * independent of particle density (e.g. could be useful for determining the best traversal with one statistic
+   * independently of what cell-size factor is chosen)
    *
    * Currently, it provides:
    * ---- Bin Independent Statistics ----
@@ -122,6 +158,7 @@ class LiveInfo {
    * cell-bin.
    * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
    * cell-bins contain roughly the same number of particles. Estimation does not work well if this is not the case.
+   * ---- Particle Dependent Bin Statistics ----
    * ---- Blurred Bin Statistics ----
    * - maxParticlesPerBlurredBin: The maximum number of particles in a blurred bin.
    * - minParticlesPerBlurredBin: The minimum number of particles in a blurred bin.
@@ -167,6 +204,7 @@ class LiveInfo {
 
     // Build bin structures
     auto cellBinStruct = buildCellBinStructure(domainSize, interactionLength, boxMin, boxMax, cutoff);
+    auto particleDependentBinStruct = buildParticleDependentBinStructure(domainSize, numOwnedParticles, boxMin, boxMax, cutoff);
     auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax, cutoff);
 
     infos["numCells"] = cellBinStruct.getNumberOfBins();
@@ -180,6 +218,7 @@ class LiveInfo {
         const auto particlePos = particleIter->getR();
         if (utils::inBox(particlePos, boxMin, boxMax)) {
           cellBinStruct.countParticle(particlePos);
+          particleDependentBinStruct.countParticle(particlePos);
           blurredBinStruct.countParticle(particlePos);
         }
       } else if (particleIter->isHalo()) {
@@ -200,6 +239,7 @@ class LiveInfo {
 
     // calculate statistics
     cellBinStruct.calculateStatistics();
+    particleDependentBinStruct.calculateStatistics();
     blurredBinStruct.calculateStatistics();
 
     // write cellBinStruct statistics to live info
@@ -213,6 +253,10 @@ class LiveInfo {
     infos["relativeParticlesPerCellStdDev"] = cellBinStruct.getRelStdDevParticlesPerBin();
     infos["particlesPerCellStdDev"] = cellBinStruct.getStdDevParticlesPerBin();
     infos["estimatedNumNeighborInteractions"] = cellBinStruct.getEstimatedNumberOfNeighborInteractions();
+
+    // write particle dependent bin statistics to live info
+    infos["particleDependentBinMaxDensity"] = particleDependentBinStruct.getMaxDensity();
+    infos["particleDependentBinDensityStdDev"] = particleDependentBinStruct.getStdDevDensity();
 
     // write blurred bin statistics to live info
     infos["maxParticlesPerBlurredBin"] = blurredBinStruct.getMaxParticlesPerBin();

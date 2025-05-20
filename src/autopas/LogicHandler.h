@@ -1860,9 +1860,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
       timerCalculateHomogeneity.stop();
       if (needsDensityStatistics) {
-        const auto meanParticlesPerCell = info.get<double>("meanParticlesPerCell");
-        const auto relativeParticlesPerCellStdDev = info.get<double>("relativeParticlesPerCellStdDev");
-        autoTuner.addDomainSimilarityStatistics(meanParticlesPerCell, relativeParticlesPerCellStdDev,
+        const auto particleDependentBinDensityStdDev = info.get<double>("particleDependentBinDensityStdDev");
+        const auto particleDependentBinMaxDensity = info.get<double>("particleDependentBinMaxDensity");
+        autoTuner.addDomainSimilarityStatistics(particleDependentBinDensityStdDev, particleDependentBinMaxDensity,
                                               timerCalculateHomogeneity.getTotalTime());
         autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
       }
