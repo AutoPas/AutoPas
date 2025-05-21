@@ -1,10 +1,10 @@
 /**
- * @file ParticleBinStructureTests.cpp
+ * @file ParticleBinStructureTest.cpp
  * @author S. Newcome
  * @date 24/03/2025
  */
 
-#include "ParticleBinStructureTests.h"
+#include "ParticleBinStructureTest.h"
 
 #include <gtest/gtest.h>
 
@@ -19,7 +19,7 @@
  * Adds six particles to a bin structure (or attempts to) and checks that the total and individual particle counts are
  * correct.
  */
-TEST_F(ParticleBinStructureTests, testCountParticle) {
+TEST_F(ParticleBinStructureTest, testCountParticle) {
   using autopas::utils::ArrayMath::isEqual;
 
   // Construct a bin structure with 2 bins in each dimension, each bin is 1x1x1
@@ -66,7 +66,7 @@ TEST_F(ParticleBinStructureTests, testCountParticle) {
  * Test for calculateStatistics. This is a basic test intended to check that the function runs and to check basic
  * behavior without comparing to reference values.
  */
-TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
+TEST_F(ParticleBinStructureTest, testCalculateStatisticsBasic) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
@@ -150,7 +150,7 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
  * A test to check that the statistics calculated by ParticleBinStructure are the same as those calculated by a
  * (deterministic) random reference.
  */
-TEST_F(ParticleBinStructureTests, calculateStatisticsVsReference) {
+TEST_F(ParticleBinStructureTest, calculateStatisticsVsReference) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
@@ -283,7 +283,7 @@ TEST_F(ParticleBinStructureTests, calculateStatisticsVsReference) {
  * Considers a 3x3x3 block of cells. The particles in the central cell are binned and the estimate produced by
  * ParticleBinStructure is compared against the actual number of interactions.
  */
-TEST_F(ParticleBinStructureTests, estimatedNumNeighIntVsActualWithAssumptions) {
+TEST_F(ParticleBinStructureTest, estimatedNumNeighIntVsActualWithAssumptions) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
