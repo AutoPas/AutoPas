@@ -98,13 +98,13 @@ class TuningStrategyInterface {
    * Indicate whether the strategy needs smoothed values of homogeneity and max density
    * @return
    */
-  [[nodiscard]] virtual bool needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+  virtual bool needsDomainSimilarityStatistics() const { return false; }
 
   /**
    * Method to pass smoothed homogeneity and the maximal density to the tuning strategy.
    * @param homogeneity
    * @param maxDensity
    */
-  virtual void receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity){};
+  virtual void receiveDomainSimilarityStatistics(double homogeneity, double maxDensity){};
 };
 }  // namespace autopas

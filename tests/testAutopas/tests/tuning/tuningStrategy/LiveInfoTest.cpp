@@ -47,10 +47,18 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
   container.init();
 
   // Create comparison bins
-  const auto numCellBinsPerDim = castedFloor<size_t>(boxSize / (cutoff + skin));
+  const auto numCellBinsPerDim = floorAndCast<size_t>(boxSize / (cutoff + skin));
   const auto numCells = numCellBinsPerDim[0] * numCellBinsPerDim[1] * numCellBinsPerDim[2];
   const auto cellBinDims = boxSize / staticCastArray<double>(numCellBinsPerDim);
   auto cellBins = autopas::utils::ParticleBinStructure(numCellBinsPerDim, cellBinDims, boxMin, boxMax, cutoff);
+
+  // PD = Particle Dependent
+  const auto targetNumberOfPDBins = std::ceil(static_cast<double>(numParticlesOwned) / 10.);
+  const auto targetNumberOfPDBinsPerDim = std::cbrt(targetNumberOfPDBins);
+  const auto numberOfPDBinsPerDim = static_cast<size_t>(std::floor(targetNumberOfPDBinsPerDim));
+  const auto PDBinDimensions = boxSize / static_cast<double>(numberOfPDBinsPerDim);
+  auto particleDependentBins =
+      autopas::utils::ParticleBinStructure(numberOfPDBinsPerDim, PDBinDimensions, boxMin, boxMax, cutoff);
 
   constexpr auto blurredBinDims = boxSize / std::array<double, 3>{3., 3., 3.};
   auto blurredBins = autopas::utils::ParticleBinStructure({3, 3, 3}, blurredBinDims, boxMin, boxMax, cutoff);
@@ -61,6 +69,7 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
     ParticleFP64 p({5., 5., 5.}, {0., 0., 0.}, id);
     container.addParticle(p);
     cellBins.countParticle({5., 5., 5.});
+    particleDependentBins.countParticle({5., 5., 5.});
     blurredBins.countParticle({5., 5., 5.});
   }
   for (size_t i = 0; i < numParticlesHalo; ++i, ++id) {
@@ -83,6 +92,7 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
                   container.getBoxMin(), container.getBoxMax(), container.getCutoff(), container.getVerletSkin());
 
   cellBins.calculateStatistics();
+  particleDependentBins.calculateStatistics();
   blurredBins.calculateStatistics();
 
   // Compare directly calculated LiveInfo statistics
@@ -111,6 +121,9 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
   EXPECT_DOUBLE_EQ(liveInfo.get<double>("estimatedNumNeighborInteractions"),
                    cellBins.getEstimatedNumberOfNeighborInteractions());
 
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinMaxDensity"), particleDependentBins.getMaxDensity());
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinDensityStdDev"), particleDependentBins.getStdDevDensity());
+
   EXPECT_EQ(liveInfo.get<size_t>("maxParticlesPerBlurredBin"), blurredBins.getMaxParticlesPerBin());
   EXPECT_EQ(liveInfo.get<size_t>("minParticlesPerBlurredBin"), blurredBins.getMinParticlesPerBin());
   EXPECT_EQ(liveInfo.get<size_t>("medianParticlesPerBlurredBin"), blurredBins.getMedianParticlesPerBin());
@@ -128,9 +141,10 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
  * There should be
  * - 11 directly calculated statistics
  * - 10 cellBin statistics
+ * - 2 particleDependentBin statistics
  * - 8 blurredBin statistics
  *
- * = 29
+ * = 31
  */
 TEST_F(LiveInfoTest, NoMissingLiveInfoStatisticsUnitTests) {
   autopas::LiveInfo liveInfo;
@@ -152,7 +166,7 @@ TEST_F(LiveInfoTest, NoMissingLiveInfoStatisticsUnitTests) {
   liveInfo.gather(container.begin(), container.getVerletRebuildFrequency(), container.getNumberOfParticles(),
                   container.getBoxMin(), container.getBoxMax(), container.getCutoff(), container.getVerletSkin());
 
-  EXPECT_EQ(size(liveInfo.get()), 29) << "LiveInfoTest is missing a test for one of the LiveInfo statistics, or"
+  EXPECT_EQ(size(liveInfo.get()), 31) << "LiveInfoTest is missing a test for one of the LiveInfo statistics, or"
                                          " includes a test for a statistic that no longer exists.";
 }
 
@@ -172,7 +186,7 @@ TEST_F(LiveInfoTest, NoParticleTest) {
   constexpr auto boxSize = boxMax - boxMin;
   constexpr size_t rebuildFrequency{10};
 
-  const auto numCellBinsPerDim = castedFloor<size_t>(boxSize / (cutoff + skin));
+  const auto numCellBinsPerDim = floorAndCast<size_t>(boxSize / (cutoff + skin));
   const auto numCells = numCellBinsPerDim[0] * numCellBinsPerDim[1] * numCellBinsPerDim[2];
 
   auto container = autopas::AutoPas<ParticleFP64>();
@@ -213,6 +227,9 @@ TEST_F(LiveInfoTest, NoParticleTest) {
   EXPECT_DOUBLE_EQ(liveInfo.get<double>("relativeParticlesPerCellStdDev"), 0.);
   EXPECT_DOUBLE_EQ(liveInfo.get<double>("particlesPerCellStdDev"), 0.);
   EXPECT_DOUBLE_EQ(liveInfo.get<double>("estimatedNumNeighborInteractions"), 0.);
+
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinMaxDensity"), 0);
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinDensityStdDev"), 0);
 
   EXPECT_EQ(liveInfo.get<size_t>("maxParticlesPerBlurredBin"), 0);
   EXPECT_EQ(liveInfo.get<size_t>("minParticlesPerBlurredBin"), 0);

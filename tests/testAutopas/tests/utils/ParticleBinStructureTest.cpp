@@ -1,10 +1,10 @@
 /**
- * @file ParticleBinStructureTests.cpp
+ * @file ParticleBinStructureTest.cpp
  * @author S. Newcome
  * @date 24/03/2025
  */
 
-#include "ParticleBinStructureTests.h"
+#include "ParticleBinStructureTest.h"
 
 #include <gtest/gtest.h>
 
@@ -19,7 +19,7 @@
  * Adds six particles to a bin structure (or attempts to) and checks that the total and individual particle counts are
  * correct.
  */
-TEST_F(ParticleBinStructureTests, testCountParticle) {
+TEST_F(ParticleBinStructureTest, testCountParticle) {
   using autopas::utils::ArrayMath::isEqual;
 
   // Construct a bin structure with 2 bins in each dimension, each bin is 1x1x1
@@ -66,7 +66,7 @@ TEST_F(ParticleBinStructureTests, testCountParticle) {
  * Test for calculateStatistics. This is a basic test intended to check that the function runs and to check basic
  * behavior without comparing to reference values.
  */
-TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
+TEST_F(ParticleBinStructureTest, testCalculateStatisticsBasic) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
@@ -88,6 +88,9 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
   EXPECT_DOUBLE_EQ(particleBinStructure.getMeanParticlesPerBin(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevParticlesPerBin(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMeanDensity(), 0.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevDensity(), 0.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getEstimatedNumberOfNeighborInteractions(), 0.);
   EXPECT_EQ(particleBinStructure.getMinParticlesPerBin(), 0);
   EXPECT_EQ(particleBinStructure.getMaxParticlesPerBin(), 0);
@@ -110,6 +113,9 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
   EXPECT_DOUBLE_EQ(particleBinStructure.getMeanParticlesPerBin(), 10.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevParticlesPerBin(), 0.);
   EXPECT_DOUBLE_EQ(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMeanDensity(), 10. / (binLength[0] * binLength[1] * binLength[2]));
+  EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevDensity(), 0.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 10. / (binLength[0] * binLength[1] * binLength[2]));
   // EXPECT_NEAR is required due to slight floating point discrepancies.
   EXPECT_NEAR(particleBinStructure.getEstimatedNumberOfNeighborInteractions(),
               numBins * (10. * (10. * 27.) * estimatedHitRate - 10.), 1e-8);
@@ -128,6 +134,8 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
   EXPECT_GT(particleBinStructure.getMeanParticlesPerBin(), 10.);
   EXPECT_GT(particleBinStructure.getStdDevParticlesPerBin(), 0.);
   EXPECT_GT(particleBinStructure.getRelStdDevParticlesPerBin(), 0.);
+  EXPECT_GT(particleBinStructure.getStdDevDensity(), 0.);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), 11. / (binLength[0] * binLength[1] * binLength[2]));
   EXPECT_GT(particleBinStructure.getEstimatedNumberOfNeighborInteractions(),
             numBins * (10. * (10. * 27.) * estimatedHitRate - 10.));
   EXPECT_EQ(particleBinStructure.getMinParticlesPerBin(), 10);
@@ -142,7 +150,7 @@ TEST_F(ParticleBinStructureTests, testCalculateStatisticsBasic) {
  * A test to check that the statistics calculated by ParticleBinStructure are the same as those calculated by a
  * (deterministic) random reference.
  */
-TEST_F(ParticleBinStructureTests, calculateStatisticsVsReference) {
+TEST_F(ParticleBinStructureTest, calculateStatisticsVsReference) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
@@ -227,6 +235,25 @@ TEST_F(ParticleBinStructureTests, calculateStatisticsVsReference) {
   }();
   EXPECT_EQ(particleBinStructure.getUpperQuartileParticlesPerBin(), expectedUpperQuartile);
 
+  // Mean Density
+  const auto expectedMeanDensity = static_cast<double>(numParticles) / (boxMax[0] * boxMax[1] * boxMax[2]);
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMeanDensity(), expectedMeanDensity);
+
+  // Std. Dev. Density
+  const auto expectedStdDevDensity = [&]() {
+    double sum = 0.;
+    for (size_t i = 0; i < numBins; ++i) {
+      const auto diff = (static_cast<double>(particleCounts[i]) / volBin) - expectedMeanDensity;
+      sum += diff * diff;
+    }
+    return std::sqrt(sum / static_cast<double>(numBins));
+  }();
+  EXPECT_DOUBLE_EQ(particleBinStructure.getStdDevDensity(), expectedStdDevDensity);
+
+  // Max Density
+  const auto expectedMaxDensity = static_cast<double>(expectedMax) / volBin;
+  EXPECT_DOUBLE_EQ(particleBinStructure.getMaxDensity(), expectedMaxDensity);
+
   // Num Empty Bins
   const auto expectedNumEmptyBins = std::count(particleCounts.begin(), particleCounts.end(), 0);
   EXPECT_EQ(particleBinStructure.getNumEmptyBins(), expectedNumEmptyBins);
@@ -256,7 +283,7 @@ TEST_F(ParticleBinStructureTests, calculateStatisticsVsReference) {
  * Considers a 3x3x3 block of cells. The particles in the central cell are binned and the estimate produced by
  * ParticleBinStructure is compared against the actual number of interactions.
  */
-TEST_F(ParticleBinStructureTests, estimatedNumNeighIntVsActualWithAssumptions) {
+TEST_F(ParticleBinStructureTest, estimatedNumNeighIntVsActualWithAssumptions) {
   using namespace autopas::utils;
   using namespace ArrayMath::literals;
 
