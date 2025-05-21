@@ -121,8 +121,8 @@ TEST_F(LiveInfoTest, CorrectInfoMappings) {
   EXPECT_DOUBLE_EQ(liveInfo.get<double>("estimatedNumNeighborInteractions"),
                    cellBins.getEstimatedNumberOfNeighborInteractions());
 
-  EXPECT_EQ(liveInfo.get<size_t>("particleDependentBinMaxDensity"), particleDependentBins.getMaxDensity());
-  EXPECT_EQ(liveInfo.get<size_t>("particleDependentBinDensityStdDev"), particleDependentBins.getStdDevDensity());
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinMaxDensity"), particleDependentBins.getMaxDensity());
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinDensityStdDev"), particleDependentBins.getStdDevDensity());
 
   EXPECT_EQ(liveInfo.get<size_t>("maxParticlesPerBlurredBin"), blurredBins.getMaxParticlesPerBin());
   EXPECT_EQ(liveInfo.get<size_t>("minParticlesPerBlurredBin"), blurredBins.getMinParticlesPerBin());
@@ -228,8 +228,8 @@ TEST_F(LiveInfoTest, NoParticleTest) {
   EXPECT_DOUBLE_EQ(liveInfo.get<double>("particlesPerCellStdDev"), 0.);
   EXPECT_DOUBLE_EQ(liveInfo.get<double>("estimatedNumNeighborInteractions"), 0.);
 
-  EXPECT_EQ(liveInfo.get<size_t>("particleDependentBinMaxDensity"), 0);
-  EXPECT_EQ(liveInfo.get<size_t>("particleDependentBinDensityStdDev"), 0);
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinMaxDensity"), 0);
+  EXPECT_EQ(liveInfo.get<double>("particleDependentBinDensityStdDev"), 0);
 
   EXPECT_EQ(liveInfo.get<size_t>("maxParticlesPerBlurredBin"), 0);
   EXPECT_EQ(liveInfo.get<size_t>("minParticlesPerBlurredBin"), 0);
