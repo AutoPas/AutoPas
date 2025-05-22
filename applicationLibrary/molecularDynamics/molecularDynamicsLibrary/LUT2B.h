@@ -4,19 +4,45 @@
 
 #pragma once
 
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 
 #include "ParentLUT.h"
-
-
 
 namespace mdLib {
 class LUT2B : public ParentLUT {
  public:
-  LUT2B( int resolution, double cutoffSquared) : ParentLUT(resolution, cutoffSquared) {}
+
+
+  LUT2B( int resolution, double cutoffSquared) : ParentLUT(resolution, cutoffSquared) {
+//    _lut2B.reserve(resolution);
+
+
+
+// Open the file
+std::filesystem::path cwd = std::filesystem::current_path();
+std::cout << "Current working directory: " << cwd << std::endl;
+
+std::ofstream file("logging_distances.csv");
+// Check if the file is opened successfully
+if (!file.is_open()) {
+  std::cout << "Error opening file!" << std::endl;
+
+}
+std::cout << "cutoffSquared   " <<cutoffSquared << std::endl;
+std::cout << "pointDistance   " <<_pointDistance << std::endl;
+std::cout << "distanceSquared" << std::endl;
+
+  }
 
   template<class Functor>
   float retrieveValues(const Functor &functor,float distanceSquared) {
 //    return getNextNeighbor(functor,distanceSquared);
+
+
+std::cout << std::fixed << std::setprecision(15) << distanceSquared << std::endl;
+
     return getLinear(functor,distanceSquared);
 
   }

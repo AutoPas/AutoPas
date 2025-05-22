@@ -22,7 +22,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "src/LUT.h"
+#include "ParentLUT.h"
 
 
 namespace mdLib {
@@ -56,7 +56,8 @@ class LJFunctorAVX
    */
   LJFunctorAVX() = delete;
 
- private:
+// private:
+public:
   /**
    * Internal, actual constructor.
    * @param cutoff
@@ -174,9 +175,16 @@ class LJFunctorAVX
 //          fac = _lut->retrieveValues(*this,dr2);
 fac = _lut->retrieveValues(*this, dr2);
           if (calculateGlobals) {
-            // this is a problem
-            AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
-            return;
+//            // this is a problem
+//            AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
+//            return;
+
+
+
+//added by me
+
+
+//end added by me
           }
         }else {
           // end added for lut
@@ -203,6 +211,7 @@ fac = _lut->retrieveValues(*this, dr2);
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
+
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum += virial;
       }

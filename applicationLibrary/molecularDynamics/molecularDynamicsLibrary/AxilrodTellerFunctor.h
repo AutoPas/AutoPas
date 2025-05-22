@@ -276,8 +276,8 @@ class AxilrodTellerFunctor
     if constexpr (useLUT) {
 
       const auto [factors, order] = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
-       double forceJ;
-       double forceK;
+      std::array<double, 3> forceJ;
+      std::array<double, 3> forceK;
       // TODO: signs ?? this might already be solved check by calculating by hands this seems to be about of the placement of minus in the formulas underneath is correct
       const auto forceI = displacementIJ * factors[order[0]] - displacementKI * factors[order[2]];
       i.addF(forceI);
@@ -299,8 +299,8 @@ class AxilrodTellerFunctor
         const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
         const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
         const double factor = 3.0 * nu / allDistsTo5;
-
-        // Dot products of both distance vectors going from one particle
+//
+//        // Dot products of both distance vectors going from one particle
         const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
         const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
         const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);

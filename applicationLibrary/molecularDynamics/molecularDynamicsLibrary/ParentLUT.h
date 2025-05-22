@@ -29,6 +29,8 @@ namespace mdLib {
       _numberOfPoints= resolution;
     }
 
+    ParentLUT(){}
+
 
 //     template<class Functor>
 //     void fill(const Functor &functor, double cutoffSquared) {}
