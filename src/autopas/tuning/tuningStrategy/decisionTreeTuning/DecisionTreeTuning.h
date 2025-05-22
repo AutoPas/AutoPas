@@ -6,7 +6,9 @@
 
 #pragma once
 
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
+#endif
 
 #include <map>
 #include <set>
@@ -24,6 +26,8 @@ namespace autopas {
  * This class uses a decision tree model to predict the best configuration based on the current live
  * information. The decision tree model is trained using the Python scikit-learn library. The Python
  * script predict.py is used to load the model and make predictions.
+ *
+ * @note This tuning strategy requires the CMake variable AUTOPAS_ENABLE_PYTHON_BASED_TUNING set to ON
  */
 class DecisionTreeTuning : public TuningStrategyInterface {
  public:
@@ -76,10 +80,13 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    * Confidence threshold for the prediction.
    */
   double _confidenceThreshold;
+
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   /**
    * Pybind11 object representing the Python function `main`.
    */
   pybind11::object _pythonMainFunc;
+#endif
 };
 
 }  // namespace autopas

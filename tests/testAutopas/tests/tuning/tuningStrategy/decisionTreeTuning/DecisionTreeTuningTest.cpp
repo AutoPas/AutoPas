@@ -9,7 +9,9 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
+#endif
 
 #include <filesystem>  // For checking the existence of test files
 
@@ -18,7 +20,9 @@
 
 namespace autopas {
 
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 namespace py = pybind11;
+#endif
 
 /**
  * @class MockLiveInfo
@@ -36,6 +40,7 @@ class MockLiveInfo : public LiveInfo {
  * Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
  */
 TEST(DecisionTreeTuningTest, TestScriptLoading) {
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   std::set<autopas::Configuration> searchSpace;
 
   EXPECT_THROW(
@@ -46,6 +51,9 @@ TEST(DecisionTreeTuningTest, TestScriptLoading) {
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
       pybind11::error_already_set);
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -54,6 +62,7 @@ TEST(DecisionTreeTuningTest, TestScriptLoading) {
  * Tests that a valid Python model response updates the configuration queue correctly.
  */
 TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   // Define the search space for configurations
   std::set<autopas::Configuration> searchSpace = {
       autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
@@ -92,6 +101,9 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   EXPECT_EQ(predictedConfig.traversal, autopas::TraversalOption::lc_c08);
   EXPECT_EQ(predictedConfig.dataLayout, autopas::DataLayoutOption::soa);
   EXPECT_EQ(predictedConfig.newton3, autopas::Newton3Option::enabled);
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -100,6 +112,7 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
  * Tests that a malformed model throws an exception during `reset()`.
  */
 TEST(DecisionTreeTuningTest, TestInvalidModel) {
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise)};
@@ -127,6 +140,9 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
       std::runtime_error);
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
+#endif
 }
 
 }  // namespace autopas
