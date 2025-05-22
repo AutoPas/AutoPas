@@ -60,7 +60,6 @@ class LogicHandler {
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
-        _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
@@ -75,10 +74,11 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      const ContainerSelectorInfo containerSelectorInfo{configuration.cellSizeFactor, _logicHandlerInfo.verletSkin,
-                                                        _neighborListRebuildFrequency, _verletClusterSize,
-                                                        configuration.loadEstimator};
-      _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
+      const ContainerSelectorInfo containerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,
+                                                        _logicHandlerInfo.cutoff,     configuration.cellSizeFactor,
+                                                        _logicHandlerInfo.verletSkin, _neighborListRebuildFrequency,
+                                                        _verletClusterSize,           configuration.loadEstimator};
+      _container = ContainerSelector<Particle_T>::generateContainer(configuration.container, containerSelectorInfo);
       checkMinimalSize();
     }
 
@@ -96,7 +96,7 @@ class LogicHandler {
    * Returns a non-const reference to the currently selected particle container.
    * @return Non-const reference to the container.
    */
-  autopas::ParticleContainerInterface<Particle_T> &getContainer() { return _containerSelector.getCurrentContainer(); }
+  ParticleContainerInterface<Particle_T> &getContainer() { return *_container; }
 
   /**
    * Collects leaving particles from buffer and potentially inserts owned particles to the container.
@@ -104,8 +104,8 @@ class LogicHandler {
    * @return Leaving particles.
    */
   [[nodiscard]] std::vector<Particle_T> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
-    const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
-    const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
+    const auto &boxMin = _container->getBoxMin();
+    const auto &boxMax = _container->getBoxMax();
     std::vector<Particle_T> leavingBufferParticles{};
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
@@ -117,7 +117,7 @@ class LogicHandler {
           }
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
             p.setOwnershipState(OwnershipState::owned);
-            _containerSelector.getCurrentContainer().addParticle(p);
+            _container->addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
           }
@@ -178,7 +178,7 @@ class LogicHandler {
         _stepsSinceLastListRebuild = 0;
       }
       ++_stepsSinceLastListRebuild;
-      _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
+      _container->setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
       ++_iteration;
     }
 
@@ -186,7 +186,7 @@ class LogicHandler {
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
     AutoPasLog(TRACE, "Initiating container update.");
-    auto leavingParticles = _containerSelector.getCurrentContainer().updateContainer(not doDataStructureUpdate);
+    auto leavingParticles = _container->updateContainer(not doDataStructureUpdate);
     leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
 
     // Substract the amount of leaving particles from the number of owned particles.
@@ -205,8 +205,8 @@ class LogicHandler {
    */
   std::vector<Particle_T> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
     using namespace autopas::utils::ArrayMath::literals;
-    const auto &oldMin = _containerSelector.getCurrentContainer().getBoxMin();
-    const auto &oldMax = _containerSelector.getCurrentContainer().getBoxMax();
+    const auto &oldMin = _container->getBoxMin();
+    const auto &oldMax = _container->getBoxMax();
 
     // if nothing changed do nothing
     if (oldMin == boxMin and oldMax == boxMax) {
@@ -242,7 +242,7 @@ class LogicHandler {
 
     // check all particles
     std::vector<Particle_T> particlesNowOutside;
-    for (auto pIter = _containerSelector.getCurrentContainer().begin(); pIter.isValid(); ++pIter) {
+    for (auto pIter = _container->begin(); pIter.isValid(); ++pIter) {
       // make sure only owned ones are present
       if (not pIter->isOwned()) {
         utils::ExceptionHandler::exception(
@@ -259,10 +259,13 @@ class LogicHandler {
     }
 
     // actually resize the container
-    _containerSelector.resizeBox(boxMin, boxMax);
-    // The container might have changed sufficiently enough so that we need more or less spacial locks
+    _containerSelectorInfo->boxMin = boxMin;
+    _containerSelectorInfo->boxMax = boxMax;
+    _container =
+        ContainerSelector<Particle_T>::generateContainer(_container->getContainerType(), *_containerSelectorInfo);
+    // The container might have changed sufficiently enough so that we need more or less spatial locks
     const auto boxLength = boxMax - boxMin;
-    const auto interactionLengthInv = 1. / (_containerSelector.getCurrentContainer().getInteractionLength());
+    const auto interactionLengthInv = 1. / _container->getInteractionLength();
     initSpacialLocks(boxLength, interactionLengthInv);
 
     // Set this flag, s.t., the container is rebuilt!
@@ -272,15 +275,14 @@ class LogicHandler {
   }
 
   /**
-   * Estimates number of halo particles via autopas::utils::NumParticlesEstimator::estimateNumHalosUniform() then
+   * Estimates the number of halo particles via autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(), then
    * calls LogicHandler::reserve(size_t numParticles, size_t numHaloParticles).
    *
    * @param numParticles Total number of owned particles.
    */
   void reserve(size_t numParticles) {
-    const auto &container = _containerSelector.getCurrentContainer();
     const auto numParticlesHaloEstimate = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
-        numParticles, container.getBoxMin(), container.getBoxMax(), container.getInteractionLength());
+        numParticles, _container->getBoxMin(), _container->getBoxMax(), _container->getInteractionLength());
     reserve(numParticles, numParticlesHaloEstimate);
   }
 
@@ -295,12 +297,12 @@ class LogicHandler {
     for (auto &buffer : _haloParticleBuffer) {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
-    // there is currently no good heuristic for this buffer so reuse the one for halos.
+    // there is currently no good heuristic for this buffer, so reuse the one for halos.
     for (auto &buffer : _particleBuffer) {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
+    _container->reserve(numParticles, numHaloParticles);
   }
 
   /**
@@ -308,8 +310,8 @@ class LogicHandler {
    */
   void addParticle(const Particle_T &p) {
     // first check that the particle actually belongs in the container
-    const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
-    const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
+    const auto &boxMin = _container->getBoxMin();
+    const auto &boxMax = _container->getBoxMax();
     if (utils::notInBox(p.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
@@ -322,7 +324,7 @@ class LogicHandler {
     particleCopy.setOwnershipState(OwnershipState::owned);
     if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // Container has to (about to) be invalid to be able to add Particles!
-      _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
+      _container->template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
       _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
@@ -334,12 +336,11 @@ class LogicHandler {
    * @copydoc AutoPas::addHaloParticle()
    */
   void addHaloParticle(const Particle_T &haloParticle) {
-    auto &container = _containerSelector.getCurrentContainer();
-    const auto &boxMin = container.getBoxMin();
-    const auto &boxMax = container.getBoxMax();
+    const auto &boxMin = _container->getBoxMin();
+    const auto &boxMax = _container->getBoxMax();
     Particle_T haloParticleCopy = haloParticle;
     if (utils::inBox(haloParticleCopy.getR(), boxMin, boxMax)) {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
           "Box Min {}\n"
           "Box Max {}\n"
@@ -349,10 +350,10 @@ class LogicHandler {
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
     if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // If the neighbor lists are not valid, we can add the particle.
-      container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
+      _container->template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = container.updateHaloParticle(haloParticleCopy);
+      bool updated = _container->updateHaloParticle(haloParticleCopy);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
@@ -366,7 +367,7 @@ class LogicHandler {
    */
   void deleteAllParticles() {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
-    _containerSelector.getCurrentContainer().deleteAllParticles();
+    _container->deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     // all particles are gone -> reset counters.
@@ -469,31 +470,31 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ContainerIterator<Particle_T, true, false> begin(IteratorBehavior behavior) {
+  ContainerIterator<Particle_T, true, false> begin(IteratorBehavior behavior) {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
-    return _containerSelector.getCurrentContainer().begin(behavior, &additionalVectors);
+    return _container->begin(behavior, &additionalVectors);
   }
 
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ContainerIterator<Particle_T, false, false> begin(IteratorBehavior behavior) const {
+  ContainerIterator<Particle_T, false, false> begin(IteratorBehavior behavior) const {
     auto additionalVectors =
         const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle_T, false, false>>(
             behavior);
-    return _containerSelector.getCurrentContainer().begin(behavior, &additionalVectors);
+    return _container->begin(behavior, &additionalVectors);
   }
 
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ContainerIterator<Particle_T, true, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                       const std::array<double, 3> &higherCorner,
-                                                                       IteratorBehavior behavior) {
-    // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
+  ContainerIterator<Particle_T, true, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                              const std::array<double, 3> &higherCorner,
+                                                              IteratorBehavior behavior) {
+    // sanity check: Most of our stuff depends on `inBox`, which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner[d] > higherCorner[d]) {
-        autopas::utils::ExceptionHandler::exception(
+        utils::ExceptionHandler::exception(
             "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
             "Lower corner: {}\n"
             "Upper corner: {}",
@@ -502,20 +503,19 @@ class LogicHandler {
     }
 
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, true>>(behavior);
-    return _containerSelector.getCurrentContainer().getRegionIterator(lowerCorner, higherCorner, behavior,
-                                                                      &additionalVectors);
+    return _container->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
   }
 
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ContainerIterator<Particle_T, false, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                        const std::array<double, 3> &higherCorner,
-                                                                        IteratorBehavior behavior) const {
-    // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
+  ContainerIterator<Particle_T, false, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                               const std::array<double, 3> &higherCorner,
+                                                               IteratorBehavior behavior) const {
+    // sanity check: Most of our stuff depends on `inBox`, which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner[d] > higherCorner[d]) {
-        autopas::utils::ExceptionHandler::exception(
+        utils::ExceptionHandler::exception(
             "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
             "Lower corner: {}\n"
             "Upper corner: {}",
@@ -525,9 +525,7 @@ class LogicHandler {
 
     auto additionalVectors =
         const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle_T, false, true>>(behavior);
-    return std::as_const(_containerSelector)
-        .getCurrentContainer()
-        .getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
+    return std::as_const(_container)->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
   }
 
   /**
@@ -1005,7 +1003,17 @@ class LogicHandler {
   /**
    * Reference to the map of AutoTuners which are managed by the AutoPas main interface.
    */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> &_autoTunerRefs;
+  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &_autoTunerRefs;
+
+  /**
+   * The current container holding the particles.
+   */
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> _container;
+
+  /**
+   * The current configuration for the container.
+   */
+  std::unique_ptr<ContainerSelectorInfo> _containerSelectorInfo;
 
   /**
    * Set of interaction types AutoPas is initialized to, determined by the given AutoTuners.
@@ -1056,11 +1064,6 @@ class LogicHandler {
    * Buffer to store halo particles that should not yet be added to the container. There is one buffer per thread.
    */
   std::vector<FullParticleCell<Particle_T>> _haloParticleBuffer;
-
-  /**
-   * Object holding the actual particle container with the ability to switch container types.
-   */
-  ContainerSelector<Particle_T> _containerSelector;
 
   /**
    * Locks for regions in the domain. Used for buffer <-> container interaction.
@@ -1116,14 +1119,13 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
 
 template <typename Particle_T>
 void LogicHandler<Particle_T>::checkMinimalSize() const {
-  const auto &container = _containerSelector.getCurrentContainer();
   // check boxSize at least cutoff + skin
   for (unsigned int dim = 0; dim < 3; ++dim) {
-    if (container.getBoxMax()[dim] - container.getBoxMin()[dim] < container.getInteractionLength()) {
-      autopas::utils::ExceptionHandler::exception(
+    if (_container->getBoxMax()[dim] - _container->getBoxMin()[dim] < _container->getInteractionLength()) {
+      utils::ExceptionHandler::exception(
           "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.\nHas to be at least cutoff({}) + skin({}) = {}.", dim,
-          container.getBoxMin()[dim], dim, container.getBoxMax()[dim], container.getCutoff(), container.getVerletSkin(),
-          container.getCutoff() + container.getVerletSkin());
+          _container->getBoxMin()[dim], dim, _container->getBoxMax()[dim], _container->getCutoff(),
+          _container->getVerletSkin(), _container->getCutoff() + _container->getVerletSkin());
     }
   }
 }
@@ -1236,17 +1238,16 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   }();
 
   auto &autoTuner = *_autoTunerRefs[interactionType];
-  auto &container = _containerSelector.getCurrentContainer();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
     autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
   }
 #endif
-  autopas::utils::Timer timerTotal;
-  autopas::utils::Timer timerRebuild;
-  autopas::utils::Timer timerComputeInteractions;
-  autopas::utils::Timer timerComputeRemainder;
+  utils::Timer timerTotal;
+  utils::Timer timerRebuild;
+  utils::Timer timerComputeInteractions;
+  utils::Timer timerComputeRemainder;
 
   const bool energyMeasurementsPossible = autoTuner.resetEnergy();
 
@@ -1259,7 +1260,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
 #endif
-    container.rebuildNeighborLists(&traversal);
+    _container->rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->resetNeighborListsInvalidDoDynamicRebuild();
     _numRebuilds++;
@@ -1272,7 +1273,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   }
 
   timerComputeInteractions.start();
-  container.computeInteractions(&traversal);
+  _container->computeInteractions(&traversal);
   timerComputeInteractions.stop();
 
   timerComputeRemainder.start();
@@ -1302,9 +1303,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 template <typename Particle_T>
 template <class Functor>
 void LogicHandler<Particle_T>::computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA) {
-  auto &container = _containerSelector.getCurrentContainer();
-
-  withStaticContainerType(container, [&](auto &actualContainerType) {
+  withStaticContainerType(*_container, [&](auto &actualContainerType) {
     if constexpr (utils::isPairwiseFunctor<Functor>()) {
       if (newton3) {
         computeRemainderInteractions2B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer,
@@ -1816,31 +1815,30 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
 
-  // if this iteration is not relevant take the same algorithm config as before.
+  // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
     configuration = autoTuner.getCurrentConfig();
     // The currently selected container might not be compatible with the configuration for this functor. Check and
     // change if necessary. (see https://github.com/AutoPas/AutoPas/issues/871)
-    if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
-      _containerSelector.selectContainer(
+    if (_container->getContainerType() != configuration.container) {
+      ContainerSelector<Particle_T>::generateContainer(
           configuration.container,
-          ContainerSelectorInfo(configuration.cellSizeFactor, _containerSelector.getCurrentContainer().getVerletSkin(),
+          ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
+                                configuration.cellSizeFactor, _container->getVerletSkin(),
                                 _neighborListRebuildFrequency, _verletClusterSize, configuration.loadEstimator));
     }
-    const auto &container = _containerSelector.getCurrentContainer();
-    traversalPtrOpt = autopas::utils::withStaticCellType<Particle_T>(
-        container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
+    traversalPtrOpt = utils::withStaticCellType<Particle_T>(
+        _container->getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
           // Can't make this unique_ptr const otherwise we can't move it later.
           auto traversalPtr =
               TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
-                  configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
+                  configuration.traversal, functor, _container->getTraversalSelectorInfo(), configuration.dataLayout,
                   configuration.newton3);
 
-          // set sortingThreshold of the traversal if it can be casted to a CellTraversal and uses the CellFunctor
+          // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
           if (auto *cellTraversalPtr =
-                  dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
-                      traversalPtr.get())) {
+                  dynamic_cast<CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
             cellTraversalPtr->setSortingThreshold(_sortingThreshold);
           }
           if (traversalPtr->isApplicable()) {
@@ -1853,8 +1851,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
-      const auto &container = _containerSelector.getCurrentContainer();
-      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
+      const auto [homogeneity, maxDensity] = utils::calculateHomogeneityAndMaxDensity(*_container);
       timerCalculateHomogeneity.stop();
       autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
@@ -1862,7 +1859,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = autoTuner.prepareIteration();
 
     if (needsLiveInfo) {
-      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+      info.gather(*_container, functor, _neighborListRebuildFrequency);
       autoTuner.receiveLiveInfo(info);
     }
 
@@ -1877,7 +1874,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       if (traversalPtrOpt.has_value()) {
         break;
       }
-      // if no config is left after rejecting this one an exception is thrown here.
+      // if no config is left after rejecting this one, an exception is thrown here.
       std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
@@ -1885,7 +1882,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
-    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+    info.gather(_container, functor, _neighborListRebuildFrequency);
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
@@ -1993,15 +1990,14 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, F
   }
 
   // Check if the traversal is applicable to the current state of the container
-  _containerSelector.selectContainer(
-      conf.container,
-      ContainerSelectorInfo(conf.cellSizeFactor, _containerSelector.getCurrentContainer().getVerletSkin(),
-                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator));
-  const auto &container = _containerSelector.getCurrentContainer();
-  const auto traversalInfo = container.getTraversalSelectorInfo();
+  ContainerSelector<Particle_T>::generateContainer(
+      conf.container, ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
+                                            conf.cellSizeFactor, _container->getVerletSkin(),
+                                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator));
+  const auto traversalInfo = _container->getTraversalSelectorInfo();
 
-  auto traversalPtrOpt = autopas::utils::withStaticCellType<Particle_T>(
-      container.getParticleCellTypeEnum(),
+  auto traversalPtrOpt = utils::withStaticCellType<Particle_T>(
+      _container->getParticleCellTypeEnum(),
       [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface>> {
         // Can't make this unique_ptr const otherwise we can't move it later.
         auto traversalPtr =
@@ -2010,7 +2006,7 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, F
 
         // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
         if (auto *cellTraversalPtr =
-                dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
+                dynamic_cast<CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
           cellTraversalPtr->setSortingThreshold(_sortingThreshold);
         }
         if (traversalPtr->isApplicable()) {
