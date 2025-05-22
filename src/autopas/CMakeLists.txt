@@ -1,23 +1,18 @@
 file(
-        GLOB_RECURSE
-        MY_SRC
-        "*.cpp"
-        "*.h"
+    GLOB_RECURSE
+    MY_SRC
+    "*.cpp"
+    "*.h"
 )
 
 file(
-        GLOB_RECURSE
-        CU_SRC
-        "*.cu"
-        "*.cuh"
+    GLOB_RECURSE
+    CU_SRC
+    "*.cu"
+    "*.cuh"
 )
 
-option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-        "Enables energy measurements and tuning using PMT library and enables the RAPL interface, by default, allowing for energy measurement on Intel and AMD hardware."
-        ON
-)
-
-option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS "Enables dynamic rebuilding of all containers." ON)
+option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
@@ -29,8 +24,8 @@ endif ()
 add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
-        autopas
-        PUBLIC
+    autopas
+    PUBLIC
         $<$<NOT:$<PLATFORM_ID:Darwin>>:rt> # required for Time.h, on macOS not needed
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
@@ -42,7 +37,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
-        PRIVATE
+    PRIVATE
         # harmony are only needed privately when building AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony>
 )
@@ -50,8 +45,8 @@ target_link_libraries(
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
 # target. this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
 target_compile_definitions(
-        autopas
-        PUBLIC
+    autopas
+    PUBLIC
         $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_USE_OPENMP>
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
