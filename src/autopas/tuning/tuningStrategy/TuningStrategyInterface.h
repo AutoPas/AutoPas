@@ -102,7 +102,7 @@ class TuningStrategyInterface {
 
   /**
    * Method to pass smoothed domain similarity statistics (particle-dependent bin standard deviation in density and max
-   * density) to the tuning strategy. See #LiveInfo for meaning of particle dependent bin.
+   * density) to the tuning strategy. See LiveInfo::gather for meaning of particle dependent bin.
    * @param pdBinStdDevDensity particle-dependent bin density standard deviation.
    * @param pdBinMaxDensity particle-dependent bin maximum density.
    */
