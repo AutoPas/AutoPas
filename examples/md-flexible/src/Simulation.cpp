@@ -9,7 +9,6 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -227,11 +226,16 @@ void Simulation::run() {
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
+    }
 
-      _timers.updateContainer.start();
-      auto emigrants = _autoPasContainer->updateContainer();
-      _timers.updateContainer.stop();
+    // We update the container, even if dt=0, to bump the iteration counter, which is needed to ensure containers can
+    // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
+    // iteration counter which can be used to uniquely identify functor calls.
+    _timers.updateContainer.start();
+    auto emigrants = _autoPasContainer->updateContainer();
+    _timers.updateContainer.stop();
 
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing

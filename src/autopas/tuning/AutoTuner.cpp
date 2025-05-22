@@ -30,9 +30,9 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
       _earlyStoppingFactor(autoTunerInfo.earlyStoppingFactor),
-      _needsHomogeneityAndMaxDensity(std::transform_reduce(
-          _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
-          [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
+      _needsHomogeneityAndMaxDensity(
+          std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
+                                [](auto &tuningStrat) { return tuningStrat->needsDomainSimilarityStatistics(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
       _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
@@ -56,7 +56,7 @@ AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
   return *this;
 }
 
-void AutoTuner::addHomogeneityAndMaxDensity(double homogeneity, double maxDensity, long time) {
+void AutoTuner::addDomainSimilarityStatistics(double homogeneity, double maxDensity, long time) {
   _homogeneitiesOfLastTenIterations.push_back(homogeneity);
   _maxDensitiesOfLastTenIterations.push_back(maxDensity);
   _timerCalculateHomogeneity.addTime(time);
@@ -110,7 +110,7 @@ bool AutoTuner::tuneConfiguration() {
   // Determine where in a tuning phase we are
   // If _iterationsInMostRecentTuningPhase >= _tuningInterval the current tuning phase takes more iterations than the
   // tuning interval -> continue tuning
-  if ((_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune) {
+  if (isStartOfTuningPhase()) {
     // CASE: Start of a new tuning phase
     _isTuning = true;
     _forceRetune = false;
@@ -371,49 +371,51 @@ long AutoTuner::estimateRuntimeFromSamples() const {
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
 }
 
-bool AutoTuner::prepareIteration() {
-  // Flag if this is the first iteration in a new tuning phase
-  const bool startOfTuningPhase = _iteration % _tuningInterval == 0 and not _isTuning;
+bool AutoTuner::isStartOfTuningPhase() const {
+  return (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
+}
 
-  // first tuning iteration -> reset everything
-  if (startOfTuningPhase) {
+void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
+  // first tuning iteration -> send statistics to tuning strategies and reset _homogeneitiesOfLastTenIterations and
+  // _maxDensitiesOfLastTenIterations.
+  if (isStartOfTuningPhase() and _needsHomogeneityAndMaxDensity) {
     // If needed, calculate homogeneity and maxDensity, and reset buffers.
     const auto [homogeneity, maxDensity] = [&]() {
-      if (_needsHomogeneityAndMaxDensity) {
-        const auto retTuple = std::make_tuple(OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
-                                              OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations));
-        _homogeneitiesOfLastTenIterations.clear();
-        _maxDensitiesOfLastTenIterations.clear();
-        AutoPasLog(DEBUG, "Calculating homogeneities over 10 iterations took in total {} ns on rank {}.",
-                   _timerCalculateHomogeneity.getTotalTime(), []() {
-                     int rank{0};
-                     AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-                     return rank;
-                   });
-        return retTuple;
-      } else {
-        return std::make_tuple(-1., -1.);
-      }
+      const auto retTuple = std::make_tuple(OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
+                                            OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations));
+      _homogeneitiesOfLastTenIterations.clear();
+      _maxDensitiesOfLastTenIterations.clear();
+      AutoPasLog(DEBUG, "Calculating domain similarity statistics over 10 iterations took in total {} ns on rank {}.",
+                 _timerCalculateHomogeneity.getTotalTime(), []() {
+                   int rank{0};
+                   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+                   return rank;
+                 });
+      return retTuple;
     }();
 
     // pass homogeneity and maxDensity info if needed
     for (const auto &tuningStrat : _tuningStrategies) {
-      tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
+      tuningStrat->receiveDomainSimilarityStatistics(homogeneity, maxDensity);
+    }
+
+    if (_forceRetune) {
+      // If we have sent statistics because of a forced retune, throw a warning
+      AutoPasLog(WARN,
+                 "Due to a forced retune, domain similarity statistics, used by at least one tuning strategy, may"
+                 "not be correct.");
     }
   }
-
-  // if necessary, we need to collect live info in the first tuning iteration
-  const bool needsLiveInfoNow = startOfTuningPhase and _needsLiveInfo;
-
-  return needsLiveInfoNow;
 }
 
-bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
+bool AutoTuner::needsDomainSimilarityStatistics() const {
   // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
   constexpr size_t numIterationsForHomogeneity = 10;
   return _needsHomogeneityAndMaxDensity and
          _iteration % _tuningInterval > _tuningInterval - numIterationsForHomogeneity;
 }
+
+bool AutoTuner::needsLiveInfo() const { return isStartOfTuningPhase() and _needsLiveInfo; }
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 
