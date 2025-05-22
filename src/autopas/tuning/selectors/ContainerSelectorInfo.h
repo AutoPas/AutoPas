@@ -42,8 +42,10 @@ class ContainerSelectorInfo {
    * @param verletClusterSize Size of verlet Clusters
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
-  explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double cellSizeFactor, double verletSkin, unsigned int verletRebuildFrequency,
-                                 unsigned int verletClusterSize, LoadEstimatorOption loadEstimator)
+  explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                                 double cutoff, double cellSizeFactor, double verletSkin,
+                                 unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
+                                 LoadEstimatorOption loadEstimator)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),
