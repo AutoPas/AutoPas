@@ -12,6 +12,9 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/options/TraversalOption.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+
 namespace autopas::VerletListsCellsHelpers {
 /**
  * Cell wise verlet lists for neighbors from all adjacent cells: For every cell, a vector of pairs.
@@ -79,7 +82,7 @@ struct BaseStepOffsets {
 };
 
 /**
- * Builds the list of offsets from the base cell for the c08 base step.
+ * Builds the list of offsets from the base cell for the c01, c08, and c18 base step.
  * A offset pair are two cell indices relative to the base cell index that have to interact.
  *
  * The third tuple entry is an estimation factor on the fraction of particles that will end up needing a neighbor list
@@ -91,9 +94,10 @@ struct BaseStepOffsets {
  *       For CSF < 1 more factors (and different) are needed if more neighbor cells interact with the base cell.
  *
  * @param cellsPerDim Number of cells per dimension including halo.
+ * @param traversal The TraversalOption for which the offsets should be generated (currently c01, c08, or c18).
  * @return Vector of tuples<offset1, offset2, listEstimateFactor>
  */
-std::vector<BaseStepOffsets> buildC08BaseStep(const std::array<int, 3> &cellsPerDim);
+std::vector<BaseStepOffsets> buildBaseStep(const std::array<int, 3> &cellsPerDim, const TraversalOption traversal);
 
 /**
  * Simple heuristic to calculate the average number of particles per verlet list
@@ -116,11 +120,12 @@ size_t estimateListLength(size_t numParticles, const std::array<double, 3> &boxS
  * @param useNewton3 Whether or not the traversal that uses the lists employs Newton3.
  * @param cells Reference to the vector of cells.
  * @param offsetsC08 Vector of BaseStepOffsets.
+ * @param cellsPerDim Number of cells in the block per dimension.
  * @return An estimate of the number of lists that will be needed in the base cell.
  */
 template <class Cells>
 size_t estimateNumLists(size_t baseCellIndex, bool useNewton3, const Cells &cells,
-                        const std::vector<BaseStepOffsets> &offsetsC08) {
+                        const std::vector<BaseStepOffsets> &offsetsC08, const std::array<size_t, 3> cellsPerDim) {
   // First for every cell, find its biggest factor.
   // Meaning, find out what is the closest interaction type this cell is involved in.
   std::unordered_map<int, double> offsetFactors{};
@@ -132,12 +137,20 @@ size_t estimateNumLists(size_t baseCellIndex, bool useNewton3, const Cells &cell
   // The estimate is constructed by summing the involved cells' sizes weighted by their factors.
   size_t estimate = 0;
   for (const auto &[offset, factor] : offsetFactors) {
-    estimate += cells[baseCellIndex + offset].size() * factor;
+    const auto otherCellCoords = utils::ThreeDimensionalMapping::oneToThreeD(baseCellIndex + offset, cellsPerDim);
+    if (otherCellCoords[0] < cellsPerDim[0] and otherCellCoords[1] < cellsPerDim[1] and
+        otherCellCoords[2] < cellsPerDim[2]) {
+      estimate += cells[baseCellIndex + offset].size() * factor;
+    }
   }
   // For the non Newton3 case, lists have to be created for particles that otherwise would already be covered.
   if (not useNewton3) {
     for (const auto &[offset, factor] : offsetFactorsNoN3) {
-      estimate += cells[baseCellIndex + offset].size() * factor;
+      const auto otherCellCoords = utils::ThreeDimensionalMapping::oneToThreeD(baseCellIndex + offset, cellsPerDim);
+      if (otherCellCoords[0] < cellsPerDim[0] and otherCellCoords[1] < cellsPerDim[1] and
+          otherCellCoords[2] < cellsPerDim[2]) {
+        estimate += cells[baseCellIndex + offset].size() * factor;
+      }
     }
   }
   return estimate;
