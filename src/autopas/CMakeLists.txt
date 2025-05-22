@@ -23,6 +23,9 @@ endif ()
 
 add_library(autopas STATIC ${MY_SRC})
 
+# Include JSON
+target_include_directories(autopas PRIVATE "${CMAKE_SOURCE_DIR}/libs/json")
+
 target_link_libraries(
     autopas
     PUBLIC

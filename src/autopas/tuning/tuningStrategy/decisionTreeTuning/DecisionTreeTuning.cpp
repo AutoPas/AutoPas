@@ -9,7 +9,7 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 
 #include "autopas/utils/ExceptionHandler.h"
 
