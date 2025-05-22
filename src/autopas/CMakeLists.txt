@@ -5,14 +5,7 @@ file(
     "*.h"
 )
 
-file(
-    GLOB_RECURSE
-    CU_SRC
-    "*.cu"
-    "*.cuh"
-)
-
-option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
+option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS "Enables dynamic rebuilding of all containers." ON)
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
