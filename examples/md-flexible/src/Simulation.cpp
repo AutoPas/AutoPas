@@ -41,8 +41,15 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
+//#include "molecularDynamicsLibrary/LUT3B.h"
+//#include "molecularDynamicsLibrary/LUT2B.h"
+#include "molecularDynamicsLibrary/ParentLUT.h"
 
 namespace {
+
+
+
+
 /**
  * Tries to identify the width of the terminal where the simulation is running.
  * If no width can be identified, the function defaults to 80.
@@ -76,16 +83,24 @@ size_t getTerminalWidth() {
     terminalWidth = 80;
   }
 
+
   return terminalWidth;
 }
 }  // namespace
+
+
+
+
 
 Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+      lut2B(100, _configuration.cutoff.value  *_configuration.cutoff.value ),
+      lut3B(100, _configuration.cutoff.value  *_configuration.cutoff.value )
+      {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -202,6 +217,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   _timers.initialization.stop();
+
+
+
+
+
 }
 
 void Simulation::finalize() {
@@ -213,6 +233,17 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
+
+  double cutoffSquared = _configuration.cutoff.value * _configuration.cutoff.value ;
+                             //hopefully set up both luts here only once
+   lut2B = mdLib::LUT2B(80, cutoffSquared);
+
+   lut3B= mdLib::LUT3B(100, cutoffSquared);
+
+
+
+
+
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -638,6 +669,7 @@ void Simulation::logMeasurements() {
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
 #if MD_FLEXIBLE_MODE == MULTISITE
+
     std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits,
                                simulate);
 #endif
@@ -787,6 +819,7 @@ void Simulation::loadParticles() {
   }
 }
 
+
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
@@ -794,7 +827,9 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+        auto functor = LJFunctor(cutoff, lut2B)
+        return functor;
+//      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
@@ -803,7 +838,14 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
+       auto functor = LJFunctorTypeAVX(cutoff,&lut2B);
+      auto eps = _configuration.getParticlePropertiesLibrary()->getEpsilon(0);
+       auto sigmaSquared = _configuration.getParticlePropertiesLibrary()->getSigma(0);
+       functor.setParticleProperties(eps, sigmaSquared);
+
+//     return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
+     return f(LJFunctorTypeAVX{cutoff, &lut2B});
+//        return functor;
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
@@ -828,12 +870,23 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
+  //TODO right now just put both luts as attributes but later think about only creating them if lut is true
+
+
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-      return f(ATFunctor{cutoff, particlePropertiesLibrary});
+
+      auto functor = ATFunctor(cutoff, &lut3B);
+
+
+      //TODO find where nu is and how to get it here dynamically
+
+      functor.setParticleProperties(1);
+      return f(functor);
+
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
@@ -846,3 +899,5 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
     }
   }
 }
+
+

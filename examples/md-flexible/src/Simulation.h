@@ -128,6 +128,15 @@ class Simulation {
    */
   constexpr static auto _floatStringPrecision = 3;
 
+
+  //LUT
+
+  mdLib::LUT3B lut3B;
+  mdLib::LUT2B lut2B;
+  //
+
+
+
   /**
    * Struct containing all timers used for the simulation.
    */

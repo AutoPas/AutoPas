@@ -86,7 +86,7 @@ constexpr bool calcGlobals =
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
-using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, false, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
@@ -102,7 +102,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
-using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, false, true, autopas::FunctorN3Modes::Both,
                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
@@ -131,7 +131,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, false,true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
