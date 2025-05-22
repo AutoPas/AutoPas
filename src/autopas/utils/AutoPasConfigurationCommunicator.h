@@ -89,8 +89,8 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param bucket new MPI communicator for its bucket
  * @param smoothedPDBinStdDevDensity standard deviation in particle-dependent bin density smoothed over last 10
  * iterations. See LiveInfo::gather() for more details.
- * @param smoothedPDBinMaxDensity maximum particle-dependent bin density smoothed over last 10 iterations. See LiveInfo::gather()
- * for more details.
+ * @param smoothedPDBinMaxDensity maximum particle-dependent bin density smoothed over last 10 iterations. See
+ * LiveInfo::gather() for more details.
  * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
  * for two ranks which exchange their tuning information.
  * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
