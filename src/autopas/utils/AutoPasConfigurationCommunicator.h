@@ -83,18 +83,20 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.
  * Each bucket then has its own search space.
  *
- * If negative (=invalid) values for homogeneity or density are passed, every rank gets its own bucket.
+ * If negative (=invalid) values for pdBinStdDevDensity or pdBinMaxDensity are passed, every rank gets its own bucket.
  *
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
- * @param smoothedHomogeneity homogeneity smoothed over last 10 iterations.
- * @param maxDensity maxDensity smoothed over last 10 iterations.
+ * @param smoothedPDBinStdDevDensity standard deviation in particle-dependent bin density smoothed over last 10
+ * iterations. See LiveInfo::gather() for more details.
+ * @param smoothedPDBinMaxDensity maximum particle-dependent bin density smoothed over last 10 iterations. See LiveInfo::gather()
+ * for more details.
  * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
  * for two ranks which exchange their tuning information.
  * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
  */
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedHomogeneity,
-                              double maxDensity, double MPITuningMaxDifferenceForBucket,
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedPDBinStdDevDensity,
+                              double smoothedPDBinMaxDensity, double MPITuningMaxDifferenceForBucket,
                               double MPITuningWeightForMaxDensity);
 
 /**
