@@ -733,6 +733,8 @@ class LogicHandler {
   std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(
       Functor &functor, const InteractionTypeOption &interactionType);
 
+void swapContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer);
+
   /**
    * Triggers the core steps of computing the particle interactions:
    *    - functor init- / end traversal
@@ -1809,6 +1811,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     Functor &functor, const InteractionTypeOption &interactionType) {
   bool stillTuning = false;
   Configuration configuration{};
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr;
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
   auto &autoTuner = *_autoTunerRefs[interactionType];
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
@@ -1817,23 +1820,23 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
-    stillTuning = false;
     configuration = autoTuner.getCurrentConfig();
     // The currently selected container might not be compatible with the configuration for this functor. Check and
     // change if necessary. (see https://github.com/AutoPas/AutoPas/issues/871)
     if (_container->getContainerType() != configuration.container) {
-      ContainerSelector<Particle_T>::generateContainer(
+      containerPtr = ContainerSelector<Particle_T>::generateContainer(
           configuration.container,
           ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
                                 configuration.cellSizeFactor, _container->getVerletSkin(),
                                 _neighborListRebuildFrequency, _verletClusterSize, configuration.loadEstimator));
     }
+
     traversalPtrOpt = utils::withStaticCellType<Particle_T>(
-        _container->getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
+        containerPtr->getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
           // Can't make this unique_ptr const otherwise we can't move it later.
           auto traversalPtr =
               TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
-                  configuration.traversal, functor, _container->getTraversalSelectorInfo(), configuration.dataLayout,
+                  configuration.traversal, functor, containerPtr->getTraversalSelectorInfo(), configuration.dataLayout,
                   configuration.newton3);
 
           // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
@@ -1887,7 +1890,34 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
+  swapContainer(std::move(containerPtr));
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
+}
+
+template <typename Particle_T>
+void LogicHandler<Particle_T>::swapContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer)
+{
+  // copy particles so they do not get lost when the container is switched
+  if (_container != nullptr) {
+    // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
+    const auto numParticlesTotal = _container->size();
+    const auto numParticlesHalo = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
+        numParticlesTotal, _container->getBoxMin(), _container->getBoxMax(),
+        _container->getInteractionLength());
+
+    newContainer->reserve(numParticlesTotal, numParticlesHalo);
+    for (auto particleIter = _container->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid();
+         ++particleIter) {
+      // add a particle as inner if it is owned
+      if (particleIter->isOwned()) {
+        newContainer->addParticle(*particleIter);
+      } else {
+        newContainer->addHaloParticle(*particleIter);
+      }
+    }
+  }
+
+  _container = std::move(newContainer);
 }
 
 template <typename Particle_T>
