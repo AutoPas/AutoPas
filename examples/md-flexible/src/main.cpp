@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include "Simulation.h"
+#include "autopas/utils/WrapKokkos.h"
 #include "autopas/utils/WrapMPI.h"
 
 // Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
@@ -20,6 +21,7 @@ extern template class autopas::AutoPas<ParticleType>;
  */
 int main(int argc, char **argv) {
   autopas::AutoPas_MPI_Init(&argc, &argv);
+  autopas::kokkos::initialize(argc, argv);
   {
     MDFlexConfig configuration(argc, argv);
 
@@ -63,6 +65,7 @@ int main(int argc, char **argv) {
       }
     }
   }
+  autopas::kokkos::finalize();
   autopas::AutoPas_MPI_Finalize();
   return EXIT_SUCCESS;
 }

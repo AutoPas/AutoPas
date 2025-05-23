@@ -37,6 +37,11 @@ namespace smoothing {}
 namespace sph {}
 
 /**
+ * This namespace is used for the GPU implementations using Kokkos
+ */
+namespace kokkos {}
+
+/**
  * In this namespace some helper classes and functions can be found used inside of AutoPas.
  * These classes reside mostly in the utils directory. However, most commonly used function inside the utils
  * directory might not be in the utils namespace.
