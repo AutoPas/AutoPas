@@ -278,29 +278,6 @@ class AutoPas {
   ConstIteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
-   * execute code on all particles in parallel as defined by a lambda function
-   * @tparam Lambda (Particle_T &p) -> void
-   * @param forEachLambda code to be executed on all particles
-   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
-   * @note not actually parallel until kokkos integration
-   */
-  template <typename Lambda>
-  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
-  }
-
-  /**
-   * @copydoc forEachParallel()
-   * @note const version
-   */
-  template <typename Lambda>
-  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
-  }
-
-  /**
    * Execute code on all particles as defined by a lambda function.
    * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
@@ -318,31 +295,6 @@ class AutoPas {
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
-  }
-
-  /**
-   * Reduce properties of particles in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle_T p, A &initialValue) -> void
-   * @tparam reference to result of type A
-   * @param reduceLambda code to reduce properties of particles
-   * @param result reference to result of type A
-   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
-   * @note not actually parallel until kokkos integration
-   */
-  template <typename Lambda, typename A>
-  void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
-  }
-
-  /**
-   * @copydoc reduce()
-   * @note const version
-   */
-  template <typename Lambda, typename A>
-  void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -405,39 +357,6 @@ class AutoPas {
   RegionConstIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner,
                                          const std::array<double, 3> &higherCorner,
                                          IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
-
-  /**
-   * Execute code on all particles in a certain region in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle_T &p) -> void
-   * @param forEachLambda code to be executed on all particles
-   * @param lowerCorner lower corner of bounding box
-   * @param higherCorner higher corner of bounding box
-   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
-   * @note not actually parallel until kokkos integration
-   */
-  template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                               const std::array<double, 3> &higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) {
-      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-    });
-  }
-
-  /**
-   * @copydoc forEachInRegionParallel()
-   * @note const version
-   */
-  template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                               const std::array<double, 3> &higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) {
-      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-    });
-  }
 
   /**
    * Execute code on all particles in a certain region as defined by a lambda function.
