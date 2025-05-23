@@ -48,7 +48,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = FullParticleCell<Particle_T>;
+  using ParticleCellType = FullParticleCell<Particle_T>;
 
   /**
    *  Type of the Particle.
@@ -61,11 +61,10 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param verletRebuildFrequency
+   * @param sortingThreshold
    */
-  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
-            unsigned int verletRebuildFrequency)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin, verletRebuildFrequency),
+  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin, const size_t sortingThreshold)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
         _cellBorderFlagManager() {
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells
@@ -146,8 +145,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.
   }
-
-  CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void computeInteractions(TraversalInterface *traversal) override {
     prepareTraversal(traversal);
@@ -485,19 +482,20 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   template <typename Traversal>
   void prepareTraversal(Traversal &traversal) {
     auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
-    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (dsTraversal && cellTraversal) {
+      cellTraversal->setSortingThreshold(this->_sortingThreshold);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the DirectSum container. TraversalID: {}",
           traversal->getTraversalType());
     }
   }
 
-  ParticleCell &getOwnedCell() { return this->_cells[0]; };
+  ParticleCellType &getOwnedCell() { return this->_cells[0]; };
 
-  ParticleCell &getHaloCell() { return this->_cells[1]; };
+  ParticleCellType &getHaloCell() { return this->_cells[1]; };
 };
 
 }  // namespace autopas

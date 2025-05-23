@@ -77,7 +77,7 @@ class LogicHandler {
       const ContainerSelectorInfo containerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,
                                                         _logicHandlerInfo.cutoff,     configuration.cellSizeFactor,
                                                         _logicHandlerInfo.verletSkin, _neighborListRebuildFrequency,
-                                                        _verletClusterSize,           configuration.loadEstimator};
+                                                        _verletClusterSize,           _sortingThreshold, configuration.loadEstimator};
       _container = ContainerSelector<Particle_T>::generateContainer(configuration.container, containerSelectorInfo);
       checkMinimalSize();
     }
@@ -562,14 +562,13 @@ class LogicHandler {
    * @tparam Functor
    * @param conf
    * @param functor
-   * @param interactionType
    * @return tuple<optional<Traversal>, rejectIndefinitely> The optional is empty if the configuration is not applicable
    * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because
    * it will never be applicable.
    */
   template <class Functor>
   [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
-      const Configuration &conf, Functor &functor, const InteractionTypeOption &interactionType);
+      const Configuration &conf, Functor &functor);
 
   /**
    * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
@@ -1811,8 +1810,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     Functor &functor, const InteractionTypeOption &interactionType) {
   bool stillTuning = false;
   Configuration configuration{};
-  std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr;
-  std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
+  ParticleContainerInterface<Particle_T> *containerPtr = _container.get();
+  std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt = std::nullopt;
   auto &autoTuner = *_autoTunerRefs[interactionType];
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
@@ -1828,29 +1827,16 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           configuration.container,
           ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
                                 configuration.cellSizeFactor, _container->getVerletSkin(),
-                                _neighborListRebuildFrequency, _verletClusterSize, configuration.loadEstimator));
+                                _neighborListRebuildFrequency, _verletClusterSize, _sortingThreshold, configuration.loadEstimator)).get();
     }
 
-    traversalPtrOpt = utils::withStaticCellType<Particle_T>(
-        containerPtr->getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
-          // Can't make this unique_ptr const otherwise we can't move it later.
-          auto traversalPtr =
-              TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
-                  configuration.traversal, functor, containerPtr->getTraversalSelectorInfo(), configuration.dataLayout,
-                  configuration.newton3);
+      auto traversalPtr =
+          utils::generateTraversalFromConfig<Particle_T, Functor>(configuration, functor, containerPtr->getTraversalSelectorInfo());
 
-          // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
-          if (auto *cellTraversalPtr =
-                  dynamic_cast<CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
-            cellTraversalPtr->setSortingThreshold(_sortingThreshold);
-          }
-          if (traversalPtr->isApplicable()) {
-            return std::optional{std::move(traversalPtr)};
-          } else {
-            return std::nullopt;
-          }
-        });
-  } else {
+      if (traversalPtr->isApplicable()) {
+        traversalPtrOpt = std::optional{std::move(traversalPtr)};
+      }
+  } else { // Functor is relevant for tuning
     if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
@@ -1873,7 +1859,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     while (true) {
       // applicability check also sets the container
       std::tie(traversalPtrOpt, rejectIndefinitely) =
-          isConfigurationApplicable(configuration, functor, interactionType);
+          isConfigurationApplicable(configuration, functor);
       if (traversalPtrOpt.has_value()) {
         break;
       }
@@ -1890,7 +1876,6 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
-  swapContainer(std::move(containerPtr));
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
 
@@ -1898,7 +1883,7 @@ template <typename Particle_T>
 void LogicHandler<Particle_T>::swapContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer)
 {
   // copy particles so they do not get lost when the container is switched
-  if (_container != nullptr) {
+  if (_container != nullptr and newContainer != nullptr) {
     // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
     const auto numParticlesTotal = _container->size();
     const auto numParticlesHalo = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
@@ -2001,8 +1986,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 template <typename Particle_T>
 template <class Functor>
 std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool>
-LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, Functor &functor,
-                                                    const InteractionTypeOption &interactionType) {
+LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, Functor &functor) {
   // Check if the container supports the traversal
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);
@@ -2020,31 +2004,19 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, F
   }
 
   // Check if the traversal is applicable to the current state of the container
-  ContainerSelector<Particle_T>::generateContainer(
+  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(
       conf.container, ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
                                             conf.cellSizeFactor, _container->getVerletSkin(),
-                                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator));
-  const auto traversalInfo = _container->getTraversalSelectorInfo();
+                                            _neighborListRebuildFrequency, _verletClusterSize, _sortingThreshold, conf.loadEstimator)).get();
+  const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
-  auto traversalPtrOpt = utils::withStaticCellType<Particle_T>(
-      _container->getParticleCellTypeEnum(),
-      [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface>> {
-        // Can't make this unique_ptr const otherwise we can't move it later.
-        auto traversalPtr =
-            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
-                conf.traversal, functor, traversalInfo, conf.dataLayout, conf.newton3);
+  auto traversalPtr =
+      utils::generateTraversalFromConfig<Particle_T, Functor>(conf, functor, containerPtr->getTraversalSelectorInfo());;
 
-        // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
-        if (auto *cellTraversalPtr =
-                dynamic_cast<CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
-          cellTraversalPtr->setSortingThreshold(_sortingThreshold);
-        }
-        if (traversalPtr->isApplicable()) {
-          return std::optional{std::move(traversalPtr)};
-        } else {
-          return std::nullopt;
-        }
-      });
+  std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt = std::nullopt;
+  if (traversalPtr->isApplicable()) {
+    traversalPtrOpt = std::optional{std::move(traversalPtr)};
+  }
   return {std::move(traversalPtrOpt), false};
 }
 

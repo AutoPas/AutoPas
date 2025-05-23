@@ -27,6 +27,7 @@ class ContainerSelectorInfo {
         verletSkin(0.),
         verletRebuildFrequency(0),
         verletClusterSize(64),
+        sortingThreshold(0),
         loadEstimator(LoadEstimatorOption::none) {}
 
   /**
@@ -40,11 +41,13 @@ class ContainerSelectorInfo {
    * rebuilding lists.
    * @param verletRebuildFrequency rebuild frequency.
    * @param verletClusterSize Size of verlet Clusters
+   * @param sortingThreshold Number of particles in two cells from which sorting should be performed
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
                                  unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
+                                        size_t sortingThreshold,
                                  LoadEstimatorOption loadEstimator)
       : boxMin(boxMin),
         boxMax(boxMax),
@@ -53,6 +56,7 @@ class ContainerSelectorInfo {
         verletSkin(verletSkin),
         verletRebuildFrequency(verletRebuildFrequency),
         verletClusterSize(verletClusterSize),
+        sortingThreshold(sortingThreshold),
         loadEstimator(loadEstimator) {}
 
   /**
@@ -81,8 +85,8 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency, other.verletClusterSize,
+    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, sortingThreshold, loadEstimator) <
+           std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency, other.verletClusterSize, other.sortingThreshold,
                     other.loadEstimator);
   }
 
@@ -118,9 +122,14 @@ class ContainerSelectorInfo {
    */
   unsigned int verletClusterSize;
   /**
+   * Number of particles in two cells from which sorting should be performed.
+   */
+  size_t sortingThreshold;
+  /**
    * Load estimator for balanced sliced traversals.
    */
   LoadEstimatorOption loadEstimator;
+
 };
 
 }  // namespace autopas

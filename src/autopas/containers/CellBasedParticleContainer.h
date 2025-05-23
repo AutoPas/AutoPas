@@ -19,12 +19,12 @@ namespace autopas {
 /**
  * The CellBasedParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
- * @tparam ParticleCell Class for the particle cells
+ * @tparam ParticleCell_T Class for the particle cells
  */
-template <class ParticleCell>
-class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell::ParticleType> {
-  using ParticleType = typename ParticleCell::ParticleType;
-
+template <class ParticleCell_T>
+class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell_T::ParticleType> {
+  using ParticleType = typename ParticleCell_T::ParticleType;
+  using ParticleCellType = ParticleCell_T;
  public:
   /**
    * Constructor of CellBasedParticleContainer
@@ -32,16 +32,17 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param rebuildFrequency
+   * @param sortingThreshold
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, double skin, unsigned int rebuildFrequency)
+                             const double cutoff, const double skin, const size_t sortingThreshold)
       : ParticleContainerInterface<ParticleType>(skin),
         _cells(),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
-        _skin(skin) {}
+        _skin(skin),
+        _sortingThreshold(sortingThreshold){}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -146,7 +147,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Get immutable vector of cells.
    * @return immutable reference to _cells
    */
-  [[nodiscard]] const std::vector<ParticleCell> &getCells() const { return _cells; }
+  [[nodiscard]] const std::vector<ParticleCellType> &getCells() const { return _cells; }
 
  protected:
   /**
@@ -154,7 +155,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * All particle containers store their particles in ParticleCells. This is the
    * common vector for this purpose.
    */
-  std::vector<ParticleCell> _cells;
+  std::vector<ParticleCellType> _cells;
+  size_t _sortingThreshold;
 
  private:
   std::array<double, 3> _boxMin;

@@ -9,49 +9,22 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
+#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/containers/linkedCells/LinkedCellsReferences.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 
 namespace autopas::utils {
 
-/**
- * Executes the passed function body with the static cell type defined by cellType.
- *
- * @tparam ParticleType The type of the particle, needed to generate a ParticleCell.
- * @tparam F The type of the functor.
- * @param cellType Enum specifying the type of the cell.
- * @param func Function that takes a ParticleCell as argument. E.g., `[&](auto particleCellDummy) {...}`. The passed
- * cell will be default constructed and should only be used to infer the type of ParticleCell using
- * `decltype(particleCellDummy)`.
- * @return Returns whatever func returns.
- * @todo c++20 change to explicit template for templates.
- * @todo function calls also have to be changed to
- * ```
- * [&]<typename ParticleCellType>() { ... }
- * ```
- * instead of
- * ```
- * [&](auto particleCellDummy) {...}
- * ```
- */
-template <typename ParticleType, typename F>
-decltype(auto) withStaticCellType(autopas::CellType cellType, F &&func) {
-  switch (cellType) {
-    case autopas::CellType::ClusterTower:
-      [[fallthrough]];
-    case autopas::CellType::SortedCellView:
-      [[fallthrough]];
-    case autopas::CellType::IsNoCell:
-      [[fallthrough]];
-    case autopas::CellType::FullParticleCell:
-      // todo c++20: return func.template operator()<autopas::FullParticleCell<ParticleType>>();
-      return func(autopas::FullParticleCell<ParticleType>());
-    case autopas::CellType::ReferenceParticleCell:
-      // todo c++20: return func.template operator()<autopas::ReferenceParticleCell<ParticleType>>();
-      return func(autopas::ReferenceParticleCell<ParticleType>());
+
+template<class Particle_T, class Functor>
+std::unique_ptr<TraversalInterface> generateTraversalFromConfig(const Configuration& config, Functor &functor,
+                                                                 const TraversalSelectorInfo &traversalInfo) {
+  switch (config.container) {
+    case ContainerOption::Value::linkedCellsReferences:
+      return TraversalSelector<ReferenceParticleCell<Particle_T>>::template generateTraversal<Functor>(config.traversal, functor, traversalInfo, config.dataLayout, config.newton3);
+    default:
+      return TraversalSelector<FullParticleCell<Particle_T>>::template generateTraversal<Functor>(config.traversal, functor, traversalInfo, config.dataLayout, config.newton3);
   }
-  autopas::utils::ExceptionHandler::exception(
-      "Trying to use a traversal of of a Celltype not specified in TravelComparison::computeInteractions. "
-      "CelltypeEnum: {}",
-      cellType);
-  return decltype(func(autopas::FullParticleCell<ParticleType>()))();
 }
 }  // namespace autopas::utils
