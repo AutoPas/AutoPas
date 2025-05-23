@@ -39,6 +39,29 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::torqueZ,
     mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
     mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+constexpr std::array<typename ParticleType::AttributeNames, 21> Attributes = {
+    demLib::GranularDEM::AttributeNames::id,
+    demLib::GranularDEM::AttributeNames::posX,
+    demLib::GranularDEM::AttributeNames::posY,
+    demLib::GranularDEM::AttributeNames::posZ,
+    demLib::GranularDEM::AttributeNames::velocityX,
+    demLib::GranularDEM::AttributeNames::velocityY,
+    demLib::GranularDEM::AttributeNames::velocityZ,
+    demLib::GranularDEM::AttributeNames::forceX,
+    demLib::GranularDEM::AttributeNames::forceY,
+    demLib::GranularDEM::AttributeNames::forceZ,
+    demLib::GranularDEM::AttributeNames::oldForceX,
+    demLib::GranularDEM::AttributeNames::oldForceY,
+    demLib::GranularDEM::AttributeNames::oldForceZ,
+    demLib::GranularDEM::AttributeNames::angularVelX,
+    demLib::GranularDEM::AttributeNames::angularVelY,
+    demLib::GranularDEM::AttributeNames::angularVelZ,
+    demLib::GranularDEM::AttributeNames::torqueX,
+    demLib::GranularDEM::AttributeNames::torqueY,
+    demLib::GranularDEM::AttributeNames::torqueZ,
+    demLib::GranularDEM::AttributeNames::typeId,
+    demLib::GranularDEM::AttributeNames::ownershipState};
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
     mdLib::MoleculeLJ::AttributeNames::id,
