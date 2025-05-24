@@ -32,8 +32,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   VarVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                  const double skin, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<ParticleType>(boxMin, boxMax, cutoff, skin, cellSizeFactor),
-        _neighborList{} {}
+      : VerletListsLinkedBase<ParticleType>(boxMin, boxMax, cutoff, skin, cellSizeFactor), _neighborList{} {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()

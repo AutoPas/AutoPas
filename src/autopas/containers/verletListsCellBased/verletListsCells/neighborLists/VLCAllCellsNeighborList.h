@@ -13,21 +13,10 @@
 
 #include "VLCAllCellsGeneratorFunctor.h"
 #include "VLCNeighborListInterface.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
-
-/**
- * TraversalSelector is used for the construction of the list in the applyBuildFunctor method.
- * Forward declaration necessary to avoid circle of includes:
- * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes VLCAllCellsNeighborList
- */
-template <class ParticleCell>
-class TraversalSelector;
-
-template <class Particle_T, class NeighborList>
-class VLCTraversalInterface;
 
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
@@ -231,7 +220,6 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle_T> {
                          double interactionLength, const TraversalOption &vlcTraversalOpt,
                          typename VerletListsCellsHelpers::VLCBuildType buildType) override {
     // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<FullParticleCell<Particle_T>> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
@@ -255,16 +243,20 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle_T> {
           linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
       f.setCells(&this->_internalLinkedCells->getCells());
       // Build the AoS list using the AoS or SoA functor depending on buildType
-      auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
-          lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3).value();
+      auto buildTraversal =
+          TraversalSelector::generateTraversal<FullParticleCell<Particle_T>, std::remove_reference_t<decltype(f)>>(
+              lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3)
+              .value();
       linkedCells.computeInteractions(buildTraversal.get());
     } else {
       VLCAllCellsGeneratorFunctor<Particle_T, TraversalOption::vlc_c18> f(
           _aosNeighborList, _particleToCellMap, cutoff + skin, listLengthEstimate,
           linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
       // Build the AoS list using the AoS or SoA functor depending on buildType
-      auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
-          lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3).value();
+      auto buildTraversal =
+          TraversalSelector::generateTraversal<FullParticleCell<Particle_T>, std::remove_reference_t<decltype(f)>>(
+              lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3)
+              .value();
       linkedCells.computeInteractions(buildTraversal.get());
     }
   }

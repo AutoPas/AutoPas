@@ -10,10 +10,20 @@
 #include <utility>
 #include <vector>
 
-#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
-
 namespace autopas {
+
+/**
+ *
+ * Forward declaration of the neighbor list types used in this interface.
+ * This avoid circular dependencies in the header files.
+ * VLCAllCellsNeighborList.h/VLCCellPairNeighborList.h -> TraversalSelector.h -> Any VLCTraversal.h ->
+ * VLCTraversalInterface.h (This file)
+ */
+template <class Particle_T>
+class VLCAllCellsNeighborList;
+
+template <class Particle_T>
+class VLCCellPairNeighborList;
 
 /**
  * This class provides the Traversal Interface for the verlet lists cells container.

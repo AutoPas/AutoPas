@@ -60,18 +60,18 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     }
 
     case ContainerOption::linkedCells: {
-      container = std::make_unique<LinkedCells<Particle_T>>(boxMin, boxMax, cutoff, verletSkin,
-                                                            cellSizeFactor, sortingThreshold, loadEstimator);
+      container = std::make_unique<LinkedCells<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
+                                                            sortingThreshold, loadEstimator);
       break;
     }
     case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
+      container = std::make_unique<LinkedCellsReferences<Particle_T>>(boxMin, boxMax, cutoff, verletSkin,
+                                                                      cellSizeFactor, sortingThreshold);
       break;
     }
     case ContainerOption::verletLists: {
-      container = std::make_unique<VerletLists<Particle_T>>(boxMin, boxMax, cutoff, verletSkin,
-                                                            VerletLists<Particle_T>::BuildVerletListType::VerletSoA,
-                                                            cellSizeFactor);
+      container = std::make_unique<VerletLists<Particle_T>>(
+          boxMin, boxMax, cutoff, verletSkin, VerletLists<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
       break;
     }
     case ContainerOption::verletListsCells: {
@@ -81,8 +81,8 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       break;
     }
     case ContainerOption::verletClusterLists: {
-      container = std::make_unique<VerletClusterLists<Particle_T>>(
-          boxMin, boxMax, cutoff, verletSkin, verletClusterSize, loadEstimator);
+      container = std::make_unique<VerletClusterLists<Particle_T>>(boxMin, boxMax, cutoff, verletSkin,
+                                                                   verletClusterSize, loadEstimator);
       break;
     }
     case ContainerOption::varVerletListsAsBuild: {
@@ -98,7 +98,8 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       break;
     }
     case ContainerOption::octree: {
-      container = std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
+      container =
+          std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
       break;
     }
     default: {

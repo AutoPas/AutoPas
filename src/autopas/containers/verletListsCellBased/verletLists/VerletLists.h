@@ -59,8 +59,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skin,
-              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<ParticleType>(boxMin, boxMax, cutoff, skin, cellSizeFactor),
         _buildVerletListType(buildVerletListType) {}
@@ -77,8 +76,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
                                                          _soaNeighborLists);
     } else {
-      utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in VerletLists::computeInteractions");
+      utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
 
     traversal->initTraversal();
@@ -117,7 +115,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     typename VerletListHelpers<ParticleType>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                         this->getCutoff() + this->getVerletSkin());
+                                                                           this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;

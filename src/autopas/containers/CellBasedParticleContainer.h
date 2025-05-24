@@ -25,6 +25,7 @@ template <class ParticleCell_T>
 class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell_T::ParticleType> {
   using ParticleType = typename ParticleCell_T::ParticleType;
   using ParticleCellType = ParticleCell_T;
+
  public:
   /**
    * Constructor of CellBasedParticleContainer
@@ -42,7 +43,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _sortingThreshold(sortingThreshold){}
+        _sortingThreshold(sortingThreshold) {}
 
   /**
    * Destructor of CellBasedParticleContainer.

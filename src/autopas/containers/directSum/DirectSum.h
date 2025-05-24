@@ -63,7 +63,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @param skin
    * @param sortingThreshold
    */
-  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin, const size_t sortingThreshold)
+  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
+            const size_t sortingThreshold)
       : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
         _cellBorderFlagManager() {
     using namespace autopas::utils::ArrayMath::literals;

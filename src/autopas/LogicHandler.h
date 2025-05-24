@@ -25,7 +25,6 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/SimilarityFunctions.h"
-#include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -77,7 +76,8 @@ class LogicHandler {
       const ContainerSelectorInfo containerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,
                                                         _logicHandlerInfo.cutoff,     configuration.cellSizeFactor,
                                                         _logicHandlerInfo.verletSkin, _neighborListRebuildFrequency,
-                                                        _verletClusterSize,           _sortingThreshold, configuration.loadEstimator};
+                                                        _verletClusterSize,           _sortingThreshold,
+                                                        configuration.loadEstimator};
       _container = ContainerSelector<Particle_T>::generateContainer(configuration.container, containerSelectorInfo);
       checkMinimalSize();
     }
@@ -732,7 +732,7 @@ class LogicHandler {
   std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(
       Functor &functor, const InteractionTypeOption &interactionType);
 
-void swapContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer);
+  void swapContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer);
 
   /**
    * Triggers the core steps of computing the particle interactions:
@@ -1824,16 +1824,18 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // change if necessary. (see https://github.com/AutoPas/AutoPas/issues/871)
     if (_container->getContainerType() != configuration.container) {
       containerPtr = ContainerSelector<Particle_T>::generateContainer(
-          configuration.container,
-          ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
-                                configuration.cellSizeFactor, _container->getVerletSkin(),
-                                _neighborListRebuildFrequency, _verletClusterSize, _sortingThreshold, configuration.loadEstimator)).get();
+                         configuration.container,
+                         ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(),
+                                               _container->getCutoff(), configuration.cellSizeFactor,
+                                               _container->getVerletSkin(), _neighborListRebuildFrequency,
+                                               _verletClusterSize, _sortingThreshold, configuration.loadEstimator))
+                         .get();
     }
 
-      traversalPtrOpt =
-          utils::generateTraversalFromConfig<Particle_T, Functor>(configuration, functor, containerPtr->getTraversalSelectorInfo());
+    traversalPtrOpt = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
+        configuration, functor, containerPtr->getTraversalSelectorInfo());
 
-  } else { // Functor is relevant for tuning
+  } else {  // Functor is relevant for tuning
     if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
@@ -1855,8 +1857,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     bool rejectIndefinitely = false;
     while (true) {
       // applicability check also sets the container
-      std::tie(traversalPtrOpt, rejectIndefinitely) =
-          isConfigurationApplicable(configuration, functor);
+      std::tie(traversalPtrOpt, rejectIndefinitely) = isConfigurationApplicable(configuration, functor);
       if (traversalPtrOpt.has_value()) {
         break;
       }
@@ -1877,19 +1878,16 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 }
 
 template <typename Particle_T>
-void LogicHandler<Particle_T>::swapContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer)
-{
+void LogicHandler<Particle_T>::swapContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer) {
   // copy particles so they do not get lost when the container is switched
   if (_container != nullptr and newContainer != nullptr) {
     // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
     const auto numParticlesTotal = _container->size();
     const auto numParticlesHalo = utils::NumParticlesEstimator::estimateNumHalosUniform(
-        numParticlesTotal, _container->getBoxMin(), _container->getBoxMax(),
-        _container->getInteractionLength());
+        numParticlesTotal, _container->getBoxMin(), _container->getBoxMax(), _container->getInteractionLength());
 
     newContainer->reserve(numParticlesTotal, numParticlesHalo);
-    for (auto particleIter = _container->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid();
-         ++particleIter) {
+    for (auto particleIter = _container->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid(); ++particleIter) {
       // add a particle as inner if it is owned
       if (particleIter->isOwned()) {
         newContainer->addParticle(*particleIter);
@@ -1966,8 +1964,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
           case TuningMetricOption::energy:
             return measurements.energyTotal;
           default:
-            utils::ExceptionHandler::exception(
-                "LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
+            utils::ExceptionHandler::exception("LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
             return 0l;
         }
       }();
@@ -2000,15 +1997,18 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, F
     return {std::nullopt, true};
   }
 
-  // Check if the traversal is applicable to the current state of the container
-  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(
-      conf.container, ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
-                                            conf.cellSizeFactor, _container->getVerletSkin(),
-                                            _neighborListRebuildFrequency, _verletClusterSize, _sortingThreshold, conf.loadEstimator)).get();
+  auto containerPtr =
+      ContainerSelector<Particle_T>::generateContainer(
+          conf.container,
+          ContainerSelectorInfo(_container->getBoxMin(), _container->getBoxMax(), _container->getCutoff(),
+                                conf.cellSizeFactor, _container->getVerletSkin(), _neighborListRebuildFrequency,
+                                _verletClusterSize, _sortingThreshold, conf.loadEstimator))
+          .get();
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
-  auto traversalPtr =
-      utils::generateTraversalFromConfig<Particle_T, Functor>(conf, functor, containerPtr->getTraversalSelectorInfo());
+  // Generates a traversal if applicable, otherwise returns std::nullopt
+  auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
+      conf, functor, containerPtr->getTraversalSelectorInfo());
 
   return {std::move(traversalPtr), false};
 }

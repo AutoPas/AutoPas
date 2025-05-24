@@ -7,20 +7,10 @@
 #pragma once
 #include "VLCCellPairGeneratorFunctor.h"
 #include "VLCNeighborListInterface.h"
-#include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 
 namespace autopas {
 
-/**
- * TraversalSelector is used for the construction of the list in the applyBuildFunctor method.
- * Forward declaration necessary to avoid circle of includes:
- * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes VLCCellPairNeighborList
- */
-template <class ParticleCell>
-class TraversalSelector;
-
-template <class Particle_T>
-class VLCCellPairTraversalInterface;
 /**
  * Neighbor list to be used with VerletListsCells container.
  * Pairwise verlet lists iterates through each pair of neighboring cells
@@ -217,8 +207,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
                          typename VerletListsCellsHelpers::VLCBuildType buildType) override {
     VLCCellPairGeneratorFunctor<Particle_T> f(_aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
 
-    // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<FullParticleCell<Particle_T>> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
@@ -226,11 +214,13 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
     const auto dataLayout =
         buildType == VerletListsCellsHelpers::VLCBuildType::aosBuild ? DataLayoutOption::aos : DataLayoutOption::soa;
 
+    // Generate the build traversal with the traversal selector and apply the build functor with it.
     // Build the AoS list using the AoS or SoA functor depending on buildType
-    auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
-        TraversalOption::lc_c18, f, traversalSelectorInfo, dataLayout, useNewton3).value();
-    auto pairBuildTraversal = dynamic_cast<TraversalInterface *>(buildTraversal.get());
-    linkedCells.computeInteractions(pairBuildTraversal);
+    auto buildTraversal =
+        TraversalSelector::generateTraversal<FullParticleCell<Particle_T>, std::remove_reference_t<decltype(f)>>(
+            TraversalOption::lc_c18, f, traversalSelectorInfo, dataLayout, useNewton3)
+            .value();
+    linkedCells.computeInteractions(buildTraversal.get());
   }
 
   /**

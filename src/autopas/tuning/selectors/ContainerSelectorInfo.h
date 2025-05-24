@@ -47,8 +47,7 @@ class ContainerSelectorInfo {
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
                                  unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
-                                        size_t sortingThreshold,
-                                 LoadEstimatorOption loadEstimator)
+                                 size_t sortingThreshold, LoadEstimatorOption loadEstimator)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),
@@ -85,9 +84,9 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, sortingThreshold, loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency, other.verletClusterSize, other.sortingThreshold,
-                    other.loadEstimator);
+    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, sortingThreshold,
+                    loadEstimator) < std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency,
+                                              other.verletClusterSize, other.sortingThreshold, other.loadEstimator);
   }
 
   /**
@@ -129,7 +128,6 @@ class ContainerSelectorInfo {
    * Load estimator for balanced sliced traversals.
    */
   LoadEstimatorOption loadEstimator;
-
 };
 
 }  // namespace autopas
