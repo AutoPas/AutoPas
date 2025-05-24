@@ -10,10 +10,8 @@
 #include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/options/TraversalOption.h"
 
 namespace autopas {
 

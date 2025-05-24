@@ -11,8 +11,9 @@
 
 #pragma once
 
-#include "VLCNeighborListInterface.h"
-#include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCNeighborListInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

@@ -6,6 +6,7 @@
 #pragma once
 
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {

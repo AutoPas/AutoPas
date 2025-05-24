@@ -16,8 +16,7 @@ namespace autopas {
  *
  * Forward declaration of the neighbor list types used in this interface.
  * This avoid circular dependencies in the header files.
- * VLCAllCellsNeighborList.h/VLCCellPairNeighborList.h -> TraversalSelector.h -> Any VLCTraversal.h ->
- * VLCTraversalInterface.h (This file)
+ * VLCAllCellsNeighborList.h/VLCCellPairNeighborList.h -> VLCTraversalInterface.h (This file)
  */
 template <class Particle_T>
 class VLCAllCellsNeighborList;

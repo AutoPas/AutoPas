@@ -7,6 +7,7 @@
 #pragma once
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairC08CellHandler.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {

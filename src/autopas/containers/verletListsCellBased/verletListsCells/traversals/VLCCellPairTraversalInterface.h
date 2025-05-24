@@ -5,6 +5,9 @@
  */
 
 #pragma once
+
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+
 namespace autopas {
 /**
  * Interface for traversals used with VLCCellPairNeighborList.
