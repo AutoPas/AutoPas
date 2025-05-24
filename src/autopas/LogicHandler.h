@@ -300,7 +300,10 @@ class LogicHandler {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
+    // Only reserve memory if we rebuild afterward. Otherwise, we might invalidate any existing particle references.
+    if (not neighborListsAreValid()) {
+      _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
+    }
   }
 
   /**
