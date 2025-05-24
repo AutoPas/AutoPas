@@ -1808,18 +1808,19 @@ template <typename Particle_T>
 template <class Functor>
 std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::selectConfiguration(
     Functor &functor, const InteractionTypeOption &interactionType) {
-  bool stillTuning = false;
-  Configuration configuration{};
-  std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt = std::nullopt;
   auto &autoTuner = *_autoTunerRefs[interactionType];
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
+#ifdef AUTOPAS_LOG_LIVEINFO
+  info.gather(_container, functor, _neighborListRebuildFrequency);
+  _liveInfoLogger.logLiveInfo(info, _iteration);
+#endif
 
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
-    configuration = autoTuner.getCurrentConfig();
-    std::tie(traversalPtrOpt, std::ignore) = isConfigurationApplicable(configuration, functor);
+    auto configuration = autoTuner.getCurrentConfig();
+    auto [traversalPtrOpt, ignore] = isConfigurationApplicable(configuration, functor);
 
     if (not traversalPtrOpt.has_value()) {
       // TODO: Can we handle this case gracefully?
@@ -1827,44 +1828,37 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
           functor.getName());
     }
-  } else {  // Functor is relevant for tuning
-    if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
-      utils::Timer timerCalculateHomogeneity;
-      timerCalculateHomogeneity.start();
-      const auto [homogeneity, maxDensity] = utils::calculateHomogeneityAndMaxDensity(*_container);
-      timerCalculateHomogeneity.stop();
-      autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
-    }
+    return {configuration, std::move(traversalPtrOpt.value()), false};
+  }
 
-    const auto needsLiveInfo = autoTuner.prepareIteration();
-    if (needsLiveInfo) {
+  if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
+    utils::Timer timerCalculateHomogeneity;
+    timerCalculateHomogeneity.start();
+    const auto [homogeneity, maxDensity] = utils::calculateHomogeneityAndMaxDensity(*_container);
+    timerCalculateHomogeneity.stop();
+    autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+  }
+
+  const auto needsLiveInfo = autoTuner.prepareIteration();
+  if (needsLiveInfo) {
+    if (info.get().empty()) {
       info.gather(*_container, functor, _neighborListRebuildFrequency);
-      autoTuner.receiveLiveInfo(info);
     }
-
-    std::tie(configuration, stillTuning) = autoTuner.getNextConfig();
-
-    // loop as long as we don't get a valid configuration
-    bool rejectIndefinitely = false;
-    do {
-      // applicability check also sets the container
-      std::tie(traversalPtrOpt, rejectIndefinitely) = isConfigurationApplicable(configuration, functor);
-      if (not traversalPtrOpt.has_value()) {
-        // if no config is left after rejecting this one, an exception is thrown here.
-        std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
-      }
-    } while (not traversalPtrOpt.has_value());
+    autoTuner.receiveLiveInfo(info);
   }
 
-#ifdef AUTOPAS_LOG_LIVEINFO
-  // if live info has not been gathered yet, gather it now and log it
-  if (info.get().empty()) {
-    info.gather(_container, functor, _neighborListRebuildFrequency);
-  }
-  _liveInfoLogger.logLiveInfo(info, _iteration);
-#endif
+  auto [configuration, stillTuning] = autoTuner.getNextConfig();
 
-  return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
+  // loop as long as we don't get a valid configuration
+  do {
+    // applicability check also sets the container
+    auto [traversalPtrOpt, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
+    if (traversalPtrOpt.has_value()) {
+      return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
+    }
+    // if no config is left after rejecting this one, an exception is thrown here.
+    std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
+  } while (true);
 }
 
 template <typename Particle_T>
