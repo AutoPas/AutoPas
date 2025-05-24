@@ -1830,12 +1830,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
                                 _neighborListRebuildFrequency, _verletClusterSize, _sortingThreshold, configuration.loadEstimator)).get();
     }
 
-      auto traversalPtr =
+      traversalPtrOpt =
           utils::generateTraversalFromConfig<Particle_T, Functor>(configuration, functor, containerPtr->getTraversalSelectorInfo());
 
-      if (traversalPtr->isApplicable()) {
-        traversalPtrOpt = std::optional{std::move(traversalPtr)};
-      }
   } else { // Functor is relevant for tuning
     if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
@@ -1886,7 +1883,7 @@ void LogicHandler<Particle_T>::swapContainer(std::unique_ptr<ParticleContainerIn
   if (_container != nullptr and newContainer != nullptr) {
     // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
     const auto numParticlesTotal = _container->size();
-    const auto numParticlesHalo = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
+    const auto numParticlesHalo = utils::NumParticlesEstimator::estimateNumHalosUniform(
         numParticlesTotal, _container->getBoxMin(), _container->getBoxMax(),
         _container->getInteractionLength());
 
@@ -1910,7 +1907,7 @@ template <class Functor>
 bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
                                                            const InteractionTypeOption &interactionType) {
   if (not _interactionTypes.count(interactionType)) {
-    autopas::utils::ExceptionHandler::exception(
+    utils::ExceptionHandler::exception(
         "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
         "{}.",
         interactionType);
@@ -1969,7 +1966,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
           case TuningMetricOption::energy:
             return measurements.energyTotal;
           default:
-            autopas::utils::ExceptionHandler::exception(
+            utils::ExceptionHandler::exception(
                 "LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
             return 0l;
         }
@@ -2011,13 +2008,9 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, F
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
   auto traversalPtr =
-      utils::generateTraversalFromConfig<Particle_T, Functor>(conf, functor, containerPtr->getTraversalSelectorInfo());;
+      utils::generateTraversalFromConfig<Particle_T, Functor>(conf, functor, containerPtr->getTraversalSelectorInfo());
 
-  std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt = std::nullopt;
-  if (traversalPtr->isApplicable()) {
-    traversalPtrOpt = std::optional{std::move(traversalPtr)};
-  }
-  return {std::move(traversalPtrOpt), false};
+  return {std::move(traversalPtr), false};
 }
 
 }  // namespace autopas

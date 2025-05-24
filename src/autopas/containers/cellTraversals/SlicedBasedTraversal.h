@@ -54,7 +54,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
         _sliceThickness{},
         _spaciallyForward(spaciallyForward),
         _dataLayoutConverter(functor, dataLayout) {
-    this->init(dims);
+    this->init();
   }
 
   /**
@@ -119,9 +119,8 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
  protected:
   /**
    * Resets the cell structure of the traversal.
-   * @param dims
    */
-  void init(const std::array<unsigned long, 3> &dims);
+  void init();
 
   /**
    * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
@@ -179,7 +178,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
 };
 
 template <class ParticleCell, class Functor>
-inline void SlicedBasedTraversal<ParticleCell, Functor>::init(const std::array<unsigned long, 3> &dims) {
+void SlicedBasedTraversal<ParticleCell, Functor>::init() {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     if (not _spaciallyForward) {

@@ -7,18 +7,17 @@
 #pragma once
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/cells/ParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
+#include "autopas/tuning/Configuration.h"
 
 namespace autopas::utils {
 
 
 template<class Particle_T, class Functor>
-std::unique_ptr<TraversalInterface> generateTraversalFromConfig(const Configuration& config, Functor &functor,
+std::optional<std::unique_ptr<TraversalInterface>> generateTraversalFromConfig(const Configuration& config, Functor &functor,
                                                                  const TraversalSelectorInfo &traversalInfo) {
   switch (config.container) {
     case ContainerOption::Value::linkedCellsReferences:
