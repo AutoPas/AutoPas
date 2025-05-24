@@ -33,7 +33,7 @@ namespace autopas {
  * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
- * @tparam ParticleCell type of the ParticleCells that are used to store the particles
+ * @tparam Particle_T type of the Particle
  */
 template <class Particle_T>
 class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle_T>> {
@@ -45,22 +45,23 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    *  Type of the ParticleCell.
    */
-  using ReferenceCell = ReferenceParticleCell<Particle_T>;
+  using ParticleCellType = ReferenceParticleCell<Particle_T>;
+
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param rebuildFrequency
    * @param cellSizeFactor cell size factor relative to cutoff
+   * @param sortingThreshold number of particles in two cells from which sorting should be performed
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                        const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
+                        const double skin, const size_t sortingThreshold = 8, const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency),
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
@@ -68,11 +69,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCellsReferences; }
-
-  /**
-   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-   */
-  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::ReferenceParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _cellBlock.reserve(numParticles + numParticlesHaloEstimate);
@@ -162,7 +158,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         if (it->isDummy()) {
           continue;
         }
-        ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
+        ParticleCellType &cell = _cellBlock.getContainingCell(it->getR());
         auto address = &(*it);
         cell.addParticleReference(address);
       }
@@ -173,14 +169,15 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellPairTraversal) {
+      cellPairTraversal->setSortingThreshold(this->_sortingThreshold);
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCellsReferences::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
@@ -384,13 +381,13 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   }
 
   ContainerIterator<ParticleType, true, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
   }
 
   ContainerIterator<ParticleType, false, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
     return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
@@ -513,19 +510,19 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */
-  internal::CellBlock3D<ReferenceCell> &getCellBlock() { return _cellBlock; }
+  internal::CellBlock3D<ParticleCellType> &getCellBlock() { return _cellBlock; }
 
   /**
    * @copydoc getCellBlock()
    * @note const version
    */
-  const internal::CellBlock3D<ReferenceCell> &getCellBlock() const { return _cellBlock; }
+  const internal::CellBlock3D<ParticleCellType> &getCellBlock() const { return _cellBlock; }
 
   /**
    * Returns reference to the data of LinkedCellsReferences
    * @return the data
    */
-  std::vector<ReferenceCell> &getCells() { return this->_cells; }
+  std::vector<ParticleCellType> &getCells() { return this->_cells; }
 
  protected:
   /**
@@ -600,11 +597,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * object to manage the block of cells.
    */
-  internal::CellBlock3D<ReferenceCell> _cellBlock;
+  internal::CellBlock3D<ParticleCellType> _cellBlock;
   /**
    * load estimation algorithm for balanced traversals.
    */
-  autopas::LoadEstimatorOption _loadEstimator;
+  LoadEstimatorOption _loadEstimator;
   /**
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */

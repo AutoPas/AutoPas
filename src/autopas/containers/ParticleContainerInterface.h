@@ -42,12 +42,6 @@ class ParticleContainerInterface {
   using ParticleType = Particle_T;
 
   /**
-   * Get the ParticleCell type as an Enum
-   * @return The Cell type as an Enum
-   */
-  virtual CellType getParticleCellTypeEnum() const = 0;
-
-  /**
    * Constructor
    * @param skin Skin distance a particle is allowed to move.
    */
