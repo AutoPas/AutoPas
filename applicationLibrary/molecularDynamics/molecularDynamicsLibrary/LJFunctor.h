@@ -32,10 +32,11 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam scalingCutoff_T If set to true, the cutoff will be scaled by the sigma of the particles.
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true>
+          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoff_T = false>
 class LJFunctor
     : public autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3,
                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
@@ -96,6 +97,7 @@ class LJFunctor
    * properties like sigma, epsilon and shift.
    * @param cutoff
    * @param particlePropertiesLibrary
+   * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
   explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {
@@ -133,8 +135,12 @@ class LJFunctor
     auto sigmaSquared = _sigmaSquared;
     auto epsilon24 = _epsilon24;
     auto shift6 = _shift6;
+    auto cutoffSquared = _cutoffSquared;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      if constexpr (scalingCutoff_T) {
+        cutoffSquared = sigmaSquared * _cutoffSquared;
+      }
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
@@ -143,7 +149,7 @@ class LJFunctor
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffSquared) {
+    if (dr2 > cutoffSquared) {
       return;
     }
 
@@ -214,7 +220,7 @@ class LJFunctor
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle_T::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
-    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
     SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
@@ -274,6 +280,9 @@ class LJFunctor
         SoAFloatPrecision epsilon24 = const_epsilon24;
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
+          if constexpr (scalingCutoff_T) {
+            cutoffSquared = sigmaSquared * _cutoffSquared;
+          }
           epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
             shift6 = shift6s[j];
@@ -416,7 +425,7 @@ class LJFunctor
     size_t numGlobalCalcsN3Sum = 0;
     size_t numGlobalCalcsNoN3Sum = 0;
 
-    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
@@ -461,6 +470,9 @@ class LJFunctor
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
+          if constexpr (scalingCutoff_T) {
+            cutoffSquared = sigmaSquared * _cutoffSquared;
+          }
           epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
             shift6 = shift6s[j];
@@ -586,7 +598,8 @@ class LJFunctor
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
+      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared,
+                                                                      scalingCutoff_T);
     } else {
       _shift6 = 0.;
     }
@@ -821,7 +834,7 @@ class LJFunctor
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
@@ -912,6 +925,7 @@ class LJFunctor
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
+            cutoffSquared = _cutoffSquared * sigmaSquared;
             epsilon24 = epsilon24s[j];
             if constexpr (applyShift) {
               shift6 = shift6s[j];
@@ -1195,7 +1209,7 @@ class LJFunctor
   static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
-  const double _cutoffSquared;
+  double _cutoffSquared;
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
 
