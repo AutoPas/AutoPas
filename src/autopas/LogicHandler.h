@@ -1861,7 +1861,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
     if (traversalPtr) {
-      return {configuration, std::move(traversalPtr), stillTuning};
+      return {configuration, std::move(traversalPtr.value()), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
     std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
@@ -1996,8 +1996,7 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &config,
           config.container, ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                                                   _currentContainer->getCutoff(), config.cellSizeFactor,
                                                   _currentContainer->getVerletSkin(), _neighborListRebuildFrequency,
-                                                  _verletClusterSize, _sortingThreshold, config.loadEstimator))
-          .get();
+                                                  _verletClusterSize, _sortingThreshold, config.loadEstimator));
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns std::nullopt
@@ -2005,7 +2004,7 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &config,
       config, functor, containerPtr->getTraversalSelectorInfo());
 
   if (traversalPtr) {
-    setCurrentContainer(containerPtr);
+    setCurrentContainer(std::move(containerPtr));
   }
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
