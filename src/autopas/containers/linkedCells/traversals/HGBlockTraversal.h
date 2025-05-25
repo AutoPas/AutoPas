@@ -71,8 +71,6 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
 
       // do the colored traversal
       const size_t numColors = stride_x * stride_y * stride_z;
-      // AutoPasLog(INFO, "HGBlockTraversal: numColors: {}, group: {} {} {}, numBlocksPerColor: {}", numColors, group[0],
-      //            group[1], group[2], blocksPerColorPerDim[0] * blocksPerColorPerDim[1] * blocksPerColorPerDim[2]);
       AUTOPAS_OPENMP(parallel)
       for (size_t col = 0; col < numColors; ++col) {
         const std::array<size_t, 3> startIndex(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));

@@ -57,8 +57,8 @@ class HGTraversalBase : public TraversalInterface {
   double _maxDisplacement;
   unsigned int _stepsSinceLastRebuild;
   unsigned int _rebuildFrequency;
-  // the ratio between cutoffs of levels from which point distance should be checked before checking distance of particles
-  // can do particle to level specific instead of level to level specific in the future
+  // the ratio between cutoffs of levels from which point distance should be checked before checking distance of
+  // particles can do particle to level specific instead of level to level specific in the future
   const double distCheckRatio = 0.2;
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
@@ -122,7 +122,7 @@ class HGTraversalBase : public TraversalInterface {
       if (otherLevel == level) {
         continue;
       }
-      if (this->_useNewton3 && ( (otherLevel >= level && topDown) || (otherLevel <= level && !topDown))) {
+      if (this->_useNewton3 && ((otherLevel >= level && topDown) || (otherLevel <= level && !topDown))) {
         continue;
       }
       const double interactionLength = this->getInteractionLength(level, otherLevel);
@@ -404,8 +404,7 @@ class HGTraversalBase : public TraversalInterface {
             if (distanceCheck and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
-            }
-            else if (distanceCheck and xl >= particleCellIndex3D[0]) {
+            } else if (distanceCheck and xl >= particleCellIndex3D[0]) {
               break;
             }
             // 1 to n SoAFunctorPair
