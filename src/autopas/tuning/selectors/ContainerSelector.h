@@ -16,6 +16,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 
@@ -46,7 +47,6 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &boxMax = containerInfo.boxMax;
   const auto &cutoff = containerInfo.cutoff;
   const auto &verletSkin = containerInfo.verletSkin;
-  const auto &verletRebuildFrequency = containerInfo.verletRebuildFrequency;
   const auto &verletClusterSize = containerInfo.verletClusterSize;
   const auto &cellSizeFactor = containerInfo.cellSizeFactor;
   const auto &loadEstimator = containerInfo.loadEstimator;

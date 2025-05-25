@@ -73,10 +73,13 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      const ContainerSelectorInfo containerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,
-                                                        _logicHandlerInfo.cutoff,     configuration.cellSizeFactor,
-                                                        _logicHandlerInfo.verletSkin, _neighborListRebuildFrequency,
-                                                        _verletClusterSize,           _sortingThreshold,
+      const ContainerSelectorInfo containerSelectorInfo{_logicHandlerInfo.boxMin,
+                                                        _logicHandlerInfo.boxMax,
+                                                        _logicHandlerInfo.cutoff,
+                                                        configuration.cellSizeFactor,
+                                                        _logicHandlerInfo.verletSkin,
+                                                        _verletClusterSize,
+                                                        _sortingThreshold,
                                                         configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, containerSelectorInfo);
@@ -1991,12 +1994,11 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &config,
     return {std::nullopt, /*rejectIndefinitely*/ true};
   }
 
-  auto containerPtr =
-      ContainerSelector<Particle_T>::generateContainer(
-          config.container, ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
-                                                  _currentContainer->getCutoff(), config.cellSizeFactor,
-                                                  _currentContainer->getVerletSkin(), _neighborListRebuildFrequency,
-                                                  _verletClusterSize, _sortingThreshold, config.loadEstimator));
+  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(
+      config.container,
+      ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
+                            _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
+                            _verletClusterSize, _sortingThreshold, config.loadEstimator));
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns std::nullopt
