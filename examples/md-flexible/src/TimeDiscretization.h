@@ -53,7 +53,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
  */
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                         const double &deltaT, const std::array<double, 3> &globalForce);
+                                         const double &deltaT, const std::array<double, 3> &globalForce,
+                                         bool resetTorques = true);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.

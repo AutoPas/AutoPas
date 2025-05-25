@@ -274,6 +274,9 @@ void Simulation::run() {
 
   auto respaActive = _configuration.respaStepSize.value > 1;
 
+  RotationalAnalysis rotationalAnalysis(_configuration.rotationalAnalysisLagSteps.value,
+                                        _configuration.rotationalAnalysisStepInterval.value);
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -311,7 +314,7 @@ void Simulation::run() {
           }
           updateVelocities(/*resetForce*/ true, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
-          updateAngularVelocities(/*resetForce*/ false, RespaIterationType::OuterStep);
+          updateAngularVelocities(/*resetTorques*/ false, RespaIterationType::OuterStep);
 #endif
           respaStarted = true;
         } else {
@@ -321,6 +324,7 @@ void Simulation::run() {
 
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
+      // updateQuaternions(/*resetTorques*/ not(respaStarted and not nextIsRespaIteration));
       updateQuaternions();
 #endif
 
@@ -411,8 +415,10 @@ void Simulation::run() {
       }
 
       if (not respaActive) {
-        _kineticEnergy.push_back(calculateKineticEnergy());
-        _totalEnergy.push_back(_potentialEnergy.back() + _kineticEnergy.back());
+        if (_potentialEnergy.size() > 0) {
+          _kineticEnergy.push_back(calculateKineticEnergy());
+          _totalEnergy.push_back(_potentialEnergy.back() + _kineticEnergy.back());
+        }
       }
 
       if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
@@ -427,11 +433,21 @@ void Simulation::run() {
             updateThermostat(/*skipIterationCheck*/ true);
           }
         }
-        _kineticEnergy.push_back(calculateKineticEnergy());
-        _totalEnergy.push_back(_potentialEnergy.back() + _kineticEnergy.back());
+
+        if (_potentialEnergy.size() > 0) {
+          _kineticEnergy.push_back(calculateKineticEnergy());
+          _totalEnergy.push_back(_potentialEnergy.back() + _kineticEnergy.back());
+        }
       }
     }
     _timers.computationalLoad.stop();
+
+    if (_configuration.rotationalAnalysisLagSteps.value > 0) {
+      for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+        const auto [w, x, y, z] = particle->getQuaternion();
+        rotationalAnalysis.recordOrientation(particle->getID(), _iteration, Quaternion{w, x, y, z});
+      }
+    }
 
     if (not _simulationIsPaused) {
       ++_iteration;
@@ -576,6 +592,11 @@ void Simulation::run() {
   // Record last state of simulation.
   if (_createVtkFiles) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+  }
+
+  if (_configuration.rotationalAnalysisLagSteps.value > 0) {
+    rotationalAnalysis.writeResults(_configuration.rotationalAnalysisOutputFolder.value,
+                                    _configuration.rotationalAnalysisFilename.value);
   }
 
   // print out the final potental energy, kinetic energy and total energy
@@ -762,11 +783,11 @@ void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.stop();
 }
 
-void Simulation::updateQuaternions() {
+void Simulation::updateQuaternions(bool resetTorques) {
   _timers.quaternionUpdate.start();
   TimeDiscretization::calculateQuaternionsAndResetTorques(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value);
+      _configuration.globalForce.value, resetTorques);
   _timers.quaternionUpdate.stop();
 }
 

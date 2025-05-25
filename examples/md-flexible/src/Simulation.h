@@ -20,6 +20,7 @@
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 #include "tools/RDF.h"
+#include "tools/RotationalAnalysis.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
@@ -321,7 +322,7 @@ class Simulation {
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.
    */
-  void updateQuaternions();
+  void updateQuaternions(bool resetTorques = true);
 
   /**
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor

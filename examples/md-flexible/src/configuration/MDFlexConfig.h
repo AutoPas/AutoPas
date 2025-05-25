@@ -665,6 +665,30 @@ class MDFlexConfig {
    */
   MDFlexOption<size_t, __LINE__> respaStepSize{1, "respa-stepsize", true, "Stepsize for respa"};
 
+  /**
+   * rotationalAnalysisLagSteps
+   */
+  MDFlexOption<size_t, __LINE__> rotationalAnalysisLagSteps{0, "rotational-analysis-lag-steps", true,
+                                                            "Lag steps for MSD_rot ond OACF."};
+
+  /**
+   * rotationalAnalysisStepInterval
+   */
+  MDFlexOption<size_t, __LINE__> rotationalAnalysisStepInterval{0, "rotational-analysis-step-interval", true,
+                                                                "Steps between measurements for MSD_rot ond OACF."};
+
+  /**
+   * rotationalAnalysisFilename
+   */
+  MDFlexOption<std::string, __LINE__> rotationalAnalysisFilename{"rot", "rotational-analysis-filename", true,
+                                                                 "Filename for output of MSD_rot ond OACF."};
+
+  /**
+   * rotationalAnalysisOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> rotationalAnalysisOutputFolder{"", "rotational-analysis-output-folder", true,
+                                                                     "Foldername for output of MSD_rot ond OACF."};
+
   // Options for additional Object Generation on command line
   /**
    * boxLength

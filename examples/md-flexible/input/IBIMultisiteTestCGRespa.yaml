@@ -3,7 +3,7 @@ container                            :  [LinkedCells]
 traversal                            :  [lc_c08]
 newton3                              :  [enabled]
 data-layout                          :  [AoS]
-respa-stepsize                       :  16
+respa-stepsize                       :  5
 
 verlet-rebuild-frequency             :  10
 verlet-skin-radius                   :  0.02
@@ -16,7 +16,7 @@ tuning-max-evidence                  :  10
 cutoff                               :  3
 cell-size                            :  [1]
 deltaT                               :  0.002
-iterations                           :  10000
+iterations                           :  1000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -38,19 +38,19 @@ Objects:
       particle-spacing               :  2.35
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
-thermostat:
-  initialTemperature                 :  1
-  targetTemperature                  :  1
-  deltaTemperature                   :  0.5
-  thermostatInterval                 :  16
-  addBrownianMotion                  :  true
+#thermostat:
+#  initialTemperature                 :  1
+#  targetTemperature                  :  1
+#  deltaTemperature                   :  0.5
+#  thermostatInterval                 :  20
+#  addBrownianMotion                  :  false
 
 log-level                            :  info
 no-end-config                        :  true
 no-progress-bar                      :  false
-#vtk-filename                         :  IBIMultisiteTestCGRespa
-#vtk-output-folder                    :  IBIMultisiteTestOutputCGRespa
-#vtk-write-frequency                  :  10
+vtk-filename                         :  IBIMultisiteTestCGRespa
+vtk-output-folder                    :  IBIMultisiteTestOutputCGRespaRS5
+vtk-write-frequency                  :  1
 lut-input-file                       :  lut.csv
 #rdf-filename                         :  RDF
 #rdf-output-folder                    :  IBIMultisiteTestOutputCGRespa
@@ -60,3 +60,7 @@ lut-input-file                       :  lut.csv
 #rdf-capture-frequency                :  1
 #rdf-start-iteration                  :  50000
 #rdf-end-iteration                    :  100000
+rotational-analysis-lag-steps        :  1000
+rotational-analysis-step-interval    :  10
+rotational-analysis-filename         :  rot
+rotational-analysis-output-folder    :  IBIMultisiteTestOutputCGRespaRS5

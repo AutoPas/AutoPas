@@ -326,6 +326,26 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.respaStepSize.description;
 
         config.respaStepSize.value = node[key].as<size_t>();
+      } else if (key == config.rotationalAnalysisLagSteps.name) {
+        expected = "Unsigned Integer >= 0.";
+        description = config.rotationalAnalysisLagSteps.description;
+
+        config.rotationalAnalysisLagSteps.value = node[key].as<size_t>();
+      } else if (key == config.rotationalAnalysisStepInterval.name) {
+        expected = "Unsigned Integer >= 0.";
+        description = config.rotationalAnalysisStepInterval.description;
+
+        config.rotationalAnalysisStepInterval.value = node[key].as<size_t>();
+      } else if (key == config.rotationalAnalysisFilename.name) {
+        expected = "String.";
+        description = config.rotationalAnalysisFilename.description;
+
+        config.rotationalAnalysisFilename.value = node[key].as<std::string>();
+      } else if (key == config.rotationalAnalysisOutputFolder.name) {
+        expected = "String.";
+        description = config.rotationalAnalysisOutputFolder.description;
+
+        config.rotationalAnalysisOutputFolder.value = node[key].as<std::string>();
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;

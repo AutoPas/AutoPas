@@ -70,7 +70,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                         const double &deltaT, const std::array<double, 3> &globalForce) {
+                                         const double &deltaT, const std::array<double, 3> &globalForce,
+                                         bool resetTorques) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayMath::cross;
   using autopas::utils::ArrayMath::div;
@@ -131,14 +132,16 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
     iter->setAngularVel(angVelWHalfStep);  // save angular velocity half step, to be used by calculateAngularVelocities
 
     // Reset torque
-    iter->setTorque({0., 0., 0.});
-    if (std::any_of(globalForce.begin(), globalForce.end(),
-                    [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); })) {
-      // Get torque from global force
-      const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
-      const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
-      for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
-        iter->addTorque(cross(rotatedSitePositions[site], globalForce));
+    if (resetTorques) {
+      iter->setTorque({0., 0., 0.});
+      if (std::any_of(globalForce.begin(), globalForce.end(),
+                      [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); })) {
+        // Get torque from global force
+        const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
+        const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
+        for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
+          iter->addTorque(cross(rotatedSitePositions[site], globalForce));
+        }
       }
     }
   }
