@@ -154,68 +154,6 @@ class HGTraversalBase : public TraversalInterface {
 
   /**
    *
-   * @tparam T Coordinate integral type
-   * @param x x coordinate
-   * @param y y coordinate
-   * @param z z coordinate
-   * @param dim0 x dimension size
-   * @param dim1 y dimension size
-   * @return 1D index of the 3D coordinates. The 3d manhattan distance between consecutive 1d indexes is 1.
-   */
-  template <typename T>
-  static T computeIndex(T x, T y, T z, T dim0, T dim1) {
-    int term = y * dim0 + ((y % 2 == 0) ? x : (dim0 - 1 - x));
-    if (z % 2 == 0) {
-      return z * dim0 * dim1 + term;
-    } else {
-      return (z + 1) * dim0 * dim1 - 1 - term;
-    }
-  }
-
-  /**
-   * Convert a 1d index (or color) to a 3d index in a snaky pattern so that between consecutive indexes,
-   * the manhattan distance of the 3D coordinates is 1. It is used in TaskTraversal.
-   * @tparam T Type of the indices.
-   * @param dims The total dimensions of the index space.
-   * @return A vector that contains the 3d indexes for each 1d index.
-   */
-  template <typename T>
-  std::vector<std::array<long, 3>> oneToThreeDForStartSnakyPattern(const std::array<T, 3> &dims) {
-    std::vector<std::array<long, 3>> coords(dims[0] * dims[1] * dims[2]);
-    for (T z = 0; z < dims[2]; ++z) {
-      for (T y = 0; y < dims[1]; ++y) {
-        for (T x = 0; x < dims[0]; ++x) {
-          int idx = computeIndex(x, y, z, dims[0], dims[1]);
-          coords[idx] = {static_cast<long>(x), static_cast<long>(y), static_cast<long>(z)};
-        }
-      }
-    }
-    return coords;
-  }
-
-  /**
-   *
-   * @param upperCB first CellBlock3D
-   * @param upperCell 3d cell index of cell belonging to first CellBlock3D
-   * @param lowerCB second CellBlock3D
-   * @param lowerCell 3d cell index of cell belonging to second CellBlock3D
-   * @return minimum distance between two cells squared
-   */
-  double getMinDistBetweenCellsSquared(const CellBlock &upperCB, const std::array<size_t, 3> &upperCell,
-                                       const CellBlock &lowerCB, const std::array<size_t, 3> &lowerCell) {
-    const auto cellPos1 = upperCB.getCellBoundingBox(upperCell);
-    const auto cellPos2 = lowerCB.getCellBoundingBox(lowerCell);
-    double totalDist = 0;
-    for (size_t i = 0; i < 3; ++i) {
-      const auto dist =
-          std::max(0.0, std::max(cellPos1.first[i] - cellPos2.second[i], cellPos2.first[i] - cellPos1.second[i]));
-      totalDist += dist * dist;
-    }
-    return totalDist;
-  }
-
-  /**
-   *
    * @param CB cell block that contains the cell
    * @param cellIndex 1d cell index of cell belonging to first CellBlock3D
    * @param point
@@ -328,7 +266,6 @@ class HGTraversalBase : public TraversalInterface {
    * @param lowerLevel lower level index
    * @param lowerBound lower bound of the coordinates of lower level cells that contain owned particles
    * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
-   * @param distanceCheck if true, checks if the minimum distance between upper level particle and lower level cell is
    * less than the interaction length, otherwise skips the lower level cell
    */
   template <class Functor>
@@ -408,7 +345,6 @@ class HGTraversalBase : public TraversalInterface {
    * @param lowerLevel lower level index
    * @param lowerBound lower bound of the coordinates of lower level cells that contain owned particles
    * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
-   * @param distanceCheck if true, checks if the minimum distance between upper level particle and lower level cell is
    * less than the interaction length, otherwise skips the lower level cell
    */
   template <class Functor>
@@ -514,39 +450,6 @@ class HGTraversalBase : public TraversalInterface {
                (numColors == smallestNumColors && numBlocksPerColor > largestBlocksPerColor))) {
             smallestNumColors = numColors;
             largestBlocksPerColor = numBlocksPerColor;
-            bestGroup = group;
-          }
-        }
-    return bestGroup;
-  }
-
-  /**
-   * Finds the best group size for a given target number of blocks across all colors.
-   * A block is a unit of work that is assigned to a thread in an OpenMP loop.
-   * A group of blocks of 3d size x,y,z will be assigned to a thread per openmp loop iteration.
-   * @param targetBlocks The target number of blocks.
-   * @param stride The stride for each dimension.
-   * @param end The end coordinates for each dimension.
-   * @return The best group size for the given target number of blocks per color.
-   */
-  static std::array<size_t, 3> findBestGroupSizeForTargetBlocks(int targetBlocks, const std::array<size_t, 3> &stride,
-                                                                const std::array<unsigned long, 3> &end) {
-    unsigned long smallestCriterion = 1e15;
-    std::array<size_t, 3> bestGroup = {1, 1, 1};
-    for (size_t x_group = 1; x_group <= stride[0] * 2; ++x_group)
-      for (size_t y_group = 1; y_group <= stride[1] * 2; ++y_group)
-        for (size_t z_group = 1; z_group <= stride[2] * 2; ++z_group) {
-          std::array<size_t, 3> group = {x_group, y_group, z_group};
-          std::array<size_t, 3> num_index{}, testStride{};
-          for (size_t i = 0; i < 3; i++) {
-            testStride[i] = 1 + static_cast<size_t>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
-            num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
-          }
-          const long numColors = testStride[0] * testStride[1] * testStride[2];
-          const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
-          const unsigned long criterion = std::abs(numBlocksPerColor * numColors - targetBlocks);
-          if (criterion < smallestCriterion) {
-            smallestCriterion = criterion;
             bestGroup = group;
           }
         }

@@ -209,15 +209,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     hgrid_block4,
     hgrid_block8,
-    /**
-     * Similar to hgrid_block but instead of fully waiting for a color to end to start the next color, openmp task with
-     * dependencies is used. The basic idea is that if the cells with the previous color around the cell is computed,
-     * the cell with the next color can start computing. The numbers hgrid_taskX denote that the total number of
-     * OpenMP tasks should be as close to X * num_threads as possible.
-     */
-    hgrid_task32,
-    hgrid_task64,
-    hgrid_task128,
   };
 
   /**
@@ -355,9 +346,6 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::ot_c01, "ot_c01"},
 
         // HierarchicalGrid Traversals:
-        {TraversalOption::hgrid_task32, "hgrid_task32"},
-        {TraversalOption::hgrid_task64, "hgrid_task64"},
-        {TraversalOption::hgrid_task128, "hgrid_task128"},
         {TraversalOption::hgrid_block4, "hgrid_block4"},
         {TraversalOption::hgrid_block8, "hgrid_block8"},
     };

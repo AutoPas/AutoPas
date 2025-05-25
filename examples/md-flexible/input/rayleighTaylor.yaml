@@ -19,68 +19,60 @@
 
 functor: Lennard-Jones (12-6) AVX
 cutoff: 3
-cutoffs: [ 0.76, 1.5, 3 ]
-verlet-skin-radius: 0.06
+cutoffs: [ 0.75, 1.5, 3 ]
+verlet-skin-radius: 0
 verlet-rebuild-frequency: 600
-deltaT: 0
-iterations: 400000
-boundary-type: [ periodic, periodic, reflective ]
-globalForce: [ 0, 0, -12.44 ]
-data-layout: [ SoA ]
-traversal: [hgrid_task, hgrid_test, lc_c08, hgrid_task_soa_cell, hgrid_color, hgrid_color_soa_cell, hgrid_block, hgrid_block_soa_cell]
-#  [hgrid_color, hgrid_block, hgrid_task, hgrid_color_soa_cell, hgrid_task_soa_cell, hgrid_block_soa_cell,
-#            lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18]
-# vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02
-newton3: [ enabled ]
-cell-size: [ 1 ]
-tuning-interval: 20
-tuning-samples: 1
+deltaT                           :  0.0
+iterations                       :  400000
+boundary-type                    :  [periodic, periodic, reflective]
+globalForce                      :  [0, 0, -12.44]
+data-layout                      :  [SoA, AoS]
+traversal                        :  [hgrid_block4, hgrid_block8, lc_c08]
+newton3                          : [enabled]
+cell-size                        : [1]
+tuning-interval                  :  100
+tuning-samples                   : 5
 Sites:
   0:
-    epsilon: 1.
-    sigma: 1.
-    mass: 1.
+    epsilon                      :  1.
+    sigma                        :  1
+    mass                         :  1.
   1:
-    epsilon: 1.
-    sigma: 0.5
-    mass: 2.
+    epsilon                      :  1.
+    sigma                        :  0.5
+    mass                         :  1.
   2:
-    epsilon: 1.
-    sigma: 0.25
-    mass: 1.
-
+    epsilon                      :  1.
+    sigma                        :  0.25
+    mass                         :  1.
 Objects:
   CubeClosestPacked:
     0:
-      particle-type-id: 0
-      box-length: [80, 80, 40]
-      particle-spacing: 1.5
-      bottomLeftCorner: [0, 0, 0]
-      velocity: [0, 0, 0]
+      particle-type-id           :  0
+      box-length                 :  [40, 40, 40]
+      particle-spacing           :  1.2
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
     1:
-      particle-type-id: 1
-      box-length: [80, 80, 40]
-      particle-spacing: 0.75
-      bottomLeftCorner: [0, 0, 0]
-      velocity: [0, 0, 0]
+      particle-type-id           :  1
+      box-length                 :  [40, 40, 40]
+      particle-spacing           :  0.6
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
     2:
-      particle-type-id: 2
-      box-length: [ 80, 80, 40 ]
-      particle-spacing: 0.38
-      bottomLeftCorner: [ 0, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-
+      particle-type-id           :  2
+      box-length                 :  [40, 40, 40]
+      particle-spacing           :  0.3
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
 thermostat:
-  initialTemperature: 40
-  targetTemperature: 40
-  deltaTemperature: 2
-  thermostatInterval: 1000
-  addBrownianMotion: true
-
-load-balancer: InvertedPressure
-load-balancing-interval: 10000
-subdivide-dimension: [false, false, true]
-
-no-progress-bar: true
-fastParticlesThrow: true
-
+  initialTemperature             :  40
+  targetTemperature              :  40
+  deltaTemperature               :  2
+  thermostatInterval             :  1000
+  addBrownianMotion              :  true
+load-balancer                    :  InvertedPressure
+load-balancing-interval          :  10000
+subdivide-dimension              :  [false, false, true]
+no-progress-bar                  :  true
+fastParticlesThrow               :  true

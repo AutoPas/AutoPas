@@ -14,7 +14,6 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopas/containers/linkedCells/traversals/HGBlockTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGTaskTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -307,18 +306,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     case TraversalOption::hgrid_block8: {
       return std::make_unique<HGBlockTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3,
                                                                                8);
-    }
-    case TraversalOption::hgrid_task32: {
-      return std::make_unique<HGTaskTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3,
-                                                                              32);
-    }
-    case TraversalOption::hgrid_task64: {
-      return std::make_unique<HGTaskTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3,
-                                                                              64);
-    }
-    case TraversalOption::hgrid_task128: {
-      return std::make_unique<HGTaskTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3,
-                                                                              128);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
