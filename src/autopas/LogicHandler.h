@@ -73,16 +73,16 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      const ContainerSelectorInfo containerSelectorInfo{_logicHandlerInfo.boxMin,
-                                                        _logicHandlerInfo.boxMax,
-                                                        _logicHandlerInfo.cutoff,
-                                                        configuration.cellSizeFactor,
-                                                        _logicHandlerInfo.verletSkin,
-                                                        _verletClusterSize,
-                                                        _sortingThreshold,
-                                                        configuration.loadEstimator};
+      _currentContainerSelectorInfo = ContainerSelectorInfo{_logicHandlerInfo.boxMin,
+                                                            _logicHandlerInfo.boxMax,
+                                                            _logicHandlerInfo.cutoff,
+                                                            configuration.cellSizeFactor,
+                                                            _logicHandlerInfo.verletSkin,
+                                                            _verletClusterSize,
+                                                            _sortingThreshold,
+                                                            configuration.loadEstimator};
       _currentContainer =
-          ContainerSelector<Particle_T>::generateContainer(configuration.container, containerSelectorInfo);
+          ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
     }
 
@@ -263,10 +263,11 @@ class LogicHandler {
     }
 
     // actually resize the container
-    _containerSelectorInfo->boxMin = boxMin;
-    _containerSelectorInfo->boxMax = boxMax;
-    _currentContainer = ContainerSelector<Particle_T>::generateContainer(_currentContainer->getContainerType(),
-                                                                         *_containerSelectorInfo);
+    _currentContainerSelectorInfo.boxMin = boxMin;
+    _currentContainerSelectorInfo.boxMax = boxMax;
+    auto newContainer = ContainerSelector<Particle_T>::generateContainer(_currentContainer->getContainerType(),
+                                                                         _currentContainerSelectorInfo);
+    setCurrentContainer(std::move(newContainer));
     // The container might have changed sufficiently enough so that we need more or less spatial locks
     const auto boxLength = boxMax - boxMin;
     const auto interactionLengthInv = 1. / _currentContainer->getInteractionLength();
@@ -1022,7 +1023,7 @@ class LogicHandler {
   /**
    * The current configuration for the container.
    */
-  std::unique_ptr<ContainerSelectorInfo> _containerSelectorInfo;
+  ContainerSelectorInfo _currentContainerSelectorInfo;
 
   /**
    * Set of interaction types AutoPas is initialized to, determined by the given AutoTuners.
@@ -1834,9 +1835,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
     if (not traversalPtr) {
       // TODO: Can we handle this case gracefully?
-      utils::ExceptionHandler::exception(
-          "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
-          functor.getName());
+      AutoPasLog(WARN,
+                 "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
+                 functor.getName());
     }
     return {configuration, std::move(traversalPtr.value()), false};
   }
@@ -1994,18 +1995,20 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &config,
     return {std::nullopt, /*rejectIndefinitely*/ true};
   }
 
-  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(
-      config.container,
+  auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator));
+                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns std::nullopt
   auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
       config, functor, containerPtr->getTraversalSelectorInfo());
 
-  if (traversalPtr) {
+  if (traversalPtr and (_currentContainer->getContainerType() != containerPtr->getContainerType() or
+                        containerInfo != _currentContainerSelectorInfo)) {
+    _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
   }
 
