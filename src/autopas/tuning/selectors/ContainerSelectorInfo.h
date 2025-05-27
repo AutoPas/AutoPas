@@ -62,7 +62,8 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
-           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
+           verletClusterSize == other.verletClusterSize and sortingThreshold == other.sortingThreshold and
+           loadEstimator == other.loadEstimator;
   }
 
   /**
@@ -99,7 +100,7 @@ class ContainerSelectorInfo {
   /**
    * Cutoff radius to be used in this container.
    */
-  const double cutoff;
+  double cutoff;
 
   /**
    * cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells)

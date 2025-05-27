@@ -140,14 +140,14 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
   [[nodiscard]] std::tuple<std::array<double, 2>, std::array<size_t, 2>> estimateOptimalGridSideLength(
       size_t numParticles, size_t clusterSize) const {
     using namespace autopas::utils::ArrayMath::literals;
-    using autopas::utils::ArrayMath::ceil;
-    using autopas::utils::ArrayUtils::static_cast_copy_array;
+    using utils::ArrayMath::ceil;
+    using utils::ArrayUtils::static_cast_copy_array;
 
     // estimate the grid size for the actual box, then add halo layers as necessary
     const std::array<double, 3> boxSize = _boxMax - _boxMin;
     const std::array<double, 2> boxSize2D{boxSize[0], boxSize[1]};
     if (numParticles == 0) {
-      return {boxSize2D, {1, 1}};
+      return {boxSize2D, {3, 3}};  // owned tower plus two halo layers in each direction
     }
 
     const double volume = boxSize[0] * boxSize[1] * boxSize[2];

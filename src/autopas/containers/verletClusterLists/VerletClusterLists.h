@@ -141,17 +141,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   void computeInteractions(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "VerletClusterLists::computeInteractions(): Trying to do a pairwise iteration, even though verlet lists are "
-          "not "
-          "valid.");
+          "not valid.");
     }
     auto *traversalInterface = dynamic_cast<VCLTraversalInterface<ParticleType> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
       traversalInterface->setTowers(_towerBlock.getTowersRef());
     } else {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
@@ -356,7 +355,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
-      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+      return LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
     // First delete all halo particles.
     this->deleteHaloParticles();
@@ -364,6 +363,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     AUTOPAS_OPENMP(parallel for)
     for (size_t i = 0ul; i < _towerBlock.size(); ++i) {
       _towerBlock[i].deleteDummyParticles();
+    }
+    AUTOPAS_OPENMP(parallel for)
+    for (size_t i = 0ul; i < _particlesToAdd.size(); ++i) {
+      _particlesToAdd[i].erase(std::remove_if(_particlesToAdd[i].begin(), _particlesToAdd[i].end(),
+                                              [](const auto &p) { return p.isDummy(); }),
+                               _particlesToAdd[i].end());
     }
 
     // next find invalid particles
@@ -400,7 +405,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
   [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
@@ -764,7 +769,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
+    // The builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
     // when rebuildTowersAndClusters() was not called explicitly.
     if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
       // clear the lists buffer because clusters will be recreated
@@ -779,7 +784,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
         calculateClusterThreadPartition();
       }
     } else {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }

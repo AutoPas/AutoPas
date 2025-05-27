@@ -10,10 +10,15 @@
 #include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 
 namespace autopas {
+
+// template <class Particle_T>
+// class VLCCellPairNeighborList;
 
 /**
  * Linked Cells with Verlet Lists container.
@@ -140,7 +145,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
   /**
    * Load estimation algorithm for balanced traversals.
    */
-  autopas::LoadEstimatorOption _loadEstimator;
+  LoadEstimatorOption _loadEstimator;
 
   /**
    * Data layout during the list generation. Has no influence on list layout.

@@ -160,16 +160,16 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    */
   bool _spaciallyForward;
 
+  /**
+   * Cell length in CellBlock3D.
+   */
+  std::array<double, 3> _cellLength;
+
  private:
   /**
    * Interaction length (cutoff + skin).
    */
   double _interactionLength;
-
-  /**
-   * Cell length in CellBlock3D.
-   */
-  std::array<double, 3> _cellLength;
 
   /**
    * Data Layout Converter to be used with this traversal.
