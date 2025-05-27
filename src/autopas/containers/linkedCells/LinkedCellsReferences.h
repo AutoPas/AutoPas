@@ -59,7 +59,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                        const double skin, const size_t sortingThreshold = 8, const double cellSizeFactor = 1.0,
+                        const double skin, const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
@@ -107,6 +107,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
     AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
+  }
+
+  /**
+   * Deletes all particles from the container.
+   */
+  void deleteAllParticles() override {
+    _particleList.clearAllParticles();
+    CellBasedParticleContainer<ParticleCellType>::deleteAllParticles();
   }
 
   /**
@@ -289,7 +297,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
-      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+      return LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
 
     std::vector<ParticleType> invalidParticles;
