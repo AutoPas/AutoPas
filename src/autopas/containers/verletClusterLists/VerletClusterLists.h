@@ -89,11 +89,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skin, unsigned int rebuildFrequency, size_t clusterSize,
                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<Particle_T>(skin),
+      : ParticleContainerInterface<Particle_T>(),
         _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
+        _skin{skin},
         _rebuildFrequency{rebuildFrequency},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
@@ -941,13 +942,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  [[nodiscard]] double getVerletSkin() const override { return this->_skin; }
+  [[nodiscard]] double getVerletSkin() const override { return _skin; }
 
   /**
    * Set the verlet skin length for the container.
    * @param skin
    */
-  void setSkin(double skin) { this->_skin = skin; }
+  void setSkin(double skin) { _skin = skin; }
 
   /**
    * Get the rebuild Frequency value for the container.
@@ -995,7 +996,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       particlesBuffer.clear();
     });
 
-    const double interactionLength = _cutoff + this->_skin;
+    const double interactionLength = this->getInteractionLength();
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle_T>>(
         _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3);
 
@@ -1293,6 +1294,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * Cutoff.
    */
   double _cutoff{};
+
+  double _skin{};
 
   /**
    * rebuidFrequency.
