@@ -15,10 +15,10 @@
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
-#include "autopas/utils/StaticCellSelector.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
 using ::testing::_;
@@ -503,11 +503,8 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   }
 
   // Obtain a compatible traversal
-  auto traversal = autopas::utils::withStaticCellType<
-      Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-    return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(mockFunctor)>(
-        traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
-  });
+  auto traversal = autopas::TraversalSelector::generateTraversal<FullParticleCell<ParticleFP64>, decltype(mockFunctor)>(
+      traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
 
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
