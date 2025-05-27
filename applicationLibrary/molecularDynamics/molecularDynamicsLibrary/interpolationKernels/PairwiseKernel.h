@@ -14,7 +14,9 @@ class PairwiseKernel {
  public:
   explicit PairwiseKernel(){};
 
-  virtual double calculate(double dr2) = 0;
+  virtual double calculateDerivative(double dr) = 0;
+
+  virtual double calculate(double dr) = 0;
 };
 
 }  // namespace mdLib

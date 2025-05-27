@@ -536,8 +536,8 @@ class MDFlexConfig {
   /**
    * interpolation nodes
    */
-  MDFlexOption<std::shared_ptr<autopas::NumberSet<size_t>>, __LINE__> interpolationNodes{
-      std::make_shared<autopas::NumberSetFinite<size_t>>(std::set<size_t>{0}), "interpolation-nodes", true,
+  MDFlexOption<std::vector<size_t>, __LINE__> interpolationNodes{
+      std::vector<size_t>{}, "interpolation-nodes", true,
       "Number of interpolation nodes for each interpolation interval."};
 
   /**
@@ -550,8 +550,8 @@ class MDFlexConfig {
   /**
    * Splits for the interpolation interval
    */
-  MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> interpolationSplits{
-      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{}), "interpolation-splits", true,
+  MDFlexOption<std::vector<double>, __LINE__> interpolationSplits{
+      std::vector<double>{}, "interpolation-splits", true,
       "Split points for the interpolation interval"};
 
   /**

@@ -222,8 +222,8 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
 }
 
 template <typename T>
-inline std::set<T> parseTs(const std::string &tString) {
-  std::set<T> result;
+inline std::vector<T> parseTs(const std::string &tString) {
+  std::vector<T> result;
   /* Exchange with generic regex string */
   std::regex regexT(regexDoubleStr);
 
@@ -235,7 +235,7 @@ inline std::set<T> parseTs(const std::string &tString) {
       std::istringstream ss(number->str());
       T num;
       ss >> num;
-      result.insert(num);
+      result.push_back(num);
     } catch (const std::exception &) {
       autopas::utils::ExceptionHandler::exception("Failed to parse generic type from: {}", number->str());
     }
@@ -281,8 +281,14 @@ inline std::unique_ptr<autopas::NumberSet<T>> parseNumberSet(const std::string &
   }
   */
 
-  std::set<T> values = autopas::utils::StringUtils::parseTs<T>(setString);
-  return std::make_unique<autopas::NumberSetFinite<T>>(values);
+  std::vector<T> values = autopas::utils::StringUtils::parseTs<T>(setString);
+  std::set<T> result {values.begin(), values.end()};
+  return std::make_unique<autopas::NumberSetFinite<T>>(result);
 }
 
+template <typename T>
+inline std::vector<T> parseNumberVec(const std::string &setString) {
+  std::vector<T> values = autopas::utils::StringUtils::parseTs<T>(setString);
+  return values;
+}
 }  // namespace autopas::utils::StringUtils

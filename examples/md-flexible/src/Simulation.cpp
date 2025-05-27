@@ -96,20 +96,20 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _interpolantLJFunctor{mdLib::LJKernel{*_configuration.getParticlePropertiesLibrary()},
                             _configuration.cutoff.value,
                             _configuration.interpolationStart.value,
-                            _configuration.interpolationNodes.value->getAll(),
-                            _configuration.interpolationSplits.value->getAll(),
+                            _configuration.interpolationNodes.value,
+                            _configuration.interpolationSplits.value,
                             *_configuration.getParticlePropertiesLibrary()},
       _argonPairInterpolantFunctor{mdLib::ArgonKernel{},
                                    _configuration.cutoff.value,
                                    _configuration.interpolationStart.value,
-                                   _configuration.interpolationNodes.value->getAll(),
-                                   _configuration.interpolationSplits.value->getAll(),
+                                   _configuration.interpolationNodes.value,
+                                   _configuration.interpolationSplits.value,
                                    *_configuration.getParticlePropertiesLibrary()},
       _kryptonPairInterpolantFunctor{mdLib::KryptonKernel{},
                                      _configuration.cutoff.value,
                                      _configuration.interpolationStart.value,
-                                     _configuration.interpolationNodes.value->getAll(),
-                                     _configuration.interpolationSplits.value->getAll(),
+                                     _configuration.interpolationNodes.value,
+                                     _configuration.interpolationSplits.value,
                                      *_configuration.getParticlePropertiesLibrary()}
 #endif
 {
@@ -325,7 +325,7 @@ void Simulation::run() {
       ++_iteration;
     }
 
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::trace) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
                 << autopas::memoryProfiler::currentMemoryUsage() << " kB\n";
     }

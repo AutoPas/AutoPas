@@ -35,14 +35,14 @@ class PairwiseInterpolantFunctor
   PairwiseInterpolantFunctor() = delete;
 
  private:
-  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::set<size_t> numNodes,
-                                      std::set<double> intervalSplits, void * /*dummy*/)
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::vector<size_t> numNodes,
+                                      std::vector<double> intervalSplits, void * /*dummy*/)
       : autopas::PairwiseFunctor<
             Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, applyShift, useMixing, useNewton3,
                                                    calculateGlobals, countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
-        _numNodes{numNodes.begin(), numNodes.end()},
-        _intervalSplits{intervalSplits.begin(), intervalSplits.end()},
+        _numNodes{numNodes},
+        _intervalSplits{intervalSplits},
         _a{a},
         _b{cutoff},
         _potentialEnergySum{0.},
@@ -126,7 +126,6 @@ class PairwiseInterpolantFunctor
   }
 
   void constructPolynomial() {
-    std::cout << "Constructing" << std::endl;
 
     double a = _a;
     for (int interval = 0; interval < _numNodes.size(); ++interval) {
@@ -151,16 +150,16 @@ class PairwiseInterpolantFunctor
   }
 
  public:
-  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::set<size_t> nNodes,
-                                      std::set<double> intervalSplits)
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::vector<size_t> nNodes,
+                                      std::vector<double> intervalSplits)
       : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
     static_assert(not useMixing,
                   "Mixing without ParticlePropertiesLibrary is not possible! Use a different constructor or set mixing "
                   "to false.");
   }
 
-  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::set<size_t> nNodes,
-                                      std::set<double> intervalSplits,
+  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::vector<size_t> nNodes,
+                                      std::vector<double> intervalSplits,
                                       ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
     static_assert(useMixing,
@@ -184,6 +183,7 @@ class PairwiseInterpolantFunctor
   void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
+    /* Filter unnecessary force computations */
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -201,6 +201,7 @@ class PairwiseInterpolantFunctor
       return;
     }
 
+    /* Evaluate Polynomial */
     double d = std::sqrt(dr2);
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
@@ -364,7 +365,10 @@ class PairwiseInterpolantFunctor
       _postProcessed = true;
 
       size_t number = 0;
-      std::vector<double> cuts = {0.25, 0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.25, 2.5, 2.75, 3.};
+      std::vector<double> cuts{};
+      for (double cut = _a; cut <= _b; cut+= 0.25) {
+        cuts.push_back(cut);
+      }
       double prev_cut = 0.;
       for (auto cut : cuts) {
         number = 0;

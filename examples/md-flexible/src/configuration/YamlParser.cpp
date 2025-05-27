@@ -262,10 +262,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "List Unsigned Integer >= 0 with size > 0";
         description = config.interpolationNodes.description;
 
-        config.interpolationNodes.value = autopas::utils::StringUtils::parseNumberSet<size_t>(
+        config.interpolationNodes.value = autopas::utils::StringUtils::parseNumberVec<size_t>(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
-        if (config.interpolationNodes.value->isEmpty()) {
+        if (config.interpolationNodes.value.empty()) {
           throw std::runtime_error("Parsed interpolation nodes list is empty.");
         }
       } else if (key == config.interpolationStart.name) {
@@ -280,7 +280,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of floats.";
         description = config.interpolationSplits.description;
 
-        config.interpolationSplits.value = autopas::utils::StringUtils::parseNumberSet<double>(
+        config.interpolationSplits.value = autopas::utils::StringUtils::parseNumberVec<double>(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
       } else if (key == config.tuningPhases.name) {
         expected = "Unsigned Integer";

@@ -17,6 +17,10 @@ class LJKernel : public PairwiseKernel<LJKernel> {
     _PPLibrary = &particlePropertiesLibrary;
   };
 
+  double calculateDerivative(double dr) final {
+    return 0.;
+  }
+
   double calculate(double dr) final {
     double dr2 = dr * dr;
     double invdr2 = 1. / dr2;
