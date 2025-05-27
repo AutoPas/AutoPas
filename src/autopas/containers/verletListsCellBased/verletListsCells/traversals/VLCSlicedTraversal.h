@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "autopas/containers/cellTraversals/SlicedLockBasedTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 

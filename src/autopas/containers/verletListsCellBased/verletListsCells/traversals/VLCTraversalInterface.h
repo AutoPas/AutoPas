@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/options/ContainerOption.h"
+
 namespace autopas {
 
 /**
@@ -67,7 +69,7 @@ class VLCTraversalInterface {
 
   /**
    * Load the SoA from the respective neighbor list.
-   * @tparam pairwiseFunctor
+   * @tparam PairwiseFunctor
    * @param pairwiseFunctor
    * @param neighborLists
    */
@@ -79,7 +81,7 @@ class VLCTraversalInterface {
 
   /**
    * Extract the SoA from the respective neighbor list.
-   * @tparam pairwiseFunctor
+   * @tparam PairwiseFunctor
    * @param pairwiseFunctor
    * @param neighborLists
    */
