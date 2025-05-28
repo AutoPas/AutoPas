@@ -1004,13 +1004,6 @@ class AutoPas {
     _autoTunerInfo.tuningMetric = tuningMetricOption;
   }
 
-/**
- * TODO: Documentation
- */
-    void setDynamicRetuneTimeFactor(double dynamicRetuneTimeFactor) {
-    _autoTunerInfo.dynamicRetuneTimeFactor = dynamicRetuneTimeFactor;
-  }
-
   /**
    * Getter for the energy sensor
    * @return
@@ -1112,6 +1105,13 @@ class AutoPas {
    * @return sorting-threshold
    */
   size_t getSortingThreshold() const { return _sortingThreshold; }
+
+  /**
+   * TODO: Documentation
+   */
+  void setDynamicRetuneTimeFactor(double dynamicRetuneTimeFactor) {
+    _autoTunerInfo.dynamicRetuneTimeFactor = dynamicRetuneTimeFactor;
+  }
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
