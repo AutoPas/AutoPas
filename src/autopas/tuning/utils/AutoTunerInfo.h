@@ -43,6 +43,9 @@ struct AutoTunerInfo {
   /**
    * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
    */
-  bool useLOESSSmoothening{false};
+  bool useLOESSSmoothening{true};
+
+  /* TODO: Docs */
+  double dynamicRetuneTimeFactor{std::numeric_limits<double>::infinity()};
 };
 }  // namespace autopas

@@ -1004,6 +1004,13 @@ class AutoPas {
     _autoTunerInfo.tuningMetric = tuningMetricOption;
   }
 
+/**
+ * TODO: Documentation
+ */
+    void setDynamicRetuneTimeFactor(double dynamicRetuneTimeFactor) {
+    _autoTunerInfo.dynamicRetuneTimeFactor = dynamicRetuneTimeFactor;
+  }
+
   /**
    * Getter for the energy sensor
    * @return

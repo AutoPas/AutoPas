@@ -40,7 +40,9 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
-      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
+      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)),
+      _dynamicRetuneTimeFactor(autoTunerInfo.dynamicRetuneTimeFactor) {
+  _dynamicRetuneTimer.start();
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
@@ -110,7 +112,8 @@ bool AutoTuner::tuneConfiguration() {
   // Determine where in a tuning phase we are
   // If _iterationsInMostRecentTuningPhase >= _tuningInterval the current tuning phase takes more iterations than the
   // tuning interval -> continue tuning
-  if ((_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune) {
+
+  if (_forceRetune or (inFirstTuningIteration() and not _isTuning)) {
     // CASE: Start of a new tuning phase
     _isTuning = true;
     _forceRetune = false;
@@ -315,8 +318,9 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
   AutoPasLog(DEBUG, "Iteration: {}", _iteration);
   _endOfTuningPhase = false;
 
+  // TODO: check this
   if (_iteration % _tuningInterval == 0) {
-    ++_tuningPhase;
+    // ++_tuningPhase;
 
     if (_isTuning) {
       AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
@@ -326,6 +330,7 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
+  // TODO: This will likely need to be adjusted
   // if next iteration is start of new tuning phase, we need to rebuild, since the container may change
   // _iteration + 1 since we want to look ahead to the next iteration
   if ((_iteration + 1) % _tuningInterval == 0) {
@@ -371,9 +376,38 @@ long AutoTuner::estimateRuntimeFromSamples() const {
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
 }
 
+
+
+// TODO: documentation
+// is this the correct point to do the dynamic retune checks
+bool AutoTuner::shouldRetuneDynamic() {
+  // AutoPasLog(WARN, "Called shouldRetuneDynamic");
+  if (_isTuning or _forceRetune) return false;  // TODO: is this sensible?
+
+  if (_iteration % _tuningInterval != 0) return false;
+
+  _dynamicRetuneTimer.stop();
+
+  long temp = _lastTimeBetweenTuning;
+  long currentTimeBetweenTuning = _dynamicRetuneTimer.getTotalTime();
+  _lastTimeBetweenTuning = currentTimeBetweenTuning;
+
+  _dynamicRetuneTimer.reset();
+  AutoPasLog(WARN, "currentTimeBetweenTuning time: {}, lastTimeBetweenTuning: {}", currentTimeBetweenTuning,
+             temp);
+  _dynamicRetuneTimer.start();
+
+  if (currentTimeBetweenTuning <= _dynamicRetuneTimeFactor * temp) return false;
+
+  AutoPasLog(WARN, "Dynamic retune triggered");
+  _lastTuningPhaseStartIteration = _iteration;
+  ++_tuningPhase;
+  return true;
+}
+
 bool AutoTuner::prepareIteration() {
   // Flag if this is the first iteration in a new tuning phase
-  const bool startOfTuningPhase = _iteration % _tuningInterval == 0 and not _isTuning;
+  bool startOfTuningPhase = not _isTuning and shouldRetuneDynamic();
 
   // first tuning iteration -> reset everything
   if (startOfTuningPhase) {
@@ -430,12 +464,15 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
 bool AutoTuner::inTuningPhase() const {
+  // TODO: Documentation
+
   // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
   // been called yet.
-  return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
+
+  return (_isTuning or _forceRetune or inFirstTuningIteration()) and not searchSpaceIsTrivial();
 }
 
-bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
+bool AutoTuner::inFirstTuningIteration() const { return (_iteration == _lastTuningPhaseStartIteration); }
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 

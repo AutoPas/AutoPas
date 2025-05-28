@@ -293,6 +293,9 @@ std::string MDFlexConfig::to_string() const {
     printOption(fuzzyRuleFilename);
   }
 
+  // TODO: place this appropiately
+  printOption(dynamicRetuneTimeFactor);
+
   // TODO: C++20 Use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;

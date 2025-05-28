@@ -108,9 +108,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -329,6 +327,14 @@ class MDFlexConfig {
       autopas::TuningMetricOption::time, "tuning-metric", true,
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * dynamicRetuneTimeFactor
+   */
+  MDFlexOption<double, __LINE__> dynamicRetuneTimeFactor{
+      std::numeric_limits<double>::infinity(), "dynamic-retune-time-factor", true,
+      "If the last iteration took longer than the iteration before it by a factor bigger than dynamicRetuneTimeFactor,"
+      "a tuning phase is triggered"};
 
   /**
    * enerySensorOption

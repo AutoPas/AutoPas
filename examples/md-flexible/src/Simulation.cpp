@@ -165,6 +165,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
   _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
+  _autoPasContainer->setDynamicRetuneTimeFactor(_configuration.dynamicRetuneTimeFactor.value);
   _autoPasContainer->setUseLOESSSmoothening(_configuration.useLOESSSmoothening.value);
   _autoPasContainer->setEnergySensorOption(_configuration.energySensorOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);

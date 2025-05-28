@@ -452,5 +452,20 @@ class AutoTuner {
    * early stopping is used."
    */
   size_t _iterationBaseline{0};
+
+  /**
+   TODO: documentation
+  */
+  double _dynamicRetuneTimeFactor;
+
+  /*
+    TODO: documentation + make private?  
+  */
+  autopas::utils::Timer _dynamicRetuneTimer;
+  bool shouldRetuneDynamic();
+
+  private:
+    long _lastTimeBetweenTuning;
+    long _lastTuningPhaseStartIteration;
 };
 }  // namespace autopas

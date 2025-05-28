@@ -440,6 +440,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
 
         config.tuningMetricOption.value = *parsedOptions.begin();
+      } else if (key == config.dynamicRetuneTimeFactor.name) {
+        expected = "Floating point value > 1";
+        description = config.dynamicRetuneTimeFactor.description;
+
+        config.dynamicRetuneTimeFactor.value = node[key].as<double>();
+        if (config.dynamicRetuneTimeFactor.value <= 1) {
+          throw std::runtime_error("The dynamic retune time factor has to be greater than 1!");
+        }
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
         expected = "Floating-point Value";
         description = config.MPITuningMaxDifferenceForBucket.description;
