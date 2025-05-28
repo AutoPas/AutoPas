@@ -157,6 +157,10 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * common vector for this purpose.
    */
   std::vector<ParticleCellType> _cells;
+  /**
+   * If the number of particles in a cell or cell pair exceeds this threshold, the particles will be sorted.
+   * To be forwarded to cell traversals.
+   */
   size_t _sortingThreshold;
 
  private:

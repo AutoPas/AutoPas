@@ -22,14 +22,22 @@ namespace autopas {
  * @tparam Particle_T
  */
 template <class Particle_T>
-class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
+class
+VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
  public:
+  /**
+   * Type of the Particle.
+   */
   using ParticleType = Particle_T;
-  using ParticleCellType = typename LinkedCells<ParticleType>::ParticleCellType;
+
+  /**
+   * Type of the ParticleCell used by the underlying linked cells.
+   */
+  using ParticleCellType = typename LinkedCells<Particle_T>::ParticleCellType;
 
   /**
    * Constructor of the VerletListsLinkedBase class.
-   * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::ParticleType
+   * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::Particle_T
    * *rebuildFrequency
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
@@ -40,7 +48,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    */
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skin, const double cellSizeFactor)
-      : ParticleContainerInterface<ParticleType>(skin),
+      : ParticleContainerInterface<Particle_T>(skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
@@ -64,7 +72,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl
    * @note This function invalidates the neighbor lists.
    */
-  void addParticleImpl(const ParticleType &p) override {
+  void addParticleImpl(const Particle_T &p) override {
     _neighborListIsValid.store(false, std::memory_order_relaxed);
     // position is already checked, so call impl directly.
     _linkedCells.addParticleImpl(p);
@@ -74,7 +82,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    * @copydoc autopas::ParticleContainerInterface::addHaloParticleImpl
    * @note This function invalidates the neighbor lists.
    */
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const Particle_T &haloParticle) override {
     _neighborListIsValid.store(false, std::memory_order_relaxed);
     // position is already checked, so call impl directly.
     _linkedCells.addHaloParticleImpl(haloParticle);
@@ -110,13 +118,13 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
     _linkedCells.deleteAllParticles();
   }
 
-  std::tuple<const ParticleType *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  std::tuple<const ParticleType *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
@@ -139,7 +147,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const ParticleType *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
                                                                    IteratorBehavior iteratorBehavior,
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const {
@@ -147,7 +155,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
                                                              boxMax);
   }
 
-  bool deleteParticle(ParticleType &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the references in the lists.
     internal::markParticleAsDeleted(particle);
     return false;
@@ -163,7 +171,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.
    */
-  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+  [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(_linkedCells);
     }
@@ -178,7 +186,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    * @param haloParticle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(const ParticleType &haloParticle) override {
+  bool updateHaloParticle(const Particle_T &haloParticle) override {
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
@@ -196,18 +204,18 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     return _linkedCells.begin(behavior, additionalVectors);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
     return _linkedCells.begin(behavior, additionalVectors);
   }
@@ -231,18 +239,18 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
           nullptr) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
@@ -314,7 +322,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
-  LinkedCells<ParticleType> _linkedCells;
+  LinkedCells<Particle_T> _linkedCells;
 
   /// specifies if the neighbor list is currently valid
   std::atomic<bool> _neighborListIsValid{false};

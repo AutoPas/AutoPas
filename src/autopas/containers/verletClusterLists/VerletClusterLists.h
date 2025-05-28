@@ -55,7 +55,13 @@ namespace autopas {
 template <class Particle_T>
 class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public internal::ParticleDeletedObserver {
  public:
+  /**
+   * Type of the Particle.
+   */
   using ParticleType = Particle_T;
+  /**
+   * Type of the ParticleCell which refers to the cluster towers.
+   */
   using ParticleCellType = internal::ClusterTower<Particle_T>;
 
   /**
@@ -90,7 +96,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skin, size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<ParticleType>(skin),
+      : ParticleContainerInterface<Particle_T>(skin),
         _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
@@ -145,7 +151,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
           "VerletClusterLists::computeInteractions(): Trying to do a pairwise iteration, even though verlet lists are "
           "not valid.");
     }
-    auto *traversalInterface = dynamic_cast<VCLTraversalInterface<ParticleType> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCLTraversalInterface<Particle_T> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
       traversalInterface->setTowers(_towerBlock.getTowersRef());
@@ -175,17 +181,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * in.
    * @param p The particle to add.
    */
-  void addParticleImpl(const ParticleType &p) override {
+  void addParticleImpl(const Particle_T &p) override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const Particle_T &haloParticle) override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
-  bool updateHaloParticle(const ParticleType &haloParticle) override {
+  bool updateHaloParticle(const Particle_T &haloParticle) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto &haloPos = haloParticle.getR();
@@ -248,13 +254,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     }
   }
 
-  std::tuple<const ParticleType *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  std::tuple<const ParticleType *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
@@ -277,7 +283,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const ParticleType *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
                                                                    IteratorBehavior iteratorBehavior,
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const {
@@ -336,12 +342,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
     }
-    const ParticleType *retPtr = &_towerBlock[cellIndex][particleIndex];
+    const Particle_T *retPtr = &_towerBlock[cellIndex][particleIndex];
 
     return {retPtr, cellIndex, particleIndex};
   }
 
-  bool deleteParticle(ParticleType &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the clusters' references.
     internal::markParticleAsDeleted(particle);
     return false;
@@ -353,7 +359,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     return false;
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+  [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
@@ -372,11 +378,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     }
 
     // next find invalid particles
-    std::vector<ParticleType> invalidParticles;
+    std::vector<Particle_T> invalidParticles;
 
     // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
     AUTOPAS_OPENMP(declare reduction(
-        vecMergeParticle : std::vector<ParticleType> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+        vecMergeParticle : std::vector<Particle_T> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
     AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : invalidParticles)) {
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
@@ -404,9 +410,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
@@ -418,13 +424,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
       // from LogicHandler.
-      return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+      return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType additionalVectorsToPass;
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<ParticleType, true, false>(*this, behavior, &additionalVectorsToPass);
+      return ContainerIterator<Particle_T, true, false>(*this, behavior, &additionalVectorsToPass);
     }
   }
 
@@ -432,9 +438,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version.
    */
-  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
@@ -447,13 +453,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
       // from LogicHandler.
-      return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+      return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType additionalVectorsToPass;
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<ParticleType, false, false>(*this, behavior, &additionalVectorsToPass);
+      return ContainerIterator<Particle_T, false, false>(*this, behavior, &additionalVectorsToPass);
     }
   }
 
@@ -558,9 +564,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
@@ -572,13 +578,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
       // from LogicHandler.
-      return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+      return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType additionalVectorsToPass;
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<ParticleType, true, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
+      return ContainerIterator<Particle_T, true, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
                                                          higherCorner);
     }
   }
@@ -587,9 +593,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version.
    */
-  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
           nullptr) const override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
@@ -603,14 +609,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
       // from LogicHandler.
-      return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner,
+      return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner,
                                                           higherCorner);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType additionalVectorsToPass;
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<ParticleType, false, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
+      return ContainerIterator<Particle_T, false, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
                                                           higherCorner);
     }
   }
@@ -778,7 +784,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     }
     _builder->rebuildNeighborListsAndFillClusters();
 
-    auto *clusterTraversalInterface = dynamic_cast<VCLTraversalInterface<ParticleType> *>(traversal);
+    auto *clusterTraversalInterface = dynamic_cast<VCLTraversalInterface<Particle_T> *>(traversal);
     if (clusterTraversalInterface) {
       if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
         calculateClusterThreadPartition();
@@ -912,7 +918,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param y The y-th tower in y direction.
    * @return a reference to the tower for the given tower grid coordinates.
    */
-  internal::ClusterTower<ParticleType> &getTowerByIndex(size_t x, size_t y) {
+  internal::ClusterTower<Particle_T> &getTowerByIndex(size_t x, size_t y) {
     return _towerBlock.getTowerByIndex2D(x, y);
   }
 
@@ -923,7 +929,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    *
    * @return
    */
-  internal::ClusterTowerBlock2D<ParticleType> &getTowerBlock() { return _towerBlock; }
+  internal::ClusterTowerBlock2D<Particle_T> &getTowerBlock() { return _towerBlock; }
 
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _towerBlock.getBoxMax(); }
 
@@ -965,7 +971,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * Get the neighbor lists buffer object.
    * @return
    */
-  const typename internal::VerletClusterListsRebuilder<ParticleType>::NeighborListsBuffer_T &getNeighborLists() const {
+  const typename internal::VerletClusterListsRebuilder<Particle_T>::NeighborListsBuffer_T &getNeighborLists() const {
     return _neighborLists;
   }
 
@@ -988,7 +994,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     });
 
     const double interactionLength = _cutoff + this->_skin;
-    _builder = std::make_unique<internal::VerletClusterListsRebuilder<ParticleType>>(
+    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle_T>>(
         _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3);
 
     _numClusters = _builder->rebuildTowersAndClusters();
@@ -1213,7 +1219,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     return {cellIndex, particleIndex};
   }
 
-  internal::ClusterTowerBlock2D<ParticleType> _towerBlock;
+  internal::ClusterTowerBlock2D<Particle_T> _towerBlock;
 
   /**
    * load estimation algorithm for balanced traversals.
@@ -1235,7 +1241,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * Outer vector is for Thread buffer to allow parallel particle insertion.
    * This has to be a mutable so we can call appendBuffersHelper() from const and non-const functions.
    */
-  mutable std::vector<std::vector<ParticleType>> _particlesToAdd;
+  mutable std::vector<std::vector<Particle_T>> _particlesToAdd;
 
   /**
    * Checks if there are particles in the buffers of _particlesToAdd.
@@ -1303,12 +1309,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   /**
    * The builder for the verlet cluster lists.
    */
-  std::unique_ptr<internal::VerletClusterListsRebuilder<ParticleType>> _builder;
+  std::unique_ptr<internal::VerletClusterListsRebuilder<Particle_T>> _builder;
 
   /**
    * Structure to provide persistent memory for neighbor lists. Will be filled by the builder.
    */
-  typename internal::VerletClusterListsRebuilder<ParticleType>::NeighborListsBuffer_T _neighborLists{};
+  typename internal::VerletClusterListsRebuilder<Particle_T>::NeighborListsBuffer_T _neighborLists{};
 };
 
 }  // namespace autopas

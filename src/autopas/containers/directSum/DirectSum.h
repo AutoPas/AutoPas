@@ -92,12 +92,12 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticleImpl(const ParticleType &p) override { getOwnedCell().addParticle(p); }
+  void addParticleImpl(const Particle_T &p) override { getOwnedCell().addParticle(p); }
 
   /**
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const Particle_T &haloParticle) override {
     const auto boxMax = this->getBoxMax();
     const auto boxMin = this->getBoxMin();
     const auto pos = haloParticle.getR();
@@ -116,7 +116,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(const ParticleType &haloParticle) override {
+  bool updateHaloParticle(const Particle_T &haloParticle) override {
     const auto boxMax = this->getBoxMax();
     const auto boxMin = this->getBoxMin();
     const auto pos = haloParticle.getR();
@@ -155,15 +155,15 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     traversal->endTraversal();
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+  [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
-      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+      return LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
     getOwnedCell().deleteDummyParticles();
 
-    std::vector<ParticleType> invalidParticles{};
+    std::vector<Particle_T> invalidParticles{};
     auto &particleVec = getOwnedCell()._particles;
     for (auto iter = particleVec.begin(); iter != particleVec.end();) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
@@ -192,17 +192,23 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
         this->getCutoff(), this->getBoxMax() - this->getBoxMin(), 0);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+  /**
+ * @copydoc autopas::ParticleContainerInterface::begin()
+ */
+  [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+  /**
+ * @copydoc autopas::ParticleContainerInterface::begin()
+ */
+  [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+    return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -243,17 +249,23 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     }
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+  /**
+ * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+ */
+  [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+  /**
+ * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+ */
+  [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -313,6 +325,9 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::deleteParticle()
+   */
   bool deleteParticle(Particle_T &particle) override {
     // swap-delete helper function
     auto swapDelFromCell = [&](auto &particleCell) -> bool {

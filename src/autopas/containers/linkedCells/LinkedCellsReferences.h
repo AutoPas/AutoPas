@@ -77,7 +77,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticleImpl(const ParticleType &p) override {
+  void addParticleImpl(const Particle_T &p) override {
     addParticleLock.lock();
     _particleList.push_back(p);
     updateDirtyParticleReferences();
@@ -87,7 +87,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const Particle_T &haloParticle) override {
     addParticleLock.lock();
     _particleList.push_back(haloParticle);
     updateDirtyParticleReferences();
@@ -97,7 +97,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(const ParticleType &haloParticle) override {
+  bool updateHaloParticle(const Particle_T &haloParticle) override {
     auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
@@ -283,24 +283,30 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     return {retPtr, cellIndex, particleIndex};
   }
 
+  /**
+* @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
+*/
   bool deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(particle);
     return false;
   }
 
+  /**
+* @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
+*/
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
     return false;
   }
 
-  std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+  std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
 
-    std::vector<ParticleType> invalidParticles;
+    std::vector<Particle_T> invalidParticles;
 
     // for exception handling in parallel region
     bool exceptionCaught{false};
@@ -308,7 +314,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
     AUTOPAS_OPENMP(parallel) {
       // private for each thread!
-      std::vector<ParticleType> myInvalidParticles, myInvalidNotOwnedParticles;
+      std::vector<Particle_T> myInvalidParticles, myInvalidNotOwnedParticles;
       AUTOPAS_OPENMP(for)
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
@@ -388,17 +394,23 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                  this->getCellBlock().getCellLength(), 0);
   }
 
-  ContainerIterator<ParticleType, true, false> begin(
+  /**
+* @copydoc ParticleContainerInterface::begin()
+*/
+  ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
   }
 
-  ContainerIterator<ParticleType, false, false> begin(
+  /**
+* @copydoc ParticleContainerInterface::begin()
+*/
+  ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+    return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -435,17 +447,23 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+  /**
+* @copydoc ParticleContainerInterface::getRegionIterator()
+*/
+  [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+  /**
+* @copydoc ParticleContainerInterface::getRegionIterator()
+*/
+  [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -601,7 +619,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * object that stores the actual Particles and keeps track of the references.
    */
-  ParticleVector<ParticleType> _particleList;
+  ParticleVector<Particle_T> _particleList;
   /**
    * object to manage the block of cells.
    */
