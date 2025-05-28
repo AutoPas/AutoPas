@@ -82,16 +82,16 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
- * @copydoc ParticleContainerInterface::addHaloParticleImpl()
- */
+   * @copydoc ParticleContainerInterface::addHaloParticleImpl()
+   */
   void addHaloParticleImpl(const Particle_T &haloParticle) override {
     ParticleCellType &cell = _cellBlock.getContainingCell(haloParticle.getR());
     cell.addParticle(haloParticle);
   }
 
   /**
- * @copydoc ParticleContainerInterface::updateHaloParticle()
- */
+   * @copydoc ParticleContainerInterface::updateHaloParticle()
+   */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
     auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
@@ -105,8 +105,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
- * @copydoc ParticleContainerInterface::deleteHaloParticles()
- */
+   * @copydoc ParticleContainerInterface::deleteHaloParticles()
+   */
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -208,14 +208,14 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const override {
+                                                             IteratorBehavior iteratorBehavior,
+                                                             const std::array<double, 3> &boxMin,
+                                                             const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
 
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior) const override {
+                                                             IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -238,9 +238,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    */
   template <bool regionIter>
   std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
-                                                                   IteratorBehavior iteratorBehavior,
-                                                                   const std::array<double, 3> &boxMin,
-                                                                   const std::array<double, 3> &boxMax) const {
+                                                                 IteratorBehavior iteratorBehavior,
+                                                                 const std::array<double, 3> &boxMin,
+                                                                 const std::array<double, 3> &boxMax) const {
     using namespace autopas::utils::ArrayMath::literals;
 
     std::array<double, 3> boxMinWithSafetyMargin = boxMin;
@@ -297,8 +297,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
- * @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
- */
+   * @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
+   */
   bool deleteParticle(Particle_T &particle) override {
     // deduce into which vector the reference points
     auto &particleVec = _cellBlock.getContainingCell(particle.getR())._particles;
@@ -310,8 +310,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
- * @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
- */
+   * @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
+   */
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
     auto &particleVec = this->_cells[cellIndex]._particles;
     auto &particle = particleVec[particleIndex];
@@ -322,8 +322,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
- * @copydoc ParticleContainerInterface::begin()
- */
+   * @copydoc ParticleContainerInterface::begin()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
@@ -331,8 +331,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
- * @copydoc ParticleContainerInterface::begin()
- */
+   * @copydoc ParticleContainerInterface::begin()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
@@ -385,8 +385,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
- * @copydoc ParticleContainerInterface::getRegionIterator()
- */
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
@@ -394,8 +394,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   /**
-* @copydoc ParticleContainerInterface::getRegionIterator()
-*/
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =

@@ -209,8 +209,7 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] ContainerIterator<Particle_T, false, false> cbegin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
-          nullptr) const {
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {
     return begin(behavior, additionalVectors);
   }
 

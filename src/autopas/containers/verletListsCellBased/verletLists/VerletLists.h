@@ -121,7 +121,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                           this->getCutoff() + this->getVerletSkin());
+                                                                         this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;

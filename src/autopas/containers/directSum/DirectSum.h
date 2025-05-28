@@ -193,8 +193,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   }
 
   /**
- * @copydoc autopas::ParticleContainerInterface::begin()
- */
+   * @copydoc autopas::ParticleContainerInterface::begin()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
@@ -202,8 +202,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   }
 
   /**
- * @copydoc autopas::ParticleContainerInterface::begin()
- */
+   * @copydoc autopas::ParticleContainerInterface::begin()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
@@ -250,8 +250,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   }
 
   /**
- * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
- */
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
@@ -259,8 +259,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   }
 
   /**
- * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
- */
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+   */
   [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =

@@ -255,13 +255,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   }
 
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const override {
+                                                             IteratorBehavior iteratorBehavior,
+                                                             const std::array<double, 3> &boxMin,
+                                                             const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior) const override {
+                                                             IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -284,9 +284,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   template <bool regionIter>
   std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
-                                                                   IteratorBehavior iteratorBehavior,
-                                                                   const std::array<double, 3> &boxMin,
-                                                                   const std::array<double, 3> &boxMax) const {
+                                                                 IteratorBehavior iteratorBehavior,
+                                                                 const std::array<double, 3> &boxMin,
+                                                                 const std::array<double, 3> &boxMax) const {
     using namespace autopas::utils::ArrayMath::literals;
 
     // in this context cell == tower
@@ -585,7 +585,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       typename ContainerIterator<Particle_T, true, true>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
       return ContainerIterator<Particle_T, true, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
-                                                         higherCorner);
+                                                       higherCorner);
     }
   }
 
@@ -609,15 +609,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
       // from LogicHandler.
-      return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner,
-                                                          higherCorner);
+      return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle_T, false, true>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
       return ContainerIterator<Particle_T, false, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
-                                                          higherCorner);
+                                                        higherCorner);
     }
   }
 
