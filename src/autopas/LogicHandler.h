@@ -1826,7 +1826,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
 #ifdef AUTOPAS_LOG_LIVEINFO
-  info.gather(_container, functor, _neighborListRebuildFrequency);
+  info.gather(*_currentContainer, functor, _neighborListRebuildFrequency);
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
