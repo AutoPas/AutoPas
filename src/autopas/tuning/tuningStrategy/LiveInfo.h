@@ -78,11 +78,11 @@ class LiveInfo {
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
    */
   template <class Particle_T, class PairwiseFunctor>
-  void gather(const autopas::ParticleContainerInterface<Particle_T> &container, const PairwiseFunctor &functor,
+  void gather(const ParticleContainerInterface<Particle_T> &container, const PairwiseFunctor &functor,
               unsigned int rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
-    using autopas::utils::ArrayMath::ceilToInt;
-    using autopas::utils::ArrayMath::floorToInt;
+    using utils::ArrayMath::ceilToInt;
+    using utils::ArrayMath::floorToInt;
 
     // Some aliases for quicker access
     const auto &boxMin = container.getBoxMin();
