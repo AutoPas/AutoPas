@@ -374,12 +374,12 @@ bool AutoTuner::isStartOfTuningPhase() const {
   return (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
 }
 
-bool AutoTuner::tuningPhaseAboutToBegin() const {
-  return _iteration % _tuningInterval > _tuningInterval - 10;
-}
+bool AutoTuner::tuningPhaseAboutToBegin() const { return _iteration % _tuningInterval > _tuningInterval - 10; }
 
-bool AutoTuner::needsLiveInfo() const { return (isStartOfTuningPhase() and _needsLiveInfo) or
-  (tuningPhaseAboutToBegin() and _needsDomainSimilarityStatistics); }
+bool AutoTuner::needsLiveInfo() const {
+  return (isStartOfTuningPhase() and _needsLiveInfo) or
+         (tuningPhaseAboutToBegin() and _needsDomainSimilarityStatistics);
+}
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 
@@ -413,7 +413,6 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
                "Due to a forced retune, domain similarity statistics, used by at least one tuning strategy, may"
                "not be correct.");
   }
-
 }
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
