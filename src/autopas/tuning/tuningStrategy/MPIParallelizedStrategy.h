@@ -53,12 +53,12 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
 
-  void receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity) override;
+  void receiveDomainSimilarityStatistics(double pdBinStdDevDensity, double pdBinMaxDensity) override;
 
   bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
-  [[nodiscard]] inline bool needsSmoothedHomogeneityAndMaxDensity() const override;
+  [[nodiscard]] inline bool needsDomainSimilarityStatistics() const override;
 
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
@@ -82,16 +82,16 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
  private:
   /**
-   * The smoothed homogeneity of the whole simulation.
-   * See SimilarityFunctions::calculateHomogeneityAndMaxDensity().
+   * The smoothed standard-deviation of the particle-dependent bin densities for this AutoPas container's box.
+   * See LiveInfo::gather().
    */
-  double _smoothedHomogeneity{-1.};
+  double _smoothedPDBinStdDevDensity{-1.};
 
   /**
-   * The maximal density throughout the whole domain.
-   * See SimilarityFunctions::calculateHomogeneityAndMaxDensity().
+   * The smoothed maximum particle-dependent bin density for this AutoPas container's box.
+   * See LiveInfo::gather().
    */
-  double _maxDensity{-1.};
+  double _smoothedPDBinMaxDensity{-1.};
 
   /**
    * The tuning strategy tuning locally
@@ -124,7 +124,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    */
   double _mpiTuningMaxDifferenceForBucket;
   /**
-   * Weight for maxDensity in the calculation for bucket distribution.
+   * Weight for pdBinMaxDensity in the calculation for bucket distribution.
    */
   double _mpiTuningWeightForMaxDensity;
   /**
