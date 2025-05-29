@@ -30,7 +30,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
       _earlyStoppingFactor(autoTunerInfo.earlyStoppingFactor),
-      _needsHomogeneityAndMaxDensity(
+      _needsDomainSimilarityStatistics(
           std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                 [](auto &tuningStrat) { return tuningStrat->needsDomainSimilarityStatistics(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
@@ -42,8 +42,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
       _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
-  _homogeneitiesOfLastTenIterations.reserve(10);
-  _maxDensitiesOfLastTenIterations.reserve(10);
+  _pdBinDensityStdDevOfLastTenIterations.reserve(10);
+  _pdBinMaxDensityOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
@@ -56,10 +56,9 @@ AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
   return *this;
 }
 
-void AutoTuner::addDomainSimilarityStatistics(double homogeneity, double maxDensity, long time) {
-  _homogeneitiesOfLastTenIterations.push_back(homogeneity);
-  _maxDensitiesOfLastTenIterations.push_back(maxDensity);
-  _timerCalculateHomogeneity.addTime(time);
+void AutoTuner::addDomainSimilarityStatistics(double pdBinDensityStdDev, double pdBinMaxDensity) {
+  _pdBinDensityStdDevOfLastTenIterations.push_back(pdBinDensityStdDev);
+  _pdBinMaxDensityOfLastTenIterations.push_back(pdBinMaxDensity);
 }
 
 void AutoTuner::logTuningResult(bool tuningIteration, long tuningTime) const {
@@ -375,47 +374,12 @@ bool AutoTuner::isStartOfTuningPhase() const {
   return (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
 }
 
-void AutoTuner::sendDomainSimilarityStatisticsAtStartOfTuningPhase() {
-  // first tuning iteration -> send statistics to tuning strategies and reset _homogeneitiesOfLastTenIterations and
-  // _maxDensitiesOfLastTenIterations.
-  if (isStartOfTuningPhase() and _needsHomogeneityAndMaxDensity) {
-    // If needed, calculate homogeneity and maxDensity, and reset buffers.
-    const auto [homogeneity, maxDensity] = [&]() {
-      const auto retTuple = std::make_tuple(OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
-                                            OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations));
-      _homogeneitiesOfLastTenIterations.clear();
-      _maxDensitiesOfLastTenIterations.clear();
-      AutoPasLog(DEBUG, "Calculating domain similarity statistics over 10 iterations took in total {} ns on rank {}.",
-                 _timerCalculateHomogeneity.getTotalTime(), []() {
-                   int rank{0};
-                   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-                   return rank;
-                 });
-      return retTuple;
-    }();
-
-    // pass homogeneity and maxDensity info if needed
-    for (const auto &tuningStrat : _tuningStrategies) {
-      tuningStrat->receiveDomainSimilarityStatistics(homogeneity, maxDensity);
-    }
-
-    if (_forceRetune) {
-      // If we have sent statistics because of a forced retune, throw a warning
-      AutoPasLog(WARN,
-                 "Due to a forced retune, domain similarity statistics, used by at least one tuning strategy, may"
-                 "not be correct.");
-    }
-  }
+bool AutoTuner::tuningPhaseAboutToBegin() const {
+  return _iteration % _tuningInterval > _tuningInterval - 10;
 }
 
-bool AutoTuner::needsDomainSimilarityStatistics() const {
-  // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
-  constexpr size_t numIterationsForHomogeneity = 10;
-  return _needsHomogeneityAndMaxDensity and
-         _iteration % _tuningInterval > _tuningInterval - numIterationsForHomogeneity;
-}
-
-bool AutoTuner::needsLiveInfo() const { return isStartOfTuningPhase() and _needsLiveInfo; }
+bool AutoTuner::needsLiveInfo() const { return (isStartOfTuningPhase() and _needsLiveInfo) or
+  (tuningPhaseAboutToBegin() and _needsDomainSimilarityStatistics); }
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 
@@ -424,9 +388,32 @@ const std::vector<std::unique_ptr<TuningStrategyInterface>> &AutoTuner::getTunin
 }
 
 void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
-  for (auto &tuningStrategy : _tuningStrategies) {
-    tuningStrategy->receiveLiveInfo(liveInfo);
+  // Handle Live Info processing before the tuning phase
+  if (_needsDomainSimilarityStatistics and tuningPhaseAboutToBegin()) {
+    const auto particleDependentBinDensityStdDev = liveInfo.get<double>("particleDependentBinDensityStdDev");
+    const auto particleDependentBinMaxDensity = liveInfo.get<double>("particleDependentBinMaxDensity");
+    addDomainSimilarityStatistics(particleDependentBinDensityStdDev, particleDependentBinMaxDensity);
   }
+  // Handling at start of tuning phase
+  if ((_needsLiveInfo or _needsDomainSimilarityStatistics) and isStartOfTuningPhase()) {
+    for (auto &tuningStrategy : _tuningStrategies) {
+      if (tuningStrategy->needsLiveInfo()) {
+        tuningStrategy->receiveLiveInfo(liveInfo);
+      }
+      if (tuningStrategy->needsDomainSimilarityStatistics()) {
+        const auto pdBinDensityStdDevSmoothed = OptimumSelector::medianValue(_pdBinDensityStdDevOfLastTenIterations);
+        const auto pdBinMaxDensitySmoothed = OptimumSelector::medianValue(_pdBinMaxDensityOfLastTenIterations);
+        tuningStrategy->receiveDomainSimilarityStatistics(pdBinDensityStdDevSmoothed, pdBinMaxDensitySmoothed);
+      }
+    }
+  }
+  if (_needsDomainSimilarityStatistics and _forceRetune and isStartOfTuningPhase()) {
+    // If we have sent statistics because of a forced retune, throw a warning
+    AutoPasLog(WARN,
+               "Due to a forced retune, domain similarity statistics, used by at least one tuning strategy, may"
+               "not be correct.");
+  }
+
 }
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
