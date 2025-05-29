@@ -140,7 +140,7 @@ class PairwiseInterpolantFunctor
         double node = std::cos(x);
         double d = mapToInterval(node, a, b);
 
-        double value = _kernel.calculate(d);
+        double value = _kernel.calculatePairDerivative(d);
         values[i] = value;
       }
 
@@ -227,7 +227,7 @@ class PairwiseInterpolantFunctor
     auto f = dr * fac;
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-    double real_fac = _kernel.calculate(d);
+    double real_fac = _kernel.calculatePairDerivative(d);
     interpolationError = std::abs(real_fac - fac);
     if (real_fac != 0.) {
       relInterpolationError = std::abs(interpolationError / real_fac);

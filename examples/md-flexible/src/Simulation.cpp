@@ -890,6 +890,12 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption3B::krypton: {
+
+    }
+    case MDFlexConfig::FunctorOption3B::argon: {
+
+    }
     default: {
       throw std::runtime_error("Unknown triwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption3B.value)));

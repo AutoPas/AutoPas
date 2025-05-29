@@ -96,7 +96,7 @@ class AbInitioKryptonPairFunctor
 
     // Pre calculations
     const double dist = std::sqrt(dist2);
-    double fac = _kryptonKernel.calculate(dist);
+    double fac = _kryptonKernel.calculatePairDerivative(dist);
     auto f = displacement * fac;
 
     i.addF(f);

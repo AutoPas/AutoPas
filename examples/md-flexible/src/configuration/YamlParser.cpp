@@ -246,6 +246,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
         if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+        } if (strArg.find("argon") != std::string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::argon;
+        } if (strArg.find("krypton") != std::string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::krypton;
         } else {
           throw std::runtime_error("Unrecognized triwise functor!");
         }

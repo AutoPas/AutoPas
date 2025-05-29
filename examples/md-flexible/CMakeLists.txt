@@ -18,6 +18,7 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsL
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT "Compile Pairwise Interpolant Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT "Compile Triwise Interpolant Functor." ON)
 option(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY "Compile for Interpolant Accuracy Benchmarking." ON)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
@@ -33,6 +34,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT}>:MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT}>:MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT>
         $<$<BOOL:${MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY}>:MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY>
 )
 

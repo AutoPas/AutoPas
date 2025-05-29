@@ -7,19 +7,19 @@
 
 #pragma once
 
-#include "PairwiseKernel.h"
+#include "Kernel.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace mdLib {
 
-class ArgonKernel : public PairwiseKernel<ArgonKernel> {
+class ArgonKernel : public Kernel<ArgonKernel> {
  public:
   explicit ArgonKernel()
-      : PairwiseKernel<ArgonKernel>(){
+      : Kernel<ArgonKernel>(){
 
         };
 
-  double calculateDerivative(double dr) final {
+  double calculatePairDerivative(double dr) final {
     const double dr2 = dr * dr;
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -91,7 +91,7 @@ class ArgonKernel : public PairwiseKernel<ArgonKernel> {
     return firstTerm + secondTerm;
   }
 
-  double calculate(double dr) final {
+  double calculatePair(double dr) final {
     const double dr2 = dr * dr;
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -158,6 +158,10 @@ class ArgonKernel : public PairwiseKernel<ArgonKernel> {
     const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16);
 
     return firstTerm - secondTerm;
+  }
+
+  double calculateTriplet(double dr1, double dr2, double dr3) {
+    return 0.;
   }
 
  private:

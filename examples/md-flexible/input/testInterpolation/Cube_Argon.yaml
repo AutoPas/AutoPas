@@ -2,7 +2,7 @@
 ## md-flexible compiled for multi-site molecules.
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  1.0
+verlet-skin-radius               :  0.25
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -12,11 +12,11 @@ tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  argon
-interpolation-nodes              :  [18, 16]
-interpolation-splits             :  [0.7]
+interpolation-nodes              :  [16, 16]
+interpolation-splits             :  [0.6]
 interpolation-start              :  0.3
 newton3                          :  [disabled, enabled]
-cutoff                           :  1.25
+cutoff                           :  1.75
 box-min                          :  [0, 0, 0]
 box-max                          :  [50, 50, 50]
 cell-size                        :  [1]
@@ -51,9 +51,9 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Cube_Argon_interpolated
+vtk-filename                     :  Cube_Argon
 vtk-write-frequency              :  500
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  debug
-log-file                         :  log_argon.out
+log-file                         :  log_argon_interpolation_derivative_0,6_16_16_benchmark.out

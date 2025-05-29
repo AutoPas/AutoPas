@@ -7,21 +7,25 @@
 
 #pragma once
 
-#include "PairwiseKernel.h"
+#include "Kernel.h"
 
 namespace mdLib {
 
-class LJKernel : public PairwiseKernel<LJKernel> {
+class LJKernel : public Kernel<LJKernel> {
  public:
-  explicit LJKernel(ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary) : PairwiseKernel<LJKernel>() {
+  explicit LJKernel(ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary) : Kernel<LJKernel>() {
     _PPLibrary = &particlePropertiesLibrary;
   };
 
-  double calculateDerivative(double dr) final {
+  double calculatePairDerivative(double dr) final {
     return 0.;
   }
 
-  double calculate(double dr) final {
+  double calculateTriplet(double dr1, double dr2, double dr3) final {
+    return 0.;
+  }
+
+  double calculatePair(double dr) final {
     double dr2 = dr * dr;
     double invdr2 = 1. / dr2;
     double lj6 = _PPLibrary->getMixingSigmaSquared(0, 0) * invdr2;

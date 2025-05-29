@@ -352,6 +352,14 @@ std::string MDFlexConfig::to_string() const {
         os << "Axilrod-Teller" << endl;
         break;
       }
+      case FunctorOption3B::argon: {
+        os << "Argon Triwise" << endl;
+        break;
+      }
+      case FunctorOption3B::krypton: {
+        os << "Krypton Triwise" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions3B, -indentWidth);

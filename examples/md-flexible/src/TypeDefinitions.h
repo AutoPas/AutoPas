@@ -29,6 +29,10 @@
 #include "molecularDynamicsLibrary/interpolationKernels/LJKernel.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
+#include "molecularDynamicsLibrary/TriwiseInterpolantFunctor.h"
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #endif
@@ -111,6 +115,15 @@ using ArgonPairInterpolantFunctorType =
 using KryptonPairInterpolantFunctorType =
     mdLib::PairwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                       mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
+    using ArgonTripletInterpolantFunctorType =
+    mdLib::TriwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, true, autopas::FunctorN3Modes::Both,
+                                    mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+    using KryptonTripletInterpolantFunctorType =
+    mdLib::TriwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, true, autopas::FunctorN3Modes::Both,
+                                    mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 using ArgonPairAbInitioFunctorType =

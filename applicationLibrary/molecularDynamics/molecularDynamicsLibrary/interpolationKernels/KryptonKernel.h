@@ -7,19 +7,19 @@
 
 #pragma once
 
-#include "PairwiseKernel.h"
+#include "Kernel.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace mdLib {
 
-class KryptonKernel : public PairwiseKernel<KryptonKernel> {
+class KryptonKernel : public Kernel<KryptonKernel> {
  public:
   explicit KryptonKernel()
-      : PairwiseKernel<KryptonKernel>(){
+      : Kernel<KryptonKernel>(){
 
         };
 
-  double calculateDerivative(double dr) final {
+  double calculatePairDerivative(double dr) final {
     const double dr2 = dr * dr;
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -92,7 +92,7 @@ class KryptonKernel : public PairwiseKernel<KryptonKernel> {
                                : _constATilde * distInv2 * std::exp(-_alphaTilde * dr) * (distInv + _alphaTilde));
   }
 
-  double calculate(double dr) final {
+  double calculatePair(double dr) final {
     const double dr2 = dr * dr;
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -103,7 +103,7 @@ class KryptonKernel : public PairwiseKernel<KryptonKernel> {
     const double distNeg14 = distNeg12 * distInv2;
     const double distNeg16 = distNeg14 * distInv2;
 
-    const double firstTerm = _constA * std::exp(_alpha1*dr + _alpha2*dr2 + _alpha1*distInv);
+    const double firstTerm = _constA * std::exp(_alpha1*dr + _alpha2*dr2 + _alphaInv1*distInv);
 
     const double bdist = _constb * dr;
     const double bdist2 = bdist * bdist;
@@ -159,6 +159,10 @@ class KryptonKernel : public PairwiseKernel<KryptonKernel> {
     const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16);
 
     return firstTerm - secondTerm;
+  }
+
+  double calculateTriplet(double dr1, double dr2, double dr3) {
+    return 0.;
   }
 
  private:

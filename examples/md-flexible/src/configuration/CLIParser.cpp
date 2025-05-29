@@ -315,6 +315,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.functorOption3B)::getoptChar: {
         if (strArg.find("at") != string::npos or strArg.find("axi") != string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+        } if (strArg.find("argon") != string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::argon;
+        } if (strArg.find("krypton") != string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::krypton;
         } else {
           cerr << "Unknown triwise functor: " << strArg << endl;
           cerr << "Please use 'Axilrod-Teller'" << endl;
