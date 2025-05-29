@@ -161,8 +161,8 @@ class LiveInfo {
    * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
    * cell-bins contain roughly the same number of particles. Estimation does not work well if this is not the case.
    * ---- Particle Dependent Bin Statistics ----
-   * - particleDependentBinMaxDensity: The maximum density of particles in a particle-dependent bin.
-   * - particleDependentBinDensityStdDev: The standard deviation in the density of particles in a particle-dependent
+   * - particleDependentBinMaxDensity: The maximum density of particles of a particle-dependent bin.
+   * - particleDependentBinDensityStdDev: The standard deviation in the density of particles per particle-dependent
    * bin. In earlier versions of AutoPas, this was referred to as "Homogeneity".
    * ---- Blurred Bin Statistics ----
    * - maxParticlesPerBlurredBin: The maximum number of particles in a blurred bin.
