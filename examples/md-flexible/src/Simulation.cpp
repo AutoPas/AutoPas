@@ -211,6 +211,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         throw std::runtime_error("The number of iterations must be divisible by the respa-stepsize");
       }
     }
+
+    if (not _configuration.lutInputFile.value.empty() and _configuration.useApproxForceRespa.value) {
+      throw std::runtime_error("Can not use LuT CG forces and approximate forces at the same time!");
+    }
   }
 
   _timers.initialization.stop();
@@ -250,6 +254,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     _lut->computeDerivatives();
     _cgSimulation = true;
   }
+
+  if (_configuration.useApproxForceRespa.value) {
+    _cgSimulation = true;
+  }
 }
 
 void Simulation::finalize() {
@@ -274,8 +282,11 @@ void Simulation::run() {
 
   auto respaActive = _configuration.respaStepSize.value > 1;
 
-  RotationalAnalysis rotationalAnalysis(_configuration.rotationalAnalysisLagSteps.value,
-                                        _configuration.rotationalAnalysisStepInterval.value);
+  RotationalAnalysis rotationalAnalysis;
+  if (_configuration.rotationalAnalysisLagSteps.value > 0) {
+    rotationalAnalysis.setValues(_configuration.rotationalAnalysisLagSteps.value,
+                                 _configuration.rotationalAnalysisStepInterval.value);
+  }
 
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -403,9 +414,9 @@ void Simulation::run() {
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities(respaActive and nextIsRespaIteration and ibiConvergenceReached);
 #if MD_FLEXIBLE_MODE == MULTISITE
-      if (not respaStarted) {
-        updateAngularVelocities(false);
-      }
+      // if (not respaStarted) {
+      updateAngularVelocities(false);
+      //}
 #endif
       if (_configuration.useThermostat.value) {
         if ((not respaActive or not respaStarted) and
@@ -1216,9 +1227,14 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor,
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   if (useCGFunctor) {
-    auto func = LuTFunctorType{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
-    func.setLuT(_lut);
-    return f(func);
+    if (_configuration.useApproxForceRespa.value) {
+      auto func = LJFunctorTypeAutovecApproxMultisite{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
+      return f(func);
+    } else {
+      auto func = LuTFunctorType{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
+      func.setLuT(_lut);
+      return f(func);
+    }
   }
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {

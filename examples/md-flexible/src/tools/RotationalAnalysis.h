@@ -30,8 +30,10 @@ struct Quaternion {
 
 class RotationalAnalysis {
  public:
-  RotationalAnalysis(size_t maxLagSteps, size_t stepInterval) : _maxLagSteps(maxLagSteps), _stepInterval(stepInterval) {
+  void setValues(size_t maxLagSteps, size_t stepInterval) {
     _numLags = maxLagSteps / stepInterval + 1;
+    _maxLagSteps = maxLagSteps;
+    _stepInterval = stepInterval;
     _msdSums.resize(_numLags, 0.0);
     _oacfSums.resize(_numLags, 0.0);
     _counts.resize(_numLags, 0);

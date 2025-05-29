@@ -35,10 +35,11 @@ namespace mdLib {
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true>
+          bool countFLOPs = false, bool relevantForTuning = true, bool useApproxMultisiteForce = true>
 class LJFunctor
-    : public autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3,
-                                                            calculateGlobals, countFLOPs, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle_T,
+                                      LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                countFLOPs, relevantForTuning, useApproxMultisiteForce>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -63,7 +64,7 @@ class LJFunctor
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                       countFLOPs, relevantForTuning>>(cutoff),
+                                                       countFLOPs, relevantForTuning, useApproxMultisiteForce>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -97,12 +98,14 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+                     int subtractForces = 1)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
+    _subtractForces = static_cast<double>(subtractForces);
   }
 
   std::string getName() final { return "LJFunctorAutoVec"; }
@@ -140,6 +143,18 @@ class LJFunctor
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
+
+    if constexpr (useApproxMultisiteForce) {
+      if constexpr (not useMixing) {
+        throw autopas::utils::ExceptionHandler::AutoPasException("Approximate Multisiteforces only work with mixing");
+      }
+      // get number of sites
+      const size_t numSitesA = _PPLibrary->getNumSites(i.getTypeId());
+      const size_t numSitesB = _PPLibrary->getNumSites(j.getTypeId());
+      const double factor = numSitesA * numSitesB;
+      epsilon24 *= factor;
+    }
+
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
@@ -153,7 +168,7 @@ class LJFunctor
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
+    auto f = dr * fac * _subtractForces;
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
@@ -173,7 +188,7 @@ class LJFunctor
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * f;
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+      double potentialEnergy6 = _subtractForces * (epsilon24 * lj12m6 + shift6);
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
@@ -267,7 +282,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -457,7 +474,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -914,7 +933,9 @@ class LJFunctor
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -1219,5 +1240,7 @@ class LJFunctor
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
+
+  double _subtractForces;
 };
 }  // namespace mdLib

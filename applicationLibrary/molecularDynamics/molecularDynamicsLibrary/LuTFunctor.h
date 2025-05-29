@@ -147,7 +147,7 @@ class LuTFunctor
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * force;
-      double potentialEnergy = _lookupTable->interpolateLinearInR(dr2);
+      double potentialEnergy = _lookupTable->interpolateLinearInR(dr2) * _subtractForces;
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;

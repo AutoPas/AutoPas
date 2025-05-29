@@ -689,6 +689,12 @@ class MDFlexConfig {
   MDFlexOption<std::string, __LINE__> rotationalAnalysisOutputFolder{"", "rotational-analysis-output-folder", true,
                                                                      "Foldername for output of MSD_rot ond OACF."};
 
+  /**
+   * useApproxForceRespa
+   */
+  MDFlexOption<bool, __LINE__> useApproxForceRespa{false, "use-approx-force-respa", true,
+                                                   "If an approximate force should be used for CG Respa steps."};
+
   // Options for additional Object Generation on command line
   /**
    * boxLength

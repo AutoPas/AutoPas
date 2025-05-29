@@ -346,6 +346,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.rotationalAnalysisOutputFolder.description;
 
         config.rotationalAnalysisOutputFolder.value = node[key].as<std::string>();
+      } else if (key == config.useApproxForceRespa.name) {
+        expected = "Boolean Value.";
+        description = config.useApproxForceRespa.description;
+
+        config.useApproxForceRespa.value = node[key].as<bool>();
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;
