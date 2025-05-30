@@ -221,8 +221,8 @@ void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
 }
 
 template <class Particle_T>
-std::vector<Particle_T> AutoPas<Particle_T>::updateContainer() {
-  return _logicHandler->updateContainer();
+std::vector<Particle_T> AutoPas<Particle_T>::updateContainer(double maxR) {
+  return _logicHandler->updateContainer(maxR);
 }
 
 template <class Particle_T>

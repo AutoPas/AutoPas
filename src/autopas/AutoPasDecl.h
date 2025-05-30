@@ -128,8 +128,9 @@ class AutoPas {
    * On an update, halo particles are deleted and particles that do no longer belong into the container will be removed
    * and returned.
    * @return A vector of invalid particles that do no longer belong in the current container.
+   * @param Optional: max displacement in the current iteration.
    */
-  [[nodiscard]] std::vector<Particle_T> updateContainer();
+  [[nodiscard]] std::vector<Particle_T> updateContainer(double maxR = 0.);
 
   /**
    * Reserve memory for a given number of particles in the container and logic layers.

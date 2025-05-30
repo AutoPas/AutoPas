@@ -229,7 +229,7 @@ void Simulation::run() {
 #endif
 
       _timers.updateContainer.start();
-      auto emigrants = _autoPasContainer->updateContainer();
+      auto emigrants = _autoPasContainer->updateContainer(/* max displacement in current iteration */ _maxR);
       _timers.updateContainer.stop();
 
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
@@ -436,7 +436,7 @@ void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+      _configuration.globalForce.value, _configuration.fastParticlesThrow.value, _maxR);
   _timers.positionUpdate.stop();
 }
 

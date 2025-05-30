@@ -156,8 +156,9 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::updateContainer()
    */
-  [[nodiscard]] std::vector<Particle_T> updateContainer() {
+  [[nodiscard]] std::vector<Particle_T> updateContainer(double maxR) {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    _maxRSinceRebuild += maxR;
     this->checkNeighborListsInvalidDoDynamicRebuild();
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
@@ -1002,6 +1003,11 @@ class LogicHandler {
    */
   size_t _sortingThreshold;
 
+  /*
+   * Maximum distance travelled by a particle in the current iteration.
+   */
+  double _maxRSinceRebuild{};
+
   /**
    * Reference to the map of AutoTuners which are managed by the AutoPas main interface.
    */
@@ -1158,6 +1164,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
+  /*
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
@@ -1168,6 +1175,8 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
   }
+   */
+  _neighborListInvalidDoDynamicRebuild |= _maxRSinceRebuild >= halfSkinSquare;
 #endif
 }
 
@@ -1262,6 +1271,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     container.rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->resetNeighborListsInvalidDoDynamicRebuild();
+    _maxRSinceRebuild = 0.;
     _numRebuilds++;
     if (not autoTuner.inTuningPhase()) {
       _numRebuildsInNonTuningPhase++;

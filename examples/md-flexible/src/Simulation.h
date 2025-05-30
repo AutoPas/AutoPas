@@ -93,6 +93,11 @@ class Simulation {
   std::ostream *_outputStream;
 
   /**
+   * Maximum distance travelled in the current iteration.
+   */
+   double _maxR{};
+
+  /**
    * Number of completed iterations. Aka. number of current iteration.
    * The first iteration has number 0.
    */

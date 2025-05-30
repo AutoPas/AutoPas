@@ -30,11 +30,12 @@ namespace TimeDiscretization {
  * @param globalForce Base force value to which every particle is reset.
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/rebuildFrequency/2). Does nothing if dynamic containers are enabled.
+ * @param maxR To calculate the maximum distance travelled by a particle in the current iteration.
  */
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow);
+                                      bool fastParticlesThrow, double maxR);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
