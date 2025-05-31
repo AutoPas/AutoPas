@@ -236,8 +236,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   // check if IBI should be used
-  const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
-  if (ibiMeasureSimulation) {
+  if (_configuration.ibiEquilibrateIterations.value > 0) {
     _rdfCG = std::make_shared<RDF>(
         _autoPasContainer, 0, _configuration.rdfRadius.value, _configuration.rdfNumBins.value,
         _configuration.rdfGuardArea.value,
@@ -279,6 +278,7 @@ void Simulation::run() {
   bool ibiConvergenceReached{_cgSimulation ? true : false};
   bool firstRespaIterationSkipped{false};
   bool respaStarted{false};
+  const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
 
   auto respaActive = _configuration.respaStepSize.value > 1;
 
@@ -389,8 +389,8 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
-    if ((not respaActive and not _cgSimulation) or
-        (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation)) {
+    if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
+        (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive)) {
       const auto potentialEnergy = updateInteractionForces(ForceType::FullParticle);
       if (potentialEnergy.has_value()) {
         _potentialEnergy.push_back(potentialEnergy.value());
@@ -414,9 +414,7 @@ void Simulation::run() {
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities(respaActive and nextIsRespaIteration and ibiConvergenceReached);
 #if MD_FLEXIBLE_MODE == MULTISITE
-      // if (not respaStarted) {
       updateAngularVelocities(false);
-      //}
 #endif
       if (_configuration.useThermostat.value) {
         if ((not respaActive or not respaStarted) and
@@ -814,7 +812,7 @@ std::optional<double> Simulation::updateInteractionForces(ForceType forceTypeToC
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
     std::pair<bool, std::optional<double>> wasTuningIterationAndPotentialEnergy =
-        calculatePairwiseForces(forceTypeToCalculate);
+        calculatePairwiseForces(forceTypeToCalculate, subtractForces);
     _currentIterationIsTuningIteration =
         (_currentIterationIsTuningIteration | std::get<0>(wasTuningIterationAndPotentialEnergy));
     if (std::get<1>(wasTuningIterationAndPotentialEnergy).has_value()) {
@@ -1227,6 +1225,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor,
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   if (useCGFunctor) {
+    std::cout << "call CG functor" << std::endl;
     if (_configuration.useApproxForceRespa.value) {
       auto func = LJFunctorTypeAutovecApproxMultisite{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
       return f(func);
@@ -1236,6 +1235,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor,
       return f(func);
     }
   }
+  std::cout << "call FP functor" << std::endl;
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
