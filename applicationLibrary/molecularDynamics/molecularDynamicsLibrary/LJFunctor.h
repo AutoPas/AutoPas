@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "LUT2B.h"
+#include "ParentLUT.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -17,7 +19,6 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "src/LUT.h"
 
 namespace mdLib {
 
@@ -35,7 +36,7 @@ namespace mdLib {
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle_T, bool applyShift = false, bool useMixing = false, bool useLUT = false
+template <class Particle_T, bool applyShift = false, bool useMixing = false, bool useLUT = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctor
@@ -111,13 +112,14 @@ class LJFunctor
 
 
   //added for lut
-    explicit LJFunctor(double cutoff, LUT2B *lut2B =  nullptr,typename std::enable_if<!useMixing, T>::type* = nullptr)
+  template <typename T = void>
+    explicit LJFunctor(double cutoff, LUT2B *lut =  nullptr,typename std::enable_if<!useMixing, T>::type* = nullptr)
       : LJFunctor(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
     if(lut){
-    _lut = lut2B;}}
+    _lut = lut;}}
 
   //end of added for lut
   std::string getName() final { return "LJFunctorAutoVec"; }
@@ -169,7 +171,7 @@ class LJFunctor
         if constexpr (useLUT) {
       // How to check for mixing if useMixing is always enabled?
       AutoPasLog(DEBUG, "Used LUT with {}", dr2);
-      fac = _PPLibrary->_lut.retrieveValues(*this,dr2);
+      fac = _lut->retrieveValues(*this, dr2);
       if (calculateGlobals) {
         // this is a problem
         AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
@@ -186,7 +188,8 @@ class LJFunctor
     lj6 = lj6 * lj6 * lj6;
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    //fac should be defined ones i think this one isnt use then
+    fac = epsilon24 * (lj12 + lj12m6) * invdr2;
 
     }
     auto f = dr * fac;
@@ -209,7 +212,7 @@ class LJFunctor
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * f;
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;   //TODO put this in the LUT
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
@@ -622,6 +625,7 @@ class LJFunctor
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if(useLUT){
+      AutoPasLog(DEBUG, "FILLING LUT IN LJFUNCTOR PLain");
         _lut->fill< decltype(*this) >(*this, _cutoffSquared);
     }
     if (applyShift) {
@@ -669,6 +673,24 @@ class LJFunctor
    * @return useMixing
    */
   constexpr static bool getMixing() { return useMixing; }
+
+
+  // added by me for lut
+  [[nodiscard]] float getLUTValues(double distance2) const {
+    // TOOD why is this hardcoded get the actual one from the mdconfig. save it in the parentLUT
+    // this is force magnitude for true r not r^2 even though distance= r^2
+//    auto sigmaSquared = 1;
+    auto sigmaSquared = _sigmaSquared;
+    auto epsilon24 = _epsilon24;
+    //    auto shift6 = _shift6AoS;
+
+    double invdr2 = 1. / distance2;
+    double lj6 = sigmaSquared * invdr2;
+    lj6 = lj6 * lj6 * lj6;
+    double lj12 = lj6 * lj6;
+    double lj12m6 = lj12 - lj6;
+    return epsilon24 * (lj12 + lj12m6) * invdr2;
+  }
 
   /**
    * Reset the global values.

@@ -221,48 +221,24 @@ auto result = getNextNeighbour(index1, index2, index3);
 
     std::array<double, 3> getNextNeighbour( size_t index1, size_t index2, size_t index3) const {
 
-      //just a function for consistancy, floored values are basically next neighbours
+      //just a function for consistency, floored values are basically next neighbours
       return _lut3B[index1][index2][index3];
 
     }
 
 
-    std::array<double, 3> getHybrid( size_t index1, size_t index2, size_t index3) const {
-
-      auto resultMiddle = _lut3B[index1][index2][index3];
 
 
 
-      auto resultAbove = getNextNeighbour(index1, index2, index3);
+//alternative global LUT
+
+    std::array<double, 2> calculateGlobalFac(  double distSquaredIJ, double distSquaredJK, double distSquaredKI) const {
 
 
-
-      std::array<double, 3> resultBelow {};
-      if(index3 > 0 ){
-        resultBelow = _lut3B[index1][index2][index3-1];
-
-      }else if( index2 >0){
-        resultBelow = _lut3B[index1][index2-1][index3];
-
-      }else {
-        resultBelow = _lut3B[index1 - 1][index2][index3];
-      }
-
-
-
-      // V = alpha *
-      double  alpha, beta,  gamma;
-      //resultAbove = alpha * distance[1] + beta * distance[2] + gamma * distance[3] + delta
-      //note : distance has to be recalulated with the lutfactor like in retrieve value for the other ones +/ - pointdistance
-      //the eigen lib here might already have all the stuff for solving the LGS
-      Eigen::Matrix<double, 3,3> matrix;
-      Eigen::Vector3d v;
-//      matrix <<
-      //wait does this even make sense cause V in lut is vector of 3
-
-
-
-
+      const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+      const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+      const double factor = 3.0 * nu / allDistsTo5;
+      return{allDistsSquared, factor};
 
     }
 
@@ -270,9 +246,102 @@ auto result = getNextNeighbour(index1, index2, index3);
 
 
 
+    template<class Functor>
+    void fill_gobal(const Functor &functor, double cutoffSquared) {
+
+
+      _lut3B_global.resize(_resolution + 1);
+      for (auto a = 0; a <= _resolution; a++) {
+        double distA = _lutCutoff + a * _pointDistance;
+        _lut3B_global[a].resize(a + 1);
+        for (auto b = 0; b <= a; b++) {
+          double distB = _lutCutoff + b * _pointDistance;
+          _lut3B_global[a][b].reserve(b + 1);
+          for (auto c = 0; c <= b; c++) {
+            double distC = _lutCutoff + c * _pointDistance;
+            auto global = calculateGlobalFac(distA, distB, distC);
+            _lut3B_global[a][b].push_back({functor.getLUTValues(distA, distB, distC), global[0], global[1]  });
+
+          }
+        }
+      }
+
+      std::cout << "filled ";
+    }
+
+
+    template <class Functor>
+    [[nodiscard]] std::pair<const std::array<double, 5>, std::array<u_int8_t, 3>> retrieveValues_global(const Functor &functor, double dist1, double dist2, double dist3) const {
+      //    using namespace autopas::utils::ArrayMath::literals;
+      if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
+        return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
+      }
+
+      size_t index1, index2, index3;
+      std::array<u_int8_t,3> order{};  // Array to track the original indices of the distances
+
+      if (dist1 >= dist2 && dist2 >= dist3) {
+        index1 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor );
+        index2 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
+        index3 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
+        order[0] = 0; order[1] = 1; order[2] = 2;
+      } else if (dist1 >= dist3 && dist3 >= dist2) {
+        index1 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor );
+        index2 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
+        index3 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
+        order[0] = 0; order[1] = 2; order[2] = 1;
+      } else if (dist2 >= dist1 && dist1 >= dist3) {
+        index1 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
+        index2 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor );
+        index3 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
+        order[0] = 1; order[1] = 0; order[2] = 2;
+      } else if (dist2 >= dist3 && dist3 >= dist1) {
+        index1 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
+        index2 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
+        index3 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor);
+        order[0] = 1; order[1] = 2; order[2] = 0;
+      } else if (dist3 >= dist1 && dist1 >= dist2) {
+        index1 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor);
+        index2 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor);
+        index3 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor);
+        order[0] = 2; order[1] = 0; order[2] = 1;
+      } else {
+        index1 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor);
+        index2 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor);
+        index3 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor);
+        order[0] = 2; order[1] = 1; order[2] = 0;
+      }
+
+
+
+      //if Linear Interpolation
+      //    auto result = getLinear(index1, index2, index3);
+
+
+
+      // space for other interpolation
+      auto result = getNextNeighbour_global(index1, index2, index3);
+
+      auto resultPair = std::make_pair(result, order);
+
+      std::cout << "RETRIEVE VALUE ";
+
+      return resultPair;
+    }
+
+
+    std::array<double, 5> getNextNeighbour_global( size_t index1, size_t index2, size_t index3) const {
+
+      //just a function for consistency, floored values are basically next neighbours
+      return _lut3B_global[index1][index2][index3];
+
+    }
 
    private:
     std::vector<std::vector<std::vector<std::array<double, 3>>>> _lut3B;
+    std::vector<std::vector<std::vector<std::array<double, 5>>>> _lut3B_global;
+    double nu;
+
 
 
     //helper functions

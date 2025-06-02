@@ -98,8 +98,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(nullptr),
-      lut2B(100, _configuration.cutoff.value  *_configuration.cutoff.value ),
-      lut3B(100, _configuration.cutoff.value  *_configuration.cutoff.value )
+      lut2B(10, _configuration.cutoff.value  *_configuration.cutoff.value ),
+      lut3B(0, _configuration.cutoff.value  *_configuration.cutoff.value )
       {
   _timers.total.start();
   _timers.initialization.start();
@@ -234,11 +234,11 @@ void Simulation::finalize() {
 
 void Simulation::run() {
 
-  double cutoffSquared = _configuration.cutoff.value * _configuration.cutoff.value ;
-                             //hopefully set up both luts here only once
-   lut2B = mdLib::LUT2B(80, cutoffSquared);
-
-   lut3B= mdLib::LUT3B(100, cutoffSquared);
+//  double cutoffSquared = _configuration.cutoff.value * _configuration.cutoff.value ;
+//                             //hopefully set up both luts here only once
+//   lut2B = mdLib::LUT2B(80, cutoffSquared);
+//
+//   lut3B= mdLib::LUT3B(100, cutoffSquared);
 
 
 
@@ -827,9 +827,13 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-        auto functor = LJFunctor(cutoff, lut2B)
-        return functor;
-//      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      auto functor =    LJFunctorTypeAutovec(cutoff, &lut2B);
+          auto eps = _configuration.getParticlePropertiesLibrary()->getEpsilon(0);
+      auto sigmaSquared = _configuration.getParticlePropertiesLibrary()->getSigma(0);
+      functor.setParticleProperties(eps, sigmaSquared);
+//        return functor;
+  //    return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      return f(functor);
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "

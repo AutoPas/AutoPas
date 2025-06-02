@@ -18,6 +18,7 @@ namespace mdLib {
       ParentLUT(int resolution, double cutoffSquared){
         _resolution = resolution;
         _cutoffSquared = cutoffSquared;
+        _cutoff = std::sqrt(cutoffSquared);
       _lutCutoff = cutoffSquared / 10.;
       _lutDistance = _cutoffSquared - _lutCutoff;
       _lutFactor = _resolution / _lutDistance;
@@ -41,6 +42,7 @@ namespace mdLib {
 //  std::vector<std::vector<std::vector<std::array<double, 3>>>> _lut3B;
 //  std::vector<double> _lut2B;
 
+     double _cutoff{};
   double _cutoffSquared{};
   double _lutCutoff{};
   double _lutFactor{};

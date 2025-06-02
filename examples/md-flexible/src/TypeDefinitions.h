@@ -102,7 +102,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, false, true, a
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
-using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, false, true, autopas::FunctorN3Modes::Both,
+using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, false, false, autopas::FunctorN3Modes::Both,
                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
