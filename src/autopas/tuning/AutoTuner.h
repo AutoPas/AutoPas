@@ -452,5 +452,12 @@ class AutoTuner {
    * early stopping is used."
    */
   size_t _iterationBaseline{0};
+public:
+  /**
+   * both variables are relevant for pattern selection for LJFunctorHWY, only set once per simulations
+   */
+  std::vector<autopas::VectorizationPatternOption::Value> optimal_patterns_newton3_on;
+  std::vector<autopas::VectorizationPatternOption::Value> optimal_patterns_newton3_off;
+  bool patterns_calculated{false};
 };
 }  // namespace autopas

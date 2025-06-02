@@ -175,6 +175,26 @@ class Functor {
   virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}
 
   /**
+   * Getter for boolean if functor is relevant to pattern selection
+   * @return boolean
+   */
+
+  virtual bool getPatternSelection() {return false;};
+
+  /**
+   * set pattern vector with optimal patterns for functor
+   * @param pattern_map_newton3_on, pattern_map_newton3_off
+   */
+
+
+  virtual void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value>* pattern_map_newton3_on, std::vector<autopas::VectorizationPatternOption::Value>* pattern_map_newton3_off) {};
+  /**
+     * Get status whether functor uses mixing or not
+     * @return boolean
+     */
+  virtual bool getMixingStatus() {return false;}
+
+  /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.
    *
    * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()

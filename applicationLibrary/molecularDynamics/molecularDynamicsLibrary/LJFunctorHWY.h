@@ -204,14 +204,25 @@ class LJFunctorHWY
   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
   */
   // clang-format on
+
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
     // first attempt at pattern selection
-    size_t length1 = soa1.size();
-    size_t length2 = soa2.size();
+    // check if a pattern map with optimal pattern is provided
+    if (_pattern_map_newton3_on != nullptr && _pattern_map_newton3_off != nullptr) {
+      if (soa1.size()!=0 && soa2.size()!=0) {
+        if (soa1.size()<=30 && soa2.size() <=30){
+          if (newton3) {
+            setVecPattern((*_pattern_map_newton3_on)[(soa1.size()-1)+30*(soa2.size()-1)]);
+          }else {
+            setVecPattern((*_pattern_map_newton3_off)[(soa1.size()-1)+30*(soa2.size()-1)]);
+          }
+        }else {
+          setVecPattern(mdLib::VectorizationPattern::p1xVec);
+        }
 
-    setVecPattern(VectorizationPattern::p1xVec);
-
+      }
+    }
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
@@ -1333,6 +1344,31 @@ class LJFunctorHWY
    */
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
+  /**
+  * @copydoc autopas::Functor::getPatternSelection()
+  * Getter for boolean if functor is relevant to pattern selection
+   * @return boolean
+  */
+
+  bool getPatternSelection() final{return true;}
+
+  /**
+    * @copydoc autopas::Functor::setPatternSelection()
+    * set pattern vector with optimal patterns for functor
+    * @param pattern_map
+    */
+
+   void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value>* pattern_map_newton3_on, std::vector<autopas::VectorizationPatternOption::Value>* pattern_map_newton3_off)final {
+    _pattern_map_newton3_on = pattern_map_newton3_on;
+    _pattern_map_newton3_off = pattern_map_newton3_off;
+  };
+  /**
+    * @copydoc autopas::Functor::getMixingStatus()
+     * Get status whether functor uses mixing or not
+     * @return boolean
+     */
+   bool getMixingStatus() final{return useMixing;}
+
  private:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -1378,5 +1414,7 @@ class LJFunctorHWY
   bool _masksInitialized{false};
 
   VectorizationPattern _vecPattern;
+  std::vector<autopas::VectorizationPatternOption::Value>* _pattern_map_newton3_on = nullptr;
+  std::vector<autopas::VectorizationPatternOption::Value>* _pattern_map_newton3_off = nullptr;
 };
 }  // namespace mdLib

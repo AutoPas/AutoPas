@@ -35,7 +35,9 @@
 #include "autopas/utils/logging/LiveInfoLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
-
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 namespace autopas {
 
 /**
@@ -1803,6 +1805,250 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
     }
   }
 }
+/* this is a helper method to calculate the initial optimal patterns for the
+ * dynamic pattern selection for the LJFunctorHWY
+ */
+template<class Functor, class Cell>
+void csvOutput(Functor &functor, std::vector<Cell> &cells) {
+
+  std::ofstream csvFile("particles.csv");
+  if (not csvFile.is_open()) {
+    throw std::runtime_error("FILE NOT OPEN!");
+  }
+  csvFile << "CellId,ParticleId,rX,rY,rZ,fX,fY,fZ\n";
+  for (size_t cellId = 0; cellId < cells.size(); ++cellId) {
+    functor.SoAExtractor(cells[cellId], cells[cellId]._particleSoABuffer, 0);
+    for (size_t particleId = 0; particleId < cells[cellId].getNumberOfParticles(autopas::IteratorBehavior::owned); ++particleId) {
+      const auto &p = cells[cellId][particleId];
+      using autopas::utils::ArrayUtils::to_string;
+      csvFile << cellId << ","
+              << p.getID() << ","
+              << to_string(p.getR(), ",", {"", ""}) << ","
+              << to_string(p.getF(), ",", {"", ""})
+              << "\n";
+    }
+  }
+  csvFile.close();
+
+}
+template<class Functor, class Cell>
+void initialization(Functor &functor,  std::vector<Cell> &cells, std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>>& neighborLists,
+                    const std::vector<size_t> &numParticlesPerCell, double cutoff, double interactionLengthSquare, double hitRate) {
+    // initialize cells with randomly distributed particles
+    using Particle = mdLib::MoleculeLJ;
+
+    double cellLength = 0.;
+
+
+
+        // this is a formula determined by regression (based on a mapping from hitrate to div with random sample values)
+        double div = 2.86*(hitRate*hitRate*hitRate)-4.13*(hitRate*hitRate)+2.81*hitRate+0.42;
+        cellLength = cutoff / div;
+
+
+    cells[0].reserve(numParticlesPerCell[0]);
+    cells[1].reserve(numParticlesPerCell[1]);
+    for (size_t cellId = 0; cellId < numParticlesPerCell.size(); ++cellId) {
+        for (size_t particleId = 0; particleId < numParticlesPerCell[cellId]; ++particleId) {
+            Particle p{
+                    {
+                            // particles are next to each other in X direction
+                            rand() / static_cast<double>(RAND_MAX) * cellLength + cellLength * cellId,
+                            rand() / static_cast<double>(RAND_MAX) * cellLength,
+                            rand() / static_cast<double>(RAND_MAX) * cellLength,
+                    },
+                    {0., 0., 0.,},
+                    // every cell gets its own id space
+                    particleId + ((std::numeric_limits<size_t>::max() / numParticlesPerCell.size()) * cellId),
+                    particleId % 5};
+            cells[cellId].addParticle(p);
+        }
+        functor.SoALoader(cells[cellId], cells[cellId]._particleSoABuffer, 0, false);
+    }
+
+
+
+}
+
+
+
+template<class Functor, class Cell>
+void applyFunctorPair(Functor &functor, std::vector<Cell> &cells, std::map<std::string, autopas::utils::Timer>& timer, bool newton3) {
+  timer.at("Functor").start();
+
+  functor.SoAFunctorPair(cells[0]._particleSoABuffer, cells[1]._particleSoABuffer, newton3);
+
+  timer.at("Functor").stop();
+}
+template<class Functor_type>
+long patternHelper(Functor_type& current_functor, size_t repetitions, size_t iterations, size_t firstnumParticles, size_t secondnumParticles, double hitRate,  autopas::VectorizationPatternOption::Value vec_pat , std::map<std::string, autopas::utils::Timer>& timer, bool newton3) {
+    const double cutoff{3.}; // is also the cell size
+    const double skin{std::pow(1./hitRate, 1./3.)};
+    const double interactionLengthSquare{(cutoff * skin) * (cutoff * skin)};
+
+    std::vector<uint64_t> times {};
+    times.reserve(repetitions);
+    bool mixing = current_functor.getMixingStatus();
+
+  using Particle = mdLib::MoleculeLJ;
+  using Cell = autopas::FullParticleCell<mdLib::MoleculeLJ>;
+  constexpr autopas::FunctorN3Modes functorN3Modes{autopas::FunctorN3Modes::Both};
+  using Functor_mixing = mdLib::LJFunctorHWY<Particle, false, true, functorN3Modes, false, true>;
+  using Functor_not_mixing = mdLib::LJFunctorHWY<Particle, false, false, functorN3Modes, false, true>;
+  if (mixing == true) {
+    for (int n = 0; n < repetitions; ++n) {
+      // choose functor based on available architecture
+
+      ParticlePropertiesLibrary<double, size_t> PPL{cutoff};
+      Functor_mixing functor{cutoff, PPL};
+
+      //setting the chosen vectorisation pattern for the benchmark
+      functor.setVecPattern(vec_pat);
+      //checkFunctorType(functor);
+
+
+      // 5 site types to provide some variation (requiring gathering that is somewhat similar to a realistic scenario)
+      if (mixing) {
+        PPL.addSiteType(0,1.);
+        PPL.addLJParametersToSite(0,1.,1.);
+        PPL.addSiteType(1,1.);
+        PPL.addLJParametersToSite(1,1.,1.);
+        PPL.addSiteType(2,1.);
+        PPL.addLJParametersToSite(2,1.,1.);
+        PPL.addSiteType(3,1.);
+        PPL.addLJParametersToSite(3,1.,1.);
+        PPL.addSiteType(4,1.);
+        PPL.addLJParametersToSite(4,1.,1.);
+        PPL.calculateMixingCoefficients();
+      } else {
+        constexpr double epsilon24{24.};
+        constexpr double sigmaSquare{1.};
+        functor.setParticleProperties(epsilon24, sigmaSquare);
+      }
+
+      // define scenario
+      const std::vector<size_t> numParticlesPerCell{firstnumParticles, secondnumParticles};
+      size_t calcsDistTotal{0};
+      size_t calcsForceTotal{0};
+      // repeat the whole experiment multiple times and average results
+      std::vector<Cell> cells{2};
+      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists (firstnumParticles);
+
+      initialization(functor, cells, neighborLists, numParticlesPerCell, cutoff, interactionLengthSquare, hitRate);
+
+
+      for (size_t iteration = 0; iteration < iterations; ++iteration) {
+        // actual benchmark
+        applyFunctorPair(functor, cells, timer, newton3);
+      }
+
+
+      // print particles to CSV for checking and prevent compiler from optimizing everything away.
+      csvOutput(functor, cells);
+
+
+      times.push_back(timer["Functor"].getTotalTime());
+      for (auto &[_, t]: timer) {
+        t.reset();
+      }
+    }
+  }else {
+    for (int n = 0; n < repetitions; ++n) {
+      // choose functor based on available architecture
+      Functor_not_mixing functor{cutoff};
+
+      //setting the chosen vectorisation pattern for the benchmark
+      functor.setVecPattern(vec_pat);
+        constexpr double epsilon24{24.};
+        constexpr double sigmaSquare{1.};
+        functor.setParticleProperties(epsilon24, sigmaSquare);
+
+
+      // define scenario
+      const std::vector<size_t> numParticlesPerCell{firstnumParticles, secondnumParticles};
+      size_t calcsDistTotal{0};
+      size_t calcsForceTotal{0};
+      // repeat the whole experiment multiple times and average results
+      std::vector<Cell> cells{2};
+      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists (firstnumParticles);
+
+      initialization(functor, cells, neighborLists, numParticlesPerCell, cutoff, interactionLengthSquare, hitRate);
+
+
+      for (size_t iteration = 0; iteration < iterations; ++iteration) {
+        // actual benchmark
+        applyFunctorPair(functor, cells, timer, newton3);
+      }
+
+
+      // print particles to CSV for checking and prevent compiler from optimizing everything away.
+      csvOutput(functor, cells);
+
+
+      times.push_back(timer["Functor"].getTotalTime());
+      for (auto &[_, t]: timer) {
+        t.reset();
+      }
+    }
+  }
+    long sum = std::accumulate(times.begin(), times.end(), static_cast<long>(0));
+    return sum;
+}
+
+inline std::string checkVecPattern(mdLib::VectorizationPattern vec_pat) {
+  if (vec_pat == mdLib::VectorizationPattern::p1xVec) {
+    return "p1xVec";
+  } else if (vec_pat == mdLib::VectorizationPattern::p2xVecDiv2) {
+    return "p2xVecDiv2";
+  } else if (vec_pat == mdLib::VectorizationPattern::pVecDiv2x2) {
+    return "pVecDiv2x2";
+  }else {
+    return "pVecx1";
+  }
+}
+// This method calculates the pattern benchmark used to select efficient Vectorization patterns dynamically inside LJFunctorHWY
+template<class Functor>
+std::vector<autopas::VectorizationPatternOption::Value> pattern_map_calc(Functor& functor, bool newton3) {
+  using patterntype = autopas::VectorizationPatternOption::Value;
+  std::vector<patterntype> patterns = {patterntype::p1xVec,patterntype::p2xVecDiv2,patterntype::pVecDiv2x2, patterntype::pVecx1};
+  std::vector<std::vector<long>> all_results(4,std::vector<long>(900,1));
+  std::map<std::string, autopas::utils::Timer> timer{
+          {"Initialization",     autopas::utils::Timer()},
+          {"Functor",            autopas::utils::Timer()},
+          {"Output",             autopas::utils::Timer()},
+          {"InteractionCounter", autopas::utils::Timer()},
+  };
+  for (size_t i = 0; i<patterns.size(); i++) {
+    patterntype current_pattern = patterns[i];
+    for (size_t firstnumberParticles = 1; firstnumberParticles<=30; firstnumberParticles++) {
+      for (size_t secondnumberParticles = 1; secondnumberParticles<=30; secondnumberParticles++) {
+        long test = patternHelper(functor,10,100,firstnumberParticles,secondnumberParticles,0.16,current_pattern, timer, newton3);
+        all_results[i][firstnumberParticles-1+30*(secondnumberParticles-1)] = test;
+
+      }
+    }
+  }
+
+  std::vector<patterntype> optimal_patterns(900,patterntype::p1xVec);
+  for (size_t i = 0; i<900; i++) {
+    long min = all_results[0][i];
+    long min_index = 0;
+    for (int j = 1; j<4; j++) {
+      if (all_results[j][i]< min) {
+        min = all_results[j][i];
+        min_index = j;
+      }
+    }
+    optimal_patterns[i] = patterns[min_index];
+  }
+
+
+  return optimal_patterns;
+
+}
+
+
+
 
 template <typename Particle_T>
 template <class Functor>
@@ -1882,6 +2128,24 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     }
   }
   functor.setVecPattern(configuration.vecPattern);
+
+  /* optimal patterns for LJFunctorHWY are calculated once and made available to
+   functor through pointer everytime this method is called.
+   */
+  if (functor.getPatternSelection()) {
+    if (!autoTuner.patterns_calculated) {
+      autoTuner.optimal_patterns_newton3_on = pattern_map_calc(functor, true);
+      autoTuner.optimal_patterns_newton3_off= pattern_map_calc(functor, false);
+      autoTuner.patterns_calculated = true;
+      std::cout<< "Pattern maps calculated!"<<std::endl;
+      std::cout<<" optimal pattern for fcs:1 and scs:30 newton3 on:"<<checkVecPattern(autoTuner.optimal_patterns_newton3_on[29*30])<<std::endl;
+      std::cout<<" optimal pattern for fcs:1 and scs:30 newton3 off:"<<checkVecPattern(autoTuner.optimal_patterns_newton3_off[29*30])<<std::endl;
+      std::cout<<" optimal pattern for fcs:30 and scs:1 newton3 on:"<<checkVecPattern(autoTuner.optimal_patterns_newton3_on[29])<<std::endl;
+      std::cout<<" optimal pattern for fcs:30 and scs:1 newton3 off:"<<checkVecPattern(autoTuner.optimal_patterns_newton3_off[29])<<std::endl;
+    }
+    functor.setPatternSelection(&autoTuner.optimal_patterns_newton3_on , &autoTuner.optimal_patterns_newton3_off);
+  }
+
 
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
