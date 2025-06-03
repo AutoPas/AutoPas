@@ -1,5 +1,5 @@
 /**
- * @file ContainerSwap.h
+ * @file ContainerSwapTest.h
  * @author F. Gratl
  * @date 14.12.2020
  */
@@ -10,12 +10,10 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/LogicHandler.h"
-#include "autopas/tuning/selectors/ContainerSelector.h"
 
-namespace autopas {
 class ContainerSwapTest
     : public AutoPasTestBase,
-      public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::ContainerOption>> {
+      public ::testing::WithParamInterface<std::pair<autopas::Configuration, autopas::Configuration>> {
  public:
   ContainerSwapTest() = default;
   ~ContainerSwapTest() override = default;
@@ -23,9 +21,9 @@ class ContainerSwapTest
   struct twoParamToString {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      // tuple of ContainerOption
+      // tuple of Configuration objects
       const auto &[from, to] = static_cast<ParamType>(info.param);
-      return "from" + from.to_string() + "To" + to.to_string();
+      return "from" + from.container.to_string() + "To" + to.container.to_string();
     }
   };
 
@@ -34,6 +32,5 @@ class ContainerSwapTest
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0.1;
-  const unsigned int verletRebuildFrequency = 2;
+  const unsigned int verletRebuildFrequency = 1;
 };
-}  // namespace autopas

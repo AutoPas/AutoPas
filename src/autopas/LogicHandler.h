@@ -737,8 +737,6 @@ class LogicHandler {
   std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(
       Functor &functor, const InteractionTypeOption &interactionType);
 
-  // friend class to test the container change
-  friend class ContainerSwapTest_testContainerConversion_Test;
   /**
    * Sets the current container to the given one and transfers all particles from the old container to the new one.
    * @param newContainer The new container to set.
