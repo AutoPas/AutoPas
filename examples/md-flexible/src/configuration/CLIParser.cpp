@@ -372,8 +372,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.interpolationNodes)::getoptChar: {
         try {
-          config.interpolationNodes.value = autopas::utils::StringUtils::parseNumberVec<size_t>(
-            autopas::utils::ArrayUtils::to_string(strArg, ", ", {"", ""}));
+          config.interpolationNodes.value = autopas::utils::StringUtils::parseNumberVec<size_t>(strArg);
 
           if (config.interpolationNodes.value.empty()) {
             cerr << "Parsed interpolation nodes list is empty." << endl;
@@ -400,8 +399,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.interpolationSplits)::getoptChar: {
         try {
-          config.interpolationSplits.value = autopas::utils::StringUtils::parseNumberVec<double>(
-            autopas::utils::ArrayUtils::to_string(strArg, ", ", {"", ""}));
+          config.interpolationSplits.value = autopas::utils::StringUtils::parseNumberVec<double>(strArg);
 
           if (config.interpolationNodes.value.empty()) {
             cerr << "Parsed interpolation split list is empty." << endl;
