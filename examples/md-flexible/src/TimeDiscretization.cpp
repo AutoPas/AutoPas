@@ -159,20 +159,26 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   using namespace autopas::utils::ArrayMath::literals;
 
   AUTOPAS_OPENMP(parallel)
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    const auto force = iter->getF();
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+    if (iter->getOwnershipState() == autopas::OwnershipState::owned) {
+      const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+      const auto force = iter->getF();
+      if (not outerRespaStep) {
+        const auto oldForce = iter->getOldF();
+        const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
+        iter->addV(changeInVel);
+      } else {
+        const auto changeInVel = (force * (1.0 / molecularMass)) * 0.5 * deltaT * static_cast<double>(respaStepSize);
+        iter->addV(changeInVel);
+      }
+    }
+
     if (not outerRespaStep) {
-      const auto oldForce = iter->getOldF();
-      const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
-      iter->addV(changeInVel);
       if (resetForces) {
-        iter->setTempF(force);
+        iter->setTempF(iter->getF());
         iter->setF({0, 0, 0});
       }
     } else {
-      const auto changeInVel = (force * (1.0 / molecularMass)) * 0.5 * deltaT * static_cast<double>(respaStepSize);
-      iter->addV(changeInVel);
       if (resetForces) {
         iter->setF(iter->getTempF());
       }
@@ -182,7 +188,8 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                                bool resetTorques, const bool outerRespaStep, const size_t respaStepSize) {
+                                bool resetTorques, const bool outerRespaStep, const size_t respaStepSize,
+                                const size_t outerStepMolID, const size_t innerStepMolID) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::quaternion::rotatePosition;
   using autopas::utils::quaternion::rotatePositionBackwards;
@@ -190,29 +197,37 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 #if MD_FLEXIBLE_MODE == MULTISITE
 
   AUTOPAS_OPENMP(parallel)
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const auto torqueW = iter->getTorque();
-    const auto q = iter->getQuaternion();
-    const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+    if (iter->getOwnershipState() == autopas::OwnershipState::owned) {
+      const auto torqueW = iter->getTorque();
+      const auto q = iter->getQuaternion();
+      const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia
 
-    // convert torque to molecular-frame
-    const auto torqueM = rotatePositionBackwards(q, torqueW);
+      // convert torque to molecular-frame
+      const auto torqueM = rotatePositionBackwards(q, torqueW);
 
-    // get I^-1 T in molecular-frame
-    const auto torqueDivMoIM = torqueM / I;
+      // get I^-1 T in molecular-frame
+      const auto torqueDivMoIM = torqueM / I;
 
-    // convert to world-frame
-    const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
+      // convert to world-frame
+      const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
+
+      if (not outerRespaStep) {
+        iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
+      } else {
+        iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT * static_cast<double>(respaStepSize));
+      }
+    }
 
     if (not outerRespaStep) {
-      iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
       if (resetTorques) {
-        iter->setTempTorque(torqueW);
+        iter->setTypeId(outerStepMolID);
+        iter->setTempTorque(iter->getTorque());
         iter->setTorque({0, 0, 0});
       }
     } else {
-      iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT * static_cast<double>(respaStepSize));
       if (resetTorques) {
+        iter->setTypeId(innerStepMolID);
         iter->setTorque(iter->getTempTorque());
       }
     }

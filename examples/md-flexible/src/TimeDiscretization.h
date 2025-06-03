@@ -81,6 +81,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  */
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                                bool resetTorques, const bool outerRespaStep = false, const size_t respaStepSize = 1);
+                                bool resetTorques, const bool outerRespaStep = false, const size_t respaStepSize = 1,
+                                const size_t outerStepMolID = 0, const size_t innerStepMolID = 1);
 
 }  // namespace TimeDiscretization

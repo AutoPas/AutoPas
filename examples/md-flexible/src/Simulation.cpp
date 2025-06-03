@@ -205,16 +205,16 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         throw std::runtime_error("The thermostat interval must be divisible by the respa-stepsize");
       }
     }
+  }
 
-    if (_configuration.respaStepSize.value > 1) {
-      if (_configuration.iterations.value % _configuration.respaStepSize.value != 0) {
-        throw std::runtime_error("The number of iterations must be divisible by the respa-stepsize");
-      }
+  if (_configuration.respaStepSize.value > 1) {
+    if (_configuration.iterations.value % _configuration.respaStepSize.value != 0) {
+      throw std::runtime_error("The number of iterations must be divisible by the respa-stepsize");
     }
+  }
 
-    if (not _configuration.lutInputFile.value.empty() and _configuration.useApproxForceRespa.value) {
-      throw std::runtime_error("Can not use LuT CG forces and approximate forces at the same time!");
-    }
+  if (not _configuration.lutInputFile.value.empty() and _configuration.useApproxForceRespa.value) {
+    throw std::runtime_error("Can not use LuT CG forces and approximate forces at the same time!");
   }
 
   _timers.initialization.stop();
@@ -275,7 +275,7 @@ void Simulation::run() {
   size_t cgMeasureIterations{0};
   size_t ibiTrials{0};
   const size_t rdfNumBins = _configuration.rdfNumBins.value;
-  bool ibiConvergenceReached{_cgSimulation ? true : false};
+  bool ibiConvergenceReached{(_cgSimulation or _configuration.multiMultisiteModelsRespa.value) ? true : false};
   bool firstRespaIterationSkipped{false};
   bool respaStarted{false};
   const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
@@ -319,14 +319,24 @@ void Simulation::run() {
       if (respaActive and isRespaIteration and ibiConvergenceReached) {
         if (firstRespaIterationSkipped) {
           if (not respaStarted) {
-            // do a first force evalusation
+            // do a first force evaluation
             updateInteractionForces(ForceType::FullParticle);
-            updateInteractionForces(ForceType::CoarseGrain, true);
+            if (not _configuration.multiMultisiteModelsRespa.value) {
+              updateInteractionForces(ForceType::CoarseGrain, true);
+            }
           }
           updateVelocities(/*resetForce*/ true, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
-          updateAngularVelocities(/*resetTorques*/ false, RespaIterationType::OuterStep);
+          if (_configuration.multiMultisiteModelsRespa.value) {
+            updateAngularVelocities(/*resetTorques*/ true, RespaIterationType::OuterStep,
+                                    _configuration.respaMoleculeTypes.value[0],
+                                    _configuration.respaMoleculeTypes.value[1]);
+
+          } else {
+            updateAngularVelocities(/*resetTorques*/ false, RespaIterationType::OuterStep, 0, 0);
+          }
 #endif
+
           respaStarted = true;
         } else {
           firstRespaIterationSkipped = true;
@@ -390,7 +400,8 @@ void Simulation::run() {
     }
 
     if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
-        (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive)) {
+        (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive) or
+        (respaActive and _configuration.multiMultisiteModelsRespa.value)) {
       const auto potentialEnergy = updateInteractionForces(ForceType::FullParticle);
       if (potentialEnergy.has_value()) {
         _potentialEnergy.push_back(potentialEnergy.value());
@@ -412,9 +423,16 @@ void Simulation::run() {
     }
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      updateVelocities(respaActive and nextIsRespaIteration and ibiConvergenceReached);
+      updateVelocities(/*resetForces*/ respaActive and nextIsRespaIteration and ibiConvergenceReached);
 #if MD_FLEXIBLE_MODE == MULTISITE
-      updateAngularVelocities(false);
+      if (_configuration.multiMultisiteModelsRespa.value) {
+        updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration and ibiConvergenceReached,
+                                RespaIterationType::InnerStep, _configuration.respaMoleculeTypes.value[0],
+                                _configuration.respaMoleculeTypes.value[1]);
+      } else {
+        updateAngularVelocities(false, RespaIterationType::InnerStep, 0, 0);
+      }
+
 #endif
       if (_configuration.useThermostat.value) {
         if ((not respaActive or not respaStarted) and
@@ -432,10 +450,18 @@ void Simulation::run() {
 
       if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
         updateInteractionForces(ForceType::FullParticle);
-        updateInteractionForces(ForceType::CoarseGrain, true);
+        if (not _configuration.multiMultisiteModelsRespa.value) {
+          updateInteractionForces(ForceType::CoarseGrain, true);
+        }
         updateVelocities(false, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
-        updateAngularVelocities(false, RespaIterationType::OuterStep);
+        if (_configuration.multiMultisiteModelsRespa.value) {
+          updateAngularVelocities(false, RespaIterationType::OuterStep, _configuration.respaMoleculeTypes.value[0],
+                                  _configuration.respaMoleculeTypes.value[1]);
+        } else {
+          updateAngularVelocities(false, RespaIterationType::OuterStep, 0, 0);
+        }
+
 #endif
         if (_configuration.useThermostat.value) {
           if ((_iteration + 1) % _configuration.thermostatInterval.value == 0) {
@@ -884,7 +910,8 @@ double Simulation::calculateKineticEnergy() {
   return sum * 0.5;
 }
 
-void Simulation::updateAngularVelocities(bool resetForces, RespaIterationType respaIterationType) {
+void Simulation::updateAngularVelocities(bool resetForces, RespaIterationType respaIterationType,
+                                         const size_t outerStepMolID, const size_t innerStepMolID) {
   const double deltaT = _configuration.deltaT.value;
 
   _timers.angularVelocityUpdate.start();
@@ -892,10 +919,11 @@ void Simulation::updateAngularVelocities(bool resetForces, RespaIterationType re
   if (respaIterationType == RespaIterationType::OuterStep) {
     TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                    deltaT, resetForces, /*outerRespaStep*/ true,
-                                                   _configuration.respaStepSize.value);
+                                                   _configuration.respaStepSize.value, outerStepMolID, innerStepMolID);
   } else {
     TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                                   deltaT, resetForces);
+                                                   deltaT, resetForces, /*outerRespaStep*/ false, 0, outerStepMolID,
+                                                   innerStepMolID);
   }
 
   _timers.angularVelocityUpdate.stop();
@@ -1225,7 +1253,6 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor,
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   if (useCGFunctor) {
-    std::cout << "call CG functor" << std::endl;
     if (_configuration.useApproxForceRespa.value) {
       auto func = LJFunctorTypeAutovecApproxMultisite{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
       return f(func);
@@ -1235,7 +1262,6 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor,
       return f(func);
     }
   }
-  std::cout << "call FP functor" << std::endl;
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)

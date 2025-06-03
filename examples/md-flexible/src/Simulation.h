@@ -340,7 +340,8 @@ class Simulation {
   /**
    * Updates the angular velocities of the particles in the local AutoPas container.
    */
-  void updateAngularVelocities(bool resetForces, RespaIterationType respaIterationType = RespaIterationType::NoRespa);
+  void updateAngularVelocities(bool resetForces, RespaIterationType respaIterationType = RespaIterationType::NoRespa,
+                               const size_t outerStepMolID = 0, const size_t innerStepMolID = 1);
 
   /**
    * Updates the thermostat of for the local domain.

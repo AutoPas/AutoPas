@@ -695,6 +695,19 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> useApproxForceRespa{false, "use-approx-force-respa", true,
                                                    "If an approximate force should be used for CG Respa steps."};
 
+  /**
+   * respaMoleculeTypes
+   */
+  MDFlexOption<std::vector<size_t>, __LINE__> respaMoleculeTypes{
+      {0}, "respa-molecule-types", true, "Which molecule types to use in different respa iterations"};
+
+  /**
+   * multiMultisiteModelsRespa
+   */
+  MDFlexOption<bool, __LINE__> multiMultisiteModelsRespa{
+      false, "multi-multisite-models-respa", true,
+      "If multiple multisite models are used to compute interactions with r-RESPA."};
+
   // Options for additional Object Generation on command line
   /**
    * boxLength

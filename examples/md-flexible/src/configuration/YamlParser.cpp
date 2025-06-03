@@ -351,6 +351,24 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.useApproxForceRespa.description;
 
         config.useApproxForceRespa.value = node[key].as<bool>();
+      } else if (key == config.multiMultisiteModelsRespa.name) {
+        expected = "Boolean Value.";
+        description = config.multiMultisiteModelsRespa.description;
+
+        config.multiMultisiteModelsRespa.value = node[key].as<bool>();
+      } else if (key == config.respaMoleculeTypes.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.respaMoleculeTypes.description;
+
+        std::vector<std::string> errors;
+        config.respaMoleculeTypes.value =
+            parseComplexTypeValueSequence<unsigned long>(node, "respa-molecule-types", errors);
+        if (not errors.empty()) {
+          throw std::runtime_error(errors[0]);
+        }
+        if (config.respaMoleculeTypes.value.empty()) {
+          throw std::runtime_error("Parsed respa-molecule-type-list is empty.");
+        }
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;

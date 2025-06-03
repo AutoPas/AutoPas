@@ -394,7 +394,8 @@ std::string MDFlexConfig::to_string() const {
       os << ", " << *sitePosIter;
     }
     os << "]" << endl;
-    os << "    " << setw(valueOffset - 4) << left << momentOfInertiaStr << ":  " << massMap.value.at(molId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << momentOfInertiaStr << ":  " << momentOfInertiaMap.at(molId)
+       << endl;
   }
 #endif
 
