@@ -69,6 +69,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.generatorOption,
       config.globalForce,
       config.iterations,
+      config.interpolationNodes,
+      config.interpolationSplits,
+      config.interpolationStart,
       config.loadBalancer,
       config.loadBalancingInterval,
       config.loadEstimatorOptions,
@@ -364,6 +367,49 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         } catch (const exception &) {
           cerr << "Error parsing number of iterations: " << optarg << endl;
           displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.interpolationNodes)::getoptChar: {
+        try {
+          config.interpolationNodes.value = autopas::utils::StringUtils::parseNumberVec<size_t>(
+            autopas::utils::ArrayUtils::to_string(strArg, ", ", {"", ""}));
+
+          if (config.interpolationNodes.value.empty()) {
+            cerr << "Parsed interpolation nodes list is empty." << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of interpolation nodes: " << optarg << endl;
+          displayHelp = true; 
+        }
+        break;
+      }
+      case decltype(config.interpolationStart)::getoptChar: {
+        try {
+          config.interpolationStart.value = stod(strArg);
+          if (config.interpolationStart.value < 0.) {
+            cerr << "Interpolation Start must be >= 0." << endl;
+            displayHelp = true;
+          }
+        } catch (const exception& ) {
+          cerr << "Error parsing Interpolation start: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.interpolationSplits)::getoptChar: {
+        try {
+          config.interpolationSplits.value = autopas::utils::StringUtils::parseNumberVec<double>(
+            autopas::utils::ArrayUtils::to_string(strArg, ", ", {"", ""}));
+
+          if (config.interpolationNodes.value.empty()) {
+            cerr << "Parsed interpolation split list is empty." << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of interpolation splits: " << optarg << endl;
+          displayHelp = true; 
         }
         break;
       }
