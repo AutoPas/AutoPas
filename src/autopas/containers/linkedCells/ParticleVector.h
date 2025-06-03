@@ -21,7 +21,7 @@
 template <class Particle_T>
 class ParticleVector {
  public:
-  ParticleVector<Particle_T>() = default;
+  ParticleVector() = default;
 
   /**
    * Returns the dirty flag, indicating whether Particles exist in the vector that are not stored in a cell yet.
