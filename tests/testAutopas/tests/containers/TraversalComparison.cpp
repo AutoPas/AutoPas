@@ -170,7 +170,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     markSomeParticlesAsDeleted(*container, numParticles + numHaloParticles, 19, interactionType);
   }
 
-  container->rebuildNeighborLists(traversal.value().get());
+  container->rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
     executeShift(*container, skin / 2, numParticles + numHaloParticles);
@@ -181,7 +181,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
-  container->computeInteractions(traversal.value().get());
+  container->computeInteractions(traversal.get());
 
   functor.endTraversal(newton3Option);
 

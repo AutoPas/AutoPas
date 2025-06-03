@@ -505,8 +505,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   // Obtain a compatible traversal
   auto traversal =
       TraversalSelector::generateTraversal<FullParticleCell<Molecule>, decltype(mockFunctor)>(
-          traversalOption, mockFunctor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option)
-          .value();
+          traversalOption, mockFunctor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
 
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;

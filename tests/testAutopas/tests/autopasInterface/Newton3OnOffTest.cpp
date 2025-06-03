@@ -312,8 +312,7 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOpt
 
   // simulate iteration
   iterate(container, autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor>(
-                         config, mockFunctor, traversalSelectorInfo)
-                         .value());
+                         config, mockFunctor, traversalSelectorInfo));
 
   return std::make_tuple(callsSC.load(), callsPair.load(), callsTriple.load());
 }

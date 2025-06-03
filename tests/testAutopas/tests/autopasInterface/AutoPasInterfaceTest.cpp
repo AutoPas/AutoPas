@@ -486,7 +486,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   auto traversalPtr = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, LJFunctorGlobals>(
       conf, functor, traversalSelectorInfo);
 
-  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr.has_value())
+  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr != nullptr)
       << "Either the domain is chosen badly (fix this!) or hasCompatibleValues and isApplicable don't follow the same"
          "logic anymore.";
 }

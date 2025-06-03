@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include <array>
 #include <memory>
-#include <optional>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
@@ -66,7 +64,7 @@ class TraversalSelector {
    * @return Smartpointer to the traversal.
    */
   template <class ParticleCell, class Functor>
-  static std::optional<std::unique_ptr<TraversalInterface>> generateTraversal(
+  static std::unique_ptr<TraversalInterface> generateTraversal(
       TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
       DataLayoutOption dataLayout, bool useNewton3);
 
@@ -82,7 +80,7 @@ class TraversalSelector {
    * @return Smartpointer to the traversal.
    */
   template <class ParticleCell, class PairwiseFunctor>
-  static std::optional<std::unique_ptr<TraversalInterface>> generatePairwiseTraversal(
+  static std::unique_ptr<TraversalInterface> generatePairwiseTraversal(
       TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
       DataLayoutOption dataLayout, bool useNewton3);
 
@@ -98,7 +96,7 @@ class TraversalSelector {
    * @return Smartpointer to the traversal.
    */
   template <class ParticleCell, class TriwiseFunctor>
-  static std::optional<std::unique_ptr<TraversalInterface>> generateTriwiseTraversal(
+  static std::unique_ptr<TraversalInterface> generateTriwiseTraversal(
       TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &traversalInfo,
       DataLayoutOption dataLayout, bool useNewton3);
 
@@ -109,15 +107,15 @@ class TraversalSelector {
    * @param config The configuration to generate the traversal from.
    * @param functor The functor to use in the traversal.
    * @param traversalInfo Additional information for the traversal.
-   * @return Smartpointer to the generated traversal, or std::nullopt if no valid traversal could be generated.
+   * @return Smartpointer to the generated traversal, or nullptr if no valid traversal could be generated.
    */
   template <class Particle_T, class Functor>
-  static std::optional<std::unique_ptr<TraversalInterface>> generateTraversalFromConfig(
+  static std::unique_ptr<TraversalInterface> generateTraversalFromConfig(
       const Configuration &config, Functor &functor, const TraversalSelectorInfo &traversalInfo);
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-std::optional<std::unique_ptr<TraversalInterface>> TraversalSelector::generatePairwiseTraversal(
+std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
     DataLayoutOption dataLayout, bool useNewton3) {
   std::unique_ptr<TraversalInterface> traversal;
@@ -343,19 +341,19 @@ std::optional<std::unique_ptr<TraversalInterface>> TraversalSelector::generatePa
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
                                          traversalType.to_string());
-      return std::nullopt;
+      return nullptr;
     }
   }
   // Check if the traversal is applicable.
   if (not traversal->isApplicable()) {
-    return std::nullopt;
+    return nullptr;
   }
   // If applicable, return the traversal.
   return std::move(traversal);
 }
 
 template <class ParticleCell, class TriwiseFunctor>
-std::optional<std::unique_ptr<TraversalInterface>> TraversalSelector::generateTriwiseTraversal(
+std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
     TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &traversalInfo,
     DataLayoutOption dataLayout, bool useNewton3) {
   std::unique_ptr<TraversalInterface> traversal;
@@ -379,19 +377,19 @@ std::optional<std::unique_ptr<TraversalInterface>> TraversalSelector::generateTr
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
                                          traversalType.to_string());
-      return std::nullopt;
+      return nullptr;
     }
   }
   // Check if the traversal is applicable.
   if (not traversal->isApplicable()) {
-    return std::nullopt;
+    return nullptr;
   }
   // If applicable, return the traversal.
   return std::move(traversal);
 }
 
 template <class ParticleCell, class Functor>
-std::optional<std::unique_ptr<TraversalInterface>> TraversalSelector::generateTraversal(
+std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversal(
     TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
     DataLayoutOption dataLayout, bool useNewton3) {
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
@@ -403,11 +401,11 @@ std::optional<std::unique_ptr<TraversalInterface>> TraversalSelector::generateTr
   }
   utils::ExceptionHandler::exception(
       "TraversalSelector::generateTraversal(): No Traversals exist for the given Functor: {}", functor.getName());
-  return std::nullopt;
+  return nullptr;
 }
 
 template <class Particle_T, class Functor>
-std::optional<std::unique_ptr<TraversalInterface>> TraversalSelector::generateTraversalFromConfig(
+std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversalFromConfig(
     const Configuration &config, Functor &functor, const TraversalSelectorInfo &traversalInfo) {
   switch (config.container) {
     case ContainerOption::Value::linkedCellsReferences:
