@@ -209,16 +209,20 @@ class LJFunctorHWY
                              bool newton3) final {
     // first attempt at pattern selection
     // check if a pattern map with optimal pattern is provided
-    if (_pattern_map_newton3_on != nullptr && _pattern_map_newton3_off != nullptr) {
+    if (_patternMapNewton3On != nullptr && _patternMapNewton3Off != nullptr) {
       if (soa1.size()!=0 && soa2.size()!=0) {
         if (soa1.size()<=30 && soa2.size() <=30){
           if (newton3) {
-            setVecPattern((*_pattern_map_newton3_on)[(soa1.size()-1)+30*(soa2.size()-1)]);
+            setVecPattern((*_patternMapNewton3On)[(soa1.size()-1)+30*(soa2.size()-1)]);
           }else {
-            setVecPattern((*_pattern_map_newton3_off)[(soa1.size()-1)+30*(soa2.size()-1)]);
+            setVecPattern((*_patternMapNewton3Off)[(soa1.size()-1)+30*(soa2.size()-1)]);
           }
         }else {
-          setVecPattern(mdLib::VectorizationPattern::p1xVec);
+          if (soa1.size()<= soa2.size()) {
+            setVecPattern(mdLib::VectorizationPattern::p1xVec);
+          }else {
+            setVecPattern(mdLib::VectorizationPattern::pVecx1);
+          }
         }
 
       }
@@ -1355,19 +1359,14 @@ class LJFunctorHWY
   /**
     * @copydoc autopas::Functor::setPatternSelection()
     * set pattern vector with optimal patterns for functor
-    * @param pattern_map
+    * @param patternMapNewton3On, patternMapNewton3Off
     */
 
-   void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value>* pattern_map_newton3_on, std::vector<autopas::VectorizationPatternOption::Value>* pattern_map_newton3_off)final {
-    _pattern_map_newton3_on = pattern_map_newton3_on;
-    _pattern_map_newton3_off = pattern_map_newton3_off;
+   void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value>* patternMapNewton3On, std::vector<autopas::VectorizationPatternOption::Value>* patternMapNewton3Off)final {
+    _patternMapNewton3On = patternMapNewton3On;
+    _patternMapNewton3Off = patternMapNewton3Off;
   };
-  /**
-    * @copydoc autopas::Functor::getMixingStatus()
-     * Get status whether functor uses mixing or not
-     * @return boolean
-     */
-   bool getMixingStatus() final{return useMixing;}
+
 
  private:
   /**
@@ -1414,7 +1413,7 @@ class LJFunctorHWY
   bool _masksInitialized{false};
 
   VectorizationPattern _vecPattern;
-  std::vector<autopas::VectorizationPatternOption::Value>* _pattern_map_newton3_on = nullptr;
-  std::vector<autopas::VectorizationPatternOption::Value>* _pattern_map_newton3_off = nullptr;
+  std::vector<autopas::VectorizationPatternOption::Value>* _patternMapNewton3On = nullptr;
+  std::vector<autopas::VectorizationPatternOption::Value>* _patternMapNewton3Off = nullptr;
 };
 }  // namespace mdLib
