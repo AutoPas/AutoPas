@@ -88,8 +88,7 @@ class KryptonKernel : public Kernel<KryptonKernel> {
 
     const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distInv2;
 
-    return (dr >= _minDistance ? firstTerm + secondTerm
-                               : _constATilde * distInv2 * std::exp(-_alphaTilde * dr) * (distInv + _alphaTilde));
+    return firstTerm + secondTerm;
   }
 
   double calculatePair(double dr) final {

@@ -56,4 +56,4 @@ vtk-write-frequency              :  500
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  debug
-log-file                         :  log_argon_interpolation_derivative_0,6_16_16_benchmark.out
+log-file                         :  test
