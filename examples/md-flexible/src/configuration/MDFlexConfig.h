@@ -486,6 +486,20 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> loadBalancingInterval{
       100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
 
+   /**
+   * loadBalancingImbalanceThreshold
+   */
+  MDFlexOption<double, __LINE__> loadBalancingImbalanceThreshold{
+      0.0, "load-balancing-imbalance-threshold", true,
+      "Defines the imbalance (e.g., (max_work-min_work)/avg_work) threshold to trigger load balancing. If <= 0, fixed interval is used."};
+
+  /**
+   * minLoadBalancingInterval
+   */
+  MDFlexOption<unsigned int, __LINE__> minLoadBalancingInterval{
+      10, "min-load-balancing-interval", true,
+      "Minimum number of iterations between adaptive load balancing operations."};
+      
   /**
    * subdivideDimension
    */

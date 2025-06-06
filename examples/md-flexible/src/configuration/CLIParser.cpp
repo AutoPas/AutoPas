@@ -71,6 +71,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.iterations,
       config.loadBalancer,
       config.loadBalancingInterval,
+      config.loadBalancingImbalanceThreshold,
+      config.minLoadBalancingInterval,
       config.loadEstimatorOptions,
       config.logFileName,
       config.logLevel,
@@ -736,6 +738,24 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {
         config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
+        break;
+      }
+      case decltype(config.loadBalancingImbalanceThreshold)::getoptChar: {
+        try {
+          config.loadBalancingImbalanceThreshold.value = stod(strArg);
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing load balancing imbalance threshold: " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.minLoadBalancingInterval)::getoptChar: {
+        try {
+          config.minLoadBalancingInterval.value = (unsigned int)stoul(strArg);
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing min load balancing interval: " << optarg << std::endl;
+          displayHelp = true;
+        }
         break;
       }
 

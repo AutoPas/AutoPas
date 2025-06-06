@@ -844,6 +844,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
+      } else if (key == config.loadBalancingImbalanceThreshold.name) {
+        expected = "Floating point value";
+        description = config.loadBalancingImbalanceThreshold.description;
+        config.loadBalancingImbalanceThreshold.value = node[key].as<double>();
+      } else if (key == config.minLoadBalancingInterval.name) {
+        expected = "Unsigned Integer";
+        description = config.minLoadBalancingInterval.description;
+        config.minLoadBalancingInterval.value = node[key].as<unsigned int>();
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

@@ -85,7 +85,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+      _simulationIsPaused(false),
+      _pausedIteration(0),
+      _lastBalancingIteration(0) {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -227,8 +230,12 @@ void Simulation::run() {
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
-  
-      const long forceCalcDurationNanos = updateInteractionForces();
+    }
+
+    const long forceCalcDurationNanos = updateInteractionForces();
+
+    //updated check (same as above)
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
 
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
@@ -236,10 +243,48 @@ void Simulation::run() {
 
       const auto computationalLoad = static_cast<double>(forceCalcDurationNanos);
 
-      // periodically resize box for MPI load balancing
-      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+      // Perform domain decomposition and load balancing if the interval is reached or adaptive condition is met.
+      bool triggerBalancing = false;
+      //Periodic Load Balancing
+      if (_configuration.loadBalancingInterval.value > 0 and _iteration >= _lastBalancingIteration and
+        (_iteration - _lastBalancingIteration) >= _configuration.loadBalancingInterval.value) {
+        triggerBalancing = true;
+      }
+
+      //Logic for adaptive load balancing based on new work
+      if (_configuration.loadBalancingImbalanceThreshold.value > 0.0 && _iteration >= _lastBalancingIteration &&
+          (_iteration - _lastBalancingIteration) >= _configuration.minLoadBalancingInterval.value) {
+        // Gather computational load from all ranks
+        int commSize;
+        autopas::AutoPas_MPI_Comm_size(_domainDecomposition->getCommunicator(), &commSize);
+        if (commSize > 1) {
+          std::vector<double> allWork(commSize);
+          // Make a non-const copy for MPI_Allgather (possibly expensive)
+          double nonConstComputationalLoad = computationalLoad;
+          autopas::AutoPas_MPI_Allgather(&nonConstComputationalLoad, 1, AUTOPAS_MPI_DOUBLE, allWork.data(), 1,
+                                       AUTOPAS_MPI_DOUBLE, _domainDecomposition->getCommunicator());
+
+          double minWork = -1.0, maxWork = 0.0, totalWork = 0.0;
+          for (double workVal : allWork) {
+            if (minWork < 0.0 || workVal < minWork) minWork = workVal;
+            if (workVal > maxWork) maxWork = workVal;
+            totalWork += workVal;
+          }
+          double avgWork = totalWork / commSize;
+          // Using (max - min) / avg as imbalance metric (naive, can be improved)
+          double imbalance = (avgWork > 1e-9) ? ((maxWork - minWork) / avgWork) : 0.0;
+
+          if (imbalance > _configuration.loadBalancingImbalanceThreshold.value) {
+            triggerBalancing = true;
+          }
+        }
+      }
+
+      // Actual Load Balancing
+      if (triggerBalancing) {
         _timers.loadBalancing.start();
         _domainDecomposition->update(computationalLoad);
+        _lastBalancingIteration = _iteration;
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
         // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the

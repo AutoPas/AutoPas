@@ -248,6 +248,16 @@ class Simulation {
    * Defines, if vtk files should be created or not.
    */
   bool _createVtkFiles;
+  
+  /**
+   * Stores the iteration at which the simulation was paused.
+   */
+  size_t _pausedIteration;
+
+  /**
+   * Stores the iteration at which the last load balancing was performed.
+   */
+  size_t _lastBalancingIteration;
 
  private:
   /**
