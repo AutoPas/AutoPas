@@ -247,7 +247,7 @@ void Simulation::run() {
       bool triggerBalancing = false;
       //Periodic Load Balancing
       if (_configuration.loadBalancingInterval.value > 0 and _iteration >= _lastBalancingIteration and
-        (_iteration - _lastBalancingIteration) >= _configuration.loadBalancingInterval.value) {
+          (_iteration - _lastBalancingIteration) >= _configuration.loadBalancingInterval.value) {
         triggerBalancing = true;
       }
 

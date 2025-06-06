@@ -41,6 +41,21 @@ class ParticleCommunicator {
   void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
 
   /**
+   * Safely exchanges particles with left and right neighbors to avoid deadlocks.
+   * Uses deterministic communication pattern based on rank ordering.
+   * @param particlesToLeft Particles to send to the left neighbor.
+   * @param particlesToRight Particles to send to the right neighbor.
+   * @param receivedParticles Buffer where received particles will be stored.
+   * @param leftNeighbor Rank of the left neighbor.
+   * @param rightNeighbor Rank of the right neighbor.
+   * @param myRank Current rank of this process.
+   */
+  void exchangeParticlesWithNeighbors(const std::vector<ParticleType> &particlesToLeft,
+                                      const std::vector<ParticleType> &particlesToRight,
+                                      std::vector<ParticleType> &receivedParticles,
+                                      int leftNeighbor, int rightNeighbor, int myRank);
+
+  /**
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();

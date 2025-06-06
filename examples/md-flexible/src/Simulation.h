@@ -248,7 +248,7 @@ class Simulation {
    * Defines, if vtk files should be created or not.
    */
   bool _createVtkFiles;
-  
+
   /**
    * Stores the iteration at which the simulation was paused.
    */
