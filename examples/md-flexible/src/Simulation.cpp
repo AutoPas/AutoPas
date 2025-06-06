@@ -227,12 +227,14 @@ void Simulation::run() {
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
+  
+      const long forceCalcDurationNanos = updateInteractionForces();
 
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
 
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+      const auto computationalLoad = static_cast<double>(forceCalcDurationNanos);
 
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
@@ -275,10 +277,7 @@ void Simulation::run() {
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
-      _timers.computationalLoad.start();
     }
-
-    updateInteractionForces();
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
@@ -448,7 +447,7 @@ void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.stop();
 }
 
-void Simulation::updateInteractionForces() {
+long Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();
 
   _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
@@ -481,7 +480,7 @@ void Simulation::updateInteractionForces() {
     }
   }
 
-  _timers.forceUpdateTotal.stop();
+  return _timers.forceUpdateTotal.stop();
 }
 
 void Simulation::updateVelocities() {
