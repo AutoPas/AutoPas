@@ -459,7 +459,7 @@ bool AutoTuner::inTuningPhase() const {
   return (_isTuning or _forceRetune or inFirstTuningIteration()) and not searchSpaceIsTrivial();
 }
 
-inline bool AutoTuner::inFirstTuningIteration() const { return (_iteration == _lastTunigPhaseStartIteration); }
+bool AutoTuner::inFirstTuningIteration() const { return (_iteration == _lastTunigPhaseStartIteration); }
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 

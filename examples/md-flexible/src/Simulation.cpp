@@ -187,7 +187,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   } else {
     _autoPasContainer->setTuningTriggerType(autopas::TuningTriggerOption::staticSimple);
   }
-#elif
+#else
   _autoPasContainer->setTuningTriggerType(autopas::TuningTriggerOption::staticSimple);
   AutoPasLog(WARN, "Dynamic tuning intervals are disabled. Defaulting to static trigger.");
 #endif
