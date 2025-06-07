@@ -24,28 +24,27 @@ namespace demLib {
  * A functor to handle the interactions between particles using Discrete Element Method (DEM).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
- * @tparam Particle The type of particle.
+ * @tparam Particle_T The type of particle.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
- * If set to false, _epsilon6 and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGloabls = false, bool countFLOPs = false, bool relevantForTuning = true>
+template <class Particle_T, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool countFLOPs = false, bool relevantForTuning = true>
 class DEMFunctor
     : public autopas::PairwiseFunctor<
-          Particle, DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>> {
+          Particle_T, DEMFunctor<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
  public:
   /**
@@ -64,23 +63,13 @@ class DEMFunctor
    */
   explicit DEMFunctor(double cutoff, DEMParameters &demParameters, void * /*dummy*/)
       : autopas::PairwiseFunctor<
-            Particle, DEMFunctor<Particle, useMixing, useNewton3, calculateGloabls, countFLOPs, relevantForTuning>>(
+            Particle_T, DEMFunctor<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
             cutoff),
         _radius{cutoff / 5.},  // default initialization, can be changed by ParticlePropertiesLibrary
         _cutoff{cutoff},
-        _elasticStiffness{demParameters.getElasticStiffness()},
-        _normalViscosity{demParameters.getNormalViscosity()},
-        _frictionViscosity{demParameters.getFrictionViscosity()},
-        _rollingViscosity{demParameters.getRollingViscosity()},
-        _torsionViscosity{demParameters.getTorsionViscosity()},
-        _staticFrictionCoeff{demParameters.getStaticFrictionCoeff()},
-        _dynamicFrictionCoeff{demParameters.getDynamicFrictionCoeff()},
-        _rollingFrictionCoeff{demParameters.getRollingFrictionCoeff()},
-        _torsionFrictionCoeff{demParameters.getTorsionFrictionCoeff()},
-        _heatConductivity{demParameters.getHeatConductivity()},
-        _heatGenerationFactor{demParameters.getHeatGenerationFactor()},
+        _demParameters(demParameters),
         _postProcessed{false} {
-    if constexpr (calculateGloabls) {
+    if constexpr (calculateGlobals) {
       _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
@@ -132,7 +121,7 @@ class DEMFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
     using namespace autopas::utils::ArrayMath;
 
@@ -162,7 +151,7 @@ class DEMFunctor
     const double overlap = radiusI + radiusJ - dist;
     const bool overlapIsPositive = overlap > 0;
 
-    if (not overlapIsPositive) return;  // VdW deactivated
+    if (not overlapIsPositive) return;
 
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += (newton3 ? 1 : 0);
@@ -170,34 +159,34 @@ class DEMFunctor
     }
 
     // (3 + 1 + 1 + 1 + 3 + 3 + 5 = 17 FLOPS)
-    assert(dist != 0. && "Distance is zero, division by zero detected!");
     const std::array<double, 3> normalUnit = displacement / dist;
     const double overlapHalf = overlap / 2.;
     const double radiusIReduced = radiusI - overlapHalf;
     const double radiusJReduced = radiusJ - overlapHalf;
-    assert((radiusIReduced + radiusJReduced) != 0. && "Distance is zero, division by zero detected!");
     const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
     const std::array<double, 3> relVel = i.getV() - j.getV();
     const double relVelDotNormalUnit = dot(normalUnit, relVel);
 
     // Compute Forces
     // Compute normal forces (3 + 3 = 6 FLOPS)
-    const double normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;  // 3 FLOPS
-    const double normalFMag = normalContactFMag;
-    const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);  // 3 FLOPS
+    const double normalFMag = _demParameters.getElasticStiffness() * overlap -
+                              _demParameters.getNormalViscosity() * relVelDotNormalUnit;  // 3 FLOPS
+    const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);              // 3 FLOPS
 
     // Compute tangential force (30 + 3 + 3 + 1 + 3 + 6 = 46 FLOPS)
     const std::array<double, 3> tanRelVel = relVel + cross(normalUnit * radiusIReduced, i.getAngularVel()) +
                                             cross(normalUnit * radiusJReduced, j.getAngularVel());  // 30 FLOPS
     const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
     const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                  // 3 FLOPS
-    const double coulombLimit = _staticFrictionCoeff * (normalContactFMag);                         // 1 FLOPS
-    std::array<double, 3> tanF = tanVel * (-_frictionViscosity);                                    // 3 FLOPS
-    const double tanFMag = L2Norm(tanF);                                                            // 6 FLOPS
-    if (tanFMag > coulombLimit) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;                        // -> additional 5 FLOPS
-      const double scale = _dynamicFrictionCoeff * (normalContactFMag) / tanFMag;  // 2 FLOPS
-      tanF = tanF * scale;                                                         // 3 FLOPS
+    const double coulombLimit = _demParameters.getStaticFrictionCoeff() * (normalFMag);             // 1 FLOPS
+    const double coulombLimitSquared = coulombLimit * coulombLimit;                                 // 1 FLOPS
+    std::array<double, 3> tanF = tanVel * (-_demParameters.getFrictionViscosity());                 // 3 FLOPS
+    const double tanFMagSquared = dot(tanF, tanF);                                                  // 5 FLOPS
+    if (tanFMagSquared > coulombLimit) {
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;                                    // -> additional 5 FLOPS
+      const double tanFMag = std::sqrt(tanFMagSquared);                                        // 1 FLOPS
+      const double scale = _demParameters.getDynamicFrictionCoeff() * (normalFMag) / tanFMag;  // 2 FLOPS
+      tanF = tanF * scale;                                                                     // 3 FLOPS
     }
 
     // Compute total force (3 FLOPS)
@@ -215,24 +204,26 @@ class DEMFunctor
 
     // Compute rolling torque (15 + 3 + 6 + 12 = 36 FLOPS)
     const std::array<double, 3> rollingRelVel =
-        cross(normalUnit, (i.getAngularVel() - j.getAngularVel())) * (-radiusReduced);  // 15 FLOPS
-    std::array<double, 3> rollingF = rollingRelVel * (-_rollingViscosity);              // 3 FLOPS
-    const double rollingFMag = L2Norm(rollingF);                                        // 6 FLOPS
-    if (rollingFMag > coulombLimit) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;                        // -> additional 5 FLOPS
-      const double scale = _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;  // 2 FLOPS
+        cross(normalUnit, (i.getAngularVel() - j.getAngularVel())) * (-radiusReduced);         // 15 FLOPS
+    std::array<double, 3> rollingF = rollingRelVel * (-_demParameters.getRollingViscosity());  // 3 FLOPS
+    const double rollingFMagSquared = dot(rollingF, rollingF);                                 // 5 FLOPS
+    if (rollingFMagSquared > coulombLimitSquared) {
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;  // -> additional 5 FLOPS
+      const double rollingFMag = std::sqrt(rollingFMagSquared);  // 1 FLOPS
+      const double scale = _demParameters.getRollingFrictionCoeff() * normalFMag / rollingFMag;  // 2 FLOPS
       rollingF = rollingF * scale;
     }
     const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
 
     // Compute torsional torque (11 + 3 + 6 + 3 = 23 FLOPS)
     const std::array<double, 3> torsionRelVel = normalUnit * dot(normalUnit, (i.getAngularVel() - j.getAngularVel())) *
-                                                radiusReduced;              // 1 + 3 + 5 + 2 = 11 FLOPS
-    std::array<double, 3> torsionF = torsionRelVel * (-_torsionViscosity);  // 3 FLOPS
-    const double torsionFMag = L2Norm(torsionF);                            // 6 FLOPS
-    if (torsionFMag > coulombLimit) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;                        // -> additional 5 FLOPS
-      const double scale = _torsionFrictionCoeff * (normalContactFMag) / torsionFMag;  // 2 FLOPS
+                                                radiusReduced;  // 1 + 3 + 5 + 2 = 11 FLOPS
+    std::array<double, 3> torsionF = torsionRelVel * (-_demParameters.getTorsionViscosity());  // 3 FLOPS
+    const double torsionFMagSquared = dot(torsionF, torsionF);                                 // 5 FLOPS
+    if (torsionFMagSquared > coulombLimitSquared) {
+      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;  // -> additional 5 FLOPS
+      const double torsionFMag = std::sqrt(torsionFMagSquared);  // 1 FLOPS
+      const double scale = _demParameters.getTorsionFrictionCoeff() * normalFMag / torsionFMag;  // 2 FLOPS
       torsionF = torsionF * scale;
     }
     const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
@@ -246,11 +237,13 @@ class DEMFunctor
     // Heat Transfer (2 + 4 + 2 + 1 = 9 FLOPS, for newton3 additional 1 FLOP)
     const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
     const double conductance =
-        2. * _heatConductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
+        2. * _demParameters.getHeatConductivity() *
+        std::pow((3. * _demParameters.getElasticStiffness() * overlap * geometricMeanRadius) / 4., 1. / 3.);
     const double heatFluxI = conductance * (j.getTemperature() - i.getTemperature());
 
-    // Heat Generation (12 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)
-    const double heatFluxGenerated = _heatGenerationFactor * L2Norm(tanF) * L2Norm(tanVel);
+    // Heat Generation (7 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)
+    const double heatFluxGenerated =
+        _demParameters.getHeatGenerationFactor() * std::sqrt(tanFMagSquared) * L2Norm(tanVel);
 
     i.addHeatFlux(heatFluxI + heatFluxGenerated);
     if (newton3) {
@@ -267,31 +260,31 @@ class DEMFunctor
     const auto threadnum = autopas::autopas_get_thread_num();
 
     // Initialize pointers to SoA Data
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    const auto *const __restrict vxptr = soa.template begin<Particle::AttributeNames::velocityX>();
-    const auto *const __restrict vyptr = soa.template begin<Particle::AttributeNames::velocityY>();
-    const auto *const __restrict vzptr = soa.template begin<Particle::AttributeNames::velocityZ>();
+    const auto *const __restrict vxptr = soa.template begin<Particle_T::AttributeNames::velocityX>();
+    const auto *const __restrict vyptr = soa.template begin<Particle_T::AttributeNames::velocityY>();
+    const auto *const __restrict vzptr = soa.template begin<Particle_T::AttributeNames::velocityZ>();
 
-    const auto *const __restrict angularVelXptr = soa.template begin<Particle::AttributeNames::angularVelX>();
-    const auto *const __restrict angularVelYptr = soa.template begin<Particle::AttributeNames::angularVelY>();
-    const auto *const __restrict angularVelZptr = soa.template begin<Particle::AttributeNames::angularVelZ>();
+    const auto *const __restrict angularVelXptr = soa.template begin<Particle_T::AttributeNames::angularVelX>();
+    const auto *const __restrict angularVelYptr = soa.template begin<Particle_T::AttributeNames::angularVelY>();
+    const auto *const __restrict angularVelZptr = soa.template begin<Particle_T::AttributeNames::angularVelZ>();
 
-    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    SoAFloatPrecision *const __restrict qXptr = soa.template begin<Particle::AttributeNames::torqueX>();
-    SoAFloatPrecision *const __restrict qYptr = soa.template begin<Particle::AttributeNames::torqueY>();
-    SoAFloatPrecision *const __restrict qZptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+    SoAFloatPrecision *const __restrict qXptr = soa.template begin<Particle_T::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict qYptr = soa.template begin<Particle_T::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict qZptr = soa.template begin<Particle_T::AttributeNames::torqueZ>();
 
-    const auto *const __restrict temperaturePtr = soa.template begin<Particle::AttributeNames::temperature>();
-    SoAFloatPrecision *const __restrict heatFluxPtr = soa.template begin<Particle::AttributeNames::heatFlux>();
+    const auto *const __restrict temperaturePtr = soa.template begin<Particle_T::AttributeNames::temperature>();
+    SoAFloatPrecision *const __restrict heatFluxPtr = soa.template begin<Particle_T::AttributeNames::heatFlux>();
 
-    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     // Initialize local variables for constants
     const SoAFloatPrecision cutoff = _cutoff;
@@ -325,8 +318,8 @@ class DEMFunctor
 
       const double radiusI = _PPLibrary->getRadius(typeptr[i]);
 
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum,     \
-                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, \
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum, \
+                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,             \
                                numInnerIfTanFCallsSum, numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         // Compute necessary values for computations of forces
@@ -395,24 +388,26 @@ class DEMFunctor
 
         // Compute normal force as sum of contact force.
         const SoAFloatPrecision normalContactFMag =
-            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+            _demParameters.getElasticStiffness() * overlap - _demParameters.getNormalViscosity() * relVelDotNormalUnit;
 
         const SoAFloatPrecision normalFX = normalContactFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalContactFMag * normalUnitY;
         const SoAFloatPrecision normalFZ = normalContactFMag * normalUnitZ;
 
         // Compute tangential force
-        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
-        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
-        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
+        SoAFloatPrecision tanFX = -_demParameters.getFrictionViscosity() * tanRelVelTotalX;
+        SoAFloatPrecision tanFY = -_demParameters.getFrictionViscosity() * tanRelVelTotalY;
+        SoAFloatPrecision tanFZ = -_demParameters.getFrictionViscosity() * tanRelVelTotalZ;
 
-        const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
-        const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * normalContactFMag;
-        if (tanFMag > coulombLimit) {
+        const SoAFloatPrecision coulombLimit = _demParameters.getStaticFrictionCoeff() * normalContactFMag;
+        const SoAFloatPrecision coulombLimitSquared = coulombLimit * coulombLimit;
+        const SoAFloatPrecision tanFMagSquared = tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ;
+        if (tanFMagSquared > coulombLimit) {
           if constexpr (countFLOPs) {
             ++numInnerIfTanFCallsSum;
           }
-          const SoAFloatPrecision scale = _dynamicFrictionCoeff * normalContactFMag / tanFMag;
+          const SoAFloatPrecision tanFMag = std::sqrt(tanFMagSquared);
+          const SoAFloatPrecision scale = _demParameters.getDynamicFrictionCoeff() * normalContactFMag / tanFMag;
           tanFX *= scale;
           tanFY *= scale;
           tanFZ *= scale;
@@ -451,18 +446,19 @@ class DEMFunctor
             -radiusReduced * (normalUnitX * (angularVelYptr[i] - angularVelYptr[j]) -
                               normalUnitY * (angularVelXptr[i] - angularVelXptr[j]));
 
-        SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
-        SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
-        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+        SoAFloatPrecision rollingFX = rollingRelVelX * (-_demParameters.getRollingViscosity());
+        SoAFloatPrecision rollingFY = rollingRelVelY * (-_demParameters.getRollingViscosity());
+        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_demParameters.getRollingViscosity());
 
-        const SoAFloatPrecision rollingFMag =
-            std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+        const SoAFloatPrecision rollingFMagSquared =
+            rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ;
 
-        if (rollingFMag > coulombLimit) {
+        if (rollingFMagSquared > coulombLimitSquared) {
           if constexpr (countFLOPs) {
             ++numInnerIfRollingQCallsSum;
           }
-          const SoAFloatPrecision scale = _rollingFrictionCoeff * normalContactFMag / rollingFMag;
+          const SoAFloatPrecision rollingFMag = std::sqrt(rollingFMagSquared);
+          const SoAFloatPrecision scale = _demParameters.getRollingFrictionCoeff() * normalContactFMag / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -481,18 +477,19 @@ class DEMFunctor
         const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
         const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
 
-        SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
-        SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
-        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+        SoAFloatPrecision torsionFX = torsionRelVelX * (-_demParameters.getTorsionViscosity());
+        SoAFloatPrecision torsionFY = torsionRelVelY * (-_demParameters.getTorsionViscosity());
+        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_demParameters.getTorsionViscosity());
 
-        const SoAFloatPrecision torsionFMag =
-            std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
+        const SoAFloatPrecision torsionFMagSquared =
+            torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ;
 
-        if (torsionFMag > coulombLimit) {
+        if (torsionFMagSquared > coulombLimitSquared) {
           if constexpr (countFLOPs) {
             ++numInnerIfTorsionQCallsSum;
           }
-          const SoAFloatPrecision scale = _torsionFrictionCoeff * normalContactFMag / torsionFMag;
+          const SoAFloatPrecision torsionFMag = std::sqrt(torsionFMagSquared);
+          const SoAFloatPrecision scale = _demParameters.getTorsionFrictionCoeff() * normalContactFMag / torsionFMag;
           torsionFX *= scale;
           torsionFY *= scale;
           torsionFZ *= scale;
@@ -515,12 +512,13 @@ class DEMFunctor
         // Compute Heat Transfer (2 + 3 + 2 + 2 = 9 FLOPS)
         const SoAFloatPrecision geometricMeanRadius = std::sqrt(radiusI * radiusJ);
         const SoAFloatPrecision conductance =
-            2. * _heatConductivity * std::pow((3. * _elasticStiffness * overlap * geometricMeanRadius) / 4., 1. / 3.);
+            2. * _demParameters.getHeatConductivity() *
+            std::pow((3. * _demParameters.getElasticStiffness() * overlap * geometricMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[i]);
 
-        // Compute Heat Generation (12 + 1 = 13 FLOPS)
+        // Compute Heat Generation (7 + 1 = 13 FLOPS)
         const SoAFloatPrecision heatFluxGenerated =
-            _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+            _demParameters.getHeatGenerationFactor() * std::sqrt(tanFMagSquared) *
             std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
                       tanRelVelTotalZ * tanRelVelTotalZ);
 
@@ -592,44 +590,44 @@ class DEMFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 20>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::velocityX,   Particle::AttributeNames::velocityY,
-        Particle::AttributeNames::velocityZ,   Particle::AttributeNames::forceX,
-        Particle::AttributeNames::forceY,      Particle::AttributeNames::forceZ,
-        Particle::AttributeNames::angularVelX, Particle::AttributeNames::angularVelY,
-        Particle::AttributeNames::angularVelZ, Particle::AttributeNames::torqueX,
-        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::temperature, Particle::AttributeNames::heatFlux,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 20>{
+        Particle_T::AttributeNames::id,          Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,        Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::velocityX,   Particle_T::AttributeNames::velocityY,
+        Particle_T::AttributeNames::velocityZ,   Particle_T::AttributeNames::forceX,
+        Particle_T::AttributeNames::forceY,      Particle_T::AttributeNames::forceZ,
+        Particle_T::AttributeNames::angularVelX, Particle_T::AttributeNames::angularVelY,
+        Particle_T::AttributeNames::angularVelZ, Particle_T::AttributeNames::torqueX,
+        Particle_T::AttributeNames::torqueY,     Particle_T::AttributeNames::torqueZ,
+        Particle_T::AttributeNames::temperature, Particle_T::AttributeNames::heatFlux,
+        Particle_T::AttributeNames::typeId,      Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 20>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::velocityX,   Particle::AttributeNames::velocityY,
-        Particle::AttributeNames::velocityZ,   Particle::AttributeNames::forceX,
-        Particle::AttributeNames::forceY,      Particle::AttributeNames::forceZ,
-        Particle::AttributeNames::angularVelX, Particle::AttributeNames::angularVelY,
-        Particle::AttributeNames::angularVelZ, Particle::AttributeNames::torqueX,
-        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::temperature, Particle::AttributeNames::heatFlux,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 20>{
+        Particle_T::AttributeNames::id,          Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,        Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::velocityX,   Particle_T::AttributeNames::velocityY,
+        Particle_T::AttributeNames::velocityZ,   Particle_T::AttributeNames::forceX,
+        Particle_T::AttributeNames::forceY,      Particle_T::AttributeNames::forceZ,
+        Particle_T::AttributeNames::angularVelX, Particle_T::AttributeNames::angularVelY,
+        Particle_T::AttributeNames::angularVelZ, Particle_T::AttributeNames::torqueX,
+        Particle_T::AttributeNames::torqueY,     Particle_T::AttributeNames::torqueZ,
+        Particle_T::AttributeNames::temperature, Particle_T::AttributeNames::heatFlux,
+        Particle_T::AttributeNames::typeId,      Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 7>{
-        Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
-        Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::heatFlux};
+    return std::array<typename Particle_T::AttributeNames, 7>{
+        Particle_T::AttributeNames::forceX,  Particle_T::AttributeNames::forceY,  Particle_T::AttributeNames::forceZ,
+        Particle_T::AttributeNames::torqueX, Particle_T::AttributeNames::torqueY, Particle_T::AttributeNames::torqueZ,
+        Particle_T::AttributeNames::heatFlux};
   }
 
   /**
@@ -644,7 +642,7 @@ class DEMFunctor
    */
   void initTraversal() final {
     _postProcessed = false;
-    if constexpr (calculateGloabls) {
+    if constexpr (calculateGlobals) {
       for (auto &data : _aosThreadDataGlobals) {
         data.setZero();
       }
@@ -667,7 +665,7 @@ class DEMFunctor
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-    if (calculateGloabls) {
+    if (calculateGlobals) {
     }
   }
 
@@ -753,57 +751,57 @@ class DEMFunctor
     const auto threadnum = autopas::autopas_get_thread_num();
 
     // Initialize pointers to SoA Data for soa1
-    const auto *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict xptr1 = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr1 = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr1 = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    const auto *const __restrict vxptr1 = soa1.template begin<Particle::AttributeNames::velocityX>();
-    const auto *const __restrict vyptr1 = soa1.template begin<Particle::AttributeNames::velocityY>();
-    const auto *const __restrict vzptr1 = soa1.template begin<Particle::AttributeNames::velocityZ>();
+    const auto *const __restrict vxptr1 = soa1.template begin<Particle_T::AttributeNames::velocityX>();
+    const auto *const __restrict vyptr1 = soa1.template begin<Particle_T::AttributeNames::velocityY>();
+    const auto *const __restrict vzptr1 = soa1.template begin<Particle_T::AttributeNames::velocityZ>();
 
-    const auto *const __restrict angularVelXptr1 = soa1.template begin<Particle::AttributeNames::angularVelX>();
-    const auto *const __restrict angularVelYptr1 = soa1.template begin<Particle::AttributeNames::angularVelY>();
-    const auto *const __restrict angularVelZptr1 = soa1.template begin<Particle::AttributeNames::angularVelZ>();
+    const auto *const __restrict angularVelXptr1 = soa1.template begin<Particle_T::AttributeNames::angularVelX>();
+    const auto *const __restrict angularVelYptr1 = soa1.template begin<Particle_T::AttributeNames::angularVelY>();
+    const auto *const __restrict angularVelZptr1 = soa1.template begin<Particle_T::AttributeNames::angularVelZ>();
 
-    SoAFloatPrecision *const __restrict fxptr1 = soa1.template begin<Particle::AttributeNames::forceX>();
-    SoAFloatPrecision *const __restrict fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
-    SoAFloatPrecision *const __restrict fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxptr1 = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr1 = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr1 = soa1.template begin<Particle_T::AttributeNames::forceZ>();
 
-    SoAFloatPrecision *const __restrict qXptr1 = soa1.template begin<Particle::AttributeNames::torqueX>();
-    SoAFloatPrecision *const __restrict qYptr1 = soa1.template begin<Particle::AttributeNames::torqueY>();
-    SoAFloatPrecision *const __restrict qZptr1 = soa1.template begin<Particle::AttributeNames::torqueZ>();
+    SoAFloatPrecision *const __restrict qXptr1 = soa1.template begin<Particle_T::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict qYptr1 = soa1.template begin<Particle_T::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict qZptr1 = soa1.template begin<Particle_T::AttributeNames::torqueZ>();
 
-    const auto *const __restrict temperaturePtr1 = soa1.template begin<Particle::AttributeNames::temperature>();
-    SoAFloatPrecision *const __restrict heatFluxPtr1 = soa1.template begin<Particle::AttributeNames::heatFlux>();
+    const auto *const __restrict temperaturePtr1 = soa1.template begin<Particle_T::AttributeNames::temperature>();
+    SoAFloatPrecision *const __restrict heatFluxPtr1 = soa1.template begin<Particle_T::AttributeNames::heatFlux>();
 
     // Initialize pointers to SoA Data for soa2
-    const auto *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict xptr2 = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr2 = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr2 = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    const auto *const __restrict vxptr2 = soa2.template begin<Particle::AttributeNames::velocityX>();
-    const auto *const __restrict vyptr2 = soa2.template begin<Particle::AttributeNames::velocityY>();
-    const auto *const __restrict vzptr2 = soa2.template begin<Particle::AttributeNames::velocityZ>();
+    const auto *const __restrict vxptr2 = soa2.template begin<Particle_T::AttributeNames::velocityX>();
+    const auto *const __restrict vyptr2 = soa2.template begin<Particle_T::AttributeNames::velocityY>();
+    const auto *const __restrict vzptr2 = soa2.template begin<Particle_T::AttributeNames::velocityZ>();
 
-    const auto *const __restrict angularVelXptr2 = soa2.template begin<Particle::AttributeNames::angularVelX>();
-    const auto *const __restrict angularVelYptr2 = soa2.template begin<Particle::AttributeNames::angularVelY>();
-    const auto *const __restrict angularVelZptr2 = soa2.template begin<Particle::AttributeNames::angularVelZ>();
+    const auto *const __restrict angularVelXptr2 = soa2.template begin<Particle_T::AttributeNames::angularVelX>();
+    const auto *const __restrict angularVelYptr2 = soa2.template begin<Particle_T::AttributeNames::angularVelY>();
+    const auto *const __restrict angularVelZptr2 = soa2.template begin<Particle_T::AttributeNames::angularVelZ>();
 
-    SoAFloatPrecision *const __restrict fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
-    SoAFloatPrecision *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
-    SoAFloatPrecision *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxptr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
 
-    SoAFloatPrecision *const __restrict qXptr2 = soa2.template begin<Particle::AttributeNames::torqueX>();
-    SoAFloatPrecision *const __restrict qYptr2 = soa2.template begin<Particle::AttributeNames::torqueY>();
-    SoAFloatPrecision *const __restrict qZptr2 = soa2.template begin<Particle::AttributeNames::torqueZ>();
+    SoAFloatPrecision *const __restrict qXptr2 = soa2.template begin<Particle_T::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict qYptr2 = soa2.template begin<Particle_T::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict qZptr2 = soa2.template begin<Particle_T::AttributeNames::torqueZ>();
 
-    const auto *const __restrict temperaturePtr2 = soa2.template begin<Particle::AttributeNames::temperature>();
-    SoAFloatPrecision *const __restrict heatFluxPtr2 = soa2.template begin<Particle::AttributeNames::heatFlux>();
+    const auto *const __restrict temperaturePtr2 = soa2.template begin<Particle_T::AttributeNames::temperature>();
+    SoAFloatPrecision *const __restrict heatFluxPtr2 = soa2.template begin<Particle_T::AttributeNames::heatFlux>();
 
-    auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
-    auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
+    auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
     // Initialize local variables for constants
     const SoAFloatPrecision cutoff = _cutoff;
@@ -836,8 +834,8 @@ class DEMFunctor
       SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr1[i]);
 
       // Loop over Particles in soa2
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum,     \
-                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, \
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum, \
+                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,             \
                                numInnerIfTanFCallsSum, numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
@@ -908,7 +906,7 @@ class DEMFunctor
 
         // Compute normal force
         const SoAFloatPrecision normalContactFMag =
-            _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+            _demParameters.getElasticStiffness() * overlap - _demParameters.getNormalViscosity() * relVelDotNormalUnit;
 
         const SoAFloatPrecision normalFX = normalContactFMag * normalUnitX;
         const SoAFloatPrecision normalFY = normalContactFMag * normalUnitY;
@@ -917,20 +915,22 @@ class DEMFunctor
         // Compute tangential force
         const SoAFloatPrecision tanFUnitMag = std::sqrt(
             tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY + tanRelVelTotalZ * tanRelVelTotalZ);
-        const SoAFloatPrecision tanFScale = _dynamicFrictionCoeff * normalContactFMag / tanFUnitMag;
+        const SoAFloatPrecision tanFScale = _demParameters.getDynamicFrictionCoeff() * normalContactFMag / tanFUnitMag;
 
-        SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
-        SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
-        SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
+        SoAFloatPrecision tanFX = -_demParameters.getFrictionViscosity() * tanRelVelTotalX;
+        SoAFloatPrecision tanFY = -_demParameters.getFrictionViscosity() * tanRelVelTotalY;
+        SoAFloatPrecision tanFZ = -_demParameters.getFrictionViscosity() * tanRelVelTotalZ;
 
-        const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
-        const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * normalContactFMag;
+        const SoAFloatPrecision tanFMagSquared = tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ;
+        const SoAFloatPrecision coulombLimit = _demParameters.getStaticFrictionCoeff() * normalContactFMag;
+        const SoAFloatPrecision coulombLimitSquared = coulombLimit * coulombLimit;
 
-        if (tanFMag > coulombLimit) {
+        if (tanFMagSquared > coulombLimitSquared) {
           if constexpr (countFLOPs) {
             ++numInnerIfTanFCallsSum;
           }
-          const SoAFloatPrecision scale = _dynamicFrictionCoeff * normalContactFMag / tanFMag;
+          const SoAFloatPrecision tanFMag = std::sqrt(tanFMagSquared);
+          const SoAFloatPrecision scale = _demParameters.getDynamicFrictionCoeff() * normalContactFMag / tanFMag;
           tanFX *= scale;
           tanFY *= scale;
           tanFZ *= scale;
@@ -970,18 +970,19 @@ class DEMFunctor
             -radiusReduced * (normalUnitX * (angularVelYptr1[i] - angularVelYptr2[j]) -
                               normalUnitY * (angularVelXptr1[i] - angularVelXptr2[j]));
 
-        SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
-        SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
-        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+        SoAFloatPrecision rollingFX = rollingRelVelX * (-_demParameters.getRollingViscosity());
+        SoAFloatPrecision rollingFY = rollingRelVelY * (-_demParameters.getRollingViscosity());
+        SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_demParameters.getRollingViscosity());
 
-        const SoAFloatPrecision rollingFMag =
-            std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+        const SoAFloatPrecision rollingFMagSquared =
+            rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ;
 
-        if (rollingFMag > coulombLimit) {
+        if (rollingFMagSquared > coulombLimitSquared) {
           if constexpr (countFLOPs) {
             ++numInnerIfRollingQCallsSum;
           }
-          const SoAFloatPrecision scale = _rollingFrictionCoeff * normalContactFMag / rollingFMag;
+          const SoAFloatPrecision rollingFMag = std::sqrt(rollingFMagSquared);
+          const SoAFloatPrecision scale = _demParameters.getRollingFrictionCoeff() * normalContactFMag / rollingFMag;
           rollingFX *= scale;
           rollingFY *= scale;
           rollingFZ *= scale;
@@ -1000,18 +1001,19 @@ class DEMFunctor
         const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
         const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
 
-        SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
-        SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
-        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+        SoAFloatPrecision torsionFX = torsionRelVelX * (-_demParameters.getTorsionViscosity());
+        SoAFloatPrecision torsionFY = torsionRelVelY * (-_demParameters.getTorsionViscosity());
+        SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_demParameters.getTorsionViscosity());
 
-        const SoAFloatPrecision torsionFMag =
-            std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
+        const SoAFloatPrecision torsionFMagSquared =
+            torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ;
 
-        if (torsionFMag > coulombLimit) {
+        if (torsionFMagSquared > coulombLimitSquared) {
           if constexpr (countFLOPs) {
             ++numInnerIfTorsionQCallsSum;
           }
-          const SoAFloatPrecision scale = _torsionFrictionCoeff * normalContactFMag / torsionFMag;
+          const SoAFloatPrecision torsionFMag = std::sqrt(torsionFMagSquared);
+          const SoAFloatPrecision scale = _demParameters.getTorsionFrictionCoeff() * normalContactFMag / torsionFMag;
           torsionFX *= scale;
           torsionFY *= scale;
           torsionFZ *= scale;
@@ -1035,11 +1037,12 @@ class DEMFunctor
         // Compute heat flux
         const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
         const SoAFloatPrecision conductance =
-            2. * _heatConductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
+            2. * _demParameters.getHeatConductivity() *
+            std::pow((3. * _demParameters.getElasticStiffness() * overlap * geomMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr2[j] - temperaturePtr1[i]);
 
         const SoAFloatPrecision heatFluxGenerated =
-            _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+            _demParameters.getHeatGenerationFactor() * std::sqrt(tanFMagSquared) *
             std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
                       tanRelVelTotalZ * tanRelVelTotalZ);
 
@@ -1075,32 +1078,32 @@ class DEMFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
-    const auto *const __restrict vxptr = soa.template begin<Particle::AttributeNames::velocityX>();
-    const auto *const __restrict vyptr = soa.template begin<Particle::AttributeNames::velocityY>();
-    const auto *const __restrict vzptr = soa.template begin<Particle::AttributeNames::velocityZ>();
+    const auto *const __restrict vxptr = soa.template begin<Particle_T::AttributeNames::velocityX>();
+    const auto *const __restrict vyptr = soa.template begin<Particle_T::AttributeNames::velocityY>();
+    const auto *const __restrict vzptr = soa.template begin<Particle_T::AttributeNames::velocityZ>();
 
-    const auto *const __restrict wxptr = soa.template begin<Particle::AttributeNames::angularVelX>();
-    const auto *const __restrict wyptr = soa.template begin<Particle::AttributeNames::angularVelY>();
-    const auto *const __restrict wzptr = soa.template begin<Particle::AttributeNames::angularVelZ>();
+    const auto *const __restrict wxptr = soa.template begin<Particle_T::AttributeNames::angularVelX>();
+    const auto *const __restrict wyptr = soa.template begin<Particle_T::AttributeNames::angularVelY>();
+    const auto *const __restrict wzptr = soa.template begin<Particle_T::AttributeNames::angularVelZ>();
 
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    auto *const __restrict qxptr = soa.template begin<Particle::AttributeNames::torqueX>();
-    auto *const __restrict qyptr = soa.template begin<Particle::AttributeNames::torqueY>();
-    auto *const __restrict qzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+    auto *const __restrict qxptr = soa.template begin<Particle_T::AttributeNames::torqueX>();
+    auto *const __restrict qyptr = soa.template begin<Particle_T::AttributeNames::torqueY>();
+    auto *const __restrict qzptr = soa.template begin<Particle_T::AttributeNames::torqueZ>();
 
-    const auto *const __restrict temperaturePtr = soa.template begin<Particle::AttributeNames::temperature>();
-    auto *const __restrict heatFluxPtr = soa.template begin<Particle::AttributeNames::heatFlux>();
+    const auto *const __restrict temperaturePtr = soa.template begin<Particle_T::AttributeNames::temperature>();
+    auto *const __restrict heatFluxPtr = soa.template begin<Particle_T::AttributeNames::heatFlux>();
 
-    auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict typeptr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     // countFLOPs counters
     size_t numDistanceCalculationSum = 0;
@@ -1195,9 +1198,9 @@ class DEMFunctor
         }
 
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qxacc, qyacc, qzacc, heatFluxAcc, numDistanceCalculationSum,     \
-                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, \
-                               numInnerIfTanFCallsSum, numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)       \
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qxacc, qyacc, qzacc, heatFluxAcc, numDistanceCalculationSum, \
+                               numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,             \
+                               numInnerIfTanFCallsSum, numInnerIfRollingQCallsSum, numInnerIfTorsionQCallsSum)   \
     safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           // --------------------------------- main - calculation ------------------------------
@@ -1265,26 +1268,28 @@ class DEMFunctor
           const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - relVelDotNormalUnit * normalUnitZ;
 
           // Compute normal force as sum of contact force.
-          const SoAFloatPrecision normalContactFMag =
-              _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+          const SoAFloatPrecision normalContactFMag = _demParameters.getElasticStiffness() * overlap -
+                                                      _demParameters.getNormalViscosity() * relVelDotNormalUnit;
 
           const SoAFloatPrecision normalFX = normalContactFMag * normalUnitX;
           const SoAFloatPrecision normalFY = normalContactFMag * normalUnitY;
           const SoAFloatPrecision normalFZ = normalContactFMag * normalUnitZ;
 
           // Compute tangential force
-          SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
-          SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
-          SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
+          SoAFloatPrecision tanFX = -_demParameters.getFrictionViscosity() * tanRelVelTotalX;
+          SoAFloatPrecision tanFY = -_demParameters.getFrictionViscosity() * tanRelVelTotalY;
+          SoAFloatPrecision tanFZ = -_demParameters.getFrictionViscosity() * tanRelVelTotalZ;
 
-          const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
-          const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * normalContactFMag;
+          const SoAFloatPrecision tanFMagSquared = tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ;
+          const SoAFloatPrecision coulombLimit = _demParameters.getStaticFrictionCoeff() * normalContactFMag;
+          const SoAFloatPrecision coulombLimitSquared = coulombLimit * coulombLimit;
 
-          if (tanFMag > coulombLimit) {
+          if (tanFMagSquared > coulombLimitSquared) {
             if constexpr (countFLOPs) {
               ++numInnerIfTanFCallsSum;
             }
-            const SoAFloatPrecision scale = _dynamicFrictionCoeff * normalContactFMag / tanFMag;
+            const SoAFloatPrecision tanFMag = std::sqrt(tanFMagSquared);
+            const SoAFloatPrecision scale = _demParameters.getDynamicFrictionCoeff() * normalContactFMag / tanFMag;
             tanFX *= scale;
             tanFY *= scale;
             tanFZ *= scale;
@@ -1320,18 +1325,20 @@ class DEMFunctor
           const SoAFloatPrecision rollingRelVelZ =
               -radiusReduced * (normalUnitX * (wytmp[j] - wyArr[j]) - normalUnitY * (wxtmp[j] - wxArr[j]));
 
-          SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
-          SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
-          SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+          SoAFloatPrecision rollingFX = rollingRelVelX * (-_demParameters.getRollingViscosity());
+          SoAFloatPrecision rollingFY = rollingRelVelY * (-_demParameters.getRollingViscosity());
+          SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_demParameters.getRollingViscosity());
 
-          const SoAFloatPrecision rollingFMag =
-              std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+          const SoAFloatPrecision rollingFMagSquared =
+              rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ;
 
-          if (rollingFMag > coulombLimit) {
+          if (rollingFMagSquared > coulombLimitSquared) {
             if constexpr (countFLOPs) {
               ++numInnerIfRollingQCallsSum;
             }
-            const SoAFloatPrecision scale = _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;
+            const SoAFloatPrecision rollingFMag = std::sqrt(rollingFMagSquared);
+            const SoAFloatPrecision scale =
+                _demParameters.getRollingFrictionCoeff() * (normalContactFMag) / rollingFMag;
             rollingFX *= scale;
             rollingFY *= scale;
             rollingFZ *= scale;
@@ -1349,18 +1356,20 @@ class DEMFunctor
           const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
           const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
 
-          SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
-          SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
-          SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+          SoAFloatPrecision torsionFX = torsionRelVelX * (-_demParameters.getTorsionViscosity());
+          SoAFloatPrecision torsionFY = torsionRelVelY * (-_demParameters.getTorsionViscosity());
+          SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_demParameters.getTorsionViscosity());
 
-          const SoAFloatPrecision torsionFMag =
-              std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
+          const SoAFloatPrecision torsionFMagSquared =
+              torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ;
 
-          if (torsionFMag > coulombLimit) {
+          if (torsionFMagSquared > coulombLimitSquared) {
             if constexpr (countFLOPs) {
               ++numInnerIfTorsionQCallsSum;
             }
-            const SoAFloatPrecision scale = _torsionFrictionCoeff * (normalContactFMag) / torsionFMag;
+            const SoAFloatPrecision torsionFMag = std::sqrt(torsionFMagSquared);
+            const SoAFloatPrecision scale =
+                _demParameters.getTorsionFrictionCoeff() * (normalContactFMag) / torsionFMag;
             torsionFX *= scale;
             torsionFY *= scale;
             torsionFZ *= scale;
@@ -1383,11 +1392,12 @@ class DEMFunctor
           // Compute heat flux
           const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
           const SoAFloatPrecision conductance =
-              2. * _heatConductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
+              2. * _demParameters.getHeatConductivity() *
+              std::pow((3. * _demParameters.getElasticStiffness() * overlap * geomMeanRadius) / 4., 1. / 3.);
           const SoAFloatPrecision heatFluxI = conductance * (temperatureArr[j] - temperaturetmp[j]);
 
           const SoAFloatPrecision heatFluxGenerated =
-              _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+              _demParameters.getHeatGenerationFactor() * std::sqrt(tanFMagSquared) *
               std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
                         tanRelVelTotalZ * tanRelVelTotalZ);
 
@@ -1502,25 +1512,28 @@ class DEMFunctor
       const SoAFloatPrecision tanRelVelTotalZ = tanRelVelZ - relVelDotNormalUnit * normalUnitZ;
 
       // Compute normal force as sum of contact force
-      const SoAFloatPrecision normalContactFMag = _elasticStiffness * overlap - _normalViscosity * relVelDotNormalUnit;
+      const SoAFloatPrecision normalContactFMag =
+          _demParameters.getElasticStiffness() * overlap - _demParameters.getNormalViscosity() * relVelDotNormalUnit;
 
       const SoAFloatPrecision normalFX = normalContactFMag * normalUnitX;
       const SoAFloatPrecision normalFY = normalContactFMag * normalUnitY;
       const SoAFloatPrecision normalFZ = normalContactFMag * normalUnitZ;
 
       // Compute tangential force
-      SoAFloatPrecision tanFX = -_frictionViscosity * tanRelVelTotalX;
-      SoAFloatPrecision tanFY = -_frictionViscosity * tanRelVelTotalY;
-      SoAFloatPrecision tanFZ = -_frictionViscosity * tanRelVelTotalZ;
+      SoAFloatPrecision tanFX = -_demParameters.getFrictionViscosity() * tanRelVelTotalX;
+      SoAFloatPrecision tanFY = -_demParameters.getFrictionViscosity() * tanRelVelTotalY;
+      SoAFloatPrecision tanFZ = -_demParameters.getFrictionViscosity() * tanRelVelTotalZ;
 
-      const SoAFloatPrecision tanFMag = std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ);
-      const SoAFloatPrecision coulombLimit = _staticFrictionCoeff * (normalContactFMag);
+      const SoAFloatPrecision tanFMagSquared = tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ;
+      const SoAFloatPrecision coulombLimit = _demParameters.getStaticFrictionCoeff() * normalContactFMag;
+      const SoAFloatPrecision coulombLimitSquared = coulombLimit * coulombLimit;
 
-      if (tanFMag > coulombLimit) {
+      if (tanFMagSquared > coulombLimitSquared) {
         if constexpr (countFLOPs) {
           ++numInnerIfTanFCallsSum;
         }
-        const SoAFloatPrecision scale = _dynamicFrictionCoeff * normalContactFMag / tanFMag;
+        const SoAFloatPrecision tanFMag = std::sqrt(tanFMagSquared);
+        const SoAFloatPrecision scale = _demParameters.getDynamicFrictionCoeff() * normalContactFMag / tanFMag;
         tanFX *= scale;
         tanFY *= scale;
         tanFZ *= scale;
@@ -1556,18 +1569,19 @@ class DEMFunctor
       const SoAFloatPrecision rollingRelVelZ = -radiusReduced * (normalUnitX * (wyptr[indexFirst] - wyptr[j]) -
                                                                  normalUnitY * (wxptr[indexFirst] - wxptr[j]));
 
-      SoAFloatPrecision rollingFX = rollingRelVelX * (-_rollingViscosity);
-      SoAFloatPrecision rollingFY = rollingRelVelY * (-_rollingViscosity);
-      SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_rollingViscosity);
+      SoAFloatPrecision rollingFX = rollingRelVelX * (-_demParameters.getRollingViscosity());
+      SoAFloatPrecision rollingFY = rollingRelVelY * (-_demParameters.getRollingViscosity());
+      SoAFloatPrecision rollingFZ = rollingRelVelZ * (-_demParameters.getRollingViscosity());
 
-      const SoAFloatPrecision rollingFMag =
-          std::sqrt(rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ);
+      const SoAFloatPrecision rollingFMagSquared =
+          rollingFX * rollingFX + rollingFY * rollingFY + rollingFZ * rollingFZ;
 
-      if (rollingFMag > coulombLimit) {
+      if (rollingFMagSquared > coulombLimitSquared) {
         if constexpr (countFLOPs) {
           ++numInnerIfRollingQCallsSum;
         }
-        const SoAFloatPrecision scale = _rollingFrictionCoeff * (normalContactFMag) / rollingFMag;
+        const SoAFloatPrecision rollingFMag = std::sqrt(rollingFMagSquared);
+        const SoAFloatPrecision scale = _demParameters.getRollingFrictionCoeff() * (normalContactFMag) / rollingFMag;
         rollingFX *= scale;
         rollingFY *= scale;
         rollingFZ *= scale;
@@ -1585,18 +1599,19 @@ class DEMFunctor
       const SoAFloatPrecision torsionRelVelY = torsionRelVelScalar * normalUnitY;
       const SoAFloatPrecision torsionRelVelZ = torsionRelVelScalar * normalUnitZ;
 
-      SoAFloatPrecision torsionFX = torsionRelVelX * (-_torsionViscosity);
-      SoAFloatPrecision torsionFY = torsionRelVelY * (-_torsionViscosity);
-      SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_torsionViscosity);
+      SoAFloatPrecision torsionFX = torsionRelVelX * (-_demParameters.getTorsionViscosity());
+      SoAFloatPrecision torsionFY = torsionRelVelY * (-_demParameters.getTorsionViscosity());
+      SoAFloatPrecision torsionFZ = torsionRelVelZ * (-_demParameters.getTorsionViscosity());
 
-      const SoAFloatPrecision torsionFMag =
-          std::sqrt(torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ);
+      const SoAFloatPrecision torsionFMagSquared =
+          torsionFX * torsionFX + torsionFY * torsionFY + torsionFZ * torsionFZ;
 
-      if (torsionFMag > coulombLimit) {
+      if (torsionFMagSquared > coulombLimitSquared) {
         if constexpr (countFLOPs) {
           ++numInnerIfTorsionQCallsSum;
         }
-        const SoAFloatPrecision scale = _torsionFrictionCoeff * normalContactFMag / torsionFMag;
+        const SoAFloatPrecision torsionFMag = std::sqrt(torsionFMagSquared);
+        const SoAFloatPrecision scale = _demParameters.getTorsionFrictionCoeff() * normalContactFMag / torsionFMag;
         torsionFX *= scale;
         torsionFY *= scale;
         torsionFZ *= scale;
@@ -1619,11 +1634,12 @@ class DEMFunctor
       // Compute heat flux
       const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
       const SoAFloatPrecision conductance =
-          2. * _heatConductivity * std::pow((3. * _elasticStiffness * overlap * geomMeanRadius) / 4., 1. / 3.);
+          2. * _demParameters.getHeatConductivity() *
+          std::pow((3. * _demParameters.getElasticStiffness() * overlap * geomMeanRadius) / 4., 1. / 3.);
       const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr[j] - temperaturePtr[indexFirst]);
 
       const SoAFloatPrecision heatFluxGenerated =
-          _heatGenerationFactor * std::sqrt(tanFX * tanFX + tanFY * tanFY + tanFZ * tanFZ) *
+          _demParameters.getHeatGenerationFactor() * std::sqrt(tanFMagSquared) *
           std::sqrt(tanRelVelTotalX * tanRelVelTotalX + tanRelVelTotalY * tanRelVelTotalY +
                     tanRelVelTotalZ * tanRelVelTotalZ);
 
@@ -1746,17 +1762,7 @@ class DEMFunctor
   };
 
   const double _cutoff;
-  const double _elasticStiffness;
-  const double _normalViscosity;
-  const double _frictionViscosity;
-  const double _rollingViscosity;
-  const double _torsionViscosity;
-  const double _staticFrictionCoeff;
-  const double _dynamicFrictionCoeff;
-  const double _rollingFrictionCoeff;
-  const double _torsionFrictionCoeff;
-  const double _heatConductivity;
-  const double _heatGenerationFactor;
+  const DEMParameters _demParameters;
   // not const because it might be reset through PPL
   double _radius = 0;
 
@@ -1771,7 +1777,7 @@ class DEMFunctor
 
   // ----------------------------------------Helper Methods------------------------------------------------------------
 
-  std::tuple<double, double> retrieveRadii(const Particle &i, const Particle &j) const {
+  std::tuple<double, double> retrieveRadii(const Particle_T &i, const Particle_T &j) const {
     if (!useMixing) {
       return {_radius, _radius};
     }
