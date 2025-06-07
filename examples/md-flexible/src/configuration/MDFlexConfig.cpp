@@ -461,6 +461,8 @@ if (useTuningTrigger.value) {
     printOption(tuningTriggerType, -indentWidth);
     os << indent;
     printOption(tuningTriggerFactor, -indentWidth);
+    os << indent;
+    printOption(tuningTriggerNSamples, -indentWidth);
   }
 
   return os.str();

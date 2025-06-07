@@ -470,6 +470,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         } catch (const std::exception &e) {
           errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
         }
+
+        // Parse triggerNSamples.
+        if (config.tuningTriggerType.value == autopas::TuningTriggerOption::timeBasedAverage) {
+          mark = node[key][config.tuningTriggerNSamples.name].Mark();
+          expected = "Unsigned integer > 0.";
+          description = config.tuningTriggerNSamples.description;
+          try {
+            config.tuningTriggerNSamples.value = node[key][config.tuningTriggerNSamples.name].as<unsigned>();
+            if (config.tuningTriggerNSamples.value < 1) {
+              throw std::runtime_error("The number of samples has to be greater than 0!");
+            }
+          } catch (const std::exception &e) {
+            errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+          }
+        }
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
         expected = "Floating-point Value";
         description = config.MPITuningMaxDifferenceForBucket.description;

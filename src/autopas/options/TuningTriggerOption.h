@@ -34,7 +34,7 @@ class TuningTriggerOption : public Option<TuningTriggerOption> {
     /**
      *  Similar to timeBasedSimple, but compares to the moving average of last n iterations.
      **/
-    timeBasedAverageN,
+    timeBasedAverage,
   };
 
   /**
@@ -62,7 +62,7 @@ class TuningTriggerOption : public Option<TuningTriggerOption> {
     return {
         {TuningTriggerOption::staticSimple, "StaticSimple"},
         {TuningTriggerOption::timeBasedSimple, "TimeBasedSimple"},
-        {TuningTriggerOption::timeBasedAverageN, "TimeBasedAverageN"},
+        {TuningTriggerOption::timeBasedAverage, "TimeBasedAverage"},
     };
   }
 

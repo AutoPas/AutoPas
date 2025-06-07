@@ -6,9 +6,6 @@
 
 #pragma once
 
-#include <numeric>
-#include <vector>
-
 #include "autopas/tuning/triggers/TuningTriggerInterface.h"
 
 namespace autopas {
@@ -28,7 +25,7 @@ class TimeBasedSimpleTrigger : public TuningTriggerInterface {
   TimeBasedSimpleTrigger(float triggerFactor) : _triggerFactor(triggerFactor) {};
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) const override {
-    return _currentIterationRuntime >= _triggerFactor * _lastIterationRuntime;
+    return _currentIterationRuntime >= (_triggerFactor * _lastIterationRuntime);
   }
 
   inline bool needsRuntimeSample() const override { return true; }
@@ -42,7 +39,7 @@ class TimeBasedSimpleTrigger : public TuningTriggerInterface {
 
  private:
   float _triggerFactor;
-  long _currentIterationRuntime;
-  long _lastIterationRuntime;
+  unsigned long _currentIterationRuntime;
+  unsigned long _lastIterationRuntime;
 };
 }  // namespace autopas

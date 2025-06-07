@@ -181,7 +181,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 #ifdef AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
   if (configuration.useTuningTrigger.value) {
-    autopas::TuningTriggerFactoryInfo info = {.factor = _configuration.tuningTriggerFactor.value};
+    autopas::TuningTriggerFactoryInfo info = {.triggerFactor = _configuration.tuningTriggerFactor.value, .nSamples=_configuration.tuningTriggerNSamples.value};
     _autoPasContainer->setTuningTriggerType(_configuration.tuningTriggerType.value);
     _autoPasContainer->setTuningTriggerInfo(info);
   } else {

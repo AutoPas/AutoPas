@@ -668,6 +668,11 @@ class MDFlexConfig {
    */
   MDFlexOption<float, __LINE__> tuningTriggerFactor{1.0, "trigger-factor", true,
                                                     "Factor on which to trigger a dynamic retune."};
+  /**
+   * dynamic tuning n samples
+   */
+  MDFlexOption<unsigned, __LINE__> tuningTriggerNSamples{
+      10, "trigger-n-samples", true, "Number of iteration samples to consider when deciding on trigger."};
 
   // Molecule Type Generation
   // Strings for parsing yaml files.
