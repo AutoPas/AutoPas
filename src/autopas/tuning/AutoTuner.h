@@ -12,8 +12,12 @@
 #include <tuple>
 
 #include "autopas/options/TuningMetricOption.h"
+#include "autopas/options/TuningTriggerOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/triggers/TuningTriggerInterface.h"
+#include "autopas/tuning/triggers/TuningTriggerFactory.h"
+#include "autopas/tuning/triggers/StaticSimpleTrigger.h"
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
@@ -49,6 +53,8 @@ class AutoTuner {
    */
   using SearchSpaceType = std::set<Configuration>;
 
+  using TuningTriggerType = std::unique_ptr<TuningTriggerInterface>;
+
   /**
    * Constructor for the AutoTuner that generates all configurations from the given options.
    * @param tuningStrategies Vector of object implementing the modelling and exploration of a search space. Will be
@@ -78,6 +84,12 @@ class AutoTuner {
    * @return
    */
   const TuningMetricOption &getTuningMetric() const;
+
+  /**
+   * Getter for the tuning trigger type if dynamic tuning is used.
+   * @return A TuningTriggerOption representing the type of the trigger in use.
+   */
+  const TuningTriggerOption getTuningTriggerType() const;
 
   /**
    * Pass live info on to all tuning strategies.
@@ -190,6 +202,13 @@ class AutoTuner {
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
   void addMeasurement(long sample, bool neighborListRebuilt);
+
+  /**
+   * Passes the current iteration runtime to the autotuner's dynamic tuning trigger.
+   * 
+   * @param sample The current iteration runtime.
+   */
+  void passIterationRuntime(size_t sample);
 
   /**
    * Adds measurements of homogeneity and maximal density to the vector of measurements.
@@ -454,18 +473,13 @@ class AutoTuner {
   size_t _iterationBaseline{0};
 
   /**
-   TODO: documentation
-  */
-  double _dynamicRetuneTimeFactor;
+   * The type of the trigger for dynamic tuning this autotuner uses.
+   */
+  TuningTriggerType _tuningTrigger;
+  /**
+   * Iteration in which the last tuning phase was triggered.
+   */
+  unsigned long _lastTunigPhaseStartIteration = 0;
 
-  /*
-    TODO: documentation + make private?  
-  */
-  autopas::utils::Timer _dynamicRetuneTimer;
-  bool shouldRetuneDynamic();
-
-  private:
-    long _lastTimeBetweenTuning;
-    long _lastTuningPhaseStartIteration;
 };
 }  // namespace autopas

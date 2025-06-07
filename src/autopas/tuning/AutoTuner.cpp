@@ -41,7 +41,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningResultLogger(outputSuffix),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
       _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)),
-      _dynamicRetuneTimeFactor(autoTunerInfo.dynamicRetuneTimeFactor) {
+      _tuningTrigger(TuningTriggerFactory::generateTuningTrigger(autoTunerInfo.tuningTriggerType,
+                                                                 autoTunerInfo.tuningTriggerInfo)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
@@ -112,11 +113,7 @@ bool AutoTuner::tuneConfiguration() {
   // If _iterationsInMostRecentTuningPhase >= _tuningInterval the current tuning phase takes more iterations than the
   // tuning interval -> continue tuning
 
-#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
   bool startOfTuningPhase = _forceRetune or (inFirstTuningIteration() and not _isTuning);
-#else
-  bool startOfTuningPhase = (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
-#endif
 
   if (startOfTuningPhase) {
     // CASE: Start of a new tuning phase
@@ -313,6 +310,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   }
 }
 
+void AutoTuner::passIterationRuntime(size_t sample) {
+  if (!_isTuning && _tuningTrigger->needsRuntimeSample()) _tuningTrigger->passRuntimeSample(sample);
+}
+
 void AutoTuner::bumpIterationCounters(bool needToWait) {
   // reset counter after all autotuners finished tuning
   if (not(needToWait or inTuningPhase() or _iterationBaseline < _tuningInterval)) {
@@ -383,49 +384,22 @@ long AutoTuner::estimateRuntimeFromSamples() const {
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
 }
 
-// TODO: documentation
-bool AutoTuner::shouldRetuneDynamic() {
-#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
-  if (_isTuning or _forceRetune) return false;  // TODO: is this sensible?
-
-  if (_iteration % _tuningInterval != 0) return false;
-
-  if (_iteration == 0) {
-    _dynamicRetuneTimer.start();
-    return true;
-  }
-
-  _dynamicRetuneTimer.stop();
-
-  long temp = _lastTimeBetweenTuning;
-  long currentTimeBetweenTuning = _dynamicRetuneTimer.getTotalTime();
-  _lastTimeBetweenTuning = currentTimeBetweenTuning;
-
-  _dynamicRetuneTimer.reset();
-  //AutoPasLog(WARN, "currentTimeBetweenTuning time: {}, lastTimeBetweenTuning: {}", currentTimeBetweenTuning, temp);
-  _dynamicRetuneTimer.start();
-
-  if (currentTimeBetweenTuning <= _dynamicRetuneTimeFactor * temp) return false;
-
-  AutoPasLog(DEBUG, "Dynamic retune triggered on iteration {}", _iteration);
-  _lastTuningPhaseStartIteration = _iteration;
-  ++_tuningPhase;
-  return true;
-#else
-  return false;
-#endif
-}
-
 bool AutoTuner::prepareIteration() {
 // Flag if this is the first iteration in a new tuning phase
 #if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
-  bool startOfTuningPhase = not _isTuning and shouldRetuneDynamic();
+  bool startOfTuningPhase = not _isTuning and _tuningTrigger->shouldStartTuningPhase(_iteration, _tuningInterval);
 #else
   const bool startOfTuningPhase = _iteration % _tuningInterval == 0 and not _isTuning;
 #endif
-
   // first tuning iteration -> reset everything
   if (startOfTuningPhase) {
+    AutoPasLog(DEBUG, "Started a new tuning phase in iteration {}", _iteration);
+    _lastTunigPhaseStartIteration = _iteration;
+
+#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+    ++_tuningPhase;
+#endif
+
     // If needed, calculate homogeneity and maxDensity, and reset buffers.
     const auto [homogeneity, maxDensity] = [&]() {
       if (_needsHomogeneityAndMaxDensity) {
@@ -477,6 +451,7 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 }
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
+const TuningTriggerOption AutoTuner::getTuningTriggerType() const { return _tuningTrigger->getOptionType(); }
 
 bool AutoTuner::inTuningPhase() const {
   // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
@@ -484,13 +459,7 @@ bool AutoTuner::inTuningPhase() const {
   return (_isTuning or _forceRetune or inFirstTuningIteration()) and not searchSpaceIsTrivial();
 }
 
-bool AutoTuner::inFirstTuningIteration() const {
-#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
-  return (_iteration == _lastTuningPhaseStartIteration);
-#else
-  return (_iteration % _tuningInterval == 0);
-#endif
-}
+inline bool AutoTuner::inFirstTuningIteration() const { return (_iteration == _lastTunigPhaseStartIteration); }
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 

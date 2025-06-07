@@ -106,7 +106,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
-      config.dynamicRetuneTimeFactor,
+      config.useTuningTrigger,
       zshCompletionsOption,
       helpOption)};
   // clang-format on
@@ -739,21 +739,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
         break;
       }
-
-      case decltype(config.dynamicRetuneTimeFactor)::getoptChar: {
-        try {
-          config.dynamicRetuneTimeFactor.value = stod(strArg);
-          if (config.dynamicRetuneTimeFactor.value < 1) {
-            cerr << "Dynamic retune time factor has to be greater or equal one!" << endl;
-            displayHelp = true;
-          }
-        } catch (const exception &) {
-          cerr << "Error parsing dynamic retune time factor: " << optarg << endl;
-          displayHelp = true;
-        }
+      case decltype(config.useTuningTrigger)::getoptChar: {
+        config.useTuningTrigger.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
       }
-
       default: {
         // error message handled by getopt
         displayHelp = true;

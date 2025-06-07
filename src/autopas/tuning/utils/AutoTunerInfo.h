@@ -9,6 +9,8 @@
 #include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TuningMetricOption.h"
+#include "autopas/options/TuningTriggerOption.h"
+#include "autopas/tuning/triggers/TuningTriggerFactoryInfo.h"
 namespace autopas {
 
 /**
@@ -45,7 +47,13 @@ struct AutoTunerInfo {
    */
   bool useLOESSSmoothening{true};
 
-  /* TODO: Docs */
-  double dynamicRetuneTimeFactor{std::numeric_limits<double>::infinity()};
+  /**
+   * Type of the trigger used for dynamic tuning.
+   */
+  TuningTriggerOption tuningTriggerType;
+  /**
+   * Info used to construct the trigger.
+   */
+  TuningTriggerFactoryInfo tuningTriggerInfo;
 };
 }  // namespace autopas

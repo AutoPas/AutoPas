@@ -1945,6 +1945,10 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 
   _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
+#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  autoTuner.passIterationRuntime(measurements.timeTotal);
+#endif
+
   /// Pass on measurements
   // if this was a major iteration add measurements
   if (functor->isRelevantForTuning()) {

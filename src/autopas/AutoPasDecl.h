@@ -1107,11 +1107,23 @@ class AutoPas {
   size_t getSortingThreshold() const { return _sortingThreshold; }
 
   /**
-   * TODO: Documentation
+   * Set the type of the trigger used for dynamic tuning.
+   * 
+   * @param tuningTriggerType
    */
-  void setDynamicRetuneTimeFactor(double dynamicRetuneTimeFactor) {
-    _autoTunerInfo.dynamicRetuneTimeFactor = dynamicRetuneTimeFactor;
+  void setTuningTriggerType(const TuningTriggerOption &tuningTriggerType){
+    _autoTunerInfo.tuningTriggerType = tuningTriggerType;
   }
+
+  /**
+   * Set the info needed to construct the trigger used for dynamic tuning.
+   * 
+   * @param tuningTriggerInfo
+   */
+  void setTuningTriggerInfo( const TuningTriggerFactoryInfo &tuningTriggerInfo){
+    _autoTunerInfo.tuningTriggerInfo = tuningTriggerInfo;
+  }
+
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
@@ -1207,6 +1219,7 @@ class AutoPas {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t _sortingThreshold{8};
+
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.

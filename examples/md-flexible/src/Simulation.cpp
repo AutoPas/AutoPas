@@ -9,6 +9,7 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/tuning/triggers/TuningTriggerFactoryInfo.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -53,7 +54,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -165,7 +166,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
   _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
-  _autoPasContainer->setDynamicRetuneTimeFactor(_configuration.dynamicRetuneTimeFactor.value);
   _autoPasContainer->setUseLOESSSmoothening(_configuration.useLOESSSmoothening.value);
   _autoPasContainer->setEnergySensorOption(_configuration.energySensorOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
@@ -178,6 +178,19 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
+
+#ifdef AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  if (configuration.useTuningTrigger.value) {
+    autopas::TuningTriggerFactoryInfo info = {.factor = _configuration.tuningTriggerFactor.value};
+    _autoPasContainer->setTuningTriggerType(_configuration.tuningTriggerType.value);
+    _autoPasContainer->setTuningTriggerInfo(info);
+  } else {
+    _autoPasContainer->setTuningTriggerType(autopas::TuningTriggerOption::staticSimple);
+  }
+#elif
+  _autoPasContainer->setTuningTriggerType(autopas::TuningTriggerOption::staticSimple);
+  AutoPasLog(WARN, "Dynamic tuning intervals are disabled. Defaulting to static trigger.");
+#endif
 
   _autoPasContainer->init();
 

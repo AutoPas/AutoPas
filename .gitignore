@@ -8,6 +8,7 @@ cmake.check_cache
 # editor stuff
 *.swp
 .idea/
+.vscode/
 venv/
 *.timestamp
 *.synctex.gz

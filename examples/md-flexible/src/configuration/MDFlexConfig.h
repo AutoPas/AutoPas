@@ -23,6 +23,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/TuningTriggerOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -327,15 +328,6 @@ class MDFlexConfig {
       autopas::TuningMetricOption::time, "tuning-metric", true,
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
-
-  /**
-   * dynamicRetuneTimeFactor
-   */
-  MDFlexOption<double, __LINE__> dynamicRetuneTimeFactor{
-      std::numeric_limits<double>::infinity(), "dynamic-retune-time-factor", true,
-      "If the last iteration took longer than the iteration before it by a factor bigger than dynamicRetuneTimeFactor,"
-      "a tuning phase is triggered"};
-
   /**
    * enerySensorOption
    */
@@ -648,6 +640,35 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  // options for dynamic tuning intervals
+  /**
+   * whether to use a dynamic tuning trigger
+   */
+  MDFlexOption<bool, __LINE__> useTuningTrigger{
+      false, "tuning-trigger", true,
+      "(De)Activate dynamic tuning triggers. Only useful when used to overwrite a yaml file. "
+      "Possible Values: (true false) Default: false"};
+  /**
+   * dynamic tuning trigger type
+   */
+  MDFlexOption<autopas::TuningTriggerOption, __LINE__> tuningTriggerType{
+      {},
+      "trigger-type",
+      true,
+      "Trigger type that should be used for dynamic tuning. "
+      "Leave empty to use static tuning trigger. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(
+              []() {
+                auto options = autopas::TuningTriggerOption::getAllOptions();
+                return options;
+              }(),
+              " ", {"(", ")"})};
+  /**
+   * dynamic tuning trigger factor
+   */
+  MDFlexOption<float, __LINE__> tuningTriggerFactor{1.0, "trigger-factor", true,
+                                                    "Factor on which to trigger a dynamic retune."};
+
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

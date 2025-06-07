@@ -440,13 +440,35 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
 
         config.tuningMetricOption.value = *parsedOptions.begin();
-      } else if (key == config.dynamicRetuneTimeFactor.name) {
-        expected = "Floating point value > 1";
-        description = config.dynamicRetuneTimeFactor.description;
+      } else if (key == config.useTuningTrigger.name) {
+        expected = "See AllOptions.yaml for examples.";
+        description = config.useTuningTrigger.description;
 
-        config.dynamicRetuneTimeFactor.value = node[key].as<double>();
-        if (config.dynamicRetuneTimeFactor.value <= 1) {
-          throw std::runtime_error("The dynamic retune time factor has to be greater than 1!");
+        config.useTuningTrigger.value = true;
+
+        // Parse triggerType.
+        mark = node[key][config.tuningTriggerType.name].Mark();
+        expected = "Type of dynamic tuning trigger to use.";
+        description = config.tuningTriggerType.description;
+        try {
+          const auto parsedOptions = autopas::TuningTriggerOption::parseOptions(parseSequenceOneElementExpected(
+              node[key][config.tuningTriggerType.name], "Pass exactly one trigger type!"));
+          config.tuningTriggerType.value = *parsedOptions.begin();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+
+        // Parse triggerFactor.
+        mark = node[key][config.tuningTriggerFactor.name].Mark();
+        expected = "Floating point Value >= 0.";
+        description = config.tuningTriggerFactor.description;
+        try {
+          config.tuningTriggerFactor.value = node[key][config.tuningTriggerFactor.name].as<float>();
+          if (config.tuningTriggerFactor.value < 0) {
+            throw std::runtime_error("The trigger factor for has to be greater or equal to 0!");
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
         }
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
         expected = "Floating-point Value";

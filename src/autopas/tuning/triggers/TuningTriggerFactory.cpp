@@ -1,0 +1,36 @@
+/**
+ * @file TuningTriggerFactory.cpp
+ * @author Niklas Ladurner
+ * @date 06.06.2025
+ */
+
+#include "TuningTriggerFactory.h"
+
+#include "autopas/options/TuningTriggerOption.h"
+#include "autopas/tuning/triggers/StaticSimpleTrigger.h"
+#include "autopas/tuning/triggers/TimeBasedSimpleTrigger.h"
+
+namespace autopas::TuningTriggerFactory {
+
+
+std::unique_ptr<TuningTriggerInterface> generateTuningTrigger(TuningTriggerOption tuningTriggerOption,
+                                                              const TuningTriggerFactoryInfo &info) {
+  std::unique_ptr<TuningTriggerInterface> tuningTrigger = nullptr;
+  switch (static_cast<TuningTriggerOption>(tuningTriggerOption)) {
+    case TuningTriggerOption::staticSimple: {
+      tuningTrigger = std::make_unique<StaticSimpleTrigger>();
+      break;
+    }
+    case TuningTriggerOption::timeBasedSimple: {
+      tuningTrigger = std::make_unique<TimeBasedSimpleTrigger>(info.factor);
+      break;
+    }
+    default: {
+      utils::ExceptionHandler::exception("AutoPas::generateTuningTrigger: Unknown tuning trigger {}!",
+                                         tuningTriggerOption);
+      break;
+    }
+  }
+  return tuningTrigger;
+}
+}  // namespace autopas::TuningTriggerFactory
