@@ -28,7 +28,14 @@
  */
 class Simulation {
  public:
-  enum class ForceType : int64_t { FullParticle = 0b0001, CoarseGrain = 0b0010 };
+  enum class ForceType : int64_t {
+    FullParticle = 0b0001,
+    CoarseGrain = 0b0010,
+    FPInner = 0b0011,
+    FPOuter = 0b0100,
+    IBIOuter = 0b0101,
+    CGMolOuter = 0b0110
+  };
   enum class RespaIterationType : int64_t { NoRespa = 0b0000, OuterStep = 0b0001, InnerStep = 0b0010 };
 
   /**
@@ -272,6 +279,8 @@ class Simulation {
 
   bool _cgSimulation{false};
 
+  bool _distanceClassSimulation{false};
+
   std::vector<double> _potentialEnergy;
 
   std::vector<double> _totalEnergy;
@@ -426,7 +435,8 @@ class Simulation {
    * @return Return value of f.
    */
   template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctor(FunctionType f, bool useCGFunctor = false, bool subtractForces = false);
+  ReturnType applyWithChosenFunctor(FunctionType f, ForceType forceType = ForceType::FullParticle,
+                                    bool subtractForces = false);
 
   /**
    *

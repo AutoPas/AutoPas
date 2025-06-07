@@ -15,6 +15,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/DistanceClassOption.h"
 #include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -700,6 +701,14 @@ class MDFlexConfig {
    */
   MDFlexOption<std::vector<size_t>, __LINE__> respaMoleculeTypes{
       {0}, "respa-molecule-types", true, "Which molecule types to use in different respa iterations"};
+
+  /**
+   * respaDistanceClassMode
+   */
+  MDFlexOption<autopas::DistanceClassOption, __LINE__> respaDistanceClassMode{autopas::DistanceClassOption::disabled,
+                                                                              "respa-distance-class-mode", true,
+                                                                              "Force to use in outer distance class. "
+                                                                              "Possible Values: (ibi, fp, cgmol)"};
 
   /**
    * multiMultisiteModelsRespa

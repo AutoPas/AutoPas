@@ -104,6 +104,8 @@ class LuTFunctor
 
   void setLuT(std::shared_ptr<LookupTable> lookupTable) { _lookupTable = lookupTable; }
 
+  void setInnerCutoff(double innerCutoff) { _innerCutoffSquared = innerCutoff * innerCutoff; }
+
   std::string getName() final { return "LuTFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
@@ -126,7 +128,7 @@ class LuTFunctor
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffSquared) {
+    if (dr2 > _cutoffSquared or dr2 < _innerCutoffSquared) {
       return;
     }
 
@@ -458,6 +460,8 @@ class LuTFunctor
 
   // stores the lookup table with force values
   std::shared_ptr<LookupTable> _lookupTable;
+
+  double _innerCutoffSquared = 0;
 
   static constexpr double _h{1e-4};
   static constexpr double _inv2h{1.0 / (2 * _h)};

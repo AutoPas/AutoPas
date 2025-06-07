@@ -369,6 +369,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.respaMoleculeTypes.value.empty()) {
           throw std::runtime_error("Parsed respa-molecule-type-list is empty.");
         }
+      } else if (key == config.respaDistanceClassMode.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.respaDistanceClassMode.description;
+
+        auto strArg = node[key].as<std::string>();
+
+        config.respaDistanceClassMode.value = autopas::DistanceClassOption::parseOptionExact(strArg);
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;

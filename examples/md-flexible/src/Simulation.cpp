@@ -217,6 +217,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     throw std::runtime_error("Can not use LuT CG forces and approximate forces at the same time!");
   }
 
+  if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi and
+      _configuration.lutInputFile.value.empty()) {
+    throw std::runtime_error("Please specify a lut input file to be used with LuT functor in outer distance class!");
+  }
+
   _timers.initialization.stop();
 
   // if an RDF should be created init it here
@@ -257,6 +262,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   if (_configuration.useApproxForceRespa.value) {
     _cgSimulation = true;
   }
+
+  if (_configuration.respaDistanceClassMode.value != autopas::DistanceClassOption::disabled) {
+    _distanceClassSimulation = true;
+  }
 }
 
 void Simulation::finalize() {
@@ -275,7 +284,8 @@ void Simulation::run() {
   size_t cgMeasureIterations{0};
   size_t ibiTrials{0};
   const size_t rdfNumBins = _configuration.rdfNumBins.value;
-  bool ibiConvergenceReached{(_cgSimulation or _configuration.multiMultisiteModelsRespa.value) ? true : false};
+  bool ibiConvergenceReached{
+      (_cgSimulation or _configuration.multiMultisiteModelsRespa.value or _distanceClassSimulation) ? true : false};
   bool firstRespaIterationSkipped{false};
   bool respaStarted{false};
   const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
@@ -317,12 +327,15 @@ void Simulation::run() {
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       if (respaActive and isRespaIteration and ibiConvergenceReached) {
-        if (firstRespaIterationSkipped) {
+        if (_distanceClassSimulation) {
           if (not respaStarted) {
             // do a first force evaluation
-            updateInteractionForces(ForceType::FullParticle);
-            if (not _configuration.multiMultisiteModelsRespa.value) {
-              updateInteractionForces(ForceType::CoarseGrain, true);
+            if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
+              updateInteractionForces(ForceType::IBIOuter);
+            } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
+              updateInteractionForces(ForceType::FPOuter);
+            } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
+              updateInteractionForces(ForceType::CGMolOuter);
             }
           }
           updateVelocities(/*resetForce*/ true, RespaIterationType::OuterStep);
@@ -331,15 +344,36 @@ void Simulation::run() {
             updateAngularVelocities(/*resetTorques*/ true, RespaIterationType::OuterStep,
                                     _configuration.respaMoleculeTypes.value[0],
                                     _configuration.respaMoleculeTypes.value[1]);
-
           } else {
             updateAngularVelocities(/*resetTorques*/ false, RespaIterationType::OuterStep, 0, 0);
           }
 #endif
-
           respaStarted = true;
         } else {
-          firstRespaIterationSkipped = true;
+          if (firstRespaIterationSkipped) {
+            if (not respaStarted) {
+              // do a first force evaluation
+              updateInteractionForces(ForceType::FullParticle);
+              if (not _configuration.multiMultisiteModelsRespa.value) {
+                updateInteractionForces(ForceType::CoarseGrain, true);
+              }
+            }
+            updateVelocities(/*resetForce*/ true, RespaIterationType::OuterStep);
+#if MD_FLEXIBLE_MODE == MULTISITE
+            if (_configuration.multiMultisiteModelsRespa.value) {
+              updateAngularVelocities(/*resetTorques*/ true, RespaIterationType::OuterStep,
+                                      _configuration.respaMoleculeTypes.value[0],
+                                      _configuration.respaMoleculeTypes.value[1]);
+
+            } else {
+              updateAngularVelocities(/*resetTorques*/ false, RespaIterationType::OuterStep, 0, 0);
+            }
+#endif
+
+            respaStarted = true;
+          } else {
+            firstRespaIterationSkipped = true;
+          }
         }
       }
 
@@ -399,20 +433,27 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
-    if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
-        (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive) or
-        (respaActive and _configuration.multiMultisiteModelsRespa.value)) {
-      const auto potentialEnergy = updateInteractionForces(ForceType::FullParticle);
+    if (_distanceClassSimulation and respaActive) {
+      const auto potentialEnergy = updateInteractionForces(ForceType::FPInner);
       if (potentialEnergy.has_value()) {
         _potentialEnergy.push_back(potentialEnergy.value());
       }
     } else {
-      const auto potentialEnergy = updateInteractionForces(ForceType::CoarseGrain);
-      if (potentialEnergy.has_value()) {
-        if (respaActive and nextIsRespaIteration and respaStarted) {
+      if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
+          (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive) or
+          (respaActive and _configuration.multiMultisiteModelsRespa.value)) {
+        const auto potentialEnergy = updateInteractionForces(ForceType::FullParticle);
+        if (potentialEnergy.has_value()) {
           _potentialEnergy.push_back(potentialEnergy.value());
-        } else if (_cgSimulation and not respaActive) {
-          _potentialEnergy.push_back(potentialEnergy.value());
+        }
+      } else {
+        const auto potentialEnergy = updateInteractionForces(ForceType::CoarseGrain);
+        if (potentialEnergy.has_value()) {
+          if (respaActive and nextIsRespaIteration and respaStarted) {
+            _potentialEnergy.push_back(potentialEnergy.value());
+          } else if (_cgSimulation and not respaActive) {
+            _potentialEnergy.push_back(potentialEnergy.value());
+          }
         }
       }
     }
@@ -429,6 +470,9 @@ void Simulation::run() {
         updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration and ibiConvergenceReached,
                                 RespaIterationType::InnerStep, _configuration.respaMoleculeTypes.value[0],
                                 _configuration.respaMoleculeTypes.value[1]);
+      } else if (_distanceClassSimulation and not _configuration.multiMultisiteModelsRespa.value) {
+        updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration and ibiConvergenceReached,
+                                RespaIterationType::InnerStep, 0, 0);
       } else {
         updateAngularVelocities(false, RespaIterationType::InnerStep, 0, 0);
       }
@@ -449,20 +493,40 @@ void Simulation::run() {
       }
 
       if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
-        updateInteractionForces(ForceType::FullParticle);
-        if (not _configuration.multiMultisiteModelsRespa.value) {
-          updateInteractionForces(ForceType::CoarseGrain, true);
-        }
-        updateVelocities(false, RespaIterationType::OuterStep);
+        if (_distanceClassSimulation) {
+          if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
+            updateInteractionForces(ForceType::IBIOuter);
+          } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
+            updateInteractionForces(ForceType::FPOuter);
+          } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
+            updateInteractionForces(ForceType::CGMolOuter);
+          }
+          updateVelocities(false, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
-        if (_configuration.multiMultisiteModelsRespa.value) {
-          updateAngularVelocities(false, RespaIterationType::OuterStep, _configuration.respaMoleculeTypes.value[0],
-                                  _configuration.respaMoleculeTypes.value[1]);
+          if (_configuration.multiMultisiteModelsRespa.value) {
+            updateAngularVelocities(false, RespaIterationType::OuterStep, _configuration.respaMoleculeTypes.value[0],
+                                    _configuration.respaMoleculeTypes.value[1]);
+          } else {
+            updateAngularVelocities(false, RespaIterationType::OuterStep, 0, 0);
+          }
+#endif
         } else {
-          updateAngularVelocities(false, RespaIterationType::OuterStep, 0, 0);
-        }
+          updateInteractionForces(ForceType::FullParticle);
+          if (not _configuration.multiMultisiteModelsRespa.value) {
+            updateInteractionForces(ForceType::CoarseGrain, true);
+          }
+          updateVelocities(false, RespaIterationType::OuterStep);
+#if MD_FLEXIBLE_MODE == MULTISITE
+          if (_configuration.multiMultisiteModelsRespa.value) {
+            updateAngularVelocities(false, RespaIterationType::OuterStep, _configuration.respaMoleculeTypes.value[0],
+                                    _configuration.respaMoleculeTypes.value[1]);
+          } else {
+            updateAngularVelocities(false, RespaIterationType::OuterStep, 0, 0);
+          }
 
 #endif
+        }
+
         if (_configuration.useThermostat.value) {
           if ((_iteration + 1) % _configuration.thermostatInterval.value == 0) {
             updateThermostat(/*skipIterationCheck*/ true);
@@ -535,6 +599,7 @@ void Simulation::run() {
       }
 
       _lut->updateTable(initialPotential);
+      _lut->computeDerivatives();
       _lut->writeToCSV(_configuration.lutOutputFolder.value, _configuration.lutFileName.value + "_0");
 
       equilibrate = true;
@@ -609,6 +674,8 @@ void Simulation::run() {
 
       _lut->writeToCSV(_configuration.lutOutputFolder.value,
                        _configuration.lutFileName.value + "_" + std::to_string(ibiTrials));
+
+      _lut->computeDerivatives();
 
       // continue with CG fitting or stop if convergence reached
       if (convergenceResult < tolerance) {
@@ -948,7 +1015,6 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 std::pair<bool, std::optional<double>> Simulation::calculatePairwiseForces(ForceType forceType, bool subtractForces) {
-  const bool useCGFunctor = forceType == ForceType::CoarseGrain;
   auto wasTuningIterationAndPotentialEnergy = applyWithChosenFunctor<std::pair<bool, std::optional<double>>>(
       [&](auto &&functor) {
         auto wasTuningIteration = _autoPasContainer->template computeInteractions(&functor);
@@ -958,23 +1024,26 @@ std::pair<bool, std::optional<double>> Simulation::calculatePairwiseForces(Force
         }
         return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
       },
-      useCGFunctor, subtractForces);
+      forceType, subtractForces);
 
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-  if (_configuration.ibiEquilibrateIterations.value == 0 or _iteration <= _configuration.rdfEndIteration.value or
-      forceType == ForceType::FullParticle) {
-    auto wasTuningIterationAndPotentialEnergyCoulomb =
-        applyWithChosenFunctorElectrostatic<std::pair<bool, std::optional<double>>>(
-            [&](auto &&functor) {  // return _autoPasContainer->computeInteractions(&functor);
-              auto wasTuningIteration = _autoPasContainer->template computeInteractions(&functor);
-              if (functor.getCalculateGlobals()) {
-                const auto potentialEnergy = functor.getPotentialEnergy();
-                return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
-              }
-              return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
+  bool applyCoulombForce = false;
+  if (applyCoulombForce) {
+    if (_configuration.ibiEquilibrateIterations.value == 0 or _iteration <= _configuration.rdfEndIteration.value or
+        forceType == ForceType::FullParticle) {
+      auto wasTuningIterationAndPotentialEnergyCoulomb =
+          applyWithChosenFunctorElectrostatic<std::pair<bool, std::optional<double>>>(
+              [&](auto &&functor) {  // return _autoPasContainer->computeInteractions(&functor);
+                auto wasTuningIteration = _autoPasContainer->template computeInteractions(&functor);
+                if (functor.getCalculateGlobals()) {
+                  const auto potentialEnergy = functor.getPotentialEnergy();
+                  return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
+                }
+                return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
 
-            });
-    wasTuningIterationAndPotentialEnergy.first |= wasTuningIterationAndPotentialEnergyCoulomb.first;
+              });
+      wasTuningIterationAndPotentialEnergy.first |= wasTuningIterationAndPotentialEnergyCoulomb.first;
+    }
   }
 #endif
   return wasTuningIterationAndPotentialEnergy;
@@ -1249,7 +1318,8 @@ void Simulation::loadParticles() {
 }
 
 template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor, bool subtractForces) {
+ReturnType Simulation::applyWithChosenFunctor(FunctionType f, ForceType forceType, bool subtractForces) {
+  const bool useCGFunctor = forceType == ForceType::CoarseGrain;
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   if (useCGFunctor) {
@@ -1262,10 +1332,27 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, bool useCGFunctor,
       return f(func);
     }
   }
+
+  if (forceType == ForceType::IBIOuter) {
+    auto func = LuTFunctorType{cutoff * _configuration.cutoffFactorElectrostatics.value, particlePropertiesLibrary,
+                               subtractForces ? -1 : 1};
+    func.setInnerCutoff(cutoff);
+    func.setLuT(_lut);
+    return f(func);
+  }
+
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      if (forceType == ForceType::FPOuter or forceType == ForceType::CGMolOuter) {
+        auto func =
+            LJFunctorTypeAutovec{cutoff * _configuration.cutoffFactorElectrostatics.value, particlePropertiesLibrary};
+        func.setInnerCutoff(cutoff);
+        return f(func);
+      } else {
+        return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      }
+
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "

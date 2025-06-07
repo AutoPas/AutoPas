@@ -100,6 +100,8 @@ class LJMultisiteFunctor
    */
   bool _postProcessed;
 
+  double _innerCutoffSquared = 0;
+
  public:
   /**
    * Delete Default constructor
@@ -186,7 +188,7 @@ class LJMultisiteFunctor
     const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
     const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
-    if (distanceSquaredCoM > _cutoffSquared) {
+    if (distanceSquaredCoM > _cutoffSquared or distanceSquaredCoM < _innerCutoffSquared) {
       return;
     }
 
@@ -475,7 +477,8 @@ class LJMultisiteFunctor
         SoAFloatPrecision torqueSumY = 0.;
         SoAFloatPrecision torqueSumZ = 0.;
 
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, \
+                               potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
           const size_t globalSiteBIndex = siteB + siteIndexMolB;
 
@@ -635,6 +638,8 @@ class LJMultisiteFunctor
     }
     _sitePositionsLJ = sitePositionsLJ;
   }
+
+  void setInnerCutoff(double innerCutoff) { _innerCutoffSquared = innerCutoff * innerCutoff; }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -1022,7 +1027,8 @@ class LJMultisiteFunctor
         const auto exactSitePositionAy = rotatedSitePositionAy + yAptr[molA];
         const auto exactSitePositionAz = rotatedSitePositionAz + zAptr[molA];
 
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, \
+                               potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;

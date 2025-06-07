@@ -221,12 +221,14 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
     if (not outerRespaStep) {
       if (resetTorques) {
+        // std::cout << "iter->setTypeId(outerStepMolID);" << std::endl;
         iter->setTypeId(outerStepMolID);
         iter->setTempTorque(iter->getTorque());
         iter->setTorque({0, 0, 0});
       }
     } else {
       if (resetTorques) {
+        // std::cout << "iter->setTypeId(innerStepMolID);" << std::endl;
         iter->setTypeId(innerStepMolID);
         iter->setTorque(iter->getTempTorque());
       }
