@@ -313,6 +313,8 @@ class Simulation {
 
   /**
    * Updates the temperatures of the particles in the local AutoPas container.
+   *
+   * This method is used for DEM simulations.
    */
   void updateTemperatures();
 
@@ -371,6 +373,9 @@ class Simulation {
 
   /**
    * Adds background friction to the particles in the container.
+   *
+   * This method is used for DEM simulations.
+   *
    * @param backgroundForceFrictionCoeff Damping coefficient for the forces.
    * @param backgroundTorqueFrictionCoeff Damping coefficient for the torques.
    * @param particlePropertiesLib

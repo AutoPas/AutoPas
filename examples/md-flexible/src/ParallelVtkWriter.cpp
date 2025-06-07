@@ -122,14 +122,6 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   }
   timestepFile << "        </DataArray>\n";
 #elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
-  // print radii
-  timestepFile << "        <DataArray Name=\"radii\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    const auto radius = particlePropertiesLib.getRadius(particle->getTypeId());
-    timestepFile << "        " << radius << "\n";
-  }
-  timestepFile << "        </DataArray>\n";
-
   // print temperatures
   timestepFile
       << "        <DataArray Name=\"temperatures\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float64\">\n";

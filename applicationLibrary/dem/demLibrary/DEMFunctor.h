@@ -22,8 +22,7 @@ namespace demLib {
 
 /**
  * A functor to handle the interactions between particles using Discrete Element Method (DEM).
- * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
- * scheme.
+ * Refer to force-formulas from Chapters 2.4 and 2.5 of Thesis (https://mediatum.ub.tum.de/doc/1773224/1773224.pdf).
  * @tparam Particle_T The type of particle.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
@@ -183,7 +182,9 @@ class DEMFunctor
     std::array<double, 3> tanF = tanVel * (-_demParameters.getFrictionViscosity());                 // 3 FLOPS
     const double tanFMagSquared = dot(tanF, tanF);                                                  // 5 FLOPS
     if (tanFMagSquared > coulombLimit) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;                                    // -> additional 5 FLOPS
+      if constexpr (countFLOPs) {
+        ++_aosThreadDataFLOPs[threadnum].numInnerIfTanFCalls;  // -> additional 5 FLOPS
+      }
       const double tanFMag = std::sqrt(tanFMagSquared);                                        // 1 FLOPS
       const double scale = _demParameters.getDynamicFrictionCoeff() * (normalFMag) / tanFMag;  // 2 FLOPS
       tanF = tanF * scale;                                                                     // 3 FLOPS
@@ -208,8 +209,10 @@ class DEMFunctor
     std::array<double, 3> rollingF = rollingRelVel * (-_demParameters.getRollingViscosity());  // 3 FLOPS
     const double rollingFMagSquared = dot(rollingF, rollingF);                                 // 5 FLOPS
     if (rollingFMagSquared > coulombLimitSquared) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;  // -> additional 5 FLOPS
-      const double rollingFMag = std::sqrt(rollingFMagSquared);  // 1 FLOPS
+      if constexpr (countFLOPs) {
+        ++_aosThreadDataFLOPs[threadnum].numInnerIfRollingQCalls;  // -> additional 5 FLOPS
+      }
+      const double rollingFMag = std::sqrt(rollingFMagSquared);                                  // 1 FLOPS
       const double scale = _demParameters.getRollingFrictionCoeff() * normalFMag / rollingFMag;  // 2 FLOPS
       rollingF = rollingF * scale;
     }
@@ -221,8 +224,10 @@ class DEMFunctor
     std::array<double, 3> torsionF = torsionRelVel * (-_demParameters.getTorsionViscosity());  // 3 FLOPS
     const double torsionFMagSquared = dot(torsionF, torsionF);                                 // 5 FLOPS
     if (torsionFMagSquared > coulombLimitSquared) {
-      ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;  // -> additional 5 FLOPS
-      const double torsionFMag = std::sqrt(torsionFMagSquared);  // 1 FLOPS
+      if constexpr (countFLOPs) {
+        ++_aosThreadDataFLOPs[threadnum].numInnerIfTorsionQCalls;  // -> additional 5 FLOPS
+      }
+      const double torsionFMag = std::sqrt(torsionFMagSquared);                                  // 1 FLOPS
       const double scale = _demParameters.getTorsionFrictionCoeff() * normalFMag / torsionFMag;  // 2 FLOPS
       torsionF = torsionF * scale;
     }
@@ -234,8 +239,11 @@ class DEMFunctor
       j.addTorque((frictionQI * (radiusJReduced / radiusIReduced)) - rollingQI - torsionQI);  // 10 FLOPS
     }
 
-    // Heat Transfer (2 + 4 + 2 + 1 = 9 FLOPS, for newton3 additional 1 FLOP)
-    const double geometricMeanRadius = std::sqrt(radiusI * radiusJ);
+    // Heat Transfer (4 + 2 + 1 = 7 FLOPS, for newton3 additional 1 FLOP)
+    double geometricMeanRadius = _geometricMeanRadius;
+    if constexpr (useMixing) {
+      geometricMeanRadius = _PPLibrary->getMixingGeometricMeanRadius(i.getTypeId(), j.getTypeId());
+    }
     const double conductance =
         2. * _demParameters.getHeatConductivity() *
         std::pow((3. * _demParameters.getElasticStiffness() * overlap * geometricMeanRadius) / 4., 1. / 3.);
@@ -299,6 +307,11 @@ class DEMFunctor
     size_t numInnerIfRollingQCallsSum = 0;
     size_t numInnerIfTorsionQCallsSum = 0;
 
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> geometricMeanRadii;
+    if constexpr (useMixing) {
+      geometricMeanRadii.resize(soa.size());
+    }
+
     // Loop over Particles
     for (unsigned int i = 0; i < soa.size(); i++) {
       const auto ownedStateI = ownedStatePtr[i];
@@ -317,6 +330,12 @@ class DEMFunctor
       SoAFloatPrecision heatFluxAcc = 0.;
 
       const double radiusI = _PPLibrary->getRadius(typeptr[i]);
+
+      if constexpr (useMixing) {
+        for (unsigned int j = 0; j < soa.size(); ++j) {
+          geometricMeanRadii[j] = _PPLibrary->getMixingGeometricMeanRadius(typeptr[i], typeptr[j]);
+        }
+      }
 
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum, \
                                numOverlapCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,             \
@@ -509,8 +528,11 @@ class DEMFunctor
         qYptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIY - rollingQIY - torsionQIY);
         qZptr[j] += ((radiusJReduced / radiusIReduced) * frictionQIZ - rollingQIZ - torsionQIZ);
 
-        // Compute Heat Transfer (2 + 3 + 2 + 2 = 9 FLOPS)
-        const SoAFloatPrecision geometricMeanRadius = std::sqrt(radiusI * radiusJ);
+        // Compute Heat Transfer (3 + 2 + 2 = 7 FLOPS)
+        SoAFloatPrecision geometricMeanRadius = _geometricMeanRadius;
+        if constexpr (useMixing) {
+          geometricMeanRadius = geometricMeanRadii[j];
+        }
         const SoAFloatPrecision conductance =
             2. * _demParameters.getHeatConductivity() *
             std::pow((3. * _demParameters.getElasticStiffness() * overlap * geometricMeanRadius) / 4., 1. / 3.);
@@ -700,8 +722,8 @@ class DEMFunctor
 
       constexpr size_t numFLOPsPerDistanceCall = 9;
       constexpr size_t numFLOPsPerOverlapCall = 2;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 177;
-      constexpr size_t numFLOPsPerN3KernelCall = 192;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 170;
+      constexpr size_t numFLOPsPerN3KernelCall = 185;
       constexpr size_t numFLOPsPerInnerIfTanF = 5;
       constexpr size_t numFLOPsPerInnerIfRollingQ = 5;
       constexpr size_t numFLOPsPerInnerIfTorsionQ = 5;
@@ -816,6 +838,11 @@ class DEMFunctor
     size_t numInnerIfRollingQCallsSum = 0;
     size_t numInnerIfTorsionQCallsSum = 0;
 
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> geometricMeanRadii;
+    if constexpr (useMixing) {
+      geometricMeanRadii.resize(soa2.size());
+    }
+
     // Loop over Particles in soa1
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       const auto ownedStateI = ownedStatePtr1[i];
@@ -832,6 +859,12 @@ class DEMFunctor
       SoAFloatPrecision heatFluxAcc = 0.;
 
       SoAFloatPrecision radiusI = _PPLibrary->getRadius(typeptr1[i]);
+
+      if constexpr (useMixing) {
+        for (unsigned int j = 0; j < soa2.size(); ++j) {
+          geometricMeanRadii[j] = _PPLibrary->getGeometricMeanRadius(typeptr1[i], typeptr2[j]);
+        }
+      }
 
       // Loop over Particles in soa2
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, qXacc, qYacc, qZacc, heatFluxAcc, numDistanceCalculationSum, \
@@ -1035,10 +1068,13 @@ class DEMFunctor
         }
 
         // Compute heat flux
-        const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
+        SoAFloatPrecision geometricMeanRadius = _geometricMeanRadius;
+        if constexpr (useMixing) {
+          geometricMeanRadius = geometricMeanRadii[j];
+        }
         const SoAFloatPrecision conductance =
             2. * _demParameters.getHeatConductivity() *
-            std::pow((3. * _demParameters.getElasticStiffness() * overlap * geomMeanRadius) / 4., 1. / 3.);
+            std::pow((3. * _demParameters.getElasticStiffness() * overlap * geometricMeanRadius) / 4., 1. / 3.);
         const SoAFloatPrecision heatFluxI = conductance * (temperaturePtr2[j] - temperaturePtr1[i]);
 
         const SoAFloatPrecision heatFluxGenerated =
@@ -1174,6 +1210,15 @@ class DEMFunctor
         // in each iteration we calculate the interactions of particle i with
         // vecsize particles in the neighborlist of particle i starting at
         // particle joff
+
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize>
+            geometricMeanRadii;
+        if constexpr (useMixing) {
+          for (size_t j = 0; j < vecsize; j++) {
+            geometricMeanRadii[j] =
+                _PPLibrary->getGeometricMeanRadius(typeptr[indexFirst], typeptr[neighborListPtr[joff + j]]);
+          }
+        }
 
         // gather values of particle j
 #pragma omp simd safelen(vecsize)
@@ -1390,7 +1435,10 @@ class DEMFunctor
           }
 
           // Compute heat flux
-          const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
+          SoAFloatPrecision geomMeanRadius = _geometricMeanRadius;
+          if constexpr (useMixing) {
+            geomMeanRadius = geometricMeanRadii[j];
+          }
           const SoAFloatPrecision conductance =
               2. * _demParameters.getHeatConductivity() *
               std::pow((3. * _demParameters.getElasticStiffness() * overlap * geomMeanRadius) / 4., 1. / 3.);
@@ -1632,7 +1680,10 @@ class DEMFunctor
       }
 
       // Compute heat flux
-      const SoAFloatPrecision geomMeanRadius = std::sqrt(radiusIReduced * radiusJReduced);
+      SoAFloatPrecision geomMeanRadius = _geometricMeanRadius;
+      if constexpr (useMixing) {
+        geomMeanRadius = _PPLibrary->getGeometricMeanRadius(typeptr[indexFirst], typeptr[j]);
+      }
       const SoAFloatPrecision conductance =
           2. * _demParameters.getHeatConductivity() *
           std::pow((3. * _demParameters.getElasticStiffness() * overlap * geomMeanRadius) / 4., 1. / 3.);
@@ -1716,13 +1767,13 @@ class DEMFunctor
     }
 
     /**
-     * Number of calls to Lennard-Jones Kernel with newton3 disabled.
+     * Number of calls to DEM Kernel with newton3 disabled.
      * Used for calculating number of FLOPs and hit rate.
      */
     size_t numKernelCallsNoN3 = 0;
 
     /**
-     * Number of calls to Lennard-Jones Kernel with newton3 enabled.
+     * Number of calls to DEM Kernel with newton3 enabled.
      * Used for calculating number of FLOPs and hit rate.
      */
     size_t numKernelCallsN3 = 0;
@@ -1734,23 +1785,22 @@ class DEMFunctor
     size_t numDistCalls = 0;
 
     /**
-     * Number of Overlap calls.
+     * Number of Overlap calculations.
      */
     size_t numOverlapCalls = 0;
 
     /**
-     * Number of inner if rollingQ calls.
+     * Number of inner-if rollingQ calls.
      */
     size_t numInnerIfRollingQCalls = 0;
 
     /**
-     * Number of inner if torsionQ calls.
+     * Number of inner-if torsionQ calls.
      */
     size_t numInnerIfTorsionQCalls = 0;
 
     /**
-     * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
-     * and we calculate globals for an owned-halo particle pair.
+     * Number of inner-if tanF calls.
      */
     size_t numInnerIfTanFCalls = 0;
 
@@ -1764,7 +1814,8 @@ class DEMFunctor
   const double _cutoff;
   const DEMParameters _demParameters;
   // not const because it might be reset through PPL
-  double _radius = 0;
+  double _radius = 0.;
+  double _geometricMeanRadius = 0.;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

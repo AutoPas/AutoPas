@@ -303,8 +303,16 @@ class GranularDEMParticle : public autopas::ParticleBaseFP64 {
    */
   [[nodiscard]] double getTemperature() const;
 
+  /**
+   * Set the temperature
+   * @param temperature
+   */
   void setTemperature(double temperature);
 
+  /**
+   * Adds given temperature to the particle's temperature.
+   * @param temperature
+   */
   void addTemperature(double temperature);
 
   /**
@@ -358,8 +366,14 @@ class GranularDEMParticle : public autopas::ParticleBaseFP64 {
    */
   std::array<double, 3> _torque{};
 
-  double _temperature;
+  /**
+   * Temperature of the particle.
+   */
+  double _temperature{};
 
-  double _heatFlux;
+  /**
+   * Heatflux (flow of heat energy) of the particle.
+   */
+  double _heatFlux{};
 };
 }  // namespace demLib
