@@ -686,6 +686,7 @@ void Simulation::run() {
       } else {
         ibiConvergenceReached = true;
         std::cout << "IBI: convergence reached!" << std::endl;
+        exit(0);
       }
     }
   }
