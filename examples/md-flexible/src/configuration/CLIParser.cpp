@@ -51,6 +51,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.cellSizeFactors,
       config.fastParticlesThrow,
       config.checkpointfile,
+      config.computationLoadOption,
       config.containerOptions,
       config.cutoff,
       config.dataLayoutOptions,
@@ -732,6 +733,20 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
 #endif
+        break;
+      }
+      case decltype(config.computationLoadOption)::getoptChar: {
+        auto parsedOptions = ComputationLoadOption::parseOptions(strArg);
+
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one computation load option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+
+          displayHelp = true;
+        }
+
+        config.computationLoadOption.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {

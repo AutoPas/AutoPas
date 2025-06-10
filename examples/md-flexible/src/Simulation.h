@@ -249,6 +249,11 @@ class Simulation {
    */
   bool _createVtkFiles;
 
+  /**
+   * Previous timer value to calculate time difference for last iteration
+   */
+  long _previousTimerValue = 0;
+
  private:
   /**
    * Load particles from this object's config into this object's AutoPas container.
@@ -382,6 +387,12 @@ class Simulation {
    */
   [[maybe_unused]] void checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
                                           int lineNumber);
+
+  /**
+   * Calculates the computation load based on the selected computation load option.
+   * @return The computation load value in nanoseconds.
+   */
+  [[nodiscard]] double calculateComputationLoad() const;
 
   /**
    *

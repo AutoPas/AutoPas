@@ -449,6 +449,7 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
   printOption(dontShowProgressBar);
   printOption(loadBalancer);
+  printOption(computationLoadOption);
   printOption(loadBalancingInterval);
   printOption(subdivideDimension);
   printOption(energySensorOption);

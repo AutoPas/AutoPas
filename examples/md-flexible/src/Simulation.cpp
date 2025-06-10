@@ -228,14 +228,22 @@ void Simulation::run() {
       updateQuaternions();
 #endif
 
+      updateInteractionForces();
+
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
 
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+        auto totalTime = calculateComputationLoad();
+        auto computationalLoad = totalTime - _previousTimerValue;
+        _previousTimerValue = totalTime;
+        // if the computational load is 0, we use old force update time like before
+        if (computationalLoad == 0) {
+          computationalLoad = _timers.forceUpdateTotal.getTotalTime();
+        }
         _timers.loadBalancing.start();
         _domainDecomposition->update(computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
@@ -275,10 +283,7 @@ void Simulation::run() {
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
-      _timers.computationalLoad.start();
     }
-
-    updateInteractionForces();
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
@@ -844,5 +849,29 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
       throw std::runtime_error("Unknown triwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
     }
+  }
+}
+
+double Simulation::calculateComputationLoad() const {
+  switch (_configuration.computationLoadOption.value) {
+    case ComputationLoadOption::completeCycle:
+      return static_cast<double>(_timers.computationalLoad.getTotalTime());
+    case ComputationLoadOption::positionUpdate:
+      return static_cast<double>(_timers.positionUpdate.getTotalTime());
+    case ComputationLoadOption::updateContainer:
+      return static_cast<double>(_timers.updateContainer.getTotalTime());
+    case ComputationLoadOption::haloParticleExchange:
+      return static_cast<double>(_timers.haloParticleExchange.getTotalTime());
+    case ComputationLoadOption::migratingParticleExchange:
+      return static_cast<double>(_timers.migratingParticleExchange.getTotalTime());
+    case ComputationLoadOption::reflectParticlesAtBoundaries:
+      return static_cast<double>(_timers.reflectParticlesAtBoundaries.getTotalTime());
+    case ComputationLoadOption::forceUpdateTotal:
+      return static_cast<double>(_timers.forceUpdateTotal.getTotalTime());
+    case ComputationLoadOption::velocityUpdate:
+      return static_cast<double>(_timers.velocityUpdate.getTotalTime());
+    default:
+      // Default to complete cycle if unknown option
+      return static_cast<double>(_timers.computationalLoad.getTotalTime());
   }
 }
