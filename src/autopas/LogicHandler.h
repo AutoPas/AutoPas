@@ -6,6 +6,7 @@
 
 #pragma once
 #include <atomic>
+#include <filesystem>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -1945,7 +1946,7 @@ std::vector<autopas::VectorizationPatternOption::Value> pattern_map_calc(Functor
     patterntype current_pattern = patterns[i];
     for (size_t firstnumberParticles = 1; firstnumberParticles<=30; firstnumberParticles++) {
       for (size_t secondnumberParticles = 1; secondnumberParticles<=30; secondnumberParticles++) {
-        long test = patternHelper<Functor_T,ParticleType_T>(functor,10,100,firstnumberParticles,secondnumberParticles,0.16,current_pattern, timer, newton3);
+        long test = patternHelper<Functor_T,ParticleType_T>(functor,30,100,firstnumberParticles,secondnumberParticles,0.16,current_pattern, timer, newton3);
         all_results[i][firstnumberParticles-1+30*(secondnumberParticles-1)] = test;
 
       }
@@ -2055,6 +2056,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   /* optimal patterns for LJFunctorHWY are calculated once and made available to
    functor through pointer everytime this method is called.
    */
+
   if (functor.getPatternSelection()) {
     if (!autoTuner._patternsCalculated) {
       autoTuner._optimalPatternsNewton3On = pattern_map_calc<Functor,Particle_T>(functor, true);
@@ -2065,9 +2067,16 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::cout<<" optimal pattern for fcs:1 and scs:30 newton3 off:"<<checkVecPattern(autoTuner._optimalPatternsNewton3Off[29*30])<<std::endl;
       std::cout<<" optimal pattern for fcs:30 and scs:1 newton3 on:"<<checkVecPattern(autoTuner._optimalPatternsNewton3On[29])<<std::endl;
       std::cout<<" optimal pattern for fcs:30 and scs:1 newton3 off:"<<checkVecPattern(autoTuner._optimalPatternsNewton3Off[29])<<std::endl;
+      std::cout<<"pattern, fcs, scs"<<std::endl;
+      for (size_t second_size=1; second_size<=30; second_size++) {
+        for (size_t first_size=1; first_size<=30; first_size++) {
+          std::cout<<checkVecPattern(autoTuner._optimalPatternsNewton3On[(second_size-1)*30+(first_size-1)])<<","<<first_size<<","<< second_size<< std::endl;
+        }
+      }
     }
     functor.setPatternSelection(&autoTuner._optimalPatternsNewton3On , &autoTuner._optimalPatternsNewton3Off);
   }
+
 
 
 #ifdef AUTOPAS_LOG_LIVEINFO
