@@ -99,7 +99,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(nullptr),
       lut2B(10, _configuration.cutoff.value  *_configuration.cutoff.value ),
-      lut3B(0, _configuration.cutoff.value  *_configuration.cutoff.value )
+      lut3B(10, _configuration.cutoff.value  *_configuration.cutoff.value )
       {
   _timers.total.start();
   _timers.initialization.start();
@@ -888,7 +888,8 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
 
       //TODO find where nu is and how to get it here dynamically
 
-      functor.setParticleProperties(1);
+//      functor.setParticleProperties(1);
+      functor.setParticleProperties(_configuration.nuMap.value.at(0));
       return f(functor);
 
 #else

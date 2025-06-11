@@ -37,8 +37,8 @@ class LUT2B : public ParentLUT {
   LUT2B( int resolution, double cutoffSquared) : ParentLUT(resolution, cutoffSquared) {
 //    _lut2B.reserve(resolution);
 
-logToFile(std::to_string(cutoffSquared));
-logToFile(std::to_string(_pointDistance));
+//logToFile(std::to_string(cutoffSquared));
+//logToFile(std::to_string(_pointDistance));
 
 
 
@@ -48,7 +48,7 @@ logToFile(std::to_string(_pointDistance));
   float retrieveValues(const Functor &functor,float distanceSquared) {
 
     AutoPasLog(DEBUG, "Retrieving from LUT2B {}", distanceSquared);
-logToFile(std::to_string(distanceSquared));
+//logToFile(std::to_string(distanceSquared));
 return getNextNeighbor(functor,distanceSquared);
 
 //    return getLinear(functor,distanceSquared);
@@ -56,18 +56,20 @@ return getNextNeighbor(functor,distanceSquared);
   }
 
   template<class Functor>
-  void fill(const Functor &functor, double cutoffSquared) {
-  for (auto i = 0; i < _resolution; i++) {
-//    auto x = (_pointDistance / 2) + (i * _pointDistance);
-//    std::cout<< x<< std::endl;
-    _lut2B.push_back(functor.getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
-  }}
+  void fill(const Functor &functor, double cutoffSquared, bool globsLUT) {
+      if(!globsLUT) {
+        fill_plain(functor,cutoffSquared);
+      }if(globsLUT){
+          fill_global(functor, cutoffSquared);
+      }
+
+      }
 
   template<class Functor>
   float getLinear(const Functor &functor, float distance){
 
       if (distance >= _cutoffSquared - _pointDistance / 2) {
-        logIndexToFile(std::to_string(_numberOfPoints-1));
+//        logIndexToFile(std::to_string(_numberOfPoints-1));
         return _lut2B.at(_numberOfPoints - 1);
       }
       if (distance <= (_pointDistance / 2)) {
@@ -75,7 +77,7 @@ return getNextNeighbor(functor,distanceSquared);
         return functor.getLUTValues(distance);
       }
       if (std::fmod(distance, _pointDistance) == 0) {
-        logIndexToFile(std::to_string(distance/_pointDistance));
+//        logIndexToFile(std::to_string(distance/_pointDistance));
         return _lut2B.at(distance / _pointDistance);
       }
 
@@ -92,10 +94,10 @@ return getNextNeighbor(functor,distanceSquared);
 
       float lowerY;
       if(lowerX >= _numberOfPoints){
-        logIndexToFile(std::to_string(_numberOfPoints-1));
+//        logIndexToFile(std::to_string(_numberOfPoints-1));
         lowerY = _lut2B.at(_numberOfPoints -1 );
       }else {
-        logIndexToFile(std::to_string(lowerX));
+//        logIndexToFile(std::to_string(lowerX));
         lowerY = _lut2B.at(lowerX);
       }
 
@@ -105,10 +107,10 @@ return getNextNeighbor(functor,distanceSquared);
 
       float upperY;
       if(upperX >= _numberOfPoints){
-        logIndexToFile(std::to_string(_numberOfPoints-1));
+//        logIndexToFile(std::to_string(_numberOfPoints-1));
          upperY = _lut2B.at(_numberOfPoints -1 );
       }else {
-        logIndexToFile(std::to_string(upperX));
+//        logIndexToFile(std::to_string(upperX));
         upperY = _lut2B.at(upperX);
       }
 //      std::cout<< lowerY<< std::endl;
@@ -126,7 +128,7 @@ return getNextNeighbor(functor,distanceSquared);
   float getNextNeighbor(const Functor &functor, float dr2) {
 
       if (dr2 >= _cutoffSquared) {
-        logIndexToFile(std::to_string(_numberOfPoints - 1));
+//        logIndexToFile(std::to_string(_numberOfPoints - 1));
         return _lut2B.at(_numberOfPoints - 1);
       }
       // Compute perfect value for lowest dr2 where error is greatest
@@ -141,10 +143,10 @@ return getNextNeighbor(functor,distanceSquared);
                    auto res = std::floor(dr2 / _pointDistance);
 ////                   std::cout << res;
                    if(res >= _resolution){
-                     logIndexToFile(std::to_string(_resolution -1 ));
+//                     logIndexToFile(std::to_string(_resolution -1 ));
                      return _lut2B.at(_resolution-1);
                    }
-                   logIndexToFile( std::to_string(std::floor(dr2/ _pointDistance)));
+//                   logIndexToFile( std::to_string(std::floor(dr2/ _pointDistance)));
       return _lut2B.at(std::floor(dr2 / _pointDistance));;
     }
 
@@ -163,13 +165,35 @@ return getNextNeighbor(functor,distanceSquared);
 
     }
 
+
+    template<class Functor>
+    void fill_plain(const Functor &functor, double cutoffSquared) {
+
+        for (auto i = 0; i < _resolution; i++) {
+          auto x = (_pointDistance / 2) + (i * _pointDistance);
+          std::cout << x << std::endl;
+          _lut2B.push_back(functor.getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
+        }}
+
+    template<class Functor>
+    void fill_delayed_start(const Functor &functor, double cutoffSquared) {
+
+      double delay = std::sqrt(sigmaSquared) * 0.9 ;
+      for (auto i = 0; i < _resolution; i++) {
+        auto x = delay + (i * _pointDistance);
+        std::cout << x << std::endl;
+        _lut2B.push_back(functor.getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
+      }}
+
     template<class Functor>
     void fill_global(const Functor &functor, double cutoffSquared) {
+      _lut2B_globals.reserve(_resolution);
       for (auto i = 0; i < _resolution; i++) {
 
         double distance = (_pointDistance / 2) + (i * _pointDistance);
-        _lut2B_globals[i][0] = functor.getLUTValues(distance);
-        _lut2B_globals[i][1] = calculateGlobalFactor(distance);
+        _lut2B_globals.push_back({functor.getLUTValues(distance),calculateGlobalFactor(distance) });
+//        _lut2B_globals[i][0] = functor.getLUTValues(distance);
+//        _lut2B_globals[i][1] = calculateGlobalFactor(distance);
       }}
 
 
@@ -205,7 +229,7 @@ return getNextNeighbor(functor,distanceSquared);
 
       AutoPasLog(DEBUG, "Retrieving from LUT2B {}", distanceSquared);
       //logToFile(std::to_string(distanceSquared));
-      return getNextNeighbor(functor,distanceSquared);
+      return getNextNeighbor_global(functor,distanceSquared);
 
       //    return getLinear(functor,distanceSquared);
 
@@ -228,9 +252,19 @@ return getNextNeighbor(functor,distanceSquared);
       }}
 
 
+    void setSigmaSquared(double sigmaSquared) {
+        LUT2B::sigmaSquared = sigmaSquared;
+    }
 
+    void setEpsilon24(double epsilon24) {
+        LUT2B::epsilon24 = epsilon24;
+    }
 
- private:
+    void setShift6(double shift6) {
+        LUT2B::shift6 = shift6;
+    }
+
+private:
   std::vector<double > _lut2B;
   std::vector<std::array<double, 2>> _lut2B_globals;
 

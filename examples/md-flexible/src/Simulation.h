@@ -13,6 +13,7 @@
 
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
+#include "molecularDynamicsLibrary/LUT2B.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
@@ -133,6 +134,7 @@ class Simulation {
 
   mdLib::LUT3B lut3B;
   mdLib::LUT2B lut2B;
+
   //
 
 

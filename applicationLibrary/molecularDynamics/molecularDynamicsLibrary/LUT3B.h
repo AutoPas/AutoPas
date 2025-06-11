@@ -69,7 +69,7 @@ auto result = getNextNeighbour(index1, index2, index3);
 
     auto resultPair = std::make_pair(result, order);
 
-       std::cout << "RETRIEVE VALUE ";
+//       std::cout << "RETRIEVE VALUE ";
 
     return resultPair;
   }
@@ -198,23 +198,15 @@ auto result = getNextNeighbour(index1, index2, index3);
   }
 
      template<class Functor>
-     void fill(const Functor &functor, double cutoffSquared) {
+     void fill(const Functor &functor, double cutoffSquared, bool withGlobals) {
 
+if(!withGlobals) {
+  fill_plain(functor, cutoffSquared);
+}if(withGlobals){
+//  fill_gobal(functor, cutoffSquared);
+ fill_gobal_all(functor, cutoffSquared);
 
-       _lut3B.resize(_resolution + 1);
-       for (auto a = 0; a <= _resolution; a++) {
-         double distA = _lutCutoff + a * _pointDistance;
-         _lut3B[a].resize(a + 1);
-         for (auto b = 0; b <= a; b++) {
-           double distB = _lutCutoff + b * _pointDistance;
-           _lut3B[a][b].reserve(b + 1);
-           for (auto c = 0; c <= b; c++) {
-             double distC = _lutCutoff + c * _pointDistance;
-             _lut3B[a][b].push_back(functor.getLUTValues(distA, distB, distC));
-
-           }
-         }
-       }
+}
 
        std::cout << "filled ";
     }
@@ -237,14 +229,68 @@ auto result = getNextNeighbour(index1, index2, index3);
 
       const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
       const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-      const double factor = 3.0 * nu / allDistsTo5;
+//      const double factor = 3.0 * nu / allDistsTo5;
+      const double factor =   3.0 * 1.6152500E-3  / allDistsTo5;
+
       return{allDistsSquared, factor};
 
     }
 
+    std::array<double, 2> calculateFullGlobal(  double distSquaredIJ, double distSquaredJK, double distSquaredKI) const {
 
 
+      const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+      const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+      //      const double factor = 3.0 * nu / allDistsTo5;
+      const double factor =   3.0 * 1.6152500E-3  / allDistsTo5;
 
+      //        // Dot products of both distance vectors going from one particle  -> over law of cosine
+      const double IJDotKI = 0.5 * (distSquaredIJ + distSquaredKI - distSquaredJK);
+      const double IJDotJK = 0.5 * (distSquaredIJ + distSquaredJK - distSquaredKI);
+      const double JKDotKI = 0.5 * (distSquaredJK + distSquaredKI - distSquaredIJ);
+      const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
+      const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+
+      return{potentialEnergy3, 0};
+
+    }
+
+
+    std::array<double, 2> calculatePotEnergyTest( double distSquaredIJ, double distSquaredJK, double distSquaredKI) const {
+
+
+      double distIJ = std::sqrt(distSquaredIJ);
+      double distJK = std::sqrt(distSquaredJK);
+      double distKI = std::sqrt(distSquaredKI);
+
+      double distIJ3 = distSquaredIJ * distIJ;
+      double distJK3 = distSquaredJK * distJK;
+      double distKI3 = distSquaredKI * distKI;
+      double KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2  * distIJ * distKI);
+      double IJcosJK= (distSquaredIJ + distSquaredJK - distSquaredKI) / (2  * distIJ * distJK);
+      double JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2  * distJK * distKI);
+      double res = 3* (1.6152500E-3  * (1+ (3 * KIcosIJ * IJcosJK * JKcosKI) ) )/(distIJ3* distKI3 *distJK3 );
+
+      return {res, 0};
+    }
+
+
+    template<class Functor>
+    void fill_plain(const Functor &functor, double cutoffSquared) {
+      _lut3B.resize(_resolution + 1);
+      for (auto a = 0; a <= _resolution; a++) {
+        double distA = _lutCutoff + a * _pointDistance;
+        _lut3B[a].resize(a + 1);
+        for (auto b = 0; b <= a; b++) {
+          double distB = _lutCutoff + b * _pointDistance;
+          _lut3B[a][b].reserve(b + 1);
+          for (auto c = 0; c <= b; c++) {
+            double distC = _lutCutoff + c * _pointDistance;
+            _lut3B[a][b].push_back(functor.getLUTValues(distA, distB, distC));
+          }
+        }
+      }
+    }
 
     template<class Functor>
     void fill_gobal(const Functor &functor, double cutoffSquared) {
@@ -260,8 +306,35 @@ auto result = getNextNeighbour(index1, index2, index3);
           for (auto c = 0; c <= b; c++) {
             double distC = _lutCutoff + c * _pointDistance;
             auto global = calculateGlobalFac(distA, distB, distC);
-            _lut3B_global[a][b].push_back({functor.getLUTValues(distA, distB, distC), global[0], global[1]  });
+            auto lutVal = functor.getLUTValues(distA, distB, distC);
+            std::array<double, 5> res = {lutVal[0],lutVal[1],lutVal[2], global[0], global[1]  };
+            _lut3B_global[a][b].push_back(res);
+          }
+        }
+      }
 
+      std::cout << "filled ";
+    }
+
+    template<class Functor>
+    void fill_gobal_all(const Functor &functor, double cutoffSquared) {
+
+
+      _lut3B_global.resize(_resolution + 1);
+      for (auto a = 0; a <= _resolution; a++) {
+        double distA = _lutCutoff + a * _pointDistance;
+        _lut3B_global[a].resize(a + 1);
+        for (auto b = 0; b <= a; b++) {
+          double distB = _lutCutoff + b * _pointDistance;
+          _lut3B_global[a][b].reserve(b + 1);
+          for (auto c = 0; c <= b; c++) {
+            double distC = _lutCutoff + c * _pointDistance;
+//            auto global = calculateFullGlobal(distA, distB, distC);
+            //testing
+            auto global = calculatePotEnergyTest(distA, distB, distC);
+            auto lutVal = functor.getLUTValues(distA, distB, distC);
+            std::array<double, 5> res = {lutVal[0],lutVal[1],lutVal[2], global[0], 0  };
+            _lut3B_global[a][b].push_back(res);
           }
         }
       }
@@ -271,10 +344,15 @@ auto result = getNextNeighbour(index1, index2, index3);
 
 
     template <class Functor>
+//    [[nodiscard]] std::pair<const std::array<double, 3>, std::pair<std::array<u_int8_t, 3>, std::array<double,2>> retrieveValues_global(const Functor &functor, double dist1, double dist2, double dist3) const {
     [[nodiscard]] std::pair<const std::array<double, 5>, std::array<u_int8_t, 3>> retrieveValues_global(const Functor &functor, double dist1, double dist2, double dist3) const {
-      //    using namespace autopas::utils::ArrayMath::literals;
+
+    //    using namespace autopas::utils::ArrayMath::literals;
       if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
-        return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
+          auto globs = calculateGlobalFac(dist1, dist2, dist3);
+          auto vals = functor.getLUTValues(dist1, dist2, dist3);
+          std:std::array<double, 5> res = {vals[0],vals[1],vals[2],globs[0], globs[1] };
+        return std::make_pair(res, std::array<u_int8_t, 3>({0, 1, 2}));
       }
 
       size_t index1, index2, index3;
@@ -321,10 +399,14 @@ auto result = getNextNeighbour(index1, index2, index3);
 
       // space for other interpolation
       auto result = getNextNeighbour_global(index1, index2, index3);
-
+//      auto val ={result[0], result[1], result[2]};
+//      auto fac = {result[3], result[4]};
+//
+//      auto pait = std::make_pair(order, fac);
+//      auto resultPair = std::make_pair(val, pait);
       auto resultPair = std::make_pair(result, order);
 
-      std::cout << "RETRIEVE VALUE ";
+//      std::cout << "RETRIEVE VALUE ";
 
       return resultPair;
     }
@@ -335,6 +417,11 @@ auto result = getNextNeighbour(index1, index2, index3);
       //just a function for consistency, floored values are basically next neighbours
       return _lut3B_global[index1][index2][index3];
 
+    }
+
+    template<class Functor>
+    void setNu(double nu ){
+      this->nu = nu;
     }
 
    private:

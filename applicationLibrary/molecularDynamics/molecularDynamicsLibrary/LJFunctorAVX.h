@@ -14,6 +14,7 @@
 #include <array>
 
 #include "LUT2B.h"
+#include "ParentLUT.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -22,8 +23,6 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "ParentLUT.h"
-
 
 namespace mdLib {
 
@@ -42,7 +41,7 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
-template <class Particle_T, bool applyShift = false, bool useMixing = false, bool useLUT =false,
+template <class Particle_T, bool applyShift = false, bool useMixing = false, bool useLUT = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorAVX
@@ -56,8 +55,8 @@ class LJFunctorAVX
    */
   LJFunctorAVX() = delete;
 
-// private:
-public:
+  // private:
+ public:
   /**
    * Internal, actual constructor.
    * @param cutoff
@@ -74,8 +73,8 @@ public:
         _aosThreadData(),
         _postProcessed{false} {
 
-    //added for lut
-    cutoffSquared = cutoff* cutoff;
+    // added for lut
+    cutoffSquared = cutoff * cutoff;
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -118,19 +117,19 @@ public:
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-
-    //added for lut
+  // added for lut
   template <typename T = void>
-    explicit LJFunctorAVX(double cutoff, LUT2B *lut =  nullptr,
-                        typename std::enable_if<!useMixing, T>::type* = nullptr)
+  explicit LJFunctorAVX(double cutoff, LUT2B *lut = nullptr, typename std::enable_if<!useMixing, T>::type * = nullptr)
       : LJFunctorAVX(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
-    if(lut){
-    _lut = lut;}}
+    if (lut) {
+      _lut = lut;
+    }
+  }
 
-  //end of added for lut
+  // end of added for lut
 
   std::string getName() final { return "LJFunctorAVX"; }
 
@@ -166,36 +165,34 @@ public:
       return;
     }
 
-        //added for lut by me
-        double fac;
-        double lj12m6;  // Otherwise we get an error in calculateGlobals
-        if constexpr (useLUT) {
-          // How to check for mixing if useMixing is always enabled?
-          AutoPasLog(DEBUG, "Used LUT with {}", dr2);
-//          fac = _lut->retrieveValues(*this,dr2);
-fac = _lut->retrieveValues(*this, dr2);
-          if (calculateGlobals) {
-//            // this is a problem
-//            AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
-//            return;
+    // added for lut by me
+    double fac;
+    double lj12m6;  // Otherwise we get an error in calculateGlobals
+    if constexpr (useLUT) {
+      AutoPasLog(DEBUG, "Used LUT with {}", dr2);
 
+      fac = _lut->retrieveValues(*this, dr2);
 
+      if (calculateGlobals) {
+        //            // this is a problem
+        //            AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
+        //            return;
 
-//added by me
+        // added by me
 
-
-//end added by me
-          }
-        }else {
-          // end added for lut
-          double invdr2 = 1. / dr2;
-          double lj6 = sigmaSquared * invdr2;
-          lj6 = lj6 * lj6 * lj6;
-          double lj12 = lj6 * lj6;
-          double lj12m6 = lj12 - lj6;
-          double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-        }
-          auto f = dr * fac;
+        // end added by me
+      }
+    } else {
+      // end added for lut
+      double invdr2 = 1. / dr2;
+      double lj6 = sigmaSquared * invdr2;
+      lj6 = lj6 * lj6 * lj6;
+      double lj12 = lj6 * lj6;
+      double lj12m6 = lj12 - lj6;
+      double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    }
+    auto
+        f = dr * fac;
 
     i.addF(f);
     if (newton3) {
@@ -211,7 +208,6 @@ fac = _lut->retrieveValues(*this, dr2);
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum += virial;
       }
@@ -889,24 +885,21 @@ fac = _lut->retrieveValues(*this, dr2);
    */
   constexpr static bool getMixing() { return useMixing; }
 
-
-
-  //added by me for lut
+  // added by me for lut
   [[nodiscard]] float getLUTValues(double distance) const {
-
+    // TOOD why is this hardcoded get the actual one from the mdconfig. save it in the parentLUT
+    // this is force magnitude for true r not r^2 even though distance= r^2
     auto sigmaSquared = 1;
     auto epsilon24 = 24;
-    auto shift6 = _shift6AoS;
+    //    auto shift6 = _shift6AoS;
 
-      double invdr2 = 1. / distance;
-      double lj6 = sigmaSquared * invdr2;
-      lj6 = lj6 * lj6 * lj6;
-      double lj12 = lj6 * lj6;
-      double lj12m6 = lj12 - lj6;
-      return epsilon24 * (lj12 + lj12m6) * invdr2;
-
+    double invdr2 = 1. / distance;
+    double lj6 = sigmaSquared * invdr2;
+    lj6 = lj6 * lj6 * lj6;
+    double lj12 = lj6 * lj6;
+    double lj12m6 = lj12 - lj6;
+    return epsilon24 * (lj12 + lj12m6) * invdr2;
   }
-
 
   /**
    * Reset the global values.
@@ -998,7 +991,7 @@ fac = _lut->retrieveValues(*this, dr2);
 #ifdef __AVX__
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquared = _mm256_set1_pd(sigmaSquared);
-    _lut->fill< decltype(*this) >(*this, cutoffSquared);
+    _lut->fill<decltype(*this)>(*this, cutoffSquared);
 
     if constexpr (applyShift) {
       _shift6 = _mm256_set1_pd(
@@ -1016,8 +1009,6 @@ fac = _lut->retrieveValues(*this, dr2);
       _shift6AoS = 0.;
     }
   }
-
-
 
  private:
 #ifdef __AVX__
@@ -1097,9 +1088,8 @@ fac = _lut->retrieveValues(*this, dr2);
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 
-
-    LUT2B * _lut = nullptr;
-    double cutoffSquared;
+  LUT2B *_lut = nullptr;
+  double cutoffSquared;
 
   // number of double values that fit into a vector register.
   // MUST be power of 2 because some optimizations make this assumption
