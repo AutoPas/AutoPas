@@ -109,9 +109,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -700,7 +698,7 @@ class MDFlexConfig {
    * useSecondAutpasInstance
    */
   MDFlexOption<bool, __LINE__> useSecondAutpasInstance{
-      false, "use-second-autpas-instance", true,
+      false, "use-second-autopas-instance", true,
       "If a second Autopas instance should be used to compute distance class interactions."};
 
   /**
