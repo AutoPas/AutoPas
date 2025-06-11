@@ -254,7 +254,7 @@ void Simulation::run() {
             computationalLoad = _timers.forceUpdateTotal.getTotalTime();
           }
           _timers.loadBalancing.start();
-          _domainDecomposition->update(computationalLoad);
+          _domainDecomposition->update(computationalLoad, *_autoPasContainer);
           auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                   _domainDecomposition->getLocalBoxMax());
           // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the

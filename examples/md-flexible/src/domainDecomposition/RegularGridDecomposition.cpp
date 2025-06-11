@@ -83,11 +83,15 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
 RegularGridDecomposition::~RegularGridDecomposition() = default;
 
-void RegularGridDecomposition::update(const double &work) {
+void RegularGridDecomposition::update(const double &work, AutoPasType &autoPasContainer) {
   if (_mpiCommunicationNeeded) {
     switch (_loadBalancerOption) {
       case LoadBalancerOption::invertedPressure: {
         balanceWithInvertedPressureLoadBalancer(work);
+        break;
+      }
+      case LoadBalancerOption::particleQuantile: {
+        balanceWithParticleQuantileLoadBalancer(autoPasContainer);
         break;
       }
       case LoadBalancerOption::all: {
@@ -665,6 +669,87 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
       // than localBoxMax.
       balancedPosition =
           DomainTools::balanceAdjacentDomains(averageWorkInPlane[i], neighborPlaneWork, oldLocalBoxMin[i],
+                                              neighborBoundary, 2 * (_cutoffWidth + _skinWidth));
+      _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
+    }
+  }
+}
+
+void RegularGridDecomposition::balanceWithParticleQuantileLoadBalancer(AutoPasType &autoPasContainer) {
+  using autopas::utils::Math::isNearRel;
+  // This is a dummy variable which is not being used. It is required by the non-blocking MPI_Send calls.
+  autopas::AutoPas_MPI_Request dummyRequest{};
+
+  auto oldLocalBoxMin = _localBoxMin;
+  auto oldLocalBoxMax = _localBoxMax;
+
+  // === KEY CHANGE: Use particle count instead of computation time ===
+  const double particleCount = static_cast<double>(autoPasContainer.getNumberOfParticles(autopas::IteratorBehavior::owned));
+
+  std::array<double, 3> averageParticleCountInPlane{};
+
+  for (size_t i = 0; i < _dimensionCount; ++i) {
+    const int domainCountInPlane =
+        _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
+
+    // Calculate the average particle count in the process grid plane
+    averageParticleCountInPlane[i] = particleCount;
+    if (domainCountInPlane > 1) {
+      autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &averageParticleCountInPlane[i], 1, AUTOPAS_MPI_DOUBLE,
+                                     AUTOPAS_MPI_SUM, _planarCommunicators[i]);
+      averageParticleCountInPlane[i] = averageParticleCountInPlane[i] / domainCountInPlane;
+    }
+
+    // Get neighbour indices
+    const int leftNeighbor = _neighborDomainIndices[i * 2];
+    const int rightNeighbor = _neighborDomainIndices[i * 2 + 1];
+
+    // Send average particle count in plane to neighbours
+    if (not isNearRel(_localBoxMin[i], _globalBoxMin[i])) {
+      autopas::AutoPas_MPI_Isend(&averageParticleCountInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+                                 &dummyRequest);
+      autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+                                 &dummyRequest);
+    }
+
+    if (not isNearRel(_localBoxMax[i], _globalBoxMax[i])) {
+      autopas::AutoPas_MPI_Isend(&averageParticleCountInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+                                 &dummyRequest);
+      autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+                                 &dummyRequest);
+    }
+  }
+
+  for (size_t i = 0; i < _dimensionCount; ++i) {
+    // Get neighbour indices
+    const int leftNeighbor = _neighborDomainIndices[i * 2];
+    const int rightNeighbor = _neighborDomainIndices[i * 2 + 1];
+
+    double neighborPlaneParticleCount{}, neighborBoundary{}, balancedPosition{};
+    if (not isNearRel(_localBoxMin[i], _globalBoxMin[i])) {
+      // Receive average particle count from neighbour planes.
+      autopas::AutoPas_MPI_Recv(&neighborPlaneParticleCount, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+                                AUTOPAS_MPI_STATUS_IGNORE);
+      autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+                                AUTOPAS_MPI_STATUS_IGNORE);
+
+      // === KEY INSIGHT: balanceAdjacentDomains works with ANY "work" metric ===
+      // Calculate balanced positions using particle counts instead of computation times
+      balancedPosition = DomainTools::balanceAdjacentDomains(neighborPlaneParticleCount, averageParticleCountInPlane[i], 
+                                                             neighborBoundary, oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
+      _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
+    }
+
+    if (not isNearRel(_localBoxMax[i], _globalBoxMax[i])) {
+      // Receive average particle count from neighbour planes.
+      autopas::AutoPas_MPI_Recv(&neighborPlaneParticleCount, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+                                AUTOPAS_MPI_STATUS_IGNORE);
+      autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+                                AUTOPAS_MPI_STATUS_IGNORE);
+
+      // Calculate balanced positions using particle counts instead of computation times
+      balancedPosition =
+          DomainTools::balanceAdjacentDomains(averageParticleCountInPlane[i], neighborPlaneParticleCount, oldLocalBoxMin[i],
                                               neighborBoundary, 2 * (_cutoffWidth + _skinWidth));
       _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
     }

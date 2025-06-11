@@ -23,6 +23,12 @@ class LoadBalancerOption : public autopas::Option<LoadBalancerOption> {
     invertedPressure,
 
     /**
+     * Use the particle quantile load balancer.
+     * Balances domains to have equal particle counts instead of computation times.
+     */
+    particleQuantile,
+
+    /**
      * Use the ALL load balance.
      */
     all,
@@ -55,6 +61,7 @@ class LoadBalancerOption : public autopas::Option<LoadBalancerOption> {
    */
   static std::map<LoadBalancerOption, std::string> getOptionNames() {
     return {{LoadBalancerOption::invertedPressure, "InvertedPressure"},
+            {LoadBalancerOption::particleQuantile, "ParticleQuantile"},
             {LoadBalancerOption::all, "ALL"},
             {LoadBalancerOption::none, "None"}};
   }

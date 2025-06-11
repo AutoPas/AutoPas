@@ -29,8 +29,9 @@ class DomainDecomposition {
    * Used to update the domain to the current topology.
    * Handles the diffuse load balancing by resizing the domains according to their work done.
    * @param work: The work performed in the AutoPas container.
+   * @param autoPasContainer: The AutoPas container to get particle count from.
    */
-  virtual void update(const double &work) = 0;
+  virtual void update(const double &work, AutoPasType &autoPasContainer) = 0;
 
   /**
    * Returns the index of the local domain in the global domain context.

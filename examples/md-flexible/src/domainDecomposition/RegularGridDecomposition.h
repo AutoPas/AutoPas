@@ -47,8 +47,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * the update function use type 'double' because the work will be implicitly converted to 'double' during load
    * balancing anyway.
    * @param work: The work performed in the AutoPas container.
+   * @param autoPasContainer: The AutoPas container to get particle count from.
    */
-  void update(const double &work) override;
+  void update(const double &work, AutoPasType &autoPasContainer) override;
 
   /**
    * Returns the index of the local domain in the global domain context.
@@ -382,4 +383,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @note If md-flexible is compiled without ALL this function throws an exception.
    */
   void balanceWithAllLoadBalancer(const double &work);
+
+    /**
+   * Balances the subdomains of the grid decomposition using the particle quantile balancing algorithm.
+   * This method balances domains to have equal particle counts instead of computation times.
+   * @param autoPasContainer: The AutoPas container to get particle count from.
+   */
+  void balanceWithParticleQuantileLoadBalancer(AutoPasType &autoPasContainer);
 };
