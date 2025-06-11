@@ -174,6 +174,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.loadBalancingImbalanceThreshold.value < 0.0) {
           throw std::runtime_error("Load balancing imbalance threshold must be non-negative.");
         }
+      } else if (key == config.migrationPenaltyWeight.name) {
+        expected = "Floating point value between 0.0 and 1.0";
+        description = config.migrationPenaltyWeight.description;
+
+        config.migrationPenaltyWeight.value = node[key].as<double>();
+        if (config.migrationPenaltyWeight.value < 0.0 || config.migrationPenaltyWeight.value > 1.0) {
+          throw std::runtime_error("Migration penalty weight must be between 0.0 and 1.0.");
+        }
       } else if (key == config.selectorStrategy.name) {
         expected = "Exactly one selector strategy out of the possible values.";
         description = config.selectorStrategy.description;

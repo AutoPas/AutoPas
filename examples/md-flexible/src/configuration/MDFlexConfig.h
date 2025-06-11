@@ -496,6 +496,14 @@ class MDFlexConfig {
       "Imbalance is calculated as (maxWork - minWork) / avgWork. Set to 0 to disable adaptive load balancing."};
 
   /**
+   * migrationPenaltyWeight
+   */
+  MDFlexOption<double, __LINE__> migrationPenaltyWeight{
+      0.0, "migration-penalty-weight", true,
+      "Weight factor for adding MPI communication costs to computational load during load balancing. "
+      "Higher values reduce boundary movement by making domains with high MPI costs appear busier. Range: 0.0-1.0."};
+
+  /**
    * subdivideDimension
    */
   MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{

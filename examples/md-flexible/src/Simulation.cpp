@@ -239,6 +239,13 @@ void Simulation::run() {
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         auto totalTime = calculateComputationLoad();
         auto computationalLoad = totalTime - _previousTimerValue;
+        // Add MPI communication costs to computational load to penalize domains with high migration
+        if (_configuration.migrationPenaltyWeight.value > 0.0) {
+          // Add recent MPI communication times weighted by penalty factor
+          auto mpiCosts = _timers.migratingParticleExchange.getTotalTime() + 
+                            _timers.haloParticleExchange.getTotalTime();
+          computationalLoad += mpiCosts * _configuration.migrationPenaltyWeight.value;
+        }
         // Adaptive load balancing
         if (checkLoadImbalance(computationalLoad)) {
           _previousTimerValue = totalTime;
