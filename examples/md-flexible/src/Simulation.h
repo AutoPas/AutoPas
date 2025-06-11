@@ -289,7 +289,9 @@ class Simulation {
 
   bool _distanceClassSimulation{false};
 
-  std::vector<double> _potentialEnergy;
+  std::vector<double> _potentialEnergyInnerLoop;
+
+  std::vector<double> _potentialEnergyOuterLoop;
 
   std::vector<double> _totalEnergy;
 

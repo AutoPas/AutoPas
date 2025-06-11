@@ -341,6 +341,7 @@ void Simulation::run() {
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       if (respaActive and isRespaIteration and ibiConvergenceReached) {
+        // The first potential energy is not measured because it is not a full step.
         if (_distanceClassSimulation) {
           if (not respaStarted) {
             // do a first force evaluation
@@ -455,24 +456,22 @@ void Simulation::run() {
 
     if (_distanceClassSimulation and respaActive) {
       const auto potentialEnergy = updateInteractionForces(ForceType::FPInner);
-      if (potentialEnergy.has_value()) {
-        _potentialEnergy.push_back(potentialEnergy.value());
+      if (potentialEnergy.has_value() and nextIsRespaIteration) {
+        _potentialEnergyInnerLoop.push_back(potentialEnergy.value());
       }
     } else {
       if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
           (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive) or
           (respaActive and _configuration.multiMultisiteModelsRespa.value)) {
         const auto potentialEnergy = updateInteractionForces(ForceType::FullParticle);
-        if (potentialEnergy.has_value()) {
-          _potentialEnergy.push_back(potentialEnergy.value());
+        if (potentialEnergy.has_value() and ((respaActive and nextIsRespaIteration) or (not respaActive))) {
+          _potentialEnergyInnerLoop.push_back(potentialEnergy.value());
         }
       } else {
         const auto potentialEnergy = updateInteractionForces(ForceType::CoarseGrain);
         if (potentialEnergy.has_value()) {
-          if (respaActive and nextIsRespaIteration and respaStarted) {
-            _potentialEnergy.push_back(potentialEnergy.value());
-          } else if (_cgSimulation and not respaActive) {
-            _potentialEnergy.push_back(potentialEnergy.value());
+          if ((respaActive and nextIsRespaIteration and respaStarted) or (_cgSimulation and not respaActive)) {
+            _potentialEnergyInnerLoop.push_back(potentialEnergy.value());
           }
         }
       }
@@ -506,23 +505,24 @@ void Simulation::run() {
       }
 
       if (not respaActive) {
-        if (_potentialEnergy.size() > 0) {
+        if (_potentialEnergyInnerLoop.size() > 0) {
           _kineticEnergy.push_back(calculateKineticEnergy());
-          _totalEnergy.push_back(_potentialEnergy.back() + _kineticEnergy.back());
+          _totalEnergy.push_back(_potentialEnergyInnerLoop.back() + _kineticEnergy.back());
         }
       }
 
       if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
+        std::optional<double> potentialEnergy{0};
         if (_distanceClassSimulation) {
           if (_useSecondAutopasInstanceForRespa) {
             sendPositionsAndQuaternionsToRespaInstance();
           }
           if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
-            updateInteractionForces(ForceType::IBIOuter);
+            potentialEnergy = updateInteractionForces(ForceType::IBIOuter);
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
-            updateInteractionForces(ForceType::FPOuter);
+            potentialEnergy = updateInteractionForces(ForceType::FPOuter);
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
-            updateInteractionForces(ForceType::CGMolOuter);
+            potentialEnergy = updateInteractionForces(ForceType::CGMolOuter);
           }
           if (_useSecondAutopasInstanceForRespa) {
             sendBackForcesAndTorquesFromRespaInstance();
@@ -537,9 +537,9 @@ void Simulation::run() {
           }
 #endif
         } else {
-          updateInteractionForces(ForceType::FullParticle);
+          potentialEnergy = updateInteractionForces(ForceType::FullParticle);
           if (not _configuration.multiMultisiteModelsRespa.value) {
-            updateInteractionForces(ForceType::CoarseGrain, true);
+            potentialEnergy = updateInteractionForces(ForceType::CoarseGrain, true);
           }
           updateVelocities(false, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -553,15 +553,20 @@ void Simulation::run() {
 #endif
         }
 
+        if (potentialEnergy.has_value()) {
+          _potentialEnergyOuterLoop.push_back(potentialEnergy.value());
+        }
+
         if (_configuration.useThermostat.value) {
           if ((_iteration + 1) % _configuration.thermostatInterval.value == 0) {
             updateThermostat(/*skipIterationCheck*/ true);
           }
         }
 
-        if (_potentialEnergy.size() > 0) {
+        if (_potentialEnergyInnerLoop.size() > 0 and _potentialEnergyOuterLoop.size()) {
           _kineticEnergy.push_back(calculateKineticEnergy());
-          _totalEnergy.push_back(_potentialEnergy.back() + _kineticEnergy.back());
+          _totalEnergy.push_back(_potentialEnergyInnerLoop.back() + _potentialEnergyOuterLoop.back() +
+                                 _kineticEnergy.back());
         }
       }
     }
@@ -729,29 +734,62 @@ void Simulation::run() {
   }
 
   // print out the final potental energy, kinetic energy and total energy
-  if (_potentialEnergy.size() > 0) {
+  if (_potentialEnergyInnerLoop.size() > 0 or
+      (respaActive and _potentialEnergyOuterLoop.size() > 0 and _potentialEnergyInnerLoop.size() > 0)) {
     bool allVectorSizesEqual = false;
-    std::array<size_t, 3> sizesOfVectors = {_potentialEnergy.size(), _kineticEnergy.size(), _totalEnergy.size()};
+    std::array<size_t, 4> sizesOfVectors = {_potentialEnergyOuterLoop.size(), _potentialEnergyInnerLoop.size(),
+                                            _kineticEnergy.size(), _totalEnergy.size()};
+
+    if (not respaActive) {
+      sizesOfVectors = {_potentialEnergyInnerLoop.size(), _potentialEnergyInnerLoop.size(), _kineticEnergy.size(),
+                        _totalEnergy.size()};
+    }
 
     allVectorSizesEqual = std::all_of(sizesOfVectors.begin(), sizesOfVectors.end(),
                                       [&sizesOfVectors](const auto value) { return value == sizesOfVectors[0]; });
     if (!allVectorSizesEqual) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
-          "_potentialEnergy.size() = " + std::to_string(_potentialEnergy.size()) + " _kineticEnergy.size() = " +
-          std::to_string(_kineticEnergy.size()) + " _totalEnergy.size() = " + std::to_string(_totalEnergy.size()) +
+          "_potentialEnergyInnerLoop.size() = " + std::to_string(_potentialEnergyInnerLoop.size()) +
+          " _kineticEnergy.size() = " + std::to_string(_kineticEnergy.size()) +
+          " _totalEnergy.size() = " + std::to_string(_totalEnergy.size()) +
           " : somethong is wrong with the "
           "globals calculation");
     }
 
-    // potential energy two body
-    std::cout << "potential energy two-body: [";
-    for (size_t i = 0; i < _potentialEnergy.size(); ++i) {
-      std::cout << std::setprecision(15) << _potentialEnergy[i];
-      if (i != _potentialEnergy.size() - 1) {
+    // potential energy inner loop
+    std::cout << "potential energy inner loop: [";
+    for (size_t i = 0; i < _potentialEnergyInnerLoop.size(); ++i) {
+      std::cout << std::setprecision(15) << _potentialEnergyInnerLoop[i];
+      if (i != _potentialEnergyInnerLoop.size() - 1) {
         std::cout << ", ";
       }
     }
     std::cout << "]" << std::endl;
+
+    // potential energy outer loop
+    if (_potentialEnergyOuterLoop.size() > 0) {
+      std::cout << "potential energy outer loop: [";
+      for (size_t i = 0; i < _potentialEnergyOuterLoop.size(); ++i) {
+        std::cout << std::setprecision(15) << _potentialEnergyOuterLoop[i];
+        if (i != _potentialEnergyOuterLoop.size() - 1) {
+          std::cout << ", ";
+        }
+      }
+      std::cout << "]" << std::endl;
+    }
+
+    // potential energy combined loop (inner + outer)
+    if (_potentialEnergyOuterLoop.size() == _potentialEnergyInnerLoop.size()) {
+      std::cout << "potential energy total loop: [";
+      for (size_t i = 0; i < _potentialEnergyInnerLoop.size(); ++i) {
+        const auto combinedPotEnergy = _potentialEnergyInnerLoop[i] + _potentialEnergyOuterLoop[i];
+        std::cout << std::setprecision(15) << combinedPotEnergy;
+        if (i != _potentialEnergyInnerLoop.size() - 1) {
+          std::cout << ", ";
+        }
+      }
+      std::cout << "]" << std::endl;
+    }
 
     // kinetic energy
     std::cout << "kinetic energy: [";
