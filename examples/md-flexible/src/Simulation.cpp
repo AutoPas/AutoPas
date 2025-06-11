@@ -239,35 +239,38 @@ void Simulation::run() {
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         auto totalTime = calculateComputationLoad();
         auto computationalLoad = totalTime - _previousTimerValue;
-        _previousTimerValue = totalTime;
-        // if the computational load is 0, we use old force update time like before
-        if (computationalLoad == 0) {
-          computationalLoad = _timers.forceUpdateTotal.getTotalTime();
-        }
-        _timers.loadBalancing.start();
-        _domainDecomposition->update(computationalLoad);
-        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
-                                                                _domainDecomposition->getLocalBoxMax());
-        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
-        // container again.
-        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
-        // so that remove_if can erase them after.
-        const auto &boxMin = _autoPasContainer->getBoxMin();
-        const auto &boxMax = _autoPasContainer->getBoxMax();
-        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
-          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
-            // This only changes the ownership state in the emigrants vector, not in AutoPas
-            p.setOwnershipState(autopas::OwnershipState::dummy);
-            return true;
+        // Adaptive load balancing
+        if (checkLoadImbalance(computationalLoad)) {
+          _previousTimerValue = totalTime;
+          // if the computational load is 0, we use old force update time like before
+          if (computationalLoad == 0) {
+            computationalLoad = _timers.forceUpdateTotal.getTotalTime();
           }
-          return false;
-        });
+          _timers.loadBalancing.start();
+          _domainDecomposition->update(computationalLoad);
+          auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                  _domainDecomposition->getLocalBoxMax());
+          // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
+          // container again.
+          // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+          // so that remove_if can erase them after.
+          const auto &boxMin = _autoPasContainer->getBoxMin();
+          const auto &boxMax = _autoPasContainer->getBoxMax();
+          _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+            if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+              // This only changes the ownership state in the emigrants vector, not in AutoPas
+              p.setOwnershipState(autopas::OwnershipState::dummy);
+              return true;
+            }
+            return false;
+          });
 
-        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
-                        emigrants.end());
+          emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+                          emigrants.end());
 
-        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
+          emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+          _timers.loadBalancing.stop();
+        }
       }
 
       _timers.migratingParticleExchange.start();
@@ -874,4 +877,38 @@ double Simulation::calculateComputationLoad() const {
       // Default to complete cycle if unknown option
       return static_cast<double>(_timers.computationalLoad.getTotalTime());
   }
+}
+
+bool Simulation::checkLoadImbalance(double computationalLoad) {
+  // Get the number of MPI ranks
+  int commSize;
+  autopas::AutoPas_MPI_Comm_size(_domainDecomposition->getCommunicator(), &commSize);
+  
+  // If we only have one rank, no need to check for imbalance
+  if (commSize <= 1) {
+    return true;
+  }
+
+  // Use MPI_Allreduce to get global min, max, and sum more efficiently
+  double minWork, maxWork, totalWork;
+  
+  // Get global minimum work
+  autopas::AutoPas_MPI_Allreduce(&computationalLoad, &minWork, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_MIN,
+                                 _domainDecomposition->getCommunicator());
+  
+  // Get global maximum work
+  autopas::AutoPas_MPI_Allreduce(&computationalLoad, &maxWork, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_MAX,
+                                 _domainDecomposition->getCommunicator());
+  
+  // Get global sum for average calculation
+  autopas::AutoPas_MPI_Allreduce(&computationalLoad, &totalWork, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 _domainDecomposition->getCommunicator());
+  
+  double avgWork = totalWork / commSize;
+  
+  // Calculate imbalance using (max - min) / avg as metric
+  double imbalance = (avgWork > 1e-9) ? ((maxWork - minWork) / avgWork) : 0.0;
+
+  // Check if imbalance exceeds threshold
+  return imbalance > _configuration.loadBalancingImbalanceThreshold.value;
 }

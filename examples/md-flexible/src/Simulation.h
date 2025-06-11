@@ -395,6 +395,14 @@ class Simulation {
   [[nodiscard]] double calculateComputationLoad() const;
 
   /**
+   * Checks if load balancing should be triggered based on the adaptive imbalance threshold.
+   * Only called when the interval check has already passed.
+   * @param computationalLoad The current computational load for this rank
+   * @return true if load balancing should be performed due to imbalance
+   */
+  [[nodiscard]] bool checkLoadImbalance(double computationalLoad);
+
+  /**
    *
    * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
    * @note This templated function is private and hence implemented in the .cpp

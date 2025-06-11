@@ -166,6 +166,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.loadBalancingInterval.value < 0) {
           throw std::runtime_error("Load balancing interval must be a positive integer.");
         }
+      } else if (key == config.loadBalancingImbalanceThreshold.name) {
+        expected = "Non-negative floating point value";
+        description = config.loadBalancingImbalanceThreshold.description;
+
+        config.loadBalancingImbalanceThreshold.value = node[key].as<double>();
+        if (config.loadBalancingImbalanceThreshold.value < 0.0) {
+          throw std::runtime_error("Load balancing imbalance threshold must be non-negative.");
+        }
       } else if (key == config.selectorStrategy.name) {
         expected = "Exactly one selector strategy out of the possible values.";
         description = config.selectorStrategy.description;

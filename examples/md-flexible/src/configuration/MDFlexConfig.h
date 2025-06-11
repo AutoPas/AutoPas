@@ -488,6 +488,14 @@ class MDFlexConfig {
       100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
 
   /**
+   * loadBalancingImbalanceThreshold
+   */
+  MDFlexOption<double, __LINE__> loadBalancingImbalanceThreshold{
+      0.0, "load-balancing-imbalance-threshold", true, 
+      "Threshold for adaptive load balancing. If > 0, load balancing only occurs when imbalance exceeds this value. "
+      "Imbalance is calculated as (maxWork - minWork) / avgWork. Set to 0 to disable adaptive load balancing."};
+
+  /**
    * subdivideDimension
    */
   MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{
