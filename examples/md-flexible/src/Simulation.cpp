@@ -80,6 +80,56 @@ size_t getTerminalWidth() {
 }
 }  // namespace
 
+void Simulation::prepareAutopasContainer(std::shared_ptr<autopas::AutoPas<ParticleType>> &container, double cutoff,
+                                         const std::string &outputSuffix) {
+  container = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
+  container->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
+  container->setAllowedContainers(_configuration.containerOptions.value);
+
+  container->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
+
+  // Pairwise specific options
+  container->setAllowedDataLayouts(_configuration.dataLayoutOptions.value, autopas::InteractionTypeOption::pairwise);
+  container->setAllowedNewton3Options(_configuration.newton3Options.value, autopas::InteractionTypeOption::pairwise);
+  container->setAllowedTraversals(_configuration.traversalOptions.value, autopas::InteractionTypeOption::pairwise);
+  container->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
+  // Triwise specific options
+  container->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value, autopas::InteractionTypeOption::triwise);
+  container->setAllowedNewton3Options(_configuration.newton3Options3B.value, autopas::InteractionTypeOption::triwise);
+  container->setAllowedTraversals(_configuration.traversalOptions3B.value, autopas::InteractionTypeOption::triwise);
+  // General options
+  container->setBoxMin(_domainDecomposition->getLocalBoxMin());
+  container->setBoxMax(_domainDecomposition->getLocalBoxMax());
+  container->setCutoff(cutoff);
+  container->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
+  container->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
+  container->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
+  container->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
+  container->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
+  container->setNumSamples(_configuration.tuningSamples.value);
+  container->setEarlyStoppingFactor(_configuration.earlyStoppingFactor.value);
+  container->setMaxEvidence(_configuration.tuningMaxEvidence.value);
+  container->setRuleFileName(_configuration.ruleFilename.value);
+  container->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
+  container->setSelectorStrategy(_configuration.selectorStrategy.value);
+  container->setTuningInterval(_configuration.tuningInterval.value);
+  container->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
+  container->setTuningMetricOption(_configuration.tuningMetricOption.value);
+  container->setUseLOESSSmoothening(_configuration.useLOESSSmoothening.value);
+  container->setEnergySensorOption(_configuration.energySensorOption.value);
+  container->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
+  container->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
+  container->setVerletClusterSize(_configuration.verletClusterSize.value);
+  container->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
+  container->setVerletSkin(_configuration.verletSkinRadius.value);
+  container->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  container->setUseTuningLogger(_configuration.useTuningLogger.value);
+  container->setSortingThreshold(_configuration.sortingThreshold.value);
+  container->setOutputSuffix(outputSuffix);
+
+  container->init();
+}
+
 Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
@@ -112,10 +162,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     _outputStream = &(*_logFile);
   }
 
-  _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
-  _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
-  _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
-
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
     std::tie(_configuration.functorOption.value, functorName) =
@@ -130,55 +176,23 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
   }
 
-  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
+  _useSecondAutopasInstanceForRespa = _configuration.useSecondAutpasInstance.value;
 
-  // Pairwise specific options
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
-                                           autopas::InteractionTypeOption::pairwise);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value,
-                                              autopas::InteractionTypeOption::pairwise);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
-                                          autopas::InteractionTypeOption::pairwise);
-  _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
-  // Triwise specific options
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
-                                           autopas::InteractionTypeOption::triwise);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options3B.value,
-                                              autopas::InteractionTypeOption::triwise);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions3B.value,
-                                          autopas::InteractionTypeOption::triwise);
-  // General options
-  _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
-  _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
-  _autoPasContainer->setCutoff(_configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value);
-  _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
-  _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
-  _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
-  _autoPasContainer->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
-  _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
-  _autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
-  _autoPasContainer->setEarlyStoppingFactor(_configuration.earlyStoppingFactor.value);
-  _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
-  _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
-  _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
-  _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
-  _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
-  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
-  _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
-  _autoPasContainer->setUseLOESSSmoothening(_configuration.useLOESSSmoothening.value);
-  _autoPasContainer->setEnergySensorOption(_configuration.energySensorOption.value);
-  _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
-  _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
-  _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
-  _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
-  _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
-  _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
-  _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
-  _autoPasContainer->setOutputSuffix(outputSuffix);
+  const double cutoffToUse = _useSecondAutopasInstanceForRespa
+                                 ? _configuration.cutoff.value
+                                 : _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value;
+
+  prepareAutopasContainer(_autoPasContainer, cutoffToUse, outputSuffix);
+
+  if (_useSecondAutopasInstanceForRespa) {
+    prepareAutopasContainer(_autoPasContainerRespa,
+                            _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value,
+                            outputSuffix);
+  } else {
+    _domainDecomposition->setCutoff(cutoffToUse);
+  }
+
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
-
-  _autoPasContainer->init();
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
   // phase is requested
@@ -330,12 +344,18 @@ void Simulation::run() {
         if (_distanceClassSimulation) {
           if (not respaStarted) {
             // do a first force evaluation
+            if (_useSecondAutopasInstanceForRespa) {
+              sendPositionsAndQuaternionsToRespaInstance();
+            }
             if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
               updateInteractionForces(ForceType::IBIOuter);
             } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
               updateInteractionForces(ForceType::FPOuter);
             } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
               updateInteractionForces(ForceType::CGMolOuter);
+            }
+            if (_useSecondAutopasInstanceForRespa) {
+              sendBackForcesAndTorquesFromRespaInstance();
             }
           }
           updateVelocities(/*resetForce*/ true, RespaIterationType::OuterStep);
@@ -494,12 +514,18 @@ void Simulation::run() {
 
       if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
         if (_distanceClassSimulation) {
+          if (_useSecondAutopasInstanceForRespa) {
+            sendPositionsAndQuaternionsToRespaInstance();
+          }
           if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
             updateInteractionForces(ForceType::IBIOuter);
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
             updateInteractionForces(ForceType::FPOuter);
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
             updateInteractionForces(ForceType::CGMolOuter);
+          }
+          if (_useSecondAutopasInstanceForRespa) {
+            sendBackForcesAndTorquesFromRespaInstance();
           }
           updateVelocities(false, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -764,6 +790,75 @@ void Simulation::run() {
   }
 }
 
+void Simulation::sendPositionsAndQuaternionsToRespaInstance() {
+  _timers.secondAutopasInstanceSync.start();
+  if (_autoPasContainerRespa->getNumberOfParticles() != _autoPasContainer->getNumberOfParticles()) {
+    // do a first sync at the beginning of the simulation (copy particles to second autopas instance)
+    _autoPasContainerRespa->deleteAllParticles();
+    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      _autoPasContainerRespa->addParticle(*particle);
+    }
+  } else {
+    // 1. update positions and quaternions and reset forces (aka sync positions, quaternions from
+    // inner-respa-loop-instance and set the forces to 0 or the global force)
+    std::unordered_map<size_t, std::pair<std::array<double, 3UL>, std::array<double, 4UL>>>
+        positionsAndQuaternionsOwned;
+    positionsAndQuaternionsOwned.reserve(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));
+
+    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      positionsAndQuaternionsOwned.emplace(particle->getID(), std::pair(particle->getR(), particle->getQuaternion()));
+    }
+
+    for (auto particle = _autoPasContainerRespa->begin(autopas::IteratorBehavior::owned); particle.isValid();
+         ++particle) {
+      const auto pR = positionsAndQuaternionsOwned[particle->getID()];
+      particle->setR(pR.first);
+      particle->setQuaternion(pR.second);
+      particle->setF({0, 0, 0});
+      particle->setTorque({0, 0, 0});
+    }
+  }
+
+  // update the container (removes halos)
+  const auto leavingParticles = _autoPasContainerRespa->updateContainer();
+
+  // adjust box size to be the same as the other autopas instance
+  auto additionalEmigrants =
+      _autoPasContainerRespa->resizeBox(_domainDecomposition->getLocalBoxMin(), _domainDecomposition->getLocalBoxMax());
+
+  // sanity check
+  if (leavingParticles.size() != 0 or additionalEmigrants.size() != 0) {
+    throw autopas::utils::ExceptionHandler::AutoPasException(
+        "leavingParticles or additionalEmigrants in _autoPasContainerRespa is not 0 after particle sync and "
+        "updateContainer");
+  }
+
+  // exchange and reflect happend already in the primary autopas instance
+
+  // recreate halos with larger cutoff
+  _domainDecomposition->exchangeHaloParticles(
+      *_autoPasContainerRespa, _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value);
+  _timers.secondAutopasInstanceSync.stop();
+}
+
+void Simulation::sendBackForcesAndTorquesFromRespaInstance() {
+  _timers.secondAutopasInstanceSync.start();
+  std::unordered_map<size_t, std::pair<std::array<double, 3UL>, std::array<double, 3UL>>> forcesAndTorquesOwned;
+  forcesAndTorquesOwned.reserve(_autoPasContainerRespa->getNumberOfParticles(autopas::IteratorBehavior::owned));
+
+  for (auto particle = _autoPasContainerRespa->begin(autopas::IteratorBehavior::owned); particle.isValid();
+       ++particle) {
+    forcesAndTorquesOwned.emplace(particle->getID(), std::pair(particle->getF(), particle->getTorque()));
+  }
+
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto pR = forcesAndTorquesOwned[particle->getID()];
+    particle->setF(pR.first);
+    particle->setTorque(pR.second);
+  }
+  _timers.secondAutopasInstanceSync.stop();
+}
+
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
     const size_t configsTestedPerTuningPhase = [&]() {
@@ -1016,9 +1111,15 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 std::pair<bool, std::optional<double>> Simulation::calculatePairwiseForces(ForceType forceType, bool subtractForces) {
+  auto autopasInstanceToUse = _autoPasContainer;
+  if (_useSecondAutopasInstanceForRespa) {
+    if (forceType == ForceType::CGMolOuter or forceType == ForceType::FPOuter or forceType == ForceType::IBIOuter) {
+      autopasInstanceToUse = _autoPasContainerRespa;
+    }
+  }
   auto wasTuningIterationAndPotentialEnergy = applyWithChosenFunctor<std::pair<bool, std::optional<double>>>(
       [&](auto &&functor) {
-        auto wasTuningIteration = _autoPasContainer->template computeInteractions(&functor);
+        auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
         if (functor.getCalculateGlobals()) {
           const auto potentialEnergy = functor.getPotentialEnergy();
           return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
@@ -1035,7 +1136,7 @@ std::pair<bool, std::optional<double>> Simulation::calculatePairwiseForces(Force
       auto wasTuningIterationAndPotentialEnergyCoulomb =
           applyWithChosenFunctorElectrostatic<std::pair<bool, std::optional<double>>>(
               [&](auto &&functor) {  // return _autoPasContainer->computeInteractions(&functor);
-                auto wasTuningIteration = _autoPasContainer->template computeInteractions(&functor);
+                auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
                 if (functor.getCalculateGlobals()) {
                   const auto potentialEnergy = functor.getPotentialEnergy();
                   return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
@@ -1071,7 +1172,8 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
 }
 
 void Simulation::logSimulationState() {
-  size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
+  size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul},
+      totalNumberOfParticlesSecondInstance{0ul}, ownedParticlesSecondInstance{0ul}, haloParticlesSecondInstance{0ul};
 
   size_t particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
   autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
@@ -1085,11 +1187,31 @@ void Simulation::logSimulationState() {
   autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
+  if (_useSecondAutopasInstanceForRespa) {
+    particleCount = _autoPasContainerRespa->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
+    autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticlesSecondInstance, 1, AUTOPAS_MPI_UNSIGNED_LONG,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+
+    particleCount = _autoPasContainerRespa->getNumberOfParticles(autopas::IteratorBehavior::owned);
+    autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticlesSecondInstance, 1, AUTOPAS_MPI_UNSIGNED_LONG,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+
+    particleCount = _autoPasContainerRespa->getNumberOfParticles(autopas::IteratorBehavior::halo);
+    autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticlesSecondInstance, 1, AUTOPAS_MPI_UNSIGNED_LONG,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  }
+
   if (_domainDecomposition->getDomainIndex() == 0) {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
               << "Halo : " << haloParticles << "\n";
+    if (_useSecondAutopasInstanceForRespa) {
+      std::cout << "Total number of particles at the end of Simulation in second Autopas instance: "
+                << totalNumberOfParticlesSecondInstance << "\n"
+                << "Owned: " << ownedParticlesSecondInstance << "\n"
+                << "Halo : " << haloParticlesSecondInstance << "\n";
+    }
   }
 }
 
@@ -1136,6 +1258,7 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+  const long secondAutopasSync = accumulateTime(_timers.secondAutopasInstanceSync.getTotalTime());
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const long wallClockTime = _timers.total.getTotalTime();
@@ -1167,6 +1290,8 @@ void Simulation::logMeasurements() {
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
+    std::cout << timerToString("    SecondAutopasSync             ", secondAutopasSync, maximumNumberOfDigits,
+                               simulate);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
 #if MD_FLEXIBLE_MODE == MULTISITE
     std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits,
@@ -1175,7 +1300,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("  One iteration                 ", simulate / static_cast<long>(_iteration),
+    std::cout << timerToString("  One iteration                   ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);

@@ -351,7 +351,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.useApproxForceRespa.description;
 
         config.useApproxForceRespa.value = node[key].as<bool>();
-      } else if (key == config.multiMultisiteModelsRespa.name) {
+      } else if (key == config.useSecondAutpasInstance.name) {
+        expected = "Boolean Value.";
+        description = config.useSecondAutpasInstance.description;
+
+        config.useSecondAutpasInstance.value = node[key].as<bool>();
+      } else if (key == config.multiMultisiteModelsRespa.name) {  //
         expected = "Boolean Value.";
         description = config.multiMultisiteModelsRespa.description;
 

@@ -156,12 +156,16 @@ std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subd
   return DomainTools::getExtentOfSubdomain(subdomainIndex, _decomposition);
 }
 
-void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContainer) {
+void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContainer, double cutoffToUse) {
   using autopas::utils::Math::isNearRel;
   using namespace autopas::utils::ArrayMath::literals;
 
+  if (cutoffToUse < 0) {
+    cutoffToUse = _cutoffWidth;
+  }
+
   _haloParticles.clear();
-  const double haloWidth = _cutoffWidth + _skinWidth;
+  const double haloWidth = cutoffToUse + _skinWidth;
 
   // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add 10%
   const auto localBoxDimensions = _localBoxMax - _localBoxMin;
@@ -190,15 +194,15 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     // Collect particles for the neighboring domain. If the domain is at the global boundary, only collect them in case
     // of periodic boundaries.
     if (periodicBCs or not atGlobalMinBoundary) {
-      collectHaloParticlesForLeftNeighbor(autoPasContainer, dimensionIndex, _particlesForLeftNeighbor);
+      collectHaloParticlesForLeftNeighbor(autoPasContainer, dimensionIndex, _particlesForLeftNeighbor, cutoffToUse);
     }
     if (periodicBCs or not atGlobalMaxBoundary) {
-      collectHaloParticlesForRightNeighbor(autoPasContainer, dimensionIndex, _particlesForRightNeighbor);
+      collectHaloParticlesForRightNeighbor(autoPasContainer, dimensionIndex, _particlesForRightNeighbor, cutoffToUse);
     }
 
     const double leftHaloMin = _localBoxMin[dimensionIndex] - _skinWidth;
-    const double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth;
-    const double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth;
+    const double leftHaloMax = _localBoxMin[dimensionIndex] + cutoffToUse + _skinWidth;
+    const double rightHaloMin = _localBoxMax[dimensionIndex] - cutoffToUse - _skinWidth;
     const double rightHaloMax = _localBoxMax[dimensionIndex] + _skinWidth;
 
     for (const auto &particle : _haloParticles) {
@@ -265,9 +269,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
                                           _receivedParticlesBuffer, leftNeighbor, rightNeighbor);
       // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
-      AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \
-                                       std::remove_reference_t<decltype(emigrants)> :                     \
-                                           omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+      AUTOPAS_OPENMP(declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(
+          omp_out.end(), omp_in.begin(), omp_in.end())))
       // make sure each buffer gets filled equally while not inducing scheduling overhead
       AUTOPAS_OPENMP(parallel for reduction(vecMergeParticle : emigrants) \
                                   schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / autopas::autopas_get_max_threads())))
@@ -509,14 +512,18 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
 }
 
 void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(
-    AutoPasType &autoPasContainer, size_t direction, std::vector<ParticleType> &particlesForLeftNeighborBuffer) {
+    AutoPasType &autoPasContainer, size_t direction, std::vector<ParticleType> &particlesForLeftNeighborBuffer,
+    double cutoffToUse) {
   using autopas::utils::Math::isNearRel;
   using namespace autopas::utils::ArrayMath::literals;
 
+  if (cutoffToUse < 0) {
+    cutoffToUse = _cutoffWidth;
+  }
   const std::array<double, _dimensionCount> boxMin = _localBoxMin;
   const std::array<double, _dimensionCount> boxMax = [&]() {
     auto boxMax = _localBoxMax;
-    boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + _skinWidth;
+    boxMax[direction] = _localBoxMin[direction] + cutoffToUse + _skinWidth;
     return boxMax;
   }();
   const auto atGlobalBoundary = isNearRel(_localBoxMin[direction], _globalBoxMin[direction]);
@@ -526,14 +533,18 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(
 }
 
 void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(
-    AutoPasType &autoPasContainer, size_t direction, std::vector<ParticleType> &particlesForRightNeighborBuffer) {
+    AutoPasType &autoPasContainer, size_t direction, std::vector<ParticleType> &particlesForRightNeighborBuffer,
+    double cutoffToUse) {
   using autopas::utils::Math::isNearRel;
   using namespace autopas::utils::ArrayMath::literals;
 
+  if (cutoffToUse < 0) {
+    cutoffToUse = _cutoffWidth;
+  }
   const std::array<double, _dimensionCount> boxMax = _localBoxMax;
   const std::array<double, _dimensionCount> boxMin = [&]() {
     auto boxMin = _localBoxMin;
-    boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - _skinWidth;
+    boxMin[direction] = _localBoxMax[direction] - cutoffToUse - _skinWidth;
     return boxMin;
   }();
   const auto atGlobalBoundary = isNearRel(_localBoxMax[direction], _globalBoxMax[direction]);
@@ -672,6 +683,8 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
 }
 
 autopas::AutoPas_MPI_Comm RegularGridDecomposition::getCommunicator() const { return _communicator; }
+
+void RegularGridDecomposition::setCutoff(double cutoff) { _cutoffWidth = cutoff; }
 
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)

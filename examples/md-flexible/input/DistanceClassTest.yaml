@@ -13,11 +13,11 @@ tuning-interval                      :  2000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
 
-cutoff                               :  3
-cutoff-factor-electrostatics         :  1.33333333332
+cutoff                               :  4
+cutoff-factor-electrostatics         :  1.5
 cell-size                            :  [1]
 deltaT                               :  0.002
-iterations                           :  100000
+iterations                           :  1000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -58,20 +58,21 @@ no-progress-bar                      :  false
 #vtk-filename                         :  MolModMultisiteTest
 #vtk-output-folder                    :  MolModMultisiteTest
 #vtk-write-frequency                  :  1
-#lut-input-file                       :  LUT_C4_100B.csv
-rdf-filename                         :  RDF
-rdf-output-folder                    :  DistanceClassTestFPLargeStep
-rdf-radius                           :  4
-rdf-num-bins                         :  250
-rdf-guard-area                       :  0
-rdf-capture-frequency                :  1
-rdf-start-iteration                  :  50000
-rdf-end-iteration                    :  100000
+lut-input-file                       :  LUT_C6_200B.csv
+#rdf-filename                         :  RDF
+#rdf-output-folder                    :  DistanceClassTestFPLargeStep
+#rdf-radius                           :  4
+#rdf-num-bins                         :  250
+#rdf-guard-area                       :  0
+#rdf-capture-frequency                :  1
+#rdf-start-iteration                  :  50000
+#rdf-end-iteration                    :  100000
 #ibi-equilibrate-iterations           :  50000
 #ibi-update-alpha                     :  1
 #ibi-convergence-threshold            :  0.99
 #lut-filename                         :  LUT
 #lut-output-folder                    :  MolModMultisiteTest
-multi-multisite-models-respa         : true
-respa-molecule-types                 : [1, 0]
-respa-distance-class-mode            : cgmol #ibi # fp, cgmol, disabled
+#multi-multisite-models-respa         : true
+#respa-molecule-types                 : [1, 0]
+respa-distance-class-mode            : ibi #ibi # fp, cgmol, disabled
+use-second-autpas-instance            : true

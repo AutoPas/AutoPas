@@ -116,7 +116,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Exchanges halo particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the halo particles originate from.
    */
-  void exchangeHaloParticles(AutoPasType &autoPasContainer);
+  void exchangeHaloParticles(AutoPasType &autoPasContainer, double cutoffToUse = -1);
 
   /**
    * Exchanges migrating particles with all neighbors of the provided AutoPasContainer.
@@ -142,6 +142,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @return
    */
   autopas::AutoPas_MPI_Comm getCommunicator() const;
+
+  void setCutoff(double cutoff);
 
  private:
   /**
@@ -344,7 +346,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param particlesForLeftNeighborBuffer in-out buffer for haloParticles.
    */
   void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction,
-                                           std::vector<ParticleType> &particlesForLeftNeighborBuffer);
+                                           std::vector<ParticleType> &particlesForLeftNeighborBuffer,
+                                           double cutoffToUse = -1);
 
   /**
    * Collects the halo particles for the right neighbor.
@@ -354,7 +357,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param particlesForRightNeighborBuffer in-out buffer for haloParticles.
    */
   void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction,
-                                            std::vector<ParticleType> &particlesForRightNeighborBuffer);
+                                            std::vector<ParticleType> &particlesForRightNeighborBuffer,
+                                            double cutoffToUse = -1);
 
   /**
    * Categorizes the provided particles as particles for the left or the right neighbor and adds them to the respective

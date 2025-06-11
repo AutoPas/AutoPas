@@ -697,6 +697,13 @@ class MDFlexConfig {
                                                    "If an approximate force should be used for CG Respa steps."};
 
   /**
+   * useSecondAutpasInstance
+   */
+  MDFlexOption<bool, __LINE__> useSecondAutpasInstance{
+      false, "use-second-autpas-instance", true,
+      "If a second Autopas instance should be used to compute distance class interactions."};
+
+  /**
    * respaMoleculeTypes
    */
   MDFlexOption<std::vector<size_t>, __LINE__> respaMoleculeTypes{

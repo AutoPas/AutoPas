@@ -96,6 +96,12 @@ class Simulation {
   std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
 
   /**
+   * The the nodes' AutoPas container used for outer step force calculations in RESPA simulations.
+   * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
+   */
+  std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainerRespa;
+
+  /**
    * Shared pointer to the logfile.
    */
   std::shared_ptr<std::ofstream> _logFile;
@@ -245,6 +251,8 @@ class Simulation {
      * Records the time required for the update of the AutoPas container.
      */
     autopas::utils::Timer updateContainer;
+
+    autopas::utils::Timer secondAutopasInstanceSync;
   };
 
   /**
@@ -287,7 +295,16 @@ class Simulation {
 
   std::vector<double> _kineticEnergy;
 
+  bool _useSecondAutopasInstanceForRespa{false};
+
  private:
+  void prepareAutopasContainer(std::shared_ptr<autopas::AutoPas<ParticleType>> &container, double cutoff,
+                               const std::string &outputSuffix);
+
+  void sendPositionsAndQuaternionsToRespaInstance();
+
+  void sendBackForcesAndTorquesFromRespaInstance();
+
   /**
    * Load particles from this object's config into this object's AutoPas container.
    *
