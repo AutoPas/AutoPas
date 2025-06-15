@@ -238,6 +238,17 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   _timers.initialization.stop();
 
+  // check if an ODF should be captured
+  if (_configuration.odfNumBins.value > 0) {
+    _odf = std::make_shared<ODF>(
+        _autoPasContainer, 0, _configuration.odfRadius.value, _configuration.odfNumBins.value,
+        _configuration.odfGuardArea.value,
+        std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                    [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })
+            ? true
+            : false);
+  }
+
   // if an RDF should be created init it here
   const bool captureRDF = _configuration.rdfRadius.value > 0;
   if (captureRDF) {
@@ -308,7 +319,7 @@ void Simulation::run() {
 
   RotationalAnalysis rotationalAnalysis;
   if (_configuration.rotationalAnalysisLagSteps.value > 0) {
-    rotationalAnalysis.setValues(_configuration.rotationalAnalysisLagSteps.value,
+    rotationalAnalysis.setValues(_autoPasContainer, _configuration.rotationalAnalysisLagSteps.value,
                                  _configuration.rotationalAnalysisStepInterval.value);
   }
 
@@ -336,6 +347,12 @@ void Simulation::run() {
         not ibiConvergenceReached) {
       _rdfCG->captureRDF();
       cgMeasureIterations++;
+    }
+
+    if (_odf and _iteration > _configuration.odfStartIteration.value and
+        _iteration < _configuration.odfEndIteration.value and
+        (_iteration % _configuration.odfCaptureFreuency.value == 0)) {
+      _odf->captureODF();
     }
 
     _timers.computationalLoad.start();
@@ -572,11 +589,10 @@ void Simulation::run() {
     }
     _timers.computationalLoad.stop();
 
-    if (_configuration.rotationalAnalysisLagSteps.value > 0) {
-      for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-        const auto [w, x, y, z] = particle->getQuaternion();
-        rotationalAnalysis.recordOrientation(particle->getID(), _iteration, Quaternion{w, x, y, z});
-      }
+    if (_configuration.rotationalAnalysisLagSteps.value > 0 and
+        _iteration >= _configuration.rotationalAnalysisStartIteration.value and
+        _iteration <= _configuration.rotationalAnalysisEndIteration.value) {
+      rotationalAnalysis.recordOrientations(_iteration);
     }
 
     if (not _simulationIsPaused) {
@@ -634,6 +650,19 @@ void Simulation::run() {
       _lut->writeToCSV(_configuration.lutOutputFolder.value, _configuration.lutFileName.value + "_0");
 
       equilibrate = true;
+    }
+
+    if (_odf and _iteration == _configuration.odfEndIteration.value) {
+      _odf->captureODF();
+      _odf->computeFinalODF();
+      _odf->writeToCSV(_configuration.odfOutputFolder.value,
+                       _configuration.odfFileName.value + "_" + std::to_string(_iteration));
+    }
+
+    if (_configuration.rotationalAnalysisLagSteps.value > 0 and
+        _iteration == _configuration.rotationalAnalysisEndIteration.value) {
+      rotationalAnalysis.writeResults(_configuration.rotationalAnalysisOutputFolder.value,
+                                      _configuration.rotationalAnalysisFilename.value);
     }
 
     if (_rdfAA and not _rdfCG and _iteration == _configuration.rdfEndIteration.value) {
@@ -726,11 +755,6 @@ void Simulation::run() {
   // Record last state of simulation.
   if (_createVtkFiles) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
-  }
-
-  if (_configuration.rotationalAnalysisLagSteps.value > 0) {
-    rotationalAnalysis.writeResults(_configuration.rotationalAnalysisOutputFolder.value,
-                                    _configuration.rotationalAnalysisFilename.value);
   }
 
   // print out the final potental energy, kinetic energy and total energy

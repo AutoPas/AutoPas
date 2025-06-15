@@ -346,6 +346,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.rotationalAnalysisOutputFolder.description;
 
         config.rotationalAnalysisOutputFolder.value = node[key].as<std::string>();
+      } else if (key == config.rotationalAnalysisStartIteration.name) {
+        expected = "Unsigned Integer >= 0.";
+        description = config.rotationalAnalysisStartIteration.description;
+
+        config.rotationalAnalysisStartIteration.value = node[key].as<size_t>();
+      } else if (key == config.rotationalAnalysisEndIteration.name) {
+        expected = "Unsigned Integer >= 0.";
+        description = config.rotationalAnalysisEndIteration.description;
+
+        config.rotationalAnalysisEndIteration.value = node[key].as<size_t>();
       } else if (key == config.useApproxForceRespa.name) {
         expected = "Boolean Value.";
         description = config.useApproxForceRespa.description;
@@ -707,9 +717,73 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Positive floating-point value.";
         description = config.rdfGuardArea.description;
 
-        config.rdfGuardArea.value = node[key].as<double>();
-        if (config.rdfGuardArea.value < 0) {
-          throw std::runtime_error("RDF guard area has to be a positive value >= 0!");
+        config.odfGuardArea.value = node[key].as<double>();
+        if (config.odfGuardArea.value < 0) {
+          throw std::runtime_error("ODF guard area has to be a positive value >= 0!");
+        }
+      } else if (key == config.odfOutputFolder.name) {
+        expected = "String";
+        description = config.odfOutputFolder.description;
+
+        config.odfOutputFolder.value = node[key].as<std::string>();
+        if (config.odfOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed ODF output folder name is empty");
+        }
+      } else if (key == config.odfFileName.name) {
+        expected = "String";
+        description = config.odfFileName.description;
+
+        config.odfFileName.value = node[key].as<std::string>();
+        if (config.odfFileName.value.empty()) {
+          throw std::runtime_error("Parsed ODF filename is empty!");
+        }
+      } else if (key == config.odfNumBins.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.odfNumBins.description;
+
+        config.odfNumBins.value = node[key].as<size_t>();
+        if (config.odfNumBins.value < 1) {
+          throw std::runtime_error("ODF num bins has to be a positive integer >= 1!");
+        }
+      } else if (key == config.odfCaptureFreuency.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.odfCaptureFreuency.description;
+
+        config.odfCaptureFreuency.value = node[key].as<size_t>();
+        if (config.odfCaptureFreuency.value < 1) {
+          throw std::runtime_error("ODF write frequency has to be a positive integer >= 1!");
+        }
+      } else if (key == config.odfStartIteration.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.odfStartIteration.description;
+
+        config.odfStartIteration.value = node[key].as<size_t>();
+        if (config.odfStartIteration.value < 0) {
+          throw std::runtime_error("ODF start iteration has to be a positive integer >= 0!");
+        }
+      } else if (key == config.odfEndIteration.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.odfEndIteration.description;
+
+        config.odfEndIteration.value = node[key].as<size_t>();
+        if (config.odfEndIteration.value < 0) {
+          throw std::runtime_error("ODF end iteration has to be a positive integer >= 0!");
+        }
+      } else if (key == config.odfRadius.name) {
+        expected = "Positive floating-point value.";
+        description = config.odfRadius.description;
+
+        config.odfRadius.value = node[key].as<double>();
+        if (config.odfRadius.value <= 0) {
+          throw std::runtime_error("ODF radius has to be a positive value > 0!");
+        }
+      } else if (key == config.odfGuardArea.name) {
+        expected = "Positive floating-point value.";
+        description = config.odfGuardArea.description;
+
+        config.odfGuardArea.value = node[key].as<double>();
+        if (config.odfGuardArea.value < 0) {
+          throw std::runtime_error("ODF guard area has to be a positive value >= 0!");
         }
       } else if (key == config.ibiEquilibrateIterations.name) {
         expected = "Unsigned Integer >= 0";

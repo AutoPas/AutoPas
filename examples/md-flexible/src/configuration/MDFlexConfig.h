@@ -109,7 +109,9 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
+      struct option retStruct {
+        name.c_str(), requiresArgument, nullptr, getOptChar
+      };
       return retStruct;
     }
   };
@@ -489,6 +491,46 @@ class MDFlexConfig {
   MDFlexOption<size_t, __LINE__> rdfEndIteration{0, "rdf-end-iteration", true,
                                                  "Iteration number after which RDF capturing is disabled."};
   /**
+   * rdfGuardArea
+   */
+  MDFlexOption<double, __LINE__> rdfGuardArea{0, "rdf-guard-area", true, "Guard area to use for the RDF calculation."};
+  /**
+   * odfOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> odfOutputFolder{"output", "odf-output-folder", true,
+                                                      "The location where the odf output will be created."};
+  /**
+   * odfFileName
+   */
+  MDFlexOption<std::string, __LINE__> odfFileName{"odf", "odf-filename", true, "Filename for the ODF output CSV."};
+  /**
+   * odfRadius
+   */
+  MDFlexOption<double, __LINE__> odfRadius{0, "odf-radius", true, "Radius for the ODF calculation."};
+  /**
+   * odfNumBins
+   */
+  MDFlexOption<size_t, __LINE__> odfNumBins{0, "odf-num-bins", true, "Number of bins for the ODF calculation."};
+  /**
+   * odfCaptureFreuency
+   */
+  MDFlexOption<size_t, __LINE__> odfCaptureFreuency{1, "odf-capture-frequency", true,
+                                                    "Number of iterations after which the ODF is captured."};
+  /**
+   * odfStartIteration
+   */
+  MDFlexOption<size_t, __LINE__> odfStartIteration{0, "odf-start-iteration", true,
+                                                   "Iteration number after which ODF capturing is enabled"};
+  /**
+   * odfEndIteration
+   */
+  MDFlexOption<size_t, __LINE__> odfEndIteration{0, "odf-end-iteration", true,
+                                                 "Iteration number after which ODF capturing is disabled."};
+  /**
+   * odfGuardArea
+   */
+  MDFlexOption<double, __LINE__> odfGuardArea{0, "odf-guard-area", true, "Guard area to use for the ODF calculation."};
+  /**
    * ibiEquilibrateIterations
    */
   MDFlexOption<size_t, __LINE__> ibiEquilibrateIterations{0, "ibi-equilibrate-iterations", true,
@@ -505,10 +547,7 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> ibiUpdateAlpha{
       1.0, "ibi-update-alpha", true, "Scaling factor used to avoid overshooting. Usually between 0.2 and 1.0"};
-  /**
-   * rdfGuardArea
-   */
-  MDFlexOption<double, __LINE__> rdfGuardArea{0, "rdf-guard-area", true, "Guard area to use for the RDF calculation."};
+
   /**
    * lutOutputFolder
    */
@@ -668,25 +707,37 @@ class MDFlexConfig {
    * rotationalAnalysisLagSteps
    */
   MDFlexOption<size_t, __LINE__> rotationalAnalysisLagSteps{0, "rotational-analysis-lag-steps", true,
-                                                            "Lag steps for MSD_rot ond OACF."};
+                                                            "Lag steps for MSD_rot and OACF."};
 
   /**
    * rotationalAnalysisStepInterval
    */
   MDFlexOption<size_t, __LINE__> rotationalAnalysisStepInterval{0, "rotational-analysis-step-interval", true,
-                                                                "Steps between measurements for MSD_rot ond OACF."};
+                                                                "Steps between measurements for MSD_rot and OACF."};
 
   /**
    * rotationalAnalysisFilename
    */
   MDFlexOption<std::string, __LINE__> rotationalAnalysisFilename{"rot", "rotational-analysis-filename", true,
-                                                                 "Filename for output of MSD_rot ond OACF."};
+                                                                 "Filename for output of MSD_rot and OACF."};
 
   /**
    * rotationalAnalysisOutputFolder
    */
   MDFlexOption<std::string, __LINE__> rotationalAnalysisOutputFolder{"", "rotational-analysis-output-folder", true,
-                                                                     "Foldername for output of MSD_rot ond OACF."};
+                                                                     "Foldername for output of MSD_rot and OACF."};
+
+  /**
+   * rotationalAnalysisStartIteration
+   */
+  MDFlexOption<size_t, __LINE__> rotationalAnalysisStartIteration{
+      0, "rotational-analysis-start-iteration", true, "Iteration to start with MSD_rot and OACF measurement."};
+
+  /**
+   * rotationalAnalysisStopIteration
+   */
+  MDFlexOption<size_t, __LINE__> rotationalAnalysisEndIteration{0, "rotational-analysis-end-iteration", true,
+                                                                "Iteration to stop with MSD_rot and OACF measurement."};
 
   /**
    * useApproxForceRespa

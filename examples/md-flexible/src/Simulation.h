@@ -19,6 +19,7 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+#include "tools/ODF.h"
 #include "tools/RDF.h"
 #include "tools/RotationalAnalysis.h"
 
@@ -279,6 +280,11 @@ class Simulation {
    * Stores a radial distribution function from an initial simulation
    */
   std::shared_ptr<RDF> _rdfAA;
+
+  /**
+   * Stores an orientational distribution function
+   */
+  std::shared_ptr<ODF> _odf;
 
   /**
    * Stores a lookup table for the IBI potential
