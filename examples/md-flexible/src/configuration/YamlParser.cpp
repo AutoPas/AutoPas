@@ -657,6 +657,22 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.vtkWriteFrequency.value < 1) {
           throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
         }
+      } else if (key == config.statisticsOutputFolder.name) {
+        expected = "String";
+        description = config.statisticsOutputFolder.description;
+
+        config.statisticsOutputFolder.value = node[key].as<std::string>();
+        if (config.statisticsOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed statistics output folder name is empty");
+        }
+      } else if (key == config.statisticsOutputFilename.name) {
+        expected = "String";
+        description = config.statisticsOutputFilename.description;
+
+        config.statisticsOutputFilename.value = node[key].as<std::string>();
+        if (config.statisticsOutputFilename.value.empty()) {
+          throw std::runtime_error("Parsed statistics filename is empty!");
+        }
       } else if (key == config.rdfOutputFolder.name) {
         expected = "String";
         description = config.rdfOutputFolder.description;

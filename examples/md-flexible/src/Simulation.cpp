@@ -757,7 +757,6 @@ void Simulation::run() {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 
-  // print out the final potental energy, kinetic energy and total energy
   if (_potentialEnergyInnerLoop.size() > 0 or
       (respaActive and _potentialEnergyOuterLoop.size() > 0 and _potentialEnergyInnerLoop.size() > 0)) {
     bool allVectorSizesEqual = false;
@@ -774,13 +773,27 @@ void Simulation::run() {
     if (!allVectorSizesEqual) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "_potentialEnergyInnerLoop.size() = " + std::to_string(_potentialEnergyInnerLoop.size()) +
-          " _kineticEnergy.size() = " + std::to_string(_kineticEnergy.size()) +
-          " _totalEnergy.size() = " + std::to_string(_totalEnergy.size()) +
-          " : somethong is wrong with the "
-          "globals calculation");
+          " _kineticEnergy.size() = " + std::to_string(_kineticEnergy.size()) + " _totalEnergy.size() = " +
+          std::to_string(_totalEnergy.size()) + " : somethong is wrong with the globals calculation");
     }
 
-    // potential energy inner loop
+    // prepare JSON-output
+    std::ostringstream json;
+    json << std::setprecision(15);
+    json << "{\n";
+
+    auto writeVector = [&json](const std::string &name, const std::vector<double> &vec) {
+      json << "  \"" << name << "\": [";
+      for (size_t i = 0; i < vec.size(); ++i) {
+        json << vec[i];
+        if (i != vec.size() - 1) {
+          json << ", ";
+        }
+      }
+      json << "],\n";
+    };
+
+    // print to stdout
     std::cout << "potential energy inner loop: [";
     for (size_t i = 0; i < _potentialEnergyInnerLoop.size(); ++i) {
       std::cout << std::setprecision(15) << _potentialEnergyInnerLoop[i];
@@ -790,7 +803,8 @@ void Simulation::run() {
     }
     std::cout << "]" << std::endl;
 
-    // potential energy outer loop
+    writeVector("potentialEnergyInnerLoop", _potentialEnergyInnerLoop);
+
     if (_potentialEnergyOuterLoop.size() > 0) {
       std::cout << "potential energy outer loop: [";
       for (size_t i = 0; i < _potentialEnergyOuterLoop.size(); ++i) {
@@ -800,22 +814,26 @@ void Simulation::run() {
         }
       }
       std::cout << "]" << std::endl;
+
+      writeVector("potentialEnergyOuterLoop", _potentialEnergyOuterLoop);
     }
 
-    // potential energy combined loop (inner + outer)
+    std::vector<double> totalPotentialEnergy;
     if (_potentialEnergyOuterLoop.size() == _potentialEnergyInnerLoop.size()) {
-      std::cout << "potential energy total loop: [";
+      std::cout << "potential energy combined: [";
       for (size_t i = 0; i < _potentialEnergyInnerLoop.size(); ++i) {
         const auto combinedPotEnergy = _potentialEnergyInnerLoop[i] + _potentialEnergyOuterLoop[i];
+        totalPotentialEnergy.push_back(combinedPotEnergy);
         std::cout << std::setprecision(15) << combinedPotEnergy;
         if (i != _potentialEnergyInnerLoop.size() - 1) {
           std::cout << ", ";
         }
       }
       std::cout << "]" << std::endl;
+
+      writeVector("potentialEnergyCombined", totalPotentialEnergy);
     }
 
-    // kinetic energy
     std::cout << "kinetic energy: [";
     for (size_t i = 0; i < _kineticEnergy.size(); ++i) {
       std::cout << std::setprecision(15) << _kineticEnergy[i];
@@ -823,9 +841,8 @@ void Simulation::run() {
         std::cout << ", ";
       }
     }
-
-    // total energy
     std::cout << "]" << std::endl;
+
     std::cout << "total energy: [";
     for (size_t i = 0; i < _totalEnergy.size(); ++i) {
       std::cout << std::setprecision(15) << _totalEnergy[i];
@@ -835,7 +852,9 @@ void Simulation::run() {
     }
     std::cout << "]" << std::endl;
 
-    // calculate the RelativeVariationInTrueEnergy
+    writeVector("kineticEnergy", _kineticEnergy);
+    writeVector("totalEnergy", _totalEnergy);
+
     const auto numSteps = _totalEnergy.size();
     const auto avgKineticEnergy =
         std::reduce(_kineticEnergy.begin(), _kineticEnergy.end()) / static_cast<double>(numSteps);
@@ -849,6 +868,18 @@ void Simulation::run() {
     double rvite = sum / (avgKineticEnergy * static_cast<double>(_configuration.iterations.value));
 
     std::cout << "RelativeVariationInTrueEnergy: " << std::setprecision(15) << rvite << std::endl;
+    json << "  \"RelativeVariationInTrueEnergy\": " << rvite << "\n";
+    json << "}\n";
+
+    // Write JSON
+    std::ofstream outFile(_configuration.statisticsOutputFolder.value + "/" +
+                          _configuration.statisticsOutputFilename.value + ".json");
+    if (outFile.is_open()) {
+      outFile << json.str();
+      outFile.close();
+    } else {
+      std::cerr << "Failed to open statistics.json for writing!" << std::endl;
+    }
   }
 }
 

@@ -17,7 +17,7 @@ cutoff                               :  4
 cutoff-factor-electrostatics         :  1
 cell-size                            :  [1]
 deltaT                               :  0.002
-iterations                           :  75000
+iterations                           :  1000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -75,12 +75,12 @@ no-progress-bar                      :  false
 #odf-capture-frequency                :  1
 #odf-start-iteration                  :  50000
 #odf-end-iteration                    :  100000
-rotational-analysis-lag-steps        :  1000
-rotational-analysis-step-interval    :  10
-rotational-analysis-filename         :  rot
-rotational-analysis-output-folder    :  DistanceClassTestFPLargeStep
-rotational-analysis-start-iteration  :  50000
-rotational-analysis-end-iteration    :  75000
+#rotational-analysis-lag-steps        :  1000
+#rotational-analysis-step-interval    :  10
+#rotational-analysis-filename         :  rot
+#rotational-analysis-output-folder    :  DistanceClassTestFPLargeStep
+#rotational-analysis-start-iteration  :  50000
+#rotational-analysis-end-iteration    :  75000
 #ibi-equilibrate-iterations           :  50000
 #ibi-update-alpha                     :  1
 #ibi-convergence-threshold            :  0.99
@@ -90,3 +90,5 @@ rotational-analysis-end-iteration    :  75000
 #respa-molecule-types                 : [1, 0]
 #respa-distance-class-mode            : ibi #ibi # fp, cgmol, disabled
 #use-second-autopas-instance            : true
+statistics-output-folder              : DistanceClassTestFPLargeStep
+statistics-output-filename            : statistics

@@ -740,6 +740,18 @@ class MDFlexConfig {
                                                                 "Iteration to stop with MSD_rot and OACF measurement."};
 
   /**
+   * statisticsOutputFilename
+   */
+  MDFlexOption<std::string, __LINE__> statisticsOutputFilename{"statistics", "statistics-output-filename", true,
+                                                               "Filename for output of the statistics."};
+
+  /**
+   * statisticsOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> statisticsOutputFolder{"", "statistics-output-folder", true,
+                                                             "Foldername for output of energy and rvite values."};
+
+  /**
    * useApproxForceRespa
    */
   MDFlexOption<bool, __LINE__> useApproxForceRespa{false, "use-approx-force-respa", true,
