@@ -337,13 +337,14 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  // TODO: This will likely need to be adjusted
-
   // if next iteration is start of new tuning phase, we need to rebuild, since the container may change
   // _iteration + 1 since we want to look ahead to the next iteration
-  if ((_iteration + 1) % _tuningInterval == 0) {
-    return true;
-  }
+
+#ifdef AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  if (_tuningTrigger->shouldStartTuningPhaseNextIteration()) return true;
+#else
+  if ((_iteration + 1) % _tuningInterval == 0) return true;
+#endif
 
   // AutoTuner only triggers rebuild during the tuning phase
   const auto iterationsPerConfig = this->inTuningPhase() ? _maxSamples : std::numeric_limits<unsigned int>::max();

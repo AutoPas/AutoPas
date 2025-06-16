@@ -205,6 +205,7 @@ class AutoTuner {
 
   /**
    * Passes the current iteration runtime to the autotuner's dynamic tuning trigger.
+   * For correct trigger behaviour, the time sample should not contain the runtime of rebuildNeighborLists.
    * 
    * @param sample The current iteration runtime.
    */

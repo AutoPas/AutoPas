@@ -22,10 +22,18 @@ class TimeBasedSimpleTrigger : public TuningTriggerInterface {
    * @param triggerFactor The factor by which the current iteration runtime must exceed the last iteration runtime to
    * trigger a new tuning phase.
    */
-  TimeBasedSimpleTrigger(float triggerFactor) : _triggerFactor(triggerFactor) {};
+  TimeBasedSimpleTrigger(float triggerFactor) : _triggerFactor(triggerFactor) {
+    if (triggerFactor < 0) {
+      AutoPasLog(WARN, "triggerFactor for TimeBasedSimpleTrigger is {}, but has to be >= 0. Defaulted to 1.",
+                 triggerFactor);
+      _triggerFactor = 1.0;
+    }
+  };
 
-  inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) const override {
-    return _currentIterationRuntime >= (_triggerFactor * _lastIterationRuntime);
+  inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
+     bool oldTriggerState = _wasTriggered;
+    _wasTriggered = _currentIterationRuntime >= (_triggerFactor * _lastIterationRuntime);
+    return oldTriggerState;
   }
 
   inline bool needsRuntimeSample() const override { return true; }
