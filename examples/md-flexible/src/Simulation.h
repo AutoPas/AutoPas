@@ -301,6 +301,10 @@ class Simulation {
 
   std::vector<double> _potentialEnergyOuterLoop;
 
+  std::vector<double> _virialInnerLoop;
+
+  std::vector<double> _virialOuterLoop;
+
   std::vector<double> _totalEnergy;
 
   std::vector<double> _kineticEnergy;
@@ -364,7 +368,8 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  std::optional<double> updateInteractionForces(ForceType forceTypeToCalculate, bool subtractForces = false);
+  std::optional<std::pair<double, double>> updateInteractionForces(ForceType forceTypeToCalculate,
+                                                                   bool subtractForces = false);
 
   double calculateKineticEnergy();
 
@@ -418,13 +423,14 @@ class Simulation {
    * Calculates the pairwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  std::pair<bool, std::optional<double>> calculatePairwiseForces(ForceType forceType, bool subtractForces = false);
+  std::tuple<bool, std::optional<double>, std::optional<double>> calculatePairwiseForces(ForceType forceType,
+                                                                                         bool subtractForces = false);
 
   /**
    * Calculates the triwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  std::pair<bool, std::optional<double>> calculateTriwiseForces(ForceType forceType);
+  std::tuple<bool, std::optional<double>, std::optional<double>> calculateTriwiseForces(ForceType forceType);
 
   /**
    * Adds global forces to the particles in the container.

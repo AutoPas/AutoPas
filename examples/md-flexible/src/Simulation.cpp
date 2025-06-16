@@ -477,23 +477,26 @@ void Simulation::run() {
     }
 
     if (_distanceClassSimulation and respaActive) {
-      const auto potentialEnergy = updateInteractionForces(ForceType::FPInner);
-      if (potentialEnergy.has_value() and nextIsRespaIteration) {
-        _potentialEnergyInnerLoop.push_back(potentialEnergy.value());
+      const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::FPInner);
+      if (potentialEnergyAndVirial.has_value() and nextIsRespaIteration) {
+        _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value().first);
+        _virialInnerLoop.push_back(potentialEnergyAndVirial.value().second);
       }
     } else {
       if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
           (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive) or
           (respaActive and _configuration.multiMultisiteModelsRespa.value)) {
-        const auto potentialEnergy = updateInteractionForces(ForceType::FullParticle);
-        if (potentialEnergy.has_value() and ((respaActive and nextIsRespaIteration) or (not respaActive))) {
-          _potentialEnergyInnerLoop.push_back(potentialEnergy.value());
+        const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::FullParticle);
+        if (potentialEnergyAndVirial.has_value() and ((respaActive and nextIsRespaIteration) or (not respaActive))) {
+          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value().first);
+          _virialInnerLoop.push_back(potentialEnergyAndVirial.value().second);
         }
       } else {
-        const auto potentialEnergy = updateInteractionForces(ForceType::CoarseGrain);
-        if (potentialEnergy.has_value()) {
+        const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::CoarseGrain);
+        if (potentialEnergyAndVirial.has_value()) {
           if ((respaActive and nextIsRespaIteration and respaStarted) or (_cgSimulation and not respaActive)) {
-            _potentialEnergyInnerLoop.push_back(potentialEnergy.value());
+            _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value().first);
+            _virialInnerLoop.push_back(potentialEnergyAndVirial.value().second);
           }
         }
       }
@@ -534,17 +537,17 @@ void Simulation::run() {
       }
 
       if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
-        std::optional<double> potentialEnergy{0};
+        std::optional<std::pair<double, double>> potentialEnergyAndVirial;
         if (_distanceClassSimulation) {
           if (_useSecondAutopasInstanceForRespa) {
             sendPositionsAndQuaternionsToRespaInstance();
           }
           if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
-            potentialEnergy = updateInteractionForces(ForceType::IBIOuter);
+            potentialEnergyAndVirial = updateInteractionForces(ForceType::IBIOuter);
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
-            potentialEnergy = updateInteractionForces(ForceType::FPOuter);
+            potentialEnergyAndVirial = updateInteractionForces(ForceType::FPOuter);
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
-            potentialEnergy = updateInteractionForces(ForceType::CGMolOuter);
+            potentialEnergyAndVirial = updateInteractionForces(ForceType::CGMolOuter);
           }
           if (_useSecondAutopasInstanceForRespa) {
             sendBackForcesAndTorquesFromRespaInstance();
@@ -559,9 +562,9 @@ void Simulation::run() {
           }
 #endif
         } else {
-          potentialEnergy = updateInteractionForces(ForceType::FullParticle);
+          potentialEnergyAndVirial = updateInteractionForces(ForceType::FullParticle);
           if (not _configuration.multiMultisiteModelsRespa.value) {
-            potentialEnergy = updateInteractionForces(ForceType::CoarseGrain, true);
+            potentialEnergyAndVirial = updateInteractionForces(ForceType::CoarseGrain, true);
           }
           updateVelocities(false, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -575,8 +578,9 @@ void Simulation::run() {
 #endif
         }
 
-        if (potentialEnergy.has_value()) {
-          _potentialEnergyOuterLoop.push_back(potentialEnergy.value());
+        if (potentialEnergyAndVirial.has_value()) {
+          _potentialEnergyOuterLoop.push_back(potentialEnergyAndVirial.value().first);
+          _virialOuterLoop.push_back(potentialEnergyAndVirial.value().second);
         }
 
         if (_configuration.useThermostat.value) {
@@ -585,7 +589,7 @@ void Simulation::run() {
           }
         }
 
-        if (_potentialEnergyInnerLoop.size() > 0 and _potentialEnergyOuterLoop.size()) {
+        if (_potentialEnergyInnerLoop.size() > 0 and _potentialEnergyOuterLoop.size() > 0) {
           _kineticEnergy.push_back(calculateKineticEnergy());
           _totalEnergy.push_back(_potentialEnergyInnerLoop.back() + _potentialEnergyOuterLoop.back() +
                                  _kineticEnergy.back());
@@ -765,12 +769,17 @@ void Simulation::run() {
   if (_potentialEnergyInnerLoop.size() > 0 or
       (respaActive and _potentialEnergyOuterLoop.size() > 0 and _potentialEnergyInnerLoop.size() > 0)) {
     bool allVectorSizesEqual = false;
-    std::array<size_t, 4> sizesOfVectors = {_potentialEnergyOuterLoop.size(), _potentialEnergyInnerLoop.size(),
-                                            _kineticEnergy.size(), _totalEnergy.size()};
+    std::array<size_t, 6> sizesOfVectors = {
+        _potentialEnergyOuterLoop.size(), _potentialEnergyInnerLoop.size(), _kineticEnergy.size(), _totalEnergy.size(),
+        _virialInnerLoop.size(),          _virialOuterLoop.size()};
 
     if (not respaActive) {
-      sizesOfVectors = {_potentialEnergyInnerLoop.size(), _potentialEnergyInnerLoop.size(), _kineticEnergy.size(),
-                        _totalEnergy.size()};
+      sizesOfVectors = {_potentialEnergyInnerLoop.size(),
+                        _potentialEnergyInnerLoop.size(),
+                        _kineticEnergy.size(),
+                        _totalEnergy.size(),
+                        _virialInnerLoop.size(),
+                        _virialInnerLoop.size()};
     }
 
     allVectorSizesEqual = std::all_of(sizesOfVectors.begin(), sizesOfVectors.end(),
@@ -810,6 +819,17 @@ void Simulation::run() {
 
     writeVector("potentialEnergyInnerLoop", _potentialEnergyInnerLoop);
 
+    std::cout << "virial inner loop: [";
+    for (size_t i = 0; i < _virialInnerLoop.size(); ++i) {
+      std::cout << std::setprecision(15) << _virialInnerLoop[i];
+      if (i != _virialInnerLoop.size() - 1) {
+        std::cout << ", ";
+      }
+    }
+    std::cout << "]" << std::endl;
+
+    writeVector("virialInnerLoop", _virialInnerLoop);
+
     if (_potentialEnergyOuterLoop.size() > 0) {
       std::cout << "potential energy outer loop: [";
       for (size_t i = 0; i < _potentialEnergyOuterLoop.size(); ++i) {
@@ -823,20 +843,49 @@ void Simulation::run() {
       writeVector("potentialEnergyOuterLoop", _potentialEnergyOuterLoop);
     }
 
-    std::vector<double> totalPotentialEnergy;
+    if (_virialOuterLoop.size() > 0) {
+      std::cout << "virial outer loop: [";
+      for (size_t i = 0; i < _virialOuterLoop.size(); ++i) {
+        std::cout << std::setprecision(15) << _virialOuterLoop[i];
+        if (i != _virialOuterLoop.size() - 1) {
+          std::cout << ", ";
+        }
+      }
+      std::cout << "]" << std::endl;
+
+      writeVector("virialOuterLoop", _virialOuterLoop);
+    }
+
+    std::vector<double> combinedPotentialEnergy;
     if (_potentialEnergyOuterLoop.size() == _potentialEnergyInnerLoop.size()) {
       std::cout << "potential energy combined: [";
       for (size_t i = 0; i < _potentialEnergyInnerLoop.size(); ++i) {
-        const auto combinedPotEnergy = _potentialEnergyInnerLoop[i] + _potentialEnergyOuterLoop[i];
-        totalPotentialEnergy.push_back(combinedPotEnergy);
-        std::cout << std::setprecision(15) << combinedPotEnergy;
+        const auto sum = _potentialEnergyInnerLoop[i] + _potentialEnergyOuterLoop[i];
+        combinedPotentialEnergy.push_back(sum);
+        std::cout << std::setprecision(15) << sum;
         if (i != _potentialEnergyInnerLoop.size() - 1) {
           std::cout << ", ";
         }
       }
       std::cout << "]" << std::endl;
 
-      writeVector("potentialEnergyCombined", totalPotentialEnergy);
+      writeVector("potentialEnergyCombined", combinedPotentialEnergy);
+    }
+
+    std::vector<double> combinedVirial;
+    if (_virialOuterLoop.size() == _virialInnerLoop.size()) {
+      std::cout << "virial combined: [";
+      for (size_t i = 0; i < _virialInnerLoop.size(); ++i) {
+        const auto sum = _virialInnerLoop[i] + _virialOuterLoop[i];
+        combinedVirial.push_back(sum);
+        std::cout << std::setprecision(15) << sum;
+        if (i != _virialInnerLoop.size() - 1) {
+          std::cout << ", ";
+        }
+      }
+      std::cout << "]" << std::endl;
+
+      writeVector("combinedVirial", combinedVirial);
     }
 
     std::cout << "kinetic energy: [";
@@ -1087,35 +1136,43 @@ void Simulation::updateQuaternions(bool resetTorques) {
   _timers.quaternionUpdate.stop();
 }
 
-std::optional<double> Simulation::updateInteractionForces(ForceType forceTypeToCalculate, bool subtractForces) {
+std::optional<std::pair<double, double>> Simulation::updateInteractionForces(ForceType forceTypeToCalculate,
+                                                                             bool subtractForces) {
   _timers.forceUpdateTotal.start();
 
   _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
   _currentIterationIsTuningIteration = false;
   long timeIteration = 0;
   double potentialEnergy = 0;
+  double virial = 0;
 
   // Calculate pairwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
-    std::pair<bool, std::optional<double>> wasTuningIterationAndPotentialEnergy =
+    std::tuple<bool, std::optional<double>, std::optional<double>> wasTuningIterationPotentialEnergyVirial =
         calculatePairwiseForces(forceTypeToCalculate, subtractForces);
     _currentIterationIsTuningIteration =
-        (_currentIterationIsTuningIteration | std::get<0>(wasTuningIterationAndPotentialEnergy));
-    if (std::get<1>(wasTuningIterationAndPotentialEnergy).has_value()) {
-      potentialEnergy += std::get<1>(wasTuningIterationAndPotentialEnergy).value();
+        (_currentIterationIsTuningIteration | std::get<0>(wasTuningIterationPotentialEnergyVirial));
+    if (std::get<1>(wasTuningIterationPotentialEnergyVirial).has_value()) {
+      potentialEnergy += std::get<1>(wasTuningIterationPotentialEnergyVirial).value();
+    }
+    if (std::get<2>(wasTuningIterationPotentialEnergyVirial).has_value()) {
+      virial += std::get<2>(wasTuningIterationPotentialEnergyVirial).value();
     }
     timeIteration += _timers.forceUpdatePairwise.stop();
   }
   // Calculate triwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     _timers.forceUpdateTriwise.start();
-    std::pair<bool, std::optional<double>> wasTuningIterationAndPotentialEnergy =
+    std::tuple<bool, std::optional<double>, std::optional<double>> wasTuningIterationPotentialEnergyVirial =
         calculateTriwiseForces(forceTypeToCalculate);
     _currentIterationIsTuningIteration =
-        (_currentIterationIsTuningIteration | std::get<0>(wasTuningIterationAndPotentialEnergy));
-    if (std::get<1>(wasTuningIterationAndPotentialEnergy).has_value()) {
-      potentialEnergy += std::get<1>(wasTuningIterationAndPotentialEnergy).value();
+        (_currentIterationIsTuningIteration | std::get<0>(wasTuningIterationPotentialEnergyVirial));
+    if (std::get<1>(wasTuningIterationPotentialEnergyVirial).has_value()) {
+      potentialEnergy += std::get<1>(wasTuningIterationPotentialEnergyVirial).value();
+    }
+    if (std::get<2>(wasTuningIterationPotentialEnergyVirial).has_value()) {
+      virial += std::get<2>(wasTuningIterationPotentialEnergyVirial).value();
     }
     timeIteration += _timers.forceUpdateTriwise.stop();
   }
@@ -1136,7 +1193,7 @@ std::optional<double> Simulation::updateInteractionForces(ForceType forceTypeToC
   _timers.forceUpdateTotal.stop();
 
   if (potentialEnergy != 0) {
-    return potentialEnergy;
+    return std::make_pair(potentialEnergy, virial);
   }
   return std::nullopt;
 }
@@ -1208,57 +1265,73 @@ long Simulation::accumulateTime(const long &time) {
   return reducedTime;
 }
 
-std::pair<bool, std::optional<double>> Simulation::calculatePairwiseForces(ForceType forceType, bool subtractForces) {
+std::tuple<bool, std::optional<double>, std::optional<double>> Simulation::calculatePairwiseForces(
+    ForceType forceType, bool subtractForces) {
   auto autopasInstanceToUse = _autoPasContainer;
   if (_useSecondAutopasInstanceForRespa) {
     if (forceType == ForceType::CGMolOuter or forceType == ForceType::FPOuter or forceType == ForceType::IBIOuter) {
       autopasInstanceToUse = _autoPasContainerRespa;
     }
   }
-  auto wasTuningIterationAndPotentialEnergy = applyWithChosenFunctor<std::pair<bool, std::optional<double>>>(
-      [&](auto &&functor) {
-        auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
-        if (functor.getCalculateGlobals()) {
-          const auto potentialEnergy = functor.getPotentialEnergy();
-          return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
-        }
-        return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
-      },
-      forceType, subtractForces);
+  auto wasTuningIterationPotentialEnergyVirial =
+      applyWithChosenFunctor<std::tuple<bool, std::optional<double>, std::optional<double>>>(
+          [&](auto &&functor) {
+            auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
+            if (functor.getCalculateGlobals()) {
+              const auto potentialEnergy = functor.getPotentialEnergy();
+              const auto virial = functor.getVirial();
+              return std::make_tuple<bool, std::optional<double>, std::optional<double>>(std::move(wasTuningIteration),
+                                                                                         potentialEnergy, virial);
+            }
+            return std::make_tuple<bool, std::optional<double>, std::optional<double>>(std::move(wasTuningIteration),
+                                                                                       std::nullopt, std::nullopt);
+          },
+          forceType, subtractForces);
 
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
   if (_applyCoulombFunctor and not(forceType == ForceType::CoarseGrain or forceType == ForceType::IBIOuter)) {
-    auto wasTuningIterationAndPotentialEnergyCoulomb =
-        applyWithChosenFunctorElectrostatic<std::pair<bool, std::optional<double>>>(
+    auto wasTuningIterationPotentialEnergyVirialCoulomb =
+        applyWithChosenFunctorElectrostatic<std::tuple<bool, std::optional<double>, std::optional<double>>>(
             [&](auto &&functor) {
               auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
               if (functor.getCalculateGlobals()) {
                 const auto potentialEnergy = functor.getPotentialEnergy();
-                return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
+                const auto virial = functor.getVirial();
+                return std::make_tuple<bool, std::optional<double>, std::optional<double>>(
+                    std::move(wasTuningIteration), potentialEnergy, virial);
               }
-              return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
+              return std::make_tuple<bool, std::optional<double>, std::optional<double>>(std::move(wasTuningIteration),
+                                                                                         std::nullopt, std::nullopt);
             },
             forceType);
-    wasTuningIterationAndPotentialEnergy.first |= wasTuningIterationAndPotentialEnergyCoulomb.first;
-    if (wasTuningIterationAndPotentialEnergy.second.has_value()) {
-      wasTuningIterationAndPotentialEnergy.second.value() += wasTuningIterationAndPotentialEnergyCoulomb.second.value();
+    std::get<0>(wasTuningIterationPotentialEnergyVirial) |= std::get<0>(wasTuningIterationPotentialEnergyVirialCoulomb);
+    if (std::get<1>(wasTuningIterationPotentialEnergyVirial).has_value()) {
+      std::get<1>(wasTuningIterationPotentialEnergyVirial).value() +=
+          std::get<1>(wasTuningIterationPotentialEnergyVirialCoulomb).value();
+    }
+    if (std::get<2>(wasTuningIterationPotentialEnergyVirial).has_value()) {
+      std::get<2>(wasTuningIterationPotentialEnergyVirial).value() +=
+          std::get<2>(wasTuningIterationPotentialEnergyVirialCoulomb).value();
     }
   }
 #endif
-  return wasTuningIterationAndPotentialEnergy;
+  return wasTuningIterationPotentialEnergyVirial;
 }
 
-std::pair<bool, std::optional<double>> Simulation::calculateTriwiseForces(ForceType forceType) {
-  const auto wasTuningIterationAndPotentialEnergy =
-      applyWithChosenFunctor3B<std::pair<bool, std::optional<double>>>([&](auto &&functor) {
+std::tuple<bool, std::optional<double>, std::optional<double>> Simulation::calculateTriwiseForces(ForceType forceType) {
+  const auto wasTuningIterationPotentialEnergyVirial =
+      applyWithChosenFunctor3B<std::tuple<bool, std::optional<double>, std::optional<double>>>([&](auto &&functor) {
         auto wasTuningIteration = _autoPasContainer->template computeInteractions(&functor);
         if (functor.getCalculateGlobals()) {
           const auto potentialEnergy = functor.getPotentialEnergy();
-          return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
+          const auto virial = functor.getVirial();
+          return std::make_tuple<bool, std::optional<double>, std::optional<double>>(std::move(wasTuningIteration),
+                                                                                     potentialEnergy, virial);
         }
-        return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
+        return std::make_tuple<bool, std::optional<double>, std::optional<double>>(std::move(wasTuningIteration),
+                                                                                   std::nullopt, std::nullopt);
       });
-  return wasTuningIterationAndPotentialEnergy;
+  return wasTuningIterationPotentialEnergyVirial;
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
