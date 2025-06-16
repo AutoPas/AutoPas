@@ -180,14 +180,13 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   const double cutoffToUse = _useSecondAutopasInstanceForRespa
                                  ? _configuration.cutoff.value
-                                 : _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value;
+                                 : _configuration.cutoff.value * _configuration.cutoffFactorRespa.value;
 
   prepareAutopasContainer(_autoPasContainer, cutoffToUse, outputSuffix);
 
   if (_useSecondAutopasInstanceForRespa) {
     prepareAutopasContainer(_autoPasContainerRespa,
-                            _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value,
-                            outputSuffix);
+                            _configuration.cutoff.value * _configuration.cutoffFactorRespa.value, outputSuffix);
   } else {
     _domainDecomposition->setCutoff(cutoffToUse);
   }
@@ -290,6 +289,12 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   if (_configuration.respaDistanceClassMode.value != autopas::DistanceClassOption::disabled) {
     _distanceClassSimulation = true;
+  }
+
+  for (size_t i = 0; i < _configuration.getParticlePropertiesLibrary()->getNumberRegisteredSiteTypes(); ++i) {
+    if (_configuration.getParticlePropertiesLibrary()->getCoulombEpsilon(i) > 0) {
+      _applyCoulombFunctor = true;
+    }
   }
 }
 
@@ -929,8 +934,8 @@ void Simulation::sendPositionsAndQuaternionsToRespaInstance() {
   // exchange and reflect happend already in the primary autopas instance
 
   // recreate halos with larger cutoff
-  _domainDecomposition->exchangeHaloParticles(
-      *_autoPasContainerRespa, _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value);
+  _domainDecomposition->exchangeHaloParticles(*_autoPasContainerRespa,
+                                              _configuration.cutoff.value * _configuration.cutoffFactorRespa.value);
   _timers.secondAutopasInstanceSync.stop();
 }
 
@@ -1222,22 +1227,21 @@ std::pair<bool, std::optional<double>> Simulation::calculatePairwiseForces(Force
       forceType, subtractForces);
 
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-  bool applyCoulombForce = false;
-  if (applyCoulombForce) {
-    if (_configuration.ibiEquilibrateIterations.value == 0 or _iteration <= _configuration.rdfEndIteration.value or
-        forceType == ForceType::FullParticle) {
-      auto wasTuningIterationAndPotentialEnergyCoulomb =
-          applyWithChosenFunctorElectrostatic<std::pair<bool, std::optional<double>>>(
-              [&](auto &&functor) {  // return _autoPasContainer->computeInteractions(&functor);
-                auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
-                if (functor.getCalculateGlobals()) {
-                  const auto potentialEnergy = functor.getPotentialEnergy();
-                  return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
-                }
-                return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
-
-              });
-      wasTuningIterationAndPotentialEnergy.first |= wasTuningIterationAndPotentialEnergyCoulomb.first;
+  if (_applyCoulombFunctor and not(forceType == ForceType::CoarseGrain or forceType == ForceType::IBIOuter)) {
+    auto wasTuningIterationAndPotentialEnergyCoulomb =
+        applyWithChosenFunctorElectrostatic<std::pair<bool, std::optional<double>>>(
+            [&](auto &&functor) {
+              auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
+              if (functor.getCalculateGlobals()) {
+                const auto potentialEnergy = functor.getPotentialEnergy();
+                return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), potentialEnergy);
+              }
+              return std::make_pair<bool, std::optional<double>>(std::move(wasTuningIteration), std::nullopt);
+            },
+            forceType);
+    wasTuningIterationAndPotentialEnergy.first |= wasTuningIterationAndPotentialEnergyCoulomb.first;
+    if (wasTuningIterationAndPotentialEnergy.second.has_value()) {
+      wasTuningIterationAndPotentialEnergy.second.value() += wasTuningIterationAndPotentialEnergyCoulomb.second.value();
     }
   }
 #endif
@@ -1553,7 +1557,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, ForceType forceTyp
   }
 
   if (forceType == ForceType::IBIOuter) {
-    auto func = LuTFunctorType{cutoff * _configuration.cutoffFactorElectrostatics.value, particlePropertiesLibrary,
+    auto func = LuTFunctorType{cutoff * _configuration.cutoffFactorRespa.value, particlePropertiesLibrary,
                                subtractForces ? -1 : 1};
     func.setInnerCutoff(cutoff);
     func.setLuT(_lut);
@@ -1564,8 +1568,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, ForceType forceTyp
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
       if (forceType == ForceType::FPOuter or forceType == ForceType::CGMolOuter) {
-        auto func =
-            LJFunctorTypeAutovec{cutoff * _configuration.cutoffFactorElectrostatics.value, particlePropertiesLibrary};
+        auto func = LJFunctorTypeAutovec{cutoff * _configuration.cutoffFactorRespa.value, particlePropertiesLibrary};
         func.setInnerCutoff(cutoff);
         return f(func);
       } else {
@@ -1604,12 +1607,18 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, ForceType forceTyp
 }
 
 template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f, bool useCGFunctor) {
-  const double cutoff = _configuration.cutoff.value * _configuration.cutoffFactorElectrostatics.value;
+ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f, ForceType forceType) {
+  const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
 #if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-  return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+  if (forceType == ForceType::FPOuter or forceType == ForceType::CGMolOuter) {
+    auto func = CoulombFunctorTypeAutovec{cutoff * _configuration.cutoffFactorRespa.value, particlePropertiesLibrary};
+    func.setInnerCutoff(cutoff);
+    return f(func);
+  } else {
+    return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+  }
 #else
   throw std::runtime_error(
       "MD-Flexible was not compiled with support for Coulomb interactions. Activate it via `cmake "

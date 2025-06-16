@@ -179,7 +179,7 @@ class CoulombMultisiteFunctor
     const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
     const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
-    if (distanceSquaredCoM > _cutoffSquared) {
+    if (distanceSquaredCoM > _cutoffSquared or distanceSquaredCoM < _innerCutoffSquared) {
       return;
     }
 
@@ -220,7 +220,7 @@ class CoulombMultisiteFunctor
         const double chargeB = useMixing ? _PPLibrary->getCharge(siteIdsB[j]) : _charge;
 
         const double invDistSquared = 1.0 / distanceSquared;
-        const double coulombFactor = coulombEpsilon;  // 67.63;  // 1.0 / (4.0 * M_PI * coulombEpsilon);
+        const double coulombFactor = coulombEpsilon;  // 1.0 / (4.0 * M_PI * coulombEpsilon);
 
         const double forceMagnitude = coulombFactor * chargeA * chargeB * invDistSquared;
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, forceMagnitude);
@@ -294,6 +294,8 @@ class CoulombMultisiteFunctor
     _charge = charge;
     _sitePositionsCoulomb = sitePositionsCoulomb;
   }
+
+  void setInnerCutoff(double innerCutoff) { _innerCutoffSquared = innerCutoff * innerCutoff; }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -466,5 +468,7 @@ class CoulombMultisiteFunctor
    * Thread buffer for AoS
    */
   std::vector<AoSThreadData> _aosThreadData;
+
+  double _innerCutoffSquared = 0;
 };
 }  // namespace mdLib

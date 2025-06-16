@@ -7,7 +7,7 @@ newton3                              :  [disabled]
 data-layout                          :  [AoS]
 
 cutoff                               :  4
-cutoff-factor-electrostatics         :  1
+cutoff-factor-respa                  :  1
 box-min                              :  [-2, -2, -2]
 box-max                              :  [10, 10, 10]
 cell-size                            :  [1]

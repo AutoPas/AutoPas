@@ -626,11 +626,11 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> cutoff{2., "cutoff", true, "Lennard-Jones force cutoff."};
   /**
-   * cutoff factor for electro statics
+   * cutoff factor for respa
    */
-  MDFlexOption<double, __LINE__> cutoffFactorElectrostatics{
-      1., "cutoff-factor-electrostatics", true,
-      "The cutoff is multiplied with this value and used as the electrostatics cutoff"};
+  MDFlexOption<double, __LINE__> cutoffFactorRespa{
+      1., "cutoff-factor-respa", true,
+      "The cutoff is multiplied with this value and used as large distance cutoff for respa distance classes"};
   /**
    * functorOption
    */

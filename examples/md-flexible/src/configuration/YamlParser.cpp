@@ -190,12 +190,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.cutoff.value <= 0) {
           throw std::runtime_error("Cutoff has to be > 0!");
         }
-      } else if (key == config.cutoffFactorElectrostatics.name) {
+      } else if (key == config.cutoffFactorRespa.name) {
         expected = "Positive floating point value > 0.";
-        description = config.cutoffFactorElectrostatics.description;
+        description = config.cutoffFactorRespa.description;
 
-        config.cutoffFactorElectrostatics.value = node[key].as<double>();
-        if (config.cutoffFactorElectrostatics.value <= 0) {
+        config.cutoffFactorRespa.value = node[key].as<double>();
+        if (config.cutoffFactorRespa.value <= 0) {
           throw std::runtime_error("Cutoff factor has to be > 0!");
         }
       } else if (key == config.cellSizeFactors.name) {

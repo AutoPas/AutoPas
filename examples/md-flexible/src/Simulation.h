@@ -295,6 +295,8 @@ class Simulation {
 
   bool _distanceClassSimulation{false};
 
+  bool _applyCoulombFunctor{false};
+
   std::vector<double> _potentialEnergyInnerLoop;
 
   std::vector<double> _potentialEnergyOuterLoop;
@@ -487,5 +489,5 @@ class Simulation {
    * @return Return value of f.
    */
   template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctorElectrostatic(FunctionType f, bool useCGFunctor = false);
+  ReturnType applyWithChosenFunctorElectrostatic(FunctionType f, ForceType forceType);
 };
