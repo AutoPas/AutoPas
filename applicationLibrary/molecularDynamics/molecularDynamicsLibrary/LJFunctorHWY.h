@@ -204,27 +204,41 @@ class LJFunctorHWY
   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
   */
   // clang-format on
+  inline std::string checkVecPattern(autopas::VectorizationPatternOption::Value vec_pat) {
+    if (vec_pat == autopas::VectorizationPatternOption::Value::p1xVec) {
+      return "p1xVec";
+    } else if (vec_pat == autopas::VectorizationPatternOption::Value::p2xVecDiv2) {
+      return "p2xVecDiv2";
+    } else if (vec_pat == autopas::VectorizationPatternOption::Value::pVecDiv2x2) {
+      return "pVecDiv2x2";
+    } else {
+      return "pVecx1";
+    }
+  }
 
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
     // first attempt at pattern selection
     // check if a pattern map with optimal pattern is provided
     if (_patternMapNewton3On != nullptr && _patternMapNewton3Off != nullptr) {
-      if (soa1.size()!=0 && soa2.size()!=0) {
-        if (soa1.size()<=30 && soa2.size() <=30){
+      // std::cout <<"in SoAFunctorPair with fcs:"<< soa1.size()<<"scs:" <<soa2.size()<<std::endl;
+      if (soa1.size() != 0 && soa2.size() != 0) {
+        if (soa1.size() <= 30 && soa2.size() <= 30) {
           if (newton3) {
-            setVecPattern((*_patternMapNewton3On)[(soa1.size()-1)+30*(soa2.size()-1)]);
-          }else {
-            setVecPattern((*_patternMapNewton3Off)[(soa1.size()-1)+30*(soa2.size()-1)]);
+            setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
+            // std::cout <<"in SoAFunctorPair with fcs:"<< soa1.size()<<"scs:" <<soa2.size()<<std::endl;
+            // std::cout<< "apply mapping for Newton3On with pattern:"<<
+            // checkVecPattern((*_patternMapNewton3On)[(soa1.size()-1)+30*(soa2.size()-1)])<< std::endl;
+          } else {
+            setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
           }
-        }else {
-          if (soa1.size()<= soa2.size()) {
-            setVecPattern(mdLib::VectorizationPattern::p1xVec);
-          }else {
+        } else {
+          if (soa2.size<=6) {
             setVecPattern(mdLib::VectorizationPattern::pVecx1);
+          } else {
+            setVecPattern(mdLib::VectorizationPattern::p1xVec);
           }
         }
-
       }
     }
     switch (_vecPattern) {
@@ -1349,24 +1363,24 @@ class LJFunctorHWY
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
   /**
-  * @copydoc autopas::Functor::getPatternSelection()
-  * Getter for boolean if functor is relevant to pattern selection
+   * @copydoc autopas::Functor::getPatternSelection()
+   * Getter for boolean if functor is relevant to pattern selection
    * @return boolean
-  */
+   */
 
-  bool getPatternSelection() final{return true;}
+  bool getPatternSelection() final { return true; }
 
   /**
-    * @copydoc autopas::Functor::setPatternSelection()
-    * set pattern vector with optimal patterns for functor
-    * @param patternMapNewton3On, patternMapNewton3Off
-    */
+   * @copydoc autopas::Functor::setPatternSelection()
+   * set pattern vector with optimal patterns for functor
+   * @param patternMapNewton3On, patternMapNewton3Off
+   */
 
-   void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value>* patternMapNewton3On, std::vector<autopas::VectorizationPatternOption::Value>* patternMapNewton3Off)final {
+  void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value> *patternMapNewton3On,
+                           std::vector<autopas::VectorizationPatternOption::Value> *patternMapNewton3Off) final {
     _patternMapNewton3On = patternMapNewton3On;
     _patternMapNewton3Off = patternMapNewton3Off;
   };
-
 
  private:
   /**
@@ -1413,7 +1427,7 @@ class LJFunctorHWY
   bool _masksInitialized{false};
 
   VectorizationPattern _vecPattern;
-  std::vector<autopas::VectorizationPatternOption::Value>* _patternMapNewton3On = nullptr;
-  std::vector<autopas::VectorizationPatternOption::Value>* _patternMapNewton3Off = nullptr;
+  std::vector<autopas::VectorizationPatternOption::Value> *_patternMapNewton3On = nullptr;
+  std::vector<autopas::VectorizationPatternOption::Value> *_patternMapNewton3Off = nullptr;
 };
 }  // namespace mdLib
