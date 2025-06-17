@@ -10,6 +10,7 @@
 #include "autopas/tuning/triggers/StaticSimpleTrigger.h"
 #include "autopas/tuning/triggers/TimeBasedSimpleTrigger.h"
 #include "autopas/tuning/triggers/TimeBasedAverageTrigger.h"
+#include "autopas/tuning/triggers/TimeBasedSplitTrigger.h"
 
 namespace autopas::TuningTriggerFactory {
 
@@ -28,6 +29,10 @@ std::unique_ptr<TuningTriggerInterface> generateTuningTrigger(TuningTriggerOptio
     }
     case TuningTriggerOption::timeBasedAverage: {
       tuningTrigger = std::make_unique<TimeBasedAverageTrigger>(info.triggerFactor, info.nSamples);
+      break;
+    }
+    case TuningTriggerOption::timeBasedSplit: {
+      tuningTrigger = std::make_unique<TimeBasedSplitTrigger>(info.triggerFactor, info.nSamples);
       break;
     }
     default: {

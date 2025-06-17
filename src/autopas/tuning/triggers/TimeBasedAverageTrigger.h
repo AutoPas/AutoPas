@@ -14,7 +14,7 @@ namespace autopas {
 
 /**
  * Represents a time-based trigger. A new tuning phase is triggered, if the runtime of the current iteration
- * is greater or equal to the running average of the last n iteration's runtime times triggerFactor.
+ * is greater or equal to the running average of the last n iterations runtime times triggerFactor.
  */
 class TimeBasedAverageTrigger : public TuningTriggerInterface {
  public:
@@ -35,6 +35,8 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
       AutoPasLog(WARN, "nSamples for TimeBasedAverageTrigger is {}, but has to be > 0. Defaulted to 10.", _nSamples);
       _nSamples = 10;
     }
+
+    _lastIterationRuntimes.reserve(_nSamples);
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {

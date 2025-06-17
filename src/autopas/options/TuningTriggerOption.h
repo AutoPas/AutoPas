@@ -35,6 +35,10 @@ class TuningTriggerOption : public Option<TuningTriggerOption> {
      *  Similar to timeBasedSimple, but compares to the moving average of last n iterations.
      **/
     timeBasedAverage,
+    /**
+     *  Splits up last n samples into two intervals A, B. Triggers if avg(B) is greater or equal than triggerFactor times avg(A).
+     **/
+    timeBasedSplit,
   };
 
   /**
@@ -63,6 +67,7 @@ class TuningTriggerOption : public Option<TuningTriggerOption> {
         {TuningTriggerOption::staticSimple, "StaticSimple"},
         {TuningTriggerOption::timeBasedSimple, "TimeBasedSimple"},
         {TuningTriggerOption::timeBasedAverage, "TimeBasedAverage"},
+        {TuningTriggerOption::timeBasedSplit, "TimeBasedSplit"},
     };
   }
 
