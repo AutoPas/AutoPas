@@ -2073,6 +2073,13 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           std::cout<<checkVecPattern(autoTuner._optimalPatternsNewton3On[(second_size-1)*30+(first_size-1)])<<","<<first_size<<","<< second_size<< std::endl;
         }
       }
+      std::cout<<"newton3 off optimal patterns:"<<std::endl;
+      std::cout<<"pattern, fcs, scs"<<std::endl;
+      for (size_t second_size=1; second_size<=30; second_size++) {
+        for (size_t first_size=1; first_size<=30; first_size++) {
+          std::cout<<checkVecPattern(autoTuner._optimalPatternsNewton3Off[(second_size-1)*30+(first_size-1)])<<","<<first_size<<","<< second_size<< std::endl;
+        }
+      }
     }
     functor.setPatternSelection(&autoTuner._optimalPatternsNewton3On , &autoTuner._optimalPatternsNewton3Off);
   }
