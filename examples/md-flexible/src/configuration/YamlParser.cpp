@@ -446,43 +446,52 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.useTuningTrigger.value = true;
 
-        // Parse triggerType.
-        mark = node[key][config.tuningTriggerType.name].Mark();
-        expected = "Type of dynamic tuning trigger to use.";
-        description = config.tuningTriggerType.description;
-        try {
-          const auto parsedOptions = autopas::TuningTriggerOption::parseOptions(parseSequenceOneElementExpected(
-              node[key][config.tuningTriggerType.name], "Pass exactly one trigger type!"));
-          config.tuningTriggerType.value = *parsedOptions.begin();
-        } catch (const std::exception &e) {
-          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
-        }
+        // Parse optional trigger options in any order
+        const auto &subnode = itemIterator->second;
+        if (subnode && subnode.IsMap()) {
+          for (const auto &subkeyIterator : subnode) {
+            std::string subKey = subkeyIterator.first.as<std::string>();
+            const auto &subVal = subkeyIterator.second;
+            auto subkeyMark = subkeyIterator.second.Mark();
 
-        // Parse triggerFactor.
-        mark = node[key][config.tuningTriggerFactor.name].Mark();
-        expected = "Floating point Value >= 0.";
-        description = config.tuningTriggerFactor.description;
-        try {
-          config.tuningTriggerFactor.value = node[key][config.tuningTriggerFactor.name].as<float>();
-          if (config.tuningTriggerFactor.value < 0) {
-            throw std::runtime_error("The trigger factor for has to be greater or equal to 0!");
-          }
-        } catch (const std::exception &e) {
-          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
-        }
-
-        // Parse triggerNSamples.
-        if (config.tuningTriggerType.value == autopas::TuningTriggerOption::timeBasedAverage) {
-          mark = node[key][config.tuningTriggerNSamples.name].Mark();
-          expected = "Unsigned integer > 0.";
-          description = config.tuningTriggerNSamples.description;
-          try {
-            config.tuningTriggerNSamples.value = node[key][config.tuningTriggerNSamples.name].as<unsigned>();
-            if (config.tuningTriggerNSamples.value < 1) {
-              throw std::runtime_error("The number of samples has to be greater than 0!");
+            // Parse triggerType.
+            if (subKey == config.tuningTriggerType.name) {
+              expected = "Type of dynamic tuning trigger to use.";
+              description = config.tuningTriggerType.description;
+              try {
+                const auto parsedOptions = autopas::TuningTriggerOption::parseOptions(
+                    parseSequenceOneElementExpected(subVal, "Pass exactly one trigger type!"));
+                config.tuningTriggerType.value = *parsedOptions.begin();
+              } catch (const std::exception &e) {
+                errors.push_back(makeErrorMsg(subkeyMark, subKey, e.what(), expected, description));
+              }
             }
-          } catch (const std::exception &e) {
-            errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+            // Parse triggerFactor.
+            else if (subKey == config.tuningTriggerFactor.name) {
+              expected = "Floating point Value >= 0.";
+              description = config.tuningTriggerFactor.description;
+              try {
+                config.tuningTriggerFactor.value = subVal.as<float>();
+                if (config.tuningTriggerFactor.value < 0) {
+                  throw std::runtime_error("The trigger factor for has to be greater or equal to 0!");
+                }
+              } catch (const std::exception &e) {
+                errors.push_back(makeErrorMsg(subkeyMark, subKey, e.what(), expected, description));
+              }
+            }
+            // Parse triggerNSamples.
+            else if (subKey == config.tuningTriggerNSamples.name) {
+              expected = "Unsigned integer > 0.";
+              description = config.tuningTriggerNSamples.description;
+              try {
+                config.tuningTriggerNSamples.value = subVal.as<unsigned>();
+                if (config.tuningTriggerNSamples.value < 1) {
+                  throw std::runtime_error("The number of samples has to be greater than 0!");
+                }
+              } catch (const std::exception &e) {
+                errors.push_back(makeErrorMsg(subkeyMark, subKey, e.what(), expected, description));
+              }
+            }
           }
         }
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
