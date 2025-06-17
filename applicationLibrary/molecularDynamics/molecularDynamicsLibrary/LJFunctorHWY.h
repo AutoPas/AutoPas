@@ -234,13 +234,13 @@ class LJFunctorHWY
           }
         } else {
           if (newton3) {
-            if (soa2.size<=6) {
+            if (soa2.size()<=6) {
               setVecPattern(mdLib::VectorizationPattern::pVecx1);
             } else {
               setVecPattern(mdLib::VectorizationPattern::p1xVec);
             }
           }else {
-            if (soa1.size<=4) {
+            if (soa1.size()<=4) {
               setVecPattern(mdLib::VectorizationPattern::p1xVec);
             } else {
               setVecPattern(mdLib::VectorizationPattern::pVecx1);
