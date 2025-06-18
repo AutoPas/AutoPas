@@ -233,19 +233,13 @@ class LJFunctorHWY
             setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
           }
         } else {
-          if (newton3) {
-            if (soa2.size()<=6) {
-              setVecPattern(mdLib::VectorizationPattern::pVecx1);
-            } else {
+
+            if (soa1.size()<=soa2.size()) {
               setVecPattern(mdLib::VectorizationPattern::p1xVec);
-            }
-          }else {
-            if (soa1.size()<=4) {
-              setVecPattern(mdLib::VectorizationPattern::p1xVec);
-            } else {
+            }else {
               setVecPattern(mdLib::VectorizationPattern::pVecx1);
+
             }
-          }
         }
       }
     }
