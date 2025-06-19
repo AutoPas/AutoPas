@@ -600,7 +600,8 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 void MDFlexConfig::flushParticles() { particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
-  _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
+  const auto cutoffForPPL = cutoff.value * cutoffFactorRespa.value;
+  _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoffForPPL);
 
   // initialize site Ids with mandatory mass parameter
   for (auto [siteTypeId, mass] : massMap.value) {

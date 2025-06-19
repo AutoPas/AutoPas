@@ -388,7 +388,7 @@ void Simulation::run() {
                                     _configuration.respaMoleculeTypes.value[0],
                                     _configuration.respaMoleculeTypes.value[1]);
           } else {
-            updateAngularVelocities(/*resetTorques*/ false, RespaIterationType::OuterStep, 0, 0);
+            updateAngularVelocities(/*resetTorques*/ true, RespaIterationType::OuterStep, 0, 0);
           }
 #endif
           respaStarted = true;
@@ -470,7 +470,10 @@ void Simulation::run() {
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
-      _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
+      _domainDecomposition->exchangeHaloParticles(
+          *_autoPasContainer, (_useSecondAutopasInstanceForRespa and _distanceClassSimulation)
+                                  ? _configuration.cutoff.value
+                                  : _configuration.cutoff.value * _configuration.cutoffFactorRespa.value);
       _timers.haloParticleExchange.stop();
 
       _timers.computationalLoad.start();
@@ -926,6 +929,7 @@ void Simulation::run() {
     json << "}\n";
 
     // Write JSON
+    std::filesystem::create_directories(_configuration.statisticsOutputFolder.value);
     std::ofstream outFile(_configuration.statisticsOutputFolder.value + "/" +
                           _configuration.statisticsOutputFilename.value + ".json");
     if (outFile.is_open()) {

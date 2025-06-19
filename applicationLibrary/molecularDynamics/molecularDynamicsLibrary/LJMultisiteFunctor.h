@@ -188,7 +188,7 @@ class LJMultisiteFunctor
     const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
     const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
-    if (distanceSquaredCoM > _cutoffSquared or distanceSquaredCoM < _innerCutoffSquared) {
+    if (distanceSquaredCoM > _cutoffSquared or distanceSquaredCoM <= _innerCutoffSquared) {
       return;
     }
 
