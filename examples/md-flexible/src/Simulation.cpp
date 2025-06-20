@@ -320,7 +320,7 @@ void Simulation::run() {
   bool respaStarted{false};
   const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
 
-  auto respaActive = _configuration.respaStepSize.value > 1;
+  auto respaActive = _configuration.respaStepSize.value > 0;
 
   RotationalAnalysis rotationalAnalysis;
   if (_configuration.rotationalAnalysisLagSteps.value > 0) {
@@ -481,26 +481,25 @@ void Simulation::run() {
 
     if (_distanceClassSimulation and respaActive) {
       const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::FPInner);
-      if (potentialEnergyAndVirial.has_value() and nextIsRespaIteration) {
-        _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value().first);
-        _virialInnerLoop.push_back(potentialEnergyAndVirial.value().second);
+      if (nextIsRespaIteration and mdFlexibleTypeDefs::calcGlobals) {
+        _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
+        _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
       }
     } else {
       if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
           (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation and not respaActive) or
           (respaActive and _configuration.multiMultisiteModelsRespa.value)) {
         const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::FullParticle);
-        if (potentialEnergyAndVirial.has_value() and ((respaActive and nextIsRespaIteration) or (not respaActive))) {
-          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value().first);
-          _virialInnerLoop.push_back(potentialEnergyAndVirial.value().second);
+        if (((respaActive and nextIsRespaIteration) or (not respaActive)) and mdFlexibleTypeDefs::calcGlobals) {
+          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
+          _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
         }
       } else {
         const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::CoarseGrain);
-        if (potentialEnergyAndVirial.has_value()) {
-          if ((respaActive and nextIsRespaIteration and respaStarted) or (_cgSimulation and not respaActive)) {
-            _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value().first);
-            _virialInnerLoop.push_back(potentialEnergyAndVirial.value().second);
-          }
+        if (((respaActive and nextIsRespaIteration and respaStarted) or
+             (_cgSimulation and not respaActive) and mdFlexibleTypeDefs::calcGlobals)) {
+          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
+          _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
         }
       }
     }
@@ -581,9 +580,9 @@ void Simulation::run() {
 #endif
         }
 
-        if (potentialEnergyAndVirial.has_value()) {
-          _potentialEnergyOuterLoop.push_back(potentialEnergyAndVirial.value().first);
-          _virialOuterLoop.push_back(potentialEnergyAndVirial.value().second);
+        if (mdFlexibleTypeDefs::calcGlobals) {
+          _potentialEnergyOuterLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
+          _virialOuterLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
         }
 
         if (_configuration.useThermostat.value) {
@@ -769,8 +768,7 @@ void Simulation::run() {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 
-  if (_potentialEnergyInnerLoop.size() > 0 or
-      (respaActive and _potentialEnergyOuterLoop.size() > 0 and _potentialEnergyInnerLoop.size() > 0)) {
+  if (mdFlexibleTypeDefs::calcGlobals) {
     bool allVectorSizesEqual = false;
     std::array<size_t, 6> sizesOfVectors = {
         _potentialEnergyOuterLoop.size(), _potentialEnergyInnerLoop.size(), _kineticEnergy.size(), _totalEnergy.size(),

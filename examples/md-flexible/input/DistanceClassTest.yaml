@@ -3,7 +3,8 @@ container                            :  [LinkedCells]
 traversal                            :  [lc_c08]
 newton3                              :  [enabled]
 data-layout                          :  [AoS]
-respa-stepsize                       :  0
+
+respa-stepsize                       : 1
 
 verlet-rebuild-frequency             :  10
 verlet-skin-radius                   :  0.02
@@ -14,10 +15,10 @@ tuning-samples                       :  3
 tuning-max-evidence                  :  10
 
 cutoff                               :  4
-cutoff-factor-respa                  :  1
+cutoff-factor-respa                  :  1.5
 cell-size                            :  [1]
 deltaT                               :  0.002
-iterations                           :  1000
+iterations                           :  6000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -26,8 +27,8 @@ Sites:
     epsilon                          :  0.01
     sigma                            :  1.
     mass                             :  1.
-    coulomb-epsilon                  :  1. # (4.0 * M_PI * coulombEpsilon)
-    charge                           :  1.
+    #coulomb-epsilon                  :  1. # (4.0 * M_PI * coulombEpsilon)
+    #charge                           :  1.
 
 Molecules:
   0:
@@ -46,14 +47,14 @@ Objects:
       bottomLeftCorner               :  [0, 0, 0]
       particle-spacing               :  2.35
       velocity                       :  [0, 0, 0]
-      particle-type-id               :  1
+      particle-type-id               :  0
 
-thermostat:
-  initialTemperature                 :  1
-  targetTemperature                  :  1
-  deltaTemperature                   :  0.5
-  thermostatInterval                 :  20
-  addBrownianMotion                  :  true
+#thermostat:
+#  initialTemperature                 :  1
+#  targetTemperature                  :  1
+#  deltaTemperature                   :  0.5
+#  thermostatInterval                 :  24
+#  addBrownianMotion                  :  true
 
 log-level                            :  info
 no-end-config                        :  true
@@ -63,7 +64,7 @@ no-progress-bar                      :  false
 #vtk-write-frequency                  :  1
 #lut-input-file                       :  LUT_C6_200B.csv
 #rdf-filename                         :  RDF
-#rdf-output-folder                    :  DistanceClassTestFPLargeStep
+#rdf-output-folder                    :  DistanceClassTest4FPF
 #rdf-radius                           :  4
 #rdf-num-bins                         :  250
 #rdf-guard-area                       :  0
@@ -71,7 +72,7 @@ no-progress-bar                      :  false
 #rdf-start-iteration                  :  50000
 #rdf-end-iteration                    :  100000
 #odf-filename                         :  ODF
-#odf-output-folder                    :  DistanceClassTestFPLargeStep
+#odf-output-folder                    :  DistanceClassTest4FPF
 #odf-radius                           :  4
 #odf-num-bins                         :  250
 #odf-guard-area                       :  0
@@ -80,18 +81,18 @@ no-progress-bar                      :  false
 #odf-end-iteration                    :  100000
 #rotational-analysis-lag-steps        :  1000
 #rotational-analysis-step-interval    :  10
-#rotational-analysis-filename         :  rot
-#rotational-analysis-output-folder    :  DistanceClassTestFPLargeStep
+#rotational-analysis-filename         :  Rot
+#rotational-analysis-output-folder    :  DistanceClassTest4FPF
 #rotational-analysis-start-iteration  :  50000
 #rotational-analysis-end-iteration    :  75000
 #ibi-equilibrate-iterations           :  50000
 #ibi-update-alpha                     :  1
 #ibi-convergence-threshold            :  0.99
 #lut-filename                         :  LUT
-#lut-output-folder                    :  MolModMultisiteTest
+#lut-output-folder                    :  DistanceClassTest
 #multi-multisite-models-respa         : true
 #respa-molecule-types                 : [1, 0]
-#respa-distance-class-mode            : ibi #ibi # fp, cgmol, disabled
-#use-second-autopas-instance            : true
-statistics-output-folder              : DistanceClassTestFPLargeStep
-statistics-output-filename            : statistics
+respa-distance-class-mode            : fp #ibi # fp, cgmol, disabled
+use-second-autopas-instance            : true
+statistics-output-folder              : DistanceClassTest6FPFRS1
+statistics-output-filename            : Statistics
