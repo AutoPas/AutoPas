@@ -64,6 +64,10 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   void passRuntimeSample(unsigned long sample) override {
     if (_runtimeSamples.size() == _intervalLengthA + _intervalLengthB) _runtimeSamples.erase(_runtimeSamples.begin());
     _runtimeSamples.push_back(sample);
+
+    // if we start a new tuning phase, clear runtime samples such that we do not compare runtimes between different
+    // configurations
+    if (_wasTriggered) _runtimeSamples.clear();
   }
 
   TuningTriggerOption getOptionType() const override { return TuningTriggerOption::timeBasedSplit; }
