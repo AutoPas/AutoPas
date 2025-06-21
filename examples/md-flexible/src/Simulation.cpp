@@ -482,8 +482,8 @@ void Simulation::run() {
     if (_distanceClassSimulation and respaActive) {
       const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::FPInner);
       if (nextIsRespaIteration and mdFlexibleTypeDefs::calcGlobals) {
-        _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
-        _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
+        _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).first);
+        _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).second);
       }
     } else {
       if ((not respaActive and not _cgSimulation and not ibiMeasureSimulation) or
@@ -491,15 +491,15 @@ void Simulation::run() {
           (respaActive and _configuration.multiMultisiteModelsRespa.value)) {
         const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::FullParticle);
         if (((respaActive and nextIsRespaIteration) or (not respaActive)) and mdFlexibleTypeDefs::calcGlobals) {
-          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
-          _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
+          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).first);
+          _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).second);
         }
       } else {
         const auto potentialEnergyAndVirial = updateInteractionForces(ForceType::CoarseGrain);
         if (((respaActive and nextIsRespaIteration and respaStarted) or
              (_cgSimulation and not respaActive) and mdFlexibleTypeDefs::calcGlobals)) {
-          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
-          _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
+          _potentialEnergyInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).first);
+          _virialInnerLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).second);
         }
       }
     }
@@ -581,8 +581,8 @@ void Simulation::run() {
         }
 
         if (mdFlexibleTypeDefs::calcGlobals) {
-          _potentialEnergyOuterLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).first);
-          _virialOuterLoop.push_back(potentialEnergyAndVirial.value_or(std::pair(0, 0)).second);
+          _potentialEnergyOuterLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).first);
+          _virialOuterLoop.push_back(potentialEnergyAndVirial.value_or(std::make_pair(0.0, 0.0)).second);
         }
 
         if (_configuration.useThermostat.value) {
