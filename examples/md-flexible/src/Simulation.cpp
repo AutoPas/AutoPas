@@ -29,6 +29,9 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+//extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriwiseFunctorType *);
+//#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -98,6 +101,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(nullptr),
+      //TODO add constexpr based on type of functor used
       lut2B(10, _configuration.cutoff.value  *_configuration.cutoff.value ),
       lut3B(10, _configuration.cutoff.value  *_configuration.cutoff.value )
       {
@@ -342,6 +346,9 @@ void Simulation::run() {
     }
   }
   _timers.simulate.stop();
+
+
+
 
   // Record last state of simulation.
   if (_createVtkFiles) {
@@ -874,8 +881,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
-  //TODO right now just put both luts as attributes but later think about only creating them if lut is true
-
+  // TODO right now just put both luts as attributes but later think about only creating them if lut is true
 
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
@@ -885,10 +891,9 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
 
       auto functor = ATFunctor(cutoff, &lut3B);
 
+      // TODO find where nu is and how to get it here dynamically
 
-      //TODO find where nu is and how to get it here dynamically
-
-//      functor.setParticleProperties(1);
+      //      functor.setParticleProperties(1);
       functor.setParticleProperties(_configuration.nuMap.value.at(0));
       return f(functor);
 
@@ -898,11 +903,43 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
     }
+
+    case MDFlexConfig::FunctorOption3B::argon_triwise: {
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
+
+      auto functor = ArgonTriwiseFunctorType(cutoff, &lut3B);
+      functor.setParticleProperties();
+      return f(functor);
+#else
+
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for Argon Triwise Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption3B::kr: {
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+      auto functor = KryptonTriwiseFunctorType( cutoff, &lut3B );
+      functor.setParticleProperties();
+      return f(functor);
+#else
+
+
+            throw std::runtime_error(
+                "MD-Flexible was not compiled with support for Krypton 3Body Functor. Activate it via `cmake "
+                "-DMD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
+
+#endif
+
+
+    }
+
     default: {
       throw std::runtime_error("Unknown triwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
     }
   }
+
 }
 
 

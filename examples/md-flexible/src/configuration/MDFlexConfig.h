@@ -209,7 +209,7 @@ class MDFlexConfig {
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at };
+  enum class FunctorOption3B { none, at , argon_triwise, kr};
 
   /**
    * Choice of the particle generators specified in the command line
@@ -521,7 +521,7 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller, argon_triwise, kr)"};
   /**
    * iterations
    */
