@@ -226,20 +226,35 @@ class LJFunctorHWY
         if (soa1.size() <= 30 && soa2.size() <= 30) {
           if (newton3) {
             setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
-            // std::cout <<"in SoAFunctorPair with fcs:"<< soa1.size()<<"scs:" <<soa2.size()<<std::endl;
-            // std::cout<< "apply mapping for Newton3On with pattern:"<<
-            // checkVecPattern((*_patternMapNewton3On)[(soa1.size()-1)+30*(soa2.size()-1)])<< std::endl;
           } else {
             setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
           }
         } else {
+          if (newton3) {
+            if (soa1.size()<=30) {
+              setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + 30 * (29)]);
 
-            if (soa1.size()<=soa2.size()) {
-              setVecPattern(mdLib::VectorizationPattern::p1xVec);
+            }else if (soa2.size()<=30) {
+              setVecPattern((*_patternMapNewton3On)[(29) + 30 * (soa2.size() - 1)]);
+
             }else {
-              setVecPattern(mdLib::VectorizationPattern::pVecx1);
+              setVecPattern((*_patternMapNewton3On)[(29) + 30 * (29)]);
 
             }
+          }else {
+            if (soa1.size()<=30) {
+              setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (29)]);
+
+            }else if (soa2.size()<=30) {
+              setVecPattern((*_patternMapNewton3Off)[(29) + 30 * (soa2.size() - 1)]);
+
+            }else {
+              setVecPattern((*_patternMapNewton3Off)[(29) + 30 * (29)]);
+
+            }
+
+          }
+
         }
       }
     }

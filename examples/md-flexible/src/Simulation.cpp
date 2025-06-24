@@ -153,7 +153,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
-                                           autopas::VectorizationPatternOption::p1xVec);
+                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
