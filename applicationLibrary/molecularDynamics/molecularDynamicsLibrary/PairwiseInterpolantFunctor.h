@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -20,12 +19,12 @@
 
 namespace mdLib {
 
-template <class PairwiseKernel, class Particle_T, bool applyShift = false, bool useMixing = false,
+template <class PairwiseKernel, class Particle_T,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class PairwiseInterpolantFunctor
     : public autopas::PairwiseFunctor<
-          Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, applyShift, useMixing, useNewton3,
+          Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, useNewton3,
                                                  calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
@@ -38,7 +37,7 @@ class PairwiseInterpolantFunctor
   explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::vector<size_t> numNodes,
                                       std::vector<double> intervalSplits, void * /*dummy*/)
       : autopas::PairwiseFunctor<
-            Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, applyShift, useMixing, useNewton3,
+            Particle_T, PairwiseInterpolantFunctor<PairwiseKernel, Particle_T, useNewton3,
                                                    calculateGlobals, countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _numNodes{numNodes},
@@ -153,19 +152,6 @@ class PairwiseInterpolantFunctor
   explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::vector<size_t> nNodes,
                                       std::vector<double> intervalSplits)
       : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without ParticlePropertiesLibrary is not possible! Use a different constructor or set mixing "
-                  "to false.");
-  }
-
-  explicit PairwiseInterpolantFunctor(PairwiseKernel f, double cutoff, double a, std::vector<size_t> nNodes,
-                                      std::vector<double> intervalSplits,
-                                      ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : PairwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
   }
 
   std::string getName() final { return "PairwiseInterpolantFunctor"; }
@@ -276,16 +262,7 @@ class PairwiseInterpolantFunctor
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         const bool newton3) final {}
 
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
-    _epsilon24 = epsilon24;
-    _sigmaSquared = sigmaSquared;
-    if (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
-    } else {
-      _shift6 = 0.;
-    }
-    // TODO: set kernel values
-  }
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {}
 
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
@@ -311,7 +288,7 @@ class PairwiseInterpolantFunctor
         Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
   }
 
-  constexpr static bool getMixing() { return useMixing; }
+  constexpr static bool getMixing() { return false; }
 
   void initTraversal() final {
     _potentialEnergySum = 0.;
@@ -422,31 +399,8 @@ class PairwiseInterpolantFunctor
 
   [[nodiscard]] size_t getNumFLOPs() const override {
     if constexpr (countFLOPs) {
-      const size_t numDistCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
-      const size_t numKernelCallsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
-      const size_t numKernelCallsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
-      const size_t numGlobalCalcsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsN3; });
-      const size_t numGlobalCalcsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
-
-      constexpr size_t numFLOPsPerDistanceCall = 8;
-      constexpr size_t numFLOPsPerN3KernelCall = 18;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 15;
-      constexpr size_t numFLOPsPerN3GlobalCalc = applyShift ? 13 : 12;
-      constexpr size_t numFLOPsPerNoN3GlobalCalc = applyShift ? 9 : 8;
-
-      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
-             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
-             numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
+      // TODO: implement
+      return 0;
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();
@@ -531,10 +485,6 @@ class PairwiseInterpolantFunctor
   PairwiseKernel _kernel;
 
   const double _cutoffSquared;
-  // not const because they might be reset through PPL
-  double _epsilon24, _sigmaSquared, _shift6 = 0;
-
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;

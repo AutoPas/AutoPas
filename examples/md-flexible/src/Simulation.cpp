@@ -93,24 +93,35 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _vtkWriter(nullptr)
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
       ,
-      _interpolantLJFunctor{mdLib::LJKernel{*_configuration.getParticlePropertiesLibrary()},
-                            _configuration.cutoff.value,
-                            _configuration.interpolationStart.value,
-                            _configuration.interpolationNodes.value,
-                            _configuration.interpolationSplits.value,
-                            *_configuration.getParticlePropertiesLibrary()},
       _argonPairInterpolantFunctor{mdLib::ArgonKernel{},
                                    _configuration.cutoff.value,
-                                   _configuration.interpolationStart.value,
-                                   _configuration.interpolationNodes.value,
-                                   _configuration.interpolationSplits.value,
-                                   *_configuration.getParticlePropertiesLibrary()},
+                                   _configuration.interpolationStart.value.at(0),
+                                   _configuration.interpolationNodesX.value,
+                                   _configuration.interpolationSplitsX.value,
+                                   },
       _kryptonPairInterpolantFunctor{mdLib::KryptonKernel{},
                                      _configuration.cutoff.value,
-                                     _configuration.interpolationStart.value,
-                                     _configuration.interpolationNodes.value,
-                                     _configuration.interpolationSplits.value,
-                                     *_configuration.getParticlePropertiesLibrary()}
+                                     _configuration.interpolationStart.value.at(0),
+                                     _configuration.interpolationNodesX.value,
+                                     _configuration.interpolationSplitsX.value,
+                                    }
+#endif
+#if defined (MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
+      // TODO: initialize triwise Functors
+      ,
+      _argonTripletInterpolantFunctor{mdLib::ArgonKernel{},
+                                      _configuration.cutoff.value,
+                                      _configuration.interpolationStart.value,
+                                      std::array<std::vector<size_t>,3>{_configuration.interpolationNodesX.value, _configuration.interpolationNodesY.value, _configuration.interpolationNodesZ.value},
+                                      std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
+                                    },
+
+      _kryptonTripletInterpolantFunctor{mdLib::KryptonKernel{},
+                                    _configuration.cutoff.value,
+                                    _configuration.interpolationStart.value,
+                                    std::array<std::vector<size_t>,3>{_configuration.interpolationNodesX.value, _configuration.interpolationNodesY.value, _configuration.interpolationNodesZ.value},
+                                    std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
+                                  }
 #endif
 {
   _timers.total.start();
@@ -821,12 +832,8 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
-      return f(_interpolantLJFunctor);
-#else
       auto func = LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary};
       return f(func);
-#endif
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
@@ -891,10 +898,16 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
 #endif
     }
     case MDFlexConfig::FunctorOption3B::krypton: {
-
+#if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
+      return f(_kryptonTripletInterpolantFunctor);
+#endif
+      // TODO: implement
     }
     case MDFlexConfig::FunctorOption3B::argon: {
-
+#if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
+      return f(_argonTripletInterpolantFunctor);
+#endif
+      // TODO: implement
     }
     default: {
       throw std::runtime_error("Unknown triwise functor choice" +

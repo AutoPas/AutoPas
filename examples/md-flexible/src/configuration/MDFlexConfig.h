@@ -536,23 +536,39 @@ class MDFlexConfig {
   /**
    * interpolation nodes
    */
-  MDFlexOption<std::vector<size_t>, __LINE__> interpolationNodes{
-      std::vector<size_t>{}, "interpolation-nodes", true,
-      "Number of interpolation nodes for each interpolation interval."};
+  MDFlexOption<std::vector<size_t>, __LINE__> interpolationNodesX{
+      std::vector<size_t>{}, "interpolation-nodes-x", true,
+      "Number of interpolation nodes for each interpolation interval in x-dimension."};
 
+  MDFlexOption<std::vector<size_t>, __LINE__> interpolationNodesY{
+      std::vector<size_t>{}, "interpolation-nodes-y", true,
+      "Number of interpolation nodes for each interpolation interval in y-dimension."};
+
+  MDFlexOption<std::vector<size_t>, __LINE__> interpolationNodesZ{
+      std::vector<size_t>{}, "interpolation-nodes-z", true,
+      "Number of interpolation nodes for each interpolation interval in z-dimension."};
+  
   /**
    * Interpolation Area Start
    */
-  MDFlexOption<double, __LINE__> interpolationStart{
-      0.0, "interpolation-start", true,
-      "Start Point for the interpolation interval, adjust according to physical parameters."};
+  MDFlexOption<std::array<double, 3>, __LINE__> interpolationStart{
+      { 0.0, 0.0, 0.0 }, "interpolation-start", true,
+      "Start Points for the interpolation interval in each dimension. Adjust this according to the potential function."};
 
   /**
    * Splits for the interpolation interval
    */
-  MDFlexOption<std::vector<double>, __LINE__> interpolationSplits{
-      std::vector<double>{}, "interpolation-splits", true,
-      "Split points for the interpolation interval"};
+  MDFlexOption<std::vector<double>, __LINE__> interpolationSplitsX{
+      std::vector<double>{}, "interpolation-splits-x", true,
+      "Split points for the interpolation interval in x-dimension"};
+
+  MDFlexOption<std::vector<double>, __LINE__> interpolationSplitsY{
+      std::vector<double>{}, "interpolation-splits-y", true,
+      "Split points for the interpolation interval in y-dimension"};
+
+  MDFlexOption<std::vector<double>, __LINE__> interpolationSplitsZ{
+      std::vector<double>{}, "interpolation-splits-z", true,
+      "Split points for the interpolation interval in z-dimension"};
 
   /**
    * Boundary types.

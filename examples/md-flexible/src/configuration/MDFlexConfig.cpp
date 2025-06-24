@@ -270,9 +270,13 @@ std::string MDFlexConfig::to_string() const {
   printOption(tuningSamples);
   printOption(earlyStoppingFactor);
   printOption(useLOESSSmoothening);
-  printOption(interpolationNodes);
+  printOption(interpolationNodesX);
+  printOption(interpolationNodesY);
+  printOption(interpolationNodesZ);
   printOption(interpolationStart);
-  printOption(interpolationSplits);
+  printOption(interpolationSplitsX);
+  printOption(interpolationSplitsY);
+  printOption(interpolationSplitsZ);
   if (tuningStrategyOptionsContainAnyOf({
           autopas::TuningStrategyOption::randomSearch,
           autopas::TuningStrategyOption::bayesianSearch,

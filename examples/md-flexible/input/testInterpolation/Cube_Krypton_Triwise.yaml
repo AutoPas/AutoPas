@@ -5,17 +5,21 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.25
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS]
-traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  krypton
-interpolation-nodes-x            :  [16, 16, 14]
-interpolation-splits-x           :  [0.7, 1.25]
+functor-3b                       :  krypton
+interpolation-nodes-x            :  [16]
+interpolation-nodes-y            :  [16]
+interpolation-nodes-z            :  [16]
+interpolation-splits-x           :  []
+interpolation-splits-y           :  []
+interpolation-splits-z           :  []
 interpolation-start              :  [0.35, 0.35, 0.35]
-newton3                          :  [disabled, enabled]
+data-layout-3b                   :  [AoS]
+newton3-3b                       :  [disabled, enabled]
+traversal-3b                     :  [ lc_c01 ]
 cutoff                           :  1.75
 box-min                          :  [0, 0, 0]
 box-max                          :  [30, 30, 30]
@@ -51,9 +55,9 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Cube_Krypton
+vtk-filename                     :  Cube_Krypton_Triwise
 vtk-write-frequency              :  500
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  debug
-log-file                         :  test_2_splits_8
+log-file                         :  Triwise_Tests

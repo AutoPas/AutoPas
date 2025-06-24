@@ -262,29 +262,58 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.iterations.value < 1) {
           throw std::runtime_error("The number of iterations has to be a positive integer > 0.");
         }
-      } else if (key == config.interpolationNodes.name) {
+      } else if (key == config.interpolationNodesX.name) {
         expected = "List Unsigned Integer >= 0 with size > 0";
-        description = config.interpolationNodes.description;
+        description = config.interpolationNodesX.description;
 
-        config.interpolationNodes.value = autopas::utils::StringUtils::parseNumberVec<size_t>(
+        config.interpolationNodesX.value = autopas::utils::StringUtils::parseNumberVec<size_t>(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
-        if (config.interpolationNodes.value.empty()) {
+        if (config.interpolationNodesX.value.empty()) {
+          throw std::runtime_error("Parsed interpolation nodes list is empty.");
+        }
+      } else if (key == config.interpolationNodesY.name) {
+        expected = "List Unsigned Integer >= 0 with size > 0";
+        description = config.interpolationNodesY.description;
+
+        config.interpolationNodesY.value = autopas::utils::StringUtils::parseNumberVec<size_t>(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.interpolationNodesY.value.empty()) {
+          throw std::runtime_error("Parsed interpolation nodes list is empty.");
+        }
+      } else if (key == config.interpolationNodesZ.name) {
+        expected = "List Unsigned Integer >= 0 with size > 0";
+        description = config.interpolationNodesZ.description;
+
+        config.interpolationNodesZ.value = autopas::utils::StringUtils::parseNumberVec<size_t>(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.interpolationNodesZ.value.empty()) {
           throw std::runtime_error("Parsed interpolation nodes list is empty.");
         }
       } else if (key == config.interpolationStart.name) {
         expected = "Double >= 0";
         description = config.interpolationStart.description;
 
-        config.interpolationStart.value = node[key].as<double>();
-        if (config.interpolationStart.value < 0.) {
-          throw std::runtime_error("The start of the interpolation interval has to be a \"positive\" double >= 0.");
-        }
-      } else if (key == config.interpolationSplits.name) {
+        config.interpolationStart.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == config.interpolationSplitsX.name) {
         expected = "YAML-sequence of floats.";
-        description = config.interpolationSplits.description;
+        description = config.interpolationSplitsX.description;
 
-        config.interpolationSplits.value = autopas::utils::StringUtils::parseNumberVec<double>(
+        config.interpolationSplitsX.value = autopas::utils::StringUtils::parseNumberVec<double>(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+      } else if (key == config.interpolationSplitsY.name) {
+        expected = "YAML-sequence of floats.";
+        description = config.interpolationSplitsY.description;
+
+        config.interpolationSplitsY.value = autopas::utils::StringUtils::parseNumberVec<double>(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+      } else if (key == config.interpolationSplitsZ.name) {
+        expected = "YAML-sequence of floats.";
+        description = config.interpolationSplitsZ.description;
+
+        config.interpolationSplitsZ.value = autopas::utils::StringUtils::parseNumberVec<double>(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
       } else if (key == config.tuningPhases.name) {
         expected = "Unsigned Integer";

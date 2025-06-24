@@ -84,9 +84,13 @@ class Simulation {
   std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
-  LJInterpolantFunctorType _interpolantLJFunctor;
   ArgonPairInterpolantFunctorType _argonPairInterpolantFunctor;
   KryptonPairInterpolantFunctorType _kryptonPairInterpolantFunctor;
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
+  ArgonTripletInterpolantFunctorType _argonTripletInterpolantFunctor;
+  KryptonTripletInterpolantFunctorType _kryptonTripletInterpolantFunctor;
 #endif
 
   /**

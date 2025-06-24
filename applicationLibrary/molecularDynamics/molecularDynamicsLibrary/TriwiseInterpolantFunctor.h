@@ -18,22 +18,30 @@
 
 namespace mdLib {
 
-template <class TriwiseKernel, class Particle_T, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class TriwiseKernel, class Particle_T, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
     bool calculateGlobals = false, bool countFLOPs = false>
-class TriwiseInterpolantFunctor : public autopas::TriwiseFunctor<Particle_T, TriwiseInterpolantFunctor<TriwiseKernel, Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>>
+class TriwiseInterpolantFunctor : public autopas::TriwiseFunctor<Particle_T, TriwiseInterpolantFunctor<TriwiseKernel, Particle_T, useNewton3, calculateGlobals, countFLOPs>>
 {
     
 public:
     TriwiseInterpolantFunctor() = delete;
 
 private:
-
-    explicit TriwiseInterpolantFunctor(double cutoff, void * /*dummy*/) : autopas::TriwiseFunctor<Particle_T, TriwiseInterpolantFunctor<TriwiseKernel, Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>>(),
+    explicit TriwiseInterpolantFunctor(TriwiseKernel f, double cutoff, const std::array<double, 3>& a,
+      const std::array<std::vector<size_t>, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits, void * /*dummy*/)
+            : autopas::TriwiseFunctor<Particle_T, TriwiseInterpolantFunctor<TriwiseKernel, Particle_T, useNewton3, calculateGlobals, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
-            _potentialEnergySum{0.},
-            _virialSum{0., 0., 0.},
-            _aosThreadDataGlobals(),
-            _postProcessed{false} {
+        _numNodes{nNodes},
+        _intervalSplits{intervalSplits},
+        _a{a},
+        _b{std::array<double, 3>{cutoff, cutoff, cutoff}},
+        _potentialEnergySum{0.},
+        _virialSum{0., 0., 0.},
+        _aosThreadDataGlobals(),
+        _postProcessed{false} {
+
+        // TODO: sanitize nodes and splits lists length
+
         if constexpr (calculateGlobals) {
         _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
         }
@@ -42,10 +50,84 @@ private:
         }
     }
 
+    // TODO: recursive definition, clenshaw algorithm
+    double evaluateChebyshev(double input, int n) {
+      return std::cos(n * std::acos(input));
+    }
+
+    double evaluateInterpolant(double x, double y, double z) {
+
+      double result = 0.;
+      for (int i = 0; i < _numNodes.at(0).at(0); ++i) {
+        double val_x = evaluateChebyshev(x, i);
+        for (int j = 0; j < _numNodes.at(1).at(0); ++j) {
+          double val_y = evaluateChebyshev(y, j);
+          for (int k = 0; k < _numNodes.at(2).at(0); ++k) {
+            double val_z = evaluateChebyshev(z, k);
+
+            result += _coefficients.at(i).at(j).at(k) * val_x * val_y * val_z;
+          }
+        }
+      }
+      return result;
+    }
+
+    double mapToInterval(double x, double a, double b) {
+      // TODO: implement
+      return 0.;
+    }
+
+    double mapToCheb(double x, double a, double b) {
+      // TODO: implement
+      return 0.;
+    }
+
+    void evaluateNodes(std::vector<std::vector<std::vector<double>>>& values) {
+      values.reserve(_numNodes.at(0).at(0));
+      // TODO: port to interval splits
+      for (int i = 0; i < _numNodes.at(0).at(0); ++i) {
+        
+        double x = ((2*i+1.)/(2.*_numNodes.at(0).at(0))) * PI;
+        x = std::cos(x);
+        x = mapToInterval(x, _a.at(0), _b.at(0));
+
+        std::vector<std::vector<double>> valuesY {};
+        valuesY.reserve(_numNodes.at(1).at(0));
+        for (int j = 0; j < _numNodes.at(1).at(0); ++j) {
+
+          double y = ((2*j+1.)/(2.*_numNodes.at(1).at(0))) * PI;
+          y = std::cos(y);
+          y = mapToInterval(y, _a.at(1), _b.at(1));
+
+          std::vector<double> valuesZ {};
+          valuesZ.reserve(_numNodes.at(2).at(0));
+          for (int k = 0; k < _numNodes.at(2).at(0); ++k) {
+            
+            double z = ((2*k+1.)/(2.*_numNodes.at(2).at(0))) * PI;
+            z = std::cos(z);
+            z = mapToInterval(x, _a.at(2), _b.at(2));
+
+            double value = _kernel.calculateTriplet(x, y, z);
+            valuesZ.push_back(value);
+          }
+          valuesY.push_back(valuesZ);
+        }
+        values.push_back(valuesY);
+      }
+    }
+
+    void constructPolynomial() {
+      // evaluate Kernel at Chebyshev Points
+      std::vector<std::vector<std::vector<double>>> values {};
+      evaluateNodes(values);
+
+    }
+
 public:
 
-    explicit TriwiseInterpolantFunctor(double cutoff) : TriwiseInterpolantFunctor(cutoff, nullptr) {
-
+    explicit TriwiseInterpolantFunctor(TriwiseKernel f, double cutoff, const std::array<double, 3>& a,
+                                      const std::array<std::vector<size_t>, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits)
+      : TriwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
     }
 
     std::string getName() final { return "TriwiseInterpolantFunctor"; }
@@ -90,7 +172,7 @@ public:
             Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
       }
 
-      constexpr static bool getMixing() { return useMixing; }
+      constexpr static bool getMixing() { return false; }
 
       void initTraversal() final {
         _potentialEnergySum = 0.;
@@ -247,5 +329,16 @@ public:
        std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
 
        bool _postProcessed;
+
+       /* Interpolation Parameters */
+       TriwiseKernel _kernel;
+       const std::array<std::vector<size_t>, 3> _numNodes {};
+       const std::array<std::vector<double>, 3> _intervalSplits {};
+       std::vector<std::vector<std::vector<double>>> _coefficients {};
+
+       const double PI = 2 * std::acos(0.);
+
+       std::array<double, 3> _a {};
+       std::array<double, 3> _b {};
     };
 }

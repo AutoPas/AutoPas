@@ -26,7 +26,6 @@
 #include "molecularDynamicsLibrary/PairwiseInterpolantFunctor.h"
 #include "molecularDynamicsLibrary/interpolationKernels/ArgonKernel.h"
 #include "molecularDynamicsLibrary/interpolationKernels/KryptonKernel.h"
-#include "molecularDynamicsLibrary/interpolationKernels/LJKernel.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
@@ -106,23 +105,20 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
-using LJInterpolantFunctorType =
-    mdLib::PairwiseInterpolantFunctor<mdLib::LJKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                      mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 using ArgonPairInterpolantFunctorType =
-    mdLib::PairwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
+    mdLib::PairwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, autopas::FunctorN3Modes::Both,
                                       mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 using KryptonPairInterpolantFunctorType =
-    mdLib::PairwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, true, true, autopas::FunctorN3Modes::Both,
+    mdLib::PairwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, autopas::FunctorN3Modes::Both,
                                       mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
     using ArgonTripletInterpolantFunctorType =
-    mdLib::TriwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, true, autopas::FunctorN3Modes::Both,
+    mdLib::TriwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, autopas::FunctorN3Modes::Both,
                                     mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
     using KryptonTripletInterpolantFunctorType =
-    mdLib::TriwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, true, autopas::FunctorN3Modes::Both,
+    mdLib::TriwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, autopas::FunctorN3Modes::Both,
                                     mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 

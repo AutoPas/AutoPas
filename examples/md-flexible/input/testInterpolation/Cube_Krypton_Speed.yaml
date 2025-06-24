@@ -12,16 +12,16 @@ tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  krypton
-interpolation-nodes-x            :  [16, 16, 14]
-interpolation-splits-x           :  [0.7, 1.25]
-interpolation-start              :  [0.35, 0.35, 0.35]
+interpolation-nodes-x            :  [16, 14, 12]
+interpolation-splits-x           :  [0.65, 1.1]
+interpolation-start              :  [0.35, 0., 0.]
 newton3                          :  [disabled, enabled]
 cutoff                           :  1.75
 box-min                          :  [0, 0, 0]
-box-max                          :  [30, 30, 30]
+box-max                          :  [100, 100, 100]
 cell-size                        :  [1]
 deltaT                           :  0.000125
-iterations                       :  20000
+iterations                       :  30000
 energy-sensor                    :  rapl
 boundary-type                    :  [periodic,periodic,periodic]
 globalForce                      :  [0,0,0]
@@ -41,8 +41,8 @@ Objects:
   CubeClosestPacked:
     0:  
       particle-spacing           :  0.75
-      bottomLeftCorner           :  [5, 5, 5]
-      box-length                 :  [5, 5, 5]
+      bottomLeftCorner           :  [40, 40, 40]
+      box-length                 :  [15, 15, 15]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
 # thermostat:
@@ -51,9 +51,9 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  Cube_Krypton
-vtk-write-frequency              :  500
+vtk-filename                     :  Cube_Krypton_Bench_Local
+vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  debug
-log-file                         :  test_2_splits_8
+log-file                         :  Time_Benchmark
