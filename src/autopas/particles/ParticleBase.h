@@ -58,7 +58,8 @@ class ParticleBase {
         _v(v),
         _f({0.0, 0.0, 0.0}),
         _id(id),
-        _ownershipState(ownershipState)
+        _ownershipState(ownershipState),
+        _q(0.0)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
         _rAtRebuild(r)
@@ -104,6 +105,11 @@ class ParticleBase {
    */
   OwnershipState _ownershipState;
 
+  /**
+   * Charge of the particle.
+   */
+  floatType _q;
+
  public:
   /**
    * Stream operator for instances of ParticleBase class.
@@ -118,7 +124,7 @@ class ParticleBase {
    * @return
    */
   bool operator==(const ParticleBase &rhs) const {
-    return std::tie(_r, _v, _f, _id) == std::tie(rhs._r, rhs._v, rhs._f, rhs._id);
+    return std::tie(_r, _v, _f, _id, _q) == std::tie(rhs._r, rhs._v, rhs._f, rhs._id, rhs._q);
   }
 
   /**
@@ -280,6 +286,18 @@ class ParticleBase {
   }
 
   /**
+   * get the charge of the particle
+   * @return charge
+   */
+  [[nodiscard]] const double getQ() const { return _q; }
+
+  /**
+   * Set the charge of the particle
+   * @param q charge
+   */
+  void setQ(const double q) { _q = q; }
+
+  /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
@@ -295,7 +313,9 @@ class ParticleBase {
          << "\nForce   : "
          << autopas::utils::ArrayUtils::to_string(_f)
          << "\nOwnershipState : "
-         << _ownershipState;
+         << _ownershipState
+         << "\nCharge : "
+         << _q;
     // clang-format on
     return text.str();
   }
@@ -333,7 +353,7 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState, charge };
 
   /**
    * Floating Point Type used for this particle
@@ -352,7 +372,7 @@ class ParticleBase {
   using SoAArraysType =
       typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+                                       floatType /*fz*/, OwnershipState /*ownershipState*/, floatType /*charge*/ >::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -388,6 +408,8 @@ class ParticleBase {
       return getF()[2];
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
+    } else if constexpr (attribute == AttributeNames::charge) {
+      return getQ();
     } else {
       utils::ExceptionHandler::exception("ParticleBase::get() unknown attribute {}", attribute);
     }
@@ -417,6 +439,8 @@ class ParticleBase {
       _f[2] = value;
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
+    } else if constexpr (attribute == AttributeNames::charge) {
+      _q = value;
     } else {
       utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
@@ -455,7 +479,7 @@ std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType>
   using utils::ArrayUtils::operator<<;
   os << "Particle"
      << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
-     << "\nForce   : " << particle._f << "\nOwnershipState : " << particle._ownershipState;
+     << "\nForce   : " << particle._f << "\nOwnershipState : " << particle._ownershipState << "\nCharge : " << particle._q;
   // clang-format on
   return os;
 }

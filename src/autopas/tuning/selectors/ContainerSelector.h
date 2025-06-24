@@ -20,6 +20,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/P3M/P3M_container.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/NumParticlesEstimator.h"
@@ -153,6 +154,15 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
       container =
           std::make_unique<Octree<Particle_T>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+      break;
+    }
+    case ContainerOption::p3m: {
+      // TODO need to update default values for N_dims and cao
+      std::array<int,3> N{8,8,8};
+      container = 
+          std::make_unique<P3M_container<Particle_T>>(_boxMin, _boxMax, N, _cutoff, containerInfo.verletSkin,
+                                                      containerInfo.verletRebuildFrequency,
+                                                      containerInfo.cellSizeFactor, containerInfo.loadEstimator, 3);
       break;
     }
     default: {

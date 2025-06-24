@@ -68,6 +68,11 @@ class ContainerOption : public Option<ContainerOption> {
      * distributed since it is space adaptive
      */
     octree,
+    /**
+     * P3M : Container that offers long range electro-static potential evaluation.
+     * Built ontop of a LinkedCells container.
+     */
+    p3m,
   };
 
   /**
@@ -110,6 +115,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
         {ContainerOption::octree, "Octree"},
+        {ContainerOption::p3m, "P3M"},
     };
   };
 

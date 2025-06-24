@@ -41,6 +41,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedC02Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedTraversal.h"
+#include "autopas/containers/P3M/P3M_traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
@@ -296,6 +297,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
       using ParticleType = typename ParticleCell::ParticleType;
       return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor>>(
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
+    }
+
+    case TraversalOption::p3m_p3m: {
+      //using ParticleType = typename ParticleCell::ParticleType; /*<ParticleCell, PairwiseFunctor>*/ /*&pairwiseFunctor,*/ /*traversalInfo.interactionLength,*/
+      return std::make_unique<P3M_traversal<ParticleCell>>(
+           traversalInfo.interactionLength,  dataLayout, useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",

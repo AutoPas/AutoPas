@@ -196,6 +196,9 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+
+    // P3M Traversals:
+    p3m_p3m,
   };
 
   /**
@@ -331,6 +334,9 @@ class TraversalOption : public Option<TraversalOption> {
         // Octree Traversals:
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
+
+        // P3M Traversals:
+        {TraversalOption::p3m_p3m, "P3M"},
     };
   };
 
