@@ -211,9 +211,6 @@ class MDFlexConfig {
     lj12_6_AVX,
     lj12_6_SVE,
     lj12_6_Globals,
-    lj12_6_XSIMD,
-    lj12_6_MIPP,
-    lj12_6_SIMDe,
     lj12_6_HWY
   };
 
@@ -533,8 +530,8 @@ class MDFlexConfig {
       // Default is a dummy option
       FunctorOption::lj12_6_AVX, "functor", true,
       "Pairwise force functor to use. Possible Values: (lennard-jones "
-      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals lennard-jones-xsimd lennard-jones-simde "
-      "lennard-jones-mipp lennard-jones-highway)"};
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals "
+      "lennard-jones-highway)"};
   /**
    * functorOption3B
    */

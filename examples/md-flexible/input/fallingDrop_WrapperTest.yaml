@@ -10,7 +10,7 @@ traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  simde
+functor                          :  highway
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]

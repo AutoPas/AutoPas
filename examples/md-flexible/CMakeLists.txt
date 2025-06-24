@@ -19,9 +19,6 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsL
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
-option(MD_FLEXIBLE_FUNCTOR_XSIMD "If instruction set is available, compile XSIMD Functor." ON)
-option(MD_FLEXIBLE_FUNCTOR_MIPP "If instruction set is available, compile MIPP Functor." ON)
-option(MD_FLEXIBLE_FUNCTOR_SIMDE "If instruction set is available, compile SIMDe Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_HWY "If instruction set is available, compile Highway Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC "Compile auto vectorized Axilrod Teller Functor." OFF)
 option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
@@ -34,9 +31,6 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_XSIMD}>:MD_FLEXIBLE_FUNCTOR_XSIMD>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIPP}>:MD_FLEXIBLE_FUNCTOR_MIPP>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SIMDE}>:MD_FLEXIBLE_FUNCTOR_SIMDE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HWY}>:MD_FLEXIBLE_FUNCTOR_HWY>
 )
 
@@ -54,15 +48,6 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_HWY)
         message(WARNING "Highway functor has not been implemented for Multi-Site Molecules")
-    endif()
-    if (MD_FLEXIBLE_FUNCTOR_SIMDE)
-        message(WARNING "SIMDe functor has not been implemented for Multi-Site Molecules")
-    endif()
-    if (MD_FLEXIBLE_FUNCTOR_XSIMD)
-        message(WARNING "XSIMD functor has not been implemented for Multi-Site Molecules")
-    endif()
-    if (MD_FLEXIBLE_FUNCTOR_MIPP)
-        message(WARNING "MIPP functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 

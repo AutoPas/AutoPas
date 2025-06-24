@@ -32,15 +32,6 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeMIPP *);
-#endif
-#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeXSIMD *);
-#endif
-#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSIMDe *);
-#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -834,39 +825,12 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
-    case MDFlexConfig::FunctorOption::lj12_6_XSIMD: {
-#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
-      return f(LJFunctorTypeXSIMD{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor XSIMD. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_XSIMD=ON`.");
-#endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_MIPP: {
-#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
-      return f(LJFunctorTypeMIPP{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor MIPP. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_MIPP=ON`.");
-#endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_SIMDe: {
-#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
-      return f(LJFunctorTypeSIMDe{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
-#endif
-    }
     case MDFlexConfig::FunctorOption::lj12_6_HWY: {
 #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
       return f(LJFunctorTypeHWY{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
+          "MD-Flexible was not compiled with support for LJFunctor HWY. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_HWY=ON`.");
 #endif
     }
