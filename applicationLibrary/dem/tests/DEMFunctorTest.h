@@ -1,8 +1,8 @@
 /**
-* @file DEMFunctor.h
-* @author Joon Kim
-* @date 25.06.25
-*/
+ * @file DEMFunctor.h
+ * @author Joon Kim
+ * @date 25.06.25
+ */
 
 #pragma once
 
@@ -10,8 +10,8 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "dem/demLibrary/DEMParameters.h"
 #include "dem/demLibrary/DEMFunctor.h"
+#include "dem/demLibrary/DEMParameters.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class DEMFunctorTest : public AutoPasTestBase {

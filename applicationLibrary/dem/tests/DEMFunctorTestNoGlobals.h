@@ -1,8 +1,8 @@
 /**
-* @file DEMFunctorTestNoGlobals.h
+ * @file DEMFunctorTestNoGlobals.h
  * @author Joon Kim
  * @date 25.06.25
-*/
+ */
 
 #pragma once
 

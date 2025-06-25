@@ -121,7 +121,7 @@ struct Newton3True : public TypeWrapper<FuncType, true> {};
 template <class FuncType>
 struct Newton3False : public TypeWrapper<FuncType, false> {};
 
-using MyTypes = ::testing::Types<Newton3True<DEMFunMixGlob>, Newton3False<DEMFunMixGlob>,
-                                 Newton3True<DEMFunNoMixGlob>, Newton3False<DEMFunNoMixGlob>>;
+using MyTypes = ::testing::Types<Newton3True<DEMFunMixGlob>, Newton3False<DEMFunMixGlob>, Newton3True<DEMFunNoMixGlob>,
+                                 Newton3False<DEMFunNoMixGlob>>;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, DEMFunctorTestNoGlobals, MyTypes);

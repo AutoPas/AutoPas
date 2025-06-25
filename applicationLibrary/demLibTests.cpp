@@ -1,8 +1,8 @@
 /**
-* @file demLibTests.cpp
+ * @file demLibTests.cpp
  * @author Joon Kim
  * @date 25.06.2025
-*/
+ */
 
 #include <gtest/gtest.h>
 
