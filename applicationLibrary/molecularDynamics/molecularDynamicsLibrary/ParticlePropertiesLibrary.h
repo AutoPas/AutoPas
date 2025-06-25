@@ -321,6 +321,12 @@ class ParticlePropertiesLibrary {
                                  k];
   }
 
+  /**
+   * Returns the precomputed geometric mean radius for one pair of site types, i.e. sqrt(r_i * r_j).
+   * @param i
+   * @param j
+   * @return sqrt(r_i * r_j)
+   */
   floatType getMixingGeometricMeanRadius(intType i, intType j) const {
     return _computedDEMMixingData[i * _numRegisteredSiteTypes + j].geometricMeanRadius;
   }
