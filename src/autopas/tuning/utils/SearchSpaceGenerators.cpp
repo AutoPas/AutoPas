@@ -9,6 +9,7 @@
 #include <memory>
 #include <set>
 
+#include "LogicHandler.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/NumberSet.h"
@@ -48,9 +49,13 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
               for (const auto &vecPatternOption : allowedVecPatternOptions) {
                 const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
                                                   dataLayoutOption, newton3Option, interactionType, vecPatternOption};
+
+
                 if (configuration.hasCompatibleValues()) {
                   searchSet.insert(configuration);
+
                 }
+
               }
             }
           }
@@ -62,6 +67,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
   if (searchSet.empty()) {
     utils::ExceptionHandler::exception("No valid configurations could be created.");
   }
+  std::cout<<"search space size in generator:"<<searchSet.size()<<std::endl;;
+
   return searchSet;
 }
 

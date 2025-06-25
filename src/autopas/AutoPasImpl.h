@@ -98,10 +98,12 @@ void AutoPas<Particle_T>::init() {
 
   // Create autotuners for each interaction type
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
+
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
         _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
         interactionType, _allowedVecPatternsOptions[interactionType]);
+
 
     AutoTuner::TuningStrategiesListType tuningStrategies;
     tuningStrategies.reserve(_tuningStrategyOptions.size());
@@ -116,6 +118,7 @@ void AutoPas<Particle_T>::init() {
     _autoTuners.emplace(interactionType,
                         std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
                                                              _verletRebuildFrequency, tunerOutputSuffix));
+
   }
 
   // Create logic handler

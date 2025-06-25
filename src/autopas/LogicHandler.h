@@ -1919,7 +1919,7 @@ long patternHelper(Functor_T& functor, size_t repetitions, size_t iterations, si
     return sum;
 }
 
-inline std::string checkVecPattern(autopas::VectorizationPatternOption::Value vec_pat) {
+inline std::string checkVecPattern(const autopas::VectorizationPatternOption::Value vec_pat) {
   if (vec_pat == autopas::VectorizationPatternOption::Value::p1xVec) {
     return "p1xVec";
   } else if (vec_pat == autopas::VectorizationPatternOption::Value::p2xVecDiv2) {
