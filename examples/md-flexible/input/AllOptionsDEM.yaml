@@ -62,7 +62,8 @@ Sites:
     epsilon                          :  1.
     sigma                            :  1.
     mass                             :  0.5
-
+    radius                           :  0.75
+    specific-heat                    :  1
 Objects:
   CubeGrid:
     0:

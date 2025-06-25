@@ -190,7 +190,6 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
     iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
   }
 #elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
-  // TODO: consider using other integration methods
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const std::array<double, 3> torque = iter->getTorque();

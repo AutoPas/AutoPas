@@ -862,7 +862,7 @@ class DEMFunctor
 
       if constexpr (useMixing) {
         for (unsigned int j = 0; j < soa2.size(); ++j) {
-          geometricMeanRadii[j] = _PPLibrary->getGeometricMeanRadius(typeptr1[i], typeptr2[j]);
+          geometricMeanRadii[j] = _PPLibrary->getMixingGeometricMeanRadius(typeptr1[i], typeptr2[j]);
         }
       }
 
@@ -1216,7 +1216,7 @@ class DEMFunctor
         if constexpr (useMixing) {
           for (size_t j = 0; j < vecsize; j++) {
             geometricMeanRadii[j] =
-                _PPLibrary->getGeometricMeanRadius(typeptr[indexFirst], typeptr[neighborListPtr[joff + j]]);
+                _PPLibrary->getMixingGeometricMeanRadius(typeptr[indexFirst], typeptr[neighborListPtr[joff + j]]);
           }
         }
 
@@ -1682,7 +1682,7 @@ class DEMFunctor
       // Compute heat flux
       SoAFloatPrecision geomMeanRadius = _geometricMeanRadius;
       if constexpr (useMixing) {
-        geomMeanRadius = _PPLibrary->getGeometricMeanRadius(typeptr[indexFirst], typeptr[j]);
+        geomMeanRadius = _PPLibrary->getMixingGeometricMeanRadius(typeptr[indexFirst], typeptr[j]);
       }
       const SoAFloatPrecision conductance =
           2. * _demParameters.getHeatConductivity() *

@@ -15,6 +15,7 @@ target_link_libraries(
         autopas
         autopasTools
         molecularDynamicsLibrary
+        demLibrary
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
