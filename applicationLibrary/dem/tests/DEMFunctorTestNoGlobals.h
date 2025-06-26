@@ -43,15 +43,15 @@ class DEMFunctorTestNoGlobals : public DEMFunctorTest {
   const std::array<std::array<double, 3>, 2> startingVel = {{{3., 3., 3.}, {-3., -3., -3.}}};
   const std::array<std::array<double, 3>, 2> startingAngVel = {{{1., 2., 3.}, {-4., -5., -6.}}};
 
-  constexpr static std::array<double, 3> expectedForce{-65.5088011, -130.4776022, -195.3564034};
-  constexpr static std::array<double, 3> expectedTorque{0.0338124, -0.0615624, 0.0230625};
-  constexpr static std::array<double, 3> expectedTorqueNewton3{0.0381874, -0.0554374, 0.0309375};
-  constexpr static double expectedHeatFlux{0.1556357};
+  constexpr static std::array<double, 3> expectedForce{-65.508801145, -130.477602290, -195.356403435};
+  constexpr static std::array<double, 3> expectedTorque{0.033812499, -0.061562499, 0.0230625};
+  constexpr static std::array<double, 3> expectedTorqueNewton3{0.038187499, -0.055437499, 0.0309375};
+  constexpr static double expectedHeatFlux{0.155635714};
 
-  constexpr static std::array<double, 3> expectedForceMixing{-85.5333496, -170.6068777, -255.4701382};
-  constexpr static std::array<double, 3> expectedTorqueMixing{-0.0161539, 0.0171091, -0.0101628};
-  constexpr static std::array<double, 3> expectedTorqueMixingNewton3{0.1041895, -0.1301002, 0.0561450};
-  constexpr static double expectedHeatFluxMixing{0.1616544};
+  constexpr static std::array<double, 3> expectedForceMixing{-85.533349695, -170.606877763, -255.470138272};
+  constexpr static std::array<double, 3> expectedTorqueMixing{-0.016153918, 0.017109176, -0.010162847};
+  constexpr static std::array<double, 3> expectedTorqueMixingNewton3{0.104189592, -0.130100257, 0.056145009};
+  constexpr static double expectedHeatFluxMixing{0.161654455};
 
   constexpr static double absDelta{1e-7};
 };
