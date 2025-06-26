@@ -12,6 +12,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "dem/demLibrary/DEMFunctor.h"
 #include "dem/demLibrary/DEMParameters.h"
+#include "dem/demLibrary/GranularDEMParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class DEMFunctorTest : public AutoPasTestBase {
@@ -40,6 +41,11 @@ class DEMFunctorTest : public AutoPasTestBase {
     return "";
   }
 };
+
+/**
+ * Short for the AutoPas DEM particle type.
+ */
+using Granular = demLib::GranularDEMParticle;
 
 // typedefs to hide clutter
 template <bool mixing>

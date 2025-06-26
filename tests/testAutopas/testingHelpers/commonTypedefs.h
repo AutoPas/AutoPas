@@ -8,7 +8,6 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
-#include "demLibrary/GranularDEMParticle.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "mocks/MockTriwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -30,10 +29,6 @@ using FPCell = autopas::FullParticleCell<ParticleFP64>;
  */
 using Molecule = mdLib::MoleculeLJ;
 
-/**
- * Short for the AutoPas DEM particle type.
- */
-using Granular = demLib::GranularDEMParticle;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
