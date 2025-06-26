@@ -104,6 +104,12 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                      _configuration.interpolationStart.value.at(0),
                                      _configuration.interpolationNodesX.value,
                                      _configuration.interpolationSplitsX.value,
+                                    },
+      _testPairInterpolantFunctor{mdLib::TestKernel{},
+                                     _configuration.cutoff.value,
+                                     _configuration.interpolationStart.value.at(0),
+                                     _configuration.interpolationNodesX.value,
+                                     _configuration.interpolationSplitsX.value,
                                     }
 #endif
 #if defined (MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
@@ -112,16 +118,24 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _argonTripletInterpolantFunctor{mdLib::ArgonKernel{},
                                       _configuration.cutoff.value,
                                       _configuration.interpolationStart.value,
-                                      std::array<std::vector<size_t>,3>{_configuration.interpolationNodesX.value, _configuration.interpolationNodesY.value, _configuration.interpolationNodesZ.value},
+                                      std::array<size_t,3>{_configuration.interpolationNodesX.value.at(0), _configuration.interpolationNodesY.value.at(0), _configuration.interpolationNodesZ.value.at(0)},
                                       std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
                                     },
 
       _kryptonTripletInterpolantFunctor{mdLib::KryptonKernel{},
                                     _configuration.cutoff.value,
                                     _configuration.interpolationStart.value,
-                                    std::array<std::vector<size_t>,3>{_configuration.interpolationNodesX.value, _configuration.interpolationNodesY.value, _configuration.interpolationNodesZ.value},
+                                    std::array<size_t,3>{_configuration.interpolationNodesX.value.at(0), _configuration.interpolationNodesY.value.at(0), _configuration.interpolationNodesZ.value.at(0)},
                                     std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
-                                  }
+                                  },
+
+      _testTripletInterpolantFunctor{
+                                    mdLib::TestKernel{},
+                                    _configuration.cutoff.value,
+                                    _configuration.interpolationStart.value,
+                                    std::array<size_t,3>{_configuration.interpolationNodesX.value.at(0), _configuration.interpolationNodesY.value.at(0), _configuration.interpolationNodesZ.value.at(0)},
+                                    std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
+      }
 #endif
 {
   _timers.total.start();
@@ -876,6 +890,11 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
       return f(func);
 #endif
     }
+    case MDFlexConfig::FunctorOption::test: {
+#if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
+      return f(_testPairInterpolantFunctor);
+#endif
+    }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
@@ -908,6 +927,11 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
       return f(_argonTripletInterpolantFunctor);
 #endif
       // TODO: implement
+    }
+    case MDFlexConfig::FunctorOption3B::test: {
+#if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
+      return f(_testTripletInterpolantFunctor);
+#endif
     }
     default: {
       throw std::runtime_error("Unknown triwise functor choice" +

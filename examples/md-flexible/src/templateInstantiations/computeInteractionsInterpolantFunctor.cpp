@@ -19,6 +19,10 @@ template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonPairInt
 //! @cond Doxygen_Suppress
 template bool autopas::AutoPas<ParticleType>::computeInteractions(ArgonPairInterpolantFunctorType *);
 //! @endcond
+
+//! @cond Doxygen_Suppress
+template bool autopas::AutoPas<ParticleType>::computeInteractions(TestPairInterpolantFunctorType *);
+//! @endcond
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
@@ -32,5 +36,9 @@ template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriplet
 
 //! @cond Doxygen_Suppress
 template bool autopas::AutoPas<ParticleType>::computeInteractions(ArgonTripletInterpolantFunctorType *);
+//! @endcond
+
+//! @cond Doxygen_Suppress
+template bool autopas::AutoPas<ParticleType>::computeInteractions(TestTripletInterpolantFunctorType *);
 //! @endcond
 #endif

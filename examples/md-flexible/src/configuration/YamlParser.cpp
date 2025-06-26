@@ -234,6 +234,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::argon;
         } else if (strArg.find("krypton") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::krypton;
+        } else if (strArg.find("test") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::test;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -246,10 +248,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
         if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
-        } if (strArg.find("argon") != std::string::npos) {
+        } else if (strArg.find("argon") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::argon;
-        } if (strArg.find("krypton") != std::string::npos) {
+        } else if (strArg.find("krypton") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::krypton;
+        } else if (strArg.find("test") != std::string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::test;
         } else {
           throw std::runtime_error("Unrecognized triwise functor!");
         }

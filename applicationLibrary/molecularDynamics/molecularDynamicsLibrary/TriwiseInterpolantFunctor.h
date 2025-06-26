@@ -28,7 +28,7 @@ public:
 
 private:
     explicit TriwiseInterpolantFunctor(TriwiseKernel f, double cutoff, const std::array<double, 3>& a,
-      const std::array<std::vector<size_t>, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits, void * /*dummy*/)
+      const std::array<size_t, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits, void * /*dummy*/)
             : autopas::TriwiseFunctor<Particle_T, TriwiseInterpolantFunctor<TriwiseKernel, Particle_T, useNewton3, calculateGlobals, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _numNodes{nNodes},
@@ -48,22 +48,29 @@ private:
         if constexpr (countFLOPs) {
         _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
         }
+
+        constructPolynomial();
+        evaluateInterpolant(1., 0.2, 0.3);
     }
 
     // TODO: recursive definition, clenshaw algorithm
-    double evaluateChebyshev(double input, int n) {
-      return std::cos(n * std::acos(input));
+    double evaluateChebyshev(double input, int j) {
+      return std::cos(j * std::acos(input));
     }
 
     double evaluateInterpolant(double x, double y, double z) {
-
       double result = 0.;
-      for (int i = 0; i < _numNodes.at(0).at(0); ++i) {
-        double val_x = evaluateChebyshev(x, i);
-        for (int j = 0; j < _numNodes.at(1).at(0); ++j) {
-          double val_y = evaluateChebyshev(y, j);
-          for (int k = 0; k < _numNodes.at(2).at(0); ++k) {
-            double val_z = evaluateChebyshev(z, k);
+      for (int i = 0; i < _numNodes.at(0); ++i) {
+        double mappedX = mapToCheb(x, _a.at(0), _b.at(0));
+        double val_x = evaluateChebyshev(mappedX, i); 
+
+        for (int j = 0; j < _numNodes.at(1); ++j) {
+          double mappedY = mapToCheb(y, _a.at(1), _b.at(1));
+          double val_y = evaluateChebyshev(mappedY, j);
+
+          for (int k = 0; k < _numNodes.at(2); ++k) {
+            double mappedZ = mapToCheb(z, _a.at(2), _b.at(2));
+            double val_z = evaluateChebyshev(mappedZ, k);
 
             result += _coefficients.at(i).at(j).at(k) * val_x * val_y * val_z;
           }
@@ -73,60 +80,73 @@ private:
     }
 
     double mapToInterval(double x, double a, double b) {
-      // TODO: implement
-      return 0.;
+      double intermediate = x + 1;
+      double newX = a + ((b - a) * intermediate) / 2.;
+      return newX;
+    }
+
+    double mapToCheb2(double x, double a, double b) {
+      double intermediate = x - a;
+      double newX = 2. * intermediate / (b-a) - 1.;
+      return newX;
     }
 
     double mapToCheb(double x, double a, double b) {
-      // TODO: implement
-      return 0.;
+      return (2 * x - (b+a)) / (b-a);
     }
 
-    void evaluateNodes(std::vector<std::vector<std::vector<double>>>& values) {
-      values.reserve(_numNodes.at(0).at(0));
-      // TODO: port to interval splits
-      for (int i = 0; i < _numNodes.at(0).at(0); ++i) {
-        
-        double x = ((2*i+1.)/(2.*_numNodes.at(0).at(0))) * PI;
-        x = std::cos(x);
-        x = mapToInterval(x, _a.at(0), _b.at(0));
+    double obtainCoefficient(std::array<int, 3>& indices) {
+      double c = 0.;
 
-        std::vector<std::vector<double>> valuesY {};
-        valuesY.reserve(_numNodes.at(1).at(0));
-        for (int j = 0; j < _numNodes.at(1).at(0); ++j) {
+      for (int k0 = 0; k0 < _numNodes.at(0); ++k0) {
+        double xNode = std::cos((k0 + 0.5) * PI / _numNodes.at(0));
+        double mappedX = mapToInterval(xNode, _a.at(0), _b.at(0));
 
-          double y = ((2*j+1.)/(2.*_numNodes.at(1).at(0))) * PI;
-          y = std::cos(y);
-          y = mapToInterval(y, _a.at(1), _b.at(1));
+        for (int k1 = 0; k1 < _numNodes.at(1); ++k1) {
+          double yNode = std::cos((k1 + 0.5) * PI / _numNodes.at(1));
+          double mappedY = mapToInterval(yNode, _a.at(1), _b.at(2));
+          
+          for (int k2 = 0; k2 < _numNodes.at(2); ++k2) {
+            double zNode = std::cos((k2 + 0.5) * PI / _numNodes.at(2));
+            double mappedZ = mapToInterval(zNode, _a.at(2), _b.at(2));
 
-          std::vector<double> valuesZ {};
-          valuesZ.reserve(_numNodes.at(2).at(0));
-          for (int k = 0; k < _numNodes.at(2).at(0); ++k) {
-            
-            double z = ((2*k+1.)/(2.*_numNodes.at(2).at(0))) * PI;
-            z = std::cos(z);
-            z = mapToInterval(x, _a.at(2), _b.at(2));
-
-            double value = _kernel.calculateTriplet(x, y, z);
-            valuesZ.push_back(value);
+            double value = _kernel.calculateTriplet(mappedX, mappedY, mappedZ);
+            double cosinePart = evaluateChebyshev(xNode, indices.at(0)) * evaluateChebyshev(yNode, indices.at(1)) * evaluateChebyshev(zNode, indices.at(2));
+            c += value * cosinePart;
           }
-          valuesY.push_back(valuesZ);
         }
-        values.push_back(valuesY);
       }
+
+      double factor = 1.;
+
+      for (int d = 0; d < 3; ++d) {
+        double upper = (indices.at(d) > 0 && indices.at(d) < _numNodes.at(d)) ? 2. : 1.;
+        factor *= upper / _numNodes.at(d);
+      }
+
+      return c * factor;
     }
 
     void constructPolynomial() {
-      // evaluate Kernel at Chebyshev Points
-      std::vector<std::vector<std::vector<double>>> values {};
-      evaluateNodes(values);
-
+      // TODO: port to interval splits
+      // Obtain all coefficients
+      for (int i = 0; i < _numNodes.at(0); ++i) {
+        _coefficients.resize(_numNodes.at(0));
+        for (int j = 0; j < _numNodes.at(1); ++j) {
+          _coefficients.at(i).resize(_numNodes.at(1));
+          for (int k = 0; k < _numNodes.at(2); ++k) {
+            _coefficients.at(i).at(j).resize(_numNodes.at(2));
+            std::array<int, 3> indices {i, j, k};
+            _coefficients.at(i).at(j).at(k) = obtainCoefficient(indices);
+          }
+        }
+      }
     }
 
 public:
 
     explicit TriwiseInterpolantFunctor(TriwiseKernel f, double cutoff, const std::array<double, 3>& a,
-                                      const std::array<std::vector<size_t>, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits)
+                                      const std::array<size_t, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits)
       : TriwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
     }
 
@@ -145,7 +165,42 @@ public:
     void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
         using namespace autopas::utils::ArrayMath::literals;
 
-        // TODO: implement
+        // Filter unnecessary force computations
+        if (i.isDummy() or j.isDummy() or k.isDummy()) {
+          return;
+        }
+
+        const auto threadnum = autopas::autopas_get_thread_num();
+
+        if constexpr (countFLOPs) {
+          ++_aosThreadDataFLOPs[threadnum].numDistCalls;
+        }
+
+        auto drIJ = i.getR() - j.getR();
+        auto drIK = i.getR() - k.getR();
+        auto drJK = j.getR() - k.getR();
+
+        double dIJ2 = autopas::utils::ArrayMath::dot(drIJ, drIJ);
+        double dIK2 = autopas::utils::ArrayMath::dot(drIK, drIK);
+        double dJK2 = autopas::utils::ArrayMath::dot(drJK, drJK);
+
+        if (dIJ2 > _cutoffSquared or dIK2 > _cutoffSquared or dJK2 > _cutoffSquared) {
+          return;
+        }
+
+        double dIJ = std::sqrt(dIJ2);
+        double dIK = std::sqrt(dIK2);
+        double dJK = std::sqrt(dJK2);
+
+        double fac = evaluateInterpolant(dIJ, dIK, dJK);
+
+        // TODO: guard with compile flag
+        double real_fac = _kernel.calculateTriplet(dIJ, dIK, dJK);
+
+        double error = real_fac - fac;
+
+        // TODO: add force contributions to the right particles
+        // TODO: decide whether to use potential or derivative -> see paper from HSU, ...
     }
 
     constexpr static auto getNeededAttr() {
@@ -332,7 +387,7 @@ public:
 
        /* Interpolation Parameters */
        TriwiseKernel _kernel;
-       const std::array<std::vector<size_t>, 3> _numNodes {};
+       const std::array<size_t, 3> _numNodes {};
        const std::array<std::vector<double>, 3> _intervalSplits {};
        std::vector<std::vector<std::vector<double>>> _coefficients {};
 

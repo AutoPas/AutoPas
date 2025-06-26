@@ -102,8 +102,8 @@ class PairwiseInterpolantFunctor
   }
 
   double mapToInterval(double x, double a, double b) {
-    float intermediate = x + 1;
-    float newX = a + ((b - a) * intermediate) / 2.;
+    double intermediate = x + 1;
+    double newX = a + ((b - a) * intermediate) / 2.;
     return newX;
   }
 
@@ -123,7 +123,7 @@ class PairwiseInterpolantFunctor
     }
     _coefficients.at(interval)[0] = _coefficients.at(interval)[0] / 2.;
   }
-
+ 
   void constructPolynomial() {
 
     double a = _a;

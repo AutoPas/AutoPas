@@ -204,12 +204,12 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, argon, krypton };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, argon, krypton, test };
 
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at, argon, krypton };
+  enum class FunctorOption3B { none, at, argon, krypton, test };
 
   /**
    * Choice of the particle generators specified in the command line

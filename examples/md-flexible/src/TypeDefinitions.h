@@ -26,10 +26,14 @@
 #include "molecularDynamicsLibrary/PairwiseInterpolantFunctor.h"
 #include "molecularDynamicsLibrary/interpolationKernels/ArgonKernel.h"
 #include "molecularDynamicsLibrary/interpolationKernels/KryptonKernel.h"
+#include "molecularDynamicsLibrary/interpolationKernels/TestKernel.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
 #include "molecularDynamicsLibrary/TriwiseInterpolantFunctor.h"
+#include "molecularDynamicsLibrary/interpolationKernels/ArgonKernel.h"
+#include "molecularDynamicsLibrary/interpolationKernels/KryptonKernel.h"
+#include "molecularDynamicsLibrary/interpolationKernels/TestKernel.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
@@ -111,14 +115,20 @@ using ArgonPairInterpolantFunctorType =
 using KryptonPairInterpolantFunctorType =
     mdLib::PairwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, autopas::FunctorN3Modes::Both,
                                       mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using TestPairInterpolantFunctorType =
+    mdLib::PairwiseInterpolantFunctor<mdLib::TestKernel, ParticleType,autopas::FunctorN3Modes::Both,
+                                      mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
-    using ArgonTripletInterpolantFunctorType =
+using ArgonTripletInterpolantFunctorType =
     mdLib::TriwiseInterpolantFunctor<mdLib::ArgonKernel, ParticleType, autopas::FunctorN3Modes::Both,
                                     mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
-    using KryptonTripletInterpolantFunctorType =
+using KryptonTripletInterpolantFunctorType =
     mdLib::TriwiseInterpolantFunctor<mdLib::KryptonKernel, ParticleType, autopas::FunctorN3Modes::Both,
+                                    mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using TestTripletInterpolantFunctorType =
+    mdLib::TriwiseInterpolantFunctor<mdLib::TestKernel, ParticleType, autopas::FunctorN3Modes::Both,
                                     mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 

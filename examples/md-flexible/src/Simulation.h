@@ -86,11 +86,13 @@ class Simulation {
 #if defined(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT)
   ArgonPairInterpolantFunctorType _argonPairInterpolantFunctor;
   KryptonPairInterpolantFunctorType _kryptonPairInterpolantFunctor;
+  TestPairInterpolantFunctorType _testPairInterpolantFunctor;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
   ArgonTripletInterpolantFunctorType _argonTripletInterpolantFunctor;
   KryptonTripletInterpolantFunctorType _kryptonTripletInterpolantFunctor;
+  TestTripletInterpolantFunctorType _testTripletInterpolantFunctor;
 #endif
 
   /**
