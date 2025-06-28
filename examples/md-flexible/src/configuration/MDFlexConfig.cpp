@@ -206,6 +206,16 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   initializeObjects();
 }
 
+
+//For LUT
+void MDFlexConfig::handleLUT(bool triwise ,bool useLUT, bool useGlobalLUT, int resolution){
+
+  _particlePropertiesLibrary->initializeLookUpTables(triwise, useLUT, useGlobalLUT, resolution);
+
+
+}
+
+
 std::string MDFlexConfig::to_string() const {
   using namespace std;
   using autopas::utils::ArrayUtils::operator<<;
@@ -621,6 +631,8 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 #endif
 
   _particlePropertiesLibrary->calculateMixingCoefficients();
+
+//  _particlePropertiesLibrary->initializeLookUpTables();
 }
 
 void MDFlexConfig::initializeObjects() {

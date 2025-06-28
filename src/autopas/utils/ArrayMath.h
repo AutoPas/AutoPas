@@ -648,6 +648,19 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
   return a;
 }
 
+/**
+ * Multiplies a scalar s to each element of array a and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param s the scalar to be multiplied to each element of a
+ * @param a the array
+ * @return array who's elements are a[i]*s
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator*(T s, const std::array<T, SIZE> &a) {
+  return mulScalar(a, s);
+}
+
 }  // namespace literals
 
 /**

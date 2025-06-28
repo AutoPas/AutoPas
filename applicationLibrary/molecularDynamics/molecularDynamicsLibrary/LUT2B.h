@@ -34,20 +34,40 @@ class LUT2B : public ParentLUT {
   }
 
 
-  LUT2B( int resolution, double cutoffSquared) : ParentLUT(resolution, cutoffSquared) {
+  LUT2B( int resolution, double cutoffSquared, double sigsquared = 0, double eps = 0, double shift = 0) : ParentLUT(resolution, cutoffSquared) {
 //    _lut2B.reserve(resolution);
 
+epsilon24 = eps;
+sigmaSquared = sigsquared;
+shift6 = shift;
 //logToFile(std::to_string(cutoffSquared));
 //logToFile(std::to_string(_pointDistance));
 
-
-
   }
 
+
+
+  LUT2B( int resolution, double cutoffSquared, bool global, double sigsquared = 0, double eps = 0, double shift = 0) : ParentLUT(resolution, cutoffSquared) {
+    //    _lut2B.reserve(resolution);
+
+    epsilon24 = eps;
+    sigmaSquared = sigsquared;
+    shift6 = shift;
+    //logToFile(std::to_string(cutoffSquared));
+    //logToFile(std::to_string(_pointDistance));
+
+    if (resolution == 0){
+      return;
+
+    }
+
+    fill(cutoffSquared, global);
+
+  }
   template<class Functor>
   float retrieveValues(const Functor &functor,float distanceSquared) {
 
-    AutoPasLog(DEBUG, "Retrieving from LUT2B {}", distanceSquared);
+//    AutoPasLog(DEBUG, "Retrieving from LUT2B {}", distanceSquared);
 //logToFile(std::to_string(distanceSquared));
 return getNextNeighbor(functor,distanceSquared);
 
@@ -62,6 +82,16 @@ return getNextNeighbor(functor,distanceSquared);
       }if(globsLUT){
           fill_global(functor, cutoffSquared);
       }
+
+      }
+
+
+      void fill( double cutoffSquared, bool globsLUT) {
+        if(!globsLUT) {
+          fill_plain(cutoffSquared);
+        }if(globsLUT){
+          fill_global( cutoffSquared);
+        }
 
       }
 
@@ -166,6 +196,7 @@ return getNextNeighbor(functor,distanceSquared);
     }
 
 
+    //TODO maybe just delete cutoff squared from the parameters cause you dont use it?
     template<class Functor>
     void fill_plain(const Functor &functor, double cutoffSquared) {
 
@@ -194,6 +225,38 @@ return getNextNeighbor(functor,distanceSquared);
         _lut2B_globals.push_back({functor.getLUTValues(distance),calculateGlobalFactor(distance) });
 //        _lut2B_globals[i][0] = functor.getLUTValues(distance);
 //        _lut2B_globals[i][1] = calculateGlobalFactor(distance);
+      }}
+
+
+    void fill_plain( double cutoffSquared) {
+
+      for (auto i = 0; i < _resolution; i++) {
+        auto x = (_pointDistance / 2) + (i * _pointDistance);
+        std::cout << x << std::endl;
+        _lut2B.push_back(getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
+      }}
+
+
+
+    void fill_delayed_start( double cutoffSquared) {
+
+      double delay = std::sqrt(sigmaSquared) * 0.9 ;
+      for (auto i = 0; i < _resolution; i++) {
+        auto x = delay + (i * _pointDistance);
+        std::cout << x << std::endl;
+        _lut2B.push_back(getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
+      }}
+
+
+
+    void fill_global( double cutoffSquared) {
+      _lut2B_globals.reserve(_resolution);
+      for (auto i = 0; i < _resolution; i++) {
+
+        double distance = (_pointDistance / 2) + (i * _pointDistance);
+        _lut2B_globals.push_back({getLUTValues(distance),calculateGlobalFactor(distance) });
+        //        _lut2B_globals[i][0] = functor.getLUTValues(distance);
+        //        _lut2B_globals[i][1] = calculateGlobalFactor(distance);
       }}
 
 
@@ -227,7 +290,7 @@ return getNextNeighbor(functor,distanceSquared);
     template<class Functor>
     std::array<double, 2> retrieveValues_global(const Functor &functor,float distanceSquared) {
 
-      AutoPasLog(DEBUG, "Retrieving from LUT2B {}", distanceSquared);
+//      AutoPasLog(DEBUG, "Retrieving from LUT2B {}", distanceSquared);
       //logToFile(std::to_string(distanceSquared));
       return getNextNeighbor_global(functor,distanceSquared);
 
@@ -262,6 +325,22 @@ return getNextNeighbor(functor,distanceSquared);
 
     void setShift6(double shift6) {
         LUT2B::shift6 = shift6;
+    }
+
+    float getLUTValues(double distance2) const {
+      // TOOD why is this hardcoded get the actual one from the mdconfig. save it in the parentLUT
+      // this is force magnitude for true r not r^2 even though distance= r^2
+      //    auto sigmaSquared = 1;
+//      auto sigmaSquared = sigmaSquared;
+//      auto epsilon24 = epsilon24;
+      //    auto shift6 = _shift6AoS;
+
+      double invdr2 = 1. / distance2;
+      double lj6 = sigmaSquared * invdr2;
+      lj6 = lj6 * lj6 * lj6;
+      double lj12 = lj6 * lj6;
+      double lj12m6 = lj12 - lj6;
+      return epsilon24 * (lj12 + lj12m6) * invdr2;
     }
 
 private:

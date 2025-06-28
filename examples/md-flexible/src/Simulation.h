@@ -132,7 +132,7 @@ class Simulation {
 
   //LUT
 
-  mdLib::LUT3B lut3B;
+  mdLib::LUT3B &lut3B;
   mdLib::LUT2B lut2B;
 
   //
@@ -243,6 +243,12 @@ class Simulation {
      * Records the time required for the update of the AutoPas container.
      */
     autopas::utils::Timer updateContainer;
+
+
+    /**
+     * added to record time it takes to create LUT
+     */
+     autopas::utils::Timer LUTcreation;
   };
 
   /**

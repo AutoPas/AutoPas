@@ -107,7 +107,8 @@ namespace mdLib {
 
             //added for lut by me
             if (useLUT) {
-                _lut->fill<decltype(*this)>(*this, _cutoffSquared, useLUTGlobal);
+
+//                _lut->fill<decltype(*this)>(*this, _cutoffSquared, useLUTGlobal);
 
             }
 
@@ -150,10 +151,12 @@ namespace mdLib {
             double expTerm= 0;
             double sum = 0.0;
 
+            double devIJ , devJK , devKI = 0;
             if(useLUT){
 
 
               std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
+//              std::pair<const std::array<double, 4>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
                 auto factors = res.first;
                 auto order = res.second;
 
@@ -167,15 +170,31 @@ namespace mdLib {
 
                 double sign_factor = 1 + 3*(KIcosIJ * IJcosJK * JKcosKI);
 
-                auto factorForceJDirectionIJ = sign_factor * factors[order[0]];
+
+                // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
+                const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
+                const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
+                const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
+                const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+                const double numerator = numKI * numJK * numIJ;
+                double f =  1+  (3. / 8.) * numerator / allDistsSquared;
+
+//                auto A = factors[3];
+                 devIJ = factors[order[0]];
+                 devKI = factors[order[1]];
+                 devJK = factors[order[2]];
+
+
+
+//                auto factorForceJDirectionIJ = sign_factor * factors[order[0]];
 //                if(factorForceJDirectionIJ<0 ){
 //                    factorForceJDirectionIJ = factorForceJDirectionIJ *-1;
 //                }
-                auto factorForceJDirectionKI =  sign_factor*  factors[order[1]];;
+//                auto factorForceJDirectionKI =  sign_factor*  factors[order[1]];;
 //                if(factorForceJDirectionKI>0 ){
 //                    factorForceJDirectionKI = factorForceJDirectionKI *-1;
 //                }
-                auto factorForceJDirectionJK = sign_factor *  factors[order[2]];;
+//                auto factorForceJDirectionJK = sign_factor *  factors[order[2]];;
 //                if(factorForceJDirectionJK<0 ){
 //                    factorForceJDirectionJK = factorForceJDirectionJK *-1;
 //                }
@@ -195,34 +214,77 @@ namespace mdLib {
 
 
                 // Assembling the forces
-                const auto forceIDirectionIJ = displacementIJ * (factorForceJDirectionIJ);
-                const auto forceIDirecationKI = displacementKI * (factorForceJDirectionKI);
+//                const auto forceIDirectionIJ = displacementIJ * (factorForceJDirectionIJ);
+//                const auto forceIDirecationKI = displacementKI * (factorForceJDirectionKI);
+//
+//                forceI = (forceIDirectionIJ + forceIDirecationKI) * (-1.0);
+//
+//                //TODO put back
+//                i.addF(forceI);
+//
+//                forceJ = forceI;
+//                forceK = forceI;
 
-                forceI = (forceIDirectionIJ + forceIDirecationKI) * (-1.0);
 
-                //TODO put back
-                i.addF(forceI);
 
-                forceJ = forceI;
-                forceK = forceI;
+//new LUT 4 force
 
+                const auto displacementIJ = j.getR() - i.getR();
+                const auto displacementJK = k.getR() - j.getR();
+                const auto displacementKI = i.getR() - k.getR();
+
+                const double cosinesGradientIJ =
+                        (3. / 4.) *
+                        ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+
+
+
+auto forceDirectionIJ = -1. * sign_factor * devIJ * (displacementIJ  );
+auto forceDirectionIJ_2 = (-1. * f) * devIJ * (displacementIJ / distIJ);
+auto forceDirectionKI = -1. * f * devKI * (displacementKI );
+auto forceDirectionKI_2 = (-1. * f) * devKI * (displacementKI / distKI );
+auto forceDirectionJK = -1. * sign_factor * devKI * (displacementJK );
+auto forceDirectionJK_2 = (-1. * f )* devJK * (displacementJK /distJK );
+
+//Assemble force I
+forceI= forceDirectionIJ - forceDirectionKI;
+auto forceI_2 = -1. * sign_factor * (devIJ * distSquaredIJ - devKI *distSquaredKI);
+//forceI= -1.* (forceDirectionIJ_2 - forceDirectionKI_2);
+forceI= -1.*   (forceDirectionIJ_2 - forceDirectionKI_2);
+
+
+
+//auto dcosI_di = (1 /distIJ * distKI) * (distSquaredKI-distSquaredIJ)-
+auto dRi_dri = displacementIJ / distIJ;
+auto dRk_drk = displacementKI / distKI;
+auto force_4 = -1. * (sign_factor *((devIJ* dRi_dri) + (devKI * dRk_drk)));
+
+i.addF(forceI);
                 if(newton3){
-
-                    // Assembling the forces
-                    factorForceJDirectionIJ = -1* factorForceJDirectionIJ;
-
-                    const auto forceJDirectionIJ = displacementIJ * (factorForceJDirectionIJ);
-                    const auto forceJDirectionJK = displacementJK * (factorForceJDirectionJK);
-                    forceJ = (forceJDirectionIJ + forceJDirectionJK) * (-1.0);
-
-                    //TODO
+                    auto dRi_dri = displacementIJ / distIJ;
+                    auto dRj_drj = displacementJK / distJK;
+                    forceJ = -1. * ( -1. *forceDirectionIJ_2 + forceDirectionJK_2);
                     j.addF(forceJ);
 
-                    // Using newton's third law for the force on particle k
-                    forceK = (forceI + forceJ) * (-1.0);
-
-                    //TODO
+//                    forceK = -1. * (sign_factor *((devKI* dRk_drk) + (devJK * dRj_drj)));
+                    forceK = -1. * ((-1. * forceDirectionJK_2) + forceDirectionKI_2);
                     k.addF(forceK);
+
+                    // Assembling the forces
+//                    factorForceJDirectionIJ = -1* factorForceJDirectionIJ;
+//
+//                    const auto forceJDirectionIJ = displacementIJ * (factorForceJDirectionIJ);
+//                    const auto forceJDirectionJK = displacementJK * (factorForceJDirectionJK);
+//                    forceJ = (forceJDirectionIJ + forceJDirectionJK) * (-1.0);
+//
+//                    //TODO
+//                    j.addF(forceJ);
+//
+//                    // Using newton's third law for the force on particle k
+//                    forceK = (forceI + forceJ) * (-1.0);
+//
+//                    //TODO
+//                    k.addF(forceK);
 
                 }
                 std::cout <<"In LUT should not be here" ;
@@ -289,6 +351,9 @@ namespace mdLib {
                 // Total gradient factors for the exponential term times the cosines term
                 const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
                 const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
+
+                auto testIJ = expTerm * (devIJ + cosinesGradientIJ * sum);
+                auto testKI = expTerm * (devKI + cosinesGradientKI * sum);
 
                 // Assembling the forces
                 auto factorIDdirectionIJ = fullATMGradientIJ + fullExpGradientIJ;
@@ -385,7 +450,7 @@ namespace mdLib {
 
         //added by me for lut
 //        [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredJK,double distSquaredIJ,  double distSquaredKI) const {
-        [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredIJ,  double distSquaredKI ,double distSquaredJK ) const {
+        [[nodiscard]] std::array<double, 3> getLUTValues2(double distSquaredIJ,  double distSquaredKI ,double distSquaredJK ) const {
 
             // Actual distances
             const double distIJ = std::sqrt(distSquaredIJ);
@@ -479,6 +544,127 @@ namespace mdLib {
 
         }
 
+
+
+        [[nodiscard]] std::array<double, 3> getLUTValues(double dist1Squared,  double dist2Squared ,double dist3Squared ) const {
+
+          double distIJ = std::sqrt(dist1Squared);
+          double distJK = std::sqrt(dist2Squared);
+          double distKI = std::sqrt(dist3Squared);
+
+
+            // Calculate prefactor
+          const auto allDist = distIJ * distJK *distKI;
+            const double allDistsSquared = dist1Squared * dist2Squared * dist3Squared;
+            const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+//            const auto allDistsTripled = allDistsSquared * allDists;
+
+            const auto allDistCubed = (allDist) * (allDist)*(allDist);
+
+            const double factor =  _nu / allDistCubed;  // C_ATM / (R1R2R3)^3
+
+
+            // Gradient factors of 1. / (rrr)^3
+            const double allDistsTriplesGradientIJ = -3. * (distJK* distKI) / (allDist);
+            const double allDistsTriplesGradientKI = -3.  * (distJK* distIJ) / (allDist);
+            const double allDistsTriplesGradientJJ = -3.  * (distIJ* distIJ) / (allDist);
+
+
+            // Dot products of both distance vectors going from one particle
+            const double IJDotKI = - 0.5 * (dist1Squared + dist3Squared - dist2Squared);
+            const double IJDotJK = - 0.5 * (dist1Squared + dist2Squared - dist3Squared);
+            const double JKDotKI = - 0.5 * (dist2Squared + dist3Squared - dist1Squared);
+
+            const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
+
+
+            const auto forceIDirIJ = IJDotJK * JKDotKI - dist2Squared * dist3Squared + 5.0 * allDotProducts / dist1Squared;
+            const auto forceJDirJK = IJDotKI * JKDotKI - dist1Squared * dist3Squared + 5.0 * allDotProducts / dist2Squared;
+            const auto forceKDirKI = IJDotJK * JKDotKI - dist1Squared * dist2Squared + 5.0 * allDotProducts / dist3Squared;
+            const auto forceIDirJK = IJDotKI * (IJDotJK - JKDotKI);
+            const auto forceJDirKI =  IJDotJK * (JKDotKI - IJDotKI);
+
+
+
+            double dist_sum = distIJ + distKI + distJK;
+            double dist_prod = distIJ * distKI * distJK;
+
+            // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
+            std::array<double, 6> sumFactors{};
+            double sum = 0.0;
+            for (auto n = 0; n < sumFactors.size(); n++) {
+                sumFactors[n] = _constantsA[n] * std::pow((distIJ * distJK * distKI), 2. * n / 3.);
+                sum += sumFactors[n];
+            }
+
+            const auto expTerm = std::exp(-1* _alpha * (distIJ + distJK + distKI));
+
+            const auto expandedTerm = expTerm * sum;
+            const auto A = factor + expandedTerm;
+
+            auto devAatm_IJ = -3 * (_nu   / (allDistCubed * distIJ)) ;
+            auto devAatm_KI = -3 * (_nu   / (allDistCubed * distKI)) ;
+            auto devAatm_JK = -3 * (_nu   / (allDistCubed * distJK)) ;
+
+
+            const double numKI = dist1Squared + dist2Squared - dist3Squared;
+            const double numJK = dist1Squared + dist2Squared - dist3Squared;
+            const double numIJ = dist3Squared + dist2Squared - dist1Squared;
+
+            const double numerator = numKI * numJK * numIJ;
+            auto cosines = (3. / 8.) * numerator / allDistsSquared;
+
+            //Derivatives of expandedTerm
+            // Gradient factor of the sum in ij-direction
+            double ijSum = 0.0;
+            for (auto n = 0; n < sumFactors.size(); n++) {
+              ijSum += sumFactors[n] * (2. * n / (3. * distIJ) - _alpha);
+            }
+            // Gradient factor of the sum in ki-direction
+            double kiSum = 0.0;
+            for (auto n = 0; n < sumFactors.size(); n++) {
+              kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
+            }
+
+            // Gradient factor of the sum in jk-direction
+            double jkSum = 0.0;
+            for (auto n = 0; n < sumFactors.size(); n++) {
+              jkSum += sumFactors[n] * (2. * n / (3. * distJK) - _alpha);
+            }
+
+
+            double ijSum_dev = 0.0;
+            for (auto n = 0; n < sumFactors.size(); n++) {
+                ijSum_dev += sumFactors[n] * (-1*  _alpha - (2. * n / (3. * distIJ) ));
+            }
+            double kiSum_dev = 0.0;
+            for (auto n = 0; n < sumFactors.size(); n++) {
+                kiSum_dev += sumFactors[n] * ( -1*  _alpha -  (2. * n / (3. * distKI) ));
+            }
+
+            double jkSum_dev = 0.0;
+            for (auto n = 0; n < sumFactors.size(); n++) {
+                jkSum_dev += sumFactors[n] * (-1 * _alpha - (2. * n / (3. * distJK) ));
+            }
+
+
+
+//            auto devCorr_IJ =  -1  * _nu * expTerm* sum + expTerm *
+
+//            auto devIJ = -1*  _alpha*expTerm * sum + expTerm *ijSum;
+            auto devIJ =     devAatm_IJ + expTerm *  ijSum_dev;
+//            auto devIJ =  (-(1. + cosines) * ijSum / distIJ);
+//            auto devKI = -_alpha*expTerm * sum + expTerm *kiSum;
+            auto devKI =     devAatm_KI + expTerm *  kiSum_dev;
+//            auto devKI =  ((1. + cosines) * kiSum / distKI);
+//            auto devJK = -_alpha*expTerm * sum + expTerm *jkSum;
+            auto devJK =     devAatm_JK + expTerm *  jkSum_dev;
+//            auto devJK =  (-(1. + cosines) * jkSum / distJK);
+            return { devIJ, devKI, devJK};
+
+
+
+        }
 
         /**
          * @copydoc autopas::Functor::getNeededAttr()

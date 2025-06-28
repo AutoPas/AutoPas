@@ -92,7 +92,14 @@ size_t getTerminalWidth() {
 }  // namespace
 
 
-
+void logToFile(const std::string& message) {
+  std::ofstream outFile("Virial_AT_plain_3BodyTest.txt", std::ios::app); // Open in append mode
+  if (outFile.is_open()) {
+    outFile << message << std::endl;
+  } else {
+    std::cerr << "Unable to open file for writing." << std::endl;
+  }
+}
 
 
 Simulation::Simulation(const MDFlexConfig &configuration,
@@ -102,11 +109,32 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(nullptr),
       //TODO add constexpr based on type of functor used
-      lut2B(10, _configuration.cutoff.value  *_configuration.cutoff.value ),
-      lut3B(10, _configuration.cutoff.value  *_configuration.cutoff.value )
+//#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC ) ||defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)  || defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
+      lut2B(0, _configuration.cutoff.value  *_configuration.cutoff.value ),
+
+//#endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+//      lut3B(0, _configuration.cutoff.value  *_configuration.cutoff.value )
+      lut3B(_configuration.getParticlePropertiesLibrary()->getLUT3B() )
+//NOTE on why this way: in simulation lut is a reference, why isnt it const ref in ppl?
+      //yes would be better since it cannot be modified then however due to how whole lib is set up
+      //we first create a empty lut object and only fill it aferwards with specification, so it needs to be modifiable
+
+
+
+//      lut2B(_configuration.getParticlePropertiesLibrary()->getLUT2B() )
+//#endif
       {
+
+//lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
+//lut3B = mdLib::LUT3B(_configuration.getParticlePropertiesLibrary()->getLUT3B());
+//lut2B = _configuration.getParticlePropertiesLibrary()->getLUT2B();
+
   _timers.total.start();
   _timers.initialization.start();
+
+  //set LUT to be the one from ppl
+//  lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
 
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
@@ -237,13 +265,6 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-
-//  double cutoffSquared = _configuration.cutoff.value * _configuration.cutoff.value ;
-//                             //hopefully set up both luts here only once
-//   lut2B = mdLib::LUT2B(80, cutoffSquared);
-//
-//   lut3B= mdLib::LUT3B(100, cutoffSquared);
-
 
 
 
@@ -567,6 +588,7 @@ bool Simulation::calculatePairwiseForces() {
 bool Simulation::calculateTriwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+
   return wasTuningIteration;
 }
 
@@ -643,12 +665,17 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+  const long LUTcreationTime = accumulateTime(_timers.LUTcreation.getTotalTime());
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const long wallClockTime = _timers.total.getTotalTime();
     // use the two potentially largest timers to determine the number of chars needed
     const auto maximumNumberOfDigits =
         static_cast<int>(std::max(std::to_string(total).length(), std::to_string(wallClockTime).length()));
+
+    std::cout << "LUT Timer filling " <<  ": " << _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime() << std::endl;
+    std::cout << timerToString("LUT timer filling readable:                 ",  _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime() , maximumNumberOfDigits);
+
     std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
@@ -687,6 +714,8 @@ void Simulation::logMeasurements() {
                                maximumNumberOfDigits, total);
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
+    std::cout << "\n";
+//    std::cout << timerToString("LUT creation time ", LUTcreationTime, maximumNumberOfDigits, simulate);
     std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
@@ -891,10 +920,18 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
 
       auto functor = ATFunctor(cutoff, &lut3B);
 
+
+//´TODO maybe just put the LUT through here straight
+//      auto functor = ATFunctor(cutoff, *_configuration.getParticlePropertiesLibrary());
+
+//      auto functor = ATFunctor(cutoff, &_configuration.getParticlePropertiesLibrary()->getLUT3B());
+
       // TODO find where nu is and how to get it here dynamically
 
       //      functor.setParticleProperties(1);
+//      _timers.LUTcreation.start();
       functor.setParticleProperties(_configuration.nuMap.value.at(0));
+//      _timers.LUTcreation.stop();
       return f(functor);
 
 #else

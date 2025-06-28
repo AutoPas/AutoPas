@@ -178,7 +178,7 @@ namespace mdLib {
             if constexpr (useLUT) {
                 // How to check for mixing if useMixing is always enabled?
                 AutoPasLog(DEBUG, "Used LUT with {}", dr2);
-                if (!useLUTGlobal) {
+                if constexpr (!useLUTGlobal) {
                     fac = _lut->retrieveValues(*this, dr2);
                 } else {
                     fac_glob = _lut->retrieveValues_global(*this, dr2);
@@ -187,7 +187,7 @@ namespace mdLib {
                     // this is a problem
 //        AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
 //        return;
-                    if (useLUTGlobal) {
+                    if constexpr (useLUTGlobal) {
                         fac = fac_glob[0];
                         potentialEnergy6 = fac_glob[1];
 
@@ -235,7 +235,7 @@ namespace mdLib {
                 // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
                 auto virial = dr * f;
-                if (!useLUT) {
+                if constexpr (!useLUT) {
                     potentialEnergy6 = epsilon24 * lj12m6 + shift6;   //TODO put this in the LUT
                 }
 
@@ -651,7 +651,7 @@ namespace mdLib {
             _sigmaSquared = sigmaSquared;
 
 
-            if (useLUT) {
+            if constexpr (useLUT) {
                 AutoPasLog(DEBUG, "FILLING LUT IN LJFUNCTOR PLain");
                 _lut->setSigmaSquared(sigmaSquared);
                 _lut->setEpsilon24(epsilon24);

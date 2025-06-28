@@ -42,7 +42,14 @@ int main(int argc, char **argv) {
 #endif
     }
 
+    bool TRI_WISE_LUT= true;
+    bool USELUT = true;
+    bool USEGLOBAL = false;
+    int RESOLUTION =1000;
+    configuration.handleLUT(TRI_WISE_LUT, USELUT, USEGLOBAL, RESOLUTION);
+
     Simulation simulation(configuration, domainDecomposition);
+
     simulation.run();
     simulation.finalize();
 

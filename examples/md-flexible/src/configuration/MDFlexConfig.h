@@ -864,6 +864,8 @@ class MDFlexConfig {
    * Initializes all particles present at the start of the simulation.
    */
   void initializeObjects();
+ public:
+  void handleLUT(bool triwise, bool useLUT, bool useGlobalLUT, int resolution);
 };
 
 /**

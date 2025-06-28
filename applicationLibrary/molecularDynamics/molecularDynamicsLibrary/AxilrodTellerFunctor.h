@@ -116,7 +116,7 @@ class AxilrodTellerFunctor
    */
   AxilrodTellerFunctor() = delete;
 
- private:
+// private:
   /**
    * Internal, actual constructor.
    * @param cutoff
@@ -139,7 +139,7 @@ class AxilrodTellerFunctor
     }
   }
 
- public:
+
 
   //from feat/3xa
   /**
@@ -162,6 +162,9 @@ class AxilrodTellerFunctor
       _lut = lut;
     }
   }
+
+
+
 
   //End from feat/3xa
 
@@ -244,6 +247,10 @@ class AxilrodTellerFunctor
   void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
+    bool check = newton3;
+    bool check2 = allowsNewton3();
+newton3 = true;
+
 //    bool globalLUTS = false;
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
@@ -283,8 +290,17 @@ class AxilrodTellerFunctor
       std::array<double, 3> factors;
       double potentialEnergy3;
 
-      if(useLUTGlobal){
+        auto res1 = getLUTValues(distSquaredJK, distSquaredKI, distSquaredIJ);
+        auto res1_test = _lut->getLUTValuesAT(distSquaredJK, distSquaredKI, distSquaredIJ);
+        auto res2 = getLUTValues(distSquaredJK, distSquaredIJ, distSquaredKI);
+        auto res3 = getLUTValues(distSquaredKI, distSquaredIJ, distSquaredJK);
+        auto res4 = getLUTValues(distSquaredKI, distSquaredJK, distSquaredIJ);
+        auto res5 = getLUTValues(distSquaredIJ, distSquaredJK, distSquaredKI);
+        auto res6 = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
+
+      if constexpr (useLUTGlobal){
         std::pair<const std::array<double, 5>, std::array<u_int8_t, 3>> res = _lut->retrieveValues_global(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
+
          factorsAndGlob = res.first;
          order = res.second;
          factors = {factorsAndGlob[0], factorsAndGlob[1], factorsAndGlob[2]};
@@ -292,9 +308,11 @@ class AxilrodTellerFunctor
 
       }else{
         std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
+//        std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _PPLibrary->getLUT3B().retrieveValues( distSquaredIJ, distSquaredJK, distSquaredKI);
         factors = res.first;
           order = res.second;
       }
+
 
 
       std::array<double, 3> forceJ;
@@ -318,11 +336,14 @@ class AxilrodTellerFunctor
          forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
         j.addF(forceJ);
         k.addF(forceK);
+          logToFile(std::to_string(forceI[0]) +","+ std::to_string(forceI[1])+"," + std::to_string(forceI[2])+"," +
+                            std::to_string(forceK[0]) +","+ std::to_string(forceK[1])+"," + std::to_string(forceK[2])+","+
+                            std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT_LUT");
       }
 
 
       if constexpr (calculateGlobals ) {
-        if(!useLUTGlobal) {
+        if constexpr (!useLUTGlobal) {
           // added by me
           //  Calculate prefactor
           const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
@@ -335,7 +356,7 @@ class AxilrodTellerFunctor
           const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
 
           const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
-            std::printf("IJDdotKI  %f     IJDotJK : %f     JKDotKI: %f       distKI :  %f  distJK: %f    distIJ: %f \n", IJDotKI, IJDotJK, JKDotKI, distSquaredKI, distSquaredJK, distSquaredIJ);
+//            std::printf("IJDdotKI  %f     IJDotJK : %f     JKDotKI: %f       distKI :  %f  distJK: %f    distIJ: %f \n", IJDotKI, IJDotJK, JKDotKI, distSquaredKI, distSquaredJK, distSquaredIJ);
           // end added by me
 
           // Add 3 * potential energy to every owned particle of the interaction.
@@ -352,6 +373,7 @@ class AxilrodTellerFunctor
           // Virial is calculated as f_i * r_i
           // see Thompson et al.: https://doi.org/10.1063/1.3245303
           const auto virialI = forceI * i.getR();
+          AutoPasLog(TRACE, "Final potential energy {} force {}", virialI, forceI);
           if (i.isOwned()) {
             _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
             _aosThreadDataGlobals[threadnum].virialSum += virialI;
@@ -485,6 +507,11 @@ class AxilrodTellerFunctor
 
         forceK = (forceI + forceJ) * (-1.0);
         k.addF(forceK);
+
+
+          logToFile(std::to_string(forceI[0]) +","+ std::to_string(forceI[1])+"," + std::to_string(forceI[2])+"," +
+                    std::to_string(forceK[0]) +","+ std::to_string(forceK[1])+"," + std::to_string(forceK[2])+","+
+                    std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT");
       }
 
       if constexpr (countFLOPs) {
@@ -502,6 +529,7 @@ class AxilrodTellerFunctor
 
         // Virial is calculated as f_i * r_i
         // see Thompson et al.: https://doi.org/10.1063/1.3245303
+
         const auto virialI = forceI * i.getR();
         if (i.isOwned()) {
           _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
@@ -540,10 +568,11 @@ class AxilrodTellerFunctor
     //TODO add a way to set NU
 
   //added for lut by me
-  if (useLUT) {
-    _lut->fill< decltype(*this) >(*this, _cutoffSquared, useLUTGlobal);
-
-  }
+  //TODO constexpres?, cutoffsqaured is not really necessary here,
+//  if constexpr (useLUT) {
+//    _lut->fill< decltype(*this) >(*this, _cutoffSquared, useLUTGlobal);
+//
+//  }
 
   }
 
@@ -626,8 +655,11 @@ class AxilrodTellerFunctor
 
       _postProcessed = true;
 
-      AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_AT");
+      logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_AT");
+
     }
   }
 
@@ -865,5 +897,17 @@ class AxilrodTellerFunctor
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
+
+
+
+  //helper for evaluation:
+  void logToFile(const std::string& message, std::string filename) {
+    std::ofstream outFile(filename + ".txt", std::ios::app); // Open in append mode
+    if (outFile.is_open()) {
+      outFile << message << std::endl;
+    } else {
+      std::cerr << "Unable to open file for writing." << std::endl;
+    }
+  }
 };
 }  // namespace mdLib

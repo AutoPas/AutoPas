@@ -86,7 +86,7 @@ constexpr bool calcGlobals =
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
-using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, false, true, false, autopas::FunctorN3Modes::Both,
+using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, false, false, true, false, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
@@ -133,6 +133,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #else
 using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, false,true, false,autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+
 #endif
 #endif
 

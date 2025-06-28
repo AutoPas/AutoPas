@@ -20,6 +20,7 @@ namespace mdLib {
         _cutoffSquared = cutoffSquared;
         _cutoff = std::sqrt(cutoffSquared);
       _lutCutoff = cutoffSquared / 10.;
+//      _lutCutoff = 2.5;
       _lutDistance = _cutoffSquared - _lutCutoff;
       _lutFactor = _resolution / _lutDistance;
       _pointDistance = _lutDistance / static_cast<double>(_resolution);
@@ -52,8 +53,16 @@ namespace mdLib {
   double _numberOfPoints{};
   double _pointDistance{};
 
+ public:
+  void setResolution(int resolution) {
+      _resolution = resolution;
 
+      _lutCutoff = _cutoffSquared / 10.;
 
+      _lutDistance = _cutoffSquared - _lutCutoff;
+      _lutFactor = _resolution / _lutDistance;
+      _pointDistance = _lutDistance / static_cast<double>(_resolution);
+      _numberOfPoints= resolution;
 
-
-};}
+  }
+ };}
