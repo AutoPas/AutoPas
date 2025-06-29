@@ -73,9 +73,9 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  *
  * @note Throws error if md-flexible is compiled without multi-site support.
  *
- * @note if MD_FLEXIBLE_FUNCTOR_DEM is defined, compute changes of angular velocities using the first-order Euler method:
- * w_{n+1} = w_n + delta_t * (q_n / (0.4 * mass * radius^2))
- * For details, refer to thesis (https://mediatum.ub.tum.de/doc/1773224/1773224.pdf)
+ * @note if MD_FLEXIBLE_FUNCTOR_DEM is defined, compute changes of angular velocities using the first-order Euler
+ * method: w_{n+1} = w_n + delta_t * (q_n / (0.4 * mass * radius^2)) For details, refer to thesis
+ * (https://mediatum.ub.tum.de/doc/1773224/1773224.pdf)
  *
  * @param autoPasContainer
  * @param particlePropertiesLibrary
