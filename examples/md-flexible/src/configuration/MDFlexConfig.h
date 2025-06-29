@@ -817,8 +817,10 @@ class MDFlexConfig {
    * Following options are DEM (Discrete Element Method) specific parameters.
    *
    * For detailed explanation of the parameters see: https://mediatum.ub.tum.de/doc/1773224/1773224.pdf
-   *
-   * DEM-elasticStiffness
+   */
+
+  /**
+   * DEM-parameter for elastic stiffness.
    */
   MDFlexOption<double, __LINE__> demElasticStiffness{100., "demElasticStiffness", true,
                                                      "DEM-parameter for elastic stiffness used in normal force model."};
@@ -889,14 +891,14 @@ class MDFlexConfig {
       "DEM-parameter for heat generation factor used in heat generation model (drawn from frictional forces)."};
 
   /**
-   * DEM-parameter for background friction coefficient regarding forces.
+   * DEM-parameter for background force friction coefficient regarding forces.
    */
   MDFlexOption<double, __LINE__> demBackgroundForceFrictionCoeff{
       0.01, "demBackgroundForceFrictionCoeff", true,
       "DEM-parameter for background friction regarding forces used in background friction model."};
 
   /**
-   * DEM-parameter for background torque coefficient regarding forces.
+   * DEM-parameter for background torque friction coefficient regarding forces.
    */
   MDFlexOption<double, __LINE__> demBackgroundTorqueFrictionCoeff{
       0.01, "demBackgroundTorqueFrictionCoeff", true,
