@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     bool TRI_WISE_LUT= true;
     bool USELUT = true;
     bool USEGLOBAL = false;
-    int RESOLUTION =1000;
+    int RESOLUTION =100;
     configuration.handleLUT(TRI_WISE_LUT, USELUT, USEGLOBAL, RESOLUTION);
 
     Simulation simulation(configuration, domainDecomposition);

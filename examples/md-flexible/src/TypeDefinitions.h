@@ -131,7 +131,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, false,true, false,autopas::FunctorN3Modes::Both,
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, false,false , false,autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #endif
@@ -145,7 +145,7 @@ using ArgonTriwiseFunctorType = mdLib::ArgonFunctor < ParticleType, autopas::Fun
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
 #include "molecularDynamicsLibrary/KryptonExtendedATMFunctor.h"
 using KryptonTriwiseFunctorType =
-    mdLib::KryptonExtendedATMFunctor<ParticleType, autopas::FunctorN3Modes::Both, false, false, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::KryptonExtendedATMFunctor<ParticleType, autopas::FunctorN3Modes::Both, true, false, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #endif
 

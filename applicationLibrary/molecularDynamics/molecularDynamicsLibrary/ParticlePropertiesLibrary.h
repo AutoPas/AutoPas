@@ -362,16 +362,16 @@ _LUT3B.setNu(nu);
         _LUT3B.setNu(nu);
         if(useLUT){
           LUTtimers[0].start();
-          _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, false);
+          _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT, nu);
           LUTtimers[0].stop();
 
         }
-        if (useGlobalLUT){
-          LUTtimers[0].start();
-          _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, true );
-          LUTtimers[0].stop();
-          _LUT3B.setNu(nu);
-        }
+      //  if (useGlobalLUT){
+       //   LUTtimers[0].start();
+       //   _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT );
+     //     LUTtimers[0].stop();
+      //    _LUT3B.setNu(nu);
+     //   }
         //            _LUT2B = mdLib::LUT2B(10, _cutoff * _cutoff,getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
       }
     }

@@ -117,6 +117,8 @@ namespace mdLib {
         void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) override {
             using namespace autopas::utils::ArrayMath::literals;
 
+          newton3 = allowsNewton3();
+
             if (i.isDummy() or j.isDummy() or k.isDummy()) {
                 return;
             }
@@ -155,34 +157,35 @@ namespace mdLib {
             if(useLUT){
 
 
-              std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
+             // std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
+              std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
 //              std::pair<const std::array<double, 4>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
                 auto factors = res.first;
                 auto order = res.second;
 
                 //Calculate pre-factor
-                double distIJ = std::sqrt(distSquaredIJ);
-                double distJK = std::sqrt(distSquaredJK);
-                double distKI = std::sqrt(distSquaredKI);
-                double KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2 * distIJ * distKI);
-                double IJcosJK = (distSquaredIJ + distSquaredJK - distSquaredKI) / (2 * distIJ * distJK);
-                double JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2 * distJK * distKI);
-
-                double sign_factor = 1 + 3*(KIcosIJ * IJcosJK * JKcosKI);
-
-
-                // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
-                const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
-                const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
-                const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
-                const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-                const double numerator = numKI * numJK * numIJ;
-                double f =  1+  (3. / 8.) * numerator / allDistsSquared;
-
-//                auto A = factors[3];
-                 devIJ = factors[order[0]];
-                 devKI = factors[order[1]];
-                 devJK = factors[order[2]];
+//                 double distIJ = std::sqrt(distSquaredIJ);
+//                 double distJK = std::sqrt(distSquaredJK);
+//                 double distKI = std::sqrt(distSquaredKI);
+//                 double KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2 * distIJ * distKI);
+//                 double IJcosJK = (distSquaredIJ + distSquaredJK - distSquaredKI) / (2 * distIJ * distJK);
+//                 double JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2 * distJK * distKI);
+//
+//                 double sign_factor = 1 + 3*(KIcosIJ * IJcosJK * JKcosKI);
+//
+//
+//                 // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
+//                 const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
+//                 const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
+//                 const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
+//                 const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+//                 const double numerator = numKI * numJK * numIJ;
+//                 double f =  1+  (3. / 8.) * numerator / allDistsSquared;
+//
+// //                auto A = factors[3];
+//                  devIJ = factors[order[0]];
+//                  devKI = factors[order[1]];
+//                  devJK = factors[order[2]];
 
 
 
@@ -205,12 +208,12 @@ namespace mdLib {
 //
 //
 //                //testing if order matters
-                auto res1 = getLUTValues(distSquaredJK, distSquaredKI, distSquaredIJ);
-                auto res2 = getLUTValues(distSquaredJK, distSquaredIJ, distSquaredKI);
-                auto res3 = getLUTValues(distSquaredKI, distSquaredIJ, distSquaredJK);
-                auto res4 = getLUTValues(distSquaredKI, distSquaredJK, distSquaredIJ);
-                auto res5 = getLUTValues(distSquaredIJ, distSquaredJK, distSquaredKI);
-                auto res6 = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
+                auto res1 = _lut->getLUTValuesKrypton(distSquaredJK, distSquaredKI, distSquaredIJ);
+                auto res2 = _lut->getLUTValuesKrypton(distSquaredJK, distSquaredIJ, distSquaredKI);
+                auto res3 = _lut->getLUTValuesKrypton(distSquaredKI, distSquaredIJ, distSquaredJK);
+                auto res4 = _lut->getLUTValuesKrypton(distSquaredKI, distSquaredJK, distSquaredIJ);
+                auto res5 = _lut->getLUTValuesKrypton(distSquaredIJ, distSquaredJK, distSquaredKI);
+                auto res6 = _lut->getLUTValuesKrypton(distSquaredIJ, distSquaredKI, distSquaredJK);
 
 
                 // Assembling the forces
@@ -229,45 +232,56 @@ namespace mdLib {
 
 //new LUT 4 force
 
-                const auto displacementIJ = j.getR() - i.getR();
-                const auto displacementJK = k.getR() - j.getR();
-                const auto displacementKI = i.getR() - k.getR();
+                // const auto displacementIJ = j.getR() - i.getR();
+                // const auto displacementJK = k.getR() - j.getR();
+                // const auto displacementKI = i.getR() - k.getR();
+                //
+                // const double cosinesGradientIJ =
+                //         (3. / 4.) *
+                //         ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+                //
 
-                const double cosinesGradientIJ =
-                        (3. / 4.) *
-                        ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
 
-
-
-auto forceDirectionIJ = -1. * sign_factor * devIJ * (displacementIJ  );
-auto forceDirectionIJ_2 = (-1. * f) * devIJ * (displacementIJ / distIJ);
-auto forceDirectionKI = -1. * f * devKI * (displacementKI );
-auto forceDirectionKI_2 = (-1. * f) * devKI * (displacementKI / distKI );
-auto forceDirectionJK = -1. * sign_factor * devKI * (displacementJK );
-auto forceDirectionJK_2 = (-1. * f )* devJK * (displacementJK /distJK );
+// auto forceDirectionIJ = -1. * sign_factor * devIJ * (displacementIJ  );
+// auto forceDirectionIJ_2 = (-1. * f) * devIJ * (displacementIJ / distIJ);
+// auto forceDirectionKI = -1. * f * devKI * (displacementKI );
+// auto forceDirectionKI_2 = (-1. * f) * devKI * (displacementKI / distKI );
+// auto forceDirectionJK = -1. * sign_factor * devKI * (displacementJK );
+// auto forceDirectionJK_2 = (-1. * f )* devJK * (displacementJK /distJK );
 
 //Assemble force I
-forceI= forceDirectionIJ - forceDirectionKI;
-auto forceI_2 = -1. * sign_factor * (devIJ * distSquaredIJ - devKI *distSquaredKI);
+              const auto forceIDirectionIJ = displacementIJ* (factors[order[0]]);
+              const auto forceIDirectionKI = displacementKI * (factors[order[2]]);
+forceI = forceIDirectionIJ - forceIDirectionKI;
+
+
+// auto forceI_2 = -1. * sign_factor * (devIJ * distSquaredIJ - devKI *distSquaredKI);
 //forceI= -1.* (forceDirectionIJ_2 - forceDirectionKI_2);
-forceI= -1.*   (forceDirectionIJ_2 - forceDirectionKI_2);
+
 
 
 
 //auto dcosI_di = (1 /distIJ * distKI) * (distSquaredKI-distSquaredIJ)-
-auto dRi_dri = displacementIJ / distIJ;
-auto dRk_drk = displacementKI / distKI;
-auto force_4 = -1. * (sign_factor *((devIJ* dRi_dri) + (devKI * dRk_drk)));
+// auto dRi_dri = displacementIJ / distIJ;
+// auto dRk_drk = displacementKI / distKI;
+// auto force_4 = -1. * (sign_factor *((devIJ* dRi_dri) + (devKI * dRk_drk)));
 
 i.addF(forceI);
                 if(newton3){
-                    auto dRi_dri = displacementIJ / distIJ;
-                    auto dRj_drj = displacementJK / distJK;
-                    forceJ = -1. * ( -1. *forceDirectionIJ_2 + forceDirectionJK_2);
+                    // auto dRi_dri = displacementIJ / distIJ;
+                    // auto dRj_drj = displacementJK / distJK;
+                    // forceJ = -1. * ( -1. *forceDirectionIJ_2 + forceDirectionJK_2);
+                  auto const forceJDirectionIJ = displacementIJ * (factors[order[0]]);
+                  auto const forceJDirectionJK = displacementJK * (factors[order[1]]);
+                  forceJ=  (forceJDirectionJK - forceJDirectionIJ);
+
                     j.addF(forceJ);
 
 //                    forceK = -1. * (sign_factor *((devKI* dRk_drk) + (devJK * dRj_drj)));
-                    forceK = -1. * ((-1. * forceDirectionJK_2) + forceDirectionKI_2);
+                    // forceK = -1. * ((-1. * forceDirectionJK_2) + forceDirectionKI_2);
+                  auto const forceKDirectionKI = displacementKI * (factors[order[2]]);
+                  auto const forceKDirectionJK = displacementJK * (factors[order[1]]);
+                  forceK=  (forceI + forceJ) * (-1.0);
                     k.addF(forceK);
 
                     // Assembling the forces
@@ -288,7 +302,7 @@ i.addF(forceI);
 
                 }
                 std::cout <<"In LUT should not be here" ;
-            }
+            }//end of uselut
             else {
 
                 // Actual distances
@@ -735,6 +749,9 @@ i.addF(forceI);
 
                 AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
                 AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+              logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_KR_100NN");
+              logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_KR_100NN");
+
             }
         }
 
@@ -944,5 +961,16 @@ i.addF(forceI);
 
         // defines whether or whether not the global values are already preprocessed
         bool _postProcessed;
+
+
+      //helper for evaluation:
+      void logToFile(const std::string& message, std::string filename) {
+        std::ofstream outFile(filename + ".txt", std::ios::app); // Open in append mode
+        if (outFile.is_open()) {
+          outFile << message << std::endl;
+        } else {
+          std::cerr << "Unable to open file for writing." << std::endl;
+        }
+      }
     };
 }  // namespace mdLib

@@ -306,6 +306,9 @@ newton3 = true;
          factors = {factorsAndGlob[0], factorsAndGlob[1], factorsAndGlob[2]};
          potentialEnergy3 = factorsAndGlob[3];
 
+
+
+
       }else{
         std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
 //        std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _PPLibrary->getLUT3B().retrieveValues( distSquaredIJ, distSquaredJK, distSquaredKI);
@@ -336,9 +339,9 @@ newton3 = true;
          forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
         j.addF(forceJ);
         k.addF(forceK);
-          logToFile(std::to_string(forceI[0]) +","+ std::to_string(forceI[1])+"," + std::to_string(forceI[2])+"," +
-                            std::to_string(forceK[0]) +","+ std::to_string(forceK[1])+"," + std::to_string(forceK[2])+","+
-                            std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT_LUT");
+   //     logToFile(std::to_string(forceI[0]) + "," + std::to_string(forceI[1]) + "," + std::to_string(forceI[2]) + "," +
+     //                 std::to_string(forceK[0]) + "," + std::to_string(forceK[1]) + "," + std::to_string(forceK[2]) +
+  //                    "," + std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT_LUT");
       }
 
 
@@ -363,7 +366,10 @@ newton3 = true;
           // Division to the correct value is handled in endTraversal().
 
            potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-        }
+        }//end if constexpr (!useLUTGlobal)
+
+        auto compare_potE = _lut->calculateFullGlobal(distSquaredIJ,distSquaredKI,distSquaredJK);
+        auto compare_potE2 = _lut->calculatePotEnergyTest(distSquaredIJ,distSquaredKI,distSquaredJK);
 
 //          AutoPasLog(DEBUG, "Dot Product           {}", allDotProducts);
 //          std::printf("Dot Product:  %f   factor : %f     epot: %f \n", allDotProducts, factor, potentialEnergy3);
@@ -509,9 +515,9 @@ newton3 = true;
         k.addF(forceK);
 
 
-          logToFile(std::to_string(forceI[0]) +","+ std::to_string(forceI[1])+"," + std::to_string(forceI[2])+"," +
-                    std::to_string(forceK[0]) +","+ std::to_string(forceK[1])+"," + std::to_string(forceK[2])+","+
-                    std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT");
+   //       logToFile(std::to_string(forceI[0]) +","+ std::to_string(forceI[1])+"," + std::to_string(forceI[2])+"," +
+   //                 std::to_string(forceK[0]) +","+ std::to_string(forceK[1])+"," + std::to_string(forceK[2])+","+
+  //                  std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT");
       }
 
       if constexpr (countFLOPs) {
@@ -657,8 +663,8 @@ newton3 = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
       AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-      logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_AT");
-      logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_AT");
+      logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_KR_modBod");
+      logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_KR_modBod");
 
     }
   }
