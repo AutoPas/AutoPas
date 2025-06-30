@@ -35,7 +35,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     iter->setOldF(f);
     iter->setF(globalForce);
     v *= 1.0;
-    f *= (deltaT * deltaT / (2 * m));
+    f *= (deltaT * deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
     // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
     if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
