@@ -73,7 +73,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 auto calcTemperatureComponent(const AutoPasTemplate &autopas,
-                              ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
+                              ParticlePropertiesLibraryTemplate &particlePropertiesLibrary, const double deltaT) {
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
 
@@ -103,10 +103,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread[typeID] = 0ul;
     }
     // parallel iterators
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       const auto &vel = iter->getV();
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
+      kineticEnergyMul2MapThread.at(iter->getTypeId()) += dot(vel, vel);
 #if MD_FLEXIBLE_MODE == MULTISITE
       // add contribution from angular momentum
       const auto &angVel = iter->getAngularVel();
@@ -143,7 +142,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   auto numParticleMapIter = numParticleMap.begin();
   for (int typeID = 0; typeID < numberComponents; ++typeID, ++kineticEnergyMapIter, ++numParticleMapIter) {
     // The calculation below assumes that the Boltzmann constant is 1.
-    kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
+    kineticEnergyMapIter->second *= particlePropertiesLibrary.getMolMass(typeID) / (static_cast<double>(numParticleMapIter->second) * degreesOfFreedom * deltaT * deltaT);
   }
   return kineticEnergyMul2Map;
 }
@@ -228,12 +227,12 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-           const double targetTemperature, const double deltaTemperature) {
+           const double targetTemperature, const double deltaTemperature, const double deltaT) {
   using namespace autopas::utils::ArrayMath::literals;
 
   AutoPasLog(DEBUG, "Applying Thermostat");
 
-  const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+  const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary, deltaT);
 
   // make sure we work with a positive delta
   const double absoluteDeltaTemperature = std::abs(deltaTemperature);
@@ -267,6 +266,6 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }
-  const auto currentTemperatures = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+  const auto currentTemperatures = calcTemperatureComponent(autopas, particlePropertiesLibrary, deltaT);
 }
 }  // namespace Thermostat

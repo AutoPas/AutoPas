@@ -379,15 +379,15 @@ class KryptonPairFunctor
 
   const double _constA = 0.3200711798e8;
   const double _alpha1 = -0.2430565544e1;
-  const double _alpha2 = -0.1435536209;
-  const double _alphaInv1 = -0.4532273868;
+  const double _alpha2 = -0.143553621;
+  const double _alphaInv1 = -0.453227387;
   const double _constb = 0.2786344368e1;
   const double _constC6 = 0.8992209265e6;
   const double _constC8 = 0.7316713603e7;
   const double _constC10 = 0.7835488511e8;
   const double _constC12 = 1.1043747590e9;
-  const double _constC14 = 2.0486474980e10;
-  const double _constC16 = 5.0017084700e11;
+  const double _constC14 = 2.0486474981e10;
+  const double _constC16 = 5.00170847035e11;
 
   const double _constATilde = 0.8268005465e7;
   const double _alphaTilde = 0.1682493666e1;

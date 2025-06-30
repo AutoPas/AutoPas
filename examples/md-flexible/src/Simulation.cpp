@@ -198,7 +198,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
     // Set the simulation directly to the desired initial temperature.
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
+                      _configuration.initTemperature.value, std::numeric_limits<double>::max(), _configuration.deltaT.value);
   }
 
   _timers.initialization.stop();
@@ -517,7 +517,7 @@ void Simulation::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
     _timers.thermostat.start();
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.targetTemperature.value, _configuration.deltaTemp.value);
+                      _configuration.targetTemperature.value, _configuration.deltaTemp.value, _configuration.deltaT.value);
     _timers.thermostat.stop();
   }
 }
