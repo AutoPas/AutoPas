@@ -33,14 +33,16 @@ void MPIParallelizedStrategyTest::testBucketDistribution(
   const autopas::AutoPas_MPI_Comm autopasMpiCommunicator = AUTOPAS_MPI_COMM_WORLD;
 
   auto mpiDivideAndConquerStrategy = autopas::MPIParallelizedStrategy(
-      autopas::MPIParallelizedStrategy::createFallBackConfiguration(searchSpace, autopas::InteractionTypeOption::pairwise),
+      autopas::MPIParallelizedStrategy::createFallBackConfiguration(searchSpace,
+                                                                    autopas::InteractionTypeOption::pairwise),
       autopasMpiCommunicator, mpiTuningMaxDifferenceForBucket, mpiTuningWeightForMaxDensity);
 
   // Begin with the full search space as the configQueue
   std::vector<autopas::Configuration> myConfigQueue{searchSpace.begin(), searchSpace.end()};
 
   // Send domain similarity statistics
-  mpiDivideAndConquerStrategy.receiveDomainSimilarityStatistics(particleDependentBinDensityStdDevs[rank], particleDependentBinDensityStdDevs[rank]);
+  mpiDivideAndConquerStrategy.receiveDomainSimilarityStatistics(particleDependentBinDensityStdDevs[rank],
+                                                                particleDependentBinDensityStdDevs[rank]);
 
   // Reset, which divides the configQueue between ranks which share a bucket
   mpiDivideAndConquerStrategy.reset(0, 0, myConfigQueue, {});
