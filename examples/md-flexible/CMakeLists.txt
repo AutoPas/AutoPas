@@ -19,6 +19,7 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsL
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_HWY "If instruction set is available, compile Highway Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC "Compile auto vectorized Axilrod Teller Functor." OFF)
 option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
 
@@ -30,6 +31,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HWY}>:MD_FLEXIBLE_FUNCTOR_HWY>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
@@ -43,6 +45,9 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
         message(WARNING "Axilrod Teller functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_HWY)
+        message(WARNING "Highway functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 
@@ -103,6 +108,9 @@ if (NOT AUTOPAS_USE_VECTORIZATION)
 elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
     # If vectorization is set to SSE: don't enable the example
     message(STATUS "Only SSE specified, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SVE")
+    message(STATUS "SVE vectorization level, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
 elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
     # If Vectorization is set to native: we try to figure out the vectorization level.
