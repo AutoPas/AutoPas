@@ -153,6 +153,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.boxMax.description;
 
         config.boxMax.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == config.cao.name) {
+        expected = "Unsigned Integer";
+        description = config.cao.description;
+
+        config.cao.value = node[key].as<int>();
+      } else if (key == config.gridDims.name) {
+        expected = "YAML-sequence of three integers that are a power of 2. Example: [16, 16, 16].";
+        description = config.gridDims.description;
+
+        config.gridDims.value = {node[key][0].as<int>(), node[key][1].as<int>(), node[key][2].as<int>()};
       } else if (key == config.subdivideDimension.name) {
         expected = "YAML-sequence of three booleans.";
         description = config.subdivideDimension.description;

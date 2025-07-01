@@ -34,18 +34,19 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     //        fft = FFT();
     //}
 
-    void set_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, GridType &rs_shifted, 
-        ComplexGridType &ks_grid, ComplexGridType &ks_shifted, ComplexGridType &optForceInfluence, FFT &fft, ContainerIterator<ParticleType, false, false> beginIter){
+    void set_traversal_parameters(unsigned int cao, std::array<int, 3> grid_dims, const std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, /*GridType &rs_shifted,*/ 
+        ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, ContainerIterator<ParticleType, true, false> &&beginIter){
         this->cao = cao;
         this->grid_dims = grid_dims;
         this->grid_dist = grid_dist;
         this->rs_grid = rs_grid;
-        this->rs_grid_shifted = rs_shifted;
+        //this->rs_grid_shifted = rs_shifted;
         this->ks_grid = ks_grid;
-        this->ks_grid_shifted = ks_shifted;
+        //this->ks_grid_shifted = ks_shifted;
         this->optForceInfluence = optForceInfluence;
         this->fft = fft;
         this->boxMin = boxMin;
+        this->beginIter = ContainerIterator<ParticleType, true, false>(beginIter);
     }
 
     private:
@@ -80,7 +81,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         
 
     // assigns the charges of particles to cao number of points in the rs_grid
-    void assignChargeDensities(bool shifted){
+    void assignChargeDensities(){
         for (auto iter = beginIter; iter.isValid(); ++iter){
             std::array<double, 3> pPos = iter->getR();
             std::array<int, 3> closestGridpoint = {0,0,0};
@@ -97,7 +98,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                         int yii = yi - (cao/2);
                         int zii = zi - (cao/2);
                         // 1/V factor may not be needed
-                        rs_grid[(closestGridpoint[0] + xii) % grid_dims[0]][(closestGridpoint[1] + yii)%grid_dims[1]][(closestGridpoint[2] + zii) % grid_dims[2]]
+                        rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]]
                             += caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * iter->getQ() * (1./ (grid_dist[0]*grid_dist[1]*grid_dist[2]));
                     }
                 }
@@ -187,7 +188,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     }
 
     // assigns parts of forces from the points in the rs_grid back to the particles according to the charge assignment fuction
-    void interpolateForces(bool shiftedRun){
+    void interpolateForces(){
         for (auto iter = beginIter; iter.isValid(); ++iter){
             std::array<double, 3> pPos = iter->getR();
             double charge = iter->getQ();
@@ -210,7 +211,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                         int yii = yi - (cao/2);
                         int zii = zi - (cao/2);
 
-                        double force = rs_grid[(closestGridpoint[0] + xii) % grid_dims[0]][(closestGridpoint[1] + yii)%grid_dims[1]][(closestGridpoint[2] + zii) % grid_dims[2]];
+                        double force = rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]];
                         totalForce[0] -= caFractionsDX[xi] * caFractionsY[yi] * caFractionsZ[yi] * (1./grid_dist[0]) * force * charge;
                         totalForce[1] -= caFractionsDY[yi] * caFractionsX[xi] * caFractionsZ[zi] * (1./grid_dist[1]) * force * charge;
                         totalForce[2] -= caFractionsDZ[zi] * caFractionsX[xi] * caFractionsY[yi] * (1./grid_dist[2]) * force * charge;
@@ -287,14 +288,14 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
      * may not fulfill N3
      */
     void traverseFarParticles(){
-        assignChargeDensities(false);
-        assignChargeDensities(true);
+        assignChargeDensities();
+        assignChargeDensities();
         fft.forward3D(rs_grid, ks_grid, grid_dims);
         applyInfluenceFunction();
          
         fft.backward3D(ks_grid, rs_grid, grid_dims);
-        interpolateForces(false);
-        interpolateForces(true);
+        interpolateForces();
+        interpolateForces();
     }
 
     /**
@@ -325,7 +326,15 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
 
     // calls normal traversal with modified potential-functor
-    void traversNearParticles(bool shifted){
+    void traversNearParticles(){
+        /*typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
+                                                                       this->getCutoff() + this->getVerletSkin());
+
+        auto traversal =
+        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
+            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+        this->_linkedCells.iteratePairwise(&traversal);*/
         return;
     }
 
@@ -339,7 +348,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     [[nodiscard]] bool isApplicable() const override {
         //utils::isPairwiseFunctor<Functor>()
-        return not this->_useNewton3 and this->_dataLayout != DataLayoutOption::soa;
+        return true;//not this->_useNewton3 and this->_dataLayout != DataLayoutOption::soa;
     }
 
     [[nodiscard]] TraversalOption getTraversalType() const override {

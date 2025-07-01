@@ -158,11 +158,11 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
     }
     case ContainerOption::p3m: {
       // TODO need to update default values for N_dims and cao
-      std::array<int,3> N{8,8,8};
+      //std::array<int,3> N{16,8,4};
       container = 
-          std::make_unique<P3M_container<Particle_T>>(_boxMin, _boxMax, N, _cutoff, containerInfo.verletSkin,
+          std::make_unique<P3M_container<Particle_T>>(_boxMin, _boxMax, containerInfo.grid_dims, _cutoff, containerInfo.verletSkin,
                                                       containerInfo.verletRebuildFrequency,
-                                                      containerInfo.cellSizeFactor, containerInfo.loadEstimator, 3);
+                                                      containerInfo.cellSizeFactor, containerInfo.loadEstimator, containerInfo.cao);
       break;
     }
     default: {

@@ -98,7 +98,7 @@ namespace autopas {
                         
                     }
                     forward(inBuffer, grid_dims[direction], outBuffer);
-                    for(int m = 0; m < grid_dims[2]; m++){
+                    for(int m = 0; m < grid_dims[direction]; m++){
                         // copy values into buffer
                         switch(direction){
                             case 0:

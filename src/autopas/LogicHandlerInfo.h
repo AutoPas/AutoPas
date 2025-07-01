@@ -39,5 +39,13 @@ class LogicHandlerInfo {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t sortingThreshold{8};
+  /**
+   * Charge assignment order for P3M
+   */
+  unsigned int cao{1};
+  /**
+   * Number of gridpoints per dimension for P3M
+   */
+  std::array<int, 3> grid_dims{0,0,0}; 
 };
 }  // namespace autopas

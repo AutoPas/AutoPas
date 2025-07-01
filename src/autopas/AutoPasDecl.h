@@ -658,10 +658,33 @@ class AutoPas {
   [[nodiscard]] unsigned int getVerletClusterSize() const { return _logicHandlerInfo.verletClusterSize; }
 
   /**
+   * Set charge assingment order.
+   * @param cao
+   */
+  void setCao(unsigned int cao) { _logicHandlerInfo.cao = cao; }
+  /**
+   * Get charge assingment order.
+   * @return
+   */
+  [[nodiscard]] unsigned int getCao() const { return _logicHandlerInfo.cao; }
+  /**
+   * Set number of gridpoints per dimension.
+   * @param cao
+   */
+  void setGrid_dims(std::array<int, 3> grid_dims) { _logicHandlerInfo.grid_dims = grid_dims; }
+  /**
+   * Get number of gridpoints per dimension.
+   * @return
+   */
+  [[nodiscard]] std::array<int, 3> getGrid_dims() const { return _logicHandlerInfo.grid_dims; }
+  
+
+  /**
    * Set Verlet cluster size.
    * @param verletClusterSize
    */
   void setVerletClusterSize(unsigned int verletClusterSize) { _logicHandlerInfo.verletClusterSize = verletClusterSize; }
+
 
   /**
    * Get tuning interval.

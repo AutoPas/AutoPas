@@ -24,7 +24,9 @@ class ContainerSelectorInfo {
         verletSkin(0.),
         verletRebuildFrequency(0),
         verletClusterSize(64),
-        loadEstimator(autopas::LoadEstimatorOption::none) {}
+        loadEstimator(autopas::LoadEstimatorOption::none),
+        cao(1),
+        grid_dims({0,0,0}) {}
 
   /**
    * Constructor.
@@ -37,12 +39,14 @@ class ContainerSelectorInfo {
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletRebuildFrequency,
-                                 unsigned int verletClusterSize, autopas::LoadEstimatorOption loadEstimator)
+                                 unsigned int verletClusterSize, autopas::LoadEstimatorOption loadEstimator, unsigned int cao, std::array<int, 3> grid_dims)
       : cellSizeFactor(cellSizeFactor),
         verletSkin(verletSkin),
         verletRebuildFrequency(verletRebuildFrequency),
         verletClusterSize(verletClusterSize),
-        loadEstimator(loadEstimator) {}
+        loadEstimator(loadEstimator),
+        cao(cao),
+        grid_dims(grid_dims) {}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -51,7 +55,7 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
-           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
+           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator and cao == other.cao and grid_dims == other.grid_dims;
   }
 
   /**
@@ -64,15 +68,15 @@ class ContainerSelectorInfo {
   /**
    * Comparison operator for ContainerSelectorInfo objects.
    * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkin,
-   * _verlerRebuildFrequency, loadEstimator
+   * _verlerRebuildFrequency, loadEstimator, cao, grid_dims
    *
    * @param other
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, loadEstimator) <
+    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, loadEstimator, cao, grid_dims) <
            std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency, other.verletClusterSize,
-                    other.loadEstimator);
+                    other.loadEstimator, other.cao, other.grid_dims);
   }
 
   /**
@@ -95,6 +99,14 @@ class ContainerSelectorInfo {
    * Load estimator for balanced sliced traversals.
    */
   autopas::LoadEstimatorOption loadEstimator;
+  /**
+   * Charge assignment order for P3M
+   */
+  unsigned int cao;
+  /**
+   * Number of gridpoints per dimension for P3M
+   */
+  std::array<int, 3> grid_dims;
 };
 
 }  // namespace autopas

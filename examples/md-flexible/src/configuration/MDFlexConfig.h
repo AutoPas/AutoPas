@@ -486,6 +486,11 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> loadBalancingInterval{
       100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
 
+  MDFlexOption<unsigned int, __LINE__> cao{1, "cao", true, "Charge assignment order used by P3M."};
+
+  MDFlexOption<std::array<int, 3>, 0> gridDims{
+      {16, 16, 16}, "grid-dimensions", true, "Number of gridpoints per dimension."};
+
   /**
    * subdivideDimension
    */

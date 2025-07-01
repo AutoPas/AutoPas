@@ -135,6 +135,12 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   return s;
 }
 
+[[maybe_unused]] static const std::set<TraversalOption> &allP3MCompatibleTraversals() {
+  //static const auto s = filterAllOptions("p3m_", InteractionTypeOption::pairwise);
+  return {TraversalOption::p3m_p3m};
+}
+
+
 /**
  * Provides a set of all traversals that only support Newton3 mode disabled.
  * @return
@@ -212,6 +218,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::octree: {
           return allOTCompatibleTraversals();
+        }
+        case ContainerOption::p3m: {
+          return allP3MCompatibleTraversals();
         }
       }
     }
