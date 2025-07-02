@@ -32,6 +32,7 @@
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
+#include "src/domainDecomposition/ComputationLoadOption.h"
 #include "src/options/BoundaryTypeOption.h"
 
 /**
@@ -817,6 +818,14 @@ class MDFlexConfig {
       "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
       "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * computationLoad
+   */
+  MDFlexOption<ComputationLoadOption, __LINE__> computationLoad{
+      ComputationLoadOption::completeCycle, "computation-load", true,
+      "Defines which computation load metric will be tracked during the simulation. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(ComputationLoadOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
    * Whether to use the tuning logger or not.

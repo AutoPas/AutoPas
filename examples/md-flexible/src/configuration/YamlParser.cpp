@@ -844,6 +844,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
+      } else if (key == config.computationLoad.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.computationLoad.description;
+
+        const auto parsedOptions = ComputationLoadOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one computation load option!"));
+
+        config.computationLoad.value = *parsedOptions.begin();
+
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

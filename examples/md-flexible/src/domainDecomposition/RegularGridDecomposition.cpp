@@ -464,15 +464,16 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::ve
     ParticleCommunicator particleCommunicator(_communicator);
 
     // Old implementation: keep for reference
-    // particleCommunicator.sendParticles(particlesToLeft, leftNeighbor);
-    // particleCommunicator.sendParticles(particlesToRight, rightNeighbor);
+    particleCommunicator.sendParticles(particlesToLeft, leftNeighbor);
+    particleCommunicator.sendParticles(particlesToRight, rightNeighbor);
 
-    // particleCommunicator.receiveParticles(receivedParticlesBuffer, leftNeighbor);
-    // particleCommunicator.receiveParticles(receivedParticlesBuffer, rightNeighbor);
+    particleCommunicator.receiveParticles(receivedParticlesBuffer, leftNeighbor);
+    particleCommunicator.receiveParticles(receivedParticlesBuffer, rightNeighbor);
 
-    // particleCommunicator.waitForSendRequests();
-    particleCommunicator.sendAndReceiveParticlesLeftAndRight(particlesToLeft, particlesToRight, receivedParticlesBuffer,
-                                                            leftNeighbor, rightNeighbor, dimensionIndex);
+    particleCommunicator.waitForSendRequests();
+    // New implementation: commented out for now
+    //particleCommunicator.sendAndReceiveParticlesLeftAndRight(particlesToLeft, particlesToRight, receivedParticlesBuffer,
+                                                            // leftNeighbor, rightNeighbor, dimensionIndex);
   } else {
     receivedParticlesBuffer.insert(receivedParticlesBuffer.end(), particlesToLeft.begin(), particlesToLeft.end());
     receivedParticlesBuffer.insert(receivedParticlesBuffer.end(), particlesToRight.begin(), particlesToRight.end());

@@ -41,6 +41,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
+#include "domainDecomposition/ComputationLoadOption.h"
 
 namespace {
 /**
@@ -221,6 +222,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
+    // todo: keep this computation load timer here
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updatePositionsAndResetForces();
@@ -231,8 +233,20 @@ void Simulation::run() {
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
+      // todo: remove this computation load timer here
+      _timers.computationalLoad.stop();
 
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+      // Calculate computation load based on selected option
+      auto totalTime = calculateComputationLoad();
+      double computationalLoad;
+      if (_configuration.computationLoad.value == ComputationLoadOption::particleCount) {
+        // For particle count, use the raw count directly
+        computationalLoad = totalTime;
+      } else {
+        // For time-based options, calculate delta from previous iteration
+        computationalLoad = totalTime - _previousTimerValue;
+        _previousTimerValue = totalTime;
+      }
 
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
@@ -274,7 +288,7 @@ void Simulation::run() {
       _timers.haloParticleExchange.start();
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
-
+      // todo: remove this computation load timer here
       _timers.computationalLoad.start();
     }
 
@@ -510,6 +524,24 @@ void Simulation::updateThermostat() {
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
+  }
+}
+
+double Simulation::calculateComputationLoad() const {
+  switch (_configuration.computationLoad.value) {
+    case ComputationLoadOption::completeCycle:
+      return static_cast<double>(_timers.computationalLoad.getTotalTime());
+    case ComputationLoadOption::forceUpdate:
+      return static_cast<double>(_timers.forceUpdateTotal.getTotalTime());
+    case ComputationLoadOption::MPICommunication:
+      return static_cast<double>(_timers.haloParticleExchange.getTotalTime() + 
+                                 _timers.migratingParticleExchange.getTotalTime());
+    case ComputationLoadOption::particleCount:
+      // === KEY CHANGE: Use particle count instead of computation time ===
+      return static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));
+    default:
+      // Default to complete cycle if unknown option
+      return static_cast<double>(_timers.computationalLoad.getTotalTime());
   }
 }
 
