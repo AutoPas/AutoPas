@@ -321,6 +321,19 @@ class Simulation {
    * This simulation's domain decomposition.
    */
   std::shared_ptr<RegularGridDecomposition> _domainDecomposition;
+
+  /**
+   * Stores the previous timer value for computation load calculation.
+   * Used to calculate the delta between current and previous timer values.
+   */
+  double _previousTimerValue = 0.0;
+
+  /**
+   * Calculates the computation load based on the selected computation load option.
+   * @return The computation load value based on the configuration.
+   */
+  [[nodiscard]] double calculateComputationLoad() const;
+
   /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.
    * Otherwise, this function does nothing.
