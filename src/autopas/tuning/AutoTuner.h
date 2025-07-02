@@ -93,24 +93,18 @@ class AutoTuner {
   bool isStartOfTuningPhase() const;
 
   /**
-   * Indicator whether domain similarity statistics should be calculated in advance of the next call to
-   * sendDomainSimilarityStatisticsAtStartOfTuningPhase().
+   * Returns true if the AutoTuner is within 10 iterations of the start of a tuning phase.
    * @return
    */
-  bool needsDomainSimilarityStatistics() const;
+  bool tuningPhaseAboutToBegin() const;
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
-   * a tuning phase.
+   * a tuning phase or if a strategy requires domain similarity statistics (taken from LiveInfo) and AutoPas is within
+   * 10 iterations of a tuning phase.
    * @return True if the AutoTuner needs live info.
    */
   [[nodiscard]] bool needsLiveInfo() const;
-
-  /**
-   * Sends smoothed mean and relative (to mean) number of particles per cell-bin (mimicking a CSF1 bin) to tuning
-   * strategies if it is the start of a tuning phase. Used to find similar domains e.g. for MPI Tuning.
-   */
-  void sendDomainSimilarityStatisticsAtStartOfTuningPhase();
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
@@ -204,13 +198,13 @@ class AutoTuner {
   void addMeasurement(long sample, bool neighborListRebuilt);
 
   /**
-   * Adds measurements of homogeneity and maximal density to the vector of measurements, which can be smoothed for use
-   * in MPI Tuning to find similar domains.
-   * @param homogeneity
-   * @param maxDensity
-   * @param time Time it took to obtain these measurements.
+   * Adds domain similarity statistics to a vector of measurements, which can be smoothed for use in MPI Tuning to find
+   * similar domains.
+   * @param pdBinDensityStdDev particle-dependent bin density standard deviation. See LiveInfo::gather for more
+   * information.
+   * @param pdBinMaxDensity particle-dependent bin maximum density. See LiveInfo::gather for more information.
    */
-  void addDomainSimilarityStatistics(double homogeneity, double maxDensity, long time);
+  void addDomainSimilarityStatistics(double pdBinDensityStdDev, double pdBinMaxDensity);
 
   /**
    * Getter for the current queue of configurations.
@@ -365,7 +359,7 @@ class AutoTuner {
   /**
    * Flag indicating if any tuning strategy needs the smoothed homogeneity and max density collected.
    */
-  bool _needsHomogeneityAndMaxDensity;
+  bool _needsDomainSimilarityStatistics;
 
   /**
    * Flag indicating if any tuning strategy needs live infos collected.
@@ -375,12 +369,12 @@ class AutoTuner {
   /**
    * Buffer for the homogeneities of the last ten Iterations
    */
-  std::vector<double> _homogeneitiesOfLastTenIterations{};
+  std::vector<double> _pdBinDensityStdDevOfLastTenIterations{};
 
   /**
    * Buffer for the maximum densities of the last ten Iterations.
    */
-  std::vector<double> _maxDensitiesOfLastTenIterations{};
+  std::vector<double> _pdBinMaxDensityOfLastTenIterations{};
 
   /**
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists are
@@ -413,12 +407,6 @@ class AutoTuner {
    * @note The next configuration to use is at the END of the vector.
    */
   std::vector<Configuration> _configQueue;
-
-  /**
-   * Timer used to determine how much time is wasted by calculating multiple homogeneities for smoothing
-   * Only used temporarily
-   */
-  autopas::utils::Timer _timerCalculateHomogeneity;
 
   /**
    * CSV logger for configurations selected at the end of each tuning phase.

@@ -1849,26 +1849,17 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    const auto needsDensityStatistics = autoTuner.needsDomainSimilarityStatistics();
-    const auto needsLiveInfo = autoTuner.needsLiveInfo();
-    if (needsDensityStatistics or needsLiveInfo) {
+    if (autoTuner.needsLiveInfo()) {
       // Gather Live Info
-      utils::Timer timerCalculateHomogeneity;
-      timerCalculateHomogeneity.start();
+      utils::Timer timerGatherLiveInfo;
+      timerGatherLiveInfo.start();
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                   _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-      timerCalculateHomogeneity.stop();
-      if (needsDensityStatistics) {
-        const auto particleDependentBinDensityStdDev = info.get<double>("particleDependentBinDensityStdDev");
-        const auto particleDependentBinMaxDensity = info.get<double>("particleDependentBinMaxDensity");
-        autoTuner.addDomainSimilarityStatistics(particleDependentBinDensityStdDev, particleDependentBinMaxDensity,
-                                                timerCalculateHomogeneity.getTotalTime());
-        autoTuner.sendDomainSimilarityStatisticsAtStartOfTuningPhase();
-      }
-      if (needsLiveInfo) {
-        autoTuner.receiveLiveInfo(info);
-      }
+      timerGatherLiveInfo.stop();
+      AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
+
+      autoTuner.receiveLiveInfo(info);
     }
 
     std::tie(configuration, stillTuning) = autoTuner.getNextConfig();

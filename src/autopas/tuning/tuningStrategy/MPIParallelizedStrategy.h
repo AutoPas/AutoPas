@@ -82,13 +82,13 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
  private:
   /**
-   * The smoothed particle-dependent bin standard deviation density of the whole simulation.
+   * The smoothed standard-deviation of the particle-dependent bin densities for this AutoPas container's box.
    * See LiveInfo::gather().
    */
   double _smoothedPDBinStdDevDensity{-1.};
 
   /**
-   * The smoothed maximum particle-dependent bin density throughout the whole domain.
+   * The smoothed maximum particle-dependent bin density for this AutoPas container's box.
    * See LiveInfo::gather().
    */
   double _smoothedPDBinMaxDensity{-1.};
