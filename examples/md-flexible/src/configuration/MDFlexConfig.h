@@ -109,9 +109,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -272,6 +270,13 @@ class MDFlexConfig {
       "List of pairwise traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllPairwiseOptions(), " ", {"(", ")"})};
   /**
+   * traversalOptionsSecondInstance
+   */
+  MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptionsSecondInstance{
+      autopas::TraversalOption::getMostPairwiseOptions(), "traversal-second-instance", true,
+      "List of pairwise traversal options to use. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(std::set<autopas::options::TraversalOption>{}, " ", {"(", ")"})};
+  /**
    * traversalOptions3B
    */
   MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptions3B{
@@ -304,6 +309,13 @@ class MDFlexConfig {
    */
   MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> cellSizeFactors{
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
+      "Factor for the interaction length to determine the cell size."};
+
+  /**
+   * cellSizeFactorsSecondInstance
+   */
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> cellSizeFactorsSecondInstance{
+      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{0.}), "cell-size-second-instance", true,
       "Factor for the interaction length to determine the cell size."};
   /**
    * logFileName
@@ -400,6 +412,12 @@ class MDFlexConfig {
    */
   MDFlexOption<bool, __LINE__> useLOESSSmoothening{
       false, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
+
+  /**
+   * ibiKeepTorque
+   */
+  MDFlexOption<bool, __LINE__> ibiKeepTorque{false, "ibi-keep-torque", true,
+                                             "If torques should be keeps for outer respa steps."};
   /**
    * tuningMaxEvidence
    */

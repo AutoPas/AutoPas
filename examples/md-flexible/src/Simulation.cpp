@@ -53,7 +53,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -81,9 +81,12 @@ size_t getTerminalWidth() {
 }  // namespace
 
 void Simulation::prepareAutopasContainer(std::shared_ptr<autopas::AutoPas<ParticleType>> &container, double cutoff,
-                                         const std::string &outputSuffix) {
+                                         const std::string &outputSuffix, bool isSecondInstance) {
   container = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   container->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
+  if (isSecondInstance and _configuration.cellSizeFactorsSecondInstance.value->getMax() > 0.0) {
+    container->setAllowedCellSizeFactors(*_configuration.cellSizeFactorsSecondInstance.value);
+  }
   container->setAllowedContainers(_configuration.containerOptions.value);
 
   container->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
@@ -92,6 +95,10 @@ void Simulation::prepareAutopasContainer(std::shared_ptr<autopas::AutoPas<Partic
   container->setAllowedDataLayouts(_configuration.dataLayoutOptions.value, autopas::InteractionTypeOption::pairwise);
   container->setAllowedNewton3Options(_configuration.newton3Options.value, autopas::InteractionTypeOption::pairwise);
   container->setAllowedTraversals(_configuration.traversalOptions.value, autopas::InteractionTypeOption::pairwise);
+  if (isSecondInstance and not _configuration.traversalOptionsSecondInstance.value.empty()) {
+    container->setAllowedTraversals(_configuration.traversalOptionsSecondInstance.value,
+                                    autopas::InteractionTypeOption::pairwise);
+  }
   container->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   container->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value, autopas::InteractionTypeOption::triwise);
@@ -182,11 +189,12 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                  ? _configuration.cutoff.value
                                  : _configuration.cutoff.value * _configuration.cutoffFactorRespa.value;
 
-  prepareAutopasContainer(_autoPasContainer, cutoffToUse, outputSuffix);
+  prepareAutopasContainer(_autoPasContainer, cutoffToUse, outputSuffix, false);
 
   if (_useSecondAutopasInstanceForRespa) {
     prepareAutopasContainer(_autoPasContainerRespa,
-                            _configuration.cutoff.value * _configuration.cutoffFactorRespa.value, outputSuffix);
+                            _configuration.cutoff.value * _configuration.cutoffFactorRespa.value,
+                            outputSuffix + "Second", true);
   } else {
     _domainDecomposition->setCutoff(cutoffToUse);
   }
@@ -319,6 +327,9 @@ void Simulation::run() {
   bool firstRespaIterationSkipped{false};
   bool respaStarted{false};
   const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
+  const bool ibiKeepTorque =
+      _configuration.respaDistanceClassMode.value == autopas::options::DistanceClassOption::ibi and
+      _configuration.ibiKeepTorque.value;
 
   auto respaActive = _configuration.respaStepSize.value > 0;
 
@@ -517,8 +528,13 @@ void Simulation::run() {
                                 RespaIterationType::InnerStep, _configuration.respaMoleculeTypes.value[0],
                                 _configuration.respaMoleculeTypes.value[1]);
       } else if (_distanceClassSimulation and not _configuration.multiMultisiteModelsRespa.value) {
-        updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration and ibiConvergenceReached,
-                                RespaIterationType::InnerStep, 0, 0);
+        if (ibiKeepTorque) {
+          updateAngularVelocities(false, RespaIterationType::InnerStep, 0, 0);
+        } else {
+          updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration and ibiConvergenceReached,
+                                  RespaIterationType::InnerStep, 0, 0);
+        }
+
       } else {
         updateAngularVelocities(false, RespaIterationType::InnerStep, 0, 0);
       }

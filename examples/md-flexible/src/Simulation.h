@@ -313,7 +313,7 @@ class Simulation {
 
  private:
   void prepareAutopasContainer(std::shared_ptr<autopas::AutoPas<ParticleType>> &container, double cutoff,
-                               const std::string &outputSuffix);
+                               const std::string &outputSuffix, bool isSecondInstance);
 
   void sendPositionsAndQuaternionsToRespaInstance();
 

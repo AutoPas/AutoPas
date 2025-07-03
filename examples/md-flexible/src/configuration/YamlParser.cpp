@@ -208,6 +208,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.cellSizeFactors.value->isEmpty()) {
           throw std::runtime_error("Parsed cell-size-factor-list is empty.");
         }
+      } else if (key == config.cellSizeFactorsSecondInstance.name) {
+        expected = "YAML-sequence of floats.";
+        description = config.cellSizeFactorsSecondInstance.description;
+
+        config.cellSizeFactorsSecondInstance.value = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.cellSizeFactorsSecondInstance.value->isEmpty()) {
+          throw std::runtime_error("Parsed cell-size-factor-list is empty.");
+        }
       } else if (key == config.dataLayoutOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.dataLayoutOptions.description;
@@ -402,6 +412,17 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw std::runtime_error("Parsed traversal-list is empty. Maybe you used an unknown option.");
         }
 
+      } else if (key == config.traversalOptionsSecondInstance.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.traversalOptionsSecondInstance.description;
+
+        config.traversalOptionsSecondInstance.value =
+            autopas::TraversalOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.traversalOptionsSecondInstance.value.empty()) {
+          throw std::runtime_error("Parsed traversal-list is empty. Maybe you used an unknown option.");
+        }
+
       } else if (key == config.traversalOptions3B.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions3B.description;
@@ -453,6 +474,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.useLOESSSmoothening.description;
 
         config.useLOESSSmoothening.value = node[key].as<bool>();
+      } else if (key == config.ibiKeepTorque.name) {
+        expected = "Boolean Value";
+        description = config.ibiKeepTorque.description;
+
+        config.ibiKeepTorque.value = node[key].as<bool>();
       } else if (key == config.tuningMaxEvidence.name) {
         expected = "Unsigned Integer >= 1";
         description = config.tuningMaxEvidence.description;
