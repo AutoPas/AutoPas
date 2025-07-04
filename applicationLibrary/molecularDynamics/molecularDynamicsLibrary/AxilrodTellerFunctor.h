@@ -663,8 +663,8 @@ newton3 = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
       AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-      logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_KR_modBod");
-      logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_KR_modBod");
+      logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_AT_res100_WA");
+      logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_AT_res100_WA");
 
     }
   }

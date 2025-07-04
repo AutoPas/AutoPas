@@ -110,7 +110,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _vtkWriter(nullptr),
       //TODO add constexpr based on type of functor used
 //#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC ) ||defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)  || defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
-      lut2B(0, _configuration.cutoff.value  *_configuration.cutoff.value ),
+      lut2B(_configuration.getParticlePropertiesLibrary()->getLUT2B()  ),
 
 //#endif
 //#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)

@@ -45,8 +45,9 @@ int main(int argc, char **argv) {
     bool TRI_WISE_LUT= true;
     bool USELUT = true;
     bool USEGLOBAL = false;
+    bool DELAY = false; //TODO add to thesis description
     int RESOLUTION =100;
-    configuration.handleLUT(TRI_WISE_LUT, USELUT, USEGLOBAL, RESOLUTION);
+    configuration.handleLUT(TRI_WISE_LUT, USELUT, USEGLOBAL,DELAY, RESOLUTION);
 
     Simulation simulation(configuration, domainDecomposition);
 

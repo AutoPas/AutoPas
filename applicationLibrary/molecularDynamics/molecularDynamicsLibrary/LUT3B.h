@@ -53,7 +53,7 @@ namespace mdLib {
             if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
 
 //                return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
-                return std::make_pair(getLUTValuesAT(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
+                return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
             }
 
             size_t index1, index2, index3;
@@ -113,7 +113,7 @@ namespace mdLib {
 
             // space for other interpolation
             //TODO NN does not work for Krypton yet
-      //      auto result = getNextNeighbour(index1, index2, index3);
+//            auto result = getNextNeighbour(index1, index2, index3);
 //            auto result = getNextNeighbour_krypton(index1, index2, index3);
 
             auto resultPair = std::make_pair(result, order);
@@ -166,20 +166,24 @@ namespace mdLib {
             std::array<double, 3> resultBelow{};
             if (index3 > 0) {
                 resultBelow = _lut3B[index1][index2][index3 - 1];
+                V_Below = _lut3B[index1][index2][index3 - 1];
                 distances_below = getDistances(index1, index2, index3 - 1);
 
             } else if (index2 > 0) {
                 resultBelow = _lut3B[index1][index2 - 1][index3];
+                V_Below = _lut3B[index1][index2 - 1][index3];
                 distances_below = getDistances(index1, index2 - 1, index3);
 
             } else {
                 if (index1 > 0) {
                     resultBelow = _lut3B[index1 - 1][index2][index3];
+                    V_Below = _lut3B[index1 - 1][index2][index3];
                     distances_below = getDistances(index1 - 1, index2, index3);
 
 
                 } else {
                     resultBelow = _lut3B[0][0][0];
+                    V_Below = _lut3B[0][0][0];
                     distances_below = getDistances(0, 0, 0);
                 }
             }
@@ -252,9 +256,9 @@ namespace mdLib {
 //        lutTimer[0].start(); //0th being for fill time
             if (!withGlobals) {
 //                fill_plain(functor, cutoffSquared);
-                // fill_plain( cutoffSquared);
+                 fill_plain( cutoffSquared);
 
-fill_plain_krypton( cutoffSquared);
+//fill_plain_krypton( cutoffSquared);
             }
             if (withGlobals) {
 //  fill_gobal(functor, cutoffSquared);
@@ -341,13 +345,14 @@ fill_plain_krypton( cutoffSquared);
             return {res, 0};
         }
 
-        std::array<double, 2>
+        double
 //        calculatePotEnergyTest_krypton(double distSquaredIJ, double distSquaredJK, double distSquaredKI) const {
         calculatePotEnergyTest_krypton(double cosines, double _nu, double allDistsTripled, double sum,double expTerm) const {
             // Add 3 * potential energy to every owned particle of the interaction.
             // Division to the correct value is handled in endTraversal().
             const double potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
-            return {potentialEnergy, 0};
+//            return {potentialEnergy, 0};
+            return potentialEnergy;
 
         }
 
@@ -578,9 +583,11 @@ fill_plain_krypton( cutoffSquared);
         std::vector<std::vector<std::vector<std::array<double, 4>>>> _lut3B_krypton;
         std::vector<std::vector<std::vector<std::array<double, 5>>>> _lut3B_global;
         double nu;
-         double _nu_krypton = 1.61525e-3;   // K·nm^9  // K*A^9
+//         double _nu_krypton = 1.61525e-3;   // K·nm^9  // K*A^9
+         double _nu_krypton = 1.61525e6;;
 //        const double _alpha = 1.378382;  // A^-1
-         double _alpha_krypton = 13.78382;  // A^-1  changed to nm
+//         double _alpha_krypton = 13.78382;  // A^-1  changed to nm
+         double _alpha_krypton = 1.378382;
          std::vector<autopas::utils::Timer> lutTimer;
 
 
@@ -841,14 +848,15 @@ fill_plain_krypton( cutoffSquared);
             for (auto n = 0; n < sumFactors.size(); n++) {
                 jkSum += sumFactors[n] * (2. * n / (3. * distJK) - _alpha_krypton);
             }
-            const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
+            double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
 
-            const auto factorForceJDirectionJK = (fullATMGradientJK + fullExpGradientJK);
+             auto factorForceJDirectionJK = (fullATMGradientJK + fullExpGradientJK);
 
-//            return {factorForceJDirectionJK, factorForceJDirectionIJ, factorForceJDirectionKI};
-            return { - factorForceJDirectionIJ, factorForceJDirectionKI, factorForceJDirectionJK};
+//             double epot =     calculatePotEnergyTest_krypton( cosines,  _nu_krypton,  allDistsTripled,  sum, expTerm);
 
+          return { -factorForceJDirectionIJ, factorForceJDirectionKI, factorForceJDirectionJK};
+//          return { epot, 0, 0};
         }
 
     };

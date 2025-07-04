@@ -865,7 +865,7 @@ class MDFlexConfig {
    */
   void initializeObjects();
  public:
-  void handleLUT(bool triwise, bool useLUT, bool useGlobalLUT, int resolution);
+  void handleLUT(bool triwise, bool useLUT, bool useGlobalLUT,bool delay, int resolution);
 };
 
 /**

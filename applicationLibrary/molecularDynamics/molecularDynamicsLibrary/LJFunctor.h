@@ -138,7 +138,7 @@ namespace mdLib {
 
         void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
             using namespace autopas::utils::ArrayMath::literals;
-
+newton3 = allowsNewton3();
 
             if (i.isDummy() or j.isDummy()) {
                 return;
@@ -773,6 +773,9 @@ namespace mdLib {
 
                 AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
                 AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+                logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_LJ_LUT_1000_globs");
+                logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_LJ_LUT_1000_globs");
+
             }
         }
 
@@ -791,7 +794,7 @@ namespace mdLib {
                 throw autopas::utils::ExceptionHandler::AutoPasException(
                         "Cannot get potential energy, because endTraversal was not called.");
             }
-            std::cout << _potentialEnergySum;
+//            std::cout << _potentialEnergySum;
             return _potentialEnergySum;
         }
 
@@ -900,6 +903,15 @@ namespace mdLib {
                 // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
                 return std::numeric_limits<double>::quiet_NaN();
             }
+        }
+
+        void logToFile(const std::string& message, std::string filename) {
+          std::ofstream outFile(filename + ".txt", std::ios::app); // Open in append mode
+          if (outFile.is_open()) {
+            outFile << message << std::endl;
+          } else {
+            std::cerr << "Unable to open file for writing." << std::endl;
+          }
         }
 
     private:

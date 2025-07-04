@@ -20,6 +20,8 @@
 #include "autopas/utils/inBox.h"
 #include "LUT3B.h"
 
+#include <iomanip>
+
 namespace mdLib {
 
 /**
@@ -154,154 +156,87 @@ namespace mdLib {
             double sum = 0.0;
 
             double devIJ , devJK , devKI = 0;
+
             if(useLUT){
 
-
-             // std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
+                std::array<double, 3> factors  = {0,0,0};
+                std::array<u_int8_t, 3> order = {0,0,0};
+                // std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
               std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
+//              std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
 //              std::pair<const std::array<double, 4>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI, distSquaredJK);
-                auto factors = res.first;
-                auto order = res.second;
+                 factors = res.first;
+                 order = res.second;
+//                std::cout << "In LUT IJ : "<< factors[order[0]] << "   KI : "<< factors[order[2] ]<< "  JK:  " << factors[order[1] ]<< std::endl;
 
-                //Calculate pre-factor
-//                 double distIJ = std::sqrt(distSquaredIJ);
-//                 double distJK = std::sqrt(distSquaredJK);
-//                 double distKI = std::sqrt(distSquaredKI);
-//                 double KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2 * distIJ * distKI);
-//                 double IJcosJK = (distSquaredIJ + distSquaredJK - distSquaredKI) / (2 * distIJ * distJK);
-//                 double JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2 * distJK * distKI);
-//
-//                 double sign_factor = 1 + 3*(KIcosIJ * IJcosJK * JKcosKI);
-//
-//
-//                 // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
-//                 const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
-//                 const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
-//                 const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
-//                 const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-//                 const double numerator = numKI * numJK * numIJ;
-//                 double f =  1+  (3. / 8.) * numerator / allDistsSquared;
-//
-// //                auto A = factors[3];
-//                  devIJ = factors[order[0]];
-//                  devKI = factors[order[1]];
-//                  devJK = factors[order[2]];
+                std::cout << "epot lut " << factors[0]<< std::endl;
 
 
 
-//                auto factorForceJDirectionIJ = sign_factor * factors[order[0]];
-//                if(factorForceJDirectionIJ<0 ){
-//                    factorForceJDirectionIJ = factorForceJDirectionIJ *-1;
+                int inversions = 0;
+                for (int i = 0; i < 3 - 1; ++i) {
+                    for (int j = i + 1; j < 3; ++j) {
+                        if (order[i] > order[j]) {
+                            inversions++;
+                        }
+                    }
+                }
+std::cout << inversions << std::endl;
+
+
+auto parity =(inversions % 2 == 0) ? 1 : -1;
+//                if(parity == -1){
+////
+//                    factors[order[1]]= factors[order[1]] *-1.;
+//                    factors[order[2]]= factors[order[2]] *-1.;
+//                    std::cout << "parity" << std::endl;
+//
 //                }
-//                auto factorForceJDirectionKI =  sign_factor*  factors[order[1]];;
-//                if(factorForceJDirectionKI>0 ){
-//                    factorForceJDirectionKI = factorForceJDirectionKI *-1;
-//                }
-//                auto factorForceJDirectionJK = sign_factor *  factors[order[2]];;
-//                if(factorForceJDirectionJK<0 ){
-//                    factorForceJDirectionJK = factorForceJDirectionJK *-1;
-//                }
-
-//                distSquaredIJ = 0.5;
-//                distSquaredKI= 1;
-//                distSquaredJK= 0.4;
-//
-//
-//                //testing if order matters
-                auto res1 = _lut->getLUTValuesKrypton(distSquaredJK, distSquaredKI, distSquaredIJ);
-                auto res2 = _lut->getLUTValuesKrypton(distSquaredJK, distSquaredIJ, distSquaredKI);
-                auto res3 = _lut->getLUTValuesKrypton(distSquaredKI, distSquaredIJ, distSquaredJK);
-                auto res4 = _lut->getLUTValuesKrypton(distSquaredKI, distSquaredJK, distSquaredIJ);
-                auto res5 = _lut->getLUTValuesKrypton(distSquaredIJ, distSquaredJK, distSquaredKI);
-                auto res6 = _lut->getLUTValuesKrypton(distSquaredIJ, distSquaredKI, distSquaredJK);
-
-
-                // Assembling the forces
-//                const auto forceIDirectionIJ = displacementIJ * (factorForceJDirectionIJ);
-//                const auto forceIDirecationKI = displacementKI * (factorForceJDirectionKI);
-//
-//                forceI = (forceIDirectionIJ + forceIDirecationKI) * (-1.0);
-//
-//                //TODO put back
-//                i.addF(forceI);
-//
-//                forceJ = forceI;
-//                forceK = forceI;
-
-
-
-//new LUT 4 force
-
-                // const auto displacementIJ = j.getR() - i.getR();
-                // const auto displacementJK = k.getR() - j.getR();
-                // const auto displacementKI = i.getR() - k.getR();
-                //
-                // const double cosinesGradientIJ =
-                //         (3. / 4.) *
-                //         ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
-                //
-
-
-// auto forceDirectionIJ = -1. * sign_factor * devIJ * (displacementIJ  );
-// auto forceDirectionIJ_2 = (-1. * f) * devIJ * (displacementIJ / distIJ);
-// auto forceDirectionKI = -1. * f * devKI * (displacementKI );
-// auto forceDirectionKI_2 = (-1. * f) * devKI * (displacementKI / distKI );
-// auto forceDirectionJK = -1. * sign_factor * devKI * (displacementJK );
-// auto forceDirectionJK_2 = (-1. * f )* devJK * (displacementJK /distJK );
-
-//Assemble force I
-              const auto forceIDirectionIJ = displacementIJ* (factors[order[0]]);
-              const auto forceIDirectionKI = displacementKI * (factors[order[2]]);
-forceI = forceIDirectionIJ - forceIDirectionKI;
-
-
-// auto forceI_2 = -1. * sign_factor * (devIJ * distSquaredIJ - devKI *distSquaredKI);
-//forceI= -1.* (forceDirectionIJ_2 - forceDirectionKI_2);
-
-
-
-
-//auto dcosI_di = (1 /distIJ * distKI) * (distSquaredKI-distSquaredIJ)-
-// auto dRi_dri = displacementIJ / distIJ;
-// auto dRk_drk = displacementKI / distKI;
-// auto force_4 = -1. * (sign_factor *((devIJ* dRi_dri) + (devKI * dRk_drk)));
+//                factors[order[0]]= factors[order[0]]*-1.;
+                const auto forceIDirectionIJ = displacementIJ * (factors[order[0]]);
+                const auto forceIDirectionKI = displacementKI * (factors[order[2]]);
+                forceI =  (forceIDirectionIJ - forceIDirectionKI);
 
 i.addF(forceI);
                 if(newton3){
                     // auto dRi_dri = displacementIJ / distIJ;
                     // auto dRj_drj = displacementJK / distJK;
                     // forceJ = -1. * ( -1. *forceDirectionIJ_2 + forceDirectionJK_2);
-                  auto const forceJDirectionIJ = displacementIJ * (factors[order[0]]);
-                  auto const forceJDirectionJK = displacementJK * (factors[order[1]]);
-                  forceJ=  (forceJDirectionJK - forceJDirectionIJ);
+                    const auto forceJDirectionIJ = displacementIJ * (-1*  factors[order[0]]);
+                    const auto forceJDirectionJK = displacementJK * (factors[order[1]]);
+                    forceJ = (forceJDirectionJK - forceJDirectionIJ);
 
                     j.addF(forceJ);
 
-//                    forceK = -1. * (sign_factor *((devKI* dRk_drk) + (devJK * dRj_drj)));
-                    // forceK = -1. * ((-1. * forceDirectionJK_2) + forceDirectionKI_2);
-                  auto const forceKDirectionKI = displacementKI * (factors[order[2]]);
-                  auto const forceKDirectionJK = displacementJK * (factors[order[1]]);
+                    //for testing
+                    std::vector<double> nums = {distSquaredIJ, distSquaredKI, distSquaredJK};
+
+                    std::sort(nums.begin(), nums.end(), [](double a, double b) {
+                        return a > b; // descending order
+                    });
+
+
+                    auto resLUT = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
+//                    auto resFromLUT = _lut->getLUTValuesKrypton(distSquaredIJ, distSquaredKI, distSquaredJK);
+
+//                    std::cout << "distIJ:" << std::to_string(distSquaredIJ) << "  distKI" << std::to_string(distSquaredKI) <<
+//                              "  factorIDirectionIJ: "<< std::to_string(factors[order[0]]) <<"  factorIDirectionKI: "<< std::to_string(factors[order[2]])<<
+//                              "  factorJDirectionIJ: "<< std::to_string(factors[order[0]])<<
+//                              "  factorJDirectionJK: "<< std::to_string(factors[order[1]])<<
+//                              "  calculated with getLUTValues " << std::to_string(resLUT[0])  <<" = " << std::to_string(resFromLUT[0]) << "; " << std::to_string(resLUT[1]) <<" = " << std::to_string(resFromLUT[1])<< "; " << std::to_string(resLUT[2])<<" = " << std::to_string(resFromLUT[2]) << "; " << std::endl;
+//                    std::cout << "distIJ:" << std::to_string(distSquaredIJ) << "  distKI" << std::to_string(distSquaredKI) << "  distJK" << std::to_string(distSquaredJK)<<
+//                    "  factorIDirectionIJ: "<< std::to_string(factors[order[0]]) <<"  factorIDirectionKI: "<< std::to_string(factors[order[2]])<<
+//                              "  factorJDirectionJK: "<< std::to_string(factors[order[1]])<<
+//                              "  calculated with getLUTValues " << std::to_string(resLUT[0])  <<"; " << std::to_string(resLUT[1]) <<"; " << std::to_string(resLUT[2]) << "; " << std::endl;
+//
+
                   forceK=  (forceI + forceJ) * (-1.0);
                     k.addF(forceK);
 
-                    // Assembling the forces
-//                    factorForceJDirectionIJ = -1* factorForceJDirectionIJ;
-//
-//                    const auto forceJDirectionIJ = displacementIJ * (factorForceJDirectionIJ);
-//                    const auto forceJDirectionJK = displacementJK * (factorForceJDirectionJK);
-//                    forceJ = (forceJDirectionIJ + forceJDirectionJK) * (-1.0);
-//
-//                    //TODO
-//                    j.addF(forceJ);
-//
-//                    // Using newton's third law for the force on particle k
-//                    forceK = (forceI + forceJ) * (-1.0);
-//
-//                    //TODO
-//                    k.addF(forceK);
+
 
                 }
-                std::cout <<"In LUT should not be here" ;
+//                std::cout <<"In LUT should not be here" ;
             }//end of uselut
             else {
 
@@ -317,6 +252,9 @@ i.addF(forceI);
 
                 const double numerator = numKI * numJK * numIJ;
 
+                std::cout <<std::fixed << std::setprecision(15) << "MAN real order : "<< distSquaredIJ << " ;  "<< distSquaredJK << " ; "<< " ; "<< distSquaredKI << std::endl;
+                std::cout << "MAN numerator " << numerator << std::endl;
+
                 const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
                 const double allDists = distIJ * distJK * distKI;
                   allDistsTripled = allDistsSquared * allDists;
@@ -324,6 +262,8 @@ i.addF(forceI);
                 // Gradient factors of 1. / (rrr)^3
                 const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
                 const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
+
+                std::cout << "MAN allDistsTriplesGradientIJ " << allDistsTriplesGradientIJ << "   MAN allDistsTriplesGradientKI " << allDistsTriplesGradientKI << std::endl;
 
                 // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
                 cosines = (3. / 8.) * numerator / allDistsSquared;
@@ -334,6 +274,10 @@ i.addF(forceI);
                         (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) /
                                      allDistsSquared);
 
+                std::cout << "MAN cosinesGradientIJ " << cosinesGradientIJ << "    MAN cosinesGradientKI " << cosinesGradientKI << std::endl;
+
+
+
                 // Gradient factors corresponding to the normal ATM term
                 const auto fullATMGradientIJ =
                         _nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
@@ -341,6 +285,9 @@ i.addF(forceI);
                         _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
 
                 expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
+
+                std::cout << "MAN fullATMGradientIJ " << fullATMGradientIJ << "    MAN fullATMGradientKI " << fullATMGradientKI << " exp term : " << expTerm<<  std::endl;
+
 
                 // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
                 std::array<double, 6> sumFactors{};
@@ -360,7 +307,7 @@ i.addF(forceI);
                 double kiSum = 0.0;
                 for (auto n = 0; n < sumFactors.size(); n++) {
                     kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
-                }
+                }     std::cout << "  MAN sum " << sum << "    MAN ijSum " << ijSum << "   kiSum: " << kiSum<<  std::endl;
 
                 // Total gradient factors for the exponential term times the cosines term
                 const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
@@ -373,8 +320,12 @@ i.addF(forceI);
                 auto factorIDdirectionIJ = fullATMGradientIJ + fullExpGradientIJ;
                 auto factorIDdirectionKI =fullATMGradientKI + fullExpGradientKI;
 
+                std::cout << "MAN fullExpGradientIJ " << fullExpGradientIJ << "     MAN fullExpGradientKI " << fullExpGradientKI <<  std::endl;
+
+
                 const auto forceIDirectionIJ = displacementIJ * (fullATMGradientIJ + fullExpGradientIJ);
                 const auto forceIDirecationKI = displacementKI * (fullATMGradientKI + fullExpGradientKI);
+                std::cout << "MAN Factor IJ " << factorIDdirectionIJ << "     MAN factor KI  " << factorIDdirectionKI <<  std::endl;
 
                  forceI = (forceIDirectionIJ + forceIDirecationKI) * (-1.0);
 
@@ -398,12 +349,76 @@ i.addF(forceI);
                 const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
 
+                std::cout << "MAN allDistsTriplesGradientJK " << allDistsTriplesGradientJK << "    MAN cosinesGradientJK " << cosinesGradientJK <<  std::endl;
+                std::cout << "MAN fullATMGradientJK " << fullATMGradientJK << "     MAN jkSum " << jkSum <<  std::endl;
 
                 //delete later
                 auto forceNEGJDirectionIJ = (-fullATMGradientIJ - fullExpGradientIJ);
                 auto forceNEGJDirectionJK=(fullATMGradientJK + fullExpGradientJK);
 
+                std::cout << "MAN Factor JK " << forceNEGJDirectionJK <<   std::endl;
+                std::cout << "***********************************"<<  std::endl;
 
+                std::cout <<  std::fixed << std::setprecision(15) <<" order : "<< distSquaredJK << " ;  "<< distSquaredKI << " ; "<< " ; "<< distSquaredIJ << std::endl;
+                auto res1 = getLUTValues(distSquaredJK, distSquaredKI, distSquaredIJ);
+                std::cout << "------------------------------------------------------"<<  std::endl;
+                std::cout << std::fixed << std::setprecision(15) <<" order : "<< distSquaredJK << " ;  "<< distSquaredIJ << " ; "<< " ; "<< distSquaredKI << std::endl;
+                auto res2 = getLUTValues(distSquaredJK, distSquaredIJ, distSquaredKI);
+
+                std::cout << "------------------------------------------------------"<<  std::endl;
+                std::cout << std::fixed << std::setprecision(15) <<" order : "<< distSquaredKI << " ;  "<< distSquaredIJ << " ; "<< " ; "<< distSquaredJK << std::endl;
+                auto res3 =getLUTValues(distSquaredKI, distSquaredIJ, distSquaredJK);
+
+                std::cout << "------------------------------------------------------"<<  std::endl;
+                std::cout << std::fixed << std::setprecision(15) <<" order : "<< distSquaredKI << " ;  "<< distSquaredJK << " ; "<< " ; "<< distSquaredIJ << std::endl;
+                auto res4 = getLUTValues(distSquaredKI, distSquaredJK, distSquaredIJ);
+
+                std::cout << "------------------------------------------------------"<<  std::endl;
+                std::cout << std::fixed << std::setprecision(15) <<" order : "<< distSquaredIJ << " ;  "<< distSquaredJK << " ; "<< " ; "<< distSquaredKI << std::endl;
+                auto res5 = getLUTValues(distSquaredIJ, distSquaredJK, distSquaredKI);
+
+                std::cout << "------------------------------------------------------"<<  std::endl;
+                std::cout << std::fixed << std::setprecision(15) <<" order : "<< distSquaredIJ << " ;  "<< distSquaredKI << " ; "<< " ; "<< distSquaredJK << std::endl;
+                auto res6 = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
+
+                std::cout << "------------------------------------------------------"<<  std::endl;
+
+
+                std::vector<double> nums = {distSquaredIJ, distSquaredKI, distSquaredJK};
+
+                std::sort(nums.begin(), nums.end(), [](double a, double b) {
+                    return a > b; // descending order
+                });
+
+
+
+//                auto resLUT = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
+                auto resLUTorder = getLUTValues(nums[0],nums[1], nums[2]);
+//                Calculate pre-factor
+                 double distIJ = std::sqrt(distSquaredIJ);
+                 double distJK = std::sqrt(distSquaredJK);
+                 double distKI = std::sqrt(distSquaredKI);
+                 double KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2 * distIJ * distKI);
+                 double IJcosJK = (distSquaredIJ + distSquaredJK - distSquaredKI) / (2 * distIJ * distJK);
+                 double JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2 * distJK * distKI);
+
+                 double actual_sign_factor = 1 + 3*(KIcosIJ * IJcosJK * JKcosKI);
+
+                 distIJ = std::sqrt(nums[0]);
+                 distJK = std::sqrt(nums[1]);
+                 distKI = std::sqrt(nums[2]);
+                 KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2 * distIJ * distKI);
+                 IJcosJK = (distSquaredIJ + distSquaredJK - distSquaredKI) / (2 * distIJ * distJK);
+                 JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2 * distJK * distKI);
+
+                 double LUT_sign_factor =  1 + 3*(KIcosIJ * IJcosJK * JKcosKI);
+//                std::cout << "acutal pre-factor:" << std::to_string(actual_sign_factor) << "  factor in LUT" << std::to_string(LUT_sign_factor)  <<std::endl;
+
+//                std::cout << "distIJ:" << std::to_string(distSquaredIJ) << "  distKI" << std::to_string(distSquaredKI) << "  distJK" << std::to_string(distSquaredJK)<<
+//                          "  factorIDirectionIJ: "<< std::to_string(factorIDdirectionIJ) <<"  factorIDirectionKI: "<< std::to_string(factorIDdirectionKI)<<
+//                          "  factorJDirectionIJ: "<< std::to_string(forceNEGJDirectionIJ)<<
+//                          "  factorJDirectionJK: "<< std::to_string(forceNEGJDirectionJK)<< std::endl;
+//                          "  calculated with getLUTValues " << std::to_string(resLUT[0]) <<" = "  << std::to_string(resLUTorder[0]) <<"; " << std::to_string(resLUT[1]) <<" = "  << std::to_string(resLUTorder[1]) << "; " << std::to_string(resLUT[2]) <<" = "  << std::to_string(resLUTorder[2])  << "; " << std::endl;
 
                 // Assembling the forces
                 const auto forceJDirectionIJ = displacementIJ * (-fullATMGradientIJ - fullExpGradientIJ);
@@ -429,7 +444,9 @@ i.addF(forceI);
             if constexpr (calculateGlobals) {
                 // Add 3 * potential energy to every owned particle of the interaction.
                 // Division to the correct value is handled in endTraversal().
+//               std::cout << "epot lut " << factors[0]  <<"  eepot man "<< potentialEnergy << std::endl;
                 const double potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+                std::cout  <<"  eepot man "<< potentialEnergy << std::endl;
 
                 // Virial is calculated as f_i * r_i
                 // see Thompson et al.: https://doi.org/10.1063/1.3245303
@@ -464,7 +481,8 @@ i.addF(forceI);
 
         //added by me for lut
 //        [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredJK,double distSquaredIJ,  double distSquaredKI) const {
-        [[nodiscard]] std::array<double, 3> getLUTValues2(double distSquaredIJ,  double distSquaredKI ,double distSquaredJK ) const {
+
+        [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredIJ,   double distSquaredKI, double distSquaredJK ) const {
 
             // Actual distances
             const double distIJ = std::sqrt(distSquaredIJ);
@@ -478,6 +496,8 @@ i.addF(forceI);
 
             const double numerator = numKI * numJK * numIJ;
 
+            std::cout << "LUT numerator " << numerator << std::endl;
+
             const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
             const double allDists = distIJ * distJK * distKI;
             const auto allDistsTripled = allDistsSquared * allDists;
@@ -486,6 +506,8 @@ i.addF(forceI);
             // Gradient factors of 1. / (rrr)^3
             const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
             const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
+
+            std::cout << "LUT allDistsTriplesGradientIJ " << allDistsTriplesGradientIJ << "   LUT allDistsTriplesGradientKI " << allDistsTriplesGradientKI << std::endl;
 
             // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
            const auto cosines = (3. / 8.) * numerator / allDistsSquared;
@@ -496,6 +518,9 @@ i.addF(forceI);
                     (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) /
                                  allDistsSquared);
 
+            std::cout << "LUT cosinesGradientIJ " << cosinesGradientIJ << "    LUT cosinesGradientKI " << cosinesGradientKI << std::endl;
+
+
             // Gradient factors corresponding to the normal ATM term
             const auto fullATMGradientIJ =
                     _nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
@@ -503,6 +528,8 @@ i.addF(forceI);
                     _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
 
             const auto expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
+
+            std::cout << "LUT fullATMGradientIJ " << fullATMGradientIJ << "    LUT fullATMGradientKI " << fullATMGradientKI << " exp term : " << expTerm<<  std::endl;
 
             // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
             std::array<double, 6> sumFactors{};
@@ -524,6 +551,9 @@ i.addF(forceI);
                 kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
             }
 
+            std::cout << "LUT sum " << sum << "    LUT ijSum " << ijSum << "   kiSum: " << kiSum<<  std::endl;
+
+
 
             // Total gradient factors for the exponential term times the cosines term
             const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
@@ -533,7 +563,7 @@ i.addF(forceI);
             const auto factorForceJDirectionIJ = (fullATMGradientIJ + fullExpGradientIJ);
             const auto factorForceJDirectionKI = (fullATMGradientKI + fullExpGradientKI);
 
-
+            std::cout << "LUT fullExpGradientIJ " << fullExpGradientIJ << "    LUT fullExpGradientKI " << fullExpGradientKI <<  std::endl;
 
             //for the newton part
 
@@ -550,17 +580,21 @@ i.addF(forceI);
             }
             const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
+            std::cout << "LUT allDistsTriplesGradientJK " << allDistsTriplesGradientJK << "    LUT cosinesGradientJK " << cosinesGradientJK <<  std::endl;
+            std::cout << "LUT fullATMGradientJK " << fullATMGradientJK << "    LUT jkSum " << jkSum <<  std::endl;
+
+
 
             const auto factorForceJDirectionJK = (fullATMGradientJK + fullExpGradientJK);
 
-//            return {factorForceJDirectionJK, factorForceJDirectionIJ, factorForceJDirectionKI};
-            return { factorForceJDirectionIJ, factorForceJDirectionKI, factorForceJDirectionJK};
+
+            return { -factorForceJDirectionIJ, factorForceJDirectionKI, factorForceJDirectionJK};
 
         }
 
 
 
-        [[nodiscard]] std::array<double, 3> getLUTValues(double dist1Squared,  double dist2Squared ,double dist3Squared ) const {
+        [[nodiscard]] std::array<double, 3> getLUTValues2(double dist1Squared,  double dist2Squared ,double dist3Squared ) const {
 
           double distIJ = std::sqrt(dist1Squared);
           double distJK = std::sqrt(dist2Squared);
@@ -935,10 +969,10 @@ i.addF(forceI);
         const double _cutoffSquared;
 
         // Parameters of the extended Axilrod-Teller potential for Krypton in Kelvin (K) and Angström (A)
-//        const double _nu = 1.61525e6;   // K*A^9
-        const double _nu = 1.61525e-3;   // K·nm^9  // K*A^9
-//        const double _alpha = 1.378382;  // A^-1
-        const double _alpha = 13.78382;  // A^-1  changed to nm
+        const double _nu = 1.61525e6;   // K*A^9
+//        const double _nu = 1.61525e-3;   // K·nm^9  // K*A^9
+        const double _alpha = 1.378382;  // A^-1
+//        const double _alpha = 13.78382;  // A^-1  changed to nm
 
 
         // Units: {K, K*A^-2, K*A^-4, K*A^-6, K*A^-8, K*A^-10}
