@@ -31,7 +31,9 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
-target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
+# TODO: find fftw library and install if required
+
+target_link_libraries(molecularDynamicsLibrary PUBLIC autopas fftw3)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
 

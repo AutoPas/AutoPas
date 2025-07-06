@@ -16,6 +16,9 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
+#include <fftw3.h>
+#include <unsupported/Eigen/CXX11/Tensor>
+
 namespace mdLib {
 
 template <class TriwiseKernel, class Particle_T, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
@@ -49,13 +52,40 @@ private:
         _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
         }
 
-        constructPolynomial();
+        // initialize vectors
+        _coefficients = Eigen::Tensor<double, 3, Eigen::RowMajor>(_numNodes.at(0), _numNodes.at(1), _numNodes.at(2));
+        constructPolynomialFFTW();
         evaluateInterpolant(1., 0.2, 0.3);
     }
 
     // TODO: recursive definition, clenshaw algorithm
     double evaluateChebyshev(double input, int j) {
       return std::cos(j * std::acos(input));
+    }
+
+    double evaluateChebyshevDerivative(double input, int j) {
+      return j * std::sin(j * std::acos(input)) / std::sqrt(1-input*input);
+    }
+
+    double evaluateInterpolantDerivative(int dim, double x, double y, double z) {
+      double result = 0.;
+      for (int i = 0; i < _numNodes.at(0); ++i) {
+        double mappedX = mapToCheb(x, _a.at(0), _b.at(0));
+        double val_x = (dim==0) ? evaluateChebyshevDerivative(mappedX, i) : evaluateChebyshev(mappedX, i); 
+
+        for (int j = 0; j < _numNodes.at(1); ++j) {
+          double mappedY = mapToCheb(y, _a.at(1), _b.at(1));
+          double val_y = (dim==1) ? evaluateChebyshevDerivative(mappedY, j) : evaluateChebyshev(mappedY, j);
+
+          for (int k = 0; k < _numNodes.at(2); ++k) {
+            double mappedZ = mapToCheb(z, _a.at(2), _b.at(2));
+            double val_z = (dim==2) ? evaluateChebyshevDerivative(mappedZ, k) : evaluateChebyshev(mappedZ, k);
+
+            result += _coefficients(i,j,k) * val_x * val_y * val_z;
+          }
+        }
+      }
+      return result;
     }
 
     double evaluateInterpolant(double x, double y, double z) {
@@ -72,7 +102,7 @@ private:
             double mappedZ = mapToCheb(z, _a.at(2), _b.at(2));
             double val_z = evaluateChebyshev(mappedZ, k);
 
-            result += _coefficients.at(i).at(j).at(k) * val_x * val_y * val_z;
+            result += _coefficients(i,j,k) * val_x * val_y * val_z;
           }
         }
       }
@@ -110,7 +140,7 @@ private:
             double zNode = std::cos((k2 + 0.5) * PI / _numNodes.at(2));
             double mappedZ = mapToInterval(zNode, _a.at(2), _b.at(2));
 
-            double value = _kernel.calculateTriplet(mappedX, mappedY, mappedZ);
+            double value = _kernel.calculateTripletDerivative(mappedX, mappedY, mappedZ);
             double cosinePart = evaluateChebyshev(xNode, indices.at(0)) * evaluateChebyshev(yNode, indices.at(1)) * evaluateChebyshev(zNode, indices.at(2));
             c += value * cosinePart;
           }
@@ -130,14 +160,62 @@ private:
     void constructPolynomial() {
       // TODO: port to interval splits
       // Obtain all coefficients
+      
       for (int i = 0; i < _numNodes.at(0); ++i) {
-        _coefficients.resize(_numNodes.at(0));
         for (int j = 0; j < _numNodes.at(1); ++j) {
-          _coefficients.at(i).resize(_numNodes.at(1));
           for (int k = 0; k < _numNodes.at(2); ++k) {
-            _coefficients.at(i).at(j).resize(_numNodes.at(2));
             std::array<int, 3> indices {i, j, k};
-            _coefficients.at(i).at(j).at(k) = obtainCoefficient(indices);
+            _coefficients(i,j,k) = obtainCoefficient(indices);
+          }
+        }
+      }
+    }
+
+    void constructPolynomialFFTW() {
+
+      int nX = _numNodes.at(0);
+      int nY = _numNodes.at(1);
+      int nZ = _numNodes.at(2);
+
+      /* Prepare Tensors */
+      for (int i = 0; i < nX; ++i) {
+        double nodeX = std::cos((2*i+1)*PI/(2.*nX));
+
+        for (int j = 0; j < nY; ++j) {
+
+          double nodeY = std::cos((2*j+1)*PI/(2.*nY));
+          for (int k = 0; k < nZ; ++k) {  
+            double nodeZ = std::cos((2*k+1)*PI/(2.*nZ));
+
+            _coefficients(i,j,k) = _kernel.calculateTripletDerivative(
+              mapToInterval(nodeX, _a.at(0), _b.at(0)),
+              mapToInterval(nodeY, _a.at(1), _b.at(1)),
+              mapToInterval(nodeZ, _a.at(2), _b.at(2))
+            );
+          }
+        }
+      }
+
+      /* Let FFTW compute the (unscaled) coefficients */
+      fftw_plan plan = fftw_plan_r2r_3d(nX, nY, nZ, _coefficients.data(), _coefficients.data(),
+        FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_ESTIMATE);
+      fftw_execute(plan);
+      fftw_destroy_plan(plan);
+
+      /* Scale the coefficients according to the Chebyshev interpolation */
+      for (int i = 0; i < nX; ++i) {
+        for (int j = 0; j < nY; ++j) {
+          for (int k = 0; k < nZ; ++k) {
+            if (i == 0) {
+              _coefficients(i,j,k) *= 0.5;
+            }
+            if (j == 0) {
+              _coefficients(i,j,k) *= 0.5;
+            }
+            if (k == 0) {
+              _coefficients(i,j,k) *= 0.5;
+            }
+            _coefficients(i,j,k) *= (1./nX * 1./nY * 1./ nZ);
           }
         }
       }
@@ -195,7 +273,7 @@ public:
         double fac = evaluateInterpolant(dIJ, dIK, dJK);
 
         // TODO: guard with compile flag
-        double real_fac = _kernel.calculateTriplet(dIJ, dIK, dJK);
+        double real_fac = _kernel.calculateTripletDerivative(dIJ, dIK, dJK);
 
         double error = real_fac - fac;
 
@@ -389,7 +467,7 @@ public:
        TriwiseKernel _kernel;
        const std::array<size_t, 3> _numNodes {};
        const std::array<std::vector<double>, 3> _intervalSplits {};
-       std::vector<std::vector<std::vector<double>>> _coefficients {};
+       Eigen::Tensor<double, 3, Eigen::RowMajor> _coefficients {};
 
        const double PI = 2 * std::acos(0.);
 

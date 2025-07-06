@@ -164,6 +164,10 @@ class ArgonKernel : public Kernel<ArgonKernel> {
     return 0.;
   }
 
+  double calculateTripletDerivative(double dr1, double dr2, double dr3) {
+    return 0.;
+  }
+
  private:
   const double _A = 4.61330146e7;
   const double _alpha1 = -2.98337630e1;

@@ -161,10 +161,105 @@ class KryptonKernel : public Kernel<KryptonKernel> {
   }
 
   double calculateTriplet(double dr1, double dr2, double dr3) {
-    return 0.;
+
+    const double firstCos = dr1*dr1 + dr2*dr2 - dr3*dr3;
+    const double secondCos = dr1*dr1 - dr2*dr2 + dr3*dr3;
+    const double thirdCos = -dr1*dr1 + dr2*dr2 + dr3*dr3;
+
+    const double firstNom = firstCos * secondCos * thirdCos;
+
+    const double firstDenom = dr1 * dr2 * dr3;
+    const double firstDenom2 = firstDenom * firstDenom;
+
+    const double firstPart = 1 + (3.*firstNom) / (8.*firstDenom2);
+
+    const double secondDenom3 = firstDenom2 * firstDenom;
+    const double exponent = -_alpha * (dr1 + dr2 + dr3);
+    const double ePart = std::exp(exponent);
+
+    double sum = 0.;
+    for (int i = 0; i <= 5; ++i) {
+      sum += _A.at(i) * std::pow(firstDenom, 2.*i/3.);
+    }
+
+    const double secondPart = _constC / secondDenom3 + ePart * sum;
+
+    return firstPart * secondPart;
   }
 
+  double calculateTripletDerivative(double dr1, double dr2, double dr3) {
+      // see Markus Branch for reference: https://github.com/AutoPas/AutoPas/blob/feat/3xa/noble-gas-functors/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/KryptonExtendedATMFunctor.h
+      // dr1 = dIJ
+      // dr2 = dJK
+      // dr3 = dKI
+
+      const double dr1Square = dr1*dr1;
+      const double dr2Square = dr2*dr2;
+      const double dr3Square = dr3*dr3;
+
+      const double numeratorKI = dr1Square + dr2Square - dr3Square;
+      const double numeratorJK = dr1Square + dr3Square - dr2Square;
+      const double numeratorIJ = dr2Square + dr3Square - dr1Square;
+    
+      const double numerator = numeratorKI * numeratorJK * numeratorIJ;
+
+      const double allDrSquare = dr1Square * dr2Square * dr3Square;
+      const double allDr = dr1 * dr2 * dr3;
+      const double allDrTripled = allDrSquare * allDr;
+
+      const double allDrTripledGradient1 = 3. / (allDrTripled * dr1Square);
+      // const double allDrTripledGradient3 = -3. / (allDrTripled * dr3Square);
+
+      const double cosines = (3. / 8.) * numerator / allDrSquare;
+      const double cosinesGradientIJ = (3./4.) * ((numerator / dr1Square - numeratorKI * numeratorIJ - numeratorJK * numeratorIJ + numeratorJK * numeratorKI) / allDrSquare);
+      // const double cosinesGradientKI = (3./4.) * ((-numerator / dr3Square + numeratorKI * numeratorIJ - numeratorJK * numeratorIJ + numeratorJK * numeratorKI) / allDrSquare);
+  
+      const double fullAtmGradientIJ = _constC * ((1.+cosines) * allDrTripledGradient1 + cosinesGradientIJ / allDrTripled);
+      // const double fullAtmGradientKI = _constC * ((1.+cosines) * allDrTripledGradient3 + cosinesGradientKI / allDrTripled);
+
+      const double expTerm = std::exp(-_alpha * (dr1 + dr2 + dr3));
+
+      std::array<double, 6> sumFactors {};
+      double sum = 0.;
+      for (size_t n = 0; n < sumFactors.size(); ++n) {
+        sumFactors.at(n) = _A.at(n) * std::pow(allDr, 2.*n / 3.);
+        sum += sumFactors.at(n);
+      }
+
+
+      double ijSum = 0.;
+      for (size_t n = 0; n < sumFactors.size(); ++n) {
+        ijSum += sumFactors.at(n) * (2.*n / (3.*dr1) - _alpha);
+      }
+
+      /*
+      double kiSum = 0.;
+      for (size_t n = 0; n < sumFactors.size(); ++n) {
+        kiSum += sumFactors.at(n) * (2.*n / (3.*dr3) - _alpha);
+      }
+      */
+
+      const double fullExpGradientIJ = expTerm * (-(1.+cosines) * ijSum / dr1 + cosinesGradientIJ * sum);
+      // const double fullExpGradientKI = expTerm * ((1.+cosines) * kiSum / dr3 + cosinesGradientKI * sum);
+
+      return fullAtmGradientIJ + fullExpGradientIJ;
+    }
+  
  private:
+
+ /* Triplet Potential Parameters */
+  const double _constC = 1.6152500e-3;
+  const double _alpha = 1.3783820e1;
+  const std::array<double, 6> _A = {
+    -0.3081304e8,
+    -0.3519442e10,
+    0.4928052e11,
+    -0.2182411e12,
+    0.3430880e12,
+    0
+  };
+  
+ /* Pair Potential Parameters */
   const double _constA = 0.3200711798e8;
   const double _alpha1 = -0.2430565544e2;
   const double _alpha2 = -0.1435536209e2;
