@@ -13,6 +13,34 @@ namespace {
  * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
+    pccLib::SpherocylinderCell::AttributeNames::id,
+    pccLib::SpherocylinderCell::AttributeNames::posX,
+    pccLib::SpherocylinderCell::AttributeNames::posY,
+    pccLib::SpherocylinderCell::AttributeNames::posZ,
+    pccLib::SpherocylinderCell::AttributeNames::velocityX,
+    pccLib::SpherocylinderCell::AttributeNames::velocityY,
+    pccLib::SpherocylinderCell::AttributeNames::velocityZ,
+    pccLib::SpherocylinderCell::AttributeNames::angularVelX,
+    pccLib::SpherocylinderCell::AttributeNames::angularVelY,
+    pccLib::SpherocylinderCell::AttributeNames::angularVelZ,
+    pccLib::SpherocylinderCell::AttributeNames::quaternion0,
+    pccLib::SpherocylinderCell::AttributeNames::quaternion1,
+    pccLib::SpherocylinderCell::AttributeNames::quaternion2,
+    pccLib::SpherocylinderCell::AttributeNames::quaternion3,
+    pccLib::SpherocylinderCell::AttributeNames::length,
+    pccLib::SpherocylinderCell::AttributeNames::typeId,
+    pccLib::SpherocylinderCell::AttributeNames::ownershipState,
+    pccLib::SpherocylinderCell::AttributeNames::diameter,
+    pccLib::SpherocylinderCell::AttributeNames::stress,
+    pccLib::SpherocylinderCell::AttributeNames::forceX,
+    pccLib::SpherocylinderCell::AttributeNames::forceY,
+    pccLib::SpherocylinderCell::AttributeNames::forceZ,
+    pccLib::SpherocylinderCell::AttributeNames::torqueX,
+    pccLib::SpherocylinderCell::AttributeNames::torqueY,
+    pccLib::SpherocylinderCell::AttributeNames::torqueZ};
+#else
 constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::id,
     mdLib::MultisiteMoleculeLJ::AttributeNames::posX,
@@ -39,6 +67,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::torqueZ,
     mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
     mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
+#endif
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
     mdLib::MoleculeLJ::AttributeNames::id,
@@ -62,7 +91,11 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
  * The combined size in byte of the simple attributes which need to be communicated using MPI.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+constexpr size_t AttributesSize = 204;
+#else
 constexpr size_t AttributesSize = 200;
+#endif
 #else
 constexpr size_t AttributesSize = 120;
 #endif
