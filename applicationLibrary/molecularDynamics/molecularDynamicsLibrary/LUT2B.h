@@ -37,7 +37,7 @@ class LUT2B : public ParentLUT {
     //    _lut2B.reserve(resolution);
 
     epsilon24 = eps;
-    sigmaSquared = sigsquared;
+    sigmaSquared = sigsquared * sigsquared;
     sqrtSigma = std::sqrt(sigmaSquared);
     shift6 = shift;
     // logToFile(std::to_string(cutoffSquared));
@@ -68,9 +68,9 @@ class LUT2B : public ParentLUT {
       return getLUTValues(distanceSquared);
     }
 
-    return getNextNeighbor(functor, distanceSquared);
+    // return getNextNeighbor(functor, distanceSquared);
 
-    //    return getLinear(functor,distanceSquared);
+       return getLinear(functor,distanceSquared);
   }
 
   template <class Functor>
@@ -96,9 +96,11 @@ class LUT2B : public ParentLUT {
 
   template <class Functor>
   float getLinear(const Functor &functor, float distance) {
+
+    // std::cout<< "distance  " << distance << std::endl;
     if (distance >= _cutoffSquared - _pointDistance / 2) {
-      //        logIndexToFile(std::to_string(_numberOfPoints-1));
-      return _lut2B.at(_numberOfPoints - 1);
+
+      return _lut2B.at(_resolution -1);
     }
     if (distance <= (_pointDistance / 2)) {
       return functor.getLUTValues(distance);
@@ -110,11 +112,16 @@ class LUT2B : public ParentLUT {
 
     // index
     float lowerX = std::floor((distance - _pointDistance / 2) / _pointDistance);
-    //      std::cout<< lowerX << std::endl;
+    // std::cout<< lowerX << std::endl;
+
+    if (lowerX >= _resolution) {
+
+      return _lut2B.at(_resolution -1);
+    }
 
     // index
     float upperX = std::ceil((distance - _pointDistance / 2) / _pointDistance);
-    //      std::cout<< upperX<< std::endl;
+    // std::cout<< upperX<< std::endl;
 
     //      const float lowerY = _lut2B.at(lowerX);
 
@@ -135,12 +142,16 @@ class LUT2B : public ParentLUT {
       //        logIndexToFile(std::to_string(upperX));
       upperY = _lut2B.at(upperX);
     }
-    //      std::cout<< lowerY<< std::endl;
-    //      std::cout<< upperY<< std::endl;
+    // std::cout<< lowerY<< std::endl;
+    // std::cout<< upperY<< std::endl;
     lowerX = lowerX * _pointDistance + _pointDistance / 2;
     upperX = upperX * _pointDistance + _pointDistance / 2;
 
-    //           std::cout << "in 2b Get/ Lineear \n";
+
+    // std::cout<<"to dist lower " << lowerX << std::endl;
+    // std::cout<<"to dist upper " << upperX << std::endl;
+    auto res = lowerY + (distance - lowerX) * (upperY - lowerY) / (upperX - lowerX);
+    // std::cout << "--------------------------------------------------------res   " <<res <<  std::endl;
     return lowerY + (distance - lowerX) * (upperY - lowerY) / (upperX - lowerX);
   }
 
@@ -186,7 +197,7 @@ class LUT2B : public ParentLUT {
     if (!delay) {
       for (auto i = 0; i < _resolution; i++) {
         auto x = (_pointDistance / 2) + (i * _pointDistance);
-        std::cout << x << std::endl;
+        // std::cout << x << std::endl;
         _lut2B.push_back(functor.getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
       }
     } else {
@@ -199,7 +210,7 @@ class LUT2B : public ParentLUT {
     double delay = std::sqrt(sigmaSquared) * 0.9;
     for (auto i = 0; i < _resolution; i++) {
       auto x = delay + (i * _pointDistance);
-      std::cout << x << std::endl;
+      // std::cout << x << std::endl;
       _lut2B.push_back(functor.getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
     }
   }
@@ -218,7 +229,7 @@ class LUT2B : public ParentLUT {
     if (!delay) {
       for (auto i = 0; i < _resolution; i++) {
         auto x = (_pointDistance / 2) + (i * _pointDistance);
-        std::cout << x << std::endl;
+        // std::cout << x << std::endl;
         _lut2B.push_back(getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
       }
     } else {
@@ -230,7 +241,7 @@ class LUT2B : public ParentLUT {
     double delay = std::sqrt(sigmaSquared) * 0.9;
     for (auto i = 0; i < _resolution; i++) {
       auto x = delay + (i * _pointDistance);
-      std::cout << x << std::endl;
+      // std::cout << x << std::endl;
       _lut2B.push_back(getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
     }
   }

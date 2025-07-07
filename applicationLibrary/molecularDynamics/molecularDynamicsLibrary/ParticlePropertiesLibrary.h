@@ -341,7 +341,7 @@ _LUT3B.setNu(nu);
         //            _LUT3B = mdLib::LUT3B(10, _cutoff * _cutoff, getNu(0));
         if(useLUT){
 //TODO
-            _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff,useGlobalLUT,delay, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
+            _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff,useGlobalLUT,delay, getSigma(0), getEpsilon(0) );
 
 
 
