@@ -1,10 +1,11 @@
 /**
- * @file TraversalComparison.cpp
- * @author humig
- * @date 12.07.19
+ * @file HGridTraversalComparison.cpp
+ * @author atacann
+ * @date 15.01.2024
  */
+// Mostly copied from TraversalComparison.cpp, minor changes to use different molecule types and test HGrid only
 
-#include "TraversalComparison.h"
+#include "HGridTraversalComparison.h"
 
 #include <string>
 
@@ -13,6 +14,10 @@
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/UniformGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctorAVX.h"
+
+std::shared_ptr<ParticlePropertiesLibrary<>> HGridTraversalComparison::_particlePropertiesLibrary =
+    std::make_shared<ParticlePropertiesLibrary<>>(1.);
 
 /**
  * Generates a random 3d shift with the given magnitude. The shift is uniformly distributed on a sphere with radius
@@ -21,7 +26,7 @@
  * @param generator
  * @return shift vector
  */
-std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
+std::array<double, 3> HGridTraversalComparison::randomShift(double magnitude, std::mt19937 &generator) {
   std::uniform_real_distribution<double> uniform01(0.0, 1.0);
   double theta = 2 * M_PI * uniform01(generator);
   double phi = acos(1 - 2 * uniform01(generator));
@@ -40,7 +45,7 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
  * @param numTotalParticles
  */
 template <class ContainerType>
-void TraversalComparison::executeShift(ContainerType &container, double magnitude, size_t numTotalParticles) {
+void HGridTraversalComparison::executeShift(ContainerType &container, double magnitude, size_t numTotalParticles) {
   std::vector<std::array<double, 3>> shiftVectorByID(numTotalParticles);
   constexpr unsigned seed = 42;
   std::mt19937 generator(seed);
@@ -67,8 +72,8 @@ void TraversalComparison::executeShift(ContainerType &container, double magnitud
  * @param interactionT
  */
 template <typename ContainerT>
-void TraversalComparison::markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles, unsigned seed,
-                                                     autopas::InteractionTypeOption interactionT) {
+void HGridTraversalComparison::markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
+                                                          unsigned seed, autopas::InteractionTypeOption interactionT) {
   // Here, we delete about deletionPercentage % of all particles.
 
   double deletionPercentage = params[interactionT].deletionPercentage;
@@ -90,27 +95,21 @@ void TraversalComparison::markSomeParticlesAsDeleted(ContainerT &container, size
 }
 
 template <bool globals>
-std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForces(
-    autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-    mykey_t key, bool useSorting) {
+std::tuple<std::vector<std::array<double, 3>>, HGridTraversalComparison::Globals>
+HGridTraversalComparison::calculateForces(autopas::ContainerOption containerOption,
+                                          autopas::TraversalOption traversalOption,
+                                          autopas::DataLayoutOption dataLayoutOption,
+                                          autopas::Newton3Option newton3Option, double cellSizeFactor, mykey_t key,
+                                          bool useSorting) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
         interactionType] = key;
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
-
   if (interactionType == autopas::InteractionTypeOption::pairwise) {
-    mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     globals /*calculateGlobals*/>
-        functor{_cutoff};
-    functor.setParticleProperties(_eps * 24, _sig * _sig);
-    std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
-        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
-  } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-    mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                                globals /*calculateGlobals*/>
-        functor{_cutoff};
-    functor.setParticleProperties(_nu);
+    mdLib::LJFunctor<Molecule, true /*applyShift*/, true /*useMixing*/, autopas::FunctorN3Modes::Both,
+                     globals /*calculateGlobals*/, false /* countFLOPs */, true /* relevantForTuning */,
+                     true /* scalingCutoff */>
+        functor{_cutoff, *_particlePropertiesLibrary};
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
         functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
   }
@@ -133,28 +132,42 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
  * @return Tuple of forces for all particles, ordered by particle id, and global values.
  */
 template <typename Functor, bool globals>
-std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForcesImpl(
-    Functor functor, autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-    mykey_t key, bool useSorting) {
+std::tuple<std::vector<std::array<double, 3>>, HGridTraversalComparison::Globals>
+HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::ContainerOption containerOption,
+                                              autopas::TraversalOption traversalOption,
+                                              autopas::DataLayoutOption dataLayoutOption,
+                                              autopas::Newton3Option newton3Option, double cellSizeFactor, mykey_t key,
+                                              bool useSorting) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
         interactionType] = key;
 
   // Construct container
-  autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
-  Molecule::setParticlePropertiesLibrary(nullptr);  // unset PPL from old tests
+  autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff, {0.5, 1., 1.5}};
   constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
   selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
                                                                            autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
+  std::array<size_t, 3> numParticlesArr = {numParticles / 3, numParticles / 3, numParticles - 2 * (numParticles / 3)};
+  std::array<size_t, 3> numHaloParticlesArr = {numHaloParticles / 3, numHaloParticles / 3,
+                                               numHaloParticles - 2 * (numHaloParticles / 3)};
+  unsigned long moleculeId = 0;
+  for (size_t i = 0; i < 3; ++i) {
+    autopasTools::generators::UniformGenerator::fillWithParticles(
+        container, Molecule({0., 0., 0.}, {0., 0., 0.}, moleculeId, i), container.getBoxMin(), container.getBoxMax(),
+        numParticlesArr[i], i);
+    moleculeId += numParticlesArr[i];
+  }
 
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numParticles);
   EXPECT_EQ(container.size(), numParticles) << "Wrong number of molecules inserted!";
-  autopasTools::generators::UniformGenerator::fillWithHaloParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container.getCutoff(),
-      numHaloParticles);
+
+  for (size_t i = 0; i < 3; ++i) {
+    autopasTools::generators::UniformGenerator::fillWithHaloParticles(
+        container, Molecule({0., 0., 0.}, {0., 0., 0.}, moleculeId, i), container.getCutoff(), numHaloParticlesArr[i],
+        static_cast<unsigned int>(i));
+    moleculeId += numHaloParticlesArr[i];
+  }
+
   EXPECT_EQ(container.size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
@@ -182,6 +195,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   container.rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
+    // need to set max displacement because particles will get shifted
+    container.setMaxDisplacement(skin / 2);
     executeShift(container, skin / 2, numParticles + numHaloParticles);
   }
 
@@ -213,7 +228,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
  * @param key The key that specifies the simulation.
  */
 template <bool globals>
-void TraversalComparison::generateReference(mykey_t key) {
+void HGridTraversalComparison::generateReference(mykey_t key) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _, interactionType] = key;
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
@@ -224,10 +239,6 @@ void TraversalComparison::generateReference(mykey_t key) {
       std::tie(calculatedForces, calculatedGlobals) =
           calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., key, false);
-    } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-      std::tie(calculatedForces, calculatedGlobals) =
-          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., key, false);
     }
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
@@ -237,23 +248,19 @@ void TraversalComparison::generateReference(mykey_t key) {
 /**
  * This tests a given configuration against a reference configuration.
  */
-TEST_P(TraversalComparison, traversalTest) {
+TEST_P(HGridTraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = GetParam();
-  // Todo: Remove this when the AxilrodTeller functor implements SoA
-  if (interactionType == autopas::InteractionTypeOption::triwise and
-      dataLayoutOption == autopas::DataLayoutOption::soa) {
-    GTEST_SKIP_("SoAs are not yet implemented for triwise traversals/functors.");
-  }
 
-  TraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,
-                                   globals,      interactionType};
+  HGridTraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,
+                                        globals,      interactionType};
 
   // empirically determined and set near the minimal possible value for the given number of particles
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   constexpr double rel_err_tolerance = 1.0e-10;
   constexpr double rel_err_tolerance_globals = 1.0e-10;
+  Molecule::setParticlePropertiesLibrary(_particlePropertiesLibrary);
 
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
@@ -319,10 +326,27 @@ static auto toString = [](const auto &info) {
  * Function to generate all possible configurations.
  * @return
  */
-auto TraversalComparison::getTestParams() {
+auto HGridTraversalComparison::getTestParams() {
+  // initialize site Ids with mandatory mass parameter
+  for (auto [siteTypeId, mass] : std::vector<std::pair<int, double>>{{0, 1.}, {1, 2.}, {2, 1.}}) {
+    _particlePropertiesLibrary->addSiteType(siteTypeId, mass);
+  }
+  // initialize LJ parameters
+  for (auto [siteTypeId, eps_sigma] :
+       std::vector<std::pair<int, std::pair<double, double>>>{{0, {1., 1.5}}, {1, {1., 1.}}, {2, {1., 0.5}}}) {
+    auto [epsilon, sigma] = eps_sigma;
+    _particlePropertiesLibrary->addLJParametersToSite(siteTypeId, epsilon, sigma);
+  }
+  // initialize AT parameters
+  for (auto [siteTypeId, nu] : std::vector<std::pair<int, double>>{{0, 1.}, {1, 1.}, {2, 1.}}) {
+    _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
+  }
+  _particlePropertiesLibrary->calculateMixingCoefficients(true);
+  Molecule::setParticlePropertiesLibrary(_particlePropertiesLibrary);
+  Molecule::setCutoffMultiplier(1.0);
   std::vector<TestingTuple> testParams{};
-  for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
+  for (auto containerOption : {autopas::ContainerOption::hierarchicalGrid}) {
+    for (auto interactionType : {autopas::InteractionTypeOption::pairwise}) {
       for (auto traversalOption :
            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
         for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
@@ -354,19 +378,15 @@ auto TraversalComparison::getTestParams() {
   return testParams;
 }
 
-std::unordered_map<autopas::InteractionTypeOption::Value, TraversalComparison::TraversalTestParams>
-    TraversalComparison::params = {{autopas::InteractionTypeOption::pairwise,
-                                    {30.,                              // deletionPercentage
-                                     {100, 2000},                      // numParticles
-                                     {200},                            // numHaloParticles
-                                     {{3., 3., 3.}, {10., 10., 10.}},  // boxMax
-                                     {0.5, 1., 2.}}},                  // cellSizeFactor
-                                   {autopas::InteractionTypeOption::triwise,
-                                    {10.,                           // deletionPercentage
-                                     {100, 400},                    // numParticles
-                                     {200},                         // numHaloParticles
-                                     {{3., 3., 3.}, {6., 6., 6.}},  // boxMax
-                                     {0.5, 1., 1.5}}}};             // cellSizeFactor
+std::unordered_map<autopas::InteractionTypeOption::Value, HGridTraversalComparison::TraversalTestParams>
+    HGridTraversalComparison::params = {
+        {autopas::InteractionTypeOption::pairwise,
+         {30.,                               // deletionPercentage
+          {100, 2000},                       // numParticles
+          {200},                             // numHaloParticles
+          {{3., 3.5, 4.}, {10., 10., 10.}},  // boxMax
+          {0.5, 1., 2.}}},                   // cellSizeFactor
+};
 
-INSTANTIATE_TEST_SUITE_P(Generated, TraversalComparison, ::testing::ValuesIn(TraversalComparison::getTestParams()),
-                         toString);
+INSTANTIATE_TEST_SUITE_P(Generated, HGridTraversalComparison,
+                         ::testing::ValuesIn(HGridTraversalComparison::getTestParams()), toString);
