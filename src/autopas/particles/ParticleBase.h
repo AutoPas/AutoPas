@@ -37,7 +37,8 @@ class ParticleBase {
         _v({0., 0., 0.}),
         _f({0.0, 0.0, 0.0}),
         _id(0),
-        _ownershipState(OwnershipState::owned)
+        _ownershipState(OwnershipState::owned),
+        _q(0.0)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
         _rAtRebuild({0.0, 0.0, 0.0})
@@ -53,13 +54,13 @@ class ParticleBase {
    * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
   ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
-               OwnershipState ownershipState = OwnershipState::owned)
+               OwnershipState ownershipState = OwnershipState::owned, double q = 0.0)
       : _r(r),
         _v(v),
         _f({0.0, 0.0, 0.0}),
         _id(id),
         _ownershipState(ownershipState),
-        _q(0.0)
+        _q(q)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
         _rAtRebuild(r)

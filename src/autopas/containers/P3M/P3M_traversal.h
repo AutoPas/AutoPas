@@ -3,11 +3,14 @@
 #include <complex>
 #include <vector>
 #include <array>
+#include <stdio.h>
 #include "FFT.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/P3M/P3M_shortRangeFunctor.h"
+#include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 
 namespace autopas {
 
@@ -35,7 +38,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     //}
 
     void set_traversal_parameters(unsigned int cao, std::array<int, 3> grid_dims, const std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, /*GridType &rs_shifted,*/ 
-        ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, ContainerIterator<ParticleType, true, false> &&beginIter){
+        ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, ContainerIterator<ParticleType, true, false> &&beginIter, 
+        LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
         this->cao = cao;
         this->grid_dims = grid_dims;
         this->grid_dist = grid_dist;
@@ -47,6 +51,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         this->fft = fft;
         this->boxMin = boxMin;
         this->beginIter = ContainerIterator<ParticleType, true, false>(beginIter);
+        this->shortRangeTraversal = shortRangeTraversal;
     }
 
     private:
@@ -78,6 +83,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // Container Iterator
     ContainerIterator<ParticleType, true, false> beginIter;
+    LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal;
         
 
     // assigns the charges of particles to cao number of points in the rs_grid
@@ -109,8 +115,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // uses B-splines for which the parameters are tabulated in https://doi.org/10.1063/1.477414
     void chargeFraction(double x, std::vector<double> &fractions){
-        assert(x <= 0.5);
-        assert(x >= -0.5);
+        //assert(x <= 0.5);
+        //assert(x >= -0.5);
         switch(cao){
             case 1:
                 fractions[0] = 1.;
@@ -143,8 +149,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // computes the derivatives of the charge Fractions
     void cafDerivative(double x, std::vector<double> &fractions){
-        assert(x <= 0.5);
-        assert(x >= -0.5);
+        //assert(x <= 0.5);
+        //assert(x >= -0.5);
         switch(cao){
             case 1:
                 fractions[0] = 1.;
@@ -245,6 +251,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             double closestGridPos = getClosestGridpoint(pPos, closestGridpoint, i);
             switch(i){
                 case 0:
+                    // TODO currently not in the interval
                     // charge Fraction uses normalized distances in [-0.5, 0.5]
                     chargeFraction((closestGridPos - pPos[i]) / grid_dist[i], caFractionsX);
                     break;
@@ -289,12 +296,10 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
      */
     void traverseFarParticles(){
         assignChargeDensities();
-        assignChargeDensities();
         fft.forward3D(rs_grid, ks_grid, grid_dims);
         applyInfluenceFunction();
          
         fft.backward3D(ks_grid, rs_grid, grid_dims);
-        interpolateForces();
         interpolateForces();
     }
 
@@ -326,16 +331,13 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
 
     // calls normal traversal with modified potential-functor
-    void traversNearParticles(){
-        /*typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                       this->getCutoff() + this->getVerletSkin());
-
-        auto traversal =
-        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-        this->_linkedCells.iteratePairwise(&traversal);*/
-        return;
+    void traverseNearParticles(){
+        if(shortRangeTraversal){
+            shortRangeTraversal->initTraversal();
+            shortRangeTraversal->traverseParticles();
+            shortRangeTraversal->endTraversal();
+            return;
+        } 
     }
 
 
@@ -343,7 +345,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     void traverseParticles(){
         traverseFarParticles();
-        //traverseNearParticles();
+        traverseNearParticles();
     }
 
     [[nodiscard]] bool isApplicable() const override {

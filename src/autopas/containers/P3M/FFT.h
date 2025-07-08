@@ -2,7 +2,7 @@
 
 #include <complex>
 #include <vector>
-#include <numbers>
+#include <math.h>
 #include <array>
 
 namespace autopas {
@@ -12,7 +12,6 @@ namespace autopas {
         using RealGridType = typename std::vector<std::vector<std::vector<double>>>;
         using ComplexGridType = std::vector<std::vector<std::vector<std::complex<double>>>>;
 
-        double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
         std::vector<std::complex<double>> inBuffer;
         std::vector<std::complex<double>> outBuffer;
         std::vector<std::complex<double>> fftBuffer;
@@ -34,9 +33,9 @@ namespace autopas {
 
             std::complex<double> w_n;
             if(forward){
-                w_n = std::exp(std::complex(0.,2*pi/ N));
+                w_n = std::exp(std::complex(0.,2*M_PI/ N));
             }else{
-                w_n = std::exp(std::complex(0.,-2*pi/ N));
+                w_n = std::exp(std::complex(0.,-2*M_PI/ N));
             }
             std::complex<double> w = std::complex(1.,0.);
 
@@ -59,7 +58,7 @@ namespace autopas {
             fft(x, N, 0, result, true);
             if(correct_scaling){
                 for(int i = 0; i < N; i++){
-                    result[i] /= std::sqrt(2*pi);
+                    result[i] /= std::sqrt(2*M_PI);
                 }
             }
         }
@@ -68,7 +67,7 @@ namespace autopas {
             fft(x, N, 0, fftBuffer, false);
             if(correct_scaling){
                 for(int i = 0; i < N; i++){
-                    result[i] = std::real(fftBuffer[i]) * std::sqrt(2*pi) / N;
+                    result[i] = std::real(fftBuffer[i]) * std::sqrt(2*M_PI) / N;
                 }
             }else{
                 for(int i = 0; i < N; i++){

@@ -3,6 +3,9 @@
 #include "autopas/containers/P3M/FFT.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/P3M/P3M_traversal.h"
+#include "autopas/containers/P3M/P3M_shortRangeFunctor.h"
+#include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
+#include "autopas/options/DataLayoutOption.h"
 
 #include <vector>
 #include <complex>
@@ -14,6 +17,7 @@ namespace autopas {
 template <class Particle_T>
 class P3M_container : public LinkedCells<Particle_T> {
 
+    using LinkedParticleCell = LinkedCells<Particle_T>::ParticleCell;
     using ParticleType = typename LinkedCells<Particle_T>::ParticleType;
     using GridType = typename std::vector<std::vector<std::vector<double>>>;
     using ComplexGridType = std::vector<std::vector<std::vector<std::complex<double>>>>;
@@ -22,7 +26,7 @@ class P3M_container : public LinkedCells<Particle_T> {
     P3M_container(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, std::array<int, 3> &N, const double cutoff,
               const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, unsigned int cao = 3)
-              : LinkedCells<Particle_T>(boxMin, boxMax, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator) {
+              : LinkedCells<ParticleType>(boxMin, boxMax, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator) {
 
         
         grid_dims = N;
@@ -35,15 +39,7 @@ class P3M_container : public LinkedCells<Particle_T> {
             }
         }
         fft = FFT(maxGridDim);
-
-        std::cout << "Cao:" << cao << std::endl;
-        std::cout << "Grid_dims";
-        for(int i = 0; i < 3; i++){
-            std::cout << N[i];
-        }
-        std::cout << std::endl;
-
-        
+    
         for (int i = 0; i < 3; i++){
             box_lengths[i] = boxMax[i] - boxMin[i];
         } 
@@ -167,11 +163,13 @@ class P3M_container : public LinkedCells<Particle_T> {
      * @param traversal
      */
     template <typename Traversal>
-    void prepareTraversal(Traversal &traversal) {
-        auto *traversalP3M = dynamic_cast<P3M_traversal<typename LinkedCells<Particle_T>::ParticleCell> *>(traversal);
+    void prepareTraversalP3M(Traversal &traversal, LCC08Traversal<LinkedParticleCell, P3M_shortRangeFunctor<Particle_T>> *shortRangeTraversal) {
+        this->prepareTraversal(shortRangeTraversal);
+        auto *traversalP3M = dynamic_cast<P3M_traversal<LinkedParticleCell> *>(traversal);
         if (traversalP3M) {
             traversalP3M->set_traversal_parameters(cao, grid_dims, this->getBoxMin(), grid_dist, rs_grid, /*rs_grid_shifted,*/ 
-                ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, std::move(this->begin(autopas::IteratorBehavior::owned)));
+                ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, std::move(this->begin(autopas::IteratorBehavior::owned)),
+                shortRangeTraversal);
         } else {
         autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the P3M container. TraversalID: {}",
@@ -180,7 +178,13 @@ class P3M_container : public LinkedCells<Particle_T> {
     }
 
     void computeInteractions(TraversalInterface *traversal) override {
-        prepareTraversal(traversal);
+        P3M_shortRangeFunctor<Particle_T> f(alpha, this->getCutoff());
+
+        auto shortRangeTraversal =
+        LCC08Traversal<LinkedParticleCell, P3M_shortRangeFunctor<Particle_T>>(
+            this->getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getCutoff(),
+            this->getCellBlock().getCellLength(), DataLayoutOption::aos, false);
+        prepareTraversalP3M(traversal, &shortRangeTraversal);
 
         traversal->initTraversal();
         traversal->traverseParticles();

@@ -186,6 +186,11 @@ class MDFlexConfig {
                   const std::vector<std::array<double, 3>> &relSitePos, std::array<double, 3> momentOfInertia);
 
   /**
+   * Adds charges to sites
+   */
+  void addChargesToSite(unsigned long siteId, double charge);
+
+  /**
    * Flushes the particles.
    */
   void flushParticles();
@@ -647,6 +652,11 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  /**
+   * chargesMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> chargesMap{
+      {{0ul, 1.}}, "charge", true, "Mapping from site type to a charge value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

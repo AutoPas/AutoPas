@@ -613,6 +613,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.sigmaMap.value.clear();
         config.nuMap.value.clear();
         config.massMap.value.clear();
+        config.chargesMap.value.clear();
 
         int siteID = 0;
         std::vector<std::string> siteErrors;
@@ -645,6 +646,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           const auto nu =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           config.addATParametersToSite(siteID, nu);
+
+          // Check charge parameter
+          const auto charge = parseComplexTypeValueSingle<double>(siteIterator->second, config.chargesMap.name.c_str(),
+                                                                   siteErrors, false);
+          config.addChargesToSite(siteID, charge);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion

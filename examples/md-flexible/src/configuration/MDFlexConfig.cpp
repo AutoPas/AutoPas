@@ -574,6 +574,23 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 #endif
 }
 
+void MDFlexConfig::addChargesToSite(unsigned long siteId, double charge) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (chargesMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNearRel(chargesMap.value.at(siteId), charge)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      chargesMap.value.emplace(siteId, charge);
+    }
+  } else {
+    throw std::runtime_error("Initializing charges to a non existing site-ID");
+  }
+}
+
 void MDFlexConfig::flushParticles() { particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
@@ -611,6 +628,10 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
                                            momentOfInertiaMap.at(molTypeId));
   }
 #endif
+  // initialize charges
+  for (auto [siteTypeId, charge] : chargesMap.value) {
+    _particlePropertiesLibrary->addChargesToSite(siteTypeId, charge);
+  }
 
   _particlePropertiesLibrary->calculateMixingCoefficients();
 }
@@ -635,6 +656,10 @@ void MDFlexConfig::initializeObjects() {
     }
     for (const auto &object : cubeClosestPackedObjects) {
       object.generate(particles);
+    }
+    // quick way to set the charges of all particles at generation
+    for(auto &particle : particles){
+      particle.setQ(_particlePropertiesLibrary->getCharge(particle.getTypeId()));
     }
   }
 }

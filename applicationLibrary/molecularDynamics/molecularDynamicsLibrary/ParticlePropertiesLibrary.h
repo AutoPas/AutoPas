@@ -94,6 +94,16 @@ class ParticlePropertiesLibrary {
                   const std::vector<std::array<floatType, 3>> relPos, const std::array<floatType, 3> momentOfInertia);
 
   /**
+   * Adds the charges of a single site type to the library.
+   *
+   * Checks if a site with given siteId was already registered.
+   * Old values will be overwritten.
+   * @param siteId
+   * @param charge
+   */
+  void addChargesToSite(const intType siteId, const floatType charge);
+
+  /**
    * Calculates the actual mixing coefficients.
    */
   void calculateMixingCoefficients();
@@ -173,6 +183,17 @@ class ParticlePropertiesLibrary {
    * of the MoI matrix/tensor.
    */
   std::array<floatType, 3> getMomentOfInertia(intType i) const;
+
+  /**
+   * Getter for a molecules' charge
+   *
+   * For single site molecules, this automatically gets the mass of the site with the given ID.
+   * For multi site molecules, this gets the total mass of the molecule.
+   *
+   * @param i Type Id of a multi-site molecule.
+   * @return charge_i
+   */
+  floatType getCharge(intType i) const;
 
   /**
    * Get relative site positions to a multi-site molecule's center-of-mass. These site positions must be appropriately
@@ -307,6 +328,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
   std::vector<floatType> _nus;  // Factor for AxilrodTeller potential
+  std::vector<floatType> _charges;
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -320,6 +342,7 @@ class ParticlePropertiesLibrary {
   // Allocate memory for the respective parameters
   bool _storeLJData{false};
   bool _storeATData{false};
+  bool _storeCharges{false};
 
   struct PackedLJMixingData {
     floatType epsilon24;
@@ -354,6 +377,9 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   }
   if (_storeATData) {
     _nus.emplace_back(0.0);
+  }
+  if(_storeCharges) {
+    _charges.emplace_back(0.0);
   }
 }
 
@@ -440,6 +466,22 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
 }
 
 template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addChargesToSite(intType siteID, floatType charge) {
+  if (siteID >= _numRegisteredSiteTypes) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addChargesToSite(): Trying to set charges for a site type "
+        "with id {},"
+        " which has not been registered yet. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  _storeCharges = true;
+  if (_charges.size() != _numRegisteredSiteTypes) {
+    _charges.resize(_numRegisteredSiteTypes);
+  }
+  _charges[siteID] = charge;
+}
+
+template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
   if (_numRegisteredSiteTypes == 0) {
     autopas::utils::ExceptionHandler::AutoPasException(
@@ -510,6 +552,11 @@ std::array<floatType, 3> ParticlePropertiesLibrary<floatType, intType>::getMomen
              "compile with the CMake argument '-DMD_FLEXIBLE_MODE=MULTISITE'.");
 #endif
   return _momentOfInertias[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getCharge(intType i) const {
+return _charges[i];
 }
 
 template <typename floatType, typename intType>
