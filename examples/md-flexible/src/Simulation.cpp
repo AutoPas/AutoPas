@@ -197,8 +197,9 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     }
 
     // Set the simulation directly to the desired initial temperature.
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.initTemperature.value, std::numeric_limits<double>::max(), _configuration.deltaT.value);
+    // Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+    //                   _configuration.initTemperature.value, std::numeric_limits<double>::max(), _configuration.deltaT.value);
+    Thermostat::tempScale = 1.0;  // reset tempScale to 1.0, since we just set the initial temperature
   }
 
   _timers.initialization.stop();
@@ -439,9 +440,9 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
-  TimeDiscretization::calculatePositionsAndResetForces(
+  TimeDiscretization::predictLeapFrog(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+      _configuration.globalForce.value, Thermostat::tempScale, _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -498,7 +499,7 @@ void Simulation::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+    TimeDiscretization::correctLeapFrog(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             deltaT);
     _timers.velocityUpdate.stop();
   }

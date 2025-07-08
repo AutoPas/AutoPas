@@ -18,7 +18,7 @@
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/isSmartPointer.h"
 #include "src/ParticleSerializationTools.h"
-#include "src/Thermostat.h"
+// #include "src/Thermostat.h"
 
 namespace {
 /**

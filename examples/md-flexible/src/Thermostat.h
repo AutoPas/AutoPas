@@ -17,6 +17,8 @@
  * Thermostat to adjust the Temperature of the Simulation.
  */
 namespace Thermostat {
+
+  double tempScale = 1.0;  ///< Scale factor for the temperature, used to adjust the velocities of the particles.
 /**
  * Calculates temperature of system.
  * Assuming dimension-less units and Boltzmann constant = 1.
@@ -257,11 +259,11 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     AutoPasLog(DEBUG, "Temperature of typeID {} after application of thermostat: {}", particleTypeID,
                immediateTargetTemperature);
   }
-
+  tempScale = scalingMap[0];
   // Scale velocities (and angular velocities) with the scaling map
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
+    iter->setV(iter->getV() * ( scalingMap[iter->getTypeId()] ));
 #if MD_FLEXIBLE_MODE == MULTISITE
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif

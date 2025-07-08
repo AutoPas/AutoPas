@@ -31,9 +31,9 @@ namespace TimeDiscretization {
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/2/rebuildFrequency).
  */
-void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
+void predictLeapFrog(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      const double &deltaT, const std::array<double, 3> &globalForce, double tempScale,
                                       bool fastParticlesThrow);
 
 /**
@@ -65,7 +65,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  */
-void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+void correctLeapFrog(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 /**

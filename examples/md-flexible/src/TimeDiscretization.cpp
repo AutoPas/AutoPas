@@ -14,9 +14,9 @@
 
 namespace TimeDiscretization {
 
-void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
+void predictLeapFrog(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      const double &deltaT, const std::array<double, 3> &globalForce, double tempScale,
                                       bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
@@ -26,6 +26,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
+  auto scale = 2.0 - 1.0 / tempScale;
 
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -34,9 +35,10 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF(globalForce);
-    v *= 1.0;
-    f *= (deltaT * deltaT * deltaT / (2 * m));
+    v *= scale;
+    f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
+    iter->setV(displacement);
     // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
     if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
         maxAllowedDistanceMovedSquared > 0) {
@@ -139,7 +141,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #endif
 }
 
-void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+void correctLeapFrog(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
   using namespace autopas::utils::ArrayMath::literals;
@@ -149,7 +151,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const auto force = iter->getF();
     const auto oldForce = iter->getOldF();
-    const auto changeInVel = (force + oldForce) * (deltaT * deltaT / (2 * molecularMass));
+    const auto changeInVel = (force) * (deltaT * deltaT / (2 * molecularMass));
     iter->addV(changeInVel);
   }
 }

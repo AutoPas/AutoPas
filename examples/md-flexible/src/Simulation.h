@@ -243,6 +243,7 @@ class Simulation {
    */
   std::shared_ptr<ParallelVtkWriter> _vtkWriter;
 
+  double _tempScale{1.0};
   /**
    * Defines, if vtk files should be created or not.
    */
