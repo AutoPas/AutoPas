@@ -159,13 +159,13 @@ class KryptonExtendedATMFunctor
 
       const auto forceIDirectionIJ = displacementIJ * (factors[order[0]]);
       const auto forceIDirectionKI = displacementKI * (factors[order[2]]);
-      forceI = (forceIDirectionIJ - forceIDirectionKI);
+      forceI = forceIDirectionIJ - forceIDirectionKI;
 
       i.addF(forceI);
       if (newton3) {
-        const auto forceJDirectionIJ = displacementIJ * (-1 * factors[order[0]]);
+        const auto forceJDirectionIJ = displacementIJ * (factors[order[0]]);
         const auto forceJDirectionJK = displacementJK * (factors[order[1]]);
-        forceJ = (forceJDirectionJK - forceJDirectionIJ);
+        forceJ = forceJDirectionJK - forceJDirectionIJ;
 
         j.addF(forceJ);
 
@@ -233,9 +233,6 @@ class KryptonExtendedATMFunctor
       const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
       const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
 
-      auto testIJ = expTerm * (devIJ + cosinesGradientIJ * sum);
-      auto testKI = expTerm * (devKI + cosinesGradientKI * sum);
-
       // Assembling the forces
       auto factorIJ = - fullATMGradientIJ - fullExpGradientIJ;
       auto factorKI = fullATMGradientKI + fullExpGradientKI;
@@ -269,7 +266,7 @@ class KryptonExtendedATMFunctor
         const auto factorJK = -fullATMGradientJK - fullExpGradientJK;
         const auto forceDirectionJK = displacementJK * factorJK;
 
-        forceJ = forceJDirectionJK - forceJDirectionIJ;
+        forceJ = forceDirectionJK - forceDirectionIJ;
         j.addF(forceJ);
 
         // Using newton's third law for the force on particle k
@@ -381,7 +378,7 @@ class KryptonExtendedATMFunctor
     const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
     const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
 
-    const auto factorIJ = - fullATMGradientIJ - fullExpGradientIJ);
+    const auto factorIJ = - fullATMGradientIJ - fullExpGradientIJ;
     const auto factorKI = fullATMGradientKI + fullExpGradientKI;
 
     // for the newton part
@@ -399,7 +396,7 @@ class KryptonExtendedATMFunctor
     }
     const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
-    const auto factorJK = - fullATMGradientJK - fullExpGradientJK);
+    const auto factorJK = - fullATMGradientJK - fullExpGradientJK;
 
     return {factorIJ, factorJK, factorKI};
   }
