@@ -97,11 +97,9 @@ template <class T>
  * @param cosK
  * @return P_A(cosI) * P_B(cosJ) * P_C(cosK)
  */
-    [[nodiscard]] inline double Q(const size_t A, const size_t B, const size_t C, double cosI,
-                                  double cosJ, double cosK) {
-        return LegendrePol(cosI, A) * LegendrePol(cosJ, B) * LegendrePol(cosK, C);
-    }
-
+[[nodiscard]] inline double Q(const size_t A, const size_t B, const size_t C, double cosI, double cosJ, double cosK) {
+  return LegendrePol(cosI, A) * LegendrePol(cosJ, B) * LegendrePol(cosK, C);
+}
 
 /**
  *
@@ -127,7 +125,6 @@ template <size_t ID>
   return firstTerm + secondTerm + thirdTerm;
 }
 
-
 ///**
 // *
 // * @tparam ID id of the particle with respect to which we are computing the derivative
@@ -137,7 +134,8 @@ template <size_t ID>
 // * @param cosI
 // * @param cosJ
 // * @param cosK
-// * @return derivative of Q, i.e. dP_A(cosI)/dcosI * dcosI/dID * P_B(cosJ) * P_C(cosK) +  P_A(cosI) * dP_B(cosJ)/dcosJ *
+// * @return derivative of Q, i.e. dP_A(cosI)/dcosI * dcosI/dID * P_B(cosJ) * P_C(cosK) +  P_A(cosI) * dP_B(cosJ)/dcosJ
+// *
 // * dcosJ/dID * P_C(cosK) +  P_A(cosI) * P_B(cosJ) * dP_C(cosK)/dcosK * dcosK/dID
 // */
 //    template <size_t ID>
@@ -151,7 +149,6 @@ template <size_t ID>
 //                         derivativeLegendre(cosK, C) * cosK.derive_wrt<ID>();
 //        return firstTerm + secondTerm + thirdTerm;
 //    }
-
 
 /**
  *
@@ -169,8 +166,7 @@ template <size_t ID>
          Q(B, C, A, cosI, cosJ, cosK) + Q(C, A, B, cosI, cosJ, cosK) + Q(C, B, A, cosI, cosJ, cosK);
 }
 
-
-//added
+// added
 /**
  *
  * @param A
@@ -181,11 +177,11 @@ template <size_t ID>
  * @param cosK
  * @return sum of the six possible terms that result from the permutation of the interior angles
  */
-    [[nodiscard]] inline double Permutation(const size_t A, const size_t B, const size_t C, double cosI,
-                                            double cosJ, double cosK) {
-        return Q(A, B, C, cosI, cosJ, cosK) + Q(A, C, B, cosI, cosJ, cosK) + Q(B, A, C, cosI, cosJ, cosK) +
-               Q(B, C, A, cosI, cosJ, cosK) + Q(C, A, B, cosI, cosJ, cosK) + Q(C, B, A, cosI, cosJ, cosK);
-    }
+[[nodiscard]] inline double Permutation(const size_t A, const size_t B, const size_t C, double cosI, double cosJ,
+                                        double cosK) {
+  return Q(A, B, C, cosI, cosJ, cosK) + Q(A, C, B, cosI, cosJ, cosK) + Q(B, A, C, cosI, cosJ, cosK) +
+         Q(B, C, A, cosI, cosJ, cosK) + Q(C, A, B, cosI, cosJ, cosK) + Q(C, B, A, cosI, cosJ, cosK);
+}
 
 /**
  *
@@ -206,7 +202,6 @@ template <size_t ID>
          Q_deriv_wrt<ID>(C, A, B, cosI, cosJ, cosK) + Q_deriv_wrt<ID>(C, B, A, cosI, cosJ, cosK);
 }
 
-
 /**
  *
  * @tparam ID id of the particle with respect to which we are computing the derivative
@@ -218,11 +213,11 @@ template <size_t ID>
  * @param cosK
  * @return derivative of the permutation summation
  */
-    template <size_t ID>
-    [[nodiscard]] nabla Permutation_deriv_wrt(const size_t A, const size_t B, const size_t C, double cosI,
-                                              double cosJ, double cosK) {
-        return Q_deriv_wrt<ID>(A, B, C, cosI, cosJ, cosK) + Q_deriv_wrt<ID>(A, C, B, cosI, cosJ, cosK) +
-               Q_deriv_wrt<ID>(B, A, C, cosI, cosJ, cosK) + Q_deriv_wrt<ID>(B, C, A, cosI, cosJ, cosK) +
-               Q_deriv_wrt<ID>(C, A, B, cosI, cosJ, cosK) + Q_deriv_wrt<ID>(C, B, A, cosI, cosJ, cosK);
-    }
+template <size_t ID>
+[[nodiscard]] nabla Permutation_deriv_wrt(const size_t A, const size_t B, const size_t C, double cosI, double cosJ,
+                                          double cosK) {
+  return Q_deriv_wrt<ID>(A, B, C, cosI, cosJ, cosK) + Q_deriv_wrt<ID>(A, C, B, cosI, cosJ, cosK) +
+         Q_deriv_wrt<ID>(B, A, C, cosI, cosJ, cosK) + Q_deriv_wrt<ID>(B, C, A, cosI, cosJ, cosK) +
+         Q_deriv_wrt<ID>(C, A, B, cosI, cosJ, cosK) + Q_deriv_wrt<ID>(C, B, A, cosI, cosJ, cosK);
+}
 }  // namespace autopas::utils::ArrayMath::Argon

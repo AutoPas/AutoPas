@@ -191,8 +191,7 @@ class LJFunctorAVX
       double lj12m6 = lj12 - lj6;
       double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     }
-    auto
-        f = dr * fac;
+    auto f = dr * fac;
 
     i.addF(f);
     if (newton3) {

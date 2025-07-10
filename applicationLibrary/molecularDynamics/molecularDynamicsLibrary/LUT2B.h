@@ -70,7 +70,7 @@ class LUT2B : public ParentLUT {
 
     // return getNextNeighbor(functor, distanceSquared);
 
-       return getLinear(functor,distanceSquared);
+    return getLinear(functor, distanceSquared);
   }
 
   template <class Functor>
@@ -96,11 +96,9 @@ class LUT2B : public ParentLUT {
 
   template <class Functor>
   float getLinear(const Functor &functor, float distance) {
-
     // std::cout<< "distance  " << distance << std::endl;
     if (distance >= _cutoffSquared - _pointDistance / 2) {
-
-      return _lut2B.at(_resolution -1);
+      return _lut2B.at(_resolution - 1);
     }
     if (distance <= (_pointDistance / 2)) {
       return functor.getLUTValues(distance);
@@ -115,8 +113,7 @@ class LUT2B : public ParentLUT {
     // std::cout<< lowerX << std::endl;
 
     if (lowerX >= _resolution) {
-
-      return _lut2B.at(_resolution -1);
+      return _lut2B.at(_resolution - 1);
     }
 
     // index
@@ -146,7 +143,6 @@ class LUT2B : public ParentLUT {
     // std::cout<< upperY<< std::endl;
     lowerX = lowerX * _pointDistance + _pointDistance / 2;
     upperX = upperX * _pointDistance + _pointDistance / 2;
-
 
     // std::cout<<"to dist lower " << lowerX << std::endl;
     // std::cout<<"to dist upper " << upperX << std::endl;
@@ -221,7 +217,6 @@ class LUT2B : public ParentLUT {
     for (auto i = 0; i < _resolution; i++) {
       double distance = (_pointDistance / 2) + (i * _pointDistance);
       _lut2B_globals.push_back({functor.getLUTValues(distance), calculateGlobalFactor(distance)});
-
     }
   }
 
@@ -251,7 +246,6 @@ class LUT2B : public ParentLUT {
     for (auto i = 0; i < _resolution; i++) {
       double distance = (_pointDistance / 2) + (i * _pointDistance);
       _lut2B_globals.push_back({getLUTValues(distance), calculateGlobalFactor(distance)});
-
     }
   }
 

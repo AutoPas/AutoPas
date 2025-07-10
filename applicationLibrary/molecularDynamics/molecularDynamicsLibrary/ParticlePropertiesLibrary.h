@@ -12,13 +12,12 @@
 #include <set>
 #include <vector>
 
-#include "molecularDynamicsLibrary/LUT3B.h"
-#include "molecularDynamicsLibrary/LUT2B.h"
-#include "molecularDynamicsLibrary/ParentLUT.h"
-#include "autopas/utils/Timer.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
-
+#include "autopas/utils/Timer.h"
+#include "molecularDynamicsLibrary/LUT2B.h"
+#include "molecularDynamicsLibrary/LUT3B.h"
+#include "molecularDynamicsLibrary/ParentLUT.h"
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
@@ -303,107 +302,85 @@ class ParticlePropertiesLibrary {
                                  k];
   }
 
-
-
-    /**
+  /**
    * Initializes the two look-up tables with hardcoded arguments
    */
-    void initializeLookUpTables() {
-        // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
-        if (_epsilons.size() > 1 || _sigmas.size() > 1 || _nus.size() > 1)
-            throw autopas::utils::ExceptionHandler::AutoPasException(
-                    "Cannot use multiple particle types with Look-up Table.");
-        if (_storeLJData) {
-//            _LUT3B = mdLib::LUT3B(10, _cutoff * _cutoff, getNu(0));
-double nu = getNu(0);
-_LUT3B = mdLib::LUT3B(10, _cutoff*_cutoff);
-_LUT3B.setNu(nu);
-
-
-
-
-        }
-        if (_storeATData) {
-//            _LUT2B = mdLib::LUT2B(10, _cutoff * _cutoff,getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
-        }
+  void initializeLookUpTables() {
+    // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
+    if (_epsilons.size() > 1 || _sigmas.size() > 1 || _nus.size() > 1)
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot use multiple particle types with Look-up Table.");
+    if (_storeLJData) {
+      //            _LUT3B = mdLib::LUT3B(10, _cutoff * _cutoff, getNu(0));
+      double nu = getNu(0);
+      _LUT3B = mdLib::LUT3B(10, _cutoff * _cutoff);
+      _LUT3B.setNu(nu);
     }
+    if (_storeATData) {
+      //            _LUT2B = mdLib::LUT2B(10, _cutoff * _cutoff,getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
+    }
+  }
 
-    /**
+  /**
    * Initializes the two look-up tables with hardcoded arguments
-     */
-    void initializeLookUpTables( bool triwise, bool useLUT, bool useGlobalLUT, bool delay, int resolution) {
-      // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
-      if (_epsilons.size() > 1 || _sigmas.size() > 1 || _nus.size() > 1)
-        throw autopas::utils::ExceptionHandler::AutoPasException(
-            "Cannot use multiple particle types with Look-up Table.");
-      if (!triwise) {
-        _LUT2B.setResolution(resolution); // reset resolution and all dependants things
-        //            _LUT3B = mdLib::LUT3B(10, _cutoff * _cutoff, getNu(0));
-        if(useLUT){
-//TODO
-            _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff,useGlobalLUT,delay, getSigma(0), getEpsilon(0) );
-
-
-
-        }
-
-
-
-
-
+   */
+  void initializeLookUpTables(bool triwise, bool useLUT, bool useGlobalLUT, bool delay, int resolution) {
+    // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
+    if (_epsilons.size() > 1 || _sigmas.size() > 1 || _nus.size() > 1)
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot use multiple particle types with Look-up Table.");
+    if (!triwise) {
+      _LUT2B.setResolution(resolution);  // reset resolution and all dependants things
+      //            _LUT3B = mdLib::LUT3B(10, _cutoff * _cutoff, getNu(0));
+      if (useLUT) {
+        // TODO
+        _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff, useGlobalLUT, delay, getSigma(0), getEpsilon(0));
       }
-      if (triwise) {
+    }
+    if (triwise) {
+      _LUT3B.setLutTimer(LUTtimers);
 
-        _LUT3B.setLutTimer(LUTtimers);
-
-        double nu = getNu(0);
-        _LUT3B.setResolution(resolution);
-        _LUT3B.setNu(nu);
-        if(useLUT){
-          LUTtimers[0].start();
-          _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT, nu);
-          LUTtimers[0].stop();
-
-        }
+      double nu = getNu(0);
+      _LUT3B.setResolution(resolution);
+      _LUT3B.setNu(nu);
+      if (useLUT) {
+        LUTtimers[0].start();
+        _LUT3B = mdLib::LUT3B(resolution, _cutoff * _cutoff, useGlobalLUT, nu);
+        LUTtimers[0].stop();
+      }
       //  if (useGlobalLUT){
-       //   LUTtimers[0].start();
-       //   _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT );
-     //     LUTtimers[0].stop();
+      //   LUTtimers[0].start();
+      //   _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT );
+      //     LUTtimers[0].stop();
       //    _LUT3B.setNu(nu);
-     //   }
-        //            _LUT2B = mdLib::LUT2B(10, _cutoff * _cutoff,getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
-      }
+      //   }
+      //            _LUT2B = mdLib::LUT2B(10, _cutoff * _cutoff,getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
     }
+  }
 
-    /**
-     *   * @return The 3 body LUT
-     */
-    mdLib::LUT3B& getLUT3B() {
-        return _LUT3B;
-    }
+  /**
+   *   * @return The 3 body LUT
+   */
+  mdLib::LUT3B &getLUT3B() { return _LUT3B; }
 
+  /**
+   * @return lut for pairwise
+   */
+  mdLib::LUT2B &getLUT2B() { return _LUT2B; }
 
-    /**
-     * @return lut for pairwise
-     */
-   mdLib::LUT2B&
-    getLUT2B() {
-        return _LUT2B;
-    }
+  std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(),
+                                                  autopas::utils::Timer(), autopas::utils::Timer(),
+                                                  autopas::utils::Timer()};
 
-    std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer()};
-
-
-
-private:
+ private:
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
   const double _cutoff;
 
-  mdLib::LUT3B _LUT3B  = mdLib::LUT3B(0,_cutoff*_cutoff);
-  mdLib::LUT2B _LUT2B  = mdLib::LUT2B(0,_cutoff*_cutoff);
-//  mdLib::LUT3B *_LUT3B  ;
-//  mdLib::LUT2B _LUT2B;
+  mdLib::LUT3B _LUT3B = mdLib::LUT3B(0, _cutoff *_cutoff);
+  mdLib::LUT2B _LUT2B = mdLib::LUT2B(0, _cutoff *_cutoff);
+  //  mdLib::LUT3B *_LUT3B  ;
+  //  mdLib::LUT2B _LUT2B;
 
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;

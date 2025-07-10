@@ -209,7 +209,7 @@ class MDFlexConfig {
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at , argon_triwise, kr};
+  enum class FunctorOption3B { none, at, argon_triwise, kr };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -521,7 +521,8 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller, argon_triwise, kr)"};
+      FunctorOption3B::none, "functor-3b", true,
+      "Triwise force functor to use. Possible Values: (axilrod-teller, argon_triwise, kr)"};
   /**
    * iterations
    */
@@ -864,8 +865,9 @@ class MDFlexConfig {
    * Initializes all particles present at the start of the simulation.
    */
   void initializeObjects();
+
  public:
-  void handleLUT(bool triwise, bool useLUT, bool useGlobalLUT,bool delay, int resolution);
+  void handleLUT(bool triwise, bool useLUT, bool useGlobalLUT, bool delay, int resolution);
 };
 
 /**

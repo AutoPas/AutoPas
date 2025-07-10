@@ -4,7 +4,6 @@
 
 #pragma once
 
-
 #include <array>
 #include <vector>
 
@@ -12,38 +11,33 @@
 
 namespace mdLib {
 
+class ParentLUT {
+ public:
+  ParentLUT(int resolution, double cutoffSquared) {
+    _resolution = resolution;
+    _cutoffSquared = cutoffSquared;
+    _cutoff = std::sqrt(cutoffSquared);
+    _lutCutoff = cutoffSquared / 10.;
+    //      _lutCutoff = 2.5;
+    _lutDistance = _cutoffSquared - _lutCutoff;
+    _lutFactor = _resolution / _lutDistance;
+    _pointDistance = _lutDistance / static_cast<double>(_resolution);
 
- class ParentLUT{
-  public:
-      ParentLUT(int resolution, double cutoffSquared){
-        _resolution = resolution;
-        _cutoffSquared = cutoffSquared;
-        _cutoff = std::sqrt(cutoffSquared);
-      _lutCutoff = cutoffSquared / 10.;
-//      _lutCutoff = 2.5;
-      _lutDistance = _cutoffSquared - _lutCutoff;
-      _lutFactor = _resolution / _lutDistance;
-      _pointDistance = _lutDistance / static_cast<double>(_resolution);
+    //
+    _numberOfPoints = resolution;
+  }
 
+  ParentLUT() {}
 
+  //     template<class Functor>
+  //     void fill(const Functor &functor, double cutoffSquared) {}
 
-      //
-      _numberOfPoints= resolution;
-    }
+ protected:
+  // Different vector for 2b and 3b functor
+  //  std::vector<std::vector<std::vector<std::array<double, 3>>>> _lut3B;
+  //  std::vector<double> _lut2B;
 
-    ParentLUT(){}
-
-
-//     template<class Functor>
-//     void fill(const Functor &functor, double cutoffSquared) {}
-
-    protected:
-
-  //Different vector for 2b and 3b functor
-//  std::vector<std::vector<std::vector<std::array<double, 3>>>> _lut3B;
-//  std::vector<double> _lut2B;
-
-     double _cutoff{};
+  double _cutoff{};
   double _cutoffSquared{};
   double _lutCutoff{};
   double _lutFactor{};
@@ -55,14 +49,14 @@ namespace mdLib {
 
  public:
   void setResolution(int resolution) {
-      _resolution = resolution;
+    _resolution = resolution;
 
-      _lutCutoff = _cutoffSquared / 10.;
+    _lutCutoff = _cutoffSquared / 10.;
 
-      _lutDistance = _cutoffSquared - _lutCutoff;
-      _lutFactor = _resolution / _lutDistance;
-      _pointDistance = _lutDistance / static_cast<double>(_resolution);
-      _numberOfPoints= resolution;
-
+    _lutDistance = _cutoffSquared - _lutCutoff;
+    _lutFactor = _resolution / _lutDistance;
+    _pointDistance = _lutDistance / static_cast<double>(_resolution);
+    _numberOfPoints = resolution;
   }
- };}
+};
+}  // namespace mdLib

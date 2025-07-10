@@ -30,7 +30,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
 //#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-//extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriwiseFunctorType *);
+// extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriwiseFunctorType *);
 //#endif
 //! @endcond
 
@@ -49,9 +49,6 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #include "molecularDynamicsLibrary/ParentLUT.h"
 
 namespace {
-
-
-
 
 /**
  * Tries to identify the width of the terminal where the simulation is running.
@@ -86,14 +83,12 @@ size_t getTerminalWidth() {
     terminalWidth = 80;
   }
 
-
   return terminalWidth;
 }
 }  // namespace
 
-
-void logToFile(const std::string& message) {
-  std::ofstream outFile("Virial_AT_plain_3BodyTest.txt", std::ios::app); // Open in append mode
+void logToFile(const std::string &message) {
+  std::ofstream outFile("Virial_AT_plain_3BodyTest.txt", std::ios::app);  // Open in append mode
   if (outFile.is_open()) {
     outFile << message << std::endl;
   } else {
@@ -101,40 +96,37 @@ void logToFile(const std::string& message) {
   }
 }
 
-
 Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(nullptr),
-      //TODO add constexpr based on type of functor used
-//#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC ) ||defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)  || defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
-      lut2B(_configuration.getParticlePropertiesLibrary()->getLUT2B()  ),
+      // TODO add constexpr based on type of functor used
+      //#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC ) ||defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)  ||
+      // defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
+      lut2B(_configuration.getParticlePropertiesLibrary()->getLUT2B()),
 
-//#endif
-//#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-//      lut3B(0, _configuration.cutoff.value  *_configuration.cutoff.value )
-      lut3B(_configuration.getParticlePropertiesLibrary()->getLUT3B() )
-//NOTE on why this way: in simulation lut is a reference, why isnt it const ref in ppl?
-      //yes would be better since it cannot be modified then however due to how whole lib is set up
-      //we first create a empty lut object and only fill it aferwards with specification, so it needs to be modifiable
-
-
+      //#endif
+      //#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+      //      lut3B(0, _configuration.cutoff.value  *_configuration.cutoff.value )
+      lut3B(_configuration.getParticlePropertiesLibrary()->getLUT3B())
+// NOTE on why this way: in simulation lut is a reference, why isnt it const ref in ppl?
+// yes would be better since it cannot be modified then however due to how whole lib is set up
+// we first create a empty lut object and only fill it aferwards with specification, so it needs to be modifiable
 
 //      lut2B(_configuration.getParticlePropertiesLibrary()->getLUT2B() )
 //#endif
-      {
-
-//lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
-//lut3B = mdLib::LUT3B(_configuration.getParticlePropertiesLibrary()->getLUT3B());
-//lut2B = _configuration.getParticlePropertiesLibrary()->getLUT2B();
+{
+  // lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
+  // lut3B = mdLib::LUT3B(_configuration.getParticlePropertiesLibrary()->getLUT3B());
+  // lut2B = _configuration.getParticlePropertiesLibrary()->getLUT2B();
 
   _timers.total.start();
   _timers.initialization.start();
 
-  //set LUT to be the one from ppl
-//  lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
+  // set LUT to be the one from ppl
+  //  lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
 
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
@@ -249,11 +241,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   _timers.initialization.stop();
-
-
-
-
-
 }
 
 void Simulation::finalize() {
@@ -265,10 +252,6 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-
-
-
-
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -367,9 +350,6 @@ void Simulation::run() {
     }
   }
   _timers.simulate.stop();
-
-
-
 
   // Record last state of simulation.
   if (_createVtkFiles) {
@@ -673,8 +653,11 @@ void Simulation::logMeasurements() {
     const auto maximumNumberOfDigits =
         static_cast<int>(std::max(std::to_string(total).length(), std::to_string(wallClockTime).length()));
 
-    std::cout << "LUT Timer filling " <<  ": " << _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime() << std::endl;
-    std::cout << timerToString("LUT timer filling readable:                 ",  _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime() , maximumNumberOfDigits);
+    std::cout << "LUT Timer filling "
+              << ": " << _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime() << std::endl;
+    std::cout << timerToString("LUT timer filling readable:                 ",
+                               _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime(),
+                               maximumNumberOfDigits);
 
     std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
@@ -715,7 +698,7 @@ void Simulation::logMeasurements() {
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
     std::cout << "\n";
-//    std::cout << timerToString("LUT creation time ", LUTcreationTime, maximumNumberOfDigits, simulate);
+    //    std::cout << timerToString("LUT creation time ", LUTcreationTime, maximumNumberOfDigits, simulate);
     std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
@@ -855,7 +838,6 @@ void Simulation::loadParticles() {
   }
 }
 
-
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
@@ -863,12 +845,12 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      auto functor =    LJFunctorTypeAutovec(cutoff, &lut2B);
-          auto eps = _configuration.getParticlePropertiesLibrary()->getEpsilon(0);
+      auto functor = LJFunctorTypeAutovec(cutoff, &lut2B);
+      auto eps = _configuration.getParticlePropertiesLibrary()->getEpsilon(0);
       auto sigmaSquared = _configuration.getParticlePropertiesLibrary()->getSigma(0);
       functor.setParticleProperties(eps, sigmaSquared);
-//        return functor;
-  //    return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      //        return functor;
+      //    return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
       return f(functor);
 #else
       throw std::runtime_error(
@@ -878,13 +860,13 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-       auto functor = LJFunctorTypeAVX(cutoff,&lut2B);
+      auto functor = LJFunctorTypeAVX(cutoff, &lut2B);
       auto eps = _configuration.getParticlePropertiesLibrary()->getEpsilon(0);
-       auto sigmaSquared = _configuration.getParticlePropertiesLibrary()->getSigma(0);
-       functor.setParticleProperties(eps, sigmaSquared);
+      auto sigmaSquared = _configuration.getParticlePropertiesLibrary()->getSigma(0);
+      functor.setParticleProperties(eps, sigmaSquared);
 
-//     return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
-     return f(LJFunctorTypeAVX{cutoff, &lut2B});
+      //     return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeAVX{cutoff, &lut2B});
 //        return functor;
 #else
       throw std::runtime_error(
@@ -920,18 +902,17 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
 
       auto functor = ATFunctor(cutoff, &lut3B);
 
+      //´TODO maybe just put the LUT through here straight
+      //      auto functor = ATFunctor(cutoff, *_configuration.getParticlePropertiesLibrary());
 
-//´TODO maybe just put the LUT through here straight
-//      auto functor = ATFunctor(cutoff, *_configuration.getParticlePropertiesLibrary());
-
-//      auto functor = ATFunctor(cutoff, &_configuration.getParticlePropertiesLibrary()->getLUT3B());
+      //      auto functor = ATFunctor(cutoff, &_configuration.getParticlePropertiesLibrary()->getLUT3B());
 
       // TODO find where nu is and how to get it here dynamically
 
       //      functor.setParticleProperties(1);
-//      _timers.LUTcreation.start();
+      //      _timers.LUTcreation.start();
       functor.setParticleProperties(_configuration.nuMap.value.at(0));
-//      _timers.LUTcreation.stop();
+      //      _timers.LUTcreation.stop();
       return f(functor);
 
 #else
@@ -956,19 +937,16 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption3B::kr: {
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-      auto functor = KryptonTriwiseFunctorType( cutoff, &lut3B );
+      auto functor = KryptonTriwiseFunctorType(cutoff, &lut3B);
       functor.setParticleProperties();
       return f(functor);
 #else
 
-
-            throw std::runtime_error(
-                "MD-Flexible was not compiled with support for Krypton 3Body Functor. Activate it via `cmake "
-                "-DMD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for Krypton 3Body Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
 
 #endif
-
-
     }
 
     default: {
@@ -976,7 +954,4 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
                                std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
     }
   }
-
 }
-
-

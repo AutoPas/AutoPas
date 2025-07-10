@@ -129,15 +129,12 @@ class Simulation {
    */
   constexpr static auto _floatStringPrecision = 3;
 
-
-  //LUT
+  // LUT
 
   mdLib::LUT3B &lut3B;
   mdLib::LUT2B lut2B;
 
   //
-
-
 
   /**
    * Struct containing all timers used for the simulation.
@@ -244,11 +241,10 @@ class Simulation {
      */
     autopas::utils::Timer updateContainer;
 
-
     /**
      * added to record time it takes to create LUT
      */
-     autopas::utils::Timer LUTcreation;
+    autopas::utils::Timer LUTcreation;
   };
 
   /**
