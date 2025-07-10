@@ -320,8 +320,8 @@ class KryptonExtendedATMFunctor
   }
 
   // added by me for lut
-  [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredIJ, double distSquaredKI,
-                                                   double distSquaredJK) const {
+  [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredIJ, double distSquaredJK,
+                                                   double distSquaredKI) const {
     // Actual distances
     const double distIJ = std::sqrt(distSquaredIJ);
     const double distJK = std::sqrt(distSquaredJK);
@@ -381,8 +381,8 @@ class KryptonExtendedATMFunctor
     const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
     const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
 
-    const auto factorForceJDirectionIJ = (fullATMGradientIJ + fullExpGradientIJ);
-    const auto factorForceJDirectionKI = (fullATMGradientKI + fullExpGradientKI);
+    const auto factorIJ = - fullATMGradientIJ - fullExpGradientIJ);
+    const auto factorKI = fullATMGradientKI + fullExpGradientKI;
 
     // for the newton part
 
@@ -399,9 +399,9 @@ class KryptonExtendedATMFunctor
     }
     const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
-    const auto factorForceJDirectionJK = (fullATMGradientJK + fullExpGradientJK);
+    const auto factorJK = - fullATMGradientJK - fullExpGradientJK);
 
-    return {-factorForceJDirectionIJ, factorForceJDirectionKI, factorForceJDirectionJK};
+    return {factorIJ, factorJK, factorKI};
   }
 
   /**
