@@ -41,6 +41,8 @@ class LUT3B : public ParentLUT {
   retrieveValues(const Functor &functor, double dist1, double dist2, double dist3) const {
 
     if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
+      std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" << std::sqrt(_lutCutoff)
+      << ") - Calculating force factors directly!" << std::endl;
       return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
     }
 
@@ -92,8 +94,8 @@ class LUT3B : public ParentLUT {
     }
 
     // if Linear Interpolation
-    // auto result = getLinear(index1, index2, index3);
-    auto result = getWeightedAverage(index1, index2, index3, dist1, dist2, dist3);
+    auto result = getLinear(index1, index2, index3);
+    // auto result = getWeightedAverage(index1, index2, index3, dist1, dist2, dist3);
 
     // space for other interpolation
     // TODO NN does not work for Krypton yet
