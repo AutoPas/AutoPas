@@ -151,89 +151,27 @@ class KryptonExtendedATMFunctor
     if (useLUT) {
       std::array<double, 3> factors = {0, 0, 0};
       std::array<u_int8_t, 3> order = {0, 0, 0};
-      // std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this,
-      // distSquaredIJ, distSquaredKI, distSquaredJK);
+
       std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res =
           _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
-      //              std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this,
-      //              distSquaredIJ, distSquaredKI, distSquaredJK); std::pair<const std::array<double, 4>,
-      //              std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredKI,
-      //              distSquaredJK);
       factors = res.first;
       order = res.second;
-      //                std::cout << "In LUT IJ : "<< factors[order[0]] << "   KI : "<< factors[order[2] ]<< "  JK:  "
-      //                << factors[order[1] ]<< std::endl;
 
-      std::cout << "epot lut " << factors[0] << std::endl;
-
-      int inversions = 0;
-      for (int i = 0; i < 3 - 1; ++i) {
-        for (int j = i + 1; j < 3; ++j) {
-          if (order[i] > order[j]) {
-            inversions++;
-          }
-        }
-      }
-      std::cout << inversions << std::endl;
-
-      auto parity = (inversions % 2 == 0) ? 1 : -1;
-      //                if(parity == -1){
-      ////
-      //                    factors[order[1]]= factors[order[1]] *-1.;
-      //                    factors[order[2]]= factors[order[2]] *-1.;
-      //                    std::cout << "parity" << std::endl;
-      //
-      //                }
-      //                factors[order[0]]= factors[order[0]]*-1.;
       const auto forceIDirectionIJ = displacementIJ * (factors[order[0]]);
       const auto forceIDirectionKI = displacementKI * (factors[order[2]]);
       forceI = (forceIDirectionIJ - forceIDirectionKI);
 
       i.addF(forceI);
       if (newton3) {
-        // auto dRi_dri = displacementIJ / distIJ;
-        // auto dRj_drj = displacementJK / distJK;
-        // forceJ = -1. * ( -1. *forceDirectionIJ_2 + forceDirectionJK_2);
         const auto forceJDirectionIJ = displacementIJ * (-1 * factors[order[0]]);
         const auto forceJDirectionJK = displacementJK * (factors[order[1]]);
         forceJ = (forceJDirectionJK - forceJDirectionIJ);
 
         j.addF(forceJ);
 
-        // for testing
-        std::vector<double> nums = {distSquaredIJ, distSquaredKI, distSquaredJK};
-
-        std::sort(nums.begin(), nums.end(), [](double a, double b) {
-          return a > b;  // descending order
-        });
-
-        auto resLUT = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
-        //                    auto resFromLUT = _lut->getLUTValuesKrypton(distSquaredIJ, distSquaredKI, distSquaredJK);
-
-        //                    std::cout << "distIJ:" << std::to_string(distSquaredIJ) << "  distKI" <<
-        //                    std::to_string(distSquaredKI) <<
-        //                              "  factorIDirectionIJ: "<< std::to_string(factors[order[0]]) <<"
-        //                              factorIDirectionKI: "<< std::to_string(factors[order[2]])<< "
-        //                              factorJDirectionIJ: "<< std::to_string(factors[order[0]])<< "
-        //                              factorJDirectionJK: "<< std::to_string(factors[order[1]])<< "  calculated with
-        //                              getLUTValues " << std::to_string(resLUT[0])  <<" = " <<
-        //                              std::to_string(resFromLUT[0]) << "; " << std::to_string(resLUT[1]) <<" = " <<
-        //                              std::to_string(resFromLUT[1])<< "; " << std::to_string(resLUT[2])<<" = " <<
-        //                              std::to_string(resFromLUT[2]) << "; " << std::endl;
-        //                    std::cout << "distIJ:" << std::to_string(distSquaredIJ) << "  distKI" <<
-        //                    std::to_string(distSquaredKI) << "  distJK" << std::to_string(distSquaredJK)<< "
-        //                    factorIDirectionIJ: "<< std::to_string(factors[order[0]]) <<"  factorIDirectionKI: "<<
-        //                    std::to_string(factors[order[2]])<<
-        //                              "  factorJDirectionJK: "<< std::to_string(factors[order[1]])<<
-        //                              "  calculated with getLUTValues " << std::to_string(resLUT[0])  <<"; " <<
-        //                              std::to_string(resLUT[1]) <<"; " << std::to_string(resLUT[2]) << "; " <<
-        //                              std::endl;
-        //
-
         forceK = (forceI + forceJ) * (-1.0);
         k.addF(forceK);
       }
-      //                std::cout <<"In LUT should not be here" ;
     }  // end of uselut
     else {
       // Actual distances
@@ -248,11 +186,6 @@ class KryptonExtendedATMFunctor
 
       const double numerator = numKI * numJK * numIJ;
 
-      std::cout << std::fixed << std::setprecision(15) << "MAN real order : " << distSquaredIJ << " ;  "
-                << distSquaredJK << " ; "
-                << " ; " << distSquaredKI << std::endl;
-      std::cout << "MAN numerator " << numerator << std::endl;
-
       const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
       const double allDists = distIJ * distJK * distKI;
       allDistsTripled = allDistsSquared * allDists;
@@ -261,18 +194,12 @@ class KryptonExtendedATMFunctor
       const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
       const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
 
-      std::cout << "MAN allDistsTriplesGradientIJ " << allDistsTriplesGradientIJ << "   MAN allDistsTriplesGradientKI "
-                << allDistsTriplesGradientKI << std::endl;
-
       // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
       cosines = (3. / 8.) * numerator / allDistsSquared;
       const double cosinesGradientIJ =
           (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
       const double cosinesGradientKI =
           (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
-
-      std::cout << "MAN cosinesGradientIJ " << cosinesGradientIJ << "    MAN cosinesGradientKI " << cosinesGradientKI
-                << std::endl;
 
       // Gradient factors corresponding to the normal ATM term
       const auto fullATMGradientIJ =
@@ -281,9 +208,6 @@ class KryptonExtendedATMFunctor
           _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
 
       expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
-
-      std::cout << "MAN fullATMGradientIJ " << fullATMGradientIJ << "    MAN fullATMGradientKI " << fullATMGradientKI
-                << " exp term : " << expTerm << std::endl;
 
       // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
       std::array<double, 6> sumFactors{};
@@ -304,7 +228,6 @@ class KryptonExtendedATMFunctor
       for (auto n = 0; n < sumFactors.size(); n++) {
         kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
       }
-      std::cout << "  MAN sum " << sum << "    MAN ijSum " << ijSum << "   kiSum: " << kiSum << std::endl;
 
       // Total gradient factors for the exponential term times the cosines term
       const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
@@ -317,13 +240,8 @@ class KryptonExtendedATMFunctor
       auto factorIDdirectionIJ = fullATMGradientIJ + fullExpGradientIJ;
       auto factorIDdirectionKI = fullATMGradientKI + fullExpGradientKI;
 
-      std::cout << "MAN fullExpGradientIJ " << fullExpGradientIJ << "     MAN fullExpGradientKI " << fullExpGradientKI
-                << std::endl;
-
       const auto forceIDirectionIJ = displacementIJ * (fullATMGradientIJ + fullExpGradientIJ);
       const auto forceIDirecationKI = displacementKI * (fullATMGradientKI + fullExpGradientKI);
-      std::cout << "MAN Factor IJ " << factorIDdirectionIJ << "     MAN factor KI  " << factorIDdirectionKI
-                << std::endl;
 
       forceI = (forceIDirectionIJ + forceIDirecationKI) * (-1.0);
 
@@ -345,93 +263,6 @@ class KryptonExtendedATMFunctor
           jkSum += sumFactors[n] * (2. * n / (3. * distJK) - _alpha);
         }
         const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
-
-        std::cout << "MAN allDistsTriplesGradientJK " << allDistsTriplesGradientJK << "    MAN cosinesGradientJK "
-                  << cosinesGradientJK << std::endl;
-        std::cout << "MAN fullATMGradientJK " << fullATMGradientJK << "     MAN jkSum " << jkSum << std::endl;
-
-        // delete later
-        auto forceNEGJDirectionIJ = (-fullATMGradientIJ - fullExpGradientIJ);
-        auto forceNEGJDirectionJK = (fullATMGradientJK + fullExpGradientJK);
-
-        std::cout << "MAN Factor JK " << forceNEGJDirectionJK << std::endl;
-        std::cout << "***********************************" << std::endl;
-
-        std::cout << std::fixed << std::setprecision(15) << " order : " << distSquaredJK << " ;  " << distSquaredKI
-                  << " ; "
-                  << " ; " << distSquaredIJ << std::endl;
-        auto res1 = getLUTValues(distSquaredJK, distSquaredKI, distSquaredIJ);
-        std::cout << "------------------------------------------------------" << std::endl;
-        std::cout << std::fixed << std::setprecision(15) << " order : " << distSquaredJK << " ;  " << distSquaredIJ
-                  << " ; "
-                  << " ; " << distSquaredKI << std::endl;
-        auto res2 = getLUTValues(distSquaredJK, distSquaredIJ, distSquaredKI);
-
-        std::cout << "------------------------------------------------------" << std::endl;
-        std::cout << std::fixed << std::setprecision(15) << " order : " << distSquaredKI << " ;  " << distSquaredIJ
-                  << " ; "
-                  << " ; " << distSquaredJK << std::endl;
-        auto res3 = getLUTValues(distSquaredKI, distSquaredIJ, distSquaredJK);
-
-        std::cout << "------------------------------------------------------" << std::endl;
-        std::cout << std::fixed << std::setprecision(15) << " order : " << distSquaredKI << " ;  " << distSquaredJK
-                  << " ; "
-                  << " ; " << distSquaredIJ << std::endl;
-        auto res4 = getLUTValues(distSquaredKI, distSquaredJK, distSquaredIJ);
-
-        std::cout << "------------------------------------------------------" << std::endl;
-        std::cout << std::fixed << std::setprecision(15) << " order : " << distSquaredIJ << " ;  " << distSquaredJK
-                  << " ; "
-                  << " ; " << distSquaredKI << std::endl;
-        auto res5 = getLUTValues(distSquaredIJ, distSquaredJK, distSquaredKI);
-
-        std::cout << "------------------------------------------------------" << std::endl;
-        std::cout << std::fixed << std::setprecision(15) << " order : " << distSquaredIJ << " ;  " << distSquaredKI
-                  << " ; "
-                  << " ; " << distSquaredJK << std::endl;
-        auto res6 = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
-
-        std::cout << "------------------------------------------------------" << std::endl;
-
-        std::vector<double> nums = {distSquaredIJ, distSquaredKI, distSquaredJK};
-
-        std::sort(nums.begin(), nums.end(), [](double a, double b) {
-          return a > b;  // descending order
-        });
-
-        //                auto resLUT = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
-        auto resLUTorder = getLUTValues(nums[0], nums[1], nums[2]);
-        //                Calculate pre-factor
-        double distIJ = std::sqrt(distSquaredIJ);
-        double distJK = std::sqrt(distSquaredJK);
-        double distKI = std::sqrt(distSquaredKI);
-        double KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2 * distIJ * distKI);
-        double IJcosJK = (distSquaredIJ + distSquaredJK - distSquaredKI) / (2 * distIJ * distJK);
-        double JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2 * distJK * distKI);
-
-        double actual_sign_factor = 1 + 3 * (KIcosIJ * IJcosJK * JKcosKI);
-
-        distIJ = std::sqrt(nums[0]);
-        distJK = std::sqrt(nums[1]);
-        distKI = std::sqrt(nums[2]);
-        KIcosIJ = (distSquaredIJ + distSquaredKI - distSquaredJK) / (2 * distIJ * distKI);
-        IJcosJK = (distSquaredIJ + distSquaredJK - distSquaredKI) / (2 * distIJ * distJK);
-        JKcosKI = (distSquaredJK + distSquaredKI - distSquaredIJ) / (2 * distJK * distKI);
-
-        double LUT_sign_factor = 1 + 3 * (KIcosIJ * IJcosJK * JKcosKI);
-        //                std::cout << "acutal pre-factor:" << std::to_string(actual_sign_factor) << "  factor in LUT"
-        //                << std::to_string(LUT_sign_factor)  <<std::endl;
-
-        //                std::cout << "distIJ:" << std::to_string(distSquaredIJ) << "  distKI" <<
-        //                std::to_string(distSquaredKI) << "  distJK" << std::to_string(distSquaredJK)<<
-        //                          "  factorIDirectionIJ: "<< std::to_string(factorIDdirectionIJ) <<"
-        //                          factorIDirectionKI: "<< std::to_string(factorIDdirectionKI)<< "  factorJDirectionIJ:
-        //                          "<< std::to_string(forceNEGJDirectionIJ)<< "  factorJDirectionJK: "<<
-        //                          std::to_string(forceNEGJDirectionJK)<< std::endl; "  calculated with getLUTValues "
-        //                          << std::to_string(resLUT[0]) <<" = "  << std::to_string(resLUTorder[0]) <<"; " <<
-        //                          std::to_string(resLUT[1]) <<" = "  << std::to_string(resLUTorder[1]) << "; " <<
-        //                          std::to_string(resLUT[2]) <<" = "  << std::to_string(resLUTorder[2])  << "; " <<
-        //                          std::endl;
 
         // Assembling the forces
         const auto forceJDirectionIJ = displacementIJ * (-fullATMGradientIJ - fullExpGradientIJ);
@@ -457,9 +288,7 @@ class KryptonExtendedATMFunctor
     if constexpr (calculateGlobals) {
       // Add 3 * potential energy to every owned particle of the interaction.
       // Division to the correct value is handled in endTraversal().
-      //               std::cout << "epot lut " << factors[0]  <<"  eepot man "<< potentialEnergy << std::endl;
       const double potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
-      std::cout << "  eepot man " << potentialEnergy << std::endl;
 
       // Virial is calculated as f_i * r_i
       // see Thompson et al.: https://doi.org/10.1063/1.3245303
@@ -490,9 +319,6 @@ class KryptonExtendedATMFunctor
   }
 
   // added by me for lut
-  //        [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredJK,double distSquaredIJ,  double
-  //        distSquaredKI) const {
-
   [[nodiscard]] std::array<double, 3> getLUTValues(double distSquaredIJ, double distSquaredKI,
                                                    double distSquaredJK) const {
     // Actual distances
@@ -507,8 +333,6 @@ class KryptonExtendedATMFunctor
 
     const double numerator = numKI * numJK * numIJ;
 
-    std::cout << "LUT numerator " << numerator << std::endl;
-
     const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
     const double allDists = distIJ * distJK * distKI;
     const auto allDistsTripled = allDistsSquared * allDists;
@@ -517,18 +341,12 @@ class KryptonExtendedATMFunctor
     const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
     const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
 
-    std::cout << "LUT allDistsTriplesGradientIJ " << allDistsTriplesGradientIJ << "   LUT allDistsTriplesGradientKI "
-              << allDistsTriplesGradientKI << std::endl;
-
     // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
     const auto cosines = (3. / 8.) * numerator / allDistsSquared;
     const double cosinesGradientIJ =
         (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
     const double cosinesGradientKI =
         (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
-
-    std::cout << "LUT cosinesGradientIJ " << cosinesGradientIJ << "    LUT cosinesGradientKI " << cosinesGradientKI
-              << std::endl;
 
     // Gradient factors corresponding to the normal ATM term
     const auto fullATMGradientIJ =
@@ -537,9 +355,6 @@ class KryptonExtendedATMFunctor
         _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
 
     const auto expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
-
-    std::cout << "LUT fullATMGradientIJ " << fullATMGradientIJ << "    LUT fullATMGradientKI " << fullATMGradientKI
-              << " exp term : " << expTerm << std::endl;
 
     // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
     std::array<double, 6> sumFactors{};
@@ -561,17 +376,12 @@ class KryptonExtendedATMFunctor
       kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
     }
 
-    std::cout << "LUT sum " << sum << "    LUT ijSum " << ijSum << "   kiSum: " << kiSum << std::endl;
-
     // Total gradient factors for the exponential term times the cosines term
     const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
     const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
 
     const auto factorForceJDirectionIJ = (fullATMGradientIJ + fullExpGradientIJ);
     const auto factorForceJDirectionKI = (fullATMGradientKI + fullExpGradientKI);
-
-    std::cout << "LUT fullExpGradientIJ " << fullExpGradientIJ << "    LUT fullExpGradientKI " << fullExpGradientKI
-              << std::endl;
 
     // for the newton part
 
@@ -588,120 +398,9 @@ class KryptonExtendedATMFunctor
     }
     const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
-    std::cout << "LUT allDistsTriplesGradientJK " << allDistsTriplesGradientJK << "    LUT cosinesGradientJK "
-              << cosinesGradientJK << std::endl;
-    std::cout << "LUT fullATMGradientJK " << fullATMGradientJK << "    LUT jkSum " << jkSum << std::endl;
-
     const auto factorForceJDirectionJK = (fullATMGradientJK + fullExpGradientJK);
 
     return {-factorForceJDirectionIJ, factorForceJDirectionKI, factorForceJDirectionJK};
-  }
-
-  [[nodiscard]] std::array<double, 3> getLUTValues2(double dist1Squared, double dist2Squared,
-                                                    double dist3Squared) const {
-    double distIJ = std::sqrt(dist1Squared);
-    double distJK = std::sqrt(dist2Squared);
-    double distKI = std::sqrt(dist3Squared);
-
-    // Calculate prefactor
-    const auto allDist = distIJ * distJK * distKI;
-    const double allDistsSquared = dist1Squared * dist2Squared * dist3Squared;
-    const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-    //            const auto allDistsTripled = allDistsSquared * allDists;
-
-    const auto allDistCubed = (allDist) * (allDist) * (allDist);
-
-    const double factor = _nu / allDistCubed;  // C_ATM / (R1R2R3)^3
-
-    // Gradient factors of 1. / (rrr)^3
-    const double allDistsTriplesGradientIJ = -3. * (distJK * distKI) / (allDist);
-    const double allDistsTriplesGradientKI = -3. * (distJK * distIJ) / (allDist);
-    const double allDistsTriplesGradientJJ = -3. * (distIJ * distIJ) / (allDist);
-
-    // Dot products of both distance vectors going from one particle
-    const double IJDotKI = -0.5 * (dist1Squared + dist3Squared - dist2Squared);
-    const double IJDotJK = -0.5 * (dist1Squared + dist2Squared - dist3Squared);
-    const double JKDotKI = -0.5 * (dist2Squared + dist3Squared - dist1Squared);
-
-    const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
-
-    const auto forceIDirIJ = IJDotJK * JKDotKI - dist2Squared * dist3Squared + 5.0 * allDotProducts / dist1Squared;
-    const auto forceJDirJK = IJDotKI * JKDotKI - dist1Squared * dist3Squared + 5.0 * allDotProducts / dist2Squared;
-    const auto forceKDirKI = IJDotJK * JKDotKI - dist1Squared * dist2Squared + 5.0 * allDotProducts / dist3Squared;
-    const auto forceIDirJK = IJDotKI * (IJDotJK - JKDotKI);
-    const auto forceJDirKI = IJDotJK * (JKDotKI - IJDotKI);
-
-    double dist_sum = distIJ + distKI + distJK;
-    double dist_prod = distIJ * distKI * distJK;
-
-    // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
-    std::array<double, 6> sumFactors{};
-    double sum = 0.0;
-    for (auto n = 0; n < sumFactors.size(); n++) {
-      sumFactors[n] = _constantsA[n] * std::pow((distIJ * distJK * distKI), 2. * n / 3.);
-      sum += sumFactors[n];
-    }
-
-    const auto expTerm = std::exp(-1 * _alpha * (distIJ + distJK + distKI));
-
-    const auto expandedTerm = expTerm * sum;
-    const auto A = factor + expandedTerm;
-
-    auto devAatm_IJ = -3 * (_nu / (allDistCubed * distIJ));
-    auto devAatm_KI = -3 * (_nu / (allDistCubed * distKI));
-    auto devAatm_JK = -3 * (_nu / (allDistCubed * distJK));
-
-    const double numKI = dist1Squared + dist2Squared - dist3Squared;
-    const double numJK = dist1Squared + dist2Squared - dist3Squared;
-    const double numIJ = dist3Squared + dist2Squared - dist1Squared;
-
-    const double numerator = numKI * numJK * numIJ;
-    auto cosines = (3. / 8.) * numerator / allDistsSquared;
-
-    // Derivatives of expandedTerm
-    //  Gradient factor of the sum in ij-direction
-    double ijSum = 0.0;
-    for (auto n = 0; n < sumFactors.size(); n++) {
-      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) - _alpha);
-    }
-    // Gradient factor of the sum in ki-direction
-    double kiSum = 0.0;
-    for (auto n = 0; n < sumFactors.size(); n++) {
-      kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
-    }
-
-    // Gradient factor of the sum in jk-direction
-    double jkSum = 0.0;
-    for (auto n = 0; n < sumFactors.size(); n++) {
-      jkSum += sumFactors[n] * (2. * n / (3. * distJK) - _alpha);
-    }
-
-    double ijSum_dev = 0.0;
-    for (auto n = 0; n < sumFactors.size(); n++) {
-      ijSum_dev += sumFactors[n] * (-1 * _alpha - (2. * n / (3. * distIJ)));
-    }
-    double kiSum_dev = 0.0;
-    for (auto n = 0; n < sumFactors.size(); n++) {
-      kiSum_dev += sumFactors[n] * (-1 * _alpha - (2. * n / (3. * distKI)));
-    }
-
-    double jkSum_dev = 0.0;
-    for (auto n = 0; n < sumFactors.size(); n++) {
-      jkSum_dev += sumFactors[n] * (-1 * _alpha - (2. * n / (3. * distJK)));
-    }
-
-    //            auto devCorr_IJ =  -1  * _nu * expTerm* sum + expTerm *
-
-    //            auto devIJ = -1*  _alpha*expTerm * sum + expTerm *ijSum;
-    auto devIJ = devAatm_IJ + expTerm * ijSum_dev;
-    //            auto devIJ =  (-(1. + cosines) * ijSum / distIJ);
-    //            auto devKI = -_alpha*expTerm * sum + expTerm *kiSum;
-    auto devKI = devAatm_KI + expTerm * kiSum_dev;
-    //            auto devKI =  ((1. + cosines) * kiSum / distKI);
-    //            auto devJK = -_alpha*expTerm * sum + expTerm *jkSum;
-    auto devJK = devAatm_JK + expTerm * jkSum_dev;
-    //            auto devJK =  (-(1. + cosines) * jkSum / distJK);
-    return {devIJ, devKI, devJK};
   }
 
   /**

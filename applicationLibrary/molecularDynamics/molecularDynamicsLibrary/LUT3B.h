@@ -38,14 +38,9 @@ class LUT3B : public ParentLUT {
 
   template <class Functor>
   [[nodiscard]] std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>>
-  //        [[nodiscard]] std::pair<const std::array<double, 4>, std::array<u_int8_t, 3>>
   retrieveValues(const Functor &functor, double dist1, double dist2, double dist3) const {
-    //        retrieveValues( double dist1, double dist2, double dist3) const {
-    //
 
     if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
-      //                return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1,
-      //                2}));
       return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
     }
 
@@ -106,9 +101,6 @@ class LUT3B : public ParentLUT {
     //            auto result = getNextNeighbour_krypton(index1, index2, index3);
 
     auto resultPair = std::make_pair(result, order);
-
-    //       std::cout << "RETRIEVE VALUE ";
-
     return resultPair;
   }
 
@@ -318,24 +310,6 @@ class LUT3B : public ParentLUT {
       }
     }
   }
-
-  //        template<class Functor>
-  //        void fill_plain_krypton(const Functor &functor, double cutoffSquared) {
-  //          _lut3B_krypton.resize(_resolution + 1);
-  //          for (auto a = 0; a <= _resolution; a++) {
-  //            double distA = _lutCutoff + a * _pointDistance;
-  //            _lut3B_krypton[a].resize(a + 1);
-  //            for (auto b = 0; b <= a; b++) {
-  //              double distB = _lutCutoff + b * _pointDistance;
-  //              _lut3B_krypton[a][b].reserve(b + 1);
-  //              for (auto c = 0; c <= b; c++) {
-  //                double distC = _lutCutoff + c * _pointDistance;
-  //                _lut3B_krypton[a][b].push_back(functor.getLUTValues(distA, distB, distC));
-  ////                _lut3B_krypton[a][b].push_back(getLUTValuesKrypton(distA, distB, distC));
-  //              }
-  //            }
-  //          }
-  //        }
 
   //        template<class Functor>
   //        void fill_plain_krypton(const Functor &functor, double cutoffSquared) {
