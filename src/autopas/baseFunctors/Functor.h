@@ -183,7 +183,8 @@ class Functor {
 
   /**
    * set pattern vector with optimal patterns for functor
-   * @param pattern_map_newton3_on, pattern_map_newton3_off
+   * @param patternMapNewton3On pattern map for newton3 on
+   * @param patternMapNewton3Off pattern map for newton3 off
    */
 
 

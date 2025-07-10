@@ -220,42 +220,43 @@ class LJFunctorHWY
                              bool newton3) final {
     // first attempt at pattern selection
     // check if a pattern map with optimal pattern is provided
+
     if (_patternMapNewton3On != nullptr && _patternMapNewton3Off != nullptr) {
       // std::cout <<"in SoAFunctorPair with fcs:"<< soa1.size()<<"scs:" <<soa2.size()<<std::endl;
       if (soa1.size() != 0 && soa2.size() != 0) {
         if (soa1.size() <= 30 && soa2.size() <= 30) {
+
           if (newton3) {
             setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
           } else {
             setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
           }
         } else {
+
           if (newton3) {
-            if (soa1.size()<=30) {
+            if (soa1.size() <= 30) {
               setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + 30 * (29)]);
 
-            }else if (soa2.size()<=30) {
+            } else if (soa2.size() <= 30) {
               setVecPattern((*_patternMapNewton3On)[(29) + 30 * (soa2.size() - 1)]);
 
-            }else {
+            } else {
               setVecPattern((*_patternMapNewton3On)[(29) + 30 * (29)]);
-
             }
-          }else {
-            if (soa1.size()<=30) {
+          } else {
+            if (soa1.size() <= 30) {
               setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (29)]);
 
-            }else if (soa2.size()<=30) {
+            } else if (soa2.size() <= 30) {
               setVecPattern((*_patternMapNewton3Off)[(29) + 30 * (soa2.size() - 1)]);
 
-            }else {
+            } else {
               setVecPattern((*_patternMapNewton3Off)[(29) + 30 * (29)]);
-
             }
-
           }
-
         }
+
+
       }
     }
     switch (_vecPattern) {
@@ -1399,6 +1400,7 @@ class LJFunctorHWY
     _patternMapNewton3Off = patternMapNewton3Off;
   };
 
+
  private:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -1446,5 +1448,7 @@ class LJFunctorHWY
   VectorizationPattern _vecPattern;
   std::vector<autopas::VectorizationPatternOption::Value> *_patternMapNewton3On = nullptr;
   std::vector<autopas::VectorizationPatternOption::Value> *_patternMapNewton3Off = nullptr;
+
+
 };
 }  // namespace mdLib
