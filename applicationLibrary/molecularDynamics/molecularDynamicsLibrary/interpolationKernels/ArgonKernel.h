@@ -164,8 +164,8 @@ class ArgonKernel : public Kernel<ArgonKernel> {
     return 0.;
   }
 
-  double calculateTripletDerivative(double dr1, double dr2, double dr3) {
-    return 0.;
+  std::array<double, 3> calculateTripletDerivative(double dr1, double dr2, double dr3) {
+    return std::array<double, 3>{0.,0.,0.};
   }
 
  private:

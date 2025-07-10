@@ -31,7 +31,7 @@ public:
 
 private:
     explicit TriwiseInterpolantFunctor(TriwiseKernel f, double cutoff, const std::array<double, 3>& a,
-      const std::array<size_t, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits, void * /*dummy*/)
+      const std::array<std::vector<size_t>, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits, void * /*dummy*/)
             : autopas::TriwiseFunctor<Particle_T, TriwiseInterpolantFunctor<TriwiseKernel, Particle_T, useNewton3, calculateGlobals, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _numNodes{nNodes},
@@ -52,10 +52,16 @@ private:
         _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
         }
 
+        for (size_t dim = 0; dim < 3; ++dim) {
+          if (_numNodes.at(dim).size() != intervalSplits.at(dim).size() + 1) {
+            throw autopas::utils::ExceptionHandler::AutoPasException("Size of node list unequal to size of intervals + 1 in dimension " + dim);
+          }
+        }
+
         // initialize vectors
-        _coefficients = Eigen::Tensor<double, 3, Eigen::RowMajor>(_numNodes.at(0), _numNodes.at(1), _numNodes.at(2));
+        // _coefficients = Eigen::Tensor<double, 3, Eigen::RowMajor>(_numNodes.at(0), _numNodes.at(1), _numNodes.at(2));
+        _coefficients = Eigen::Tensor<std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>, 3, Eigen::RowMajor>(_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
         constructPolynomialFFTW();
-        evaluateInterpolant(1., 0.2, 0.3);
     }
 
     // TODO: recursive definition, clenshaw algorithm
@@ -63,51 +69,89 @@ private:
       return std::cos(j * std::acos(input));
     }
 
-    double evaluateChebyshevDerivative(double input, int j) {
-      return j * std::sin(j * std::acos(input)) / std::sqrt(1-input*input);
+    double evaluateChebyshevFast1D(double input, int n, const std::vector<double>& coeffs) {
+      // see PairwiseInterpolantFunctor.h for reference
+      double b_n = 0.;
+      double b_n1 = 0.;
+      double b_n2 = 0.;
+      for (int k = n - 1; k > 0; --k) {
+        b_n = coeffs.at(k) + 2. * input * b_n1 - b_n2;
+        b_n2 = b_n1;
+        b_n1 = b_n;
+      }
+
+      b_n = 2. * coeffs.at(0) + 2. * input * b_n1 - b_n2;
+      return (b_n - b_n2) / 2.;
     }
 
-    double evaluateInterpolantDerivative(int dim, double x, double y, double z) {
-      double result = 0.;
-      for (int i = 0; i < _numNodes.at(0); ++i) {
-        double mappedX = mapToCheb(x, _a.at(0), _b.at(0));
-        double val_x = (dim==0) ? evaluateChebyshevDerivative(mappedX, i) : evaluateChebyshev(mappedX, i); 
+    double evaluateChebyshevFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
+      // This code is oriented on NumPy's implementation of chebeval3d
 
-        for (int j = 0; j < _numNodes.at(1); ++j) {
-          double mappedY = mapToCheb(y, _a.at(1), _b.at(1));
-          double val_y = (dim==1) ? evaluateChebyshevDerivative(mappedY, j) : evaluateChebyshev(mappedY, j);
+      size_t nX = _numNodes.at(0).at(intervalX);
+      size_t nY = _numNodes.at(1).at(intervalY);
+      size_t nZ = _numNodes.at(2).at(intervalZ);
 
-          for (int k = 0; k < _numNodes.at(2); ++k) {
-            double mappedZ = mapToCheb(z, _a.at(2), _b.at(2));
-            double val_z = (dim==2) ? evaluateChebyshevDerivative(mappedZ, k) : evaluateChebyshev(mappedZ, k);
+      auto coeffs = _coefficients(intervalX, intervalY, intervalZ).at(dim);
 
-            result += _coefficients(i,j,k) * val_x * val_y * val_z;
+
+      /* Flatten x dimension */
+      auto jkCoeffs = Eigen::MatrixXd(nY, nZ);
+
+      for (size_t j = 0; j < nY; ++j) {
+        for (size_t k = 0; k < nZ; ++k) {
+
+          std::vector<double> xCoeffs {};
+          xCoeffs.reserve(nX);
+          /* This loop can potentially be avoided */
+          for (size_t i = 0; i < nX; ++i) {
+            xCoeffs.push_back(coeffs(i,j,k));
           }
+          jkCoeffs(j,k) = evaluateChebyshevFast1D(x, nX, xCoeffs);
         }
       }
-      return result;
+
+      std::vector<double> zCoeffs {};
+      zCoeffs.reserve(nZ);
+      for (size_t k = 0; k < nZ; ++k) {
+        std::vector<double> yCoeffs {};
+        yCoeffs.reserve(nY);
+
+        /* This loop can potentially be avoided */
+        for (size_t j = 0; j < nY; ++j) {
+          yCoeffs.push_back(jkCoeffs(j, k));
+        }
+        zCoeffs.push_back(evaluateChebyshevFast1D(y, nY, yCoeffs));
+      }
+
+      return evaluateChebyshevFast1D(z, nZ, zCoeffs);
     }
 
+    /*
     double evaluateInterpolant(double x, double y, double z) {
+      int intervalX = 0;
+      int intervalY = 0;
+      int intervalZ = 0;
+
       double result = 0.;
-      for (int i = 0; i < _numNodes.at(0); ++i) {
+      for (int i = 0; i < _numNodes.at(0).at(intervalX); ++i) {
         double mappedX = mapToCheb(x, _a.at(0), _b.at(0));
         double val_x = evaluateChebyshev(mappedX, i); 
 
-        for (int j = 0; j < _numNodes.at(1); ++j) {
+        for (int j = 0; j < _numNodes.at(1).at(intervalY); ++j) {
           double mappedY = mapToCheb(y, _a.at(1), _b.at(1));
           double val_y = evaluateChebyshev(mappedY, j);
 
-          for (int k = 0; k < _numNodes.at(2); ++k) {
+          for (int k = 0; k < _numNodes.at(2).at(intervalZ); ++k) {
             double mappedZ = mapToCheb(z, _a.at(2), _b.at(2));
             double val_z = evaluateChebyshev(mappedZ, k);
 
-            result += _coefficients(i,j,k) * val_x * val_y * val_z;
+            result += _coefficients(intervalX, intervalY, intervalZ)(i,j,k) * val_x * val_y * val_z;
           }
         }
       }
       return result;
     }
+    */
 
     double mapToInterval(double x, double a, double b) {
       double intermediate = x + 1;
@@ -115,116 +159,98 @@ private:
       return newX;
     }
 
-    double mapToCheb2(double x, double a, double b) {
-      double intermediate = x - a;
-      double newX = 2. * intermediate / (b-a) - 1.;
-      return newX;
-    }
-
     double mapToCheb(double x, double a, double b) {
-      return (2 * x - (b+a)) / (b-a);
-    }
-
-    double obtainCoefficient(std::array<int, 3>& indices) {
-      double c = 0.;
-
-      for (int k0 = 0; k0 < _numNodes.at(0); ++k0) {
-        double xNode = std::cos((k0 + 0.5) * PI / _numNodes.at(0));
-        double mappedX = mapToInterval(xNode, _a.at(0), _b.at(0));
-
-        for (int k1 = 0; k1 < _numNodes.at(1); ++k1) {
-          double yNode = std::cos((k1 + 0.5) * PI / _numNodes.at(1));
-          double mappedY = mapToInterval(yNode, _a.at(1), _b.at(2));
-          
-          for (int k2 = 0; k2 < _numNodes.at(2); ++k2) {
-            double zNode = std::cos((k2 + 0.5) * PI / _numNodes.at(2));
-            double mappedZ = mapToInterval(zNode, _a.at(2), _b.at(2));
-
-            double value = _kernel.calculateTripletDerivative(mappedX, mappedY, mappedZ);
-            double cosinePart = evaluateChebyshev(xNode, indices.at(0)) * evaluateChebyshev(yNode, indices.at(1)) * evaluateChebyshev(zNode, indices.at(2));
-            c += value * cosinePart;
-          }
-        }
-      }
-
-      double factor = 1.;
-
-      for (int d = 0; d < 3; ++d) {
-        double upper = (indices.at(d) > 0 && indices.at(d) < _numNodes.at(d)) ? 2. : 1.;
-        factor *= upper / _numNodes.at(d);
-      }
-
-      return c * factor;
-    }
-
-    void constructPolynomial() {
-      // TODO: port to interval splits
-      // Obtain all coefficients
-      
-      for (int i = 0; i < _numNodes.at(0); ++i) {
-        for (int j = 0; j < _numNodes.at(1); ++j) {
-          for (int k = 0; k < _numNodes.at(2); ++k) {
-            std::array<int, 3> indices {i, j, k};
-            _coefficients(i,j,k) = obtainCoefficient(indices);
-          }
-        }
-      }
+      return (2. * (x-a)) / (b-a) - 1.;
     }
 
     void constructPolynomialFFTW() {
 
-      int nX = _numNodes.at(0);
-      int nY = _numNodes.at(1);
-      int nZ = _numNodes.at(2);
+      double aX = _a.at(0);
+      for (size_t intervalX = 0; intervalX < _numNodes.at(0).size(); ++intervalX) {
+        double bX = _intervalSplits.at(0).size() > intervalX ? _intervalSplits.at(0).at(intervalX) : _b.at(0);
+        
+        double aY = _a.at(1);
+        for (size_t intervalY = 0; intervalY < _numNodes.at(1).size(); ++intervalY) {
+          double bY = _intervalSplits.at(1).size() > intervalY ? _intervalSplits.at(1).at(intervalY) : _b.at(1);
 
-      /* Prepare Tensors */
-      for (int i = 0; i < nX; ++i) {
-        double nodeX = std::cos((2*i+1)*PI/(2.*nX));
+          double aZ = _a.at(2);
+          for (size_t intervalZ = 0; intervalZ < _numNodes.at(2).size(); ++intervalZ) {
+            double bZ = _intervalSplits.at(2).size() > intervalZ ? _intervalSplits.at(2).at(intervalZ) : _b.at(2);
 
-        for (int j = 0; j < nY; ++j) {
+            int nX = _numNodes.at(0).at(intervalX);
+            int nY = _numNodes.at(1).at(intervalY);
+            int nZ = _numNodes.at(2).at(intervalZ);
 
-          double nodeY = std::cos((2*j+1)*PI/(2.*nY));
-          for (int k = 0; k < nZ; ++k) {  
-            double nodeZ = std::cos((2*k+1)*PI/(2.*nZ));
+            std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> & intervalCoeffs = _coefficients(intervalX, intervalY, intervalZ);
+            intervalCoeffs = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>{
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nY, nZ),
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nY, nZ),
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nY, nZ)
+            };
 
-            _coefficients(i,j,k) = _kernel.calculateTripletDerivative(
-              mapToInterval(nodeX, _a.at(0), _b.at(0)),
-              mapToInterval(nodeY, _a.at(1), _b.at(1)),
-              mapToInterval(nodeZ, _a.at(2), _b.at(2))
-            );
-          }
-        }
-      }
+            /* Prepare Tensors */
+            for (int i = 0; i < nX; ++i) {
+              double nodeX = std::cos((2*i+1)*PI/(2.*nX));
 
-      /* Let FFTW compute the (unscaled) coefficients */
-      fftw_plan plan = fftw_plan_r2r_3d(nX, nY, nZ, _coefficients.data(), _coefficients.data(),
-        FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_ESTIMATE);
-      fftw_execute(plan);
-      fftw_destroy_plan(plan);
+              for (int j = 0; j < nY; ++j) {
 
-      /* Scale the coefficients according to the Chebyshev interpolation */
-      for (int i = 0; i < nX; ++i) {
-        for (int j = 0; j < nY; ++j) {
-          for (int k = 0; k < nZ; ++k) {
-            if (i == 0) {
-              _coefficients(i,j,k) *= 0.5;
+                double nodeY = std::cos((2*j+1)*PI/(2.*nY));
+                for (int k = 0; k < nZ; ++k) {  
+                  double nodeZ = std::cos((2*k+1)*PI/(2.*nZ));
+
+                  std::array<double, 3> forces = _kernel.calculateTripletDerivative(
+                    mapToInterval(nodeX, aX, bX),
+                    mapToInterval(nodeY, aY, bY),
+                    mapToInterval(nodeZ, aZ, bZ)
+                  );
+
+                  intervalCoeffs.at(0)(i,j,k) = forces.at(0);
+                  intervalCoeffs.at(1)(i,j,k) = forces.at(1);
+                  intervalCoeffs.at(2)(i,j,k) = forces.at(2);
+                }
+              }
             }
-            if (j == 0) {
-              _coefficients(i,j,k) *= 0.5;
+
+            for (int dim = 0; dim < 3; ++dim) {
+              /* Let FFTW compute the (unscaled) coefficients */
+              fftw_plan plan = fftw_plan_r2r_3d(nX, nY, nZ, intervalCoeffs.at(dim).data(), intervalCoeffs.at(dim).data(),
+                FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_ESTIMATE);
+              fftw_execute(plan);
+              fftw_destroy_plan(plan);
             }
-            if (k == 0) {
-              _coefficients(i,j,k) *= 0.5;
+
+            /* Scale the coefficients according to the Chebyshev interpolation */
+            for (int i = 0; i < nX; ++i) {
+              for (int j = 0; j < nY; ++j) {
+                for (int k = 0; k < nZ; ++k) {
+                  for (int dim = 0; dim < 3; ++dim) {
+                    if (i == 0) {
+                      intervalCoeffs.at(dim)(i,j,k) *= 0.5;
+                    }
+                    if (j == 0) {
+                      intervalCoeffs.at(dim)(i,j,k) *= 0.5;
+                    }
+                    if (k == 0) {
+                      intervalCoeffs.at(dim)(i,j,k) *= 0.5;
+                    }
+                    intervalCoeffs.at(dim)(i,j,k) *= (1./nX * 1./nY * 1./ nZ);
+                  }
+                }
+              }
             }
-            _coefficients(i,j,k) *= (1./nX * 1./nY * 1./ nZ);
-          }
-        }
-      }
+
+            aZ = bZ;
+          } // intervalZ
+          aY = bY;
+        } // intervalY
+        aX = bX;
+      } // intervalX
     }
 
 public:
 
     explicit TriwiseInterpolantFunctor(TriwiseKernel f, double cutoff, const std::array<double, 3>& a,
-                                      const std::array<size_t, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits)
+                                      const std::array<std::vector<size_t>, 3>& nNodes, const std::array<std::vector<double>, 3>& intervalSplits)
       : TriwiseInterpolantFunctor(f, cutoff, a, nNodes, intervalSplits, nullptr) {
     }
 
@@ -254,32 +280,104 @@ public:
           ++_aosThreadDataFLOPs[threadnum].numDistCalls;
         }
 
-        auto drIJ = i.getR() - j.getR();
-        auto drIK = i.getR() - k.getR();
-        auto drJK = j.getR() - k.getR();
+        auto drIJ = j.getR() - i.getR();
+        auto drJK = k.getR() - j.getR();
+        auto drKI = i.getR() - k.getR();
 
-        double dIJ2 = autopas::utils::ArrayMath::dot(drIJ, drIJ);
-        double dIK2 = autopas::utils::ArrayMath::dot(drIK, drIK);
-        double dJK2 = autopas::utils::ArrayMath::dot(drJK, drJK);
+        const double dIJ2 = autopas::utils::ArrayMath::dot(drIJ, drIJ);
+        const double dJK2 = autopas::utils::ArrayMath::dot(drJK, drJK);
+        const double dKI2 = autopas::utils::ArrayMath::dot(drKI, drKI);
 
-        if (dIJ2 > _cutoffSquared or dIK2 > _cutoffSquared or dJK2 > _cutoffSquared) {
+        if (dIJ2 > _cutoffSquared or dKI2 > _cutoffSquared or dJK2 > _cutoffSquared) {
           return;
         }
 
-        double dIJ = std::sqrt(dIJ2);
-        double dIK = std::sqrt(dIK2);
-        double dJK = std::sqrt(dJK2);
+        const double dIJ = std::sqrt(dIJ2);
+        const double dJK = std::sqrt(dJK2);
+        const double dKI = std::sqrt(dKI2);
 
-        double fac = evaluateInterpolant(dIJ, dIK, dJK);
+        int intervalX = 0;
+        int intervalY = 0;
+        int intervalZ = 0;
+
+        double aX = _a.at(0);
+        double aY = _a.at(1);
+        double aZ = _a.at(2);
+
+        double bX = _b.at(0);
+        double bY = _b.at(1);
+        double bZ = _b.at(2);
+
+        for (; intervalX < _intervalSplits.at(0).size(); ++intervalX) {
+          if (dIJ < _intervalSplits.at(0).at(intervalX)) {
+            bX = _intervalSplits.at(0).at(intervalX);
+            break;
+          }
+          else {
+            aX = _intervalSplits.at(0).at(intervalX);
+          }
+        }
+
+        for (; intervalY < _intervalSplits.at(1).size(); ++intervalY) {
+          if (dJK < _intervalSplits.at(1).at(intervalY)) {
+            bY = _intervalSplits.at(1).at(intervalY);
+            break;
+          }
+          else {
+            aY = _intervalSplits.at(1).at(intervalY);
+          }
+        }
+
+        for (; intervalZ < _intervalSplits.at(2).size(); ++intervalZ) {
+          if (dKI < _intervalSplits.at(2).at(intervalZ)) {
+            bZ = _intervalSplits.at(2).at(intervalZ);
+            break;
+          }
+          else {
+            aZ = _intervalSplits.at(2).at(intervalZ);
+          }
+        }
+
+        const double x = mapToCheb(dIJ, aX, bX);
+        const double y = mapToCheb(dJK, aY, bY);
+        const double z = mapToCheb(dKI, aZ, bZ);
+
+        const double fac_ij = evaluateChebyshevFast3D(x, y, z, intervalX, intervalY, intervalZ, 0);
+        const double fac_ki = evaluateChebyshevFast3D(x, y, z, intervalX, intervalY, intervalZ, 2);
+        
+        const auto forceI = ( drIJ * fac_ij + drKI * fac_ki ) * -1.;
+        i.addF(forceI);
+
+        double fac_jk = 0.;
+        if (newton3) {
+          fac_jk = evaluateChebyshevFast3D(x, y, z, intervalX, intervalY, intervalZ, 1);
+
+          const auto forceJ = drIJ * -fac_ij + drJK * fac_jk;
+          const auto forceK = (forceI + forceJ) * (-1.);
+
+          j.addF(forceJ);
+          k.addF(forceK);
+        }
 
         // TODO: guard with compile flag
-        double real_fac = _kernel.calculateTripletDerivative(dIJ, dIK, dJK);
+        double errorX = 0.;
+        double errorY = 0.;
+        double errorZ = 0.;
+#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
+        const std::array<double, 3> real_fac = _kernel.calculateTripletDerivative(dIJ, dJK, dKI);
 
-        double error = real_fac - fac;
+        errorX = real_fac.at(0) - fac_ij;
+        errorY = real_fac.at(1) - fac_jk;
+        errorZ = real_fac.at(2) - fac_ki;
+#endif
 
-        // TODO: add force contributions to the right particles
-        // TODO: decide whether to use potential or derivative -> see paper from HSU, ...
-    }
+        if constexpr (calculateGlobals) {
+          
+          _aosThreadDataGlobals[threadnum].absErrorSum += {errorX, errorY, errorZ};
+
+        }
+
+     }
 
     constexpr static auto getNeededAttr() {
         return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
@@ -293,30 +391,31 @@ public:
                                                                   Particle_T::AttributeNames::ownershipState};
       }
 
-      constexpr static auto getNeededAttr(std::false_type) {
+    constexpr static auto getNeededAttr(std::false_type) {
         return std::array<typename Particle_T::AttributeNames, 6>{
             Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
             Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
             Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
       }
 
-      constexpr static auto getComputedAttr() {
+    constexpr static auto getComputedAttr() {
         return std::array<typename Particle_T::AttributeNames, 3>{
             Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
       }
 
-      constexpr static bool getMixing() { return false; }
+    constexpr static bool getMixing() { return false; }
 
-      void initTraversal() final {
+    void initTraversal() final {
         _potentialEnergySum = 0.;
         _virialSum = {0., 0., 0.};
+        _absErrorSum = {0., 0., 0.};
         _postProcessed = false;
         for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
           _aosThreadDataGlobals[i].setZero();
         }
       }
 
-      void endTraversal(bool newton3) final {
+    void endTraversal(bool newton3) final {
         using namespace autopas::utils::ArrayMath::literals;
     
         if (_postProcessed) {
@@ -328,6 +427,7 @@ public:
           for (const auto &data : _aosThreadDataGlobals) {
             _potentialEnergySum += data.potentialEnergySum;
             _virialSum += data.virialSum;
+            _absErrorSum += data.absErrorSum;
           }
     
           // For each interaction, we added the full contribution for all three particles. Divide by 3 here, so that each
@@ -343,6 +443,7 @@ public:
           
           AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
           AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+          AutoPasLog(DEBUG, "Final absolute error   {} {} {}", _absErrorSum.at(0), _absErrorSum.at(1), _absErrorSum.at(2));
         }
       }
 
@@ -385,19 +486,21 @@ public:
 
       class AoSThreadDataGlobals {
         public:
-         AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
+         AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, absErrorSum{0.,0.,0.}, __remainingTo64{} {}
          void setZero() {
            virialSum = {0., 0., 0.};
+           absErrorSum = {0.,0.,0.};
            potentialEnergySum = 0.;
          }
      
          // variables
+         std::array<double, 3> absErrorSum;
          std::array<double, 3> virialSum;
          double potentialEnergySum;
      
         private:
          // dummy parameter to get the right size (64 bytes)
-         double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
+         double __remainingTo64[(64 - 7 * sizeof(double)) / sizeof(double)];
        };
 
        class AoSThreadDataFLOPs {
@@ -457,6 +560,7 @@ public:
        const double _cutoffSquared;
        double _potentialEnergySum;
        std::array<double, 3> _virialSum;
+       std::array<double, 3> _absErrorSum;
 
        std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals;
        std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
@@ -465,9 +569,9 @@ public:
 
        /* Interpolation Parameters */
        TriwiseKernel _kernel;
-       const std::array<size_t, 3> _numNodes {};
+       const std::array<std::vector<size_t>, 3> _numNodes {};
        const std::array<std::vector<double>, 3> _intervalSplits {};
-       Eigen::Tensor<double, 3, Eigen::RowMajor> _coefficients {};
+       Eigen::Tensor<std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>, 3, Eigen::RowMajor> _coefficients {};
 
        const double PI = 2 * std::acos(0.);
 

@@ -118,14 +118,14 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _argonTripletInterpolantFunctor{mdLib::ArgonKernel{},
                                       _configuration.cutoff.value,
                                       _configuration.interpolationStart.value,
-                                      std::array<size_t,3>{_configuration.interpolationNodesX.value.at(0), _configuration.interpolationNodesY.value.at(0), _configuration.interpolationNodesZ.value.at(0)},
+                                      std::array<std::vector<size_t>,3>{_configuration.interpolationNodesX.value, _configuration.interpolationNodesY.value, _configuration.interpolationNodesZ.value},
                                       std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
                                     },
 
       _kryptonTripletInterpolantFunctor{mdLib::KryptonKernel{},
                                     _configuration.cutoff.value,
                                     _configuration.interpolationStart.value,
-                                    std::array<size_t,3>{_configuration.interpolationNodesX.value.at(0), _configuration.interpolationNodesY.value.at(0), _configuration.interpolationNodesZ.value.at(0)},
+                                    std::array<std::vector<size_t>,3>{_configuration.interpolationNodesX.value, _configuration.interpolationNodesY.value, _configuration.interpolationNodesZ.value},
                                     std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
                                   },
 
@@ -133,7 +133,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                     mdLib::TestKernel{},
                                     _configuration.cutoff.value,
                                     _configuration.interpolationStart.value,
-                                    std::array<size_t,3>{_configuration.interpolationNodesX.value.at(0), _configuration.interpolationNodesY.value.at(0), _configuration.interpolationNodesZ.value.at(0)},
+                                    std::array<std::vector<size_t>,3>{_configuration.interpolationNodesX.value, _configuration.interpolationNodesY.value, _configuration.interpolationNodesZ.value},
                                     std::array<std::vector<double>,3>{_configuration.interpolationSplitsX.value, _configuration.interpolationSplitsY.value, _configuration.interpolationSplitsZ.value}
       }
 #endif
@@ -920,13 +920,13 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
       return f(_kryptonTripletInterpolantFunctor);
 #endif
-      // TODO: implement
+      return f(KryptonExtendedATMFunctorType(cutoff));
     }
     case MDFlexConfig::FunctorOption3B::argon: {
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)
       return f(_argonTripletInterpolantFunctor);
 #endif
-      // TODO: implement
+      // TODO: implement/integrate from other branch
     }
     case MDFlexConfig::FunctorOption3B::test: {
 #if defined(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT)

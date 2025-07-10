@@ -187,75 +187,90 @@ class KryptonKernel : public Kernel<KryptonKernel> {
     return firstPart * secondPart;
   }
 
-  double calculateTripletDerivative(double dr1, double dr2, double dr3) {
+  std::array<double, 3> calculateTripletDerivative(double drIJ, double drJK, double drKI) {
       // see Markus Branch for reference: https://github.com/AutoPas/AutoPas/blob/feat/3xa/noble-gas-functors/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/KryptonExtendedATMFunctor.h
       // dr1 = dIJ
       // dr2 = dJK
       // dr3 = dKI
 
-      const double dr1Square = dr1*dr1;
-      const double dr2Square = dr2*dr2;
-      const double dr3Square = dr3*dr3;
+      const double drIJSquare = drIJ*drIJ;
+      const double drJKSquare = drJK*drJK;
+      const double drKISquare = drKI*drKI;
 
-      const double numeratorKI = dr1Square + dr2Square - dr3Square;
-      const double numeratorJK = dr1Square + dr3Square - dr2Square;
-      const double numeratorIJ = dr2Square + dr3Square - dr1Square;
+      const double numeratorKI = drIJSquare + drJKSquare - drKISquare;
+      const double numeratorJK = drIJSquare + drKISquare - drJKSquare;
+      const double numeratorIJ = drJKSquare + drKISquare - drIJSquare;
     
       const double numerator = numeratorKI * numeratorJK * numeratorIJ;
 
-      const double allDrSquare = dr1Square * dr2Square * dr3Square;
-      const double allDr = dr1 * dr2 * dr3;
+      const double allDrSquare = drIJSquare * drJKSquare * drKISquare;
+      const double allDr = drIJ * drJK * drKI;
       const double allDrTripled = allDrSquare * allDr;
 
-      const double allDrTripledGradient1 = 3. / (allDrTripled * dr1Square);
-      // const double allDrTripledGradient3 = -3. / (allDrTripled * dr3Square);
+      const double allDrTripledGradientIJ = 3. / (allDrTripled * drIJSquare);
+      const double allDrTripledGradientKI = -3. / (allDrTripled * drKISquare);
 
       const double cosines = (3. / 8.) * numerator / allDrSquare;
-      const double cosinesGradientIJ = (3./4.) * ((numerator / dr1Square - numeratorKI * numeratorIJ - numeratorJK * numeratorIJ + numeratorJK * numeratorKI) / allDrSquare);
-      // const double cosinesGradientKI = (3./4.) * ((-numerator / dr3Square + numeratorKI * numeratorIJ - numeratorJK * numeratorIJ + numeratorJK * numeratorKI) / allDrSquare);
+      const double cosinesGradientIJ = (3./4.) * ((numerator / drIJSquare - numeratorKI * numeratorIJ - numeratorJK * numeratorIJ + numeratorJK * numeratorKI) / allDrSquare);
+      const double cosinesGradientKI = (3./4.) * ((-numerator / drKISquare + numeratorKI * numeratorIJ - numeratorJK * numeratorIJ + numeratorJK * numeratorKI) / allDrSquare);
   
-      const double fullAtmGradientIJ = _constC * ((1.+cosines) * allDrTripledGradient1 + cosinesGradientIJ / allDrTripled);
-      // const double fullAtmGradientKI = _constC * ((1.+cosines) * allDrTripledGradient3 + cosinesGradientKI / allDrTripled);
+      const double fullAtmGradientIJ = _constC * ((1.+cosines) * allDrTripledGradientIJ + cosinesGradientIJ / allDrTripled);
+      const double fullAtmGradientKI = _constC * ((1.+cosines) * allDrTripledGradientKI + cosinesGradientKI / allDrTripled);
 
-      const double expTerm = std::exp(-_alpha * (dr1 + dr2 + dr3));
+      const double expTerm = std::exp(-_alpha * (drIJ + drJK + drKI));
 
       std::array<double, 6> sumFactors {};
       double sum = 0.;
       for (size_t n = 0; n < sumFactors.size(); ++n) {
-        sumFactors.at(n) = _A.at(n) * std::pow(allDr, 2.*n / 3.);
+        sumFactors.at(n) = _A.at(n) * std::pow(drIJ*drJK*drKI, 2.*n / 3.);
         sum += sumFactors.at(n);
       }
 
 
       double ijSum = 0.;
       for (size_t n = 0; n < sumFactors.size(); ++n) {
-        ijSum += sumFactors.at(n) * (2.*n / (3.*dr1) - _alpha);
+        ijSum += sumFactors.at(n) * (2.*n / (3.*drIJ) - _alpha);
       }
 
-      /*
       double kiSum = 0.;
       for (size_t n = 0; n < sumFactors.size(); ++n) {
-        kiSum += sumFactors.at(n) * (2.*n / (3.*dr3) - _alpha);
+        kiSum += sumFactors.at(n) * (2.*n / (3.*drKI) - _alpha);
       }
-      */
 
-      const double fullExpGradientIJ = expTerm * (-(1.+cosines) * ijSum / dr1 + cosinesGradientIJ * sum);
-      // const double fullExpGradientKI = expTerm * ((1.+cosines) * kiSum / dr3 + cosinesGradientKI * sum);
+      const double fullExpGradientIJ = expTerm * (-(1.+cosines) * ijSum / drIJ + cosinesGradientIJ * sum);
+      const double fullExpGradientKI = expTerm * ((1.+cosines) * kiSum / drKI + cosinesGradientKI * sum);
 
-      return fullAtmGradientIJ + fullExpGradientIJ;
+      const double gradientIJ = fullAtmGradientIJ + fullExpGradientIJ;
+      const double gradientKI = fullAtmGradientKI + fullExpGradientKI;
+
+      // TODO: guard with newton3 flag
+      const double allDrTripledGradientJK = 3. / (allDrTripled * drJKSquare);
+      const double cosinesGradientJK = (3./4.) * ((numerator / drJKSquare + numeratorKI * numeratorIJ - numeratorJK * numeratorIJ - numeratorJK * numeratorKI) / allDrSquare);
+      const double fullAtmGradientJK = _constC * ((1. + cosines) * allDrTripledGradientJK + cosinesGradientJK / allDrTripled);
+
+      double jkSum = 0.;
+      for (size_t n = 0; n < sumFactors.size(); ++n) {
+        jkSum += sumFactors.at(n) * (2.*n / (3.*drJK) - _alpha);
+      }
+
+      const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / drJK + cosinesGradientJK * sum);
+      
+      const double gradientJK = fullAtmGradientJK + fullExpGradientJK;
+
+      return std::array<double, 3>{gradientIJ, gradientJK, gradientKI};
     }
   
  private:
 
  /* Triplet Potential Parameters */
-  const double _constC = 1.6152500e-3;
-  const double _alpha = 1.3783820e1;
+  const double _constC = 1.6152500e6;
+  const double _alpha = 1.3783820;
   const std::array<double, 6> _A = {
     -0.3081304e8,
-    -0.3519442e10,
-    0.4928052e11,
-    -0.2182411e12,
-    0.3430880e12,
+    -0.3519442e8,
+    0.4928052e7,
+    -0.2182411e6,
+    0.3430880e4,
     0
   };
   

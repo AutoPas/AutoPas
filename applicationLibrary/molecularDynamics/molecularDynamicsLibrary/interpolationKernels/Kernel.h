@@ -19,6 +19,8 @@ class Kernel {
   virtual double calculatePair(double dr) = 0;
 
   virtual double calculateTriplet(double dr1, double dr2, double dr3) = 0;
+
+  virtual std::array<double, 3> calculateTripletDerivative(double dr1, double dr2, double dr3) = 0;
 };
 
 }  // namespace mdLib

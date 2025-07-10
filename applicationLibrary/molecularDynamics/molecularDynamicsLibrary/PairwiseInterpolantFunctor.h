@@ -235,7 +235,6 @@ class PairwiseInterpolantFunctor
 
     if constexpr (calculateGlobals) {
       // TODO: delegate potential energy to kernel?
-      // TODO: find out what those values actually mean
       double potentialEnergy = 0.;
       auto virial = dr * f;
       if (i.isOwned()) {
@@ -429,7 +428,7 @@ class PairwiseInterpolantFunctor
 
   class AoSThreadDataGlobals {
    public:
-    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, absErrorSum{0.}, __remainingTo64{} {}
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, absErrorSum{0.}, relErrorSum{0.}, __remainingTo64{} {}
 
     void setZero() {
       virialSum = {0., 0., 0.};

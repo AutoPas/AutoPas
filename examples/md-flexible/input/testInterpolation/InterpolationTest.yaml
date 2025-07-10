@@ -10,17 +10,17 @@ tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor-3b                       :  test
-interpolation-nodes-x            :  [3]
-interpolation-nodes-y            :  [3]
-interpolation-nodes-z            :  [3]
-interpolation-splits-x           :  []
-interpolation-splits-y           :  []
-interpolation-splits-z           :  []
+interpolation-nodes-x            :  [3, 3]
+interpolation-nodes-y            :  [3, 3]
+interpolation-nodes-z            :  [3, 3]
+interpolation-splits-x           :  [1]
+interpolation-splits-y           :  [1]
+interpolation-splits-z           :  [1]
 interpolation-start              :  [0.,0.,0.]
 data-layout-3b                   :  [AoS]
 newton3-3b                       :  [disabled, enabled]
 traversal-3b                     :  [ lc_c01 ]
-cutoff                           :  1
+cutoff                           :  2
 box-min                          :  [0, 0, 0]
 box-max                          :  [10, 10, 10]
 cell-size                        :  [1]

@@ -10,17 +10,17 @@ tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor-3b                       :  krypton
-interpolation-nodes-x            :  [32]
-interpolation-nodes-y            :  [32]
-interpolation-nodes-z            :  [32]
-interpolation-splits-x           :  []
-interpolation-splits-y           :  []
-interpolation-splits-z           :  []
-interpolation-start              :  [1, 1, 1]
+interpolation-nodes-x            :  [10, 10]
+interpolation-nodes-y            :  [10, 10]
+interpolation-nodes-z            :  [10, 10]
+interpolation-splits-x           :  [5]
+interpolation-splits-y           :  [5]
+interpolation-splits-z           :  [5]
+interpolation-start              :  [3, 3, 3]
 data-layout-3b                   :  [AoS]
 newton3-3b                       :  [disabled]
 #traversal-3b                     :  [ ds_sequential ]
-cutoff                           :  5
+cutoff                           :  8
 box-min                          :  [0, 0, 0]
 box-max                          :  [30, 30, 30]
 cell-size                        :  [1]
@@ -46,7 +46,7 @@ Objects:
     0:  
       particle-spacing           :  4
       bottomLeftCorner           :  [5, 5, 5]
-      box-length                 :  [16, 16, 16]
+      box-length                 :  [8, 8, 8]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
 # thermostat:
