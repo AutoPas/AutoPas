@@ -190,7 +190,6 @@ namespace mdLib {
 
                 const double numerator = numKI * numJK * numIJ;
 
-                std::cout <<std::fixed << std::setprecision(15) << "MAN real order : "<< distSquaredIJ << " ;  "<< distSquaredJK << " ; "<< " ; "<< distSquaredKI << std::endl;
 
                 const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
                 const double allDists = distIJ * distJK * distKI;
@@ -303,14 +302,14 @@ namespace mdLib {
             if constexpr (calculateGlobals) {
                 // Add 3 * potential energy to every owned particle of the interaction.
                 // Division to the correct value is handled in endTraversal().
-//               std::cout << "epot lut " << factors[0]  <<"  eepot man "<< potentialEnergy << std::endl;
+//
                  double potentialEnergy = 0;
                 if (!useLUT) {
                    potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
                 }else    {
                   potentialEnergy = potE;
                 }
-                std::cout  <<"  eepot man "<< potentialEnergy << std::endl;
+
 
                 // Virial is calculated as f_i * r_i
                 // see Thompson et al.: https://doi.org/10.1063/1.3245303
