@@ -331,25 +331,19 @@ _LUT3B.setNu(nu);
     /**
    * Initializes the two look-up tables with hardcoded arguments
      */
-    void initializeLookUpTables( bool triwise, bool useLUT, bool useGlobalLUT, bool delay, int resolution) {
+    void initializeLookUpTables( bool triwise, bool useLUT, bool useGlobalLUT, bool delay, bool krypton,  int resolution) {
       // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
       if (_epsilons.size() > 1 || _sigmas.size() > 1 || _nus.size() > 1)
         throw autopas::utils::ExceptionHandler::AutoPasException(
             "Cannot use multiple particle types with Look-up Table.");
       if (!triwise) {
         _LUT2B.setResolution(resolution); // reset resolution and all dependants things
-        //            _LUT3B = mdLib::LUT3B(10, _cutoff * _cutoff, getNu(0));
+
         if(useLUT){
-//TODO
-            _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff,useGlobalLUT,delay, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
 
-
+            _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff,useGlobalLUT,delay, getSigma(0), getEpsilon(0) );
 
         }
-
-
-
-
 
       }
       if (triwise) {
@@ -361,17 +355,11 @@ _LUT3B.setNu(nu);
         _LUT3B.setNu(nu);
         if(useLUT){
           LUTtimers[0].start();
-          _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT, nu);
+          _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT, krypton,  nu);
           LUTtimers[0].stop();
 
         }
-      //  if (useGlobalLUT){
-       //   LUTtimers[0].start();
-       //   _LUT3B = mdLib::LUT3B(resolution, _cutoff*_cutoff, useGlobalLUT );
-     //     LUTtimers[0].stop();
-      //    _LUT3B.setNu(nu);
-     //   }
-        //            _LUT2B = mdLib::LUT2B(10, _cutoff * _cutoff,getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0) );
+
       }
     }
 

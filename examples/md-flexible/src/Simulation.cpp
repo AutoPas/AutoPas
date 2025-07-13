@@ -108,33 +108,18 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(nullptr),
-      //TODO add constexpr based on type of functor used
-//#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC ) ||defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)  || defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
+
       lut2B(_configuration.getParticlePropertiesLibrary()->getLUT2B()  ),
 
-//#endif
-//#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-//      lut3B(0, _configuration.cutoff.value  *_configuration.cutoff.value )
       lut3B(_configuration.getParticlePropertiesLibrary()->getLUT3B() )
-//NOTE on why this way: in simulation lut is a reference, why isnt it const ref in ppl?
-      //yes would be better since it cannot be modified then however due to how whole lib is set up
-      //we first create a empty lut object and only fill it aferwards with specification, so it needs to be modifiable
 
-
-
-//      lut2B(_configuration.getParticlePropertiesLibrary()->getLUT2B() )
-//#endif
       {
 
-//lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
-//lut3B = mdLib::LUT3B(_configuration.getParticlePropertiesLibrary()->getLUT3B());
-//lut2B = _configuration.getParticlePropertiesLibrary()->getLUT2B();
+
 
   _timers.total.start();
   _timers.initialization.start();
 
-  //set LUT to be the one from ppl
-//  lut3B = _configuration.getParticlePropertiesLibrary()->getLUT3B();
 
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
@@ -957,7 +942,7 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
     case MDFlexConfig::FunctorOption3B::kr: {
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
       auto functor = KryptonTriwiseFunctorType( cutoff, &lut3B );
-      functor.setParticleProperties();
+
       return f(functor);
 #else
 

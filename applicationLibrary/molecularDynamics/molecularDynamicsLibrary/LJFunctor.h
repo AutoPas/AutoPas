@@ -140,6 +140,10 @@ namespace mdLib {
             using namespace autopas::utils::ArrayMath::literals;
 newton3 = allowsNewton3();
 
+//if(i.getID() == 16){
+//  std::cout << "Here"<< std::endl;
+//}
+
             if (i.isDummy() or j.isDummy()) {
                 return;
             }
@@ -651,14 +655,14 @@ newton3 = allowsNewton3();
             _sigmaSquared = sigmaSquared;
 
 
-            if constexpr (useLUT) {
-                AutoPasLog(DEBUG, "FILLING LUT IN LJFUNCTOR PLain");
-                _lut->setSigmaSquared(sigmaSquared);
-                _lut->setEpsilon24(epsilon24);
-                _lut->setShift6(0);
-                _lut->fill<decltype(*this)>(*this, _cutoffSquared, useLUTGlobal);
-
-            }
+//            if constexpr (useLUT) {
+//                AutoPasLog(DEBUG, "FILLING LUT IN LJFUNCTOR PLain");
+//                _lut->setSigmaSquared(sigmaSquared);
+//                _lut->setEpsilon24(epsilon24);
+//                _lut->setShift6(0);
+//                _lut->fill<decltype(*this)>(*this, _cutoffSquared, useLUTGlobal);
+//
+//            }
             if (applyShift) {
                 _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared,
                                                                                 _cutoffSquared);
@@ -773,8 +777,8 @@ newton3 = allowsNewton3();
 
                 AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
                 AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-                logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_LJ_LUT_1000_globs");
-                logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_LJ_LUT_1000_globs");
+                logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_LJ_LUT_100_delta0.000001_LL_delay");
+                logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_LJ_LUT_100_delta0.000001_LL_delay");
 
             }
         }

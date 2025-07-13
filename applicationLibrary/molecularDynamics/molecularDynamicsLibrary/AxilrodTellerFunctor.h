@@ -247,11 +247,9 @@ class AxilrodTellerFunctor
   void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
-    bool check = newton3;
-    bool check2 = allowsNewton3();
-newton3 = true;
+    newton3 = allowsNewton3();
 
-//    bool globalLUTS = false;
+
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
       return;
@@ -285,21 +283,14 @@ newton3 = true;
     if constexpr (useLUT) {
 
 
-      std::array<double, 5> factorsAndGlob;
+      std::array<double, 4> factorsAndGlob;
       std::array<u_int8_t, 3> order;
       std::array<double, 3> factors;
       double potentialEnergy3;
 
-        auto res1 = getLUTValues(distSquaredJK, distSquaredKI, distSquaredIJ);
-        auto res1_test = _lut->getLUTValuesAT(distSquaredJK, distSquaredKI, distSquaredIJ);
-        auto res2 = getLUTValues(distSquaredJK, distSquaredIJ, distSquaredKI);
-        auto res3 = getLUTValues(distSquaredKI, distSquaredIJ, distSquaredJK);
-        auto res4 = getLUTValues(distSquaredKI, distSquaredJK, distSquaredIJ);
-        auto res5 = getLUTValues(distSquaredIJ, distSquaredJK, distSquaredKI);
-        auto res6 = getLUTValues(distSquaredIJ, distSquaredKI, distSquaredJK);
 
       if constexpr (useLUTGlobal){
-        std::pair<const std::array<double, 5>, std::array<u_int8_t, 3>> res = _lut->retrieveValues_global(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
+        std::pair<const std::array<double, 4>, std::array<u_int8_t, 3>> res = _lut->retrieveValues_global(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
 
          factorsAndGlob = res.first;
          order = res.second;
@@ -311,7 +302,7 @@ newton3 = true;
 
       }else{
         std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
-//        std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> res = _PPLibrary->getLUT3B().retrieveValues( distSquaredIJ, distSquaredJK, distSquaredKI);
+
         factors = res.first;
           order = res.second;
       }
@@ -321,37 +312,28 @@ newton3 = true;
       std::array<double, 3> forceJ;
       std::array<double, 3> forceK;
 
-      //added by me for calcLUTS
-//      std::array<double, 3> factors = {factorsAndGlob[0], factorsAndGlob[1], factorsAndGlob[2]};
-//      double allDistsSquaredLUT = {factorsAndGlob[3]};
-//      double factorGlob = {factorsAndGlob[4]};
 
-
-      //End of added by me for calcLUTs
-      // TODO: signs ?? this might already be solved check by calculating by hands this seems to be about of the placement of minus in the formulas underneath is correct
       const auto forceI = displacementIJ * factors[order[0]] - displacementKI * factors[order[2]];
       i.addF(forceI);
 
       if (newton3) {
-//        const auto forceJ = displacementJK * factors[order[1]] - displacementIJ * factors[order[0]];
+
          forceJ = displacementJK * factors[order[1]] - displacementIJ * factors[order[0]];
-//        const auto forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
          forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
         j.addF(forceJ);
         k.addF(forceK);
-   //     logToFile(std::to_string(forceI[0]) + "," + std::to_string(forceI[1]) + "," + std::to_string(forceI[2]) + "," +
-     //                 std::to_string(forceK[0]) + "," + std::to_string(forceK[1]) + "," + std::to_string(forceK[2]) +
-  //                    "," + std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT_LUT");
+
       }
 
 
       if constexpr (calculateGlobals ) {
         if constexpr (!useLUTGlobal) {
-          // added by me
+
           //  Calculate prefactor
           const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
           const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
           const double factor = 3.0 * nu / allDistsTo5;
+          //
           //
           //        // Dot products of both distance vectors going from one particle
           const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
@@ -359,8 +341,7 @@ newton3 = true;
           const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
 
           const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
-//            std::printf("IJDdotKI  %f     IJDotJK : %f     JKDotKI: %f       distKI :  %f  distJK: %f    distIJ: %f \n", IJDotKI, IJDotJK, JKDotKI, distSquaredKI, distSquaredJK, distSquaredIJ);
-          // end added by me
+
 
           // Add 3 * potential energy to every owned particle of the interaction.
           // Division to the correct value is handled in endTraversal().
@@ -368,13 +349,7 @@ newton3 = true;
            potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
         }//end if constexpr (!useLUTGlobal)
 
-        auto compare_potE = _lut->calculateFullGlobal(distSquaredIJ,distSquaredKI,distSquaredJK);
-        auto compare_potE2 = _lut->calculatePotEnergyTest(distSquaredIJ,distSquaredKI,distSquaredJK);
 
-//          AutoPasLog(DEBUG, "Dot Product           {}", allDotProducts);
-//          std::printf("Dot Product:  %f   factor : %f     epot: %f \n", allDotProducts, factor, potentialEnergy3);
-//          std::printf("------------------------------------------------------\n");
-//          AutoPasLog(DEBUG, "factor : {}  ", factor);
 
           // Virial is calculated as f_i * r_i
           // see Thompson et al.: https://doi.org/10.1063/1.3245303
@@ -405,77 +380,11 @@ newton3 = true;
 
       }
 
-      //EXTRA LUT VERSION
-//      if constexpr (calculateGlobals) {
-//        if(globalLUTS){
-//
-////        std::cout <<"IN CALC GLOBS WITH GLOBS OUT OF LUT" ;;
-//
-//        //added by me
-//        // Calculate prefactor
-//        const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-//        const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-//        const double factor = 3.0 * nu / allDistsTo5;
-//        //
-//        //        // Dot products of both distance vectors going from one particle
-//        const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
-//        const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
-//        const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
-//
-//        const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
-//
-//        //end added by me
-//
-//
-//
-//        // Add 3 * potential energy to every owned particle of the interaction.
-//        // Division to the correct value is handled in endTraversal().
-//
-//        //this one works
-//        const double potentialEnergy3Compare = factorGlob * (allDistsSquaredLUT - 3.0 * allDotProducts);
-//
-//        //this is being tested:
-//        const double  potentialEnergy3 = allDistsSquaredLUT;
-//
-//
-//        AutoPasLog(DEBUG, "Dot Product           {}",allDotProducts);
-//        AutoPasLog(DEBUG, "potEnergy           {}",potentialEnergy3);
-////        std::printf("Dot Product:  %f     factor : %f     potEnergy : %f  \n", allDotProducts, factorGlob, potentialEnergy3);
-//        AutoPasLog(DEBUG, "with globLUT------> factor : {}   allDistsSquaredLUT  , {}", factorGlob, allDistsSquaredLUT);
-//
-//        // Virial is calculated as f_i * r_i
-//        // see Thompson et al.: https://doi.org/10.1063/1.3245303
-//        const auto virialI = forceI * i.getR();
-//        if (i.isOwned()) {
-//          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
-//          _aosThreadDataGlobals[threadnum].virialSum += virialI;
-//        }
-//        // for non-newton3 particles j and/or k will be considered in a separate calculation
-//        if (newton3 and j.isOwned()) {
-//          const auto virialJ = forceJ * j.getR();
-//          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
-//          _aosThreadDataGlobals[threadnum].virialSum += virialJ;
-//        }
-//        if (newton3 and k.isOwned()) {
-//          const auto virialK = forceK * k.getR();
-//          _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
-//          _aosThreadDataGlobals[threadnum].virialSum += virialK;
-//        }
-//        if constexpr (countFLOPs) {
-//          if (newton3) {
-//            ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
-//          } else {
-//            ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
-//          }
-//        }
-//
-//
-//        }
-//      }
+
     }//end of useLUT
 
     else {
-      // end of added for lut by me
+
 
       // Calculate prefactor
       const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
@@ -515,9 +424,6 @@ newton3 = true;
         k.addF(forceK);
 
 
-   //       logToFile(std::to_string(forceI[0]) +","+ std::to_string(forceI[1])+"," + std::to_string(forceI[2])+"," +
-   //                 std::to_string(forceK[0]) +","+ std::to_string(forceK[1])+"," + std::to_string(forceK[2])+","+
-  //                  std::to_string(forceJ[0]) +","+ std::to_string(forceJ[1])+"," + std::to_string(forceJ[2])+"," ,"forcesAT");
       }
 
       if constexpr (countFLOPs) {
@@ -571,14 +477,7 @@ newton3 = true;
    * @param nu The Axilrod-Teller potential parameter
    */
   void setParticleProperties(SoAFloatPrecision nu) { _nu = nu;
-    //TODO add a way to set NU
 
-  //added for lut by me
-  //TODO constexpres?, cutoffsqaured is not really necessary here,
-//  if constexpr (useLUT) {
-//    _lut->fill< decltype(*this) >(*this, _cutoffSquared, useLUTGlobal);
-//
-//  }
 
   }
 
@@ -663,8 +562,8 @@ newton3 = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
       AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-      logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_AT_res100_WA");
-      logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_AT_res100_WA");
+      logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_AT_res1500_NN");
+      logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_AT_res1500_NN");
 
     }
   }

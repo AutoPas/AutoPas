@@ -208,10 +208,11 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
 
 
 //For LUT
-void MDFlexConfig::handleLUT(bool triwise ,bool useLUT, bool useGlobalLUT, bool delay, int resolution){
+
+void MDFlexConfig::handleLUT(bool triwise ,bool useLUT, bool useGlobalLUT, bool delay, bool krypton, int resolution){
 
 
-  _particlePropertiesLibrary->initializeLookUpTables(triwise, useLUT, useGlobalLUT,delay,  resolution);
+  _particlePropertiesLibrary->initializeLookUpTables(triwise, useLUT, useGlobalLUT,delay,  krypton, resolution);
 
 
 }
