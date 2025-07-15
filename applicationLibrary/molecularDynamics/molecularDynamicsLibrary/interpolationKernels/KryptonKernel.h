@@ -263,14 +263,14 @@ class KryptonKernel : public Kernel<KryptonKernel> {
  private:
 
  /* Triplet Potential Parameters */
-  const double _constC = 1.6152500e6;
-  const double _alpha = 1.3783820;
+  const double _constC = 1.6152500e-3;
+  const double _alpha = 1.3783820e1;
   const std::array<double, 6> _A = {
     -0.3081304e8,
-    -0.3519442e8,
-    0.4928052e7,
-    -0.2182411e6,
-    0.3430880e4,
+    -0.3519442e10,
+    0.4928052e11,
+    -0.2182411e12,
+    0.3430880e12,
     0
   };
   

@@ -499,10 +499,10 @@ class KryptonExtendedATMFunctor
   const double _cutoffSquared;
 
   // Parameters of the extended Axilrod-Teller potential for Krypton in Kelvin (K) and Angström (A)
-  const double _nu = 1.61525e6;   // K*A^9
-  const double _alpha = 1.378382;  // A^-1
+  const double _nu = 1.61525e-3;   // K*A^9
+  const double _alpha = 1.378382e1;  // A^-1
   // Units: {K, K*A^-2, K*A^-4, K*A^-6, K*A^-8, K*A^-10}
-  const std::array<double, 6> _constantsA = {-0.3081304e8, -0.3519442e8, 0.4928052e7, -0.2182411e6, 0.343088e4, 0.0};
+  const std::array<double, 6> _constantsA = {-0.3081304e8, -0.3519442e10, 0.4928052e11, -0.2182411e12, 0.343088e12, 0.0};
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
