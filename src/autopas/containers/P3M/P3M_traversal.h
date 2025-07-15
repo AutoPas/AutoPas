@@ -37,7 +37,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     //        fft = FFT();
     //}
 
-    void set_traversal_parameters(unsigned int cao, std::array<int, 3> grid_dims, const std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, /*GridType &rs_shifted,*/ 
+    void set_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, const std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, /*GridType &rs_shifted,*/ 
         ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, ContainerIterator<ParticleType, true, false> &&beginIter, 
         LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
         this->cao = cao;
@@ -64,7 +64,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     unsigned int cao; 
 
     // spacing between grid_points
-    std::array<int, 3> grid_dims;
+    std::array<unsigned int, 3> grid_dims;
     std::array<double, 3> grid_dist;
     std::array<double, 3> boxMin;
 
@@ -184,9 +184,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // multiplies the ks_grid with an influence function
     void applyInfluenceFunction(){
-        for(int i = 0; i < grid_dims[0]; i++){
-            for(int j = 0; j < grid_dims[1]; j++){
-                for(int k = 0; k < grid_dims[2]; k++){
+        for(unsigned int i = 0; i < grid_dims[0]; i++){
+            for(unsigned int j = 0; j < grid_dims[1]; j++){
+                for(unsigned int k = 0; k < grid_dims[2]; k++){
                     ks_grid[i][j][k] *= optForceInfluence[i][j][k];
                 }
             }
@@ -224,6 +224,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                     }
                 }
             }
+            // TODO need to subtract self force
             iter->addF(totalForce);
         }
     }
@@ -285,6 +286,10 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         }
     }
 
+    void subtractSelfForces(){
+        
+    }
+
     /**
      * assigns charges to the rs_grid (2 different shifted grids)
      * transforms the rs_grid
@@ -301,6 +306,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
          
         fft.backward3D(ks_grid, rs_grid, grid_dims);
         interpolateForces();
+
+        subtractSelfForces();
     }
 
     /**
@@ -339,7 +346,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             return;
         } 
     }
-
 
     public:
 

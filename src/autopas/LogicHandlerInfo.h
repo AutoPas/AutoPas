@@ -46,6 +46,6 @@ class LogicHandlerInfo {
   /**
    * Number of gridpoints per dimension for P3M
    */
-  std::array<int, 3> grid_dims{0,0,0}; 
+  std::array<unsigned int, 3> grid_dims{0,0,0}; 
 };
 }  // namespace autopas

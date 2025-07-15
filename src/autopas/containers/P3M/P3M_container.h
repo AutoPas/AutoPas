@@ -23,22 +23,15 @@ class P3M_container : public LinkedCells<Particle_T> {
     using ComplexGridType = std::vector<std::vector<std::vector<std::complex<double>>>>;
 
     public:
-    P3M_container(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, std::array<int, 3> &N, const double cutoff,
+    P3M_container(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, std::array<unsigned int, 3> &N, const double cutoff,
               const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, unsigned int cao = 3)
               : LinkedCells<ParticleType>(boxMin, boxMax, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator) {
 
         
         grid_dims = N;
-        unsigned int maxGridDim = 0;
-        for (int i = 0; i < 3; i++){
-            //TODO move to FFT
-            //powerOfTwo(grid_dims[i]);
-            if(grid_dims[i] > maxGridDim){
-                maxGridDim = grid_dims[i];
-            }
-        }
-        fft = FFT(maxGridDim);
+        
+        fft = FFT(N);
     
         for (int i = 0; i < 3; i++){
             box_lengths[i] = boxMax[i] - boxMin[i];
@@ -205,7 +198,7 @@ class P3M_container : public LinkedCells<Particle_T> {
     int cao; 
 
     // spacing between grid_points
-    std::array<int, 3> grid_dims;
+    std::array<unsigned int, 3> grid_dims;
     std::array<double, 3> grid_dist;
     std::array<double, 3> box_lengths;
 

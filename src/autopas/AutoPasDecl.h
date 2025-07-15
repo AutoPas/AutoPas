@@ -671,12 +671,12 @@ class AutoPas {
    * Set number of gridpoints per dimension.
    * @param cao
    */
-  void setGrid_dims(std::array<int, 3> grid_dims) { _logicHandlerInfo.grid_dims = grid_dims; }
+  void setGrid_dims(std::array<unsigned int, 3> grid_dims) { _logicHandlerInfo.grid_dims = grid_dims; }
   /**
    * Get number of gridpoints per dimension.
    * @return
    */
-  [[nodiscard]] std::array<int, 3> getGrid_dims() const { return _logicHandlerInfo.grid_dims; }
+  [[nodiscard]] std::array<unsigned int, 3> getGrid_dims() const { return _logicHandlerInfo.grid_dims; }
   
 
   /**

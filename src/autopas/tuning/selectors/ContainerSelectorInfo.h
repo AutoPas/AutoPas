@@ -39,7 +39,7 @@ class ContainerSelectorInfo {
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletRebuildFrequency,
-                                 unsigned int verletClusterSize, autopas::LoadEstimatorOption loadEstimator, unsigned int cao, std::array<int, 3> grid_dims)
+                                 unsigned int verletClusterSize, autopas::LoadEstimatorOption loadEstimator, unsigned int cao, std::array<unsigned int, 3> grid_dims)
       : cellSizeFactor(cellSizeFactor),
         verletSkin(verletSkin),
         verletRebuildFrequency(verletRebuildFrequency),
@@ -106,7 +106,7 @@ class ContainerSelectorInfo {
   /**
    * Number of gridpoints per dimension for P3M
    */
-  std::array<int, 3> grid_dims;
+  std::array<unsigned int, 3> grid_dims;
 };
 
 }  // namespace autopas

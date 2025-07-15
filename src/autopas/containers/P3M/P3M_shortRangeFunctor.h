@@ -24,16 +24,18 @@ namespace autopas{
                 return;
             }
             auto dr = i.getR() - j.getR();
-            double dist = autopas::utils::ArrayMath::dot(dr, dr);
-            if (dist > cutoffSquared) {
+            double dist2 = autopas::utils::ArrayMath::dot(dr, dr);
+            if (dist2 > cutoffSquared) {
                 return;
             }
 
+            double dist = std::sqrt(dist2);
             double adist = alpha * dist;
             double f1 = M_2_SQRTPI * alpha * exp(- adist * adist);
             double f2 = erfc(adist) / dist;
 
-            auto f = dr * i.getQ() * j.getQ() * ((f1 + f2)/dist);
+            // does not include coulomb constant
+            auto f = dr * i.getQ() * j.getQ() * ((f1 + f2)/dist2);
             i.addF(f);
             if (newton3) {
                 // only if we use newton 3 here, we want to
