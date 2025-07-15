@@ -28,7 +28,7 @@ fastParticlesThrow                   :  false
 
 Sites:
   0:
-    epsilon                          :  1.
+    epsilon                          :  0.01
     sigma                            :  1.
     mass                             :  1.
     #coulomb-epsilon                  :  1. # (4.0 * M_PI * coulombEpsilon)

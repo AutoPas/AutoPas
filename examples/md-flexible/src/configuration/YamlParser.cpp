@@ -759,8 +759,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Positive floating-point value.";
         description = config.rdfGuardArea.description;
 
-        config.odfGuardArea.value = node[key].as<double>();
-        if (config.odfGuardArea.value < 0) {
+        config.rdfGuardArea.value = node[key].as<double>();
+        if (config.rdfGuardArea.value < 0) {
           throw std::runtime_error("ODF guard area has to be a positive value >= 0!");
         }
       } else if (key == config.odfOutputFolder.name) {

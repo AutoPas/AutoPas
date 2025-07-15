@@ -1,0 +1,102 @@
+functor                              :  lj
+container                            :  [LinkedCells]
+traversal                            :  [lc_c04_HCP]
+traversal-second-instance            :  [lc_c08]
+newton3                              :  [enabled]
+data-layout                          :  [AoS]
+
+respa-stepsize                       :  2
+
+verlet-rebuild-frequency             :  1
+verlet-skin-radius                   :  0.02
+#verlet-cluster-size                  :  4
+#selector-strategy                    :  Fastest-Absolute-Value
+#tuning-strategies                    :  [slow-config-filter, predictive-tuning]
+#tuning-interval                      :  5000
+#tuning-samples                       :  10
+#tuning-max-evidence                  :  10
+#tuning-phases                        :  4
+
+cutoff                               :  3
+cutoff-factor-respa                  :  2
+cell-size                            :  [1]
+cell-size-second-instance            :  [0.5]
+deltaT                               :  0.02
+iterations                           :  7680
+boundary-type                        :  [periodic, periodic, periodic]
+fastParticlesThrow                   :  false
+
+Sites:
+  0:
+    epsilon                          :  0.01
+    sigma                            :  1.
+    mass                             :  1.
+    #coulomb-epsilon                  :  1. # (4.0 * M_PI * coulombEpsilon)
+    #charge                           :  1.
+
+Molecules:
+  0:
+    site-types                       : [0, 0, 0, 0]
+    relative-site-positions          : [[0.57735027,  0.0, -0.20412415], [-0.28867513,  0.25, -0.20412415], [-0.28867513, -0.25, -0.20412415], [0.0, 0.0, 0.61237244]]
+    moment-of-inertia                : [1, 1, 1]
+  1:
+    site-types                       : [0, 0, 0]
+    relative-site-positions          : [[0.57735027,  0.0, -0.20412415], [-0.28867513,  0.25, -0.20412415], [0.0, 0.0, 0.61237244]]
+    moment-of-inertia                : [0.375, 0.50000001, 0.87500001]
+
+Objects:
+  CubeClosestPacked:
+    0:
+      box-length                     :  [60, 60, 60] #[36.845, 36.845, 36.845]
+      bottomLeftCorner               :  [0, 0, 0]
+      particle-spacing               :  2.35
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+
+thermostat:
+  initialTemperature                 :  1
+  targetTemperature                  :  1
+  deltaTemperature                   :  0.5
+  thermostatInterval                 :  96
+  addBrownianMotion                  :  true
+
+log-level                            :  info
+no-end-config                        :  true
+no-progress-bar                      :  true
+#vtk-filename                         :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
+#vtk-output-folder                    :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
+#vtk-write-frequency                  :  100
+#lut-input-file                       :  LUT_C6_200B.csv
+# rdf-filename                         :  DistanceClassTest6FP_dt0_02_2400_7600_60_c_3_2_e0_01_perf_rs_2
+# rdf-output-folder                    :  DistanceClassTest6FP_dt0_02_2400_7600_60_c_3_2_e0_01_perf_rs_2
+# rdf-radius                           :  6
+# rdf-num-bins                         :  250
+# rdf-guard-area                       :  20
+# rdf-capture-frequency                :  1
+# rdf-start-iteration                  :  2400
+# rdf-end-iteration                    :  7600
+#odf-filename                         :  ODF_6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
+#odf-output-folder                    :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
+#odf-radius                           :  6
+#odf-num-bins                         :  250
+#odf-guard-area                       :  0
+#odf-capture-frequency                :  1
+#odf-start-iteration                  :  2400
+#odf-end-iteration                    :  30400
+#rotational-analysis-lag-steps        :  1000
+#rotational-analysis-step-interval    :  1
+#rotational-analysis-filename         :  Rot_6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
+#rotational-analysis-output-folder    :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
+#rotational-analysis-start-iteration  :  2400
+#rotational-analysis-end-iteration    :  30400
+#ibi-equilibrate-iterations           :  50000
+#ibi-update-alpha                     :  1
+#ibi-convergence-threshold            :  0.99
+#lut-filename                         :  LUT
+#lut-output-folder                    :  DistanceClassTest
+#multi-multisite-models-respa         : true
+#respa-molecule-types                 : [1, 0]
+respa-distance-class-mode            : fp #ibi # fp, cgmol, disabled
+use-second-autopas-instance          : true
+#statistics-output-folder             : DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
+#statistics-output-filename           : Statistics_6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2

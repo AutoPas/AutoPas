@@ -28,7 +28,7 @@ fastParticlesThrow                   :  false
 
 Sites:
   0:
-    epsilon                          :  1.
+    epsilon                          :  0.01
     sigma                            :  1.
     mass                             :  1.
     #coulomb-epsilon                  :  1. # (4.0 * M_PI * coulombEpsilon)
@@ -63,18 +63,18 @@ thermostat:
 log-level                            :  info
 no-end-config                        :  true
 no-progress-bar                      :  true
-#vtk-filename                         :  DistanceClassTest6FPF_dt0_02
-#vtk-output-folder                    :  DistanceClassTest6FPF_dt0_02
-#vtk-write-frequency                  :  1
+#vtk-filename                         :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_ibi_rs_2
+#vtk-output-folder                    :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_ibi_rs_2
+#vtk-write-frequency                  :  100
 lut-input-file                       :  LUT_6FPF_dt0_02_60_e0_01_a1_29.csv
-#rdf-filename                         :  RDF_6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
-#rdf-output-folder                    :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
-#rdf-radius                           :  6
-#rdf-num-bins                         :  250
-#rdf-guard-area                       :  0
-#rdf-capture-frequency                :  1
-#rdf-start-iteration                  :  2400
-#rdf-end-iteration                    :  30400
+# rdf-filename                         :  DistanceClassTest6FP_dt0_02_2400_7600_60_c_3_2_e0_01_ibi_perf_rs_2
+# rdf-output-folder                    :  DistanceClassTest6FP_dt0_02_2400_7600_60_c_3_2_e0_01_ibi_perf_rs_2
+# rdf-radius                           :  6
+# rdf-num-bins                         :  250
+# rdf-guard-area                       :  20
+# rdf-capture-frequency                :  1
+# rdf-start-iteration                  :  2400
+# rdf-end-iteration                    :  7600
 #odf-filename                         :  ODF_6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
 #odf-output-folder                    :  DistanceClassTest6FP_dt0_02_2400_30400_60_c_3_2_e1_perf_rs_2
 #odf-radius                           :  6

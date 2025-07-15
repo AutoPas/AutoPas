@@ -10,7 +10,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=112
-#SBATCH --time=16:00:00
+#SBATCH --time=24:00:00
 
 module load slurm_setup
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK

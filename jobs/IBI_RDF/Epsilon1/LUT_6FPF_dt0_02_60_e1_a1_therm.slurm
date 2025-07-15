@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH -J 1a1
+#SBATCH -D ./
+#SBATCH -o ./%x.%j.%N.out
+#SBATCH -e ./%x.%j.%N.err
+#SBATCH --get-user-env
+#SBATCH --export=NONE
+#SBATCH --clusters=cm4
+#SBATCH --partition=cm4_tiny
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=56
+#SBATCH --time=08:00:00
+
+module load slurm_setup
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+MYPROG="./md-flexible --yaml-filename LUT_6FPF_dt0_02_60_e1_a1_therm3_5.yaml"
+
+$MYPROG
