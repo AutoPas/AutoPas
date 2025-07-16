@@ -111,8 +111,8 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
     config.traversal = TraversalOption::parseOptionExact(predictionJson["Traversal"]);
     config.dataLayout = DataLayoutOption::parseOptionExact(predictionJson["Data Layout"]);
     config.newton3 = Newton3Option::parseOptionExact(predictionJson["Newton 3"]);
-    config.cellSizeFactor = std::stod(getValue("CellSizeFactor"));
-    config.loadEstimator = LoadEstimatorOption::parseOptionExact(getValue("Load Estimator"));
+    config.cellSizeFactor = std::stod(predictionJson["CellSizeFactor"]);
+    config.loadEstimator = LoadEstimatorOption::parseOptionExact(predictionJson["Load Estimator"]);
 
     config.interactionType = configQueue.front().interactionType;
 
