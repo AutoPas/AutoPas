@@ -92,7 +92,7 @@ jobs:
     container: autopas/${{ matrix.config[0] }}
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
-      LSAN_OPTIONS: "verbosity=1:log_threads=1"
+      LSAN_OPTIONS: "verbosity=1:log_threads=1:suppressions=/__w/AutoPas/AutoPas/.lsanIgnoreList.txt:ignore_noninstrumented_modules=1"
     defaults:
       run:
         # make sure the scripts are executed with bash (needed for [[) and not sh.
