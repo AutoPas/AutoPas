@@ -39,6 +39,10 @@ class TuningTriggerOption : public Option<TuningTriggerOption> {
      *  Splits up last n samples into two intervals A, B. Triggers if avg(B) is greater or equal than triggerFactor times avg(A).
      **/
     timeBasedSplit,
+    /**
+     *  Performs a linear regression on the last n iteration runtimes. Triggers if the slope is bigger than triggerFactor.
+     **/
+    timeBasedRegression,
   };
 
   /**
@@ -68,6 +72,7 @@ class TuningTriggerOption : public Option<TuningTriggerOption> {
         {TuningTriggerOption::timeBasedSimple, "TimeBasedSimple"},
         {TuningTriggerOption::timeBasedAverage, "TimeBasedAverage"},
         {TuningTriggerOption::timeBasedSplit, "TimeBasedSplit"},
+        {TuningTriggerOption::timeBasedRegression, "TimeBasedRegression"},
     };
   }
 

@@ -1947,6 +1947,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 
 #if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
   autoTuner.passIterationRuntime(measurements.timeTotal - measurements.timeRebuild);
+  // autoTuner.passIterationRuntime(measurements.timeTotal);
 #endif
 
   // Pass on measurements

@@ -36,16 +36,16 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
       _nSamples = 10;
     }
 
-    _lastIterationRuntimes.reserve(_nSamples);
+    _runtimeSamples.reserve(_nSamples);
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
     bool oldTriggerState = _wasTriggered;
     _wasTriggered = false;
 
-    if (_lastIterationRuntimes.size() < _nSamples) return oldTriggerState;
+    if (_runtimeSamples.size() < _nSamples) return oldTriggerState;
 
-    unsigned long average = std::reduce(_lastIterationRuntimes.begin(), _lastIterationRuntimes.end()) / _nSamples;
+    unsigned long average = std::reduce(_runtimeSamples.begin(), _runtimeSamples.end()) / _nSamples;
     _wasTriggered = (_currentIterationRuntime >= (_triggerFactor * average));
     return oldTriggerState;
   }
@@ -53,8 +53,8 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
   inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
-    if (_lastIterationRuntimes.size() == _nSamples) _lastIterationRuntimes.erase(_lastIterationRuntimes.begin());
-    _lastIterationRuntimes.push_back(_currentIterationRuntime);
+    if (_runtimeSamples.size() == _nSamples) _runtimeSamples.erase(_runtimeSamples.begin());
+    _runtimeSamples.push_back(_currentIterationRuntime);
     _currentIterationRuntime = sample;
   }
 
@@ -64,6 +64,6 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
   float _triggerFactor;
   unsigned _nSamples;
   unsigned long _currentIterationRuntime;
-  std::vector<unsigned long> _lastIterationRuntimes;
+  std::vector<unsigned long> _runtimeSamples;
 };
 }  // namespace autopas
