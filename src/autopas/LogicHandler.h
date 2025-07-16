@@ -1976,11 +1976,11 @@ inline std::string checkVecPattern(const autopas::VectorizationPatternOption::Va
  * @return vector with optimal pattern for each 30x30 combination of cell sizes
  */
 template <class Functor_T, class ParticleType_T>
-std::vector<autopas::VectorizationPatternOption::Value> pattern_map_calc(Functor_T &functor, bool newton3) {
+std::array<autopas::VectorizationPatternOption::Value, AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize> pattern_map_calc(Functor_T &functor, bool newton3) {
   using patterntype = autopas::VectorizationPatternOption::Value;
   std::vector<patterntype> patterns = {patterntype::p1xVec, patterntype::p2xVecDiv2, patterntype::pVecDiv2x2,
                                        patterntype::pVecx1};
-  std::vector<std::vector<long>> all_results(4, std::vector<long>(900, 1));
+  std::vector<std::vector<long>> all_results(4, std::vector<long>(AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize, 1));
   std::map<std::string, autopas::utils::Timer> timer{
       {"Initialization", autopas::utils::Timer()},
       {"Functor", autopas::utils::Timer()},
@@ -1989,17 +1989,17 @@ std::vector<autopas::VectorizationPatternOption::Value> pattern_map_calc(Functor
   };
   for (size_t i = 0; i < patterns.size(); i++) {
     patterntype current_pattern = patterns[i];
-    for (size_t firstnumberParticles = 1; firstnumberParticles <= 30; firstnumberParticles++) {
-      for (size_t secondnumberParticles = 1; secondnumberParticles <= 30; secondnumberParticles++) {
+    for (size_t firstnumberParticles = 1; firstnumberParticles <= AutoTuner::_benchmarkSize; firstnumberParticles++) {
+      for (size_t secondnumberParticles = 1; secondnumberParticles <= AutoTuner::_benchmarkSize; secondnumberParticles++) {
         long test = patternHelper<Functor_T, ParticleType_T>(
             functor, 60, 100, firstnumberParticles, secondnumberParticles, 0.16, current_pattern, timer, newton3);
-        all_results[i][firstnumberParticles - 1 + 30 * (secondnumberParticles - 1)] = test;
+        all_results[i][firstnumberParticles - 1 + AutoTuner::_benchmarkSize * (secondnumberParticles - 1)] = test;
       }
     }
   }
 
-  std::vector<patterntype> optimal_patterns(900, patterntype::p1xVec);
-  for (size_t i = 0; i < 900; i++) {
+  std::array<patterntype, AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize> optimal_patterns;
+  for (size_t i = 0; i < AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize; i++) {
     long min = all_results[0][i];
     long min_index = 0;
     for (int j = 1; j < 4; j++) {
@@ -2104,27 +2104,34 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       autoTuner._patternsCalculated = true;
       std::cout << "Pattern maps calculated!" << std::endl;
       std::cout << " optimal pattern for fcs:1 and scs:30 newton3 on:"
-                << checkVecPattern(autoTuner._optimalPatternsNewton3On[29 * 30]) << std::endl;
+                << checkVecPattern(autoTuner._optimalPatternsNewton3On[(AutoTuner::_benchmarkSize-1) * AutoTuner::_benchmarkSize]) << std::endl;
       std::cout << " optimal pattern for fcs:1 and scs:30 newton3 off:"
-                << checkVecPattern(autoTuner._optimalPatternsNewton3Off[29 * 30]) << std::endl;
+                << checkVecPattern(autoTuner._optimalPatternsNewton3Off[(AutoTuner::_benchmarkSize-1) * AutoTuner::_benchmarkSize]) << std::endl;
       std::cout << " optimal pattern for fcs:30 and scs:1 newton3 on:"
-                << checkVecPattern(autoTuner._optimalPatternsNewton3On[29]) << std::endl;
+                << checkVecPattern(autoTuner._optimalPatternsNewton3On[AutoTuner::_benchmarkSize-1]) << std::endl;
       std::cout << " optimal pattern for fcs:30 and scs:1 newton3 off:"
-                << checkVecPattern(autoTuner._optimalPatternsNewton3Off[29]) << std::endl;
-      std::cout << "pattern, fcs, scs" << std::endl;
-      for (size_t second_size = 1; second_size <= 30; second_size++) {
-        for (size_t first_size = 1; first_size <= 30; first_size++) {
-          std::cout << checkVecPattern(autoTuner._optimalPatternsNewton3On[(second_size - 1) * 30 + (first_size - 1)])
-                    << "," << first_size << "," << second_size << std::endl;
+                << checkVecPattern(autoTuner._optimalPatternsNewton3Off[AutoTuner::_benchmarkSize-1]) << std::endl;
+      std::ofstream newton3File("newton3on_patterns.csv", std::ios::out);
+      if (newton3File.is_open()) {
+        newton3File << "pattern,fcs,scs\n";
+        for (size_t second_size = 1; second_size <=AutoTuner::_benchmarkSize; second_size++) {
+          for (size_t first_size = 1; first_size <= AutoTuner::_benchmarkSize; first_size++) {
+            newton3File << checkVecPattern(autoTuner._optimalPatternsNewton3On[(second_size - 1) * AutoTuner::_benchmarkSize + (first_size - 1)])
+                      << "," << first_size << "," << second_size << "\n";
+          }
         }
+        newton3File.close();
       }
-      std::cout << "newton3 off optimal patterns:" << std::endl;
-      std::cout << "pattern, fcs, scs" << std::endl;
-      for (size_t second_size = 1; second_size <= 30; second_size++) {
-        for (size_t first_size = 1; first_size <= 30; first_size++) {
-          std::cout << checkVecPattern(autoTuner._optimalPatternsNewton3Off[(second_size - 1) * 30 + (first_size - 1)])
-                    << "," << first_size << "," << second_size << std::endl;
+      std::ofstream newton3offFile("newton3off_patterns.csv", std::ios::out);
+      if (newton3offFile.is_open()) {
+        newton3offFile << "pattern,fcs,scs\n";
+        for (size_t second_size = 1; second_size <=AutoTuner::_benchmarkSize; second_size++) {
+          for (size_t first_size = 1; first_size <= AutoTuner::_benchmarkSize; first_size++) {
+            newton3offFile << checkVecPattern(autoTuner._optimalPatternsNewton3Off[(second_size - 1) * AutoTuner::_benchmarkSize + (first_size - 1)])
+                      << "," << first_size << "," << second_size << "\n";
+          }
         }
+        newton3offFile.close();
       }
     }
     functor.setPatternSelection(&autoTuner._optimalPatternsNewton3On, &autoTuner._optimalPatternsNewton3Off);

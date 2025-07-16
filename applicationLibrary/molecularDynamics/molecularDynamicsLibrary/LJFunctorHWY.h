@@ -224,39 +224,45 @@ class LJFunctorHWY
     if (_patternMapNewton3On != nullptr && _patternMapNewton3Off != nullptr) {
       // std::cout <<"in SoAFunctorPair with fcs:"<< soa1.size()<<"scs:" <<soa2.size()<<std::endl;
       if (soa1.size() != 0 && soa2.size() != 0) {
-        if (soa1.size() <= 30 && soa2.size() <= 30) {
-
+        if (soa1.size() <= autopas::AutoTuner::_benchmarkSize && soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
           if (newton3) {
-            setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
+            setVecPattern(
+                (*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
           } else {
-            setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (soa2.size() - 1)]);
+            setVecPattern(
+                (*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
           }
         } else {
-
           if (newton3) {
-            if (soa1.size() <= 30) {
-              setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + 30 * (29)]);
+            if (soa1.size() <= autopas::AutoTuner::_benchmarkSize) {
+              setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
+                                                                            (autopas::AutoTuner::_benchmarkSize - 1)]);
 
-            } else if (soa2.size() <= 30) {
-              setVecPattern((*_patternMapNewton3On)[(29) + 30 * (soa2.size() - 1)]);
+            } else if (soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
+              setVecPattern((*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                    autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
 
             } else {
-              setVecPattern((*_patternMapNewton3On)[(29) + 30 * (29)]);
+              setVecPattern((*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                    autopas::AutoTuner::_benchmarkSize *
+                                                        (autopas::AutoTuner::_benchmarkSize - 1)]);
             }
           } else {
-            if (soa1.size() <= 30) {
-              setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + 30 * (29)]);
+            if (soa1.size() <= autopas::AutoTuner::_benchmarkSize) {
+              setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
+                                                                            (autopas::AutoTuner::_benchmarkSize - 1)]);
 
-            } else if (soa2.size() <= 30) {
-              setVecPattern((*_patternMapNewton3Off)[(29) + 30 * (soa2.size() - 1)]);
+            } else if (soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
+              setVecPattern((*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                    autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
 
             } else {
-              setVecPattern((*_patternMapNewton3Off)[(29) + 30 * (29)]);
+              setVecPattern((*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                    autopas::AutoTuner::_benchmarkSize *
+                                                        (autopas::AutoTuner::_benchmarkSize - 1)]);
             }
           }
         }
-
-
       }
     }
     switch (_vecPattern) {
@@ -1394,12 +1400,14 @@ class LJFunctorHWY
    * @param patternMapNewton3On, patternMapNewton3Off
    */
 
-  void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value> *patternMapNewton3On,
-                           std::vector<autopas::VectorizationPatternOption::Value> *patternMapNewton3Off) final {
+  void setPatternSelection(
+      std::array<autopas::VectorizationPatternOption::Value,
+                 autopas::AutoTuner::_benchmarkSize * autopas::AutoTuner::_benchmarkSize> *patternMapNewton3On,
+      std::array<autopas::VectorizationPatternOption::Value,
+                 autopas::AutoTuner::_benchmarkSize * autopas::AutoTuner::_benchmarkSize> *patternMapNewton3Off) final {
     _patternMapNewton3On = patternMapNewton3On;
     _patternMapNewton3Off = patternMapNewton3Off;
   };
-
 
  private:
   /**
@@ -1446,9 +1454,9 @@ class LJFunctorHWY
   bool _masksInitialized{false};
 
   VectorizationPattern _vecPattern;
-  std::vector<autopas::VectorizationPatternOption::Value> *_patternMapNewton3On = nullptr;
-  std::vector<autopas::VectorizationPatternOption::Value> *_patternMapNewton3Off = nullptr;
-
-
+  std::array<autopas::VectorizationPatternOption::Value,
+             autopas::AutoTuner::_benchmarkSize * autopas::AutoTuner::_benchmarkSize> *_patternMapNewton3On = nullptr;
+  std::array<autopas::VectorizationPatternOption::Value,
+             autopas::AutoTuner::_benchmarkSize * autopas::AutoTuner::_benchmarkSize> *_patternMapNewton3Off = nullptr;
 };
 }  // namespace mdLib

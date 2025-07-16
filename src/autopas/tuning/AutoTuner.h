@@ -456,8 +456,10 @@ public:
   /**
    * both variables are relevant for pattern selection for LJFunctorHWY, only set once per simulations
    */
-  std::vector<autopas::VectorizationPatternOption::Value> _optimalPatternsNewton3On;
-  std::vector<autopas::VectorizationPatternOption::Value> _optimalPatternsNewton3Off;
+  static constexpr size_t _benchmarkSize=40;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize*_benchmarkSize> _optimalPatternsNewton3On;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize*_benchmarkSize> _optimalPatternsNewton3Off;
   bool _patternsCalculated{false};
+
 };
 }  // namespace autopas

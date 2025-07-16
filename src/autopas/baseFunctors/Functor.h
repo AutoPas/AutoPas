@@ -11,6 +11,7 @@
 
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
+#include "autopas/tuning/AutoTuner.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 #include "autopas/utils/logging/FLOPLogger.h"
@@ -188,7 +189,7 @@ class Functor {
    */
 
 
-  virtual void setPatternSelection(std::vector<autopas::VectorizationPatternOption::Value>* patternMapNewton3On, std::vector<autopas::VectorizationPatternOption::Value>* patternMapNewton3Off) {};
+  virtual void setPatternSelection(std::array<autopas::VectorizationPatternOption::Value,AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize>* patternMapNewton3On, std::array<autopas::VectorizationPatternOption::Value,AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize>* patternMapNewton3Off) {};
   /**
      * Get status whether functor uses mixing or not
      * @return boolean
