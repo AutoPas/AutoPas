@@ -65,6 +65,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.extrapolationMethodOption,
       config.energySensorOption,
       config.functorOption,
+      config.vecPatternOptions,
       config.functorOption3B,
       config.generatorOption,
       config.globalForce,
@@ -303,6 +304,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("highway") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"
@@ -323,6 +326,20 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.addInteractionType(autopas::InteractionTypeOption::triwise);
         break;
       }
+      case decltype(config.vecPatternOptions)::getoptChar: {
+        config.vecPatternOptions.value = autopas::VectorizationPatternOption::parseOptions(strArg);
+        if (config.vecPatternOptions.value.empty()) {
+          cerr << "Unknown Pattern: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      /*
+      case decltype(config.dontMeasureFlops)::getoptChar: {
+        config.dontMeasureFlops.value = false;
+        break;
+      }
+      */
       case decltype(config.generatorOption)::getoptChar: {
         if (strArg.find("grid") != string::npos) {
           config.generatorOption.value = MDFlexConfig::GeneratorOption::grid;

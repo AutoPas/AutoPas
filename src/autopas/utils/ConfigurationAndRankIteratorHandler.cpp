@@ -22,6 +22,9 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   ++_loadEstimatorIt;
   if (_loadEstimatorIt != _allowedAndApplicableLoadEstimatorOptions.end()) return;
   _loadEstimatorIt = _allowedAndApplicableLoadEstimatorOptions.begin();
+  ++_vecPatternIt;
+  if (_vecPatternIt != _vecPatternOptions.end()) return;
+  _vecPatternIt = _vecPatternOptions.begin();
   ++_traversalIt;
   if (_traversalIt != _allowedAndApplicableTraversalOptions.end()) {
     selectLoadEstimatorsForCurrentContainerAndTraversal();
@@ -79,6 +82,7 @@ void ConfigurationAndRankIteratorHandler::reset(const int numConfigs, const int 
   _cellSizeFactorIt = _cellSizeFactors.begin();
   _dataLayoutIt = _dataLayoutOptions.begin();
   _newton3It = _newton3Options.begin();
+  _vecPatternIt = _vecPatternOptions.begin();
   selectTraversalsForCurrentContainer();
   selectLoadEstimatorsForCurrentContainerAndTraversal();
 
