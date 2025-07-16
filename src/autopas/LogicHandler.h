@@ -24,7 +24,6 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1850,19 +1849,16 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
-      utils::Timer timerCalculateHomogeneity;
-      timerCalculateHomogeneity.start();
-      const auto &container = _containerSelector.getCurrentContainer();
-      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
-      timerCalculateHomogeneity.stop();
-      autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
-    }
+    if (autoTuner.needsLiveInfo()) {
+      // Gather Live Info
+      utils::Timer timerGatherLiveInfo;
+      timerGatherLiveInfo.start();
+      auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+      info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+      timerGatherLiveInfo.stop();
+      AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
 
-    const auto needsLiveInfo = autoTuner.prepareIteration();
-
-    if (needsLiveInfo) {
-      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       autoTuner.receiveLiveInfo(info);
     }
 
@@ -1885,7 +1881,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
   if (info.get().empty()) {
-    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
   }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif

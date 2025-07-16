@@ -322,33 +322,37 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Floors all array elements and converts them to integers.
- * @tparam T floating point type
+ * Floors all array elements and converts them to a different type. Useful to floor array elements and cast them to
+ * some integer type.
+ * @tparam target_T target type. By default int.
+ * @tparam float_T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with floored elements of new type int.
+ * @return New array with floored elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <typename target_T = int, typename float_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<target_T, SIZE> floorAndCast(const std::array<float_T, SIZE> &a) {
+  std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::floor(a[d]));
+    result[d] = static_cast<target_T>(std::floor(a[d]));
   }
   return result;
 }
 
 /**
- * Ceils all array elements and converts them to integers.
- * @tparam T floating point type
+ * Ceils all array elements and converts them to a different type. Useful to ceil array elements and cast them to some
+ * integer type.
+ * @tparam target_T target type. By default int.
+ * @tparam float_T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with ceiled elements of new type int.
+ * @return New array with ceiled elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <class target_T = int, class float_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<target_T, SIZE> ceilAndCast(const std::array<float_T, SIZE> &a) {
+  std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::ceil(a[d]));
+    result[d] = static_cast<target_T>(std::ceil(a[d]));
   }
   return result;
 }
@@ -414,6 +418,23 @@ template <class T>
     arraysAreEqual = arraysAreEqual and (a[i] == b[i]);
   }
   return arraysAreEqual;
+}
+
+/**
+ * static_casts all elements of an array to a new type.
+ * @tparam new_T
+ * @tparam old_T
+ * @tparam SIZE
+ * @param a Old Array
+ * @return
+ */
+template <typename new_T, typename old_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<new_T, SIZE> staticCastArray(const std::array<old_T, SIZE> &a) {
+  std::array<new_T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<new_T>(a[d]);
+  }
+  return result;
 }
 
 // namespace for templated operators
