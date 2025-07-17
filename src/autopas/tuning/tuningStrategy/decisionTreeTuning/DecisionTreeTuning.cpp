@@ -111,7 +111,13 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
     config.traversal = TraversalOption::parseOptionExact(predictionJson["Traversal"]);
     config.dataLayout = DataLayoutOption::parseOptionExact(predictionJson["Data Layout"]);
     config.newton3 = Newton3Option::parseOptionExact(predictionJson["Newton 3"]);
-    config.cellSizeFactor = std::stod(predictionJson["CellSizeFactor"]);
+    // Sanity check that was stored as the expected type (i.e. a string).
+    if (predictionJson["CellSizeFactor"].is_string()) {
+      config.cellSizeFactor = std::stod(static_cast<std::string>(predictionJson["CellSizeFactor"]));
+    } else {
+      AutoPasLog(ERROR, "The Python predict.py script expected a string for CellSizeFactor, but a {} was returned.",
+                 predictionJson["CellSizeFactor"].type_name());
+    }
     config.loadEstimator = LoadEstimatorOption::parseOptionExact(predictionJson["Load Estimator"]);
 
     config.interactionType = configQueue.front().interactionType;
