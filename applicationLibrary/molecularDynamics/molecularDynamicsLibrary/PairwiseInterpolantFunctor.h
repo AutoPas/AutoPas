@@ -17,6 +17,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
+#include <fftw3.h>
+
 namespace mdLib {
 
 template <class PairwiseKernel, class Particle_T,
@@ -64,11 +66,12 @@ class PairwiseInterpolantFunctor
 
     _distanceStatistics.resize(autopas::autopas_get_max_threads());
 
+    _coefficients.reserve(_numNodes.size());
     int interval = 0;
     for (size_t node : _numNodes) {
-      _coefficients.insert(std::pair<size_t, std::vector<double>>{interval++, std::vector<double>(node)});
+      _coefficients.push_back(std::vector<double>(node));
     }
-    constructPolynomial();
+    constructPolynomialFFTW();
   }
 
   double evaluateChebyshev(int n, double x) {
@@ -122,6 +125,38 @@ class PairwiseInterpolantFunctor
       _coefficients.at(interval)[i] = coefficient * 2. / _numNodes[interval];
     }
     _coefficients.at(interval)[0] = _coefficients.at(interval)[0] / 2.;
+  }
+
+  void constructPolynomialFFTW() {
+    double a = _a;
+    for (int interval = 0; interval < _numNodes.size(); ++interval) {
+      double values[_numNodes[interval]];
+
+      double b = _intervalSplits.size() > interval ? _intervalSplits[interval] : _b;
+
+      /* evaluate Functor at optimal Chebyshev nodes */
+      for (int i = 0; i < _numNodes[interval]; ++i) {
+        double x = ((2 * i + 1.) / (2. * (_numNodes[interval]))) * PI;
+        double node = std::cos(x);
+        double d = mapToInterval(node, a, b);
+
+        double value = _kernel.calculatePairDerivative(d);
+        values[i] = value;
+      }
+
+      /* Let FFTW compute the unscaled coefficients */
+      fftw_plan plan = fftw_plan_r2r_1d(_numNodes[interval], values, values, FFTW_REDFT10, FFTW_ESTIMATE);
+      fftw_execute(plan);
+      fftw_destroy_plan(plan);
+
+      /* Scale coefficients accordingly */
+      for (int i = 0; i < _numNodes[interval]; ++i) {
+        _coefficients.at(interval)[i] = values[i] * 1. / _numNodes[interval];
+      }
+      _coefficients.at(interval)[0] = _coefficients.at(interval)[0] / 2.;
+      
+      a = b;
+    }
   }
  
   void constructPolynomial() {
@@ -480,7 +515,7 @@ class PairwiseInterpolantFunctor
   const double _b;
   const std::vector<size_t> _numNodes;
   const std::vector<double> _intervalSplits;
-  std::map<size_t, std::vector<double>> _coefficients{};
+  std::vector<std::vector<double>> _coefficients{};
   PairwiseKernel _kernel;
 
   const double _cutoffSquared;

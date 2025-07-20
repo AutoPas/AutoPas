@@ -44,8 +44,6 @@ private:
         _aosThreadDataFLOPs(),
         _postProcessed{false} {
 
-        // TODO: sanitize nodes and splits lists length
-
         if constexpr (calculateGlobals) {
         _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
         }
@@ -56,7 +54,7 @@ private:
 
 
         for (size_t dim = 0; dim < 3; ++dim) {
-          if (_numNodes.at(dim).size() != intervalSplits.at(dim).size() + 1) {
+          if (_numNodes.at(dim).size() != intervalSplits.at(dim).size() + 1 && _numNodes.at(dim).size() != 0) {
             throw autopas::utils::ExceptionHandler::AutoPasException("Size of node list unequal to size of intervals + 1 in dimension " + dim);
           }
         }
@@ -98,7 +96,7 @@ private:
 
       auto coeffs = _coeffs(intervalX, intervalY, intervalZ).at(dim);
 
-      /* Flatten x dimension */
+      /* Flatten z dimension */
       auto xyCoeffs = std::vector<std::vector<double>> {};
       xyCoeffs.reserve(nX);
       for (size_t i = 0; i < nX; ++i) {

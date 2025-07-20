@@ -31,9 +31,43 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
-# TODO: find fftw library and install if required
+# Here is the "Test Zone" for including fftw
 
-target_link_libraries(molecularDynamicsLibrary PUBLIC autopas fftw3)
+include(ExternalProject)
+
+message("Test")
+message(${CMAKE_BINARY_DIR})
+
+set(FFTW_INSTALL_DIR ${CMAKE_BINARY_DIR}/fftw_install)
+
+file(MAKE_DIRECTORY "${FFTW_INSTALL_DIR}/include")
+
+ExternalProject_Add(fftw
+    URL https://www.fftw.org/fftw-3.3.10.tar.gz
+    PREFIX fftw_ep
+    CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${FFTW_INSTALL_DIR} --enable-static --disable-shared
+    BUILD_COMMAND make
+    INSTALL_COMMAND make install
+    BUILD_IN_SOURCE 1
+)
+
+add_library(fftw3 STATIC IMPORTED GLOBAL)
+
+set_target_properties(fftw3 PROPERTIES
+    IMPORTED_LOCATION "${FFTW_INSTALL_DIR}/lib/libfftw3.a"
+    INTERFACE_INCLUDE_DIRECTORIES "${FFTW_INSTALL_DIR}/include"
+)
+
+add_dependencies(fftw3 fftw)
+
+target_link_libraries(molecularDynamicsLibrary PUBLIC fftw3)
+
+target_include_directories(molecularDynamicsLibrary PUBLIC "${FFTW_INSTALL_DIR}/include")
+add_dependencies(molecularDynamicsLibrary fftw3)
+
+# Test Zone ends
+
+target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
 
