@@ -18,6 +18,7 @@
 
 #include <fftw3.h>
 #include <unsupported/Eigen/CXX11/Tensor>
+#include "immintrin.h"
 
 namespace mdLib {
 
@@ -64,16 +65,146 @@ private:
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
         _coeffs = Eigen::Tensor<std::array<std::vector<std::vector<std::vector<double>>>, 3>, 3, Eigen::RowMajor>
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
-        constructPolynomialFFTW();
+        _coeffsVec = Eigen::Tensor<std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>, 3, Eigen::RowMajor>
+          (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
+
         constructPolyFFTW();
     }
 
-    // TODO: recursive definition, clenshaw algorithm
-    double evaluateChebyshev(double input, int j) {
-      return std::cos(j * std::acos(input));
+    double evalChebFast1DVector(double input, int n, Eigen::VectorXd& coeffs) {
+      double b_n = 0.;
+      double b_n1 = 0.;
+      double b_n2 = 0.;
+
+      for (int k = n - 1; k > 0; --k) {
+
+        b_n = coeffs(k) + 2. * input * b_n1 - b_n2;
+        b_n2 = b_n1;
+        b_n1 = b_n;
+      }
+
+      b_n = 2. * coeffs(0) + 2. * input * b_n1 - b_n2;
+      return (b_n - b_n2) / 2.;
     }
 
-    double evaluateChebyshevFast1D(double input, int n, const std::vector<double>& coeffs) {
+    __m512d evalChebFast1DVector(double input, int n, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& coeffs, size_t i, size_t size) {
+      __m512d inputVec = _mm512_set1_pd(input);
+      __m512d c;
+
+      __m512d b_n = _mm512_setzero_pd();
+      __m512d b_n1 = _mm512_setzero_pd();
+      __m512d b_n2 = _mm512_setzero_pd();
+
+      for (int j = n - 1; j > 0; --j) {
+
+        /* Full Load */
+        if (size >= 8) {
+          c = _mm512_loadu_pd(&coeffs(j, i));
+        }
+        /* Masked Load */
+        else {
+          __mmask8 mask = (1 << size) - 1;
+          c = _mm512_maskz_loadu_pd(mask, &coeffs(j, i));
+        }
+
+        b_n = c + 2. * input * b_n1 - b_n2;
+        b_n2 = b_n1;
+        b_n1 = b_n;
+      }
+      if (size >= 8) {
+        c = _mm512_loadu_pd(&coeffs(0, i));
+      }
+      /* Masked Load */
+      else {
+        __mmask8 mask = (1 << size) - 1;
+        c = _mm512_maskz_loadu_pd(mask, &coeffs(0, i));
+      }
+
+      b_n = 2. * c + 2. * input * b_n1 - b_n2;
+      return (b_n - b_n2) / 2.;
+    }
+
+    __m512d evalChebFast1DVector(double input, int n, Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs, int i, int j, int size) {
+
+      __m512d inputV =  _mm512_set1_pd(input);
+      __m512d c;
+
+      __m512d b_n = _mm512_setzero_pd();
+      __m512d b_n1 = _mm512_setzero_pd();
+      __m512d b_n2 = _mm512_setzero_pd();
+
+      for (int k = n - 1; k > 0; --k) {
+
+        /* Full Load */
+        if (size >= 8) {
+          c = _mm512_loadu_pd(&coeffs(i, k, j));
+        }
+        /* Masked Load */
+        else {
+          __mmask8 mask = (1 << size) - 1;
+          c = _mm512_maskz_loadu_pd(mask, &coeffs(i, k, j));
+        }
+
+        b_n = c + 2. * input * b_n1 - b_n2;
+        b_n2 = b_n1;
+        b_n1 = b_n;
+      }
+      if (size >= 8) {
+        c = _mm512_loadu_pd(&coeffs(i, 0, j));
+      }
+      /* Masked Load */
+      else {
+        __mmask8 mask = (1 << size) - 1;
+        c = _mm512_maskz_loadu_pd(mask, &coeffs(i, 0, j));
+      }
+
+      b_n = 2. * c + 2. * input * b_n1 - b_n2;
+      return (b_n - b_n2) / 2.;
+    }
+
+    double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
+      size_t nX = _numNodes.at(0).at(intervalX);
+      size_t nY = _numNodes.at(1).at(intervalY);
+      size_t nZ = _numNodes.at(2).at(intervalZ);
+
+      Eigen::Tensor<double, 3, Eigen::RowMajor> coeffs = _coeffsVec(intervalX, intervalY, intervalZ).at(dim);
+
+      /* Flatten z dimension */
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (nY, nX);
+      for (size_t j = 0; j < nY; j+=8) {
+        for (size_t i = 0; i < nX; ++i) {
+        
+          size_t size = nY - j;
+          __m512d values = evalChebFast1DVector(z, nZ, coeffs, i, j, size);
+
+          double helper [8];
+          _mm512_storeu_pd(helper, values);
+
+          for (int jHelp = 0; jHelp < size; ++jHelp) {
+            xyCoeffs(jHelp + j, i) = helper[jHelp];
+          }
+        }
+      }
+
+      /* Flatten y dimension */
+      Eigen::VectorXd xCoeffs (nX);
+      for (size_t i = 0; i < nX; i+=8) {
+        int size = nX - i;
+        __m512d values = evalChebFast1DVector(y, nY, xyCoeffs, i, size);
+        
+        double helper [8];
+        _mm512_storeu_pd(helper, values);
+
+        for (int iHelp = 0; iHelp < size; ++iHelp) {
+          xCoeffs(iHelp + i) = helper[iHelp];
+        }
+      }
+
+      /* Flatten x dimension */
+      return evalChebFast1DVector(x, nX, xCoeffs);
+    }
+
+    double evalChebFast1D(double input, int n, const std::vector<double>& coeffs) {
       // see PairwiseInterpolantFunctor.h for reference
       double b_n = 0.;
       double b_n1 = 0.;
@@ -88,7 +219,8 @@ private:
       return (b_n - b_n2) / 2.;
     }
 
-    double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
+
+    double evalChebFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
       // This code is oriented on NumPy's implementation of chebeval3d
       size_t nX = _numNodes.at(0).at(intervalX);
       size_t nY = _numNodes.at(1).at(intervalY);
@@ -104,7 +236,7 @@ private:
         yCoeffs.reserve(nY);
         for (size_t j = 0; j < nY; ++j) {
           
-          double value = evaluateChebyshevFast1D(z, nZ, coeffs.at(i).at(j));
+          double value = evalChebFast1D(z, nZ, coeffs.at(i).at(j));
           yCoeffs.push_back(value);
         }
         xyCoeffs.push_back(yCoeffs);
@@ -114,121 +246,12 @@ private:
       std::vector<double> xCoeffs {};
       xCoeffs.reserve(nX);
       for (size_t i = 0; i < nX; ++i) {
-        xCoeffs.push_back(evaluateChebyshevFast1D(y, nY, xyCoeffs.at(i)));
+        xCoeffs.push_back(evalChebFast1D(y, nY, xyCoeffs.at(i)));
       }
 
       /* Flatten x dimension */
-      return evaluateChebyshevFast1D(x, nX, xCoeffs);
+      return evalChebFast1D(x, nX, xCoeffs);
     }
-
-    double evalChebFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
-      // This code is oriented on NumPy's implementation of chebeval3d
-      size_t nX = _numNodes.at(0).at(intervalX);
-      size_t nY = _numNodes.at(1).at(intervalY);
-      size_t nZ = _numNodes.at(2).at(intervalZ);
-
-      auto coeffs = _coefficients(intervalX, intervalY, intervalZ).at(dim);
-
-      /* Flatten x dimension */
-      auto xyCoeffs = Eigen::MatrixXd(nX, nY);
-
-      for (size_t i = 0; i < nX; ++i) {
-        for (size_t j = 0; j < nY; ++j) {
-
-          std::vector<double> zCoeffs {};
-          zCoeffs.reserve(nZ);
-          /* This loop can potentially be avoided */
-          for (size_t k = 0; k < nZ; ++k) {
-            zCoeffs.push_back(coeffs(i,j,k));
-          }
-          xyCoeffs(i,j) = evaluateChebyshevFast1D(z, nZ, zCoeffs);
-        }
-      }
-
-      std::vector<double> xCoeffs {};
-      xCoeffs.reserve(nX);
-      for (size_t i = 0; i < nX; ++i) {
-        std::vector<double> yCoeffs {};
-        yCoeffs.reserve(nY);
-
-        /* This loop can potentially be avoided */
-        for (size_t j = 0; j < nY; ++j) {
-          yCoeffs.push_back(xyCoeffs(i, j));
-        }
-        xCoeffs.push_back(evaluateChebyshevFast1D(y, nY, yCoeffs));
-      }
-
-      return evaluateChebyshevFast1D(x, nX, xCoeffs);
-    }
-
-    double evaluateChebyshevFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
-      // This code is oriented on NumPy's implementation of chebeval3d
-
-      size_t nX = _numNodes.at(0).at(intervalX);
-      size_t nY = _numNodes.at(1).at(intervalY);
-      size_t nZ = _numNodes.at(2).at(intervalZ);
-
-      auto coeffs = _coefficients(intervalX, intervalY, intervalZ).at(dim);
-
-
-      /* Flatten x dimension */
-      auto jkCoeffs = Eigen::MatrixXd(nY, nZ);
-
-      for (size_t j = 0; j < nY; ++j) {
-        for (size_t k = 0; k < nZ; ++k) {
-
-          std::vector<double> xCoeffs {};
-          xCoeffs.reserve(nX);
-          /* This loop can potentially be avoided */
-          for (size_t i = 0; i < nX; ++i) {
-            xCoeffs.push_back(coeffs(i,j,k));
-          }
-          jkCoeffs(j,k) = evaluateChebyshevFast1D(x, nX, xCoeffs);
-        }
-      }
-
-      std::vector<double> zCoeffs {};
-      zCoeffs.reserve(nZ);
-      for (size_t k = 0; k < nZ; ++k) {
-        std::vector<double> yCoeffs {};
-        yCoeffs.reserve(nY);
-
-        /* This loop can potentially be avoided */
-        for (size_t j = 0; j < nY; ++j) {
-          yCoeffs.push_back(jkCoeffs(j, k));
-        }
-        zCoeffs.push_back(evaluateChebyshevFast1D(y, nY, yCoeffs));
-      }
-
-      return evaluateChebyshevFast1D(z, nZ, zCoeffs);
-    }
-
-    /*
-    double evaluateInterpolant(double x, double y, double z) {
-      int intervalX = 0;
-      int intervalY = 0;
-      int intervalZ = 0;
-
-      double result = 0.;
-      for (int i = 0; i < _numNodes.at(0).at(intervalX); ++i) {
-        double mappedX = mapToCheb(x, _a.at(0), _b.at(0));
-        double val_x = evaluateChebyshev(mappedX, i); 
-
-        for (int j = 0; j < _numNodes.at(1).at(intervalY); ++j) {
-          double mappedY = mapToCheb(y, _a.at(1), _b.at(1));
-          double val_y = evaluateChebyshev(mappedY, j);
-
-          for (int k = 0; k < _numNodes.at(2).at(intervalZ); ++k) {
-            double mappedZ = mapToCheb(z, _a.at(2), _b.at(2));
-            double val_z = evaluateChebyshev(mappedZ, k);
-
-            result += _coefficients(intervalX, intervalY, intervalZ)(i,j,k) * val_x * val_y * val_z;
-          }
-        }
-      }
-      return result;
-    }
-    */
 
     double mapToInterval(double x, double a, double b) {
       double intermediate = x + 1;
@@ -299,6 +322,13 @@ private:
               std::vector<std::vector<std::vector<double>>>(nX)
             };
 
+            std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> &coeffsVec = _coeffsVec(intervalX, intervalY, intervalZ);
+            coeffsVec = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> {
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY),
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY),
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY)
+            };
+
             /* Scale the coefficients according to the Chebyshev interpolation */
             for (int dim = 0; dim < 3; ++dim) {
               for (int i = 0; i < nX; ++i) {
@@ -319,94 +349,11 @@ private:
                     }
                     forcesXYZ[dim][i][j][k] *= (1./nX * 1./nY * 1./ nZ);
                     coeffsZ.push_back(forcesXYZ[dim][i][j][k]);
+                    coeffsVec.at(dim)(i, k, j) = forcesXYZ[dim][i][j][k];
                   }
                   coeffsYZ.emplace_back(coeffsZ);
                 }
                 coeffs.at(dim).at(i) = coeffsYZ;
-              }
-            }
-
-            aZ = bZ;
-          } // intervalZ
-          aY = bY;
-        } // intervalY
-        aX = bX;
-      } // intervalX
-    }
-
-    void constructPolynomialFFTW() {
-
-      double aX = _a.at(0);
-      for (size_t intervalX = 0; intervalX < _numNodes.at(0).size(); ++intervalX) {
-        double bX = _intervalSplits.at(0).size() > intervalX ? _intervalSplits.at(0).at(intervalX) : _b.at(0);
-        
-        double aY = _a.at(1);
-        for (size_t intervalY = 0; intervalY < _numNodes.at(1).size(); ++intervalY) {
-          double bY = _intervalSplits.at(1).size() > intervalY ? _intervalSplits.at(1).at(intervalY) : _b.at(1);
-
-          double aZ = _a.at(2);
-          for (size_t intervalZ = 0; intervalZ < _numNodes.at(2).size(); ++intervalZ) {
-            double bZ = _intervalSplits.at(2).size() > intervalZ ? _intervalSplits.at(2).at(intervalZ) : _b.at(2);
-
-            int nX = _numNodes.at(0).at(intervalX);
-            int nY = _numNodes.at(1).at(intervalY);
-            int nZ = _numNodes.at(2).at(intervalZ);
-
-            std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> & intervalCoeffs = _coefficients(intervalX, intervalY, intervalZ);
-            intervalCoeffs = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>{
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nY, nZ),
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nY, nZ),
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nY, nZ)
-            };
-
-            /* Prepare Tensors */
-            for (int i = 0; i < nX; ++i) {
-              double nodeX = std::cos((2*i+1)*PI/(2.*nX));
-
-              for (int j = 0; j < nY; ++j) {
-
-                double nodeY = std::cos((2*j+1)*PI/(2.*nY));
-                for (int k = 0; k < nZ; ++k) {  
-                  double nodeZ = std::cos((2*k+1)*PI/(2.*nZ));
-
-                  std::array<double, 3> forces = _kernel.calculateTripletDerivative(
-                    mapToInterval(nodeX, aX, bX),
-                    mapToInterval(nodeY, aY, bY),
-                    mapToInterval(nodeZ, aZ, bZ)
-                  );
-
-                  intervalCoeffs.at(0)(i,j,k) = forces.at(0);
-                  intervalCoeffs.at(1)(i,j,k) = forces.at(1);
-                  intervalCoeffs.at(2)(i,j,k) = forces.at(2);
-                }
-              }
-            }
-
-            for (int dim = 0; dim < 3; ++dim) {
-              /* Let FFTW compute the (unscaled) coefficients */
-              fftw_plan plan = fftw_plan_r2r_3d(nX, nY, nZ, intervalCoeffs.at(dim).data(), intervalCoeffs.at(dim).data(),
-                FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_ESTIMATE);
-              fftw_execute(plan);
-              fftw_destroy_plan(plan);
-            }
-
-            /* Scale the coefficients according to the Chebyshev interpolation */
-            for (int i = 0; i < nX; ++i) {
-              for (int j = 0; j < nY; ++j) {
-                for (int k = 0; k < nZ; ++k) {
-                  for (int dim = 0; dim < 3; ++dim) {
-                    if (i == 0) {
-                      intervalCoeffs.at(dim)(i,j,k) *= 0.5;
-                    }
-                    if (j == 0) {
-                      intervalCoeffs.at(dim)(i,j,k) *= 0.5;
-                    }
-                    if (k == 0) {
-                      intervalCoeffs.at(dim)(i,j,k) *= 0.5;
-                    }
-                    intervalCoeffs.at(dim)(i,j,k) *= (1./nX * 1./nY * 1./ nZ);
-                  }
-                }
               }
             }
 
@@ -522,19 +469,20 @@ public:
         const double z = mapToCheb(dKI, aZ, bZ);
 
         // const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 0);
-        const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 0);
-        //const double fac_ki = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 2);
-        const double fac_ki = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 2);
+        const double fac_ij_vec = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 0);
+        // const double fac_ki = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 2);
+        const double fac_ki_vec = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 2);
         
-        const auto forceI = ( drIJ * fac_ij + drKI * fac_ki ) * -1.;
+        const auto forceI = ( drIJ * fac_ij_vec + drKI * fac_ki_vec ) * -1.;
         i.addF(forceI);
 
         double fac_jk = 0.;
+        double fac_jk_vec = 0.;
         if (newton3) {
-          //fac_jk = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 1);
-          fac_jk = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 1);
+          // fac_jk = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 1);
+          fac_jk_vec = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 1);
 
-          const auto forceJ = drIJ * -fac_ij + drJK * fac_jk;
+          const auto forceJ = drIJ * -fac_ij_vec + drJK * fac_jk_vec;
           const auto forceK = (forceI + forceJ) * (-1.);
 
           j.addF(forceJ);
@@ -560,9 +508,9 @@ public:
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
         const std::array<double, 3> real_fac = _kernel.calculateTripletDerivative(dIJ, dJK, dKI);
 
-        errorX = real_fac.at(0) - fac_ij;
-        errorY = real_fac.at(1) - fac_jk;
-        errorZ = real_fac.at(2) - fac_ki;
+        errorX = real_fac.at(0) - fac_ij_vec;
+        errorY = real_fac.at(1) - fac_jk_vec;
+        errorZ = real_fac.at(2) - fac_ki_vec;
 
         relErrorX = errorX / real_fac.at(0);
         relErrorY = errorY / real_fac.at(1);
@@ -815,6 +763,11 @@ public:
           std::vector<std::vector<std::vector<double>>>, 3>,
           3,
           Eigen::RowMajor> _coeffs  {};
+
+       Eigen::Tensor<std::array<
+          Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>,
+          3,
+          Eigen::RowMajor> _coeffsVec  {};
 
        const double PI = 2 * std::acos(0.);
 

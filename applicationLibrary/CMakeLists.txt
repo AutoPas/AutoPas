@@ -65,6 +65,8 @@ target_link_libraries(molecularDynamicsLibrary PUBLIC fftw3)
 target_include_directories(molecularDynamicsLibrary PUBLIC "${FFTW_INSTALL_DIR}/include")
 add_dependencies(molecularDynamicsLibrary fftw3)
 
+target_compile_options(molecularDynamicsLibrary PUBLIC -mavx512f -mfma)
+
 # Test Zone ends
 
 target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)

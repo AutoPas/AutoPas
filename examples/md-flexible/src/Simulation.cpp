@@ -684,6 +684,8 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotal, maximumNumberOfDigits, simulate);
     std::cout << timerToString("      Tuning                      ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
+    std::cout << timerToString("      ForceUpdatePairwise         ", forceUpdatePairwise, maximumNumberOfDigits, forceUpdateTotal);
+    std::cout << timerToString("      ForceUpdateTriwise          ", forceUpdateTriwise, maximumNumberOfDigits, forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
