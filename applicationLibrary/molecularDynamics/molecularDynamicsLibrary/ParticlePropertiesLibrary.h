@@ -341,7 +341,7 @@ _LUT3B.setNu(nu);
 
         if(useLUT){
 
-            _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff,useGlobalLUT,delay, getSigma(0), getEpsilon(0) );
+            _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff,useGlobalLUT,delay, getSigma(0) *getSigma(0), getEpsilon(0) *24 );
 
         }
 

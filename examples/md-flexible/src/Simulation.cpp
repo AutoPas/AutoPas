@@ -29,10 +29,6 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
-//#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-//extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriwiseFunctorType *);
-//#endif
-//! @endcond
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -44,8 +40,6 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
-//#include "molecularDynamicsLibrary/LUT3B.h"
-//#include "molecularDynamicsLibrary/LUT2B.h"
 #include "molecularDynamicsLibrary/ParentLUT.h"
 
 namespace {
@@ -660,6 +654,10 @@ void Simulation::logMeasurements() {
 
     std::cout << "LUT Timer filling " <<  ": " << _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime() << std::endl;
     std::cout << timerToString("LUT timer filling readable:                 ",  _configuration.getParticlePropertiesLibrary()->LUTtimers[0].getTotalTime() , maximumNumberOfDigits);
+  std::cout << timerToString("triwise forces update :               ", forceUpdateTriwise, maximumNumberOfDigits);
+  std::cout << timerToString("pairwise forces update :               ", forceUpdatePairwise, maximumNumberOfDigits);
+
+
 
     std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
@@ -848,12 +846,12 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+
       auto functor =    LJFunctorTypeAutovec(cutoff, &lut2B);
-          auto eps = _configuration.getParticlePropertiesLibrary()->getEpsilon(0);
+      auto eps = _configuration.getParticlePropertiesLibrary()->getEpsilon(0);
       auto sigmaSquared = _configuration.getParticlePropertiesLibrary()->getSigma(0);
-      functor.setParticleProperties(eps, sigmaSquared);
-//        return functor;
-  //    return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      functor.setParticleProperties(24.0 * eps, sigmaSquared *sigmaSquared);
+
       return f(functor);
 #else
       throw std::runtime_error(
