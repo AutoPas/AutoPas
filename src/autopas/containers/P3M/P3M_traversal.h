@@ -118,6 +118,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // uses B-splines for which the parameters are tabulated in https://doi.org/10.1063/1.477414
     void chargeFraction(double x, std::vector<double> &fractions){
+        if(x > 0.5 || x < -0.5){
+            std::cout << "error in charge Fraction" << std::endl;
+        }
         //assert(x <= 0.5);
         //assert(x >= -0.5);
         switch(cao){
@@ -249,12 +252,13 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         // TODO make more efficient
         double closestGridPos;
         if(cao % 2 == 1){
-            closestGridpoint[dim] = (int)((pPos[dim] - boxMin[dim] + (grid_dist[dim] / 2)) / grid_dist[dim]) % grid_dims[dim];
-            closestGridPos = closestGridpoint[dim] * grid_dist[dim];
+            int closestPoint = (int)((pPos[dim] - boxMin[dim] + (grid_dist[dim] / 2)) / grid_dist[dim]);
+            closestGridpoint[dim] = closestPoint % grid_dims[dim];
+            closestGridPos = closestPoint * grid_dist[dim];
         }else{
-            int firstPoint = (int)((pPos[dim] - boxMin[dim]) / grid_dist[dim]) % grid_dims[dim];
-            int secondPoint = (firstPoint + 1) % grid_dims[dim];
-            closestGridpoint[dim] = secondPoint;
+            int firstPoint = (int)((pPos[dim] - boxMin[dim]) / grid_dist[dim]);
+            int secondPoint = (firstPoint + 1);
+            closestGridpoint[dim] = secondPoint % grid_dims[dim];
             closestGridPos = (firstPoint * grid_dims[dim] + secondPoint * grid_dims[dim]) / 2;
         }
         return closestGridPos;
