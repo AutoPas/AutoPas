@@ -1,0 +1,50 @@
+# Setup to run 500 Krypton molecules
+# Units are in Angstrom and Kelvin
+
+container                            :  [LinkedCells]
+
+functor                              :  lj
+traversal                            :  [lc_c01]
+newton3                              :  [disabled]
+data-layout                          :  [AoS]
+
+functor-3b                           :  kr
+traversal-3b                         :  [lc_c01]
+newton3-3b                           :  [disabled]
+data-layout-3b                       :  [AoS]
+
+verlet-rebuild-frequency             :  1
+#verlet-skin-radius-per-timestep      :  0.5
+
+cutoff                               :  7.5
+cell-size                            :  [0.5]
+deltaT                               :  0.001
+iterations                           :  500000
+boundary-type                        :  [periodic, periodic, periodic]
+fastParticlesThrow                   :  false
+
+box-min                              :  [0., 0., 0.]
+box-max                              :  [31.440001328563728, 31.440001328563728, 31.440001328563728]
+
+Sites:
+  0:
+    epsilon                          :  168.7
+    sigma                            :  3.64
+    nu                               :  1.706863
+    mass                             :  83.798
+
+thermostat:
+ initialTemperature                 :  200
+ targetTemperature                  :  200
+ deltaTemperature                   :  20
+ thermostatInterval                 :  1
+ addBrownianMotion                  :  true
+
+log-level                            :  info
+no-end-config                        :  true
+no-progress-bar                      :  false
+#vtk-filename                         :  kr-3b-equilibrium
+#vtk-output-folder                    :  output
+#vtk-write-frequency                  :  20000
+checkpoint                           :  init/kr-3b-equilibrium-init_0.pvtu
+# log-file                             :  kr-3b-equilibrium.log
