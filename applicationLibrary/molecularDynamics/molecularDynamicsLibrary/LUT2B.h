@@ -13,48 +13,29 @@
 namespace mdLib {
 class LUT2B : public ParentLUT {
  public:
-  void logToFile(const std::string &message) {
-    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_distances.txt", std::ios::app);  // Open in append mode
-    if (outFile.is_open()) {
-      outFile << message << std::endl;
-    } else {
-      std::cerr << "Unable to open file for writing." << std::endl;
-    }
-  }
 
-  void logIndexToFile(const std::string &message) {
-    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_res_100_in_lut.txt",
-                          std::ios::app);  // Open in append mode
-    if (outFile.is_open()) {
-      outFile << message << std::endl;
-    } else {
-      std::cerr << "Unable to open file for writing." << std::endl;
-    }
-  }
 
   LUT2B(int resolution, double cutoffSquared, double sigsquared = 0, double eps = 0, double shift = 0)
       : ParentLUT(resolution, cutoffSquared) {
-    //    _lut2B.reserve(resolution);
+
 
     epsilon24 = eps;
-    sigmaSquared = sigsquared * sigsquared;
+    sigmaSquared = sigsquared;
     sqrtSigma = std::sqrt(sigmaSquared);
     shift6 = shift;
-    // logToFile(std::to_string(cutoffSquared));
-    // logToFile(std::to_string(_pointDistance));
+
   }
 
   LUT2B(int resolution, double cutoffSquared, bool global, bool delay = false, double sigsquared = 0, double eps = 0,
         double shift = 0)
       : ParentLUT(resolution, cutoffSquared) {
-    //    _lut2B.reserve(resolution);
+
 
     epsilon24 = eps;
-    sigmaSquared = sigsquared * sigsquared;
+    sigmaSquared = sigsquared;
     shift6 = shift;
     sqrtSigma = std::sqrt(sigmaSquared);
-    // logToFile(std::to_string(cutoffSquared));
-    // logToFile(std::to_string(_pointDistance));
+
 
     if (resolution == 0) {
       return;
@@ -65,13 +46,14 @@ class LUT2B : public ParentLUT {
   template <class Functor>
   float retrieveValues(const Functor &functor, float distanceSquared) {
     // if smaller than the smallest distance saved in lut return manually calculated value
-    if ((!delay && distanceSquared < (_pointDistance / 2)) || (delay && (distanceSquared < (sqrtSigma * 0.9)))) {
-      return getLUTValues(distanceSquared);
+//    if ((!delay && distanceSquared < (_pointDistance / 2)) || (delay && (distanceSquared < (sqrtSigma * 0.9)))) {
+if ((!delay && distanceSquared < (_lutCutoff + _pointDistance) )|| (delay && (distanceSquared <  (delayValue +_pointDistance)))) {
+      return functor.getLUTValues(distanceSquared);
     }
 
-    // return getNextNeighbor(functor, distanceSquared);
+        return getNextNeighbor( distanceSquared);
 
-       return getLinear(functor,distanceSquared);
+//    return getLinear(functor,distanceSquared);
   }
 
   template <class Functor>
@@ -91,97 +73,116 @@ class LUT2B : public ParentLUT {
       fill_plain(delay);
     }
     if (globsLUT) {
-      fill_global(cutoffSquared);
+      fill_global(delay);
     }
   }
 
   template <class Functor>
   float getLinear(const Functor &functor, float distance) {
 
-    // std::cout<< "distance  " << distance << std::endl;
-    if (distance >= _cutoffSquared - _pointDistance / 2) {
-
-      return _lut2B.at(_resolution -1);
-    }
-    if (distance <= (_pointDistance / 2)) {
-      return functor.getLUTValues(distance);
-    }
     if (std::fmod(distance, _pointDistance) == 0) {
-      //        logIndexToFile(std::to_string(distance/_pointDistance));
+
       return _lut2B.at(distance / _pointDistance);
     }
 
+    int lutindexfloor = 0;
+    int lutindexceil = 0;
     // index
-    float lowerX = std::floor((distance - _pointDistance / 2) / _pointDistance);
-    // std::cout<< lowerX << std::endl;
+    if(!delay) {
 
-    if (lowerX >= _resolution) {
-
-      return _lut2B.at(_resolution -1);
+      lutindexfloor = std::floor((distance - _lutCutoff + _pointDistance) / _pointDistance);
+      lutindexceil = std::ceil((distance - _lutCutoff + _pointDistance)/ _pointDistance);
+    }else{
+      lutindexfloor = std::floor((distance - (delayValue + _pointDistance)) / _pointDistance);
+      lutindexceil = std::ceil((distance - (delayValue + _pointDistance)) / _pointDistance);
     }
 
-    // index
-    float upperX = std::ceil((distance - _pointDistance / 2) / _pointDistance);
-    // std::cout<< upperX<< std::endl;
+    float Y1=0;
 
-    //      const float lowerY = _lut2B.at(lowerX);
+    if (lutindexfloor >= _resolution) {
 
-    float lowerY;
-    if (lowerX >= _numberOfPoints) {
-      //        logIndexToFile(std::to_string(_numberOfPoints-1));
-      lowerY = _lut2B.at(_numberOfPoints - 1);
+      Y1 = _lut2B.at(_resolution - 1);
     } else {
-      //        logIndexToFile(std::to_string(lowerX));
-      lowerY = _lut2B.at(lowerX);
+      Y1 = _lut2B.at(lutindexfloor);
     }
 
-    float upperY;
-    if (upperX >= _numberOfPoints) {
-      //        logIndexToFile(std::to_string(_numberOfPoints-1));
-      upperY = _lut2B.at(_numberOfPoints - 1);
+    float Y2=0;
+    if (lutindexceil >= _resolution) {
+
+      Y2 = _lut2B.at(_resolution - 1);
     } else {
-      //        logIndexToFile(std::to_string(upperX));
-      upperY = _lut2B.at(upperX);
+
+      Y2 = _lut2B.at(lutindexceil);
     }
-    // std::cout<< lowerY<< std::endl;
-    // std::cout<< upperY<< std::endl;
-    lowerX = lowerX * _pointDistance + _pointDistance / 2;
-    upperX = upperX * _pointDistance + _pointDistance / 2;
+
+    double X1 = 0;
+    double X2 = 0;
 
 
-    // std::cout<<"to dist lower " << lowerX << std::endl;
-    // std::cout<<"to dist upper " << upperX << std::endl;
-    auto res = lowerY + (distance - lowerX) * (upperY - lowerY) / (upperX - lowerX);
-    // std::cout << "--------------------------------------------------------res   " <<res <<  std::endl;
-    return lowerY + (distance - lowerX) * (upperY - lowerY) / (upperX - lowerX);
+    if(!delay) {
+
+      X1 = (lutindexfloor * _pointDistance) + _lutCutoff + _pointDistance;
+      X2 = (lutindexceil * _pointDistance) + _lutCutoff + _pointDistance;
+    }else {
+      X1 = (lutindexfloor * _pointDistance) + (delayValue + _pointDistance);
+      X2 = (lutindexceil * _pointDistance) + (delayValue + _pointDistance);
+    }
+
+    if (fabs(Y2 - Y1) < 1e-12) {
+      return Y1;
+    }
+
+    if (fabs(X2 - X1 ) < 1e-12) {
+        return Y1;
+    }
+
+    if (fabs(distance - X1) < 1e-12) {
+        return Y1;
+    }
+    return  Y1 + (distance - X1) * ((Y2 - Y1) / (X2 - X1 ));
   }
 
-  template <class Functor>
-  float getNextNeighbor(const Functor &functor, float dr2) {
+
+  float getNextNeighbor( float dr2) {
     if (dr2 >= _cutoffSquared) {
-      //        logIndexToFile(std::to_string(_numberOfPoints - 1));
       return _lut2B.at(_numberOfPoints - 1);
     }
-    // Compute perfect value for lowest dr2 where error is greatest
-    if (dr2 < _pointDistance / 2) {
-      return functor.getLUTValues(dr2);
+
+    int index = 0;
+    if(!delay){
+       index = std::floor((dr2 - delayValue + _pointDistance) / _pointDistance);
+    }else{
+       index = std::floor((dr2 - _lutCutoff + _pointDistance) / _pointDistance);
     }
 
-    //                   std::cout << "in next Neighbour \n";
 
-    // TODO: Try multiplication
-    auto res = std::floor(dr2 / _pointDistance);
-    ////                   std::cout << res;
-    if (res >= _resolution) {
-      //                     logIndexToFile(std::to_string(_resolution -1 ));
+    if (index >= _resolution) {
       return _lut2B.at(_resolution - 1);
     }
-    //                   logIndexToFile( std::to_string(std::floor(dr2/ _pointDistance)));
-    return _lut2B.at(std::floor(dr2 / _pointDistance));
-    ;
-  }
 
-  // alternative LUT2B implementations
+    return _lut2B.at(index);
+
+  }
+  std::array<double, 2> getNextNeighbor_global( float dr2) {
+    if (dr2 >= _cutoffSquared) {
+
+      return _lut2B_globals.at(_numberOfPoints - 1);
+    }
+
+    int index = 0;
+    if(!delay){
+       index = std::floor((dr2 - delayValue + _pointDistance) / _pointDistance);
+    }else{
+       index = std::floor((dr2 - _lutCutoff + _pointDistance) / _pointDistance);
+    }
+    if (index >= _resolution) {
+
+      return _lut2B_globals.at(_resolution - 1);
+    }
+
+    return _lut2B_globals.at(index);
+
+  }
 
   double calculateGlobalFactor(float distance2) {
     double invdr2 = 1. / distance2;
@@ -192,46 +193,15 @@ class LUT2B : public ParentLUT {
     return epsilon24 * lj12m6 + shift6;
   }
 
-  // TODO maybe just delete cutoff squared from the parameters cause you dont use it?
-  template <class Functor>
-  void fill_plain(const Functor &functor, bool delay) {
-    if (!delay) {
-      for (auto i = 0; i < _resolution; i++) {
-        auto x = (_pointDistance / 2) + (i * _pointDistance);
-        // std::cout << x << std::endl;
-        _lut2B.push_back(functor.getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
-      }
-    } else {
-      fill_delayed_start();
-    }
-  }
 
-  template <class Functor>
-  void fill_delayed_start(const Functor &functor, double cutoffSquared) {
-    double delay = std::sqrt(sigmaSquared) * 0.9;
-    for (auto i = 0; i < _resolution; i++) {
-      auto x = delay + (i * _pointDistance);
-      // std::cout << x << std::endl;
-      _lut2B.push_back(functor.getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
-    }
-  }
 
-  template <class Functor>
-  void fill_global(const Functor &functor, double cutoffSquared) {
-    _lut2B_globals.reserve(_resolution);
-    for (auto i = 0; i < _resolution; i++) {
-      double distance = (_pointDistance / 2) + (i * _pointDistance);
-      _lut2B_globals.push_back({functor.getLUTValues(distance), calculateGlobalFactor(distance)});
-
-    }
-  }
 
   void fill_plain(bool delay) {
     if (!delay) {
       for (auto i = 0; i < _resolution; i++) {
-        auto x = (_pointDistance / 2) + (i * _pointDistance);
-        // std::cout << x << std::endl;
-        _lut2B.push_back(getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
+//        auto x =(_lutCutoff +_pointDistance) + (i * _pointDistance);
+        _lut2B.push_back(getLUTValues((_lutCutoff +_pointDistance) + (i * _pointDistance)));
+
       }
     } else {
       fill_delayed_start();
@@ -239,55 +209,146 @@ class LUT2B : public ParentLUT {
   }
 
   void fill_delayed_start() {
-    double delay = std::sqrt(sigmaSquared) * 0.9;
+    delayValue = sqrtSigma * 0.9;
+
+    //delayed start changes the lutcutoff
+    _lutCutoff = delayValue;
+    _lutDistance = _cutoffSquared - _lutCutoff;
+    _lutFactor = _resolution / _lutDistance;
+    _pointDistance = _lutDistance / static_cast<double>(_resolution);
+
     for (auto i = 0; i < _resolution; i++) {
-      auto x = delay + (i * _pointDistance);
-      // std::cout << x << std::endl;
-      _lut2B.push_back(getLUTValues((_pointDistance / 2) + (i * _pointDistance)));
+      auto x = (delayValue + _pointDistance) + (i * _pointDistance);
+      _lut2B.push_back(getLUTValues(x));
+
     }
   }
 
-  void fill_global(double cutoffSquared) {
+  void fill_global( bool delay) {
+
+    if(!delay) {
+      _lut2B_globals.reserve(_resolution);
+      for (auto i = 0; i < _resolution; i++) {
+        double distance = (_lutCutoff +_pointDistance) + (i * _pointDistance);
+        _lut2B_globals.push_back({getLUTValues(distance), calculateGlobalFactor(distance)});
+
+      }
+    }if(delay){
+      fill_global_delay();
+
+
+    }
+  }
+
+  void fill_global_delay() {
+
+    delayValue = sqrtSigma * 0.9;
+
+    //delayed start changes the lutcutoff
+    _lutCutoff = delayValue;
+    _lutDistance = _cutoffSquared - _lutCutoff;
+    _lutFactor = _resolution / _lutDistance;
+    _pointDistance = _lutDistance / static_cast<double>(_resolution);
+
     _lut2B_globals.reserve(_resolution);
     for (auto i = 0; i < _resolution; i++) {
-      double distance = (_pointDistance / 2) + (i * _pointDistance);
+//      double distance = (delayValue + _pointDistance) + (i * _pointDistance);
+      double distance = (delayValue +_pointDistance ) + (i * _pointDistance);
       _lut2B_globals.push_back({getLUTValues(distance), calculateGlobalFactor(distance)});
 
+
     }
   }
+
+
+
+
 
   template <class Functor>
-  std::array<double, 2> getNextNeighbor_global(const Functor &functor, float dr2) {
-    if (dr2 >= _cutoffSquared) {
-      //        logIndexToFile(std::to_string(_numberOfPoints - 1));
-      return _lut2B_globals.at(_numberOfPoints - 1);
-    }
-    // Compute perfect value for lowest dr2 where error is greatest
-    if (dr2 < _pointDistance / 2) {
-      return {functor.getLUTValues(dr2), calculateGlobalFactor(dr2)};
+  std::array<double , 2>  getLinear_global(const Functor &functor, float distance) {
+
+    if (std::fmod(distance, _pointDistance) == 0) {
+
+      return _lut2B_globals.at(distance / _pointDistance);
     }
 
-    // TODO: Try multiplication
-    auto res = std::floor(dr2 / _pointDistance);
-    ////                   std::cout << res;
-    if (res >= _resolution) {
-      //                     logIndexToFile(std::to_string(_resolution -1 ));
-      return _lut2B_globals.at(_resolution - 1);
+    int lutindexfloor = 0;
+    int lutindexceil = 0;
+    // index
+    if(!delay) {
+
+
+      lutindexfloor = std::floor((distance - _lutCutoff + _pointDistance) / _pointDistance);
+      lutindexceil = std::ceil((distance - _lutCutoff + _pointDistance)/ _pointDistance);
+    }else{
+      lutindexfloor = std::floor((distance - (delayValue + _pointDistance)) / _pointDistance);
+      lutindexceil = std::ceil((distance -(delayValue + _pointDistance)) / _pointDistance);
     }
-    //                   logIndexToFile( std::to_string(std::floor(dr2/ _pointDistance)));
-    return _lut2B_globals.at(std::floor(dr2 / _pointDistance));
-    ;
+
+
+    std::array<double ,2 >  Y1={0,0};
+
+    if (lutindexfloor >= _resolution) {
+
+      Y1 = _lut2B_globals.at(_resolution - 1);
+    } else {
+
+      Y1 = _lut2B_globals.at(lutindexfloor);
+    }
+
+    std::array<double ,2 >  Y2={0,0};
+    if (lutindexceil >= _resolution) {
+
+      Y2 = _lut2B_globals.at(_resolution - 1);
+    } else {
+
+      Y2 = _lut2B_globals.at(lutindexceil);
+    }
+
+    double X1 = 0;
+    double X2 = 0;
+
+
+    if(!delay) {
+
+
+            X1 = (lutindexfloor * _pointDistance) + _lutCutoff + _pointDistance;
+      X2 = (lutindexceil * _pointDistance) + _lutCutoff + _pointDistance;
+    }else {
+      X1 = (lutindexfloor * _pointDistance) + (delayValue + _pointDistance);
+      X2 = (lutindexceil * _pointDistance) + (delayValue + _pointDistance);
+    }
+
+    if (fabs(Y2[0] - Y1[0]) < 1e-12) {
+
+      return Y1;
+    }
+
+    if (fabs(X2 - X1 ) < 1e-12) {
+        return Y1;
+    }
+
+    if (fabs(distance - X1) < 1e-12) {
+
+        return Y1;
+    }
+
+    auto force = Y1[0] + (distance - X1) * ((Y2[0] - Y1[0]) / (X2 - X1 ));
+    auto globs = Y1[1] + (distance - X1) * ((Y2[1] - Y1[1]) / (X2 - X1 ));
+    return  {force,globs};
   }
+
 
   template <class Functor>
   std::array<double, 2> retrieveValues_global(const Functor &functor, float distanceSquared) {
-    if ((!delay && distanceSquared < (_pointDistance / 2)) || (delay && (distanceSquared < (sqrtSigma * 0.9)))) {
+
+    if (((!delay) && distanceSquared < (_lutCutoff + _pointDistance)) || (delay && (distanceSquared < (delayValue + _pointDistance) ))) {
       return {getLUTValues(distanceSquared), calculateGlobalFactor(distanceSquared)};
     }
 
-    return getNextNeighbor_global(functor, distanceSquared);
+    return getNextNeighbor_global( distanceSquared);
 
-    //    return getLinear(functor,distanceSquared);
+//        return getLinear_global(functor,distanceSquared);
   }
 
   // alternative spacing LUT
@@ -324,6 +385,26 @@ class LUT2B : public ParentLUT {
     return epsilon24 * (lj12 + lj12m6) * invdr2;
   }
 
+
+  void logToFile(const std::string &message) {
+    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_distances.txt", std::ios::app);  // Open in append mode
+    if (outFile.is_open()) {
+      outFile << message << std::endl;
+    } else {
+      std::cerr << "Unable to open file for writing." << std::endl;
+    }
+  }
+
+  void logIndexToFile(const std::string &message) {
+    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_res_100_in_lut.txt",
+                          std::ios::app);  // Open in append mode
+    if (outFile.is_open()) {
+      outFile << message << std::endl;
+    } else {
+      std::cerr << "Unable to open file for writing." << std::endl;
+    }
+  }
+
  private:
   std::vector<double> _lut2B;
   std::vector<std::array<double, 2>> _lut2B_globals;
@@ -333,5 +414,6 @@ class LUT2B : public ParentLUT {
   double shift6;
   bool delay = false;
   double sqrtSigma;
+  double delayValue = 0;
 };
 }  // namespace mdLib
