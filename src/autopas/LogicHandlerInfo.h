@@ -44,6 +44,10 @@ class LogicHandlerInfo {
    */
   unsigned int cao{1};
   /**
+   * Ewald parameter for P3M
+   */
+  double alpha{0.5};
+  /**
    * Number of gridpoints per dimension for P3M
    */
   std::array<unsigned int, 3> grid_dims{0,0,0}; 

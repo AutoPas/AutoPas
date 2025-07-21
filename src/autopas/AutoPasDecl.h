@@ -668,8 +668,18 @@ class AutoPas {
    */
   [[nodiscard]] unsigned int getCao() const { return _logicHandlerInfo.cao; }
   /**
+   * Set Ewald parameter.
+   * @param alpha
+   */
+  void setAlpha(double alpha) { _logicHandlerInfo.alpha = alpha; }
+  /**
+   * Get Ewald parameter.
+   * @return
+   */
+  [[nodiscard]] double getAlpha() const { return _logicHandlerInfo.alpha; }
+  /**
    * Set number of gridpoints per dimension.
-   * @param cao
+   * @param grid_dims
    */
   void setGrid_dims(std::array<unsigned int, 3> grid_dims) { _logicHandlerInfo.grid_dims = grid_dims; }
   /**

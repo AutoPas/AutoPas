@@ -162,7 +162,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
       container = 
           std::make_unique<P3M_container<Particle_T>>(_boxMin, _boxMax, containerInfo.grid_dims, _cutoff, containerInfo.verletSkin,
                                                       containerInfo.verletRebuildFrequency,
-                                                      containerInfo.cellSizeFactor, containerInfo.loadEstimator, containerInfo.cao);
+                                                      containerInfo.cellSizeFactor, containerInfo.loadEstimator, containerInfo.cao, containerInfo.alpha);
       break;
     }
     default: {

@@ -158,6 +158,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.cao.description;
 
         config.cao.value = node[key].as<int>();
+      } else if (key == config.alpha.name) { 
+        expected = "Double";
+        description = config.alpha.description;
+
+        config.alpha.value = node[key].as<double>();
       } else if (key == config.gridDims.name) {
         expected = "YAML-sequence of three unsigned integers that are a power of 2. Example: [16, 16, 16].";
         description = config.gridDims.description;

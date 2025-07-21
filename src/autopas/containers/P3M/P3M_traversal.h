@@ -38,8 +38,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     //}
 
     void set_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, const std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, /*GridType &rs_shifted,*/ 
-        ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, ContainerIterator<ParticleType, true, false> &&beginIter, 
-        LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
+        ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, std::vector<std::vector<double>> &selfForceCoeffs,
+        ContainerIterator<ParticleType, true, false> &&beginIter, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
         this->cao = cao;
         this->grid_dims = grid_dims;
         this->grid_dist = grid_dist;
@@ -50,6 +50,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         this->optForceInfluence = optForceInfluence;
         this->fft = fft;
         this->boxMin = boxMin;
+        this->selfForceCoeffs = selfForceCoeffs;
         this->beginIter = ContainerIterator<ParticleType, true, false>(beginIter);
         this->shortRangeTraversal = shortRangeTraversal;
     }
@@ -80,6 +81,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     ComplexGridType optForceInfluence;
     // array for all ks_grid points
     ComplexGridType optEnergyInfluence;
+
+    std::vector<std::vector<double>> selfForceCoeffs;
 
     // Container Iterator
     ContainerIterator<ParticleType, true, false> beginIter;
@@ -218,15 +221,26 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                         int zii = zi - (cao/2);
 
                         double force = rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]];
-                        totalForce[0] -= caFractionsDX[xi] * caFractionsY[yi] * caFractionsZ[yi] * (1./grid_dist[0]) * force * charge;
-                        totalForce[1] -= caFractionsDY[yi] * caFractionsX[xi] * caFractionsZ[zi] * (1./grid_dist[1]) * force * charge;
-                        totalForce[2] -= caFractionsDZ[zi] * caFractionsX[xi] * caFractionsY[yi] * (1./grid_dist[2]) * force * charge;
+                        totalForce[0] -= caFractionsDX[xi] * caFractionsY[yi] * caFractionsZ[zi] * (1./grid_dist[0]) * force * charge;
+                        totalForce[1] -= caFractionsX[xi] * caFractionsDY[yi] * caFractionsZ[zi] * (1./grid_dist[1]) * force * charge;
+                        totalForce[2] -= caFractionsX[xi] * caFractionsY[yi] * caFractionsDZ[zi] * (1./grid_dist[2]) * force * charge;
                     }
                 }
             }
-            // TODO need to subtract self force
+            std::cout << "Particle " << iter->getQ() << " long Range F: " << totalForce[0] << ", " << totalForce[1] << ", " << totalForce[2] << std::endl;
+            subtractSelfForce(*iter, totalForce);
             iter->addF(totalForce);
         }
+    }
+
+    void subtractSelfForce(ParticleType &p, std::array<double, 3> &force){
+        std::cout << " self Force: ";
+        for(int dim = 0; dim < 3; dim++){
+            double tmp = (selfForceCoeffs[dim][0] * sin(2* M_PI * p.getR()[dim] / grid_dist[dim]) + selfForceCoeffs[dim][1] * sin(4*M_PI*p.getR()[dim] / grid_dist[dim]));
+            force[dim] -= p.getQ() * p.getQ() * tmp;
+            std::cout << p.getQ() * p.getQ() * tmp << ", ";
+        }
+        std::cout << std::endl;
     }
 
     // computes the index of closest Gridpoint in direction dim and saves it in closestGridpoint
@@ -254,13 +268,13 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                 case 0:
                     // TODO currently not in the interval
                     // charge Fraction uses normalized distances in [-0.5, 0.5]
-                    chargeFraction((closestGridPos - pPos[i]) / grid_dist[i], caFractionsX);
+                    chargeFraction((pPos[i] - closestGridPos) / grid_dist[i], caFractionsX);
                     break;
                 case 1:
-                    chargeFraction((closestGridPos - pPos[i]) / grid_dist[i], caFractionsY);
+                    chargeFraction((pPos[i] - closestGridPos) / grid_dist[i], caFractionsY);
                     break;
                 case 2: 
-                    chargeFraction((closestGridPos - pPos[i]) / grid_dist[i], caFractionsZ);
+                    chargeFraction((pPos[i] - closestGridPos) / grid_dist[i], caFractionsZ);
                     break;
             }
             // caFractions now has Charge-fractions
@@ -274,20 +288,16 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             switch(i){
                 case 0:
                     // charge Fraction uses normalized distances in [-0.5, 0.5]
-                    cafDerivative((closestGridPos - pPos[i]) / grid_dist[i], caFractionsDX);
+                    cafDerivative((pPos[i] - closestGridPos) / grid_dist[i], caFractionsDX);
                     break;
                 case 1:
-                    cafDerivative((closestGridPos - pPos[i]) / grid_dist[i], caFractionsDY);
+                    cafDerivative((pPos[i] - closestGridPos) / grid_dist[i], caFractionsDY);
                     break;
                 case 2: 
-                    cafDerivative((closestGridPos - pPos[i]) / grid_dist[i], caFractionsDZ);
+                    cafDerivative((pPos[i] - closestGridPos) / grid_dist[i], caFractionsDZ);
                     break;
             }
         }
-    }
-
-    void subtractSelfForces(){
-        
     }
 
     /**
@@ -301,13 +311,31 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
      */
     void traverseFarParticles(){
         assignChargeDensities();
+        std::cout << "Charge Grid:" << std::endl;
+        for(unsigned int i = 0; i < grid_dims[2]; i++){
+            for(unsigned int j = 0; j < grid_dims[1]; j++){
+                for(unsigned int k = 0; k < grid_dims[0]; k++){
+                    std::cout << rs_grid[k][j][i] << ", ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
         fft.forward3D(rs_grid, ks_grid, grid_dims);
         applyInfluenceFunction();
          
         fft.backward3D(ks_grid, rs_grid, grid_dims);
+        std::cout << "Force Grid:" << std::endl;
+        for(unsigned int i = 0; i < grid_dims[2]; i++){
+            for(unsigned int j = 0; j < grid_dims[1]; j++){
+                for(unsigned int k = 0; k < grid_dims[0]; k++){
+                    std::cout << rs_grid[k][j][i] << ", ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
         interpolateForces();
-
-        subtractSelfForces();
     }
 
     /**
@@ -364,7 +392,15 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     }
 
     void initTraversal() override {
-
+        // zero out the grids
+        for(unsigned int x = 0; x < grid_dims[0]; x++){
+            for(unsigned int y = 0; y < grid_dims[1]; y++){
+                for(unsigned int z = 0; z < grid_dims[2]; z++){
+                    rs_grid[x][y][z] = 0;
+                    ks_grid[x][y][z] = std::complex<double>(0.0);
+                }
+            }
+        }
     }
 
     void endTraversal() override {

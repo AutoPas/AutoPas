@@ -77,7 +77,7 @@ class LogicHandler {
       // initialize the container and make sure it is valid
       const ContainerSelectorInfo containerSelectorInfo{configuration.cellSizeFactor, _logicHandlerInfo.verletSkin,
                                                         _neighborListRebuildFrequency, _verletClusterSize,
-                                                        configuration.loadEstimator, _logicHandlerInfo.cao, _logicHandlerInfo.grid_dims};
+                                                        configuration.loadEstimator, _logicHandlerInfo.cao, _logicHandlerInfo.alpha, _logicHandlerInfo.grid_dims};
       _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
       checkMinimalSize();
     }
@@ -1826,7 +1826,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       _containerSelector.selectContainer(
           configuration.container,
           ContainerSelectorInfo(configuration.cellSizeFactor, _containerSelector.getCurrentContainer().getVerletSkin(),
-                                _neighborListRebuildFrequency, _verletClusterSize, configuration.loadEstimator, _logicHandlerInfo.cao, _logicHandlerInfo.grid_dims));
+                                _neighborListRebuildFrequency, _verletClusterSize, configuration.loadEstimator, _logicHandlerInfo.cao, _logicHandlerInfo.alpha, _logicHandlerInfo.grid_dims));
     }
     const auto &container = _containerSelector.getCurrentContainer();
     traversalPtrOpt = autopas::utils::withStaticCellType<Particle_T>(
@@ -1996,7 +1996,7 @@ LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &conf, F
   _containerSelector.selectContainer(
       conf.container,
       ContainerSelectorInfo(conf.cellSizeFactor, _containerSelector.getCurrentContainer().getVerletSkin(),
-                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator, _logicHandlerInfo.cao, _logicHandlerInfo.grid_dims));
+                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator, _logicHandlerInfo.cao, _logicHandlerInfo.alpha, _logicHandlerInfo.grid_dims));
   const auto &container = _containerSelector.getCurrentContainer();
   const auto traversalInfo = container.getTraversalSelectorInfo();
 

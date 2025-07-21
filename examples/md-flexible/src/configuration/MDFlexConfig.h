@@ -493,6 +493,8 @@ class MDFlexConfig {
 
   MDFlexOption<unsigned int, __LINE__> cao{1, "cao", true, "Charge assignment order used by P3M."};
 
+  MDFlexOption<double, __LINE__> alpha{0.5, "alpha", true, "Ewald parameter for P3M."};
+
   MDFlexOption<std::array<unsigned int, 3>, 0> gridDims{
       {16, 16, 16}, "grid-dimensions", true, "Number of gridpoints per dimension."};
 

@@ -25,7 +25,7 @@ class P3M_container : public LinkedCells<Particle_T> {
     public:
     P3M_container(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, std::array<unsigned int, 3> &N, const double cutoff,
               const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
-              LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, unsigned int cao = 3)
+              LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, unsigned int cao = 3, double alpha = 0.5)
               : LinkedCells<ParticleType>(boxMin, boxMax, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator) {
 
         
@@ -67,9 +67,29 @@ class P3M_container : public LinkedCells<Particle_T> {
             return;
         }
         this->cao = cao;
-        this->alpha = 0.5;
+        this->alpha = alpha;
         
-        computeInfluenceFunction();
+        bool force = false;
+        if(force){
+            computeInfluenceFunction();
+        }else{
+            computeInfluenceEnergy();
+        }
+        
+        
+
+        selfForceCoeffs = std::vector<std::vector<double>>(3);
+        for (int dim = 0; dim < 3; dim++){
+            selfForceCoeffs[dim] = std::vector<double>(2);
+        }
+        computeSelfForceCoeff();
+        for (int dim = 0; dim < 3; dim++){
+            std::cout << "dim " << dim << " ";
+            for(int i = 0; i < 2; i++){
+                std::cout << selfForceCoeffs[dim][i] << ", ";
+            }
+            std::cout << std::endl;
+        }
     }
 
     /** can be done once at the start of the simulation/tuning, as it only depends on 
@@ -98,56 +118,283 @@ class P3M_container : public LinkedCells<Particle_T> {
         return;
     }
 
-    void computeBrillouinShift(std::vector<int> shifts, int gridSize){
-        for(int i = 0; i < gridSize/2; i++){
+    void computeBrillouinShift(std::vector<int> &shifts, int gridSize){
+        shifts[0] = 0;
+        for(int i = 1; i <= gridSize/2; i++){
             shifts[i] = i;
             shifts[gridSize - i] = -i;
+        }
+    }
+
+    /**
+     * Computes (sin(arg)/arg)^exponent
+     */
+    double powsinc(double arg, double exponent){
+        if(arg == 0.0){
+            // sin(0)/0 = 1 -> pow(1, exponent) = 1
+            return 1.0;
+        }else{
+            return pow((sin(arg) / arg), exponent);
         }
     }
 
     /*computes the Force Influence, should be combined with computation of energy influence if added*/
     std::complex<double> computeForceInfluenceAt(int brillouinX, int brillouinY, int brillouinZ){
         // the reciprocal positions are index/L * 2*pi
-        double posX = brillouinX / (double)box_lengths[0];
-        double posY = brillouinY / (double)box_lengths[1];
-        double posZ = brillouinZ / (double)box_lengths[2];
+        double posX = 2*M_PI*brillouinX / (double)box_lengths[0];
+        double posY = 2*M_PI*brillouinY / (double)box_lengths[1];
+        double posZ = 2*M_PI*brillouinZ / (double)box_lengths[2];
 
         double numerator = 0.0;
-        double denominator1 = 0.0;
-        double denominator2 = 0.0;
 
-        const int brillounZones = 0;
+        double denom1 = 0.0;
+        double denom2 = 0.0;
+
+        const int brillounZones = 1;
 
         for(int bx = -brillounZones; bx <= brillounZones; bx++){
-            double posX2 = pow(posX + (bx * grid_dims[0] / box_lengths[0]), 2);
-            double arg = (posX * grid_dist[0] + bx) * M_PI;
-            double UX2 = pow((sin(arg) / arg), 2.0*cao);
+            double posXshift = posX + (2*M_PI*bx * grid_dims[0] / box_lengths[0]);
+            double arg = (posXshift * grid_dist[0] / 2);
+
+            double UX2 = powsinc(arg, 2*cao);
+
             for(int by = -brillounZones; by <= brillounZones; by++){
-                double posY2 = pow(posY + (by * grid_dims[1] / box_lengths[1]), 2);
-                double arg = (posY * grid_dist[1] + by) * M_PI;
-                double UY2 = pow((sin(arg) / arg), 2.0*cao);
+                double posYshift = posY + (2*M_PI*by * grid_dims[1] / box_lengths[1]);
+                double arg = (posYshift * grid_dist[1] / 2);
+                double UY2 = powsinc(arg, 2*cao);
+                
                 for(int bz = -brillounZones; bz <= brillounZones; bz++){
-                    double posZ2 = pow(posZ + (bz * grid_dims[2] / box_lengths[2]), 2);
-                    double arg = (posZ * grid_dist[2] + bx) * M_PI;
-                    double UZ2 = pow((sin(arg) / arg), 2.0*cao);
+                    double posZshift = posZ + (2*M_PI*bz * grid_dims[2] / box_lengths[2]);
+                    double arg = (posZshift * grid_dist[2] /2);
 
-                    double pos2 = posX2 + posY2 + posZ2;
+                    double UZ2 = powsinc(arg, 2*cao);
 
+                    double posShift2 = posXshift * posXshift + posYshift * posYshift + posZshift * posZshift;
+
+                    
                     double U2 = UX2*UY2*UZ2;
+                    // 4*PI is multiplied later
 
-                    // 4 in exp cancels and 4*PI is multiplied later
-                    denominator1 += pos2 * U2;
-                    denominator2 += U2;
-                    numerator += U2 * exp(- (M_PI*M_PI * pos2 / (alpha*alpha)));
+                    denom1 += posShift2 * U2;
+                    denom2 += U2;
+                    //double posposshift = posX * posXshift + posY * posYshift + posZ * posZshift;
+                    numerator += U2 * exp(- (posShift2 / (4*alpha*alpha)));
+                }
+            }
+        }
+        
+        //double pos2 = posX*posX + posY*posY + posZ*posZ;
+        //double denominator = pow(denominatorG(posX, posY, posZ),2) * pos2;
+        double denominator = denom1*denom2;
+        // 4 PI^2 comes from the fact that it is missing from the positions
+        numerator *= 4 * M_PI;
+
+        return std::complex<double>(numerator/denominator);
+    }
+
+    double denominatorG(double x, double y, double z){
+        double shiftX = 2*M_PI* grid_dims[0] / box_lengths[0];
+        double shiftY = 2*M_PI* grid_dims[1] / box_lengths[1];
+        double shiftZ = 2*M_PI* grid_dims[2] / box_lengths[2];
+
+        int brillounZones = 2;
+
+        double denom = 0;
+        for(int bx = -brillounZones; bx <= brillounZones; bx++){
+            double arg = ((x + bx*shiftX) * grid_dist[0] / 2);
+
+            double UX2;
+            if(arg == 0.0){
+                // sin(arg)/arg = 1 -> pow(1, 2*cao) = 1
+                UX2 = 1.0;
+            }else{
+                UX2 = pow((sin(arg) / arg), 2.0*cao);
+            }
+            for(int by = -brillounZones; by <= brillounZones; by++){
+                double arg = ((y + by*shiftY) * grid_dist[1] / 2);
+                double UY2;
+                if(arg == 0.0){
+                    // sin(arg)/arg = 1 -> pow(1, 2*cao) = 1
+                    UY2 = 1.0;
+                }else{
+                    UY2 = pow((sin(arg) / arg), 2.0*cao);
+                }
+                for(int bz = -brillounZones; bz <= brillounZones; bz++){
+                    double arg = ((z + bz*shiftZ) * grid_dist[2] /2);
+
+                    double UZ2;
+                    if(arg == 0.0){
+                        // sin(arg)/arg = 1 -> pow(1, 2*cao) = 1
+                        UZ2 = 1.0;
+                    }else{
+                        UZ2 = pow((sin(arg) / arg), 2.0*cao);
+                    }
+
+                    denom += UX2*UY2*UZ2;
                 }
             }
         }
 
+        return denom;
+    }
+
+    void computeInfluenceEnergy(){
+        std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
+        std::vector<int> brillouinShiftedY = std::vector<int>(grid_dims[1]);
+        std::vector<int> brillouinShiftedZ = std::vector<int>(grid_dims[2]);
+        
+        computeBrillouinShift(brillouinShiftedX, grid_dims[0]);
+        computeBrillouinShift(brillouinShiftedY, grid_dims[1]);
+        computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
+
+        for(unsigned int ix=0; ix < grid_dims[0]; ix++){
+            for(unsigned int iy = 0; iy < grid_dims[1]; iy++){
+                for(unsigned int iz = 0; iz < grid_dims[2]; iz++){
+                    if(ix == 0 and iy == 0 and iz == 0){
+                        optForceInfluence[ix][iy][iz] = std::complex<double>(0.0);
+                    }else{
+                        optForceInfluence[ix][iy][iz] = computeEnergyInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    std::complex<double> computeEnergyInfluenceAt(int brillouinX, int brillouinY, int brillouinZ){
+        // the reciprocal positions are index/L * 2*pi
+        double posX = 2*M_PI*brillouinX / (double)box_lengths[0];
+        double posY = 2*M_PI*brillouinY / (double)box_lengths[1];
+        double posZ = 2*M_PI*brillouinZ / (double)box_lengths[2];
+
+        double numerator = 0.0;
+
+        const int brillounZones = 0;
+
+        double pi = M_PI;
+
+        // only checked to see if works with brillounZones = 0 -> 1 Zone
+        for(int bx = -brillounZones; bx <= brillounZones; bx++){
+            double posXshift = posX + (2*M_PI*bx * grid_dims[0] / box_lengths[0]);
+            double arg = (posXshift * grid_dist[0] / 2);
+
+            double UX2 = powsinc(arg, 2*cao);
+
+            for(int by = -brillounZones; by <= brillounZones; by++){
+                double posYshift = posY + (2*M_PI*by * grid_dims[1] / box_lengths[1]);
+                double arg = (posYshift * grid_dist[1] / 2);
+                double UY2 = powsinc(arg, 2*cao);
+                for(int bz = -brillounZones; bz <= brillounZones; bz++){
+                    if(abs(bx) + abs(by) + abs(bz) > brillounZones){
+                        continue;
+                    }
+
+                    double posZshift = posZ + (2*M_PI*bz * grid_dims[2] / box_lengths[2]);
+                    double arg = (posZshift * grid_dist[2] /2);
+
+                    double UZ2 = powsinc(arg, 2*cao);
+
+                    double posShift2 = posXshift * posXshift + posYshift * posYshift + posZshift * posZshift;
+
+                    
+                    double U2 = UX2*UY2*UZ2;
+                    // 4*PI is multiplied later
+
+                    numerator +=  U2 * exp(- (posShift2 / (4*alpha*alpha))) / posShift2;
+                }
+            }
+        }
+        
+        double denominator = pow(denominatorG(posX, posY, posZ),2);
         // 4 PI^2 comes from the fact that it is missing from the positions
-        double denominator = 4 * M_PI * M_PI * denominator1 * denominator2;
-        numerator *= 4 * M_PI;
+        numerator *= 4 * pi;
 
         return std::complex<double>(numerator/denominator);
+    }
+
+    double Usum(int x, int y, int z, int shiftXextra, int shiftYextra, int shiftZextra){
+        double shiftX = 2*M_PI* grid_dims[0] / box_lengths[0];
+        double shiftY = 2*M_PI* grid_dims[1] / box_lengths[1];
+        double shiftZ = 2*M_PI* grid_dims[2] / box_lengths[2];
+
+        double posX = 2*M_PI*x / (double)box_lengths[0];
+        double posY = 2*M_PI*y / (double)box_lengths[1];
+        double posZ = 2*M_PI*z / (double)box_lengths[2];
+
+        int brillounZones = 2;
+
+        double sum = 0;
+        for(int bx = -brillounZones; bx <= brillounZones; bx++){
+            double arg1 = ((posX + bx*shiftX) * grid_dist[0] / 2);
+            double arg2 = ((posX + (bx + shiftXextra)*shiftX) * grid_dist[0] / 2);
+
+            double UX1 = powsinc(arg1, cao);
+            double UX2 = UX1 * powsinc(arg2, cao);
+
+            for(int by = -brillounZones; by <= brillounZones; by++){
+                double arg1 = ((posY + by*shiftY) * grid_dist[1] / 2);
+                double arg2 = ((posY + (by + shiftYextra)*shiftY) * grid_dist[1] / 2);
+
+                double UY1 = powsinc(arg1, cao);
+                double UY2 = UY1 * powsinc(arg2, cao);
+                for(int bz = -brillounZones; bz <= brillounZones; bz++){
+                    double arg1 = ((posZ + bz*shiftZ) * grid_dist[2] /2);
+                    double arg2 = ((posZ + (bz + shiftZextra)*shiftZ) * grid_dist[2] /2);
+
+                    double UZ1 = powsinc(arg1, cao);
+                    double UZ2 = UZ1 * powsinc(arg2, cao);
+
+                    sum += UX2*UY2*UZ2;
+                }
+            }
+        }
+
+        return sum;
+    }
+
+    // uses approximation of self foce described in "Removal of spurious self-interactions in particle–mesh methods" doi: 10.1016/j.cpc.2011.01.026
+    void computeSelfForceCoeff(){
+        std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
+        std::vector<int> brillouinShiftedY = std::vector<int>(grid_dims[1]);
+        std::vector<int> brillouinShiftedZ = std::vector<int>(grid_dims[2]);
+        
+        computeBrillouinShift(brillouinShiftedX, grid_dims[0]);
+        computeBrillouinShift(brillouinShiftedY, grid_dims[1]);
+        computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
+
+        double vol = box_lengths[0] * box_lengths[1] * box_lengths[2];
+
+        for (int dim = 0; dim < 3; dim++){
+            double factor = 2 * M_PI / (vol * grid_dist[dim]);
+            for (int coeff = 1; coeff <= 2; coeff++){
+                factor *= coeff;
+                for (unsigned int zind = 0; zind < grid_dims[2]; zind++){
+                    for (unsigned int yind = 0; yind < grid_dims[1]; yind++){
+                for (unsigned int xind = 0; xind < grid_dims[0]; xind++){
+                    
+                        
+                            if(xind == 0 && yind == 0 && zind == 0){
+                                continue;
+                            }
+                            double precoeff;
+                            switch (dim){
+                            case 0:
+                                precoeff = Usum(brillouinShiftedX[xind], brillouinShiftedY[yind], brillouinShiftedZ[zind], coeff, 0, 0);
+                                break;
+                            case 1:
+                                precoeff = Usum(brillouinShiftedX[xind], brillouinShiftedY[yind], brillouinShiftedZ[zind], 0, coeff, 0);
+                                break;
+                            case 2:
+                                precoeff = Usum(brillouinShiftedX[xind], brillouinShiftedY[yind], brillouinShiftedZ[zind], 0, 0, coeff);
+                                break;
+                            }
+                            selfForceCoeffs[dim][coeff-1] += real(optForceInfluence[xind][yind][zind]) * precoeff;
+                        }
+                    }   
+                }
+                selfForceCoeffs[dim][coeff-1] *= factor;
+            }
+        }
     }
 
     /**
@@ -161,7 +408,7 @@ class P3M_container : public LinkedCells<Particle_T> {
         auto *traversalP3M = dynamic_cast<P3M_traversal<LinkedParticleCell> *>(traversal);
         if (traversalP3M) {
             traversalP3M->set_traversal_parameters(cao, grid_dims, this->getBoxMin(), grid_dist, rs_grid, /*rs_grid_shifted,*/ 
-                ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, std::move(this->begin(autopas::IteratorBehavior::owned)),
+                ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, selfForceCoeffs, std::move(this->begin(autopas::IteratorBehavior::owned)),
                 shortRangeTraversal);
         } else {
         autopas::utils::ExceptionHandler::exception(
@@ -214,5 +461,7 @@ class P3M_container : public LinkedCells<Particle_T> {
     ComplexGridType optForceInfluence;
     // array for all ks_grid points
     ComplexGridType optEnergyInfluence;
+    // coefficients to approximate selfForce
+    std::vector<std::vector<double>> selfForceCoeffs;
 };
 }

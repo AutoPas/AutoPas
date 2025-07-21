@@ -26,6 +26,7 @@ class ContainerSelectorInfo {
         verletClusterSize(64),
         loadEstimator(autopas::LoadEstimatorOption::none),
         cao(1),
+        alpha(0.5),
         grid_dims({0,0,0}) {}
 
   /**
@@ -39,13 +40,14 @@ class ContainerSelectorInfo {
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletRebuildFrequency,
-                                 unsigned int verletClusterSize, autopas::LoadEstimatorOption loadEstimator, unsigned int cao, std::array<unsigned int, 3> grid_dims)
+                                 unsigned int verletClusterSize, autopas::LoadEstimatorOption loadEstimator, unsigned int cao, double alpha, std::array<unsigned int, 3> grid_dims)
       : cellSizeFactor(cellSizeFactor),
         verletSkin(verletSkin),
         verletRebuildFrequency(verletRebuildFrequency),
         verletClusterSize(verletClusterSize),
         loadEstimator(loadEstimator),
         cao(cao),
+        alpha(alpha),
         grid_dims(grid_dims) {}
 
   /**
@@ -55,7 +57,7 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
-           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator and cao == other.cao and grid_dims == other.grid_dims;
+           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator and cao == other.cao and alpha == other.alpha and grid_dims == other.grid_dims;
   }
 
   /**
@@ -74,9 +76,9 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, loadEstimator, cao, grid_dims) <
+    return std::tie(cellSizeFactor, verletSkin, verletRebuildFrequency, verletClusterSize, loadEstimator, cao, alpha, grid_dims) <
            std::tie(other.cellSizeFactor, other.verletSkin, other.verletRebuildFrequency, other.verletClusterSize,
-                    other.loadEstimator, other.cao, other.grid_dims);
+                    other.loadEstimator, other.cao, other.alpha, other.grid_dims);
   }
 
   /**
@@ -103,6 +105,10 @@ class ContainerSelectorInfo {
    * Charge assignment order for P3M
    */
   unsigned int cao;
+  /**
+   * Ewald parameter for P3M
+   */
+  double alpha;
   /**
    * Number of gridpoints per dimension for P3M
    */
