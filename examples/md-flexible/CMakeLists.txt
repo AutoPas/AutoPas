@@ -20,6 +20,7 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT "Compile Pairwise Interpolant Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT "Compile Triwise Interpolant Functor." ON)
 option(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY "Compile for Interpolant Accuracy Benchmarking." ON)
+option(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION "Compile for Interpolant Vectorization" OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC "Compile auto vectorized Axilrod Teller Functor." OFF)
@@ -36,6 +37,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT}>:MD_FLEXIBLE_FUNCTOR_PAIRWISE_INTERPOLANT>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT}>:MD_FLEXIBLE_FUNCTOR_TRIWISE_INTERPOLANT>
         $<$<BOOL:${MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY}>:MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY>
+        $<$<BOOL:${MD_FLEXIBLE_INTERPOLANT_VECTORIZATION}>:MD_FLEXIBLE_INTERPOLANT_VECTORIZATION>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---

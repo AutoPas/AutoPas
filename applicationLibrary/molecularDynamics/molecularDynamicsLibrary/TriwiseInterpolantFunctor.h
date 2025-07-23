@@ -18,7 +18,10 @@
 
 #include <fftw3.h>
 #include <unsupported/Eigen/CXX11/Tensor>
+
+#if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
 #include "immintrin.h"
+#endif
 
 namespace mdLib {
 
@@ -61,16 +64,18 @@ private:
         }
 
         // initialize vectors
-        _coefficients = Eigen::Tensor<std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>, 3, Eigen::RowMajor>
-          (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
         _coeffs = Eigen::Tensor<std::array<std::vector<std::vector<std::vector<double>>>, 3>, 3, Eigen::RowMajor>
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
+
+#if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
         _coeffsVec = Eigen::Tensor<std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>, 3, Eigen::RowMajor>
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
+#endif
 
         constructPolyFFTW();
     }
 
+#if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
     double evalChebFast1DVector(double input, int n, Eigen::VectorXd& coeffs) {
       double b_n = 0.;
       double b_n1 = 0.;
@@ -203,6 +208,7 @@ private:
       /* Flatten x dimension */
       return evalChebFast1DVector(x, nX, xCoeffs);
     }
+#endif
 
     double evalChebFast1D(double input, int n, const std::vector<double>& coeffs) {
       // see PairwiseInterpolantFunctor.h for reference
@@ -322,12 +328,14 @@ private:
               std::vector<std::vector<std::vector<double>>>(nX)
             };
 
+#if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
             std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> &coeffsVec = _coeffsVec(intervalX, intervalY, intervalZ);
             coeffsVec = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> {
               Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY),
               Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY),
               Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY)
             };
+#endif
 
             /* Scale the coefficients according to the Chebyshev interpolation */
             for (int dim = 0; dim < 3; ++dim) {
@@ -349,7 +357,9 @@ private:
                     }
                     forcesXYZ[dim][i][j][k] *= (1./nX * 1./nY * 1./ nZ);
                     coeffsZ.push_back(forcesXYZ[dim][i][j][k]);
+#if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
                     coeffsVec.at(dim)(i, k, j) = forcesXYZ[dim][i][j][k];
+#endif
                   }
                   coeffsYZ.emplace_back(coeffsZ);
                 }
@@ -468,21 +478,27 @@ public:
         const double y = mapToCheb(dJK, aY, bY);
         const double z = mapToCheb(dKI, aZ, bZ);
 
-        // const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 0);
-        const double fac_ij_vec = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 0);
-        // const double fac_ki = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 2);
-        const double fac_ki_vec = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 2);
+#if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
+        const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 0);
+        const double fac_ki = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 2);
+#else
+        const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 0);
+        const double fac_ki = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 2);
+#endif
         
-        const auto forceI = ( drIJ * fac_ij_vec + drKI * fac_ki_vec ) * -1.;
+        const auto forceI = ( drIJ * fac_ij + drKI * fac_ki ) * -1.;
         i.addF(forceI);
 
         double fac_jk = 0.;
         double fac_jk_vec = 0.;
         if (newton3) {
-          // fac_jk = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 1);
-          fac_jk_vec = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 1);
+#if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
+          fac_jk = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 1);
+#else
+          fac_jk = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 1);
+#endif
 
-          const auto forceJ = drIJ * -fac_ij_vec + drJK * fac_jk_vec;
+          const auto forceJ = drIJ * -fac_ij + drJK * fac_jk;
           const auto forceK = (forceI + forceJ) * (-1.);
 
           j.addF(forceJ);
@@ -508,9 +524,9 @@ public:
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
         const std::array<double, 3> real_fac = _kernel.calculateTripletDerivative(dIJ, dJK, dKI);
 
-        errorX = real_fac.at(0) - fac_ij_vec;
-        errorY = real_fac.at(1) - fac_jk_vec;
-        errorZ = real_fac.at(2) - fac_ki_vec;
+        errorX = real_fac.at(0) - fac_ij;
+        errorY = real_fac.at(1) - fac_jk;
+        errorZ = real_fac.at(2) - fac_ki;
 
         relErrorX = errorX / real_fac.at(0);
         relErrorY = errorY / real_fac.at(1);
@@ -757,7 +773,6 @@ public:
        TriwiseKernel _kernel;
        const std::array<std::vector<size_t>, 3> _numNodes {};
        const std::array<std::vector<double>, 3> _intervalSplits {};
-       Eigen::Tensor<std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>, 3, Eigen::RowMajor> _coefficients {};
 
        Eigen::Tensor<std::array<
           std::vector<std::vector<std::vector<double>>>, 3>,
