@@ -104,12 +104,12 @@ private:
 
         /* Full Load */
         if (size >= 8) {
-          c = _mm512_loadu_pd(&coeffs(j, i));
+          c = _mm512_load_pd(&coeffs(j, i));
         }
         /* Masked Load */
         else {
           __mmask8 mask = (1 << size) - 1;
-          c = _mm512_maskz_loadu_pd(mask, &coeffs(j, i));
+          c = _mm512_maskz_load_pd(mask, &coeffs(j, i));
         }
 
         b_n = c + 2. * input * b_n1 - b_n2;
@@ -117,12 +117,12 @@ private:
         b_n1 = b_n;
       }
       if (size >= 8) {
-        c = _mm512_loadu_pd(&coeffs(0, i));
+        c = _mm512_load_pd(&coeffs(0, i));
       }
       /* Masked Load */
       else {
         __mmask8 mask = (1 << size) - 1;
-        c = _mm512_maskz_loadu_pd(mask, &coeffs(0, i));
+        c = _mm512_maskz_load_pd(mask, &coeffs(0, i));
       }
 
       b_n = 2. * c + 2. * input * b_n1 - b_n2;
@@ -142,12 +142,12 @@ private:
 
         /* Full Load */
         if (size >= 8) {
-          c = _mm512_loadu_pd(&coeffs(i, k, j));
+          c = _mm512_load_pd(&coeffs(i, k, j));
         }
         /* Masked Load */
         else {
           __mmask8 mask = (1 << size) - 1;
-          c = _mm512_maskz_loadu_pd(mask, &coeffs(i, k, j));
+          c = _mm512_maskz_load_pd(mask, &coeffs(i, k, j));
         }
 
         b_n = c + 2. * input * b_n1 - b_n2;
@@ -155,12 +155,12 @@ private:
         b_n1 = b_n;
       }
       if (size >= 8) {
-        c = _mm512_loadu_pd(&coeffs(i, 0, j));
+        c = _mm512_load_pd(&coeffs(i, 0, j));
       }
       /* Masked Load */
       else {
         __mmask8 mask = (1 << size) - 1;
-        c = _mm512_maskz_loadu_pd(mask, &coeffs(i, 0, j));
+        c = _mm512_maskz_load_pd(mask, &coeffs(i, 0, j));
       }
 
       b_n = 2. * c + 2. * input * b_n1 - b_n2;
@@ -175,7 +175,9 @@ private:
       Eigen::Tensor<double, 3, Eigen::RowMajor> coeffs = _coeffsVec(intervalX, intervalY, intervalZ).at(dim);
 
       /* Flatten z dimension */
-      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (nY, nX);
+      size_t newNy = nY + nY % 8;
+      size_t newNx = nX + nX % 8;
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (newNy, newNx);
       for (size_t j = 0; j < nY; j+=8) {
         for (size_t i = 0; i < nX; ++i) {
         
@@ -329,11 +331,16 @@ private:
             };
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
+            // Extend Coefficients Tensor such that it is aligned
+            size_t newNx = nX + nX % 8;
+            size_t newNy = nY + nY % 8;
+            size_t newNz = nZ + nZ % 8;
+
             std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> &coeffsVec = _coeffsVec(intervalX, intervalY, intervalZ);
-            coeffsVec = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> {
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY),
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY),
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nZ, nY)
+            coeffsVec = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>{
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy),
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy),
+              Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy)
             };
 #endif
 
