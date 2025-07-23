@@ -676,6 +676,12 @@ void Simulation::run() {
       _lut->computeDerivatives();
       _lut->writeToCSV(_configuration.lutOutputFolder.value, _configuration.lutFileName.value + "_0");
 
+      // reset angular velocities and quaternions
+      // for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      //   particle->setAngularVel({0, 0, 0});
+      //   particle->setQuaternion({0, 0, 0, 0});
+      // }
+
       equilibrate = true;
     }
 

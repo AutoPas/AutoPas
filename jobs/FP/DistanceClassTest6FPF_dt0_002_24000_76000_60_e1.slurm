@@ -9,11 +9,15 @@
 #SBATCH --partition=cm4_tiny
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=56
+#SBATCH --hint=nomultithread
+#SBATCH --distribution=block:block
+#SBATCH --cpus-per-task=112
 #SBATCH --time=24:00:00
 
 module load slurm_setup
-export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-MYPROG="./md-flexible --yaml-filename DistanceClassTest6FPF_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_ibi.yaml"
+export OMP_NUM_THREADS=56
+export OMP_PLACES="{0:56}"
+export OMP_PROC_BIND=close
+MYPROG="./md-flexible --yaml-filename DistanceClassTest6FPF_dt0_002_24000_76000_60_e1.yaml"
 
 $MYPROG
