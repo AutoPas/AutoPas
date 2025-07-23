@@ -182,8 +182,8 @@ private:
           size_t size = nY - j;
           __m512d values = evalChebFast1DVector(z, nZ, coeffs, i, j, size);
 
-          double helper [8];
-          _mm512_storeu_pd(helper, values);
+          alignas(64) double helper [8];
+          _mm512_store_pd(helper, values);
 
           for (int jHelp = 0; jHelp < size; ++jHelp) {
             xyCoeffs(jHelp + j, i) = helper[jHelp];
@@ -197,8 +197,8 @@ private:
         int size = nX - i;
         __m512d values = evalChebFast1DVector(y, nY, xyCoeffs, i, size);
         
-        double helper [8];
-        _mm512_storeu_pd(helper, values);
+        alignas(64) double helper [8];
+        _mm512_store_pd(helper, values);
 
         for (int iHelp = 0; iHelp < size; ++iHelp) {
           xCoeffs(iHelp + i) = helper[iHelp];
