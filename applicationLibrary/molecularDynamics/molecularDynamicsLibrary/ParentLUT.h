@@ -49,7 +49,6 @@ namespace mdLib {
   double _lutFactor{};
   double _lutDistance{};
   int _resolution{};
-  bool _isFilled = false;
   double _numberOfPoints{};
   double _pointDistance{};
 

@@ -517,8 +517,8 @@ namespace mdLib {
 
                 AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
                 AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-              logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_KR_control");
-              logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_KR_control");
+              logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_KR_control_newEps");
+              logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_KR_control_newEps");
 
             }
         }

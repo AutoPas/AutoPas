@@ -186,9 +186,7 @@ newton3 = allowsNewton3();
                     fac_glob = _lut->retrieveValues_global(*this, dr2);
                 }
                 if (calculateGlobals) {
-                    // this is a problem
-//        AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
-//        return;
+
                     if constexpr (useLUTGlobal) {
                         fac = fac_glob[0];
                         potentialEnergy6 = fac_glob[1];
@@ -213,7 +211,7 @@ newton3 = allowsNewton3();
                 lj6 = lj6 * lj6 * lj6;
                 double lj12 = lj6 * lj6;
                 lj12m6 = lj12 - lj6;
-                //fac should be defined ones i think this one isnt use then
+
                 fac = epsilon24 * (lj12 + lj12m6) * invdr2;
 
             }
@@ -775,8 +773,8 @@ newton3 = allowsNewton3();
 
                 AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
                 AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-//                logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_LJ_control");
-//                logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_LJ_control");
+//                logToFile(  std::to_string(_potentialEnergySum), "potentialEnergy_LJ_control_newEps_ppl");
+//                logToFile(  std::to_string(_virialSum[0]) +"," +  std::to_string(_virialSum[1]) +"," +  std::to_string(_virialSum[2]), "virial_LJ_newEps_ppl");
 
             }
         }

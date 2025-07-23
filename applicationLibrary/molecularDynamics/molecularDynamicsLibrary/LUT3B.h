@@ -110,6 +110,7 @@ class LUT3B : public ParentLUT {
           double distC = _lutCutoff + c * _pointDistance;
           auto x = getLUTValuesKrypton(distA, distB, distC);
           _lut3B_global[a][b].push_back(getLUTValuesKrypton(distA, distB, distC));
+//          std::cout << "index  :" << a << ", " << b << ", " << c << "  "<< distA << ", " << distB << ", " << distC << std::endl;
 
         }
       }
@@ -137,7 +138,7 @@ class LUT3B : public ParentLUT {
       }
     }
 
-    std::cout << "filled ";
+
   }
 
 
@@ -189,7 +190,7 @@ class LUT3B : public ParentLUT {
     }
     resultRight = _lut3B[index1 + 1][index2][index3];
 
-    std::cout << "in LINEAR ";
+
 
     return (resultRight + resultLeft) * 0.5;
   }
@@ -220,7 +221,6 @@ class LUT3B : public ParentLUT {
     }
     resultRight = _lut3B_global[index1 + 1][index2][index3];
 
-    std::cout << "in LINEAR ";
 
     return (resultRight + resultLeft) * 0.5;
   }
@@ -405,7 +405,6 @@ class LUT3B : public ParentLUT {
 
 
 
-
   double   calculatePotEnergy_Krypton(double cosines, double _nu, double allDistsTripled, double sum, double expTerm) const {
     // Add 3 * potential energy to every owned particle of the interaction.
     // Division to the correct value is handled in endTraversal().
@@ -424,8 +423,8 @@ class LUT3B : public ParentLUT {
   retrieveValues(const Functor &functor, double dist1, double dist2, double dist3) const {
 
     if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
-      std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" << std::sqrt(_lutCutoff)
-                << ") - Calculating force factors directly!" << std::endl;
+//      std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" << std::sqrt(_lutCutoff)
+//                << ") - Calculating force factors directly!" << std::endl;
       return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
     }
 
@@ -496,20 +495,10 @@ class LUT3B : public ParentLUT {
       const Functor &functor, double dist1, double dist2, double dist3) const {
 
     if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
-        std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" << std::sqrt(_lutCutoff)
-                  << ") - Calculating force factors directly!" << std::endl;
+//        std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" << std::sqrt(_lutCutoff)
+//                  << ") - Calculating force factors directly!" << std::endl;
 
-//if  (!KRYPTON) {
-//  auto globs = calculatePotEnergy(dist1, dist2, dist3);
-//  auto vals = functor.getLUTValues(dist1, dist2, dist3);
-//
-//  std::array<double, 4> res = {vals[0], vals[1], vals[2], globs};
-//  return std::make_pair(res, std::array<u_int8_t, 3>({0, 1, 2}));
-//}else{
-//
-//  auto vals = functor.getLUTValues(dist1, dist2, dist3);
-//  return std::make_pair(vals, std::array<u_int8_t, 3>({0, 1, 2}));
-//}
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC) && defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
       throw std::runtime_error(
           "LUT3B can either run with MD_FLEXIBLE_FUNCTOR_KRYPTON or MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC but not with both at the same time. Please turn one off");
@@ -580,8 +569,8 @@ class LUT3B : public ParentLUT {
 //         auto result = getLinear_global(index1, index2, index3);
 
     // space for other interpolation
-//    auto result = getNextNeighbour_global(index1, index2, index3);
-      auto result = getWeightedAverage_global(index1, index2, index3, dist1, dist2, dist3);
+   auto result = getNextNeighbour_global(index1, index2, index3);
+ //     auto result = getWeightedAverage_global(index1, index2, index3, dist1, dist2, dist3);
 
     auto resultPair = std::make_pair(result, order);
 

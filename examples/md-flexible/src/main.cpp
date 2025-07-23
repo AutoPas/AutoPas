@@ -45,9 +45,11 @@ int main(int argc, char **argv) {
     bool TRI_WISE_LUT= true;
     bool USELUT = true;
     bool USEGLOBAL = true;
-    bool DELAY = true;
-    bool KRYPTON = false;
-    int RESOLUTION =20;
+    bool DELAY = false;
+    bool KRYPTON = true;
+    int RESOLUTION =100;
+
+    std::cout << "Configuration  triwise lut : " << TRI_WISE_LUT << " uselut  " << USELUT << " useglobal   " << USEGLOBAL << " delay  " << DELAY << "  krypton  " << KRYPTON << " resolution " << RESOLUTION << std::endl;
 
     configuration.handleLUT(TRI_WISE_LUT, USELUT, USEGLOBAL,DELAY, KRYPTON,RESOLUTION);
 
