@@ -175,8 +175,8 @@ private:
       Eigen::Tensor<double, 3, Eigen::RowMajor> coeffs = _coeffsVec(intervalX, intervalY, intervalZ).at(dim);
 
       /* Flatten z dimension */
-      size_t newNy = nY + nY % 8;
-      size_t newNx = nX + nX % 8;
+      size_t newNx = nX + (8 - nX % 8);
+      size_t newNy = nY + (8 - nY % 8);
       Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (newNy, newNx);
       for (size_t j = 0; j < nY; j+=8) {
         for (size_t i = 0; i < nX; ++i) {
@@ -332,9 +332,9 @@ private:
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
             // Extend Coefficients Tensor such that it is aligned
-            size_t newNx = nX + nX % 8;
-            size_t newNy = nY + nY % 8;
-            size_t newNz = nZ + nZ % 8;
+            size_t newNx = nX + (8 - nX % 8);
+            size_t newNy = nY + (8 - nY % 8);
+            size_t newNz = nZ + (8 - nZ % 8);
 
             std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> &coeffsVec = _coeffsVec(intervalX, intervalY, intervalZ);
             coeffsVec = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>{
