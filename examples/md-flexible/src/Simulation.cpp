@@ -239,7 +239,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi and
-      _configuration.lutInputFile.value.empty()) {
+      _configuration.lutInputFile.value.empty() and _configuration.ibiEquilibrateIterations.value == 0) {
     throw std::runtime_error("Please specify a lut input file to be used with LuT functor in outer distance class!");
   }
 
@@ -317,21 +317,28 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
 
+  auto respaActive = _configuration.respaStepSize.value > 0;
+
+  auto respaStepSizeTemp = _configuration.respaStepSize.value;
+  if (respaActive and _configuration.ibiEquilibrateIterations.value > 0) {
+    _configuration.respaStepSize.value = 1;
+  }
+
   bool equilibrate{false};
   size_t equilibrateIterations{0};
   size_t cgMeasureIterations{0};
   size_t ibiTrials{0};
   const size_t rdfNumBins = _configuration.rdfNumBins.value;
-  bool ibiConvergenceReached{
-      (_cgSimulation or _configuration.multiMultisiteModelsRespa.value or _distanceClassSimulation) ? true : false};
+  bool ibiConvergenceReached{(_cgSimulation or _configuration.multiMultisiteModelsRespa.value or
+                              (_distanceClassSimulation and not respaActive))
+                                 ? true
+                                 : false};
   bool firstRespaIterationSkipped{false};
   bool respaStarted{false};
   const bool ibiMeasureSimulation = _configuration.ibiEquilibrateIterations.value > 0;
   const bool ibiKeepTorque =
       _configuration.respaDistanceClassMode.value == autopas::options::DistanceClassOption::ibi and
       _configuration.ibiKeepTorque.value;
-
-  auto respaActive = _configuration.respaStepSize.value > 0;
 
   RotationalAnalysis rotationalAnalysis;
   if (_configuration.rotationalAnalysisLagSteps.value > 0) {
@@ -373,7 +380,7 @@ void Simulation::run() {
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      if (respaActive and isRespaIteration and ibiConvergenceReached) {
+      if (respaActive and isRespaIteration) {
         // The first potential energy is not measured because it is not a full step.
         if (_distanceClassSimulation) {
           if (not respaStarted) {
@@ -382,7 +389,12 @@ void Simulation::run() {
               sendPositionsAndQuaternionsToRespaInstance();
             }
             if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
-              updateInteractionForces(ForceType::IBIOuter);
+              if (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation) {
+                updateInteractionForces(ForceType::FPOuter);
+              } else {
+                updateInteractionForces(ForceType::IBIOuter);
+              }
+
             } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
               updateInteractionForces(ForceType::FPOuter);
             } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
@@ -521,18 +533,17 @@ void Simulation::run() {
     }
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      updateVelocities(/*resetForces*/ respaActive and nextIsRespaIteration and ibiConvergenceReached);
+      updateVelocities(/*resetForces*/ respaActive and nextIsRespaIteration);
 #if MD_FLEXIBLE_MODE == MULTISITE
       if (_configuration.multiMultisiteModelsRespa.value) {
-        updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration and ibiConvergenceReached,
-                                RespaIterationType::InnerStep, _configuration.respaMoleculeTypes.value[0],
-                                _configuration.respaMoleculeTypes.value[1]);
+        updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration, RespaIterationType::InnerStep,
+                                _configuration.respaMoleculeTypes.value[0], _configuration.respaMoleculeTypes.value[1]);
       } else if (_distanceClassSimulation and not _configuration.multiMultisiteModelsRespa.value) {
         if (ibiKeepTorque) {
           updateAngularVelocities(false, RespaIterationType::InnerStep, 0, 0);
         } else {
-          updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration and ibiConvergenceReached,
-                                  RespaIterationType::InnerStep, 0, 0);
+          updateAngularVelocities(/*resetTorques*/ respaActive and nextIsRespaIteration, RespaIterationType::InnerStep,
+                                  0, 0);
         }
 
       } else {
@@ -554,14 +565,18 @@ void Simulation::run() {
         }
       }
 
-      if (respaActive and nextIsRespaIteration and ibiConvergenceReached and respaStarted) {
+      if (respaActive and nextIsRespaIteration and respaStarted) {
         std::optional<std::pair<double, double>> potentialEnergyAndVirial;
         if (_distanceClassSimulation) {
           if (_useSecondAutopasInstanceForRespa) {
             sendPositionsAndQuaternionsToRespaInstance();
           }
           if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi) {
-            potentialEnergyAndVirial = updateInteractionForces(ForceType::IBIOuter);
+            if (_iteration <= _configuration.rdfEndIteration.value and not _cgSimulation) {
+              potentialEnergyAndVirial = updateInteractionForces(ForceType::FPOuter);
+            } else {
+              potentialEnergyAndVirial = updateInteractionForces(ForceType::IBIOuter);
+            }
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::fp) {
             potentialEnergyAndVirial = updateInteractionForces(ForceType::FPOuter);
           } else if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::cgmol) {
@@ -677,10 +692,15 @@ void Simulation::run() {
       _lut->writeToCSV(_configuration.lutOutputFolder.value, _configuration.lutFileName.value + "_0");
 
       // reset angular velocities and quaternions
-      // for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      // for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid();
+      // ++particle) {
       //   particle->setAngularVel({0, 0, 0});
       //   particle->setQuaternion({0, 0, 0, 0});
       // }
+
+      if (respaActive and _configuration.ibiEquilibrateIterations.value > 0) {
+        _configuration.respaStepSize.value = respaStepSizeTemp;
+      }
 
       equilibrate = true;
     }
