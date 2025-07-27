@@ -63,11 +63,11 @@ private:
         }
 
         // initialize vectors
-        _coeffs = Eigen::Tensor<std::array<std::vector<std::vector<std::vector<double>>>, 3>, 3, Eigen::RowMajor>
+        _coeffs = Eigen::Tensor<std::vector<std::vector<std::vector<double>>>, 3, Eigen::RowMajor>
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-        _coeffsVec = Eigen::Tensor<std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>, 3, Eigen::RowMajor>
+        _coeffsVec = Eigen::Tensor<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3, Eigen::RowMajor>
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
 #endif
 
@@ -166,12 +166,12 @@ private:
       return (b_n - b_n2) / 2.;
     }
 
-    double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
+    double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
       size_t nX = _numNodes.at(0).at(intervalX);
       size_t nY = _numNodes.at(1).at(intervalY);
       size_t nZ = _numNodes.at(2).at(intervalZ);
 
-      Eigen::Tensor<double, 3, Eigen::RowMajor> coeffs = _coeffsVec(intervalX, intervalY, intervalZ).at(dim);
+      Eigen::Tensor<double, 3, Eigen::RowMajor> coeffs = _coeffsVec(intervalX, intervalY, intervalZ);
 
       /* Flatten z dimension */
       size_t newNx = nX + (8 - nX % 8)%8;
@@ -227,13 +227,13 @@ private:
     }
 
 
-    double evalChebFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ, int dim) {
+    double evalChebFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
       // This code is oriented on NumPy's implementation of chebeval3d
       size_t nX = _numNodes.at(0).at(intervalX);
       size_t nY = _numNodes.at(1).at(intervalY);
       size_t nZ = _numNodes.at(2).at(intervalZ);
 
-      auto coeffs = _coeffs(intervalX, intervalY, intervalZ).at(dim);
+      auto coeffs = _coeffs(intervalX, intervalY, intervalZ);
 
       /* Flatten z dimension */
       auto xyCoeffs = std::vector<std::vector<double>> {};
@@ -288,7 +288,7 @@ private:
             int nY = _numNodes.at(1).at(intervalY);
             int nZ = _numNodes.at(2).at(intervalZ);
 
-            double forcesXYZ [3][nX][nY][nZ];
+            double forcesXYZ [nX][nY][nZ];
 
             /* Prepare Tensors, initialize vectors */
             for (int i = 0; i < nX; ++i) {
@@ -307,27 +307,20 @@ private:
                     mapToInterval(nodeZ, aZ, bZ)
                   );
 
-                  for (int dim = 0; dim < 3; ++dim) {
-                    forcesXYZ[dim][i][j][k] = forces.at(dim);
-                  }
+                    forcesXYZ[i][j][k] = forces.at(0);
                 }
               }
             }
 
-            for (int dim = 0; dim < 3; ++dim) {
-              /* Let FFTW compute the (unscaled) coefficients */
-              fftw_plan plan_test = fftw_plan_r2r_3d(nX, nY, nZ, &forcesXYZ[dim][0][0][0], &forcesXYZ[dim][0][0][0],
+            /* Let FFTW compute the (unscaled) coefficients */
+            fftw_plan plan_test = fftw_plan_r2r_3d(nX, nY, nZ, &forcesXYZ[0][0][0], &forcesXYZ[0][0][0],
                 FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_ESTIMATE);
-              fftw_execute(plan_test);
-              fftw_destroy_plan(plan_test);
-            }
+            fftw_execute(plan_test);
+            fftw_destroy_plan(plan_test);
+            
 
-            std::array<std::vector<std::vector<std::vector<double>>>, 3> &coeffs = _coeffs(intervalX, intervalY, intervalZ);
-            coeffs = std::array<std::vector<std::vector<std::vector<double>>>, 3> {
-              std::vector<std::vector<std::vector<double>>>(nX),
-              std::vector<std::vector<std::vector<double>>>(nX),
-              std::vector<std::vector<std::vector<double>>>(nX)
-            };
+            std::vector<std::vector<std::vector<double>>> &coeffs = _coeffs(intervalX, intervalY, intervalZ);
+            coeffs = std::vector<std::vector<std::vector<double>>>(nX);
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
             // Extend Coefficients Tensor such that it is aligned
@@ -335,16 +328,11 @@ private:
             size_t newNy = nY + (8 - nY % 8)%8;
             size_t newNz = nZ + (8 - nZ % 8)%8;
 
-            std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3> &coeffsVec = _coeffsVec(intervalX, intervalY, intervalZ);
-            coeffsVec = std::array<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>{
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy),
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy),
-              Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy)
-            };
+            Eigen::Tensor<double, 3, Eigen::RowMajor> &coeffsVec = _coeffsVec(intervalX, intervalY, intervalZ);
+            coeffsVec = Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy);
 #endif
 
             /* Scale the coefficients according to the Chebyshev interpolation */
-            for (int dim = 0; dim < 3; ++dim) {
               for (int i = 0; i < nX; ++i) {
                 std::vector<std::vector<double>> coeffsYZ {};
                 coeffsYZ.reserve(nY);
@@ -353,25 +341,24 @@ private:
                   coeffsZ.reserve(nZ);
                   for (int k = 0; k < nZ; ++k) {                    
                     if (i == 0) {
-                      forcesXYZ[dim][i][j][k] *= 0.5;
+                      forcesXYZ[i][j][k] *= 0.5;
                     }
                     if (j == 0) {
-                      forcesXYZ[dim][i][j][k] *= 0.5;
+                      forcesXYZ[i][j][k] *= 0.5;
                     }
                     if (k == 0) {
-                      forcesXYZ[dim][i][j][k] *= 0.5;
+                      forcesXYZ[i][j][k] *= 0.5;
                     }
-                    forcesXYZ[dim][i][j][k] *= (1./nX * 1./nY * 1./ nZ);
-                    coeffsZ.push_back(forcesXYZ[dim][i][j][k]);
+                    forcesXYZ[i][j][k] *= (1./nX * 1./nY * 1./ nZ);
+                    coeffsZ.push_back(forcesXYZ[i][j][k]);
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-                    coeffsVec.at(dim)(i, k, j) = forcesXYZ[dim][i][j][k];
+                    coeffsVec(i, k, j) = forcesXYZ[i][j][k];
 #endif
                   }
                   coeffsYZ.emplace_back(coeffsZ);
                 }
-                coeffs.at(dim).at(i) = coeffsYZ;
+                coeffs.at(i) = coeffsYZ;
               }
-            }
 
             aZ = bZ;
           } // intervalZ
@@ -485,23 +472,22 @@ public:
         const double z = mapToCheb(dKI, aZ, bZ);
 
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-        const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 0);
-        const double fac_ki = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 2);
+        const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
+        const double fac_ki = evalChebFast3DVector(z, x, y, intervalZ, intervalX, intervalY);
 #else
-        const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 0);
-        const double fac_ki = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 2);
+        const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ);
+        const double fac_ki = evalChebFast3D(z, x, y, intervalZ, intervalX, intervalY);
 #endif
-        
-        const auto forceI = ( drIJ * fac_ij + drKI * fac_ki ) * -1.;
+        const auto forceI = ( drIJ * fac_ij + drKI * fac_ki * -1. ) * -1.;
         i.addF(forceI);
 
         double fac_jk = 0.;
         double fac_jk_vec = 0.;
         if (newton3) {
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-          fac_jk = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ, 1);
+          fac_jk = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
 #else
-          fac_jk = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ, 1);
+          fac_jk = evalChebFast3D(y, z, x, intervalY, intervalZ, intervalX);
 #endif
 
           const auto forceJ = drIJ * -fac_ij + drJK * fac_jk;
@@ -780,13 +766,13 @@ public:
        const std::array<std::vector<size_t>, 3> _numNodes {};
        const std::array<std::vector<double>, 3> _intervalSplits {};
 
-       Eigen::Tensor<std::array<
-          std::vector<std::vector<std::vector<double>>>, 3>,
+       Eigen::Tensor<
+          std::vector<std::vector<std::vector<double>>>,
           3,
           Eigen::RowMajor> _coeffs  {};
 
-       Eigen::Tensor<std::array<
-          Eigen::Tensor<double, 3, Eigen::RowMajor>, 3>,
+       Eigen::Tensor<
+          Eigen::Tensor<double, 3, Eigen::RowMajor>,
           3,
           Eigen::RowMajor> _coeffsVec  {};
 
