@@ -302,9 +302,9 @@ private:
                   double nodeZ = std::cos((2*k+1)*PI/(2.*nZ));
 
                   std::array<double, 3> forces = _kernel.calculateTripletDerivative(
-                    mapToInterval(nodeX, aX, bX),
-                    mapToInterval(nodeY, aY, bY),
-                    mapToInterval(nodeZ, aZ, bZ)
+                    mapToInterval(nodeX, aX*aX, bX*bX),
+                    mapToInterval(nodeY, aY*aY, bY*bY),
+                    mapToInterval(nodeZ, aZ*aZ, bZ*bZ)
                   );
 
                     forcesXYZ[i][j][k] = forces.at(0);
@@ -413,10 +413,6 @@ public:
           return;
         }
 
-        const double dIJ = std::sqrt(dIJ2);
-        const double dJK = std::sqrt(dJK2);
-        const double dKI = std::sqrt(dKI2);
-
         int intervalX = 0;
         int intervalY = 0;
         int intervalZ = 0;
@@ -431,45 +427,48 @@ public:
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
         if constexpr (countFLOPs) {
-          _distanceStatistics[threadnum].push_back(dIJ);
-          _distanceStatistics[threadnum].push_back(dKI);
-          _distanceStatistics[threadnum].push_back(dJK);
+          _distanceStatistics[threadnum].push_back(dIJ2);
+          _distanceStatistics[threadnum].push_back(dKI2);
+          _distanceStatistics[threadnum].push_back(dJK2);
         }
 #endif
 
         for (; intervalX < _intervalSplits.at(0).size(); ++intervalX) {
-          if (dIJ < _intervalSplits.at(0).at(intervalX)) {
-            bX = _intervalSplits.at(0).at(intervalX);
+          const double split = _intervalSplits.at(0).at(intervalX);
+          if (dIJ2 < split*split) {
+            bX = split;
             break;
           }
           else {
-            aX = _intervalSplits.at(0).at(intervalX);
+            aX = split;
           }
         }
 
         for (; intervalY < _intervalSplits.at(1).size(); ++intervalY) {
-          if (dJK < _intervalSplits.at(1).at(intervalY)) {
-            bY = _intervalSplits.at(1).at(intervalY);
+          const double split = _intervalSplits.at(1).at(intervalY);
+          if (dJK2 < split*split) {
+            bY = split;
             break;
           }
           else {
-            aY = _intervalSplits.at(1).at(intervalY);
+            aY = split;
           }
         }
 
         for (; intervalZ < _intervalSplits.at(2).size(); ++intervalZ) {
-          if (dKI < _intervalSplits.at(2).at(intervalZ)) {
-            bZ = _intervalSplits.at(2).at(intervalZ);
+          const double split = _intervalSplits.at(2).at(intervalZ);
+          if (dKI2 < split*split) {
+            bZ = split;
             break;
           }
           else {
-            aZ = _intervalSplits.at(2).at(intervalZ);
+            aZ = split;
           }
         }
 
-        const double x = mapToCheb(dIJ, aX, bX);
-        const double y = mapToCheb(dJK, aY, bY);
-        const double z = mapToCheb(dKI, aZ, bZ);
+        const double x = mapToCheb(dIJ2, aX*aX, bX*bX);
+        const double y = mapToCheb(dJK2, aY*aY, bY*bY);
+        const double z = mapToCheb(dKI2, aZ*aZ, bZ*bZ);
 
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
         const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
@@ -514,11 +513,11 @@ public:
         double relErrorY = 0.;
         double relErrorZ = 0.;
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-        const std::array<double, 3> real_fac = _kernel.calculateTripletDerivative(dIJ, dJK, dKI);
+        const std::array<double, 3> real_fac = _kernel.calculateTripletDerivative(dIJ2, dJK2, dKI2);
 
         errorX = real_fac.at(0) - fac_ij;
         errorY = real_fac.at(1) - fac_jk;
-        errorZ = real_fac.at(2) - fac_ki;
+        errorZ = real_fac.at(2) + fac_ki;
 
         relErrorX = errorX / real_fac.at(0);
         relErrorY = errorY / real_fac.at(1);

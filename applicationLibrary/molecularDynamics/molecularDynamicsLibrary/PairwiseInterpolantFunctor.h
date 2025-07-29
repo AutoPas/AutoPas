@@ -138,7 +138,7 @@ class PairwiseInterpolantFunctor
       for (int i = 0; i < _numNodes[interval]; ++i) {
         double x = ((2 * i + 1.) / (2. * (_numNodes[interval]))) * PI;
         double node = std::cos(x);
-        double d = mapToInterval(node, a, b);
+        double d = mapToInterval(node, a*a, b*b);
 
         double value = _kernel.calculatePairDerivative(d);
         values[i] = value;
@@ -172,7 +172,7 @@ class PairwiseInterpolantFunctor
       for (int i = 0; i < _numNodes[interval]; ++i) {
         double x = ((2 * i + 1.) / (2. * (_numNodes[interval]))) * PI;
         double node = std::cos(x);
-        double d = mapToInterval(node, a, b);
+        double d = mapToInterval(node, a*a, b*b);
 
         double value = _kernel.calculatePairDerivative(d);
         values[i] = value;
@@ -223,10 +223,10 @@ class PairwiseInterpolantFunctor
     }
 
     /* Evaluate Polynomial */
-    double d = std::sqrt(dr2);
+    // double d = std::sqrt(dr2);
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-    _distanceStatistics[threadnum].push_back(d);
+    _distanceStatistics[threadnum].push_back(dr2);
 #endif
 
     int interval = 0;
@@ -234,21 +234,22 @@ class PairwiseInterpolantFunctor
     double b = _b;
     /* determine interval*/
     for (; interval < _intervalSplits.size(); ++interval) {
-      if (d < _intervalSplits[interval]) {
-        b = _intervalSplits[interval];
+      const double split = _intervalSplits[interval];
+      if (dr2 < split*split) {
+        b = split;
         break;
       } else {
-        a = _intervalSplits[interval];
+        a = split;
       }
     }
 
-    double fac = evaluateChebyshevFast(mapToCheb(d, a, b), _numNodes.at(interval), _coefficients.at(interval));
+    double fac = evaluateChebyshevFast(mapToCheb(dr2, a*a, b*b), _numNodes.at(interval), _coefficients.at(interval));
     double interpolationError = 0.;
     double relInterpolationError = 0.;
     auto f = dr * fac;
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-    double real_fac = _kernel.calculatePairDerivative(d);
+    double real_fac = _kernel.calculatePairDerivative(dr2);
     interpolationError = std::abs(real_fac - fac);
     if (real_fac != 0.) {
       relInterpolationError = std::abs(interpolationError / real_fac);

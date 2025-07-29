@@ -19,8 +19,8 @@ class KryptonKernel : public Kernel<KryptonKernel> {
 
         };
 
-  double calculatePairDerivative(double dr) final {
-    const double dr2 = dr * dr;
+  double calculatePairDerivative(double dr2) final {
+    const double dr = std::sqrt(dr2);
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
     const double distInv6 = distInv2 * distInv2 * distInv2;
@@ -160,11 +160,15 @@ class KryptonKernel : public Kernel<KryptonKernel> {
     return firstTerm - secondTerm;
   }
 
-  double calculateTriplet(double dr1, double dr2, double dr3) {
+  double calculateTriplet(double dr1_2, double dr2_2, double dr3_2) {
 
-    const double firstCos = dr1*dr1 + dr2*dr2 - dr3*dr3;
-    const double secondCos = dr1*dr1 - dr2*dr2 + dr3*dr3;
-    const double thirdCos = -dr1*dr1 + dr2*dr2 + dr3*dr3;
+    const double dr1 = std::sqrt(dr1_2);
+    const double dr2 = std::sqrt(dr2_2);
+    const double dr3 = std::sqrt(dr3_2);
+
+    const double firstCos = dr1_2 + dr2_2 - dr3_2;
+    const double secondCos = dr1_2 - dr2_2 + dr3_2;
+    const double thirdCos = -dr1_2 + dr2_2 + dr3_2;
 
     const double firstNom = firstCos * secondCos * thirdCos;
 
@@ -187,15 +191,15 @@ class KryptonKernel : public Kernel<KryptonKernel> {
     return firstPart * secondPart;
   }
 
-  std::array<double, 3> calculateTripletDerivative(double drIJ, double drJK, double drKI) {
+  std::array<double, 3> calculateTripletDerivative(double drIJSquare, double drJKSquare, double drKISquare) {
       // see Markus Branch for reference: https://github.com/AutoPas/AutoPas/blob/feat/3xa/noble-gas-functors/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/KryptonExtendedATMFunctor.h
       // dr1 = dIJ
       // dr2 = dJK
       // dr3 = dKI
 
-      const double drIJSquare = drIJ*drIJ;
-      const double drJKSquare = drJK*drJK;
-      const double drKISquare = drKI*drKI;
+      const double drIJ = std::sqrt(drIJSquare);
+      const double drJK = std::sqrt(drJKSquare);
+      const double drKI = std::sqrt(drKISquare);
 
       const double numeratorKI = drIJSquare + drJKSquare - drKISquare;
       const double numeratorJK = drIJSquare + drKISquare - drJKSquare;
