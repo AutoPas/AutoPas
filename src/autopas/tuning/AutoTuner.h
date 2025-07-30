@@ -452,14 +452,22 @@ class AutoTuner {
    * early stopping is used."
    */
   size_t _iterationBaseline{0};
-public:
+
+ public:
+  /**
+   * maximum particles per cell for LJFunctorHWY benchmark for vectorization pattern selection
+   */
+  static constexpr size_t _benchmarkSize = 30;
+
   /**
    * both variables are relevant for pattern selection for LJFunctorHWY, only set once per simulations
    */
-  static constexpr size_t _benchmarkSize=40;
-  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize*_benchmarkSize> _optimalPatternsNewton3On;
-  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize*_benchmarkSize> _optimalPatternsNewton3Off;
-  bool _patternsCalculated{false};
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3On;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3Off;
 
+  /**
+   * boolean to determine of results of pattern benchmark are available
+   */
+  bool _patternsCalculated{false};
 };
 }  // namespace autopas

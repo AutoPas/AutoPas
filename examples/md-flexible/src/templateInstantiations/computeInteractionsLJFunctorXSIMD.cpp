@@ -6,5 +6,5 @@
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress
-template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeXSIMD *);
+//template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeXSIMD *);
 //! @endcond

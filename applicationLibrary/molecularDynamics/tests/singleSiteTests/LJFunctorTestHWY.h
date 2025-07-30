@@ -30,6 +30,8 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   template <bool mixing>
   void testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
                                              VectorizationPattern pattern);
+  template <bool mixing>
+  void testPatternSelection(bool newton3);
 
   template <bool mixing>
   void testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles);
