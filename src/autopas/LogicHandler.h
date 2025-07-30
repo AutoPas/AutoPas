@@ -2106,20 +2106,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       autoTuner._optimalPatternsNewton3On = pattern_map_calc<Functor, Particle_T>(functor, true);
       autoTuner._optimalPatternsNewton3Off = pattern_map_calc<Functor, Particle_T>(functor, false);
       autoTuner._patternsCalculated = true;
-      std::cout << "Pattern maps calculated!" << std::endl;
-      std::cout << " optimal pattern for fcs:1 and scs:30 newton3 on:"
-                << checkVecPattern(
-                       autoTuner._optimalPatternsNewton3On[(AutoTuner::_benchmarkSize - 1) * AutoTuner::_benchmarkSize])
-                << std::endl;
-      std::cout
-          << " optimal pattern for fcs:1 and scs:30 newton3 off:"
-          << checkVecPattern(
-                 autoTuner._optimalPatternsNewton3Off[(AutoTuner::_benchmarkSize - 1) * AutoTuner::_benchmarkSize])
-          << std::endl;
-      std::cout << " optimal pattern for fcs:30 and scs:1 newton3 on:"
-                << checkVecPattern(autoTuner._optimalPatternsNewton3On[AutoTuner::_benchmarkSize - 1]) << std::endl;
-      std::cout << " optimal pattern for fcs:30 and scs:1 newton3 off:"
-                << checkVecPattern(autoTuner._optimalPatternsNewton3Off[AutoTuner::_benchmarkSize - 1]) << std::endl;
+
       std::ofstream newton3File("newton3on_patterns.csv", std::ios::out);
       if (newton3File.is_open()) {
         newton3File << "pattern,fcs,scs\n";

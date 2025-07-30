@@ -66,7 +66,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -192,9 +192,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
-  //for debuggin only pls remove after
 
-    //end debug
   _autoPasContainer->init();
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
