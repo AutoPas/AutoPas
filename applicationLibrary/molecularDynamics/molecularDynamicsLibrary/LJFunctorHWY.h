@@ -1464,8 +1464,8 @@ class LJFunctorHWY
 
   VectorizationPattern _vecPattern;
   std::array<autopas::VectorizationPatternOption::Value,
-             autopas::AutoTuner::_benchmarkSize * autopas::AutoTuner::_benchmarkSize> *_patternMapNewton3On = nullptr;
+             autopas::AutoTuner::_benchmarkSize *autopas::AutoTuner::_benchmarkSize> *_patternMapNewton3On = nullptr;
   std::array<autopas::VectorizationPatternOption::Value,
-             autopas::AutoTuner::_benchmarkSize * autopas::AutoTuner::_benchmarkSize> *_patternMapNewton3Off = nullptr;
+             autopas::AutoTuner::_benchmarkSize *autopas::AutoTuner::_benchmarkSize> *_patternMapNewton3Off = nullptr;
 };
 }  // namespace mdLib

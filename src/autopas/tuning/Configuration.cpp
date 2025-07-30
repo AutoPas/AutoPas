@@ -117,7 +117,7 @@ bool autopas::operator==(const autopas::Configuration &lhs, const autopas::Confi
 bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
   return not(lhs == rhs);
 }
-//fixed mistake for vec Pattern: used lhs.vecPattern twice instead of lhs and rhs
+// fixed mistake for vec Pattern: used lhs.vecPattern twice instead of lhs and rhs
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
                   lhs.interactionType, lhs.vecPattern) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal,

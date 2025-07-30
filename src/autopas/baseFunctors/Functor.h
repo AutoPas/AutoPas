@@ -180,7 +180,7 @@ class Functor {
    * @return boolean
    */
 
-  virtual bool getPatternSelection() {return false;};
+  virtual bool getPatternSelection() { return false; };
 
   /**
    * set pattern vector with optimal patterns for functor
@@ -188,13 +188,15 @@ class Functor {
    * @param patternMapNewton3Off pattern map for newton3 off
    */
 
-
-  virtual void setPatternSelection(std::array<autopas::VectorizationPatternOption::Value,AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize>* patternMapNewton3On, std::array<autopas::VectorizationPatternOption::Value,AutoTuner::_benchmarkSize*AutoTuner::_benchmarkSize>* patternMapNewton3Off) {};
+  virtual void setPatternSelection(
+      std::array<autopas::VectorizationPatternOption::Value, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize>
+          *patternMapNewton3On,
+      std::array<autopas::VectorizationPatternOption::Value, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize>
+          *patternMapNewton3Off){};
   /**
-     * Get status whether functor uses mixing or not
-     * @return boolean
-     */
-
+   * Get status whether functor uses mixing or not
+   * @return boolean
+   */
 
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.
