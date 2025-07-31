@@ -1978,8 +1978,8 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 
 template <typename Particle_T>
 template <class Functor>
-std::tuple<std::unique_ptr<TraversalInterface>, bool>
-LogicHandler<Particle_T>::isConfigurationApplicable(const Configuration &config, Functor &functor) {
+std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
+    const Configuration &config, Functor &functor) {
   // Check if the container supports the traversal
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);

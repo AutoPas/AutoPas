@@ -47,10 +47,10 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::lc_c01) {
     traversal = autopas::TraversalSelector::generatePairwiseTraversal<FPCell, TraversalTest::CountFunctor>(
-                    traversalOption, functor, tsi, autopas::DataLayoutOption::aos, true);
+        traversalOption, functor, tsi, autopas::DataLayoutOption::aos, true);
   } else {
     traversal = autopas::TraversalSelector::generatePairwiseTraversal<FPCell, TraversalTest::CountFunctor>(
-                    traversalOption, functor, tsi, autopas::DataLayoutOption::aos, false);
+        traversalOption, functor, tsi, autopas::DataLayoutOption::aos, false);
   }
 
   unsigned long cellId = 0;

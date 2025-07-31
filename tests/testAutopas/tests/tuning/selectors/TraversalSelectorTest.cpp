@@ -22,8 +22,7 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
 
   auto checkTraversal = [](const auto &traversalOption, const auto traversal) {
     // check that traversals are of the expected type
-    EXPECT_EQ(traversalOption,
-              traversal ? traversal->getTraversalType() : autopas::TraversalOption())
+    EXPECT_EQ(traversalOption, traversal ? traversal->getTraversalType() : autopas::TraversalOption())
         << "Is the domain size large enough for the processors' thread count?";
   };
 
