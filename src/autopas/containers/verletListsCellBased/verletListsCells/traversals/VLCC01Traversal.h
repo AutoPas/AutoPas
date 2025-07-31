@@ -8,7 +8,6 @@
 
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
