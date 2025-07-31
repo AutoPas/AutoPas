@@ -1823,7 +1823,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
 #ifdef AUTOPAS_LOG_LIVEINFO
-  info.gather(*_currentContainer, functor, _neighborListRebuildFrequency);
+  // if live info has not been gathered yet, gather it now and log it
+  if (info.get().empty()) {
+    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+  }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
