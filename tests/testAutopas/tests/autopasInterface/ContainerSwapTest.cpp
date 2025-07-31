@@ -1,20 +1,20 @@
 /**
  * @file ContainerSwapTest.cpp
- * @author F. Gratl
- * @date 14.12.2020
+ * @author muehlhaeusser
+ * @date 30.07.2025
  */
 
 #include "ContainerSwapTest.h"
 
 #include "autopas/LogicHandler.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/particles/OwnershipState.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "autopas/containers/CompatibleTraversals.h"
 
 using ::testing::Combine;
+using ::testing::Return;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
-using ::testing::Return;
 
 /**
  * This function stores a copy of each particle depending on the position in ListInner, ListHaloWithinCutoff or
@@ -48,13 +48,19 @@ void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3>
   }
 }
 
+/**
+ * This tests whether the logic handler swaps between different kind of containers without losing particles.
+ * It initializes a searchspace of two configs and swaps between the first and second config back and forth.
+ */
 TEST_P(ContainerSwapTest, testContainerConversion) {
-  const auto &[from, to] = GetParam();
+  const auto &[config1, config2] = GetParam();
 
   constexpr autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos;
   constexpr autopas::Newton3Option newton3 = autopas::Newton3Option::disabled;
-  auto fromTraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(from.container, autopas::InteractionTypeOption::pairwise);
-  auto toTraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(to.container, autopas::InteractionTypeOption::pairwise);
+  auto config1TraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(
+      config1.container, autopas::InteractionTypeOption::pairwise);
+  auto config2TraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(
+      config2.container, autopas::InteractionTypeOption::pairwise);
 
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{bBoxMin},
@@ -64,10 +70,10 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   };
   constexpr autopas::AutoTunerInfo autoTunerInfo{
       .maxSamples = 1,
-      };
+  };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const std::set searchSpace({from, to});
+  const std::set searchSpace({config1, config2});
 
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -75,48 +81,53 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
   autopas::LogicHandler<ParticleFP64> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
+  // Helper to add particles to the container.
+  auto addParticlesToContainer = [&](auto &containerToFill) {
+    auto getPossible1DPositions = [&](double min, double max) -> auto{
+      return std::array<double, 6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
+                                   max + cutoff + verletSkin - 1e-3};
+    };
+    containerToFill.deleteAllParticles();
+    size_t id = 0;
+    for (auto x : getPossible1DPositions(bBoxMin[0], bBoxMax[0])) {
+      for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
+        for (auto z : getPossible1DPositions(bBoxMin[2], bBoxMax[2])) {
+          const std::array<double, 3> pos{x, y, z};
+          ParticleFP64 p(pos, {0., 0., 0.}, id);
+          if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
+            containerToFill.addParticle(p);
+          } else {
+            p.setOwnershipState(autopas::OwnershipState::halo);
+            containerToFill.addHaloParticle(p);
+          }
+          ++id;
+        }
+      }
+    }
+  };
+
   // The first computeInteractions run to initialize the 'from' container.
   MockPairwiseFunctor<ParticleFP64> functor{};
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(Return(true));
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  ASSERT_EQ(logicHandler.getContainer().getContainerType(), from.container);
+  const auto firstContainerType = logicHandler.getContainer().getContainerType();
+  const auto secondContainerType =
+      logicHandler.getContainer().getContainerType() == config1.container ? config2.container : config1.container;
 
-  // fill with problematic particles
-  auto &container = logicHandler.getContainer();
-  auto getPossible1DPositions = [&](double min, double max) -> auto{
-    return std::array<double, 6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
-                                 max + cutoff + verletSkin - 1e-3};
-  };
-  size_t id = 0;
-
-  for (auto x : getPossible1DPositions(bBoxMin[0], bBoxMax[0])) {
-    for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
-      for (auto z : getPossible1DPositions(bBoxMin[2], bBoxMax[2])) {
-        const std::array<double, 3> pos{x, y, z};
-        ParticleFP64 p(pos, {0., 0., 0.}, id);
-        if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
-          container.addParticle(p);
-        } else {
-          p.setOwnershipState(autopas::OwnershipState::halo);
-          container.addHaloParticle(p);
-        }
-        ++id;
-      }
-    }
-  }
+  // Start the second iteration which should swap the container to the secondContainerType configuration.
+  static_cast<void>(logicHandler.updateContainer());
+  addParticlesToContainer(logicHandler.getContainer());
 
   std::vector<ParticleFP64> beforeListInner, beforeListHaloWithinCutoff,
       beforeListHaloOutsideCutoff /*for particles only in verlet containers*/;
-  getStatus(bBoxMin, bBoxMax, cutoff, container, beforeListInner, beforeListHaloWithinCutoff,
+  getStatus(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), beforeListInner, beforeListHaloWithinCutoff,
             beforeListHaloOutsideCutoff);
 
-
-  // Second iteration should go for the second configuration
-  static_cast<void>(logicHandler.updateContainer());
+  // Container swap should happen during computeInteractions
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  ASSERT_EQ(logicHandler.getContainer().getContainerType(), to.container);
+  ASSERT_EQ(logicHandler.getContainer().getContainerType(), secondContainerType);
 
   std::vector<ParticleFP64> afterListInner, afterListHaloWithinCutoff, afterListHaloOutsideCutoff;
   getStatus(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), afterListInner, afterListHaloWithinCutoff,
@@ -135,11 +146,13 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   EXPECT_THAT(afterListHaloWithinCutoff, UnorderedElementsAreArray(beforeListHaloWithinCutoff));
   EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedElementsAreArray(beforeListHaloOutsideCutoff));
 
-  // Third iteration should go for the first configuration again
+  // Reset tuning, so third iteration should swap back to firstContainerType
   tunerMap[autopas::InteractionTypeOption::pairwise]->forceRetune();
   static_cast<void>(logicHandler.updateContainer());
+  addParticlesToContainer(logicHandler.getContainer());
+
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  ASSERT_EQ(logicHandler.getContainer().getContainerType(), from.container);
+  ASSERT_EQ(logicHandler.getContainer().getContainerType(), firstContainerType);
 
   std::vector<ParticleFP64> after2ListInner, after2ListHaloWithinCutoff, after2ListHaloOutsideCutoff;
   getStatus(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), after2ListInner, after2ListHaloWithinCutoff,
@@ -160,19 +173,34 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
 }
 
 std::vector<autopas::Configuration> containerConfigs = {
-  {autopas::ContainerOption::directSum, 1, autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-{autopas::ContainerOption::linkedCells, 1, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-{autopas::ContainerOption::linkedCellsReferences, 1, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-{autopas::ContainerOption::verletLists, 1, autopas::TraversalOption::vl_list_iteration, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-{autopas::ContainerOption::varVerletListsAsBuild, 1, autopas::TraversalOption::vvl_as_built, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-  {autopas::ContainerOption::verletClusterLists, 1, autopas::TraversalOption::vcl_cluster_iteration, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-  {autopas::ContainerOption::verletListsCells, 1, autopas::TraversalOption::vlc_c01, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-  {autopas::ContainerOption::pairwiseVerletLists, 1, autopas::TraversalOption::vlp_c01, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-{autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
+    {autopas::ContainerOption::directSum, 1, autopas::TraversalOption::ds_sequential,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::linkedCells, 1, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
+     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::linkedCellsReferences, 1, autopas::TraversalOption::lc_c01,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::verletLists, 1, autopas::TraversalOption::vl_list_iteration,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::varVerletListsAsBuild, 1, autopas::TraversalOption::vvl_as_built,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::verletClusterLists, 1, autopas::TraversalOption::vcl_cluster_iteration,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::verletListsCells, 1, autopas::TraversalOption::vlc_c01,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::pairwiseVerletLists, 1, autopas::TraversalOption::vlp_c01,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
+     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
 
 std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateUniquePairs(
-    const std::vector<autopas::Configuration>& configs
-) {
+    const std::vector<autopas::Configuration> &configs) {
   std::vector<std::pair<autopas::Configuration, autopas::Configuration>> pairs;
   for (size_t i = 0; i < configs.size(); ++i) {
     for (size_t j = i + 1; j < configs.size(); ++j) {
@@ -182,6 +210,5 @@ std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateU
   return pairs;
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, ContainerSwapTest,
-                         ValuesIn(GenerateUniquePairs(containerConfigs)),
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerSwapTest, ValuesIn(GenerateUniquePairs(containerConfigs)),
                          ContainerSwapTest::twoParamToString());
