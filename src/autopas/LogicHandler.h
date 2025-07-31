@@ -24,7 +24,6 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -1842,19 +1841,16 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     return {configuration, std::move(traversalPtr), false};
   }
 
-  if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
-    utils::Timer timerCalculateHomogeneity;
-    timerCalculateHomogeneity.start();
-    const auto [homogeneity, maxDensity] = utils::calculateHomogeneityAndMaxDensity(*_currentContainer);
-    timerCalculateHomogeneity.stop();
-    autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
-  }
+  if (autoTuner.needsLiveInfo()) {
+    // Gather Live Info
+    utils::Timer timerGatherLiveInfo;
+    timerGatherLiveInfo.start();
+    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+    timerGatherLiveInfo.stop();
+    AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
 
-  const auto needsLiveInfo = autoTuner.prepareIteration();
-  if (needsLiveInfo) {
-    if (info.get().empty()) {
-      info.gather(*_currentContainer, functor, _neighborListRebuildFrequency);
-    }
     autoTuner.receiveLiveInfo(info);
   }
 

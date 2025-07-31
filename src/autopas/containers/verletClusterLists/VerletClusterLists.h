@@ -182,12 +182,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param p The particle to add.
    */
   void addParticleImpl(const Particle_T &p) override {
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
   void addHaloParticleImpl(const Particle_T &haloParticle) override {
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
@@ -250,7 +250,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       }
     }
     if (deletedSomething) {
-      _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+      _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     }
   }
 
@@ -391,7 +391,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
         }
       }
     }
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     return invalidParticles;
   }
 
@@ -961,7 +961,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + this->getVerletSkin(); }
 
   void deleteAllParticles() override {
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_towerBlock.begin(), _towerBlock.end(), [](auto &tower) { tower.clear(); });
   }
@@ -998,7 +998,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
     _numClusters = _builder->rebuildTowersAndClusters();
 
-    _isValid.store(ValidityState::cellsValidListsInvalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::cellsValidListsInvalid, std::memory_order_relaxed);
     for (auto &tower : _towerBlock) {
       tower.setParticleDeletionObserver(this);
     }
@@ -1153,7 +1153,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   void notifyParticleDeleted() override {
     // this is potentially called from a threaded environment, so we have to make this atomic here!
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
   }
 
  private:

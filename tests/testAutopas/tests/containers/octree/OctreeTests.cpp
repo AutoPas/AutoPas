@@ -20,7 +20,7 @@
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 
 using ::testing::_;
 
@@ -734,7 +734,7 @@ TEST_F(OctreeTest, testLeafIDs) {
   // Get leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
-  OTC18Traversal<ParticleFP64, mdLib::LJFunctor<ParticleFP64>>::assignIDs(leaves);
+  OTC18Traversal<ParticleFP64, MockPairwiseFunctor<ParticleFP64>>::assignIDs(leaves);
 
   std::vector<int> ids, expected;
   for (int i = 0; i < leaves.size(); ++i) {
