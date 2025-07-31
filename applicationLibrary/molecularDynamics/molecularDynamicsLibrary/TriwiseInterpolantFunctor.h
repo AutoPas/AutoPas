@@ -18,7 +18,6 @@
 
 #include <fftw3.h>
 #include <unsupported/Eigen/CXX11/Tensor>
-
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
 #include "immintrin.h"
 #endif
@@ -48,9 +47,9 @@ private:
         _aosThreadDataFLOPs(),
         _postProcessed{false} {
 
-        if constexpr (calculateGlobals) {
+        //if constexpr (calculateGlobals) {
         _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
-        }
+        //}
         if constexpr (countFLOPs) {
           _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
           _distanceStatistics.resize(autopas::autopas_get_max_threads());
@@ -75,7 +74,7 @@ private:
     }
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-    double evalChebFast1DVector(double input, int n, Eigen::VectorXd& coeffs) {
+    double evalChebFast1DVector(double input, int n, const Eigen::VectorXd& coeffs) {
       double b_n = 0.;
       double b_n1 = 0.;
       double b_n2 = 0.;
@@ -91,8 +90,8 @@ private:
       return (b_n - b_n2) / 2.;
     }
 
-    __m512d evalChebFast1DVector(double input, int n, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& coeffs, size_t i, size_t size) {
-      __m512d inputVec = _mm512_set1_pd(input);
+    __m512d evalChebFast1DMatrix(double input, int n, const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& coeffs, size_t i, size_t size) {
+     const  __m512d inputVec = _mm512_set1_pd(input);
       __m512d c;
 
       __m512d b_n = _mm512_setzero_pd();
@@ -107,7 +106,7 @@ private:
         }
         /* Masked Load */
         else {
-          __mmask8 mask = (1 << size) - 1;
+          const __mmask8 mask = (1 << size) - 1;
           c = _mm512_maskz_load_pd(mask, &coeffs(j, i));
         }
 
@@ -120,7 +119,7 @@ private:
       }
       /* Masked Load */
       else {
-        __mmask8 mask = (1 << size) - 1;
+        const __mmask8 mask = (1 << size) - 1;
         c = _mm512_maskz_load_pd(mask, &coeffs(0, i));
       }
 
@@ -128,9 +127,9 @@ private:
       return (b_n - b_n2) / 2.;
     }
 
-    __m512d evalChebFast1DVector(double input, int n, Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs, int i, int j, int size) {
+    __m512d evalChebFast1DTensor(double input, int n, const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs, int i, int j, int size) {
 
-      __m512d inputV =  _mm512_set1_pd(input);
+      const __m512d inputV =  _mm512_set1_pd(input);
       __m512d c;
 
       __m512d b_n = _mm512_setzero_pd();
@@ -145,7 +144,7 @@ private:
         }
         /* Masked Load */
         else {
-          __mmask8 mask = (1 << size) - 1;
+          const __mmask8 mask = (1 << size) - 1;
           c = _mm512_maskz_load_pd(mask, &coeffs(i, k, j));
         }
 
@@ -158,7 +157,7 @@ private:
       }
       /* Masked Load */
       else {
-        __mmask8 mask = (1 << size) - 1;
+        const __mmask8 mask = (1 << size) - 1;
         c = _mm512_maskz_load_pd(mask, &coeffs(i, 0, j));
       }
 
@@ -167,43 +166,35 @@ private:
     }
 
     double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
-      size_t nX = _numNodes.at(0).at(intervalX);
-      size_t nY = _numNodes.at(1).at(intervalY);
-      size_t nZ = _numNodes.at(2).at(intervalZ);
+      const size_t nX = _numNodes.at(0).at(intervalX);
+      const size_t nY = _numNodes.at(1).at(intervalY);
+      const size_t nZ = _numNodes.at(2).at(intervalZ);
 
-      Eigen::Tensor<double, 3, Eigen::RowMajor> coeffs = _coeffsVec(intervalX, intervalY, intervalZ);
+      const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs = _coeffsVec(intervalX, intervalY, intervalZ);
 
       /* Flatten z dimension */
-      size_t newNx = nX + (8 - nX % 8)%8;
-      size_t newNy = nY + (8 - nY % 8)%8;
-      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (newNy, newNx);
+      const size_t newNx = nX + (8 - nX % 8)%8;
+      const size_t newNy = nY + (8 - nY % 8)%8;
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (newNx, newNy);
       for (size_t j = 0; j < nY; j+=8) {
         for (size_t i = 0; i < nX; ++i) {
         
           size_t size = nY - j;
-          __m512d values = evalChebFast1DVector(z, nZ, coeffs, i, j, size);
+          const __m512d values = evalChebFast1DTensor(z, nZ, coeffs, i, j, size);
 
-          alignas(64) double helper [8];
-          _mm512_store_pd(helper, values);
-
-          for (int jHelp = 0; jHelp < size; ++jHelp) {
-            xyCoeffs(jHelp + j, i) = helper[jHelp];
-          }
+          _mm512_store_pd(&xyCoeffs(i, j), values);
         }
       }
 
-      /* Flatten y dimension */
-      Eigen::VectorXd xCoeffs (nX);
-      for (size_t i = 0; i < nX; i+=8) {
-        int size = nX - i;
-        __m512d values = evalChebFast1DVector(y, nY, xyCoeffs, i, size);
-        
-        alignas(64) double helper [8];
-        _mm512_store_pd(helper, values);
+      xyCoeffs.transposeInPlace();
 
-        for (int iHelp = 0; iHelp < size; ++iHelp) {
-          xCoeffs(iHelp + i) = helper[iHelp];
-        }
+      /* Flatten y dimension */
+      Eigen::VectorXd xCoeffs (newNx);
+      for (size_t i = 0; i < nX; i+=8) {
+        const int size = nX - i;
+        const __m512d values = evalChebFast1DMatrix(y, nY, xyCoeffs, i, size);
+        
+        _mm512_store_pd(&xCoeffs(i), values);
       }
 
       /* Flatten x dimension */
@@ -505,6 +496,7 @@ public:
           }
         }
 
+#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
         double errorX = 0.;
         double errorY = 0.;
         double errorZ = 0.;
@@ -512,7 +504,6 @@ public:
         double relErrorX = 0.;
         double relErrorY = 0.;
         double relErrorZ = 0.;
-#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
         const std::array<double, 3> real_fac = _kernel.calculateTripletDerivative(dIJ2, dJK2, dKI2);
 
         errorX = real_fac.at(0) - fac_ij;
@@ -522,14 +513,10 @@ public:
         relErrorX = errorX / real_fac.at(0);
         relErrorY = errorY / real_fac.at(1);
         relErrorZ = errorZ / real_fac.at(2);
+
+        _aosThreadDataGlobals[threadnum].absErrorSum += {errorX, errorY, errorZ};
+        _aosThreadDataGlobals[threadnum].relErrorSum += {relErrorX, relErrorY, relErrorZ};
 #endif
-
-        if constexpr (calculateGlobals) {
-          
-          _aosThreadDataGlobals[threadnum].absErrorSum += {errorX, errorY, errorZ};
-          _aosThreadDataGlobals[threadnum].relErrorSum += {relErrorX, relErrorY, relErrorZ};
-        }
-
      }
 
     constexpr static auto getNeededAttr() {
