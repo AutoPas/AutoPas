@@ -18,6 +18,8 @@
 
 #include <fftw3.h>
 #include <unsupported/Eigen/CXX11/Tensor>
+#include <chrono>
+
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
 #include "immintrin.h"
 #endif
@@ -101,28 +103,14 @@ private:
       for (int j = n - 1; j > 0; --j) {
 
         /* Full Load */
-        if (size >= 8) {
-          c = _mm512_load_pd(&coeffs(j, i));
-        }
-        /* Masked Load */
-        else {
-          const __mmask8 mask = (1 << size) - 1;
-          c = _mm512_maskz_load_pd(mask, &coeffs(j, i));
-        }
+        c = _mm512_load_pd(&coeffs(j, i));
 
         b_n = c + 2. * input * b_n1 - b_n2;
         b_n2 = b_n1;
         b_n1 = b_n;
       }
-      if (size >= 8) {
-        c = _mm512_load_pd(&coeffs(0, i));
-      }
-      /* Masked Load */
-      else {
-        const __mmask8 mask = (1 << size) - 1;
-        c = _mm512_maskz_load_pd(mask, &coeffs(0, i));
-      }
-
+      c = _mm512_load_pd(&coeffs(0, i));
+      
       b_n = 2. * c + 2. * input * b_n1 - b_n2;
       return (b_n - b_n2) / 2.;
     }
@@ -139,28 +127,14 @@ private:
       for (int k = n - 1; k > 0; --k) {
 
         /* Full Load */
-        if (size >= 8) {
-          c = _mm512_load_pd(&coeffs(i, k, j));
-        }
-        /* Masked Load */
-        else {
-          const __mmask8 mask = (1 << size) - 1;
-          c = _mm512_maskz_load_pd(mask, &coeffs(i, k, j));
-        }
+        c = _mm512_load_pd(&coeffs(i, k, j));
 
         b_n = c + 2. * input * b_n1 - b_n2;
         b_n2 = b_n1;
         b_n1 = b_n;
       }
-      if (size >= 8) {
-        c = _mm512_load_pd(&coeffs(i, 0, j));
-      }
-      /* Masked Load */
-      else {
-        const __mmask8 mask = (1 << size) - 1;
-        c = _mm512_maskz_load_pd(mask, &coeffs(i, 0, j));
-      }
-
+      c = _mm512_load_pd(&coeffs(i, 0, j));
+      
       b_n = 2. * c + 2. * input * b_n1 - b_n2;
       return (b_n - b_n2) / 2.;
     }
@@ -172,6 +146,7 @@ private:
 
       const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs = _coeffsVec(intervalX, intervalY, intervalZ);
 
+      auto startZ = std::chrono::high_resolution_clock::now();
       /* Flatten z dimension */
       const size_t newNx = nX + (8 - nX % 8)%8;
       const size_t newNy = nY + (8 - nY % 8)%8;
@@ -185,9 +160,13 @@ private:
           _mm512_store_pd(&xyCoeffs(i, j), values);
         }
       }
+      auto endZ = std::chrono::high_resolution_clock::now();
 
+      auto startT = std::chrono::high_resolution_clock::now();
       xyCoeffs.transposeInPlace();
+      auto endT = std::chrono::high_resolution_clock::now();
 
+      auto startY = std::chrono::high_resolution_clock::now();
       /* Flatten y dimension */
       Eigen::VectorXd xCoeffs (newNx);
       for (size_t i = 0; i < nX; i+=8) {
@@ -196,9 +175,24 @@ private:
         
         _mm512_store_pd(&xCoeffs(i), values);
       }
+      auto endY = std::chrono::high_resolution_clock::now();
 
+      auto startX = std::chrono::high_resolution_clock::now();
       /* Flatten x dimension */
-      return evalChebFast1DVector(x, nX, xCoeffs);
+      double result = evalChebFast1DVector(x, nX, xCoeffs);
+      auto endX = std::chrono::high_resolution_clock::now();
+
+      auto durationZ = std::chrono::duration_cast<std::chrono::nanoseconds>(endZ - startZ);
+      auto durationY = std::chrono::duration_cast<std::chrono::nanoseconds>(endY - startY);
+      auto durationX = std::chrono::duration_cast<std::chrono::nanoseconds>(endX - startX);
+      auto durationT = std::chrono::duration_cast<std::chrono::nanoseconds>(endT - startT);
+
+      auto timeZ = durationZ.count();
+      auto timeY = durationY.count();
+      auto timeX = durationX.count();
+      auto timeT = durationT.count();
+
+      return result;
     }
 #endif
 
