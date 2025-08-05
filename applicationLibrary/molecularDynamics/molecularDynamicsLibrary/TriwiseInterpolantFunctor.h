@@ -70,13 +70,16 @@ private:
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
         _coeffsVec = Eigen::Tensor<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3, Eigen::RowMajor>
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
+
+        _coeffsVec2 = Eigen::Tensor<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3, Eigen::RowMajor>
+         (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
 #endif
 
         constructPolyFFTW();
     }
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-    double evalChebFast1DVector(double input, int n, const Eigen::VectorXd& coeffs) {
+    inline double evalChebFast1DVector(double input, int n, const Eigen::VectorXd& coeffs) {
       double b_n = 0.;
       double b_n1 = 0.;
       double b_n2 = 0.;
@@ -92,7 +95,7 @@ private:
       return (b_n - b_n2) / 2.;
     }
 
-    __m512d evalChebFast1DMatrix(double input, int n, const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& coeffs, size_t i, size_t size) {
+    inline __m512d evalChebFast1DMatrix(double input, int n, const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& coeffs, size_t i) {
      const  __m512d inputVec = _mm512_set1_pd(input);
       __m512d c;
 
@@ -115,10 +118,9 @@ private:
       return (b_n - b_n2) / 2.;
     }
 
-    __m512d evalChebFast1DTensor(double input, int n, const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs, int i, int j, int size) {
+    inline __m512d evalChebFast1DTensor(double input, int n, const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs, int i, int j) {
 
       const __m512d inputV =  _mm512_set1_pd(input);
-      __m512d c;
 
       __m512d b_n = _mm512_setzero_pd();
       __m512d b_n1 = _mm512_setzero_pd();
@@ -127,76 +129,160 @@ private:
       for (int k = n - 1; k > 0; --k) {
 
         /* Full Load */
-        c = _mm512_load_pd(&coeffs(i, k, j));
+        const __m512d c = _mm512_load_pd(&coeffs(i, k, j));
 
         b_n = c + 2. * input * b_n1 - b_n2;
         b_n2 = b_n1;
         b_n1 = b_n;
       }
-      c = _mm512_load_pd(&coeffs(i, 0, j));
+      const __m512d c = _mm512_load_pd(&coeffs(i, 0, j));
       
       b_n = 2. * c + 2. * input * b_n1 - b_n2;
       return (b_n - b_n2) / 2.;
     }
 
-    double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
+    inline double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
       const size_t nX = _numNodes.at(0).at(intervalX);
       const size_t nY = _numNodes.at(1).at(intervalY);
       const size_t nZ = _numNodes.at(2).at(intervalZ);
 
       const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs = _coeffsVec(intervalX, intervalY, intervalZ);
 
-      auto startZ = std::chrono::high_resolution_clock::now();
+      //auto startZ = std::chrono::high_resolution_clock::now();
       /* Flatten z dimension */
       const size_t newNx = nX + (8 - nX % 8)%8;
       const size_t newNy = nY + (8 - nY % 8)%8;
       Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (newNx, newNy);
-      for (size_t j = 0; j < nY; j+=8) {
-        for (size_t i = 0; i < nX; ++i) {
-        
-          size_t size = nY - j;
-          const __m512d values = evalChebFast1DTensor(z, nZ, coeffs, i, j, size);
-
+      for (size_t i = 0; i < nX; ++i) {
+        for (size_t j = 0; j < nY; j+=8) {
+          const __m512d values = evalChebFast1DTensor(z, nZ, coeffs, i, j);
           _mm512_store_pd(&xyCoeffs(i, j), values);
         }
       }
-      auto endZ = std::chrono::high_resolution_clock::now();
 
-      auto startT = std::chrono::high_resolution_clock::now();
-      xyCoeffs.transposeInPlace();
-      auto endT = std::chrono::high_resolution_clock::now();
+      //auto endZ = std::chrono::high_resolution_clock::now();
+      //auto startT = std::chrono::high_resolution_clock::now();
+      // if (intervalX != intervalY || intervalY != intervalZ) {
+      //  xyCoeffs.transposeInPlace();
+      //}
+      //auto endT = std::chrono::high_resolution_clock::now();
 
-      auto startY = std::chrono::high_resolution_clock::now();
+      //auto startY = std::chrono::high_resolution_clock::now();
       /* Flatten y dimension */
       Eigen::VectorXd xCoeffs (newNx);
       for (size_t i = 0; i < nX; i+=8) {
-        const int size = nX - i;
-        const __m512d values = evalChebFast1DMatrix(y, nY, xyCoeffs, i, size);
-        
+        const __m512d values = evalChebFast1DMatrix(x, nX, xyCoeffs, i);
         _mm512_store_pd(&xCoeffs(i), values);
       }
-      auto endY = std::chrono::high_resolution_clock::now();
+      //auto endY = std::chrono::high_resolution_clock::now();
 
-      auto startX = std::chrono::high_resolution_clock::now();
+      //auto startX = std::chrono::high_resolution_clock::now();
       /* Flatten x dimension */
-      double result = evalChebFast1DVector(x, nX, xCoeffs);
-      auto endX = std::chrono::high_resolution_clock::now();
+      double result = evalChebFast1DVector(y, nY, xCoeffs);
+      //auto endX = std::chrono::high_resolution_clock::now();
 
-      auto durationZ = std::chrono::duration_cast<std::chrono::nanoseconds>(endZ - startZ);
-      auto durationY = std::chrono::duration_cast<std::chrono::nanoseconds>(endY - startY);
-      auto durationX = std::chrono::duration_cast<std::chrono::nanoseconds>(endX - startX);
-      auto durationT = std::chrono::duration_cast<std::chrono::nanoseconds>(endT - startT);
+      //auto durationZ = std::chrono::duration_cast<std::chrono::nanoseconds>(endZ - startZ);
+      //auto durationY = std::chrono::duration_cast<std::chrono::nanoseconds>(endY - startY);
+      //auto durationX = std::chrono::duration_cast<std::chrono::nanoseconds>(endX - startX);
+      //auto durationT = std::chrono::duration_cast<std::chrono::nanoseconds>(endT - startT);
 
-      auto timeZ = durationZ.count();
-      auto timeY = durationY.count();
-      auto timeX = durationX.count();
-      auto timeT = durationT.count();
+      //auto timeZ = durationZ.count();
+      //auto timeY = durationY.count();
+      //auto timeX = durationX.count();
+      //auto timeT = durationT.count();
+
+      return result;
+    }
+
+    // in theory, this also would work with a list of vec registers
+    inline __m512d evalChebPoly(double x, int n) {
+      alignas(64) double content [8];
+      for (int i = 0; i < n; ++i) {
+        content[i] = x;
+      }
+      content[0] = 1;
+
+      __m512d result = _mm512_load_pd(content);
+
+      __m512d mulHelper = _mm512_set1_pd(2*x);
+      __m512d subHelper = _mm512_set1_pd(1);
+
+      __mmask8 mask = 0xFC;
+
+      double subPrev = 1.;
+      double subCur = 1.;
+
+      for (int i = 2; i < n; ++i) {
+        result = _mm512_mask_mul_pd(result, mask, result, mulHelper);
+        result = _mm512_mask_sub_pd(result, mask, result, subHelper);
+
+        mask = mask << 1;
+        if (i == 2) {
+          subHelper = _mm512_set1_pd(x);
+          subCur = x;
+        }
+        else {
+
+          double new_sub = subCur * 2 * x;
+          new_sub = new_sub - subPrev;
+          subPrev = subCur;
+          subCur = new_sub;
+
+          subHelper = _mm512_set1_pd(subCur);
+        }
+      }
+      return result;
+    }
+
+    inline double chebVector3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
+      const size_t nX = _numNodes.at(0).at(intervalX);
+      const size_t nY = _numNodes.at(1).at(intervalY);
+      const size_t nZ = _numNodes.at(2).at(intervalZ);
+
+      const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs = _coeffsVec2(intervalX, intervalY, intervalZ);
+
+      const __m512d chebZ = evalChebPoly(z, nZ);
+      const __m512d chebY = evalChebPoly(y, nY);
+      const __m512d chebX = evalChebPoly(x, nX);
+
+      //Eigen::VectorXd vecZ = Eigen::VectorXd(nZ);
+      //Eigen::VectorXd vecY = Eigen::VectorXd(nY);
+      //Eigen::VectorXd vecX = Eigen::VectorXd(nX);
+
+      // _mm512_store_pd(vecX.data(), chebX);
+
+      const size_t newNx = nX + (8 - nX % 8)%8;
+      const size_t newNy = nY + (8 - nY % 8)%8;
+
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs
+        = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>::Zero(newNx, newNy);
+      for (int i = 0; i < nX; ++i) {
+        for (int j = 0; j < nY; ++j) {
+          const __m512d row = _mm512_load_pd(&coeffs(i, j, 0));
+          const __m512d intermediate = row * chebZ;
+          xyCoeffs(i, j) +=  _mm512_reduce_add_pd(intermediate);
+        }
+      }
+      
+      Eigen::VectorXd xCoeffs = Eigen::VectorXd::Zero(newNx);
+      for (int i = 0; i < nX; ++i) {
+        const __m512d row = _mm512_load_pd(&xyCoeffs(i, 0));
+        const __m512d intermediate = row * chebY;
+        xCoeffs(i) += _mm512_reduce_add_pd(intermediate);
+      }
+
+      // Eigen::VectorXd xCoeffs = xyCoeffs * vecY;
+      // xCoeffs.dot(vecX);
+
+      const __m512d xC = _mm512_load_pd(&xCoeffs(0));
+      const __m512d intermediate = xC * chebX;
+      double result = _mm512_reduce_add_pd(intermediate);
 
       return result;
     }
 #endif
 
-    double evalChebFast1D(double input, int n, const std::vector<double>& coeffs) {
+    inline double evalChebFast1D(double input, int n, const std::vector<double>& coeffs) {
       // see PairwiseInterpolantFunctor.h for reference
       double b_n = 0.;
       double b_n1 = 0.;
@@ -212,7 +298,7 @@ private:
     }
 
 
-    double evalChebFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
+    inline double evalChebFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
       // This code is oriented on NumPy's implementation of chebeval3d
       size_t nX = _numNodes.at(0).at(intervalX);
       size_t nY = _numNodes.at(1).at(intervalY);
@@ -245,13 +331,13 @@ private:
       return evalChebFast1D(x, nX, xCoeffs);
     }
 
-    double mapToInterval(double x, double a, double b) {
+    inline double mapToInterval(double x, double a, double b) {
       double intermediate = x + 1;
       double newX = a + ((b - a) * intermediate) / 2.;
       return newX;
     }
 
-    double mapToCheb(double x, double a, double b) {
+    inline double mapToCheb(double x, double a, double b) {
       return (2. * (x-a)) / (b-a) - 1.;
     }
 
@@ -315,7 +401,10 @@ private:
 
             Eigen::Tensor<double, 3, Eigen::RowMajor> &coeffsVec = _coeffsVec(intervalX, intervalY, intervalZ);
             coeffsVec = Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy);
-#endif
+
+            Eigen::Tensor<double, 3, Eigen::RowMajor> &coe = _coeffsVec2(intervalX, intervalY, intervalZ);
+            coe = Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy);
+            #endif
 
             /* Scale the coefficients according to the Chebyshev interpolation */
               for (int i = 0; i < nX; ++i) {
@@ -338,6 +427,7 @@ private:
                     coeffsZ.push_back(forcesXYZ[i][j][k]);
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
                     coeffsVec(i, k, j) = forcesXYZ[i][j][k];
+                    coe(i, j, k) = forcesXYZ[i][j][k];
 #endif
                   }
                   coeffsYZ.emplace_back(coeffsZ);
@@ -372,7 +462,7 @@ public:
         return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
     }
 
-    void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
+    inline void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
         using namespace autopas::utils::ArrayMath::literals;
 
         // Filter unnecessary force computations
@@ -386,9 +476,9 @@ public:
           ++_aosThreadDataFLOPs[threadnum].numDistCalls;
         }
 
-        auto drIJ = j.getR() - i.getR();
-        auto drJK = k.getR() - j.getR();
-        auto drKI = i.getR() - k.getR();
+        const auto drIJ = j.getR() - i.getR();
+        const auto drJK = k.getR() - j.getR();
+        const auto drKI = i.getR() - k.getR();
 
         const double dIJ2 = autopas::utils::ArrayMath::dot(drIJ, drIJ);
         const double dJK2 = autopas::utils::ArrayMath::dot(drJK, drJK);
@@ -456,8 +546,10 @@ public:
         const double z = mapToCheb(dKI2, aZ*aZ, bZ*bZ);
 
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-        const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
-        const double fac_ki = evalChebFast3DVector(z, x, y, intervalZ, intervalX, intervalY);
+        //const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
+        //const double fac_ki = evalChebFast3DVector(z, x, y, intervalZ, intervalX, intervalY);
+        const double fac_ij = chebVector3D(x, y, z, intervalX, intervalY, intervalZ);
+        const double fac_ki = chebVector3D(z, x, y, intervalZ, intervalX, intervalY);
 #else
         const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ);
         const double fac_ki = evalChebFast3D(z, x, y, intervalZ, intervalX, intervalY);
@@ -469,7 +561,8 @@ public:
         double fac_jk_vec = 0.;
         if (newton3) {
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-          fac_jk = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
+          // fac_jk = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
+          fac_jk = chebVector3D(y, z, x, intervalY, intervalZ, intervalX);
 #else
           fac_jk = evalChebFast3D(y, z, x, intervalY, intervalZ, intervalX);
 #endif
@@ -750,6 +843,11 @@ public:
           std::vector<std::vector<std::vector<double>>>,
           3,
           Eigen::RowMajor> _coeffs  {};
+
+       Eigen::Tensor<
+          Eigen::Tensor<double, 3, Eigen::RowMajor>,
+          3,
+          Eigen::RowMajor> _coeffsVec2 {};
 
        Eigen::Tensor<
           Eigen::Tensor<double, 3, Eigen::RowMajor>,
