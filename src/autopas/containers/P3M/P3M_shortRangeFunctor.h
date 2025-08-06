@@ -38,11 +38,11 @@ namespace autopas{
 
             // does not include coulomb constant
             auto f = dr * i.getQ() * j.getQ() * ((f1 + f2)/dist2);
-            if(i.isOwned())
-                std::cout << "Particle " << i.getQ() << " short Range F: " << f[0] << ", " << f[1] << ", " << f[2] << std::endl;
+            //if(i.isOwned())
+            //    std::cout << "Particle " << i.getQ() << " short Range F: " << f[0] << ", " << f[1] << ", " << f[2] << std::endl;
             i.addF(f);
-            if(i.isOwned())
-                std::cout << "Particle " << i.getQ() << " total F: " << i.getF()[0] << ", " << i.getF()[1] << ", " << i.getF()[2] << std::endl;
+            //if(i.isOwned())
+            //    std::cout << "Particle " << i.getQ() << " total F: " << i.getF()[0] << ", " << i.getF()[1] << ", " << i.getF()[2] << std::endl;
             if (newton3) {
                 // only if we use newton 3 here, we want to
                 j.subF(f);

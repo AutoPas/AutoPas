@@ -118,11 +118,11 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // uses B-splines for which the parameters are tabulated in https://doi.org/10.1063/1.477414
     void chargeFraction(double x, std::vector<double> &fractions){
-        if(x > 0.5 || x < -0.5){
+        /*if(x > 0.5 || x < -0.5){
             std::cout << "error in charge Fraction" << std::endl;
-        }
-        //assert(x <= 0.5);
-        //assert(x >= -0.5);
+        }*/
+        assert(x <= 0.5);
+        assert(x >= -0.5);
         switch(cao){
             case 1:
                 fractions[0] = 1.;
@@ -230,20 +230,20 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                     }
                 }
             }
-            std::cout << "Particle " << iter->getQ() << " long Range F: " << totalForce[0] << ", " << totalForce[1] << ", " << totalForce[2] << std::endl;
+            //std::cout << "Particle " << iter->getQ() << " long Range F: " << totalForce[0] << ", " << totalForce[1] << ", " << totalForce[2] << std::endl;
             subtractSelfForce(*iter, totalForce);
             iter->addF(totalForce);
         }
     }
 
     void subtractSelfForce(ParticleType &p, std::array<double, 3> &force){
-        std::cout << " self Force: ";
+        //std::cout << " self Force: ";
         for(int dim = 0; dim < 3; dim++){
             double tmp = (selfForceCoeffs[dim][0] * sin(2* M_PI * p.getR()[dim] / grid_dist[dim]) + selfForceCoeffs[dim][1] * sin(4*M_PI*p.getR()[dim] / grid_dist[dim]));
             force[dim] -= p.getQ() * p.getQ() * tmp;
-            std::cout << p.getQ() * p.getQ() * tmp << ", ";
+            //std::cout << p.getQ() * p.getQ() * tmp << ", ";
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
     }
 
     // computes the index of closest Gridpoint in direction dim and saves it in closestGridpoint
@@ -315,8 +315,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
      */
     void traverseFarParticles(){
         assignChargeDensities();
-        std::cout << "Charge Grid:" << std::endl;
-        for(unsigned int i = 0; i < grid_dims[2]; i++){
+        //std::cout << "Charge Grid:" << std::endl;
+        /*for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[0]; k++){
                     std::cout << rs_grid[k][j][i] << ", ";
@@ -324,13 +324,13 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                 std::cout << std::endl;
             }
             std::cout << std::endl;
-        }
+        }*/
         fft.forward3D(rs_grid, ks_grid, grid_dims);
         applyInfluenceFunction();
          
         fft.backward3D(ks_grid, rs_grid, grid_dims);
-        std::cout << "Force Grid:" << std::endl;
-        for(unsigned int i = 0; i < grid_dims[2]; i++){
+        //std::cout << "Force Grid:" << std::endl;
+        /*for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[0]; k++){
                     std::cout << rs_grid[k][j][i] << ", ";
@@ -338,7 +338,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                 std::cout << std::endl;
             }
             std::cout << std::endl;
-        }
+        }*/
         interpolateForces();
     }
 

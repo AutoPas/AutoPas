@@ -83,13 +83,13 @@ class P3M_container : public LinkedCells<Particle_T> {
             selfForceCoeffs[dim] = std::vector<double>(2);
         }
         computeSelfForceCoeff();
-        for (int dim = 0; dim < 3; dim++){
+        /*for (int dim = 0; dim < 3; dim++){
             std::cout << "dim " << dim << " ";
             for(int i = 0; i < 2; i++){
                 std::cout << selfForceCoeffs[dim][i] << ", ";
             }
             std::cout << std::endl;
-        }
+        }*/
     }
 
     /** can be done once at the start of the simulation/tuning, as it only depends on 
