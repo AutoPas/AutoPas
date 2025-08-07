@@ -336,7 +336,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::ot_c01, "ot_c01"},
 
         // P3M Traversals:
-        {TraversalOption::p3m_p3m, "P3M"},
+        {TraversalOption::p3m_p3m, "p3m_P3M"},
     };
   };
 

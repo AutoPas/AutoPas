@@ -136,8 +136,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 [[maybe_unused]] static const std::set<TraversalOption> &allP3MCompatibleTraversals() {
-  //static const auto s = filterAllOptions("p3m_", InteractionTypeOption::pairwise);
-  return {TraversalOption::p3m_p3m};
+  static const auto s = filterAllOptions("p3m_", InteractionTypeOption::pairwise);
+  return s;
 }
 
 

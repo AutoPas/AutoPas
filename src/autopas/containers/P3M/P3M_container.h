@@ -17,7 +17,7 @@ namespace autopas {
 template <class Particle_T>
 class P3M_container : public LinkedCells<Particle_T> {
 
-    using LinkedParticleCell = LinkedCells<Particle_T>::ParticleCell;
+    using LinkedParticleCell = typename LinkedCells<Particle_T>::ParticleCell;
     using ParticleType = typename LinkedCells<Particle_T>::ParticleType;
     using GridType = typename std::vector<std::vector<std::vector<double>>>;
     using ComplexGridType = std::vector<std::vector<std::vector<std::complex<double>>>>;

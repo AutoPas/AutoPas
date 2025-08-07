@@ -149,6 +149,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                 fractions[3] = (1./96) * (19+44*x+24*x*x-16*x*x*x-16*x*x*x*x);
                 fractions[4] = (1./384) * (1+8*x+24*x*x+32*x*x*x+16*x*x*x*x);
             default:
+                return;
                 //error unknown charge assignment order
         }
     }
@@ -183,6 +184,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                 fractions[3] = (-2./3.) * x*x*x - 0.5 *x*x + 0.5 * x + (44./96.);
                 fractions[4] = (1./6.) * x*x*x + 0.25 * x*x + 0.125 * x + (1./48.);
             default:
+                return;
                 //error unknown charge assignment order
         }
     }
