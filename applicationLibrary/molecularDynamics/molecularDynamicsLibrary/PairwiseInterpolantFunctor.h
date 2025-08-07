@@ -88,7 +88,7 @@ class PairwiseInterpolantFunctor
     return 2 * x * evaluateChebyshev(n - 1, x) * coeffs[n - 1] - evaluateChebyshev(n - 2, x) * coeffs[n - 2];
   }
 
-  float evaluateChebyshevFast(double x, int n, const std::vector<double> &coeff) {
+  inline double evaluateChebyshevFast(double x, int n, const std::vector<double> &coeff) {
     /*Following the Clenshaw Algorithm*/
     double b_n = 0;
     double b_n1 = 0;
@@ -138,7 +138,7 @@ class PairwiseInterpolantFunctor
       for (int i = 0; i < _numNodes[interval]; ++i) {
         double x = ((2 * i + 1.) / (2. * (_numNodes[interval]))) * PI;
         double node = std::cos(x);
-        double d = mapToInterval(node, a*a, b*b);
+        double d = mapToInterval(node, a, b);
 
         double value = _kernel.calculatePairForce(d);
         values[i] = value;
@@ -172,9 +172,9 @@ class PairwiseInterpolantFunctor
       for (int i = 0; i < _numNodes[interval]; ++i) {
         double x = ((2 * i + 1.) / (2. * (_numNodes[interval]))) * PI;
         double node = std::cos(x);
-        double d = mapToInterval(node, a*a, b*b);
+        double d = mapToInterval(node, a, b);
 
-        double value = _kernel.calculatePairDerivative(d);
+        double value = _kernel.calculatePairForce(d);
         values[i] = value;
       }
 
@@ -223,7 +223,7 @@ class PairwiseInterpolantFunctor
     }
 
     /* Evaluate Polynomial */
-    // double d = std::sqrt(dr2);
+    double d = std::sqrt(dr2);
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
     _distanceStatistics[threadnum].push_back(dr2);
@@ -235,21 +235,21 @@ class PairwiseInterpolantFunctor
     /* determine interval*/
     for (; interval < _intervalSplits.size(); ++interval) {
       const double split = _intervalSplits[interval];
-      if (dr2 < split*split) {
+      if (d < split) {
         b = split;
         break;
       } else {
         a = split;
       }
     }
-    const double x = mapToCheb(dr2, a*a, b*b);
+    const double x = mapToCheb(d, a, b);
     const double fac = evaluateChebyshevFast(x, _numNodes.at(interval), _coefficients.at(interval));
     double interpolationError = 0.;
     double relInterpolationError = 0.;
     const auto f = dr * fac;
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-    double real_fac = _kernel.calculatePairForce(dr2);
+    double real_fac = _kernel.calculatePairForce(d);
     interpolationError = std::abs(real_fac - fac);
     if (real_fac != 0.) {
       relInterpolationError = std::abs(interpolationError / real_fac);
