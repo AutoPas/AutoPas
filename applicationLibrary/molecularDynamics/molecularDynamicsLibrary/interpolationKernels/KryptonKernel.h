@@ -19,7 +19,7 @@ class KryptonKernel : public Kernel<KryptonKernel> {
 
         };
 
-  double calculatePairDerivative(double dr2) final {
+  double calculatePairForce(double dr2) final {
     const double dr = std::sqrt(dr2);
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -91,7 +91,7 @@ class KryptonKernel : public Kernel<KryptonKernel> {
     return firstTerm + secondTerm;
   }
 
-  double calculatePair(double dr) final {
+  double calculatePairPotential(double dr) final {
     const double dr2 = dr * dr;
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -160,7 +160,7 @@ class KryptonKernel : public Kernel<KryptonKernel> {
     return firstTerm - secondTerm;
   }
 
-  double calculateTriplet(double dr1_2, double dr2_2, double dr3_2) {
+  double calculateTripletPotential(double dr1_2, double dr2_2, double dr3_2) {
 
     const double dr1 = std::sqrt(dr1_2);
     const double dr2 = std::sqrt(dr2_2);
@@ -191,7 +191,7 @@ class KryptonKernel : public Kernel<KryptonKernel> {
     return firstPart * secondPart;
   }
 
-  std::array<double, 3> calculateTripletDerivative(double drIJSquare, double drJKSquare, double drKISquare) {
+  std::array<double, 3> calculateTripletForce(double drIJSquare, double drJKSquare, double drKISquare) {
       // see Markus Branch for reference: https://github.com/AutoPas/AutoPas/blob/feat/3xa/noble-gas-functors/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/KryptonExtendedATMFunctor.h
       // dr1 = dIJ
       // dr2 = dJK

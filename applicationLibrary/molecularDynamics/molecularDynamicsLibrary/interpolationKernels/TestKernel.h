@@ -19,19 +19,19 @@ class TestKernel : public Kernel<TestKernel> {
 
         };
 
-  double calculatePairDerivative(double dr) final {
+  double calculatePairForce(double dr) final {
     return 0.;
   }
 
-  double calculatePair(double dr) final {
+  double calculatePairPotential(double dr) final {
     return 0.;
   }
 
-  double calculateTriplet(double dr1, double dr2, double dr3) {
+  double calculateTripletPotential(double dr1, double dr2, double dr3) {
     return dr1 * dr1 + dr2 * dr2 + dr3 * dr3;
   }
 
-  std::array<double, 3> calculateTripletDerivative(double dr1, double dr2, double dr3) {
+  std::array<double, 3> calculateTripletForce(double dr1, double dr2, double dr3) {
     return std::array{2.*dr1 + 2.*dr2 + 2.*dr3, 0., 0.};
   }
 

@@ -86,14 +86,14 @@ private:
 
       for (int k = n - 1; k > 0; --k) {
 
-        b_n = coeffs(k) + 2. * input * b_n1 - b_n2;
+        b_n = coeffs(k) + 2. * input * b_n1 - b_n2; // 4
         b_n2 = b_n1;
         b_n1 = b_n;
-      }
+      } // (n-1) * 4
 
-      b_n = 2. * coeffs(0) + 2. * input * b_n1 - b_n2;
-      return (b_n - b_n2) / 2.;
-    }
+      b_n = 2. * coeffs(0) + 2. * input * b_n1 - b_n2; // 5
+      return (b_n - b_n2) / 2.; // 2
+    } // 7 + (n-1)*4
 
     inline __m512d evalChebFast1DMatrix(double input, int n, const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& coeffs, size_t i) {
      const  __m512d inputVec = _mm512_set1_pd(input);
@@ -116,7 +116,7 @@ private:
       
       b_n = 2. * c + 2. * input * b_n1 - b_n2;
       return (b_n - b_n2) / 2.;
-    }
+    } // 7 + (n-1)*4
 
     inline __m512d evalChebFast1DTensor(double input, int n, const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs, int i, int j) {
 
@@ -139,7 +139,7 @@ private:
       
       b_n = 2. * c + 2. * input * b_n1 - b_n2;
       return (b_n - b_n2) / 2.;
-    }
+    } // 7 + (n-1)*4
 
     inline double evalChebFast3DVector(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
       const size_t nX = _numNodes.at(0).at(intervalX);
@@ -157,8 +157,8 @@ private:
         for (size_t j = 0; j < nY; j+=8) {
           const __m512d values = evalChebFast1DTensor(z, nZ, coeffs, i, j);
           _mm512_store_pd(&xyCoeffs(i, j), values);
-        }
-      }
+        } // nY / 8 * (7+(nZ-1)*4)
+      } // nX * nY/8 * (7+(nZ-1)*4)
 
       //auto endZ = std::chrono::high_resolution_clock::now();
       //auto startT = std::chrono::high_resolution_clock::now();
@@ -170,15 +170,15 @@ private:
       //auto startY = std::chrono::high_resolution_clock::now();
       /* Flatten y dimension */
       Eigen::VectorXd xCoeffs (newNx);
-      for (size_t i = 0; i < nX; i+=8) {
-        const __m512d values = evalChebFast1DMatrix(x, nX, xyCoeffs, i);
-        _mm512_store_pd(&xCoeffs(i), values);
-      }
+      for (size_t j = 0; j < nY; j+=8) {
+        const __m512d values = evalChebFast1DMatrix(x, nX, xyCoeffs, j);
+        _mm512_store_pd(&xCoeffs(j), values);
+      } // nY / 8 * (7+(nX-1)*4)
       //auto endY = std::chrono::high_resolution_clock::now();
 
       //auto startX = std::chrono::high_resolution_clock::now();
       /* Flatten x dimension */
-      double result = evalChebFast1DVector(y, nY, xCoeffs);
+      double result = evalChebFast1DVector(y, nY, xCoeffs); // 7+(nY-1)*4
       //auto endX = std::chrono::high_resolution_clock::now();
 
       //auto durationZ = std::chrono::duration_cast<std::chrono::nanoseconds>(endZ - startZ);
@@ -230,7 +230,7 @@ private:
 
           subHelper = _mm512_set1_pd(subCur);
         }
-      }
+      } // (n-2) * 5
       return result;
     }
 
@@ -241,42 +241,61 @@ private:
 
       const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs = _coeffsVec2(intervalX, intervalY, intervalZ);
 
-      const __m512d chebZ = evalChebPoly(z, nZ);
-      const __m512d chebY = evalChebPoly(y, nY);
-      const __m512d chebX = evalChebPoly(x, nX);
+      auto startCheb = std::chrono::high_resolution_clock::now();
 
-      //Eigen::VectorXd vecZ = Eigen::VectorXd(nZ);
-      //Eigen::VectorXd vecY = Eigen::VectorXd(nY);
-      //Eigen::VectorXd vecX = Eigen::VectorXd(nX);
-
-      // _mm512_store_pd(vecX.data(), chebX);
+      const __m512d chebZ = evalChebPoly(z, nZ); // (n-2) * 5
+      const __m512d chebY = evalChebPoly(y, nY); // (n-2) * 5
+      const __m512d chebX = evalChebPoly(x, nX); // (n-2) * 5
 
       const size_t newNx = nX + (8 - nX % 8)%8;
       const size_t newNy = nY + (8 - nY % 8)%8;
+      const size_t newNz = nZ + (8 - nZ % 8)%8;
+
+      Eigen::VectorXd vecZ = Eigen::VectorXd(newNz);
+      //Eigen::VectorXd vecY = Eigen::VectorXd(nY);
+      //Eigen::VectorXd vecX = Eigen::VectorXd(nX);
+
+      //_mm512_store_pd(vecX.data(), chebX);
+      //_mm512_store_pd(vecY.data(), chebY);
+      _mm512_store_pd(vecZ.data(), chebZ);
+
+      auto endCheb = std::chrono::high_resolution_clock::now();
+      auto startTensor = std::chrono::high_resolution_clock::now();
 
       Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs
         = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>::Zero(newNx, newNy);
       for (int i = 0; i < nX; ++i) {
+        __m512d newRow = _mm512_setzero_pd();
         for (int j = 0; j < nY; ++j) {
           const __m512d row = _mm512_load_pd(&coeffs(i, j, 0));
-          const __m512d intermediate = row * chebZ;
-          xyCoeffs(i, j) +=  _mm512_reduce_add_pd(intermediate);
+          const __m512d cheb = _mm512_set1_pd(vecZ(j));
+
+          newRow = _mm512_fmadd_pd(row, cheb, newRow); //1 or 2
         }
-      }
+        _mm512_store_pd(&xyCoeffs(i, 0), newRow);
+      } // n*n*(1 or 2)
+
+      auto endTensor = std::chrono::high_resolution_clock::now();
       
+      auto startMatrix = std::chrono::high_resolution_clock::now();
       Eigen::VectorXd xCoeffs = Eigen::VectorXd::Zero(newNx);
       for (int i = 0; i < nX; ++i) {
         const __m512d row = _mm512_load_pd(&xyCoeffs(i, 0));
         const __m512d intermediate = row * chebY;
         xCoeffs(i) += _mm512_reduce_add_pd(intermediate);
       }
+      auto endMatrix = std::chrono::high_resolution_clock::now();
 
-      // Eigen::VectorXd xCoeffs = xyCoeffs * vecY;
-      // xCoeffs.dot(vecX);
-
+      auto startVector = std::chrono::high_resolution_clock::now();
       const __m512d xC = _mm512_load_pd(&xCoeffs(0));
       const __m512d intermediate = xC * chebX;
       double result = _mm512_reduce_add_pd(intermediate);
+      auto endVector = std::chrono::high_resolution_clock::now();
+
+      auto durationCheb = std::chrono::duration_cast<std::chrono::nanoseconds>(endCheb - startCheb);
+      auto durationTensor = std::chrono::duration_cast<std::chrono::nanoseconds>(endTensor - startTensor);
+      auto durationMatrix = std::chrono::duration_cast<std::chrono::nanoseconds>(endMatrix - startMatrix);
+      auto durationVector = std::chrono::duration_cast<std::chrono::nanoseconds>(endVector - startVector);
 
       return result;
     }
@@ -288,14 +307,14 @@ private:
       double b_n1 = 0.;
       double b_n2 = 0.;
       for (int k = n - 1; k > 0; --k) {
-        b_n = coeffs.at(k) + 2. * input * b_n1 - b_n2;
+        b_n = coeffs.at(k) + 2. * input * b_n1 - b_n2; // 4
         b_n2 = b_n1;
         b_n1 = b_n;
-      }
+      } // (n-1) * 4
 
-      b_n = 2. * coeffs.at(0) + 2. * input * b_n1 - b_n2;
-      return (b_n - b_n2) / 2.;
-    }
+      b_n = 2. * coeffs.at(0) + 2. * input * b_n1 - b_n2; // 5
+      return (b_n - b_n2) / 2.; // 2
+    } // 7 + 4 * (n-1)
 
 
     inline double evalChebFast3D(double x, double y, double z, int intervalX, int intervalY, int intervalZ) {
@@ -314,21 +333,21 @@ private:
         yCoeffs.reserve(nY);
         for (size_t j = 0; j < nY; ++j) {
           
-          double value = evalChebFast1D(z, nZ, coeffs.at(i).at(j));
+          double value = evalChebFast1D(z, nZ, coeffs.at(i).at(j)); // 7 + 4 * (nZ-1)
           yCoeffs.push_back(value);
-        }
+        } // nY * (7+4*(nZ-1))
         xyCoeffs.push_back(yCoeffs);
-      }
+      } // nx * nY * (7+4*(nZ-1))
 
       /* Flatten y dimension */
       std::vector<double> xCoeffs {};
       xCoeffs.reserve(nX);
       for (size_t i = 0; i < nX; ++i) {
-        xCoeffs.push_back(evalChebFast1D(y, nY, xyCoeffs.at(i)));
-      }
+        xCoeffs.push_back(evalChebFast1D(y, nY, xyCoeffs.at(i))); // (7+4*(nY-1))
+      } // nx * (7+4*(ny-1))
 
       /* Flatten x dimension */
-      return evalChebFast1D(x, nX, xCoeffs);
+      return evalChebFast1D(x, nX, xCoeffs); // (7+4*(nz-1))
     }
 
     inline double mapToInterval(double x, double a, double b) {
@@ -372,7 +391,7 @@ private:
                 for (int k = 0; k < nZ; ++k) {  
                   double nodeZ = std::cos((2*k+1)*PI/(2.*nZ));
 
-                  std::array<double, 3> forces = _kernel.calculateTripletDerivative(
+                  std::array<double, 3> forces = _kernel.calculateTripletForce(
                     mapToInterval(nodeX, aX*aX, bX*bX),
                     mapToInterval(nodeY, aY*aY, bY*bY),
                     mapToInterval(nodeZ, aZ*aZ, bZ*bZ)
@@ -546,10 +565,10 @@ public:
         const double z = mapToCheb(dKI2, aZ*aZ, bZ*bZ);
 
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-        //const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
-        //const double fac_ki = evalChebFast3DVector(z, x, y, intervalZ, intervalX, intervalY);
-        const double fac_ij = chebVector3D(x, y, z, intervalX, intervalY, intervalZ);
-        const double fac_ki = chebVector3D(z, x, y, intervalZ, intervalX, intervalY);
+        const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
+        const double fac_ki = evalChebFast3DVector(z, x, y, intervalZ, intervalX, intervalY);
+        const double fac_ij_test = chebVector3D(x, y, z, intervalX, intervalY, intervalZ);
+        const double fac_ki_test = chebVector3D(z, x, y, intervalZ, intervalX, intervalY);
 #else
         const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ);
         const double fac_ki = evalChebFast3D(z, x, y, intervalZ, intervalX, intervalY);
@@ -591,7 +610,7 @@ public:
         double relErrorX = 0.;
         double relErrorY = 0.;
         double relErrorZ = 0.;
-        const std::array<double, 3> real_fac = _kernel.calculateTripletDerivative(dIJ2, dJK2, dKI2);
+        const std::array<double, 3> real_fac = _kernel.calculateTripletForce(dIJ2, dJK2, dKI2);
 
         errorX = real_fac.at(0) - fac_ij;
         errorY = real_fac.at(1) - fac_jk;

@@ -19,7 +19,7 @@ class ArgonKernel : public Kernel<ArgonKernel> {
 
         };
 
-  double calculatePairDerivative(double dr) final {
+  double calculatePairForce(double dr) final {
     const double dr2 = dr * dr;
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -91,7 +91,7 @@ class ArgonKernel : public Kernel<ArgonKernel> {
     return firstTerm + secondTerm;
   }
 
-  double calculatePair(double dr) final {
+  double calculatePairPotential(double dr) final {
     const double dr2 = dr * dr;
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
@@ -160,11 +160,11 @@ class ArgonKernel : public Kernel<ArgonKernel> {
     return firstTerm - secondTerm;
   }
 
-  double calculateTriplet(double dr1, double dr2, double dr3) {
+  double calculateTripletPotential(double dr1, double dr2, double dr3) {
     return 0.;
   }
 
-  std::array<double, 3> calculateTripletDerivative(double dr1, double dr2, double dr3) {
+  std::array<double, 3> calculateTripletForce(double dr1, double dr2, double dr3) {
     return std::array<double, 3>{0.,0.,0.};
   }
 

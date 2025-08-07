@@ -110,9 +110,9 @@ class PairwiseInterpolantFunctor
     return newX;
   }
 
-  double mapToCheb(double x, double a, double b) {
-    double intermediate = x - a;
-    double newX = 2. * intermediate / (b - a) - 1.;
+  inline double mapToCheb(double x, double a, double b) {
+    const double intermediate = x - a;
+    const double newX = 2. * intermediate / (b - a) - 1.;
     return newX;
   }
 
@@ -140,7 +140,7 @@ class PairwiseInterpolantFunctor
         double node = std::cos(x);
         double d = mapToInterval(node, a*a, b*b);
 
-        double value = _kernel.calculatePairDerivative(d);
+        double value = _kernel.calculatePairForce(d);
         values[i] = value;
       }
 
@@ -201,7 +201,7 @@ class PairwiseInterpolantFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+  inline void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     /* Filter unnecessary force computations */
@@ -215,8 +215,8 @@ class PairwiseInterpolantFunctor
       ++_aosThreadDataFLOPs[threadnum].numDistCalls;
     }
 
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    const auto dr = i.getR() - j.getR();
+    const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
       return;
@@ -242,14 +242,14 @@ class PairwiseInterpolantFunctor
         a = split;
       }
     }
-
-    double fac = evaluateChebyshevFast(mapToCheb(dr2, a*a, b*b), _numNodes.at(interval), _coefficients.at(interval));
+    const double x = mapToCheb(dr2, a*a, b*b);
+    const double fac = evaluateChebyshevFast(x, _numNodes.at(interval), _coefficients.at(interval));
     double interpolationError = 0.;
     double relInterpolationError = 0.;
-    auto f = dr * fac;
+    const auto f = dr * fac;
 
 #if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-    double real_fac = _kernel.calculatePairDerivative(dr2);
+    double real_fac = _kernel.calculatePairForce(dr2);
     interpolationError = std::abs(real_fac - fac);
     if (real_fac != 0.) {
       relInterpolationError = std::abs(interpolationError / real_fac);

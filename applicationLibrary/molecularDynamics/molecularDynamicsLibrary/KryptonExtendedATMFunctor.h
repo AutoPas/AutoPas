@@ -114,67 +114,67 @@ class KryptonExtendedATMFunctor
     }
 
     // Actual distances
-    const double distIJ = std::sqrt(distSquaredIJ);
-    const double distJK = std::sqrt(distSquaredJK);
-    const double distKI = std::sqrt(distSquaredKI);
+    const double distIJ = std::sqrt(distSquaredIJ); // 1
+    const double distJK = std::sqrt(distSquaredJK); // 1
+    const double distKI = std::sqrt(distSquaredKI); // 1
 
     // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
-    const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
-    const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
-    const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
+    const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI; // 2
+    const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK; // 2
+    const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ; // 2
 
-    const double numerator = numKI * numJK * numIJ;
+    const double numerator = numKI * numJK * numIJ; // 2
 
-    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-    const double allDists = distIJ * distJK * distKI;
-    const double allDistsTripled = allDistsSquared * allDists;
+    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI; // 2
+    const double allDists = distIJ * distJK * distKI; // 2
+    const double allDistsTripled = allDistsSquared * allDists; // 2
 
     // Gradient factors of 1. / (rrr)^3
-    const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
-    const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
+    const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ); // 2
+    const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI); // 2
 
     // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
-    const double cosines = (3. / 8.) * numerator / allDistsSquared;
+    const double cosines = (3. / 8.) * numerator / allDistsSquared; // 3
     const double cosinesGradientIJ =
-        (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+        (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared); // 10
     const double cosinesGradientKI =
-        (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+        (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared); // 11
 
     // Gradient factors corresponding to the normal ATM term
     const auto fullATMGradientIJ =
-        _nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
+        _nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled); // 5
     const auto fullATMGradientKI =
-        _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
+        _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled); // 5
 
-    const double expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
+    const double expTerm = std::exp(-_alpha * (distIJ + distJK + distKI)); // 5
 
     // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
     std::array<double, 6> sumFactors{};
     double sum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
-      sumFactors[n] = _constantsA[n] * std::pow((distIJ * distJK * distKI), 2. * n / 3.);
-      sum += sumFactors[n];
-    }
+      sumFactors[n] = _constantsA[n] * std::pow((distIJ * distJK * distKI), 2. * n / 3.); // 6
+      sum += sumFactors[n]; // 1
+    } // 7 * 6
 
     // Gradient factor of the sum in ij-direction
     double ijSum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
-      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) - _alpha);
-    }
+      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) - _alpha); // 6
+    } // 6 * 6
 
     // Gradient factor of the sum in ki-direction
     double kiSum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
-      kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
-    }
+      kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha); // 6
+    } // 6 * 6
 
     // Total gradient factors for the exponential term times the cosines term
-    const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
-    const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
+    const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum); // 7
+    const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum); // 6
 
     // Assembling the forces
-    const double gradientIJ = fullATMGradientIJ + fullExpGradientIJ;
-    const double gradientKI = fullATMGradientKI + fullExpGradientKI;
+    const double gradientIJ = fullATMGradientIJ + fullExpGradientIJ; // 1
+    const double gradientKI = fullATMGradientKI + fullExpGradientKI; // 1
     const auto forceIDirectionIJ = displacementIJ * gradientIJ;
     const auto forceIDirecationKI = displacementKI * gradientKI;
 

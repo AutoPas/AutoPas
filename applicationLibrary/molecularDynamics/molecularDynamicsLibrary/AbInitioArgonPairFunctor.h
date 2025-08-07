@@ -94,7 +94,7 @@ class AbInitioArgonPairFunctor
     // Pre calculations
     const double dist = std::sqrt(dist2);
     
-    double fac = _argonKernel.calculatePairDerivative(dist);
+    double fac = _argonKernel.calculatePairForce(dist);
     auto f = displacement * fac;
 
     i.addF(f);
