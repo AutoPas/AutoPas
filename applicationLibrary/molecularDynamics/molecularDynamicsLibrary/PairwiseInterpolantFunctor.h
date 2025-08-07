@@ -271,7 +271,7 @@ class PairwiseInterpolantFunctor
 
     if constexpr (calculateGlobals) {
       // TODO: delegate potential energy to kernel?
-      double potentialEnergy = 0.;
+      double potentialEnergy = _kernel.calculatePairPotential(dr2);
       auto virial = dr * f;
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;

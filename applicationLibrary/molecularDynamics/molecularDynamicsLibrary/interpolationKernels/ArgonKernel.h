@@ -19,8 +19,8 @@ class ArgonKernel : public Kernel<ArgonKernel> {
 
         };
 
-  double calculatePairForce(double dr) final {
-    const double dr2 = dr * dr;
+  double calculatePairForce(double dr2) final {
+    const double dr = std::sqrt(dr2);
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
     const double distInv6 = distInv2 * distInv2 * distInv2;
@@ -91,8 +91,8 @@ class ArgonKernel : public Kernel<ArgonKernel> {
     return firstTerm + secondTerm;
   }
 
-  double calculatePairPotential(double dr) final {
-    const double dr2 = dr * dr;
+  double calculatePairPotential(double dr2) final {
+    const double dr = std::sqrt(dr2);
     const double distInv = 1. / dr;
     const double distInv2 = distInv * distInv;
     const double distInv6 = distInv2 * distInv2 * distInv2;
