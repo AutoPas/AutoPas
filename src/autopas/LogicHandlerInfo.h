@@ -39,5 +39,10 @@ class LogicHandlerInfo {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t sortingThreshold{8};
+  /**
+  * time step to be used in the simulation. Used in rf Estimation.
+  */
+  double deltaT{0};
+
 };
 }  // namespace autopas
