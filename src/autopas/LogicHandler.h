@@ -1238,8 +1238,28 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   auto &container = _containerSelector.getCurrentContainer();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
-    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
+  }
+  if (autoTuner.inFirstConfigurationLastSample()){
+    // Initialize the maximum velocity
+    double maxVelocity = 0;
+    // Fetch the needed information for estimating the rebuild frequency
+    double skin = _containerSelector.getCurrentContainer().getVerletSkin();
+    double deltaT = _logicHandlerInfo.deltaT;
+    // Iterate over particles to calculate maximum velocity
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      std::array<double, 3> tempVel = iter->getV();
+      double tempVelAbs = sqrt(tempVel[0]*tempVel[0] + tempVel[1]*tempVel[1] + tempVel[2]*tempVel[2]);
+      maxVelocity =  tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
+    }
+    double rebuildFrequencyEstimate = skin/maxVelocity/deltaT/2 + 1;
+    double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
+    if (rebuildFrequencyEstimate > userProvidedRF) {
+      autoTuner.setRebuildFrequency(userProvidedRF);
+    }
+    else{
+      autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
+    }
   }
 #endif
   autopas::utils::Timer timerTotal;
