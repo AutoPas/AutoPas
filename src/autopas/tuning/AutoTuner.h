@@ -235,6 +235,11 @@ class AutoTuner {
    * @return
    */
   bool inLastTuningIteration() const;
+  /**
+   * Indicate if the tuner is in the first configuration and last Sample of a tuning phase.
+   * @return
+   */
+  bool inFirstConfigurationLastSample() const;
 
   /**
    * Getter for the internal evidence collection.
