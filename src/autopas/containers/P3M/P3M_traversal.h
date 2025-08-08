@@ -12,6 +12,8 @@
 #include "autopas/containers/P3M/P3M_shortRangeFunctor.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 
+#include "autopas/utils/Timer.h"
+
 namespace autopas {
 
 
@@ -55,6 +57,11 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         this->shortRangeTraversal = shortRangeTraversal;
     }
 
+    void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer){
+        this->fftTimer = fftTimer;
+        this->shortRangeTimer = shortRangeTimer;
+    }
+
     private:
     autopas::FFT fft;
 
@@ -87,6 +94,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     // Container Iterator
     ContainerIterator<ParticleType, true, false> beginIter;
     LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal;
+
+    utils::Timer *fftTimer;
+    utils::Timer *shortRangeTimer;
         
 
     // assigns the charges of particles to cao number of points in the rs_grid
@@ -327,10 +337,15 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             }
             std::cout << std::endl;
         }*/
+       fftTimer->start();
         fft.forward3D(rs_grid, ks_grid, grid_dims);
+        fftTimer->stop();
+
         applyInfluenceFunction();
-         
+        
+        fftTimer->start();
         fft.backward3D(ks_grid, rs_grid, grid_dims);
+        fftTimer->stop();
         //std::cout << "Force Grid:" << std::endl;
         /*for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
@@ -385,7 +400,10 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     void traverseParticles(){
         traverseFarParticles();
+
+        shortRangeTimer->start();
         traverseNearParticles();
+        shortRangeTimer->stop();
     }
 
     [[nodiscard]] bool isApplicable() const override {

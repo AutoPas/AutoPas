@@ -7,6 +7,8 @@
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 
+#include "autopas/utils/Timer.h"
+
 #include <vector>
 #include <complex>
 #include <array>
@@ -90,6 +92,14 @@ class P3M_container : public LinkedCells<Particle_T> {
             }
             std::cout << std::endl;
         }*/
+
+       fftTimer = utils::Timer();
+       shortRangeTimer = utils::Timer();
+    }
+
+    ~P3M_container(){
+        std::cout << "FFT total time: " << fftTimer.getTotalTime() << " ns" << std::endl;
+        std::cout << "short Range interactions total time: " << shortRangeTimer.getTotalTime() << " ns" << std::endl;
     }
 
     /** can be done once at the start of the simulation/tuning, as it only depends on 
@@ -410,6 +420,7 @@ class P3M_container : public LinkedCells<Particle_T> {
             traversalP3M->set_traversal_parameters(cao, grid_dims, this->getBoxMin(), grid_dist, rs_grid, /*rs_grid_shifted,*/ 
                 ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, selfForceCoeffs, std::move(this->begin(autopas::IteratorBehavior::owned)),
                 shortRangeTraversal);
+            traversalP3M->set_Timers(&fftTimer, &shortRangeTimer);
         } else {
         autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the P3M container. TraversalID: {}",
@@ -463,5 +474,8 @@ class P3M_container : public LinkedCells<Particle_T> {
     ComplexGridType optEnergyInfluence;
     // coefficients to approximate selfForce
     std::vector<std::vector<double>> selfForceCoeffs;
+
+    utils::Timer fftTimer;
+    utils::Timer shortRangeTimer;
 };
 }
