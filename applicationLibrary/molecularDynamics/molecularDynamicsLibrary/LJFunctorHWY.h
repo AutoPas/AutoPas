@@ -224,49 +224,89 @@ class LJFunctorHWY
     // check if a pattern map with optimal pattern is provided
 
     if (_patternMapNewton3On != nullptr && _patternMapNewton3Off != nullptr) {
-      // std::cout <<"in SoAFunctorPair with fcs:"<< soa1.size()<<"scs:" <<soa2.size()<<std::endl;
+      autopas::VectorizationPatternOption::Value vectorizationPattern =
+          autopas::VectorizationPatternOption::Value::p1xVec;
 
       if (soa1.size() != 0 && soa2.size() != 0) {
         if (soa1.size() <= autopas::AutoTuner::_benchmarkSize && soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
           if (newton3) {
-            setVecPattern(
-                (*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
+            vectorizationPattern =
+                (*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
           } else {
-            setVecPattern(
-                (*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
+            vectorizationPattern =
+                (*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
           }
         } else {
           if (newton3) {
             if (soa1.size() <= autopas::AutoTuner::_benchmarkSize) {
-              setVecPattern((*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
-                                                                            (autopas::AutoTuner::_benchmarkSize - 1)]);
+              vectorizationPattern =
+                  (*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
+                                                                  (autopas::AutoTuner::_benchmarkSize - 1)];
 
             } else if (soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
-              setVecPattern((*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                    autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
+              vectorizationPattern = (*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                             autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
 
             } else {
-              setVecPattern((*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                    autopas::AutoTuner::_benchmarkSize *
-                                                        (autopas::AutoTuner::_benchmarkSize - 1)]);
+              vectorizationPattern = (*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                             autopas::AutoTuner::_benchmarkSize *
+                                                                 (autopas::AutoTuner::_benchmarkSize - 1)];
             }
           } else {
             if (soa1.size() <= autopas::AutoTuner::_benchmarkSize) {
-              setVecPattern((*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
-                                                                             (autopas::AutoTuner::_benchmarkSize - 1)]);
+              vectorizationPattern =
+                  (*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
+                                                                   (autopas::AutoTuner::_benchmarkSize - 1)];
 
             } else if (soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
-              setVecPattern((*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                     autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)]);
+              vectorizationPattern = (*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                              autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
 
             } else {
-              setVecPattern((*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                     autopas::AutoTuner::_benchmarkSize *
-                                                         (autopas::AutoTuner::_benchmarkSize - 1)]);
+              vectorizationPattern = (*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
+                                                              autopas::AutoTuner::_benchmarkSize *
+                                                                  (autopas::AutoTuner::_benchmarkSize - 1)];
             }
           }
         }
       }
+      switch (vectorizationPattern) {
+        case VectorizationPattern::p1xVec: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+          }
+          break;
+        }
+        case VectorizationPattern::p2xVecDiv2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          }
+          break;
+        }
+        case VectorizationPattern::pVecDiv2x2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          }
+          break;
+        }
+        case VectorizationPattern::pVecx1: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+          }
+          break;
+        }
+        default:
+          break;
+      }
+      return;
     }
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
