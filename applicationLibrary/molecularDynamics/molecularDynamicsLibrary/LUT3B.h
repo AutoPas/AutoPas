@@ -3,81 +3,61 @@
 //
 #pragma once
 
+#include "../examples/md-flexible/src/TypeDefinitions.h"
 #include "ParentLUT.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/Timer.h"
-#include "../examples/md-flexible/src/TypeDefinitions.h"
 
 namespace mdLib {
 class LUT3B : public ParentLUT {
  public:
-  LUT3B(int resolution, double cutoffSquared, double Nu) : ParentLUT(resolution, cutoffSquared) {
-    nu = Nu;
+  //  LUT3B(int resolution, double cutoffSquared, double Nu) : ParentLUT(resolution, cutoffSquared) {
+  //    nu = Nu;
+  //
+  //    fill(cutoffSquared, false);
+  //
+  //  }
+  //
+  //  LUT3B(int resolution, double cutoffSquared) : ParentLUT(resolution, cutoffSquared) {
+  //    // purposely not fill the lut so it can exist in the PPL
+  //    if (resolution == 0) {
+  //      return;
+  //    }
+  //
+  //    fill(cutoffSquared, false);
+  //
+  //  }
 
-    fill(cutoffSquared, false);
-
-  }
-
-  LUT3B(int resolution, double cutoffSquared) : ParentLUT(resolution, cutoffSquared) {
-    // purposely not fill the lut so it can exist in the PPL
-    if (resolution == 0) {
-      return;
-    }
-
-    fill(cutoffSquared, false);
-
-  }
-
-  LUT3B(int resolution, double cutoffSquared, bool global,bool krypton,  double _nu = 0) : ParentLUT(resolution, cutoffSquared) {
+  LUT3B(int resolution, double cutoffSquared, bool global = false, mdLib::InterpolationMethod method = NN,
+        bool krypton = false, double _nu = 0)
+      : ParentLUT(resolution, cutoffSquared) {
     KRYPTON = krypton;
     nu = _nu;
+    useGlobal = global;
+    interpolationMethod = method;
+    _numberOfPoints = calculateNumberOfPoints3B(resolution);
+
     if (resolution == 0) {
       return;
     }
 
-    fill(cutoffSquared, global);
-
+    fill();
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-  void fill(double cutoffSquared, bool withGlobals) {
-
-
-
-    if (!withGlobals) {
-      //                fill_plain(functor, cutoffSquared);
-     fill_plain(cutoffSquared);
-
+  void fill() {
+    if (!useGlobal) {
+      fill_plain();
     }
-    if (withGlobals) {
-
-      if(KRYPTON) {
-        fill_plain_krypton(cutoffSquared);
-      }else{
-        fill_global_all(cutoffSquared);
+    if (useGlobal) {
+      if (KRYPTON) {
+        fill_global_krypton();
+      } else {
+        fill_global();
       }
     }
-
-
   }
 
-
-
-
-
-
-  void fill_plain(double cutoffSquared) {
+  void fill_plain() {
     _lut3B.resize(_resolution + 1);
     for (auto a = 0; a <= _resolution; a++) {
       double distA = _lutCutoff + a * _pointDistance;
@@ -87,18 +67,14 @@ class LUT3B : public ParentLUT {
         _lut3B[a][b].reserve(b + 1);
         for (auto c = 0; c <= b; c++) {
           double distC = _lutCutoff + c * _pointDistance;
-          //                        _lut3B[a][b].push_back(functor.getLUTValues(distA, distB, distC));
+
           _lut3B[a][b].push_back(getLUTValuesAT(distA, distB, distC));
         }
       }
     }
   }
 
-
-
-
-  void fill_plain_krypton(double cutoffSquared) {
-
+  void fill_global_krypton() {
     _lut3B_global.resize(_resolution + 1);
     for (auto a = 0; a <= _resolution; a++) {
       double distA = _lutCutoff + a * _pointDistance;
@@ -110,15 +86,14 @@ class LUT3B : public ParentLUT {
           double distC = _lutCutoff + c * _pointDistance;
           auto x = getLUTValuesKrypton(distA, distB, distC);
           _lut3B_global[a][b].push_back(getLUTValuesKrypton(distA, distB, distC));
-//          std::cout << "index  :" << a << ", " << b << ", " << c << "  "<< distA << ", " << distB << ", " << distC << std::endl;
-
+          //          std::cout << "index  :" << a << ", " << b << ", " << c << "  "<< distA << ", " << distB << ", " <<
+          //          distC << std::endl;
         }
       }
     }
   }
 
-
-  void fill_global_all(double cutoffSquared) {
+  void fill_global() {
     _lut3B_global.resize(_resolution + 1);
     for (auto a = 0; a <= _resolution; a++) {
       double distA = _lutCutoff + a * _pointDistance;
@@ -137,24 +112,11 @@ class LUT3B : public ParentLUT {
         }
       }
     }
-
-
   }
-
-
 
   std::array<double, 3> getNextNeighbour(size_t index1, size_t index2, size_t index3) const {
     // just a function for consistency, floored values are basically next neighbours
 
-    if(index3 >= _resolution){
-        index3 = _resolution -1;
-    }
-      if(index2 >= _resolution){
-          index2 = _resolution -1;
-      }
-      if(index1 >= _resolution){
-          index1 = _resolution -1;
-      }
     return _lut3B[index1][index2][index3];
   }
 
@@ -163,7 +125,7 @@ class LUT3B : public ParentLUT {
     return _lut3B_global[index1][index2][index3];
   }
 
-  std::array<double, 3> getLinear(size_t index1, size_t index2, size_t index3) const {
+  std::array<double, 3> getMidpoint(size_t index1, size_t index2, size_t index3) const {
     using namespace autopas::utils::ArrayMath::literals;
     // Retrieve values from the LUT by linear interpolation
 
@@ -183,20 +145,16 @@ class LUT3B : public ParentLUT {
       return (resultRight + resultLeft) * 0.5;
     }
 
-
     // handle case that we are on the very last entry
-    if(index1 > x_max){
+    if (index1 > x_max) {
       return _lut3B[index1][index2][index3];
     }
     resultRight = _lut3B[index1 + 1][index2][index3];
 
-
-
     return (resultRight + resultLeft) * 0.5;
   }
 
-
-  std::array<double, 4> getLinear_global(size_t index1, size_t index2, size_t index3) const {
+  std::array<double, 4> getMidpoint_global(size_t index1, size_t index2, size_t index3) const {
     using namespace autopas::utils::ArrayMath::literals;
     // Retrieve values from the LUT by linear interpolation
 
@@ -216,176 +174,15 @@ class LUT3B : public ParentLUT {
       return (resultRight + resultLeft) * 0.5;
     }
     // handle case that we are on the very last entry
-    if(index1 > x_max){
+    if (index1 > x_max) {
       return _lut3B_global[index1][index2][index3];
     }
     resultRight = _lut3B_global[index1 + 1][index2][index3];
 
-
     return (resultRight + resultLeft) * 0.5;
   }
 
-  std::array<double, 3> getWeightedAverage(size_t index1, size_t index2, size_t index3, size_t actual_dist0,
-                                           size_t actual_dist1, size_t actual_dist2) const {
-    auto V_Middle = _lut3B[index1][index2][index3];
-    auto distances_middle = getDistances(index1, index2, index3);
-
-
-    std::array<double, 3> V_Above{};
-    std::array<double, 3> distances_above;
-    auto z_max = _lut3B[index1][index2].size();
-    auto y_max = _lut3B[index1].size();
-    auto x_max = _lut3B.size();
-
-    // index is enough doesnt need specific distance since the can be directly mapped to each other and bigger index
-    // always == bigger distance no use the actual distances cause need to comapre to transported distances
-    if (index3 < z_max - 1) {
-      V_Above = _lut3B[index1][index2][index3 + 1];
-      distances_above = getDistances(index1, index2, index3 + 1);
-
-    } else if (index2 < y_max - 1) {
-      V_Above = _lut3B[index1][index2 + 1][index3];
-      distances_above = getDistances(index1, index2 + 1, index3);
-
-    } else {
-      V_Above = _lut3B[index1 + 1][index2][index3];
-      distances_above = getDistances(index1 + 1, index2, index3);
-    }
-
-    std::array<double, 3> V_Below{};
-    std::array<double, 3> distances_below;
-
-
-    if (index3 > 0) {
-
-      V_Below = _lut3B[index1][index2][index3 - 1];
-      distances_below = getDistances(index1, index2, index3 - 1);
-
-    } else if (index2 > 0) {
-
-      V_Below = _lut3B[index1][index2 - 1][index3];
-      distances_below = getDistances(index1, index2 - 1, index3);
-
-    } else {
-      if (index1 > 0) {
-
-        V_Below = _lut3B[index1 - 1][index2][index3];
-        distances_below = getDistances(index1 - 1, index2, index3);
-
-      } else {
-
-        V_Below = _lut3B[0][0][0];
-        distances_below = getDistances(0, 0, 0);
-      }
-    }
-
-    // weights
-    auto a = pow(actual_dist0 - distances_middle[0], 2) + pow(actual_dist1 - distances_middle[1], 2) +
-             pow(actual_dist2 - distances_middle[2], 2);
-    auto b = pow(actual_dist0 - distances_below[0], 2) + pow(actual_dist1 - distances_below[1], 2) +
-             pow(actual_dist2 - distances_below[2], 2);
-    auto c = pow(actual_dist0 - distances_above[0], 2) + pow(actual_dist1 - distances_above[1], 2) +
-             pow(actual_dist2 - distances_above[2], 2);
-
-    auto w1 = 1 / a;
-    auto w2 = 1 / b;
-    auto w3 = 1 / c;
-
-    auto w_total = w1 + w2 + w3;
-
-    w1 = w1 / w_total;
-    w2 = w2 / w_total;
-    w3 = w3 / w_total;
-
-    auto v0 = (V_Middle[0] * w1) + (V_Below[0] * w2) + (V_Above[0] * w3);
-    auto v1 = (V_Middle[1] * w1) + (V_Below[1] * w2) + (V_Above[1] * w3);
-    auto v2 = (V_Middle[2] * w1) + (V_Below[2] * w2) + (V_Above[2] * w3);
-
-    return std::array<double, 3>{v0, v1, v2};
-  }
-
-  std::array<double, 4> getWeightedAverage_global(size_t index1, size_t index2, size_t index3, size_t actual_dist0,
-                                           size_t actual_dist1, size_t actual_dist2) const {
-    auto V_Middle = _lut3B_global[index1][index2][index3];
-    auto distances_middle = getDistances(index1, index2, index3);
-
-
-    std::array<double, 4> V_Above{};
-    std::array<double, 3> distances_above;
-    auto z_max = _lut3B_global[index1][index2].size();
-    auto y_max = _lut3B_global[index1].size();
-    auto x_max = _lut3B_global.size();
-
-    // index is enough doesnt need specific distance since the can be directly mapped to each other and bigger index
-    // always == bigger distance no use the actual distances cause need to comapre to transported distances
-    if (index3 < z_max - 1) {
-      V_Above = _lut3B_global[index1][index2][index3 + 1];
-      distances_above = getDistances(index1, index2, index3 + 1);
-
-    } else if (index2 < y_max - 1) {
-      V_Above = _lut3B_global[index1][index2 + 1][index3];
-      distances_above = getDistances(index1, index2 + 1, index3);
-
-    } else {
-      V_Above = _lut3B_global[index1 + 1][index2][index3];
-      distances_above = getDistances(index1 + 1, index2, index3);
-    }
-
-    std::array<double, 4> V_Below{};
-    std::array<double, 3> distances_below;
-
-
-    if (index3 > 0) {
-
-      V_Below = _lut3B_global[index1][index2][index3 - 1];
-      distances_below = getDistances(index1, index2, index3 - 1);
-
-    } else if (index2 > 0) {
-
-      V_Below = _lut3B_global[index1][index2 - 1][index3];
-      distances_below = getDistances(index1, index2 - 1, index3);
-
-    } else {
-      if (index1 > 0) {
-
-        V_Below = _lut3B_global[index1 - 1][index2][index3];
-        distances_below = getDistances(index1 - 1, index2, index3);
-
-      } else {
-
-        V_Below = _lut3B_global[0][0][0];
-        distances_below = getDistances(0, 0, 0);
-      }
-    }
-
-    // weights
-    auto a = pow(actual_dist0 - distances_middle[0], 2) + pow(actual_dist1 - distances_middle[1], 2) +
-             pow(actual_dist2 - distances_middle[2], 2);
-    auto b = pow(actual_dist0 - distances_below[0], 2) + pow(actual_dist1 - distances_below[1], 2) +
-             pow(actual_dist2 - distances_below[2], 2);
-    auto c = pow(actual_dist0 - distances_above[0], 2) + pow(actual_dist1 - distances_above[1], 2) +
-             pow(actual_dist2 - distances_above[2], 2);
-
-    auto w1 = 1 / a;
-    auto w2 = 1 / b;
-    auto w3 = 1 / c;
-
-    auto w_total = w1 + w2 + w3;
-
-    w1 = w1 / w_total;
-    w2 = w2 / w_total;
-    w3 = w3 / w_total;
-
-    auto v0 = (V_Middle[0] * w1) + (V_Below[0] * w2) + (V_Above[0] * w3);
-    auto v1 = (V_Middle[1] * w1) + (V_Below[1] * w2) + (V_Above[1] * w3);
-    auto v2 = (V_Middle[2] * w1) + (V_Below[2] * w2) + (V_Above[2] * w3);
-    auto glob = (V_Middle[3] * w1) + (V_Below[3] * w2) + (V_Above[3] * w3);
-
-    return std::array<double, 4>{v0, v1, v2,glob};
-  }
-
-
-  //potential energies
+  // potential energies
 
   double calculatePotEnergy(double distSquaredIJ, double distSquaredJK, double distSquaredKI) const {
     double distIJ = std::sqrt(distSquaredIJ);
@@ -403,9 +200,8 @@ class LUT3B : public ParentLUT {
     return res;
   }
 
-
-
-  double   calculatePotEnergy_Krypton(double cosines, double _nu, double allDistsTripled, double sum, double expTerm) const {
+  double calculatePotEnergy_Krypton(double cosines, double _nu, double allDistsTripled, double sum,
+                                    double expTerm) const {
     // Add 3 * potential energy to every owned particle of the interaction.
     // Division to the correct value is handled in endTraversal().
     const double potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
@@ -413,18 +209,17 @@ class LUT3B : public ParentLUT {
     return potentialEnergy;
   }
 
-
-
-
-  //retrieve values
+  // retrieve values
 
   template <class Functor>
-  [[nodiscard]] std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>>
-  retrieveValues(const Functor &functor, double dist1, double dist2, double dist3) const {
-
+  [[nodiscard]] std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> retrieveValues(const Functor &functor,
+                                                                                               double dist1,
+                                                                                               double dist2,
+                                                                                               double dist3) const {
     if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
-//      std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" << std::sqrt(_lutCutoff)
-//                << ") - Calculating force factors directly!" << std::endl;
+      //      std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" <<
+      //      std::sqrt(_lutCutoff)
+      //                << ") - Calculating force factors directly!" << std::endl;
       return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
     }
 
@@ -475,47 +270,46 @@ class LUT3B : public ParentLUT {
       order[2] = 0;
     }
 
-    // if Linear Interpolation
-    //     auto result = getLinear(index1, index2, index3);
-    //    auto result = getWeightedAverage(index1, index2, index3, dist1, dist2, dist3);
+    std::array<double, 3> result;
+    switch (interpolationMethod) {
+      case NN:
+        result = getNextNeighbour(index1, index2, index3);
+        return std::make_pair(result, order);
+        break;
+      case MP:
+        result = getMidpoint(index1, index2, index3);
+        return std::make_pair(result, order);
+      default:
+        throw autopas::utils::ExceptionHandler::AutoPasException(
+            "Choose one of the available interpolation methods for 3B LUTS");
 
-
-    auto result = getNextNeighbour(index1, index2, index3);
-
-
-    auto resultPair = std::make_pair(result, order);
-
-
-
-    return resultPair;
+    }
   }
 
   template <class Functor>
   [[nodiscard]] std::pair<const std::array<double, 4>, std::array<u_int8_t, 3>> retrieveValues_global(
       const Functor &functor, double dist1, double dist2, double dist3) const {
-
     if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
-//        std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" << std::sqrt(_lutCutoff)
-//                  << ") - Calculating force factors directly!" << std::endl;
-
+      //        std::cout << "LUT3B::retrieveValues(): Particle distance smaller than lower lutCutoff(" <<
+      //        std::sqrt(_lutCutoff)
+      //                  << ") - Calculating force factors directly!" << std::endl;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC) && defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
       throw std::runtime_error(
-          "LUT3B can either run with MD_FLEXIBLE_FUNCTOR_KRYPTON or MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC but not with both at the same time. Please turn one off");
+          "LUT3B can either run with MD_FLEXIBLE_FUNCTOR_KRYPTON or MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC but not with both "
+          "at the same time. Please turn one off");
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-  auto globs = calculatePotEnergy(dist1, dist2, dist3);
-  auto vals = functor.getLUTValues(dist1, dist2, dist3);
+      auto globs = calculatePotEnergy(dist1, dist2, dist3);
+      auto vals = functor.getLUTValues(dist1, dist2, dist3);
 
-  std::array<double, 4> res = {vals[0], vals[1], vals[2], globs};
-  return std::make_pair(res, std::array<u_int8_t, 3>({0, 1, 2}));
+      std::array<double, 4> res = {vals[0], vals[1], vals[2], globs};
+      return std::make_pair(res, std::array<u_int8_t, 3>({0, 1, 2}));
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-  auto vals = functor.getLUTValues(dist1, dist2, dist3);
-  return std::make_pair(vals, std::array<u_int8_t, 3>({0, 1, 2}));
+      auto vals = functor.getLUTValues(dist1, dist2, dist3);
+      return std::make_pair(vals, std::array<u_int8_t, 3>({0, 1, 2}));
 #endif
-
-
     }
 
     size_t index1, index2, index3;
@@ -565,22 +359,20 @@ class LUT3B : public ParentLUT {
       order[2] = 0;
     }
 
-    // if Linear Interpolation
-//         auto result = getLinear_global(index1, index2, index3);
-
-    // space for other interpolation
-   auto result = getNextNeighbour_global(index1, index2, index3);
- //     auto result = getWeightedAverage_global(index1, index2, index3, dist1, dist2, dist3);
-
-    auto resultPair = std::make_pair(result, order);
-
-
-
-    return resultPair;
+    std::array<double, 4> result;
+    switch (interpolationMethod) {
+      case NN:
+        result = getNextNeighbour_global(index1, index2, index3);
+        return std::make_pair(result, order);
+        break;
+      case MP:
+        result = getMidpoint_global(index1, index2, index3);
+        return std::make_pair(result, order);
+      default:
+        throw autopas::utils::ExceptionHandler::AutoPasException(
+            "Choose one of the available interpolation methods for 3B LUTS");
+    }
   }
-
-
-
 
  public:
   [[nodiscard]] std::array<double, 3> getLUTValuesAT(double dist1Squared, double dist2Squared,
@@ -671,7 +463,7 @@ class LUT3B : public ParentLUT {
     const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
     const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
 
-    const auto factorIJ = - fullATMGradientIJ - fullExpGradientIJ;
+    const auto factorIJ = -fullATMGradientIJ - fullExpGradientIJ;
     const auto factorKI = fullATMGradientKI + fullExpGradientKI;
 
     // for the newton part
@@ -689,19 +481,164 @@ class LUT3B : public ParentLUT {
     }
     double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
-    const auto factorJK = - fullATMGradientJK - fullExpGradientJK;
+    const auto factorJK = -fullATMGradientJK - fullExpGradientJK;
 
-    double epot =     calculatePotEnergy_Krypton( cosines,  _nu_krypton,  allDistsTripled,  sum, expTerm);
+    double epot = calculatePotEnergy_Krypton(cosines, _nu_krypton, allDistsTripled, sum, expTerm);
 
     return {factorIJ, factorJK, factorKI, epot};
-
   }
 
+  std::array<double, 3> getWeightedAverage(size_t index1, size_t index2, size_t index3, size_t actual_dist0,
+                                           size_t actual_dist1, size_t actual_dist2) const {
+    auto V_Middle = _lut3B[index1][index2][index3];
+    auto distances_middle = getDistances(index1, index2, index3);
 
+    std::array<double, 3> V_Above{};
+    std::array<double, 3> distances_above;
+    auto z_max = _lut3B[index1][index2].size();
+    auto y_max = _lut3B[index1].size();
+    auto x_max = _lut3B.size();
 
+    // index is enough doesnt need specific distance since the can be directly mapped to each other and bigger index
+    // always == bigger distance no use the actual distances cause need to comapre to transported distances
+    if (index3 < z_max - 1) {
+      V_Above = _lut3B[index1][index2][index3 + 1];
+      distances_above = getDistances(index1, index2, index3 + 1);
+
+    } else if (index2 < y_max - 1) {
+      V_Above = _lut3B[index1][index2 + 1][index3];
+      distances_above = getDistances(index1, index2 + 1, index3);
+
+    } else {
+      V_Above = _lut3B[index1 + 1][index2][index3];
+      distances_above = getDistances(index1 + 1, index2, index3);
+    }
+
+    std::array<double, 3> V_Below{};
+    std::array<double, 3> distances_below;
+
+    if (index3 > 0) {
+      V_Below = _lut3B[index1][index2][index3 - 1];
+      distances_below = getDistances(index1, index2, index3 - 1);
+
+    } else if (index2 > 0) {
+      V_Below = _lut3B[index1][index2 - 1][index3];
+      distances_below = getDistances(index1, index2 - 1, index3);
+
+    } else {
+      if (index1 > 0) {
+        V_Below = _lut3B[index1 - 1][index2][index3];
+        distances_below = getDistances(index1 - 1, index2, index3);
+
+      } else {
+        V_Below = _lut3B[0][0][0];
+        distances_below = getDistances(0, 0, 0);
+      }
+    }
+
+    // weights
+    auto a = pow(actual_dist0 - distances_middle[0], 2) + pow(actual_dist1 - distances_middle[1], 2) +
+             pow(actual_dist2 - distances_middle[2], 2);
+    auto b = pow(actual_dist0 - distances_below[0], 2) + pow(actual_dist1 - distances_below[1], 2) +
+             pow(actual_dist2 - distances_below[2], 2);
+    auto c = pow(actual_dist0 - distances_above[0], 2) + pow(actual_dist1 - distances_above[1], 2) +
+             pow(actual_dist2 - distances_above[2], 2);
+
+    auto w1 = 1 / a;
+    auto w2 = 1 / b;
+    auto w3 = 1 / c;
+
+    auto w_total = w1 + w2 + w3;
+
+    w1 = w1 / w_total;
+    w2 = w2 / w_total;
+    w3 = w3 / w_total;
+
+    auto v0 = (V_Middle[0] * w1) + (V_Below[0] * w2) + (V_Above[0] * w3);
+    auto v1 = (V_Middle[1] * w1) + (V_Below[1] * w2) + (V_Above[1] * w3);
+    auto v2 = (V_Middle[2] * w1) + (V_Below[2] * w2) + (V_Above[2] * w3);
+
+    return std::array<double, 3>{v0, v1, v2};
+  }
+
+  std::array<double, 4> getWeightedAverage_global(size_t index1, size_t index2, size_t index3, size_t actual_dist0,
+                                                  size_t actual_dist1, size_t actual_dist2) const {
+    auto V_Middle = _lut3B_global[index1][index2][index3];
+    auto distances_middle = getDistances(index1, index2, index3);
+
+    std::array<double, 4> V_Above{};
+    std::array<double, 3> distances_above;
+    auto z_max = _lut3B_global[index1][index2].size();
+    auto y_max = _lut3B_global[index1].size();
+    auto x_max = _lut3B_global.size();
+
+    // index is enough doesnt need specific distance since the can be directly mapped to each other and bigger index
+    // always == bigger distance no use the actual distances cause need to comapre to transported distances
+    if (index3 < z_max - 1) {
+      V_Above = _lut3B_global[index1][index2][index3 + 1];
+      distances_above = getDistances(index1, index2, index3 + 1);
+
+    } else if (index2 < y_max - 1) {
+      V_Above = _lut3B_global[index1][index2 + 1][index3];
+      distances_above = getDistances(index1, index2 + 1, index3);
+
+    } else {
+      V_Above = _lut3B_global[index1 + 1][index2][index3];
+      distances_above = getDistances(index1 + 1, index2, index3);
+    }
+
+    std::array<double, 4> V_Below{};
+    std::array<double, 3> distances_below;
+
+    if (index3 > 0) {
+      V_Below = _lut3B_global[index1][index2][index3 - 1];
+      distances_below = getDistances(index1, index2, index3 - 1);
+
+    } else if (index2 > 0) {
+      V_Below = _lut3B_global[index1][index2 - 1][index3];
+      distances_below = getDistances(index1, index2 - 1, index3);
+
+    } else {
+      if (index1 > 0) {
+        V_Below = _lut3B_global[index1 - 1][index2][index3];
+        distances_below = getDistances(index1 - 1, index2, index3);
+
+      } else {
+        V_Below = _lut3B_global[0][0][0];
+        distances_below = getDistances(0, 0, 0);
+      }
+    }
+
+    // weights
+    auto a = pow(actual_dist0 - distances_middle[0], 2) + pow(actual_dist1 - distances_middle[1], 2) +
+             pow(actual_dist2 - distances_middle[2], 2);
+    auto b = pow(actual_dist0 - distances_below[0], 2) + pow(actual_dist1 - distances_below[1], 2) +
+             pow(actual_dist2 - distances_below[2], 2);
+    auto c = pow(actual_dist0 - distances_above[0], 2) + pow(actual_dist1 - distances_above[1], 2) +
+             pow(actual_dist2 - distances_above[2], 2);
+
+    auto w1 = 1 / a;
+    auto w2 = 1 / b;
+    auto w3 = 1 / c;
+
+    auto w_total = w1 + w2 + w3;
+
+    w1 = w1 / w_total;
+    w2 = w2 / w_total;
+    w3 = w3 / w_total;
+
+    auto v0 = (V_Middle[0] * w1) + (V_Below[0] * w2) + (V_Above[0] * w3);
+    auto v1 = (V_Middle[1] * w1) + (V_Below[1] * w2) + (V_Above[1] * w3);
+    auto v2 = (V_Middle[2] * w1) + (V_Below[2] * w2) + (V_Above[2] * w3);
+    auto glob = (V_Middle[3] * w1) + (V_Below[3] * w2) + (V_Above[3] * w3);
+
+    return std::array<double, 4>{v0, v1, v2, glob};
+  }
 
  private:
-   bool KRYPTON;
+  bool KRYPTON;
+  bool useGlobal;
+  mdLib::InterpolationMethod interpolationMethod;
 
   std::vector<std::vector<std::vector<std::array<double, 3>>>> _lut3B;
 
@@ -726,14 +663,12 @@ class LUT3B : public ParentLUT {
     return std::array<double, 3>{d1, d2, d3};
   }
 
-
-public:
- void setNu(double _nu) { nu = _nu; }
+ public:
+  void setNu(double _nu) { nu = _nu; }
   void setLutTimer(const std::vector<autopas::utils::Timer> &lutTimer) { this->lutTimer = lutTimer; }
   void setAlphaKrypton(double alphaKrypton) { _alpha_krypton = alphaKrypton; }
   void setNuKrypton(double nuKrypton) { _nu_krypton = nuKrypton; }
   void setConstantsAKrypton(const std::array<double, 6> &constantsAKrypton) { _constantsA_krypton = constantsAKrypton; }
-
 };
 
 }  // namespace mdLib

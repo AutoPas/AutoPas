@@ -12,6 +12,12 @@
 
 namespace mdLib {
 
+enum InterpolationMethod{
+  NN = 1,
+  LIN = 2,
+  MP =3
+};
+
 
  class ParentLUT{
   public:
@@ -34,14 +40,11 @@ namespace mdLib {
     ParentLUT(){}
 
 
-//     template<class Functor>
-//     void fill(const Functor &functor, double cutoffSquared) {}
+
+    virtual void fill() =0;
 
     protected:
 
-  //Different vector for 2b and 3b functor
-//  std::vector<std::vector<std::vector<std::array<double, 3>>>> _lut3B;
-//  std::vector<double> _lut2B;
 
      double _cutoff{};
   double _cutoffSquared{};
@@ -63,5 +66,10 @@ namespace mdLib {
       _pointDistance = _lutDistance / static_cast<double>(_resolution);
       _numberOfPoints= resolution;
 
+  }
+
+  int calculateNumberOfPoints3B(int resolution) {
+
+    return (((resolution+ 1) * (resolution +2) * (resolution+3))/6);
   }
  };}

@@ -11,163 +11,140 @@
 #include "ParentLUT.h"
 
 namespace mdLib {
+
 class LUT2B : public ParentLUT {
  public:
-
-
-  LUT2B(int resolution, double cutoffSquared, double sigsquared = 0, double eps = 0, double shift = 0)
+  LUT2B(int resolution, double cutoffSquared, bool global = false, InterpolationMethod method = NN, bool delay = false,
+        double sigsquared = 0, double eps = 0, double shift = 0)
       : ParentLUT(resolution, cutoffSquared) {
-
-
-    epsilon24 = eps;
-    sigmaSquared = sigsquared;
-    sqrtSigma = std::sqrt(sigmaSquared);
-    shift6 = shift;
-
-  }
-
-  LUT2B(int resolution, double cutoffSquared, bool global, bool delay = false, double sigsquared = 0, double eps = 0,
-        double shift = 0)
-      : ParentLUT(resolution, cutoffSquared) {
-
-
     epsilon24 = eps;
     sigmaSquared = sigsquared;
     shift6 = shift;
     sqrtSigma = std::sqrt(sigmaSquared);
-
+    useGlob = global;
+    postponedStart = delay;
+    interpolationMethod = method;
 
     if (resolution == 0) {
       return;
     }
-
-    fill(cutoffSquared, global, delay);
+    fill();
   }
   template <class Functor>
   float retrieveValues(const Functor &functor, float distanceSquared) {
-    // if smaller than the smallest distance saved in lut return manually calculated value
 
-if ((!delay && distanceSquared < ((_pointDistance /2 ) + _pointDistance) )|| (delay && (distanceSquared <  (delayValue +_pointDistance)))) {
+    // if smaller than the smallest distance saved in lut return manually calculated value
+    if (distanceSquared < (_lutCutoff + _pointDistance)) {
       return functor.getLUTValues(distanceSquared);
     }
-        return getNextNeighbor( distanceSquared);
-//    return getLinear(functor,distanceSquared);
-  }
 
+    switch (interpolationMethod) {
+      case NN:
+        return getNextNeighbor(distanceSquared);
+        break;
+      case LIN:
+        return getLinear(distanceSquared);
+        break;
+      default:
+        throw autopas::utils::ExceptionHandler::AutoPasException(
+            "Choose one of the available interpolation methods for 2B LUTS");
+    }
+  }
 
   template <class Functor>
   std::array<double, 2> retrieveValues_global(const Functor &functor, float distanceSquared) {
+    // if smaller than the smallest distance saved in lut return manually calculated value
 
-    if (((!delay) && distanceSquared < ((_pointDistance /2 ) + _pointDistance)) || (delay && (distanceSquared < (delayValue + _pointDistance) ))) {
+
+    if (distanceSquared < (_lutCutoff + _pointDistance)) {
       return {getLUTValues(distanceSquared), calculateGlobalFactor(distanceSquared)};
     }
 
-    //   return getNextNeighbor_global( distanceSquared);
-    return getLinear_global(functor,distanceSquared);
-  }
-
-  template <class Functor>
-  void fill(const Functor &functor, double cutoffSquared, bool globsLUT) {
-    if (!globsLUT) {
-      fill_plain(functor, cutoffSquared);
-    }
-    if (globsLUT) {
-      fill_global(functor, cutoffSquared);
-    }
-  }
-
-  void fill(double cutoffSquared, bool globsLUT, bool _delay) {
-    delay = _delay;
-
-    if (!globsLUT) {
-      fill_plain(delay);
-    }
-    if (globsLUT) {
-      fill_global(delay);
+    switch (interpolationMethod) {
+      case NN:
+        return getNextNeighbor_global(distanceSquared);
+        break;
+      case LIN:
+        return getLinear_global(functor, distanceSquared);
+        break;
+      default:
+        throw autopas::utils::ExceptionHandler::AutoPasException(
+            "Choose one of the available interpolation methods for 2B LUTS");
     }
   }
 
-  template <class Functor>
-  float getLinear(const Functor &functor, float distance) {
+  void fill() {
+    if (!useGlob) {
+      if (!postponedStart) {
+        plain_fill();
+      } else {
+        postponed_start_fill();
+      }
 
+    } else {
+      if (!postponedStart) {
+        plain_fill_global();
+      } else {
+        postponed_stat_fill_global();
+      }
+    }
+  }
+
+  float getLinear(float distance) {
     if (std::fmod(distance, _pointDistance) == 0) {
-
       return _lut2B.at(distance / _pointDistance);
     }
 
     int lutindexfloor = 0;
     int lutindexceil = 0;
     // index
-    if(!delay) {
 
-    lutindexfloor = std::floor((distance - ((_pointDistance /2)+ _pointDistance))/ _pointDistance);
-      lutindexceil = std::ceil((distance - ((_pointDistance /2)+ _pointDistance))/ _pointDistance);
+    lutindexfloor = std::floor((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
+    lutindexceil = std::ceil((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
 
-    }else{
-      lutindexfloor = std::floor((distance - (delayValue + _pointDistance)) / _pointDistance);
-      lutindexceil = std::ceil((distance - (delayValue + _pointDistance)) / _pointDistance);
-    }
-
-    float Y1=0;
+    float Y1 = 0;
 
     if (lutindexfloor >= _resolution) {
-
       Y1 = _lut2B.at(_resolution - 1);
     } else {
       Y1 = _lut2B.at(lutindexfloor);
     }
 
-    float Y2=0;
+    float Y2 = 0;
     if (lutindexceil >= _resolution) {
-
       Y2 = _lut2B.at(_resolution - 1);
     } else {
-
       Y2 = _lut2B.at(lutindexceil);
     }
 
     double X1 = 0;
     double X2 = 0;
 
-
-    if(!delay) {
-
-
-      X1 = (lutindexfloor * _pointDistance) +(_pointDistance /2) + _pointDistance;
-      X2 = (lutindexceil * _pointDistance) + (_pointDistance /2)+ _pointDistance;
-    }else {
-      X1 = (lutindexfloor * _pointDistance) + (delayValue + _pointDistance);
-      X2 = (lutindexceil * _pointDistance) + (delayValue + _pointDistance);
-    }
+    X1 = (lutindexfloor * _pointDistance) + (_lutCutoff + _pointDistance);
+    X2 = (lutindexceil * _pointDistance) + (_lutCutoff + _pointDistance);
 
     if (fabs(Y2 - Y1) < 1e-12) {
       return Y1;
     }
 
-    if (fabs(X2 - X1 ) < 1e-12) {
-        return Y1;
+    if (fabs(X2 - X1) < 1e-12) {
+      return Y1;
     }
 
     if (fabs(distance - X1) < 1e-12) {
-        return Y1;
+      return Y1;
     }
-    return  Y1 + (distance - X1) * ((Y2 - Y1) / (X2 - X1 ));
+    return Y1 + (distance - X1) * ((Y2 - Y1) / (X2 - X1));
   }
 
-
-  float getNextNeighbor( float distance) {
+  float getNextNeighbor(float distance) {
     if (distance >= _cutoffSquared) {
-      return _lut2B.at(_numberOfPoints - 1);
+      return _lut2B.at(_resolution - 1);
     }
 
     int index = 0;
-    if(!delay){
 
-           index = std::floor((distance - ((_pointDistance /2)+ _pointDistance ))/ _pointDistance);
-    }else{
-       index = std::floor((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
-    }
-
+    index = std::floor((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
 
     if (index >= _resolution) {
       return _lut2B.at(_resolution - 1);
@@ -176,27 +153,18 @@ if ((!delay && distanceSquared < ((_pointDistance /2 ) + _pointDistance) )|| (de
     return _lut2B.at(index);
   }
 
-
-
-  std::array<double, 2> getNextNeighbor_global( float distance) {
+  std::array<double, 2> getNextNeighbor_global(float distance) {
     if (distance >= _cutoffSquared) {
-
-      return _lut2B_globals.at(_numberOfPoints - 1);
+      return _lut2B_globals.at(_resolution - 1);
     }
 
-    int index = 0;
-    if(!delay){
-      index = std::floor((distance - ((_pointDistance /2)+ _pointDistance ))/ _pointDistance);
-    }else{
-       index = std::floor((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
-    }
+    int index = std::floor((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
+
     if (index >= _resolution) {
-
       return _lut2B_globals.at(_resolution - 1);
     }
 
     return _lut2B_globals.at(index);
-
   }
 
   double calculateGlobalFactor(float distance2) {
@@ -208,159 +176,111 @@ if ((!delay && distanceSquared < ((_pointDistance /2 ) + _pointDistance) )|| (de
     return epsilon24 * lj12m6 + shift6;
   }
 
+  void plain_fill() {
+    _lutCutoff = (_pointDistance / 2);
 
-
-
-  void fill_plain(bool delay) {
-    if (!delay) {
-      for (auto i = 1; i <= _resolution; i++) {
-       auto x =(_pointDistance /2) + (i * _pointDistance);
-
-        _lut2B.push_back(getLUTValues((x)));
-//    std::cout << "Index  " << i-1 << "  distance :   " << x << std::endl;
-
-      }
-    } else {
-      fill_delayed_start();
+    for (auto i = 1; i <= _resolution; i++) {
+      auto x = _lutCutoff + (i * _pointDistance);
+      _lut2B.push_back(getLUTValues((x)));
+//      std::cout << "Index  " << i - 1 << "  distance :   " << x << std::endl;
     }
   }
 
-  void fill_delayed_start() {
-    delayValue = sqrtSigma * 0.9;
-
-    //delayed start changes the lutcutoff
-    _lutCutoff = delayValue;
+  void postponed_start_fill() {
+    _lutCutoff = sqrtSigma * 0.9;
     _lutDistance = _cutoffSquared - _lutCutoff;
     _lutFactor = _resolution / _lutDistance;
     _pointDistance = _lutDistance / static_cast<double>(_resolution);
 
     for (auto i = 0; i < _resolution; i++) {
-      auto x = (delayValue + _pointDistance) + (i * _pointDistance);
+      auto x = (_lutCutoff + _pointDistance) + (i * _pointDistance);
       _lut2B.push_back(getLUTValues(x));
 //      std::cout << "Index  " << i << "  distance :   " << x << std::endl;
     }
   }
 
-  void fill_global( bool delay) {
+  void plain_fill_global() {
+    _lutCutoff = (_pointDistance / 2);
 
-    if(!delay) {
-      _lut2B_globals.reserve(_resolution);
-      for (auto i = 1; i <= _resolution; i++) {
-        auto x =(_pointDistance /2) + (i * _pointDistance);
-       _lut2B_globals.push_back({getLUTValues(x), calculateGlobalFactor(x)});
-//        std::cout << "Index  " << i-1 << "  distance :   " << x << std::endl;
-      }
-    }if(delay){
-      fill_global_delay();
-
-
+    _lut2B_globals.reserve(_resolution);
+    for (auto i = 1; i <= _resolution; i++) {
+      auto x = _lutCutoff + (i * _pointDistance);
+      _lut2B_globals.push_back({getLUTValues(x), calculateGlobalFactor(x)});
+//      std::cout << "Index  " << i - 1 << "  distance :   " << x << std::endl;
     }
   }
 
-  void fill_global_delay() {
+  void postponed_stat_fill_global() {
+    _lutCutoff = sqrtSigma * 0.9;
 
-    delayValue = sqrtSigma * 0.9;
+    // delayed start changes the lutcutoff
 
-    //delayed start changes the lutcutoff
-    _lutCutoff = delayValue;
     _lutDistance = _cutoffSquared - _lutCutoff;
     _lutFactor = _resolution / _lutDistance;
     _pointDistance = _lutDistance / static_cast<double>(_resolution);
 
     _lut2B_globals.reserve(_resolution);
     for (auto i = 0; i < _resolution; i++) {
-      double distance = (delayValue +_pointDistance ) + (i * _pointDistance);
+      double distance = (_lutCutoff + _pointDistance) + (i * _pointDistance);
       _lut2B_globals.push_back({getLUTValues(distance), calculateGlobalFactor(distance)});
 //      std::cout << "Index  " << i << "  distance :   " << distance << std::endl;
-
     }
   }
 
-
-
-
-
-  template <class Functor>
-  std::array<double , 2>  getLinear_global(const Functor &functor, float distance) {
-
+  std::array<double, 2> getLinear_global(float distance) {
     if (std::fmod(distance, _pointDistance) == 0) {
-
       return _lut2B_globals.at(distance / _pointDistance);
     }
 
     int lutindexfloor = 0;
     int lutindexceil = 0;
     // index
-    if(!delay) {
 
+    lutindexfloor = std::floor((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
+    lutindexceil = std::ceil((distance - (_lutCutoff + _pointDistance)) / _pointDistance);
 
-      lutindexfloor = std::floor((distance - ((_pointDistance /2)+ _pointDistance) )/ _pointDistance);
-      lutindexceil = std::ceil((distance - ((_pointDistance /2)+ _pointDistance) )/ _pointDistance);
-    }else{
-      lutindexfloor = std::floor((distance - (delayValue + _pointDistance)) / _pointDistance);
-      lutindexceil = std::ceil((distance -(delayValue + _pointDistance)) / _pointDistance);
-    }
-
-
-    std::array<double ,2 >  Y1={0,0};
+    std::array<double, 2> Y1 = {0, 0};
 
     if (lutindexfloor >= _resolution) {
-
       Y1 = _lut2B_globals.at(_resolution - 1);
     } else {
-
       Y1 = _lut2B_globals.at(lutindexfloor);
     }
 
-    std::array<double ,2 >  Y2={0,0};
+    std::array<double, 2> Y2 = {0, 0};
     if (lutindexceil >= _resolution) {
-
       Y2 = _lut2B_globals.at(_resolution - 1);
     } else {
-
       Y2 = _lut2B_globals.at(lutindexceil);
     }
 
     double X1 = 0;
     double X2 = 0;
 
-
-    if(!delay) {
-
-
-            X1 = (lutindexfloor * _pointDistance) +(_pointDistance /2) + _pointDistance;
-      X2 = (lutindexceil * _pointDistance) +(_pointDistance /2) + _pointDistance;
-    }else {
-      X1 = (lutindexfloor * _pointDistance) + (delayValue + _pointDistance);
-      X2 = (lutindexceil * _pointDistance) + (delayValue + _pointDistance);
-    }
+    X1 = (lutindexfloor * _pointDistance) + (_lutCutoff + _pointDistance);
+    X2 = (lutindexceil * _pointDistance) + (_lutCutoff + _pointDistance);
 
     if (fabs(Y2[0] - Y1[0]) < 1e-12) {
-
       return Y1;
     }
 
-    if (fabs(X2 - X1 ) < 1e-12) {
-        return Y1;
+    if (fabs(X2 - X1) < 1e-12) {
+      return Y1;
     }
 
     if (fabs(distance - X1) < 1e-12) {
-
-        return Y1;
+      return Y1;
     }
 
-    auto force = Y1[0] + (distance - X1) * ((Y2[0] - Y1[0]) / (X2 - X1 ));
-    auto globs = Y1[1] + (distance - X1) * ((Y2[1] - Y1[1]) / (X2 - X1 ));
-    return  {force,globs};
+    auto force = Y1[0] + (distance - X1) * ((Y2[0] - Y1[0]) / (X2 - X1));
+    auto globs = Y1[1] + (distance - X1) * ((Y2[1] - Y1[1]) / (X2 - X1));
+    return {force, globs};
   }
-
-
-
 
   // alternative spacing LUT
 
   template <class Functor>
-  void fill_unevenly(const Functor &functor, double cutoffSquared) {
+  void fill_unevenly(const Functor &functor) {
     double increment = _cutoff / _resolution;
 
     for (auto i = 0; i < _resolution; i++) {
@@ -375,14 +295,8 @@ if ((!delay && distanceSquared < ((_pointDistance /2 ) + _pointDistance) )|| (de
 
   void setShift6(double shift6) { LUT2B::shift6 = shift6; }
 
+  // exists because LJFunctor does not exist yet when LUT is filled
   float getLUTValues(double distance2) const {
-    // TOOD why is this hardcoded get the actual one from the mdconfig. save it in the parentLUT
-    // this is force magnitude for true r not r^2 even though distance= r^2
-    //    auto sigmaSquared = 1;
-    //      auto sigmaSquared = sigmaSquared;
-    //      auto epsilon24 = epsilon24;
-    //    auto shift6 = _shift6AoS;
-
     double invdr2 = 1. / distance2;
     double lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
@@ -391,9 +305,8 @@ if ((!delay && distanceSquared < ((_pointDistance /2 ) + _pointDistance) )|| (de
     return epsilon24 * (lj12 + lj12m6) * invdr2;
   }
 
-
   void logToFile(const std::string &message) {
-    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_distances.txt", std::ios::app);  // Open in append mode
+    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_distances.txt", std::ios::app);
     if (outFile.is_open()) {
       outFile << message << std::endl;
     } else {
@@ -402,8 +315,7 @@ if ((!delay && distanceSquared < ((_pointDistance /2 ) + _pointDistance) )|| (de
   }
 
   void logIndexToFile(const std::string &message) {
-    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_res_100_in_lut.txt",
-                          std::ios::app);  // Open in append mode
+    std::ofstream outFile("iteration_10000_NN_small_fallingDrop_res_100_in_lut.txt", std::ios::app);
     if (outFile.is_open()) {
       outFile << message << std::endl;
     } else {
@@ -418,8 +330,9 @@ if ((!delay && distanceSquared < ((_pointDistance /2 ) + _pointDistance) )|| (de
   double sigmaSquared;
   double epsilon24;
   double shift6;
-  bool delay = false;
+  bool postponedStart = false;
+  bool useGlob = false;
   double sqrtSigma;
-  double delayValue = 0;
+  InterpolationMethod interpolationMethod;
 };
 }  // namespace mdLib

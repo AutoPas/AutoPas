@@ -44,17 +44,17 @@ int main(int argc, char **argv) {
 
     bool TRI_WISE_LUT= true;
     bool USELUT = true;
-    bool USEGLOBAL = true;
+    bool USEGLOBAL = false;
     bool DELAY = false;
-    bool KRYPTON = true;
-    int RESOLUTION =100;
+    bool KRYPTON = false;
+    int RESOLUTION =55;
+    mdLib::InterpolationMethod method = mdLib::InterpolationMethod::LIN;
 
     std::cout << "Configuration  triwise lut : " << TRI_WISE_LUT << " uselut  " << USELUT << " useglobal   " << USEGLOBAL << " delay  " << DELAY << "  krypton  " << KRYPTON << " resolution " << RESOLUTION << std::endl;
 
-    configuration.handleLUT(TRI_WISE_LUT, USELUT, USEGLOBAL,DELAY, KRYPTON,RESOLUTION);
+    configuration.handleLUT(TRI_WISE_LUT, USELUT, USEGLOBAL,method, DELAY, KRYPTON,RESOLUTION);
 
     Simulation simulation(configuration, domainDecomposition);
-
     simulation.run();
     simulation.finalize();
 

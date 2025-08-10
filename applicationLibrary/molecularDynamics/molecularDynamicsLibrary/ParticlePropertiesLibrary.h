@@ -302,12 +302,23 @@ class ParticlePropertiesLibrary {
                                  k];
   }
 
+  int calculateResolution(int value) {
+    if (value <= 3) {
+      std::cout << "minimal resolution is 4" << std::endl;
+      return 1;
+    }
+    int x = std::floor(std::cbrt(6 * value));
 
+    int res = (x * (x + 1) * (x + 2)) / 6;
+    std::cout << "resolution set to " << res << std::endl;
+    return x - 1;
+  }
 
   /**
-   * Initializes the two look-up tables with hardcoded arguments
+   * Initializes the two look-up tables with arguments provided in main
    */
-  void initializeLookUpTables(bool triwise, bool useLUT, bool useGlobalLUT, bool delay, bool krypton, int resolution) {
+  void initializeLookUpTables(bool triwise, bool useLUT, bool useGlobalLUT, mdLib::InterpolationMethod method,
+                              bool delay, bool krypton, int resolution) {
     // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
     if (_epsilons.size() > 1 || _sigmas.size() > 1 || _nus.size() > 1)
       throw autopas::utils::ExceptionHandler::AutoPasException(
@@ -317,7 +328,7 @@ class ParticlePropertiesLibrary {
 
       if (useLUT) {
         LUTtimers[0].start();
-        _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff, useGlobalLUT, delay, getSigma(0) * getSigma(0),
+        _LUT2B = mdLib::LUT2B(resolution, _cutoff * _cutoff, useGlobalLUT, method, delay, getSigma(0) * getSigma(0),
                               getEpsilon(0) * 24);
         LUTtimers[0].stop();
       }
@@ -330,7 +341,7 @@ class ParticlePropertiesLibrary {
       _LUT3B.setNu(nu);
       if (useLUT) {
         LUTtimers[0].start();
-        _LUT3B = mdLib::LUT3B(resolution, _cutoff * _cutoff, useGlobalLUT, krypton, nu);
+        _LUT3B = mdLib::LUT3B(resolution, _cutoff * _cutoff, useGlobalLUT, method, krypton, nu);
         LUTtimers[0].stop();
       }
     }
@@ -339,7 +350,7 @@ class ParticlePropertiesLibrary {
   /**
    *   * @return The 3 body LUT
    */
-  mdLib::LUT3B &getLUT3B() { return _LUT3B; }
+  [[maybe_unused]] mdLib::LUT3B &getLUT3B() { return _LUT3B; }
 
   /**
    * @return lut for pairwise
@@ -356,8 +367,8 @@ class ParticlePropertiesLibrary {
   const double _cutoff;
 
   mdLib::LUT3B _LUT3B = mdLib::LUT3B(0, _cutoff *_cutoff);
-  mdLib::LUT2B _LUT2B = mdLib::LUT2B(0, _cutoff *_cutoff);
 
+  mdLib::LUT2B _LUT2B = mdLib::LUT2B(0, _cutoff *_cutoff);
 
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;

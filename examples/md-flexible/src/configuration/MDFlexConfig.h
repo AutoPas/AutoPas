@@ -867,7 +867,7 @@ class MDFlexConfig {
  public:
 
 
-  void handleLUT(bool triwise, bool useLUT, bool useGlobalLUT,bool delay,bool krypton, int resolution);
+  void handleLUT(bool triwise, bool useLUT, bool useGlobalLUT,mdLib::InterpolationMethod method, bool delay,bool krypton, int resolution);
 };
 
 /**
