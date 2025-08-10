@@ -97,8 +97,8 @@ class P3M_container : public LinkedCells<Particle_T> {
             selfForceCoeffs[dim] = std::vector<double>(2);
         }
         computeSelfForceCoeff();
-        // std::cout << "Self Forces: " << std::endl;
-        /*for (int dim = 0; dim < 3; dim++){
+        /*std::cout << "Self Forces: " << std::endl;
+        for (int dim = 0; dim < 3; dim++){
             std::cout << "dim " << dim << " ";
             for(int i = 0; i < 2; i++){
                 std::cout << selfForceCoeffs[dim][i] << ", ";
@@ -401,6 +401,8 @@ class P3M_container : public LinkedCells<Particle_T> {
                 factor *= coeff;
 
                 //TODO parallelize
+                double selfForceCoeff = 0.0;
+                AUTOPAS_OPENMP(parallel for schedule(static) reduction(+: selfForceCoeff))
                 for (unsigned int zind = 0; zind < grid_dims[2]; zind++){
                     for (unsigned int yind = 0; yind < grid_dims[1]; yind++){
                         for (unsigned int xind = 0; xind < grid_dims[0]; xind++){
@@ -421,11 +423,12 @@ class P3M_container : public LinkedCells<Particle_T> {
                                 precoeff = Usum(brillouinShiftedX[xind], brillouinShiftedY[yind], brillouinShiftedZ[zind], 0, 0, coeff);
                                 break;
                             }
-                            selfForceCoeffs[dim][coeff-1] += real(optForceInfluence[xind][yind][zind]) * precoeff;
+                            selfForceCoeff += real(optForceInfluence[xind][yind][zind]) * precoeff;
                         }
                     }   
                 }
-                selfForceCoeffs[dim][coeff-1] *= factor;
+                // end of parallel for
+                selfForceCoeffs[dim][coeff-1] = selfForceCoeff * factor;
             }
         }
     }
