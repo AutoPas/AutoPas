@@ -30,6 +30,7 @@ class LUT2B : public ParentLUT {
     }
     fill();
   }
+
   template <class Functor>
   float retrieveValues(const Functor &functor, float distanceSquared) {
 
@@ -65,7 +66,7 @@ class LUT2B : public ParentLUT {
         return getNextNeighbor_global(distanceSquared);
         break;
       case LIN:
-        return getLinear_global(functor, distanceSquared);
+        return getLinear_global( distanceSquared);
         break;
       default:
         throw autopas::utils::ExceptionHandler::AutoPasException(
