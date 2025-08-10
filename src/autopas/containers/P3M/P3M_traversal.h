@@ -101,13 +101,17 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // assigns the charges of particles to cao number of points in the rs_grid
     void assignChargeDensities(){
+        double gridCellVolumeInv = (1./ (grid_dist[0]*grid_dist[1]*grid_dist[2]));
+
+        std::array<int, 3> closestGridpoint = {0,0,0};
+        std::vector<double> caFractionsX = std::vector<double>(cao);
+        std::vector<double> caFractionsY = std::vector<double>(cao);
+        std::vector<double> caFractionsZ = std::vector<double>(cao);
+
+
         for (auto iter = beginIter; iter.isValid(); ++iter){
             std::array<double, 3> pPos = iter->getR();
-            std::array<int, 3> closestGridpoint = {0,0,0};
-            std::vector<double> caFractionsX = std::vector<double>(cao);
-            std::vector<double> caFractionsY = std::vector<double>(cao);
-            std::vector<double> caFractionsZ = std::vector<double>(cao);
-
+            
             getChargeAssignmentFractions(pPos, closestGridpoint, caFractionsX, caFractionsY, caFractionsZ);
             // charge assignment according to computed fractions
             for(int xi = 0; xi < cao; xi++){
@@ -118,7 +122,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                         int zii = zi - (cao/2);
                         // 1/V factor may not be needed
                         rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]]
-                            += caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * iter->getQ() * (1./ (grid_dist[0]*grid_dist[1]*grid_dist[2]));
+                            += caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * iter->getQ() * gridCellVolumeInv;
                     }
                 }
             }
@@ -202,6 +206,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // multiplies the ks_grid with an influence function
     void applyInfluenceFunction(){
+        AUTOPAS_OPENMP(parallel for schedule(static))
         for(unsigned int i = 0; i < grid_dims[0]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[2]; k++){
@@ -213,16 +218,22 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // assigns parts of forces from the points in the rs_grid back to the particles according to the charge assignment fuction
     void interpolateForces(){
+        double gridDistInvX = (1./grid_dist[0]);
+        double gridDistInvY = (1./grid_dist[1]);
+        double gridDistInvZ = (1./grid_dist[2]);
+
+        std::array<int, 3> closestGridpoint = {0,0,0};
+        std::vector<double> caFractionsX = std::vector<double>(cao);
+        std::vector<double> caFractionsY = std::vector<double>(cao);
+        std::vector<double> caFractionsZ = std::vector<double>(cao);
+        std::vector<double> caFractionsDX = std::vector<double>(cao);
+        std::vector<double> caFractionsDY = std::vector<double>(cao);
+        std::vector<double> caFractionsDZ = std::vector<double>(cao);
+
         for (auto iter = beginIter; iter.isValid(); ++iter){
             std::array<double, 3> pPos = iter->getR();
             double charge = iter->getQ();
-            std::array<int, 3> closestGridpoint = {0,0,0};
-            std::vector<double> caFractionsX = std::vector<double>(cao);
-            std::vector<double> caFractionsY = std::vector<double>(cao);
-            std::vector<double> caFractionsZ = std::vector<double>(cao);
-            std::vector<double> caFractionsDX = std::vector<double>(cao);
-            std::vector<double> caFractionsDY = std::vector<double>(cao);
-            std::vector<double> caFractionsDZ = std::vector<double>(cao);
+            
 
             getChargeAssignmentFractions(pPos, closestGridpoint, caFractionsX, caFractionsY, caFractionsZ);
             getCAFDeriveative(pPos, closestGridpoint, caFractionsDX, caFractionsDY, caFractionsDZ);
@@ -236,9 +247,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                         int zii = zi - (cao/2);
 
                         double force = rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]];
-                        totalForce[0] -= caFractionsDX[xi] * caFractionsY[yi] * caFractionsZ[zi] * (1./grid_dist[0]) * force * charge;
-                        totalForce[1] -= caFractionsX[xi] * caFractionsDY[yi] * caFractionsZ[zi] * (1./grid_dist[1]) * force * charge;
-                        totalForce[2] -= caFractionsX[xi] * caFractionsY[yi] * caFractionsDZ[zi] * (1./grid_dist[2]) * force * charge;
+                        totalForce[0] -= caFractionsDX[xi] * caFractionsY[yi] * caFractionsZ[zi] * gridDistInvX * force * charge;
+                        totalForce[1] -= caFractionsX[xi] * caFractionsDY[yi] * caFractionsZ[zi] * gridDistInvY * force * charge;
+                        totalForce[2] -= caFractionsX[xi] * caFractionsY[yi] * caFractionsDZ[zi] * gridDistInvZ * force * charge;
                     }
                 }
             }
@@ -264,7 +275,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         // TODO make more efficient
         double closestGridPos;
         if(cao % 2 == 1){
-            int closestPoint = (int)((pPos[dim] - boxMin[dim] + (grid_dist[dim] / 2)) / grid_dist[dim]);
+            int closestPoint = (int)((pPos[dim] - boxMin[dim]) / grid_dist[dim] + 0.5);
             closestGridpoint[dim] = closestPoint % grid_dims[dim];
             closestGridPos = closestPoint * grid_dist[dim];
         }else{
@@ -282,7 +293,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             double closestGridPos = getClosestGridpoint(pPos, closestGridpoint, i);
             switch(i){
                 case 0:
-                    // TODO currently not in the interval
                     // charge Fraction uses normalized distances in [-0.5, 0.5]
                     chargeFraction((pPos[i] - closestGridPos) / grid_dist[i], caFractionsX);
                     break;
@@ -327,8 +337,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
      */
     void traverseFarParticles(){
         assignChargeDensities();
-        //std::cout << "Charge Grid:" << std::endl;
-        /*for(unsigned int i = 0; i < grid_dims[2]; i++){
+        /*std::cout << "Charge Grid:" << std::endl;
+        for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[0]; k++){
                     std::cout << rs_grid[k][j][i] << ", ";
@@ -337,7 +347,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             }
             std::cout << std::endl;
         }*/
-       fftTimer->start();
+        fftTimer->start();
         fft.forward3D(rs_grid, ks_grid, grid_dims);
         fftTimer->stop();
 
@@ -346,8 +356,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         fftTimer->start();
         fft.backward3D(ks_grid, rs_grid, grid_dims);
         fftTimer->stop();
-        //std::cout << "Force Grid:" << std::endl;
-        /*for(unsigned int i = 0; i < grid_dims[2]; i++){
+        /*std::cout << "Force Grid:" << std::endl;
+        for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[0]; k++){
                     std::cout << rs_grid[k][j][i] << ", ";
@@ -417,6 +427,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     void initTraversal() override {
         // zero out the grids
+        AUTOPAS_OPENMP(parallel for schedule(static))
         for(unsigned int x = 0; x < grid_dims[0]; x++){
             for(unsigned int y = 0; y < grid_dims[1]; y++){
                 for(unsigned int z = 0; z < grid_dims[2]; z++){

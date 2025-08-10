@@ -6,6 +6,7 @@
 #include "autopas/containers/P3M/P3M_shortRangeFunctor.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 #include "autopas/utils/Timer.h"
 
@@ -77,6 +78,17 @@ class P3M_container : public LinkedCells<Particle_T> {
         }else{
             computeInfluenceEnergy();
         }
+
+        /*std::cout << "Influence: " << std::endl;
+        for (int x = 0; x < grid_dims[0]; x++){
+            for(int y = 0; y < grid_dims[1]; y++){
+                for(int z = 0; z < grid_dims[2]; z++){
+                    std::cout << optForceInfluence[x][y][z] << ", ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }*/
         
         
 
@@ -85,6 +97,7 @@ class P3M_container : public LinkedCells<Particle_T> {
             selfForceCoeffs[dim] = std::vector<double>(2);
         }
         computeSelfForceCoeff();
+        // std::cout << "Self Forces: " << std::endl;
         /*for (int dim = 0; dim < 3; dim++){
             std::cout << "dim " << dim << " ";
             for(int i = 0; i < 2; i++){
@@ -106,21 +119,25 @@ class P3M_container : public LinkedCells<Particle_T> {
      *  the number of gridpoints in every direction, alpha, grid_dist and the charge_assignment_function
      */
     void computeInfluenceFunction(){
-        std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
-        std::vector<int> brillouinShiftedY = std::vector<int>(grid_dims[1]);
-        std::vector<int> brillouinShiftedZ = std::vector<int>(grid_dims[2]);
-        
-        computeBrillouinShift(brillouinShiftedX, grid_dims[0]);
-        computeBrillouinShift(brillouinShiftedY, grid_dims[1]);
-        computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
+        AUTOPAS_OPENMP(parallel)
+        {
+            std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
+            std::vector<int> brillouinShiftedY = std::vector<int>(grid_dims[1]);
+            std::vector<int> brillouinShiftedZ = std::vector<int>(grid_dims[2]);
+            
+            computeBrillouinShift(brillouinShiftedX, grid_dims[0]);
+            computeBrillouinShift(brillouinShiftedY, grid_dims[1]);
+            computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
 
-        for(int ix=0; ix < grid_dims[0]; ix++){
-            for(int iy = 0; iy < grid_dims[1]; iy++){
-                for(int iz = 0; iz < grid_dims[2]; iz++){
-                    if(ix%(grid_dims[0]/2) == 0 and iy%(grid_dims[1]/2) == 0 and iz%(grid_dims[2]/2) == 0){
-                        optForceInfluence[ix][iy][iz] = std::complex<double>(0.0);
-                    }else{
-                        optForceInfluence[ix][iy][iz] = computeForceInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+            AUTOPAS_OPENMP(for schedule(static))
+            for(int ix=0; ix < grid_dims[0]; ix++){
+                for(int iy = 0; iy < grid_dims[1]; iy++){
+                    for(int iz = 0; iz < grid_dims[2]; iz++){
+                        if(ix%(grid_dims[0]/2) == 0 and iy%(grid_dims[1]/2) == 0 and iz%(grid_dims[2]/2) == 0){
+                            optForceInfluence[ix][iy][iz] = std::complex<double>(0.0);
+                        }else{
+                            optForceInfluence[ix][iy][iz] = computeForceInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+                        }
                     }
                 }
             }
@@ -249,21 +266,25 @@ class P3M_container : public LinkedCells<Particle_T> {
     }
 
     void computeInfluenceEnergy(){
-        std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
-        std::vector<int> brillouinShiftedY = std::vector<int>(grid_dims[1]);
-        std::vector<int> brillouinShiftedZ = std::vector<int>(grid_dims[2]);
-        
-        computeBrillouinShift(brillouinShiftedX, grid_dims[0]);
-        computeBrillouinShift(brillouinShiftedY, grid_dims[1]);
-        computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
+        AUTOPAS_OPENMP(parallel)
+        {
+            std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
+            std::vector<int> brillouinShiftedY = std::vector<int>(grid_dims[1]);
+            std::vector<int> brillouinShiftedZ = std::vector<int>(grid_dims[2]);
+            
+            computeBrillouinShift(brillouinShiftedX, grid_dims[0]);
+            computeBrillouinShift(brillouinShiftedY, grid_dims[1]);
+            computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
 
-        for(unsigned int ix=0; ix < grid_dims[0]; ix++){
-            for(unsigned int iy = 0; iy < grid_dims[1]; iy++){
-                for(unsigned int iz = 0; iz < grid_dims[2]; iz++){
-                    if(ix == 0 and iy == 0 and iz == 0){
-                        optForceInfluence[ix][iy][iz] = std::complex<double>(0.0);
-                    }else{
-                        optForceInfluence[ix][iy][iz] = computeEnergyInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+            AUTOPAS_OPENMP(for schedule(static))
+            for(unsigned int ix=0; ix < grid_dims[0]; ix++){
+                for(unsigned int iy = 0; iy < grid_dims[1]; iy++){
+                    for(unsigned int iz = 0; iz < grid_dims[2]; iz++){
+                        if(ix == 0 and iy == 0 and iz == 0){
+                            optForceInfluence[ix][iy][iz] = std::complex<double>(0.0);
+                        }else{
+                            optForceInfluence[ix][iy][iz] = computeEnergyInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+                        }
                     }
                 }
             }
@@ -378,9 +399,11 @@ class P3M_container : public LinkedCells<Particle_T> {
             double factor = 2 * M_PI / (vol * grid_dist[dim]);
             for (int coeff = 1; coeff <= 2; coeff++){
                 factor *= coeff;
+
+                //TODO parallelize
                 for (unsigned int zind = 0; zind < grid_dims[2]; zind++){
                     for (unsigned int yind = 0; yind < grid_dims[1]; yind++){
-                for (unsigned int xind = 0; xind < grid_dims[0]; xind++){
+                        for (unsigned int xind = 0; xind < grid_dims[0]; xind++){
                     
                         
                             if(xind == 0 && yind == 0 && zind == 0){

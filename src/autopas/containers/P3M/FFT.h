@@ -16,7 +16,6 @@ namespace autopas {
         private:
         std::vector<std::complex<double>> inBuffer;
         std::vector<std::complex<double>> outBuffer;
-        std::vector<std::complex<double>> fftBuffer;
         ComplexGridType fftBuffer3D;
         bool correct_scaling;
 
@@ -62,7 +61,6 @@ namespace autopas {
             }
             inBuffer = std::vector<std::complex<double>>(maxGridDim);
             outBuffer = std::vector<std::complex<double>>(maxGridDim);
-            fftBuffer = std::vector<std::complex<double>>(maxGridDim);
 
             fftBuffer3D = ComplexGridType(N[0]);
             for(unsigned int i = 0; i < N[0]; i++){
@@ -85,20 +83,21 @@ namespace autopas {
         }
 
         void backward(std::vector<std::complex<double>> &x, unsigned int N, std::vector<std::complex<double>> &result){
-            fft(x, N, 0, fftBuffer, false);
+            fft(x, N, 0, result, false);
             if(correct_scaling){
                 for(unsigned int i = 0; i < N; i++){
-                    result[i] = fftBuffer[i] * std::sqrt(2*M_PI) / std::complex<double>(N);
+                    result[i] = result[i] * std::sqrt(2*M_PI) / std::complex<double>(N);
                 }
             }else{
                 for(unsigned int i = 0; i < N; i++){
-                    result[i] = fftBuffer[i] / std::complex<double>(N);
+                    result[i] = result[i] / std::complex<double>(N);
                 }
             }
             
         }
 
         void forward3Ddirection(ComplexGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims, int direction){
+            AUTOPAS_OPENMP(parallel for schedule(static) firstprivate(inBuffer, outBuffer))
             for(unsigned int k = 0; k < grid_dims[(direction + 1) % 3]; k++){
                 for(unsigned int l = 0; l < grid_dims[(direction + 2) % 3]; l++){
                     // ffts in z-direction
@@ -137,6 +136,7 @@ namespace autopas {
         }
 
         void forward3D(RealGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims){
+            AUTOPAS_OPENMP(parallel for schedule(static))
             for(unsigned int i = 0; i < grid_dims[0]; i++){
                 for(unsigned int j = 0; j < grid_dims[1]; j++){
                     for(unsigned int k = 0; k < grid_dims[2]; k++){
@@ -151,6 +151,7 @@ namespace autopas {
         }
 
         void backward3Ddirection(ComplexGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims, int direction){
+            AUTOPAS_OPENMP(parallel for schedule(static) firstprivate(inBuffer, outBuffer))
             for(unsigned int k = 0; k < grid_dims[(direction + 1) % 3]; k++){
                 for(unsigned int l = 0; l < grid_dims[(direction + 2) % 3]; l++){
                     // ffts in z-direction
@@ -193,6 +194,7 @@ namespace autopas {
             backward3Ddirection(fftBuffer3D, fftBuffer3D, grid_dims, 1);
             backward3Ddirection(fftBuffer3D, fftBuffer3D, grid_dims, 2);
 
+            AUTOPAS_OPENMP(parallel for schedule(static))
             for(unsigned int i = 0; i < grid_dims[0]; i++){
                 for(unsigned int j = 0; j < grid_dims[1]; j++){
                     for(unsigned int k = 0; k < grid_dims[2]; k++){
