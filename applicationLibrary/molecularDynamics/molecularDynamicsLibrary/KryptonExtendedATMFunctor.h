@@ -304,7 +304,7 @@ namespace mdLib {
                 // Division to the correct value is handled in endTraversal().
 //
                  double potentialEnergy = 0;
-                if (!useLUT) {
+                if constexpr (!useLUT) {
                    potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
                 }else    {
                   potentialEnergy = potE;
