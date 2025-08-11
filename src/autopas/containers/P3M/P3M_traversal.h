@@ -408,7 +408,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     public:
 
-    void traverseParticles(){
+    void traverseParticles() override{
         traverseFarParticles();
 
         shortRangeTimer->start();
