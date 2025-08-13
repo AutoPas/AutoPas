@@ -261,6 +261,14 @@ std::string MDFlexConfig::to_string() const {
       })) {
     printOption(acquisitionFunctionOption);
   }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::reinforcementLearning})) {
+    printOption(learningRate);
+    printOption(discountFactor);
+  }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::deepReinforcementLearning})) {
+    printOption(explorationSamples);
+    printOption(doReinforcementUpdates);
+  }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::mpiDivideAndConquer})) {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
