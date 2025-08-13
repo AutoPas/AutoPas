@@ -827,25 +827,21 @@ class AutoPas {
    * Get the number of exploration samples for deep reinforcement learning.
    * @return The number of exploration samples.
    */
-  [[nodiscard]] unsigned int getExplorationSamples() const {
-    return _tuningStrategyFactoryInfo.numberOfExplorationPhases;
-  }
+  [[nodiscard]] unsigned int getExplorationSamples() const { return _tuningStrategyFactoryInfo.explorationSamples; }
 
   /**
    * Set the number of exploration samples for deep reinforcement learning.
    * @param explorationSamples The number of exploration samples.
    */
   void setExplorationSamples(unsigned int explorationSamples) {
-    _tuningStrategyFactoryInfo.numberOfExplorationPhases = explorationSamples;
+    _tuningStrategyFactoryInfo.explorationSamples = explorationSamples;
   }
 
   /**
    * Get if reinforcement training updates are being used for deep reinforcement learning.
    * @return If reinforcement training updates are enabled.
    */
-  [[nodiscard]] bool getDoReinforcementUpdates() const {
-    return _tuningStrategyFactoryInfo.doReinforcementUpdates;
-  }
+  [[nodiscard]] bool getDoReinforcementUpdates() const { return _tuningStrategyFactoryInfo.doReinforcementUpdates; }
 
   /**
    * Set if reinforcement training updates are being used for deep reinforcement learning.
