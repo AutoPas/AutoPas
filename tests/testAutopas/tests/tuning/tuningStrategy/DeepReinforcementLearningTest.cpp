@@ -48,9 +48,6 @@ TEST_F(DeepReinforcementLearningTest, validConstructor) {
   EXPECT_NO_THROW(autopas::DeepReinforcementLearning(searchSpace, true, 2,
                                                      autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo))
       << "DeepReinforcementLearning valid constructor should not throw.";
-  EXPECT_NO_THROW(autopas::DeepReinforcementLearning(searchSpace, false, 1,
-                                                     autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo))
-      << "DeepReinforcementLearning valid constructor should not throw.";
 }
 
 /**
@@ -86,6 +83,9 @@ TEST_F(DeepReinforcementLearningTest, invalidConstructors) {
       EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, 0, explorationMethod),
                    autopas::utils::ExceptionHandler::AutoPasException)
           << "DeepReinforcementLearning should reject zero exploration samples.";
+      EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, 1, explorationMethod),
+                   autopas::utils::ExceptionHandler::AutoPasException)
+          << "DeepReinforcementLearning should reject one exploration samples.";
       EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, searchSpace.size(), explorationMethod),
                    autopas::utils::ExceptionHandler::AutoPasException)
           << "DeepReinforcementLearning should reject too many exploration samples.";
