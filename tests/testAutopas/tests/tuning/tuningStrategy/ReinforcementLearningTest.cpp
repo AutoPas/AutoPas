@@ -112,7 +112,6 @@ TEST_F(ReinforcementLearningTest, firstSearchIsFullSearch) {
   while (true) {
     const std::vector<autopas::Configuration> configQueueCopy = configQueue;
     bool ret = rl.optimizeSuggestions(configQueue, evidenceCollection);
-    rl.addEvidence(configQueue.back(), evidence);
 
     EXPECT_EQ(configQueue.size(), configQueueCopy.size())
         << "ReinforcementLearning should not change the size of the config queue.";
@@ -125,6 +124,7 @@ TEST_F(ReinforcementLearningTest, firstSearchIsFullSearch) {
       break;
     }
 
+    rl.addEvidence(configQueue.back(), evidence);
     configQueue.pop_back();
   }
 }
@@ -166,12 +166,13 @@ TEST_F(ReinforcementLearningTest, correctConfigExplorationPhase) {
 
   // Perform an initial full search
   rl.reset(0, 0, configQueue, evidenceCollection);
+  rl.optimizeSuggestions(configQueue, evidenceCollection);
 
   while (!configQueue.empty()) {
-    rl.optimizeSuggestions(configQueue, evidenceCollection);
     rl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
-
     configQueue.pop_back();
+
+    rl.optimizeSuggestions(configQueue, evidenceCollection);
   }
 
   // Update the evidence
@@ -249,11 +250,12 @@ TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
 
   // Perform an initial full search
   rl.reset(0, 0, configQueue, evidenceCollection);
+  rl.optimizeSuggestions(configQueue, evidenceCollection);
 
   while (!configQueue.empty()) {
-    rl.optimizeSuggestions(configQueue, evidenceCollection);
     rl.addEvidence(configQueue.back(), evidence);
     configQueue.pop_back();
+    rl.optimizeSuggestions(configQueue, evidenceCollection);
   }
 
   // Test the second search

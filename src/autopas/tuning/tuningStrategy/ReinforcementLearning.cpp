@@ -37,7 +37,7 @@ autopas::TuningStrategyOption autopas::ReinforcementLearning::getOptionType() co
 
 void autopas::ReinforcementLearning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   if (_firstTuningPhase) {
-    _state.insert(std::make_pair(configuration, -evidence.value));
+    _state.emplace(configuration, -evidence.value);
   } else {
     double oldState = _state[configuration];
     _state[configuration] = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
