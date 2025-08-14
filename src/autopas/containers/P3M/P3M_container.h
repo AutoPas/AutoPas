@@ -444,7 +444,7 @@ class P3M_container : public LinkedCells<Particle_T> {
         auto *traversalP3M = dynamic_cast<P3M_traversal<LinkedParticleCell> *>(traversal);
         if (traversalP3M) {
             traversalP3M->set_traversal_parameters(cao, grid_dims, this->getBoxMin(), grid_dist, rs_grid, /*rs_grid_shifted,*/ 
-                ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, selfForceCoeffs, std::move(this->begin(autopas::IteratorBehavior::owned)),
+                ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, selfForceCoeffs, this,
                 shortRangeTraversal);
             traversalP3M->set_Timers(&fftTimer, &shortRangeTimer);
         } else {

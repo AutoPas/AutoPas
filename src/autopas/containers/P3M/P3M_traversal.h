@@ -16,6 +16,10 @@
 
 namespace autopas {
 
+// decleration for pointer use later
+template <class Particle_Type>
+class P3M_container;
+
 
 //template <class ParticleCell, class Functor>
 template <class ParticleCell>
@@ -41,7 +45,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     void set_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, const std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, /*GridType &rs_shifted,*/ 
         ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, std::vector<std::vector<double>> &selfForceCoeffs,
-        ContainerIterator<ParticleType, true, false> &&beginIter, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
+        P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
         this->cao = cao;
         this->grid_dims = grid_dims;
         this->grid_dist = grid_dist;
@@ -53,7 +57,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         this->fft = fft;
         this->boxMin = boxMin;
         this->selfForceCoeffs = selfForceCoeffs;
-        this->beginIter = ContainerIterator<ParticleType, true, false>(beginIter);
+        this->container = container;
         this->shortRangeTraversal = shortRangeTraversal;
     }
 
@@ -91,8 +95,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     std::vector<std::vector<double>> selfForceCoeffs;
 
-    // Container Iterator
-    ContainerIterator<ParticleType, true, false> beginIter;
+    P3M_container<ParticleType> *container;
     LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal;
 
     utils::Timer *fftTimer;
@@ -101,6 +104,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // assigns the charges of particles to cao number of points in the rs_grid
     void assignChargeDensities(){
+        AUTOPAS_OPENMP(parallel){
         double gridCellVolumeInv = (1./ (grid_dist[0]*grid_dist[1]*grid_dist[2]));
 
         std::array<int, 3> closestGridpoint = {0,0,0};
@@ -109,7 +113,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         std::vector<double> caFractionsZ = std::vector<double>(cao);
 
 
-        for (auto iter = beginIter; iter.isValid(); ++iter){
+        for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter){
             std::array<double, 3> pPos = iter->getR();
             
             getChargeAssignmentFractions(pPos, closestGridpoint, caFractionsX, caFractionsY, caFractionsZ);
@@ -121,11 +125,14 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                         int yii = yi - (cao/2);
                         int zii = zi - (cao/2);
                         // 1/V factor may not be needed
+                        double chargeFraction = caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * iter->getQ() * gridCellVolumeInv;
+                        AUTOPAS_OPENMP(atomic)
                         rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]]
-                            += caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * iter->getQ() * gridCellVolumeInv;
+                            += chargeFraction;
                     }
                 }
             }
+        }
         }
 
     }
@@ -218,6 +225,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     // assigns parts of forces from the points in the rs_grid back to the particles according to the charge assignment fuction
     void interpolateForces(){
+        AUTOPAS_OPENMP(parallel)
+        {
         double gridDistInvX = (1./grid_dist[0]);
         double gridDistInvY = (1./grid_dist[1]);
         double gridDistInvZ = (1./grid_dist[2]);
@@ -230,7 +239,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         std::vector<double> caFractionsDY = std::vector<double>(cao);
         std::vector<double> caFractionsDZ = std::vector<double>(cao);
 
-        for (auto iter = beginIter; iter.isValid(); ++iter){
+        for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter){
             std::array<double, 3> pPos = iter->getR();
             double charge = iter->getQ();
             
@@ -253,10 +262,13 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                     }
                 }
             }
-            //std::cout << "Particle " << iter->getQ() << " long Range F: " << totalForce[0] << ", " << totalForce[1] << ", " << totalForce[2] << std::endl;
+            /*AUTOPAS_OPENMP(critical){
+            std::cout << "Particle " << iter->getQ() << " long Range F: " << totalForce[0] << ", " << totalForce[1] << ", " << totalForce[2] << std::endl;
+            }*/
             subtractSelfForce(*iter, totalForce);
             iter->addF(totalForce);
         }
+    }
     }
 
     void subtractSelfForce(ParticleType &p, std::array<double, 3> &force){
