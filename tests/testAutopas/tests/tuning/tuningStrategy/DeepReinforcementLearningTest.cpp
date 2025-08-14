@@ -125,7 +125,7 @@ TEST_F(DeepReinforcementLearningTest, firstSearchIsFullSearch) {
       autopas::InteractionTypeOption::pairwise);
 
   for (const bool train : {true, false}) {
-    for (size_t explorationSamples = 1; explorationSamples <= 8; explorationSamples++) {
+    for (size_t explorationSamples = 2; explorationSamples <= 8; explorationSamples++) {
       for (const autopas::DeepReinforcementLearning::ExplorationMethod explorationMethod :
            {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial,
             autopas::DeepReinforcementLearning::ExplorationMethod::random,
@@ -192,7 +192,7 @@ TEST_F(DeepReinforcementLearningTest, validExplorationExploitationSize) {
       autopas::InteractionTypeOption::pairwise);
 
   for (const bool train : {true, false}) {
-    for (size_t explorationSamples = 1; explorationSamples <= 8; explorationSamples++) {
+    for (size_t explorationSamples = 2; explorationSamples <= 8; explorationSamples++) {
       for (const autopas::DeepReinforcementLearning::ExplorationMethod explorationMethod :
            {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial,
             autopas::DeepReinforcementLearning::ExplorationMethod::random,

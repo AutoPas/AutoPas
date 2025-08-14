@@ -90,9 +90,9 @@ autopas::DeepReinforcementLearning::DeepReinforcementLearning(const std::set<Con
         "size.");
   }
 
-  // Test that there is at least one exploration sample
-  if (_explorationSamples < 1) {
-    utils::ExceptionHandler::exception("DeepReinforcementLearning: The exploration samples may not be less than 1.");
+  // Test that there is at least two exploration sample
+  if (_explorationSamples <= 1) {
+    utils::ExceptionHandler::exception("DeepReinforcementLearning: The exploration samples may not be less than 2.");
   }
 
   // clang-format off

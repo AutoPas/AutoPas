@@ -212,8 +212,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.explorationSamples)::getoptChar: {
         try {
           config.explorationSamples.value = stoul(strArg);
-          if (config.explorationSamples.value < 1) {
-            cerr << "Exploration samples have to be greater than zero!" << endl;
+          if (config.explorationSamples.value < 2) {
+            cerr << "Exploration samples have to be greater than one!" << endl;
             displayHelp = true;
           }
         } catch (const exception &) {
