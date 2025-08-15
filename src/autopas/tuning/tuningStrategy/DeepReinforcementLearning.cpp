@@ -154,10 +154,6 @@ autopas::TuningStrategyOption autopas::DeepReinforcementLearning::getOptionType(
 void autopas::DeepReinforcementLearning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   switch (_state) {
     case TuningState::firstSearch: {
-      if (_searchSpace.find(configuration) == _searchSpace.end()) {
-        utils::ExceptionHandler::exception("DeepReinforcementLearning: Configuration not found in search space.");
-      }
-
       // In the first search state, we simply collect evidence without any further processing.
       _history.emplace(configuration, DRLHistoryData(_inputLength, evidence.value,
                                                      static_cast<double>(_searchSpace.size()) / _explorationSamples));
@@ -187,14 +183,6 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
   switch (_state) {
     case TuningState::firstSearch: {
       // During the first search, we simply perform a full search.
-      if (configQueue.empty()) {
-        if (_searchSpace.size() != _history.size()) {
-          utils::ExceptionHandler::exception(
-              "DeepReinforcementLearning: The search space size does not match the history size. Not every "
-              "configuration was searched.");
-        }
-      }
-
       return true;
     }
 
@@ -278,11 +266,6 @@ bool autopas::DeepReinforcementLearning::reset(size_t iteration, size_t tuningPh
 }
 
 std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorationSamples() const {
-  if (_explorationSamples > _searchSpace.size()) {
-    utils::ExceptionHandler::exception("DeepReinforcementLearning: Exploration samples exceed search space size.");
-    return _searchSpace;  // Return the entire search space if samples exceed size
-  }
-
   switch (_explorationMethod) {
     case ExplorationMethod::polynomial: {
       // Implementation for polynomial selector exploration
@@ -371,11 +354,6 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
   if (_exploitationSamples > _searchSpace.size()) {
     utils::ExceptionHandler::exception("DeepReinforcementLearning: Exploitation samples exceed search space size.");
     return _searchSpace;  // Return the entire search space if samples exceed size
-  }
-
-  if (_history.size() != _searchSpace.size()) {
-    utils::ExceptionHandler::exception("DeepReinforcementLearning: History size does not match search space size.");
-    return {};  // Return an empty set if history and search space size do not match
   }
 
   // Collect the exploitation samples based on the history
