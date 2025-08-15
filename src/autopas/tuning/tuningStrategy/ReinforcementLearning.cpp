@@ -39,8 +39,8 @@ void autopas::ReinforcementLearning::addEvidence(const Configuration &configurat
   if (_firstTuningPhase) {
     _state.emplace(configuration, -evidence.value);
   } else {
-    double oldState = _state[configuration];
-    _state[configuration] = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
+    double oldState = _state.at(configuration);
+    _state.at(configuration) = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
   }
 
   if (evidence.value <= _bestEvidence) {
