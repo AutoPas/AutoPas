@@ -312,7 +312,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   /**
    * Store the output layer bias. This is a scalar value for the output layer bias.
    */
-  double _outputLayerBias = 2.721013603714227402e-01;
+  double _outputLayerBias = 2.715298880101034151e-01;
 
   /**
    * Store the training input data. This is a vector of _inputLength x 1 matrices for the training input data.
@@ -327,12 +327,12 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   /**
    * Define the number of training iterations.
    */
-  size_t _trainingIterations = 28;
+  size_t _trainingIterations = 34;
 
   /**
    * Store the learning rate.
    */
-  double _learningRate = 5.374858636887887240e-10;
+  double _learningRate = 1.771665733218049020e-09;
 
   /**
    * Store the current state of the tuning process.
@@ -347,7 +347,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   /**
    * Store the number of samples to be used for exploration.
    */
-  size_t _explorationSamples = 3;
+  size_t _explorationSamples = 4;
 
   /**
    * Store the number of samples to be used for exploitation.
@@ -360,6 +360,6 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
    * The phase scale factor defines how much the priority depends on the squared age of the data. It is only used if the
    * polynomial method is being used for selecting the exploration samples.
    */
-  double _phaseScale = 6.633703783154487610e-02;
+  double _phaseScale = 1.162197398643888948e-05;
 };
 }  // namespace autopas

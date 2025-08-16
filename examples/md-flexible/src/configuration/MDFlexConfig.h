@@ -524,7 +524,7 @@ class MDFlexConfig {
    * explorationSamples
    */
   MDFlexOption<unsigned int, __LINE__> explorationSamples{
-      3, "exploration-samples", true,
+      4, "exploration-samples", true,
       "For the deep reinforcement learning tuning strategy: Number of configurations to explore during the exploration "
       "phase. This value has to be greater than one."};
 

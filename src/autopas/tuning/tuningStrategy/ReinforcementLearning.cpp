@@ -36,6 +36,7 @@ autopas::TuningStrategyOption autopas::ReinforcementLearning::getOptionType() co
 }
 
 void autopas::ReinforcementLearning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
+  AutoPasLog(INFO, "Adding {}", configuration.toShortString());
   if (_firstTuningPhase) {
     _state.emplace(configuration, -evidence.value);
   } else {
@@ -51,6 +52,12 @@ void autopas::ReinforcementLearning::addEvidence(const Configuration &configurat
 
 bool autopas::ReinforcementLearning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                                          const EvidenceCollection &evidenceCollection) {
+  if (!configQueue.empty()) {
+    AutoPasLog(INFO, "Back {}", configQueue.back().toShortString());
+  } else {
+    AutoPasLog(INFO, "Empty");
+  }
+
   // Perform a full search over all configurations in the first tuning phase. This runs until the queue is empty.
   if (_firstTuningPhase) {
     return true;
@@ -110,6 +117,7 @@ bool autopas::ReinforcementLearning::optimizeSuggestions(std::vector<Configurati
 bool autopas::ReinforcementLearning::reset(size_t iteration, size_t tuningPhase,
                                            std::vector<Configuration> &configQueue,
                                            const EvidenceCollection &evidenceCollection) {
+  AutoPasLog(INFO, "Reset");
   if (configQueue.size() <= _randomExplorations) {
     utils::ExceptionHandler::exception(
         "The search space must contain more configurations than the number of random exploration samples for "
@@ -119,5 +127,9 @@ bool autopas::ReinforcementLearning::reset(size_t iteration, size_t tuningPhase,
   _firstTuningPhase = tuningPhase == 0;
   _explorationPhase = true;
   _bestEvidence = std::numeric_limits<long>::max();
+
+  optimizeSuggestions(configQueue, evidenceCollection);
+
+  // The first search may never contain an empty config queue.
   return false;
 }
