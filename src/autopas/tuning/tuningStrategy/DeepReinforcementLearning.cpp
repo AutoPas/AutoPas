@@ -71,25 +71,9 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> autopas::DeepReinforcementLearning::DRL
   return vec;
 }
 
-autopas::DeepReinforcementLearning::DeepReinforcementLearning(const std::set<Configuration> &searchSpace,
-                                                              const bool train, const size_t explorationSamples,
+autopas::DeepReinforcementLearning::DeepReinforcementLearning(const bool train, const size_t explorationSamples,
                                                               const ExplorationMethod explorationMethod)
-    : _explorationMethod(explorationMethod),
-      _train(train),
-      _searchSpace(searchSpace),
-      _explorationSamples(explorationSamples) {
-  // Check if the search space is empty.
-  if (_searchSpace.empty()) {
-    utils::ExceptionHandler::exception("DeepReinforcementLearning: The searchspace may not be empty.");
-  }
-
-  // Check if the exploration samples are not too many
-  if (_explorationSamples + _exploitationSamples >= _searchSpace.size()) {
-    utils::ExceptionHandler::exception(
-        "DeepReinforcementLearning: The exploration and exploitation samples may not be greater than the search space "
-        "size.");
-  }
-
+    : _explorationMethod(explorationMethod), _train(train), _explorationSamples(explorationSamples) {
   // Test that there is at least two exploration sample
   if (_explorationSamples <= 1) {
     utils::ExceptionHandler::exception("DeepReinforcementLearning: The exploration samples may not be less than 2.");
@@ -155,6 +139,7 @@ void autopas::DeepReinforcementLearning::addEvidence(const Configuration &config
   switch (_state) {
     case TuningState::firstSearch: {
       // In the first search state, we simply collect evidence without any further processing.
+      _searchSpace.insert(configuration);
       _history.emplace(configuration, DRLHistoryData(_inputLength, evidence.value,
                                                      static_cast<double>(_searchSpace.size()) / _explorationSamples));
       _minEvidence = std::min(_minEvidence, static_cast<double>(evidence.value));
@@ -243,13 +228,6 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
 bool autopas::DeepReinforcementLearning::reset(size_t iteration, size_t tuningPhase,
                                                std::vector<Configuration> &configQueue,
                                                const EvidenceCollection &evidenceCollection) {
-  // Validate the input
-  if (configQueue.size() != _searchSpace.size()) {
-    utils::ExceptionHandler::exception(
-        "DeepReinforcementLearning: The searchspace size does not match the config queue size.");
-    return false;
-  }
-
   // Reset some internal parameters
   if (tuningPhase == 0) {
     _state = TuningState::firstSearch;

@@ -15,38 +15,20 @@ TEST_F(DeepReinforcementLearningTest, validConstructor) {
   // Set the exception policy to throw exceptions
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
-  // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
-
-  EXPECT_NO_THROW(autopas::DeepReinforcementLearning(searchSpace, true, 10,
-                                                     autopas::DeepReinforcementLearning::ExplorationMethod::polynomial))
+  EXPECT_NO_THROW(
+      autopas::DeepReinforcementLearning(true, 10, autopas::DeepReinforcementLearning::ExplorationMethod::polynomial))
       << "DeepReinforcementLearning valid constructor should not throw.";
-  EXPECT_NO_THROW(autopas::DeepReinforcementLearning(searchSpace, false, 12,
-                                                     autopas::DeepReinforcementLearning::ExplorationMethod::polynomial))
+  EXPECT_NO_THROW(
+      autopas::DeepReinforcementLearning(false, 12, autopas::DeepReinforcementLearning::ExplorationMethod::polynomial))
       << "DeepReinforcementLearning valid constructor should not throw.";
-  EXPECT_NO_THROW(autopas::DeepReinforcementLearning(searchSpace, true, 9,
-                                                     autopas::DeepReinforcementLearning::ExplorationMethod::random))
+  EXPECT_NO_THROW(
+      autopas::DeepReinforcementLearning(true, 9, autopas::DeepReinforcementLearning::ExplorationMethod::random))
       << "DeepReinforcementLearning valid constructor should not throw.";
-  EXPECT_NO_THROW(autopas::DeepReinforcementLearning(searchSpace, false, 11,
-                                                     autopas::DeepReinforcementLearning::ExplorationMethod::random))
+  EXPECT_NO_THROW(
+      autopas::DeepReinforcementLearning(false, 11, autopas::DeepReinforcementLearning::ExplorationMethod::random))
       << "DeepReinforcementLearning valid constructor should not throw.";
-  EXPECT_NO_THROW(autopas::DeepReinforcementLearning(searchSpace, true, 2,
-                                                     autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo))
+  EXPECT_NO_THROW(
+      autopas::DeepReinforcementLearning(true, 2, autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo))
       << "DeepReinforcementLearning valid constructor should not throw.";
 }
 
@@ -57,44 +39,17 @@ TEST_F(DeepReinforcementLearningTest, invalidConstructors) {
   // Set the exception policy to throw exceptions
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
-  // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
-
   for (const bool train : {true, false}) {
     for (const autopas::DeepReinforcementLearning::ExplorationMethod explorationMethod :
          {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial,
           autopas::DeepReinforcementLearning::ExplorationMethod::random,
           autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo}) {
-      EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, 0, explorationMethod),
+      EXPECT_THROW(autopas::DeepReinforcementLearning(train, 0, explorationMethod),
                    autopas::utils::ExceptionHandler::AutoPasException)
           << "DeepReinforcementLearning should reject zero exploration samples.";
-      EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, 1, explorationMethod),
+      EXPECT_THROW(autopas::DeepReinforcementLearning(train, 1, explorationMethod),
                    autopas::utils::ExceptionHandler::AutoPasException)
-          << "DeepReinforcementLearning should reject one exploration samples.";
-      EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, searchSpace.size(), explorationMethod),
-                   autopas::utils::ExceptionHandler::AutoPasException)
-          << "DeepReinforcementLearning should reject too many exploration samples.";
-      EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, searchSpace.size() - 1, explorationMethod),
-                   autopas::utils::ExceptionHandler::AutoPasException)
-          << "DeepReinforcementLearning should reject too many exploration samples.";
-      EXPECT_THROW(autopas::DeepReinforcementLearning(searchSpace, train, searchSpace.size() + 100, explorationMethod),
-                   autopas::utils::ExceptionHandler::AutoPasException)
-          << "DeepReinforcementLearning should reject too many exploration samples.";
+          << "DeepReinforcementLearning should reject one exploration sample.";
     }
   }
 }
@@ -130,7 +85,7 @@ TEST_F(DeepReinforcementLearningTest, firstSearchIsFullSearch) {
            {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial,
             autopas::DeepReinforcementLearning::ExplorationMethod::random,
             autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo}) {
-        autopas::DeepReinforcementLearning drl(searchSpace, train, explorationSamples, explorationMethod);
+        autopas::DeepReinforcementLearning drl(train, explorationSamples, explorationMethod);
         std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
         autopas::EvidenceCollection evidenceCollection{};
 
@@ -197,7 +152,7 @@ TEST_F(DeepReinforcementLearningTest, validExplorationExploitationSize) {
            {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial,
             autopas::DeepReinforcementLearning::ExplorationMethod::random,
             autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo}) {
-        autopas::DeepReinforcementLearning drl(searchSpace, train, explorationSamples, explorationMethod);
+        autopas::DeepReinforcementLearning drl(train, explorationSamples, explorationMethod);
         std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
         autopas::EvidenceCollection evidenceCollection{};
 

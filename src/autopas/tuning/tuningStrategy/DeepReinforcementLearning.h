@@ -152,13 +152,11 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
 
   /**
    * Constructor for the DeepReinforcementLearning class.
-   * @param searchSpace The search space to be used for the tuning.
    * @param train Whether to train the neural network or not.
    * @param explorationSamples The number of exploration samples to use.
    * @param explorationMethod The exploration method to use.
    */
-  explicit DeepReinforcementLearning(const std::set<Configuration> &searchSpace, const bool train,
-                                     const size_t explorationSamples = 3,
+  explicit DeepReinforcementLearning(const bool train, const size_t explorationSamples = 3,
                                      const ExplorationMethod explorationMethod = ExplorationMethod::polynomial);
 
   /**
