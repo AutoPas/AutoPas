@@ -58,7 +58,7 @@ class LUT2B : public ParentLUT {
 
 
     if (distanceSquared < (_lutCutoff + _pointDistance)) {
-      return {getLUTValues(distanceSquared), calculateGlobalFactor(distanceSquared)};
+      return {getLUTValues(distanceSquared), calculatePotEnergy(distanceSquared)};
     }
 
     switch (interpolationMethod) {
@@ -168,7 +168,7 @@ class LUT2B : public ParentLUT {
     return _lut2B_globals.at(index);
   }
 
-  double calculateGlobalFactor(float distance2) {
+  double calculatePotEnergy(float distance2) {
     double invdr2 = 1. / distance2;
     double lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
@@ -206,7 +206,7 @@ class LUT2B : public ParentLUT {
     _lut2B_globals.reserve(_resolution);
     for (auto i = 1; i <= _resolution; i++) {
       auto x = _lutCutoff + (i * _pointDistance);
-      _lut2B_globals.push_back({getLUTValues(x), calculateGlobalFactor(x)});
+      _lut2B_globals.push_back({getLUTValues(x), calculatePotEnergy(x)});
 //      std::cout << "Index  " << i - 1 << "  distance :   " << x << std::endl;
     }
   }
@@ -223,7 +223,7 @@ class LUT2B : public ParentLUT {
     _lut2B_globals.reserve(_resolution);
     for (auto i = 0; i < _resolution; i++) {
       double distance = (_lutCutoff + _pointDistance) + (i * _pointDistance);
-      _lut2B_globals.push_back({getLUTValues(distance), calculateGlobalFactor(distance)});
+      _lut2B_globals.push_back({getLUTValues(distance), calculatePotEnergy(distance)});
 //      std::cout << "Index  " << i << "  distance :   " << distance << std::endl;
     }
   }
