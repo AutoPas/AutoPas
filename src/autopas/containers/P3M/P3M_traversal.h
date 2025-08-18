@@ -61,9 +61,11 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         this->shortRangeTraversal = shortRangeTraversal;
     }
 
-    void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer){
+    void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer, utils::Timer *chargeAssignmentTimer, utils::Timer *forceInterpolationTimer){
         this->fftTimer = fftTimer;
         this->shortRangeTimer = shortRangeTimer;
+        this->chargeAssignmentTimer = chargeAssignmentTimer;
+        this->forceInterpolationTimer = forceInterpolationTimer;
     }
 
     private:
@@ -100,6 +102,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     utils::Timer *fftTimer;
     utils::Timer *shortRangeTimer;
+    utils::Timer *chargeAssignmentTimer;
+    utils::Timer *forceInterpolationTimer;
         
 
     // assigns the charges of particles to cao number of points in the rs_grid
@@ -347,7 +351,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
      * may not fulfill N3
      */
     void traverseFarParticles(){
+        chargeAssignmentTimer->start();
         assignChargeDensities();
+        chargeAssignmentTimer->stop();
         /*std::cout << "Charge Grid:" << std::endl;
         for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
@@ -377,7 +383,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             }
             std::cout << std::endl;
         }*/
+        forceInterpolationTimer->start();
         interpolateForces();
+        forceInterpolationTimer->stop();
     }
 
     /**

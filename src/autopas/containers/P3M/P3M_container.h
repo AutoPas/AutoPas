@@ -31,6 +31,8 @@ class P3M_container : public LinkedCells<Particle_T> {
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, unsigned int cao = 3, double alpha = 0.5)
               : LinkedCells<ParticleType>(boxMin, boxMax, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator) {
 
+        setupTimer = utils::Timer();
+        setupTimer.start();
         
         grid_dims = N;
         
@@ -105,14 +107,20 @@ class P3M_container : public LinkedCells<Particle_T> {
             }
             std::cout << std::endl;
         }*/
+       setupTimer.stop();
 
        fftTimer = utils::Timer();
        shortRangeTimer = utils::Timer();
+       chargeAssignmentTimer = utils::Timer();
+       forceInterpolationTimer = utils::Timer();
     }
 
     ~P3M_container(){
         std::cout << "FFT total time: " << fftTimer.getTotalTime() << " ns" << std::endl;
         std::cout << "short Range interactions total time: " << shortRangeTimer.getTotalTime() << " ns" << std::endl;
+        std::cout << "P3M setup total time: " << setupTimer.getTotalTime() << " ns" << std::endl;
+        std::cout << "charge assignment total time: " << chargeAssignmentTimer.getTotalTime() << " ns" << std::endl;
+        std::cout << "force interpolation total time: " << forceInterpolationTimer.getTotalTime() << " ns" << std::endl;
     }
 
     /** can be done once at the start of the simulation/tuning, as it only depends on 
@@ -446,7 +454,7 @@ class P3M_container : public LinkedCells<Particle_T> {
             traversalP3M->set_traversal_parameters(cao, grid_dims, this->getBoxMin(), grid_dist, rs_grid, /*rs_grid_shifted,*/ 
                 ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, selfForceCoeffs, this,
                 shortRangeTraversal);
-            traversalP3M->set_Timers(&fftTimer, &shortRangeTimer);
+            traversalP3M->set_Timers(&fftTimer, &shortRangeTimer, &chargeAssignmentTimer, &forceInterpolationTimer);
         } else {
         autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the P3M container. TraversalID: {}",
@@ -503,5 +511,8 @@ class P3M_container : public LinkedCells<Particle_T> {
 
     utils::Timer fftTimer;
     utils::Timer shortRangeTimer;
+    utils::Timer chargeAssignmentTimer;
+    utils::Timer forceInterpolationTimer;
+    utils::Timer setupTimer;
 };
 }
