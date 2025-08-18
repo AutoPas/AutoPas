@@ -19,7 +19,7 @@ namespace autopas {
         ComplexGridType fftBuffer3D;
         bool correct_scaling;
 
-        void fft(std::vector<std::complex<double>> &x, unsigned int N, int start, std::vector<std::complex<double>> &result, bool forward){
+        void fft(std::vector<std::complex<double>> &x, unsigned int N, int start, std::vector<std::complex<double>> &result, bool forward, int stride = 1){
             if(N == 1){
                 result[start] = x[start];
                 return;
@@ -29,8 +29,8 @@ namespace autopas {
                 result[start + i] = x[start + 2*i];
                 result[start + N/2 + i] = x[start + 2*i+1];
             }
-            fft(result, N/2, start, x, forward);
-            fft(result, N/2, start + N/2, x, forward);
+            fft(x, N/2, start, result, forward, 2*stride);
+            fft(x, N/2, start + stride, result, forward, 2*stride);
 
             std::complex<double> w_n;
             if(forward){
@@ -40,9 +40,9 @@ namespace autopas {
             }
             std::complex<double> w = std::complex(1.,0.);
 
-            for(unsigned int k = 0; k < N/2; k++){
-                result[start + k] = x[start + k] + w * x[start + N/2 + k];
-                result[start + (N/2) + k] = x[start + k] - w * x[start + N/2 + k];
+            for(unsigned int k = 0; k < N/2; k += stride){
+                result[start + k] = result[start + k] + w * result[start + N/2 + k];
+                result[start + (N/2) + k] = result[start + k] - w * result[start + N/2 + k];
                 w *=  w_n;
             }
         }

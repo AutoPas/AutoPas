@@ -284,7 +284,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     // computes the index of closest Gridpoint in direction dim and saves it in closestGridpoint
     // also returns the position of the closest Gridpoint in direction dim
     double getClosestGridpoint(std::array<double, 3> &pPos,std::array<int, 3> &closestGridpoint, int dim){
-        // TODO make more efficient
         double closestGridPos;
         if(cao % 2 == 1){
             int closestPoint = (int)((pPos[dim] - boxMin[dim]) / grid_dist[dim] + 0.5);
