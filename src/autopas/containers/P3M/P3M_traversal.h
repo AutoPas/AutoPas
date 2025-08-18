@@ -116,8 +116,20 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         std::vector<double> caFractionsY = std::vector<double>(cao);
         std::vector<double> caFractionsZ = std::vector<double>(cao);
 
+        //using region iterators
+        int i = autopas_get_thread_num();
+        int n = autopas_get_num_threads();
+        std::array<double, 3> lowerCorner = {boxMin[0] + (container->getBoxMax()[0] - boxMin[0]) * i, boxMin[1], boxMin[2]};
+        std::array<double, 3> upperCorner;
+        if(i != n){
+            upperCorner = {boxMin[0] + (container->getBoxMax()[0] - boxMin[0]) * (i+1), container->getBoxMax()[1], container->getBoxMax()[2]};
+        }else{
+            upperCorner = container->getBoxMax();
+        }
+        
+        auto iter = container->getRegionIterator(lowerCorner, upperCorner, autopas::IteratorBehavior::owned);
 
-        for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter){
+        for (iter; iter.isValid(); ++iter){
             std::array<double, 3> pPos = iter->getR();
             
             getChargeAssignmentFractions(pPos, closestGridpoint, caFractionsX, caFractionsY, caFractionsZ);
@@ -354,7 +366,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         chargeAssignmentTimer->start();
         assignChargeDensities();
         chargeAssignmentTimer->stop();
-        /*std::cout << "Charge Grid:" << std::endl;
+        std::cout << "Charge Grid:" << std::endl;
         for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[0]; k++){
@@ -363,7 +375,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                 std::cout << std::endl;
             }
             std::cout << std::endl;
-        }*/
+        }
         fftTimer->start();
         fft.forward3D(rs_grid, ks_grid, grid_dims);
         fftTimer->stop();
