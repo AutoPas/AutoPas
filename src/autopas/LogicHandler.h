@@ -622,6 +622,19 @@ class LogicHandler {
 #endif
   }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  double getVelocityMethodEstimate(double skin, double deltaT) const {
+    // Initialize the maximum velocity
+    double maxVelocity = 0;
+    //iterate the particles to determine maximum velocity
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+    std::array<double, 3> tempVel = iter->getV();
+    double tempVelAbs = sqrt(tempVel[0]*tempVel[0] + tempVel[1]*tempVel[1] + tempVel[2]*tempVel[2]);
+    maxVelocity =  tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
+    }
+    return skin/maxVelocity/deltaT/2 + 1;
+  }
+#endif
   /**
    * getter function for _neighborListInvalidDoDynamicRebuild
    * @return bool stored in _neighborListInvalidDoDynamicRebuild
@@ -1241,19 +1254,13 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     _numRebuildsInNonTuningPhase = 0;
   }
   if (autoTuner.inFirstConfigurationLastSample()){
-    // Initialize the maximum velocity
-    double maxVelocity = 0;
-    // Fetch the needed information for estimating the rebuild frequency
+    // Fetch the needed information for estimating the rebuild frequency using Velocity Method
     double skin = _containerSelector.getCurrentContainer().getVerletSkin();
     double deltaT = _logicHandlerInfo.deltaT;
-    // Iterate over particles to calculate maximum velocity
-    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-      std::array<double, 3> tempVel = iter->getV();
-      double tempVelAbs = sqrt(tempVel[0]*tempVel[0] + tempVel[1]*tempVel[1] + tempVel[2]*tempVel[2]);
-      maxVelocity =  tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
-    }
-    double rebuildFrequencyEstimate = skin/maxVelocity/deltaT/2 + 1;
+    // get the estimate from the velocity method
+    double rebuildFrequencyEstimate = getVelocityMethodEstimate(skin, deltaT);
     double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
+    // if velocity method estimate exceeds upper-bound, set rebuild frequency as upper-bound
     if (rebuildFrequencyEstimate > userProvidedRF) {
       autoTuner.setRebuildFrequency(userProvidedRF);
     }
