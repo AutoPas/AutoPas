@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 #include "autopas/utils/logging/FLOPLogger.h"
@@ -166,6 +167,12 @@ class Functor {
    * @return
    */
   [[nodiscard]] double getCutoff() const { return _cutoff; }
+
+  /**
+   * Setter for the vectorization pattern to choose
+   * @param vecPattern
+   */
+  virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}
 
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.

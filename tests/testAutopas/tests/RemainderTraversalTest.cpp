@@ -61,9 +61,16 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const std::set<autopas::Configuration> searchSpace(
-      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-        autopas::LoadEstimatorOption::none, dataLayout, n3, autopas::InteractionTypeOption::pairwise}});
+  const std::set<autopas::Configuration> searchSpace({{
+      autopas::ContainerOption::linkedCells,
+      cellSizeFactor,
+      autopas::TraversalOption::lc_c08,
+      autopas::LoadEstimatorOption::none,
+      dataLayout,
+      n3,
+      autopas::InteractionTypeOption::pairwise,
+      autopas::VectorizationPatternOption::p1xVec,
+  }});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
       autopas::InteractionTypeOption::pairwise,
@@ -383,7 +390,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, dataLayout, autopas::Newton3Option::enabled,
-        autopas::InteractionTypeOption::pairwise}});
+        autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec}});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
       autopas::InteractionTypeOption::pairwise,
