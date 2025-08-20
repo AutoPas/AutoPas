@@ -54,8 +54,8 @@ class ParticleCommunicator {
    */
   void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
                                            const std::vector<ParticleType> &particlesToRight,
-                                           std::vector<ParticleType> &receivedParticles,
-                                           int leftNeighbor, int rightNeighbor, int dimension);
+                                           std::vector<ParticleType> &receivedParticles, int leftNeighbor,
+                                           int rightNeighbor, int dimension);
 
   /**
    * Waits for all send requests to be finished.
