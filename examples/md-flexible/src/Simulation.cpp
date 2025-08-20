@@ -249,7 +249,8 @@ void Simulation::run() {
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
-        _domainDecomposition->update(computationalLoad == 0 ? _timers.computationalLoad.getTotalTime() : computationalLoad);
+        _domainDecomposition->update(computationalLoad == 0 ? _timers.computationalLoad.getTotalTime()
+                                                            : computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
         // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
@@ -528,14 +529,13 @@ void Simulation::updateThermostat() {
 double Simulation::calculateComputationLoad() const {
   switch (_configuration.computationLoad.value) {
     case ComputationLoadOption::completeCycle:
-      return static_cast<double>(_timers.computationalLoad.getTotalTime()
-      + _timers.haloParticleExchange.getTotalTime()
-      + _timers.migratingParticleExchange.getTotalTime()
-      + _timers.reflectParticlesAtBoundaries.getTotalTime());
+      return static_cast<double>(
+          _timers.computationalLoad.getTotalTime() + _timers.haloParticleExchange.getTotalTime() +
+          _timers.migratingParticleExchange.getTotalTime() + _timers.reflectParticlesAtBoundaries.getTotalTime());
     case ComputationLoadOption::forceUpdate:
       return static_cast<double>(_timers.forceUpdateTotal.getTotalTime());
     case ComputationLoadOption::MPICommunication:
-      return static_cast<double>(_timers.haloParticleExchange.getTotalTime() + 
+      return static_cast<double>(_timers.haloParticleExchange.getTotalTime() +
                                  _timers.migratingParticleExchange.getTotalTime());
     case ComputationLoadOption::particleCount:
       // === KEY CHANGE: Use particle count instead of computation time ===
