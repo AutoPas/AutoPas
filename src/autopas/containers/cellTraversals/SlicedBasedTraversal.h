@@ -47,7 +47,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
       : CellTraversal<ParticleCell>(dims),
         TraversalInterface(dataLayout, useNewton3),
         _overlap{},
-        _dimsPerLength{},
+        _dimsSortedByLength{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlapLongestAxis(0),
@@ -63,7 +63,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    */
   [[nodiscard]] bool isApplicable() const override {
     auto minSliceThickness = _overlapLongestAxis + 1;
-    auto maxNumSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    auto maxNumSlices = this->_cellsPerDimension[_dimsSortedByLength[0]] / minSliceThickness;
     return maxNumSlices > 0;
   }
 
@@ -72,14 +72,14 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    * @param minSliceThickness
    */
   virtual void initSliceThickness(unsigned long minSliceThickness) {
-    auto numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    auto numSlices = this->_cellsPerDimension[_dimsSortedByLength[0]] / minSliceThickness;
     _sliceThickness.clear();
 
     // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
     if (numSlices < 1) return;
 
     _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
-    auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
+    auto rest = this->_cellsPerDimension[_dimsSortedByLength[0]] - _sliceThickness[0] * numSlices;
     // remaining slices to distribute the remaining layers on
     auto remSlices = std::min(rest, numSlices);
     for (size_t i = 0; i < remSlices; ++i) {
@@ -142,9 +142,9 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
   std::array<unsigned long, 3> _overlap;
 
   /**
-   * Store ids of dimensions ordered by number of cells per dimensions.
+   * Store ids of dimensions (0, 1, 2 = x, y, z) sorted by in decreasing order of number of cells in that dimension.
    */
-  std::array<int, 3> _dimsPerLength;
+  std::array<int, 3> _dimsSortedByLength;
 
   /**
    * Overlap of interacting cells along the longest axis.
@@ -190,11 +190,11 @@ inline void SlicedBasedTraversal<ParticleCell, Functor>::init(const std::array<u
 
   // find longest dimension
   auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(), this->_cellsPerDimension.end());
-  _dimsPerLength[0] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.second);
-  _dimsPerLength[2] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
-  _dimsPerLength[1] = 3 - (_dimsPerLength[0] + _dimsPerLength[2]);
+  _dimsSortedByLength[0] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.second);
+  _dimsSortedByLength[2] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
+  _dimsSortedByLength[1] = 3 - (_dimsSortedByLength[0] + _dimsSortedByLength[2]);
 
-  _overlapLongestAxis = _overlap[_dimsPerLength[0]];
+  _overlapLongestAxis = _overlap[_dimsSortedByLength[0]];
 }
 
 }  // namespace autopas
