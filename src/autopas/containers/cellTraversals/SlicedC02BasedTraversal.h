@@ -79,7 +79,8 @@ void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &
   auto numSlices = this->_sliceThickness.size();
   // check if applicable
 
-  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsSortedByLength[1]], this->_overlap[this->_dimsSortedByLength[2]]};
+  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsSortedByLength[1]],
+                                    this->_overlap[this->_dimsSortedByLength[2]]};
 
   if (not this->_spaciallyForward) {
     overLapps23 = {0ul, 0ul};

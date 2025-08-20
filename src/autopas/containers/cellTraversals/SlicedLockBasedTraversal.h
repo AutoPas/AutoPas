@@ -111,10 +111,10 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
       if (slice != numSlices - 1 and dimSlice >= lastLayer - this->_overlapLongestAxis) {
         locks[((slice + 1) * this->_overlapLongestAxis) - (lastLayer - dimSlice)].lock();
       }
-      for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[this->_dimsSortedByLength[1]] - overLapps23[0];
-           ++dimMedium) {
-        for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[this->_dimsSortedByLength[2]] - overLapps23[1];
-             ++dimShort) {
+      for (unsigned long dimMedium = 0;
+           dimMedium < this->_cellsPerDimension[this->_dimsSortedByLength[1]] - overLapps23[0]; ++dimMedium) {
+        for (unsigned long dimShort = 0;
+             dimShort < this->_cellsPerDimension[this->_dimsSortedByLength[2]] - overLapps23[1]; ++dimShort) {
           array<unsigned long, 3> idArray = {};
           idArray[this->_dimsSortedByLength[0]] = dimSlice;
           idArray[this->_dimsSortedByLength[1]] = dimMedium;
