@@ -31,8 +31,8 @@
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
-#include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/domainDecomposition/ComputationLoadOption.h"
+#include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
 
 /**

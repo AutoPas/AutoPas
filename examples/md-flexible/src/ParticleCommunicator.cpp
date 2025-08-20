@@ -39,19 +39,19 @@ void ParticleCommunicator::sendAndReceiveParticlesLeftAndRight(const std::vector
   // Create unique tags for each direction: dimension*2 + {0=left, 1=right}
   const int leftTag = dimension * 2;
   const int rightTag = dimension * 2 + 1;
-  
+
   // Pre-reserve buffers to avoid reallocations during serialization
-  const size_t particleSize = 
+  const size_t particleSize =
 #if MD_FLEXIBLE_MODE == MULTISITE
-    200;  // AttributesSize for multisite
+      200;  // AttributesSize for multisite
 #else
-    120;  // AttributesSize for single site  
+      120;  // AttributesSize for single site
 #endif
-  
+
   // Reuse buffers to avoid repeated allocations
   const int leftCount = static_cast<int>(particlesToLeft.size());
   const int rightCount = static_cast<int>(particlesToRight.size());
-  
+
   // Prepare reusable send buffers
   _reusableLeftSendBuffer.clear();
   _reusableLeftSendBuffer.reserve(sizeof(int) + leftCount * particleSize);
@@ -60,7 +60,7 @@ void ParticleCommunicator::sendAndReceiveParticlesLeftAndRight(const std::vector
   for (const auto &particle : particlesToLeft) {
     ParticleSerializationTools::serializeParticle(particle, _reusableLeftSendBuffer);
   }
-  
+
   _reusableRightSendBuffer.clear();
   _reusableRightSendBuffer.reserve(sizeof(int) + rightCount * particleSize);
   _reusableRightSendBuffer.resize(sizeof(int));
@@ -68,7 +68,7 @@ void ParticleCommunicator::sendAndReceiveParticlesLeftAndRight(const std::vector
   for (const auto &particle : particlesToRight) {
     ParticleSerializationTools::serializeParticle(particle, _reusableRightSendBuffer);
   }
-  
+
   // Prepare reusable receive buffers
   const size_t maxParticles = 10000;  // reasonable upper bound
   const size_t maxBufferSize = sizeof(int) + maxParticles * particleSize;
@@ -78,42 +78,42 @@ void ParticleCommunicator::sendAndReceiveParticlesLeftAndRight(const std::vector
   if (_reusableRightRecvBuffer.size() < maxBufferSize) {
     _reusableRightRecvBuffer.resize(maxBufferSize);
   }
-  
+
   // Use non-blocking sends and receives with unique tags - eliminates MPI_Probe!
   autopas::AutoPas_MPI_Request sendRequests[2];
   autopas::AutoPas_MPI_Request recvRequests[2];
-  
+
   // Post non-blocking receives first (with unique tags)
-  autopas::AutoPas_MPI_Irecv(_reusableLeftRecvBuffer.data(), static_cast<int>(_reusableLeftRecvBuffer.size()), AUTOPAS_MPI_CHAR,
-                            leftNeighbor, rightTag, _communicator, &recvRequests[0]);
-  autopas::AutoPas_MPI_Irecv(_reusableRightRecvBuffer.data(), static_cast<int>(_reusableRightRecvBuffer.size()), AUTOPAS_MPI_CHAR,
-                            rightNeighbor, leftTag, _communicator, &recvRequests[1]);
-  
+  autopas::AutoPas_MPI_Irecv(_reusableLeftRecvBuffer.data(), static_cast<int>(_reusableLeftRecvBuffer.size()),
+                             AUTOPAS_MPI_CHAR, leftNeighbor, rightTag, _communicator, &recvRequests[0]);
+  autopas::AutoPas_MPI_Irecv(_reusableRightRecvBuffer.data(), static_cast<int>(_reusableRightRecvBuffer.size()),
+                             AUTOPAS_MPI_CHAR, rightNeighbor, leftTag, _communicator, &recvRequests[1]);
+
   // Post non-blocking sends
-  autopas::AutoPas_MPI_Isend(_reusableLeftSendBuffer.data(), static_cast<int>(_reusableLeftSendBuffer.size()), AUTOPAS_MPI_CHAR,
-                            leftNeighbor, leftTag, _communicator, &sendRequests[0]);
-  autopas::AutoPas_MPI_Isend(_reusableRightSendBuffer.data(), static_cast<int>(_reusableRightSendBuffer.size()), AUTOPAS_MPI_CHAR,
-                            rightNeighbor, rightTag, _communicator, &sendRequests[1]);
-  
+  autopas::AutoPas_MPI_Isend(_reusableLeftSendBuffer.data(), static_cast<int>(_reusableLeftSendBuffer.size()),
+                             AUTOPAS_MPI_CHAR, leftNeighbor, leftTag, _communicator, &sendRequests[0]);
+  autopas::AutoPas_MPI_Isend(_reusableRightSendBuffer.data(), static_cast<int>(_reusableRightSendBuffer.size()),
+                             AUTOPAS_MPI_CHAR, rightNeighbor, rightTag, _communicator, &sendRequests[1]);
+
   // Wait for all communications to complete
   autopas::AutoPas_MPI_Waitall(2, sendRequests, AUTOPAS_MPI_STATUS_IGNORE);
   autopas::AutoPas_MPI_Waitall(2, recvRequests, AUTOPAS_MPI_STATUS_IGNORE);
-  
+
   // Deserialize received particles from left neighbor
   int leftRecvCount;
   std::memcpy(&leftRecvCount, _reusableLeftRecvBuffer.data(), sizeof(int));
   if (leftRecvCount > 0) {
-    std::vector<char> leftPayload(_reusableLeftRecvBuffer.begin() + sizeof(int), 
-                                 _reusableLeftRecvBuffer.begin() + sizeof(int) + leftRecvCount * particleSize);
+    std::vector<char> leftPayload(_reusableLeftRecvBuffer.begin() + sizeof(int),
+                                  _reusableLeftRecvBuffer.begin() + sizeof(int) + leftRecvCount * particleSize);
     ParticleSerializationTools::deserializeParticles(leftPayload, receivedParticles);
   }
-  
+
   // Deserialize received particles from right neighbor
   int rightRecvCount;
   std::memcpy(&rightRecvCount, _reusableRightRecvBuffer.data(), sizeof(int));
   if (rightRecvCount > 0) {
     std::vector<char> rightPayload(_reusableRightRecvBuffer.begin() + sizeof(int),
-                                  _reusableRightRecvBuffer.begin() + sizeof(int) + rightRecvCount * particleSize);
+                                   _reusableRightRecvBuffer.begin() + sizeof(int) + rightRecvCount * particleSize);
     ParticleSerializationTools::deserializeParticles(rightPayload, receivedParticles);
   }
 }

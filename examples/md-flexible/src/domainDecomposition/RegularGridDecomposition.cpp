@@ -458,7 +458,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
                                                                    const std::vector<ParticleType> &particlesToRight,
                                                                    std::vector<ParticleType> &receivedParticlesBuffer,
-                                                                   int leftNeighbor, int rightNeighbor, int dimensionIndex) {
+                                                                   int leftNeighbor, int rightNeighbor,
+                                                                   int dimensionIndex) {
   // only actually send / receive if we are not sending / receiving to ourselves
   if (_mpiCommunicationNeeded and leftNeighbor != _domainIndex) {
     ParticleCommunicator particleCommunicator(_communicator);
@@ -472,8 +473,9 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::ve
 
     particleCommunicator.waitForSendRequests();
     // New implementation: commented out for now
-    //particleCommunicator.sendAndReceiveParticlesLeftAndRight(particlesToLeft, particlesToRight, receivedParticlesBuffer,
-                                                            // leftNeighbor, rightNeighbor, dimensionIndex);
+    // particleCommunicator.sendAndReceiveParticlesLeftAndRight(particlesToLeft, particlesToRight,
+    // receivedParticlesBuffer,
+    // leftNeighbor, rightNeighbor, dimensionIndex);
   } else {
     receivedParticlesBuffer.insert(receivedParticlesBuffer.end(), particlesToLeft.begin(), particlesToLeft.end());
     receivedParticlesBuffer.insert(receivedParticlesBuffer.end(), particlesToRight.begin(), particlesToRight.end());
