@@ -427,7 +427,7 @@ bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInt
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 
-bool AutoTuner::inFirstConfigurationLastSample() const {return (_iteration % _tuningInterval == _maxSamples - 1); }
+bool AutoTuner::inFirstConfigurationLastSample() const { return (_iteration % _tuningInterval == _maxSamples - 1); }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 

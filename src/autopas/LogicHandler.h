@@ -623,23 +623,24 @@ class LogicHandler {
   }
 
 /**
-   * Estimates the rebuild frequency based on the current maximum velocity in the container
-   * Using the formula rf = skin/deltaT/vmax/2 + 1
-   * @param skin is the skin length used in the simulation.
-   * @return deltaT is the time step
-   */
+  * Estimates the rebuild frequency based on the current maximum velocity in the container
+  * Using the formula rf = skin/deltaT/vmax/2 + 1
+  * @param skin double is the skin length used in the simulation.
+  * @param deltaT double is the time step
+  * @return estimate of the rebuild frequency
+  */
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   double getVelocityMethodEstimate(double skin, double deltaT) const {
     // Initialize the maximum velocity
     double maxVelocity = 0;
-    //iterate the particles to determine maximum velocity
+    // Iterate the particles to determine maximum velocity
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    std::array<double, 3> tempVel = iter->getV();
-    double tempVelAbs = sqrt(tempVel[0]*tempVel[0] + tempVel[1]*tempVel[1] + tempVel[2]*tempVel[2]);
-    maxVelocity =  tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
+      std::array<double, 3> tempVel = iter->getV();
+      double tempVelAbs = sqrt(tempVel[0] * tempVel[0] + tempVel[1] * tempVel[1] + tempVel[2] * tempVel[2]);
+      maxVelocity =  tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
     }
     // return estimate using formula
-    return skin/maxVelocity/deltaT/2 + 1;
+    return skin / maxVelocity / deltaT / 2 + 1;
   }
 #endif
   /**
@@ -1260,11 +1261,11 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   if (autoTuner.inFirstTuningIteration()) {
     _numRebuildsInNonTuningPhase = 0;
   }
-  // use the last sample of the first configuration to estimate the mean rebuild frequency of the subsequent tuning phase
-  // set the rebuild frequency estimate for all subsequent iterations
-  if (autoTuner.inFirstConfigurationLastSample()){
+  // use the last sample of the first configuration to estimate the mean rebuild frequency of the subsequent tuning
+  // phase set the rebuild frequency estimate for all subsequent iterations
+  if (autoTuner.inFirstConfigurationLastSample()) {
     // Fetch the needed information for estimating the rebuild frequency using Velocity Method
-    double skin = _containerSelector.getCurrentContainer().getVerletSkin();
+    double skin = _logicHandlerInfo.verletSkin;
     double deltaT = _logicHandlerInfo.deltaT;
     // get the estimate from the velocity method
     double rebuildFrequencyEstimate = getVelocityMethodEstimate(skin, deltaT);
@@ -1272,8 +1273,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     // if velocity method estimate exceeds upper-bound, set rebuild frequency as upper-bound
     if (rebuildFrequencyEstimate > userProvidedRF) {
       autoTuner.setRebuildFrequency(userProvidedRF);
-    }
-    else{
+    } else {
       autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
     }
   }

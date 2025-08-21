@@ -74,20 +74,20 @@ TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
       << " Particle has moved more than half the skin, so dynamic rebuild is required. \n";
 }
 /**
-* Tests that the Velocity Method correctly estimates the rebuild frequency using the formula skin/vmax/deltaT/2 + 1.
-* First we test if the method works with one particle. We then add two more particles and test it again.
-*/
+ * Tests that the Velocity Method correctly estimates the rebuild frequency using the formula skin/vmax/deltaT/2 + 1.
+ * First we test if the method works with one particle. We then add two more particles and test it again.
+ */
 TEST_F(LogicHandlerTest, testVelocityMethod) {
   initLogicHandler();
   Molecule p1({0.5, 1., 1.}, {0., 2., 0.}, 0, 0);
   _logicHandler->addParticle(p1);
   double skin = 1.;
   double deltaT = 1.;
-  double velocityMethodEstimate = _logicHandler->getVelocityMethodEstimate(skin,deltaT);
+  double velocityMethodEstimate = _logicHandler->getVelocityMethodEstimate(skin, deltaT);
   // only one particle in the container --> vmax = 2
   // set vmax according to the maximum velocity of the particles that were added to the container before
   double vmax = 2.;
-  EXPECT_NEAR(velocityMethodEstimate, skin/vmax/deltaT/2 + 1, 0.0001);
+  EXPECT_NEAR(velocityMethodEstimate, skin / vmax / deltaT / 2 + 1, 0.0001);
 
   // test for multiple particles case
   Molecule p2({1.5, 1., 1.}, {0., 4., 3.}, 0, 0);
@@ -96,11 +96,11 @@ TEST_F(LogicHandlerTest, testVelocityMethod) {
   _logicHandler->addParticle(p3);
   // test the method with different skin length
   skin = 5.;
-   velocityMethodEstimate = _logicHandler->getVelocityMethodEstimate(skin,deltaT);
+  velocityMethodEstimate = _logicHandler->getVelocityMethodEstimate(skin, deltaT);
   // 3 particles in the container --> vmax = (3*3 + 4*4)^0.5 = 5
   // set vmax according to the maximum velocity of the particles that were added to the container before
   vmax = 5.;
-  EXPECT_NEAR(velocityMethodEstimate, skin/vmax/deltaT/2 + 1, 0.0001);
+  EXPECT_NEAR(velocityMethodEstimate, skin / vmax / deltaT / 2 + 1, 0.0001);
 }
 
 /**
