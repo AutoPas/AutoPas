@@ -474,9 +474,10 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   constexpr size_t sortingThreshold = 8;
   const std::array<double, 3> boxMinLocal{0., 0., 0.};
   const std::array<double, 3> boxMaxLocal{33., 11., 11.};
-  const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
+  const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil((boxMaxLocal-boxMinLocal) * (1. / interactionLength) * conf.cellSizeFactor));
+  const auto cellLength = (boxMaxLocal - boxMinLocal) / static_cast_copy_array<double>(cellsPerDim);
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
-      cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
+      cellsPerDim, interactionLength, cellLength, clusterSize};
   LJFunctorGlobals functor(cutoffLocal);
   const autopas::ContainerSelectorInfo containerSelectorInfo{boxMinLocal,         boxMaxLocal,       cutoffLocal,
                                                              conf.cellSizeFactor, skinLocal,         clusterSize,
