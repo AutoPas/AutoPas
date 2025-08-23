@@ -10,7 +10,7 @@ verlet-rebuild-frequency             :  1
 verlet-skin-radius                   :  0.02
 selector-strategy                    :  Fastest-Absolute-Value
 tuning-strategies                    :  []
-tuning-interval                      :  28800
+tuning-interval                      :  3600
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
 
@@ -18,7 +18,7 @@ cutoff                               :  3
 cutoff-factor-respa                  :  2
 cell-size                            :  [1]
 deltaT                               :  0.015
-iterations                           :  36672
+iterations                           :  11424
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -62,29 +62,29 @@ no-progress-bar                      :  true
 #vtk-filename                         :  DistanceClassTest6FPF_dt0_015
 #vtk-output-folder                    :  DistanceClassTest6FPF_dt0_015
 #vtk-write-frequency                  :  1
-lut-input-file                       :  LUT_6FPF_dt0_015_60_e1_a1_therm_26.csv
-rdf-filename                         :  RDF_6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
-rdf-output-folder                    :  DistanceClassTest6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
+lut-input-file                       :  LUT_respafit/LUT_6FPF_dt0_015_60_e1_a1_therm3_5_100_respafit_4_rs_1.csv
+rdf-filename                         :  RDF_6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4
+rdf-output-folder                    :  DistanceClassTest6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4
 rdf-radius                           :  6
 rdf-num-bins                         :  250
 rdf-guard-area                       :  0
 rdf-capture-frequency                :  1
-rdf-start-iteration                  :  28800
-rdf-end-iteration                    :  36600
-odf-filename                         :  ODF_6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
-odf-output-folder                    :  DistanceClassTest6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
+rdf-start-iteration                  :  3600
+rdf-end-iteration                    :  11400
+odf-filename                         :  ODF_6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4
+odf-output-folder                    :  DistanceClassTest6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4
 odf-radius                           :  6
 odf-num-bins                         :  250
 odf-guard-area                       :  0
 odf-capture-frequency                :  1
-odf-start-iteration                  :  28800
-odf-end-iteration                    :  36600
+odf-start-iteration                  :  3600
+odf-end-iteration                    :  11400
 rotational-analysis-lag-steps        :  1000
 rotational-analysis-step-interval    :  1
-rotational-analysis-filename         :  Rot_6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
-rotational-analysis-output-folder    :  DistanceClassTest6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
-rotational-analysis-start-iteration  :  28800
-rotational-analysis-end-iteration    :  36600
+rotational-analysis-filename         :  Rot_6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4
+rotational-analysis-output-folder    :  DistanceClassTest6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4
+rotational-analysis-start-iteration  :  3600
+rotational-analysis-end-iteration    :  11400
 #ibi-equilibrate-iterations           :  50000
 #ibi-update-alpha                     :  1
 #ibi-convergence-threshold            :  0.99
@@ -95,5 +95,5 @@ rotational-analysis-end-iteration    :  36600
 ibi-keep-torque                      : false
 respa-distance-class-mode            : ibi #ibi # fp, cgmol, disabled
 use-second-autopas-instance          : true
-statistics-output-folder             : DistanceClassTest6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
-statistics-output-filename           : Statistics_6FP_dt0_015_28800_36600_60_c_3_2_e1_therm3_5_ibi_rs_4
+statistics-output-folder             : DistanceClassTest6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4
+statistics-output-filename           : Statistics_6FP_dt0_015_3600_11400_60_c_3_2_e1_therm3_5_ibi_rs_4

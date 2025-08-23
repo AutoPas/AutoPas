@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J 6fprs24
+#SBATCH -J 1a1
 #SBATCH -D ./
 #SBATCH -o ./%x.%j.%N.out
 #SBATCH -e ./%x.%j.%N.err
@@ -11,13 +11,13 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --hint=nomultithread
 #SBATCH --distribution=block:block
-#SBATCH --cpus-per-task=56
-#SBATCH --time=01:00:00
+#SBATCH --cpus-per-task=112
+#SBATCH --time=02:00:00
 
 module load slurm_setup
-export OMP_PLACES=cores
+export OMP_NUM_THREADS=56
+export OMP_PLACES="{0:56}"
 export OMP_PROC_BIND=close
-export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-MYPROG="./md-flexible --yaml-filename DistanceClassTest6FP_dt0_015_3600_11400_60_c_2_5_2_4_e1_therm3_5_rs_24.yaml"
+MYPROG="./md-flexible --yaml-filename LUT_6FPF_dt0_015_60_e1_a1_therm3_5_100_respafit_d2.yaml"
 
 $MYPROG
