@@ -15,9 +15,6 @@
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
-#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-#include "molecularDynamicsLibrary/CoulombMultisiteFunctor.h"
-#endif
 #endif
 
 #else
@@ -87,10 +84,6 @@ using LuTFunctorType = mdLib::LuTFunctor<ParticleType, true, autopas::FunctorN3M
 using LookupTableType = mdLib::LookupTable;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-using LJFunctorTypeAutovecApproxMultisite =
-    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
-                     mdFlexibleTypeDefs::countFLOPs, true>;
-
 /**
  * Type of LJFunctorTypeAutovec used in md-flexible.
  * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
@@ -99,11 +92,6 @@ using LJFunctorTypeAutovecApproxMultisite =
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                        mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
-#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-using CoulombFunctorTypeAutovec =
-    mdLib::CoulombMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
-                                   mdFlexibleTypeDefs::countFLOPs>;
-#endif
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;

@@ -172,16 +172,6 @@ class MDFlexConfig {
   void addATParametersToSite(unsigned long siteId, double nu);
 
   /**
-   * Adds the Coulomb parameters specified site.
-   * Checks if the given site exists and if the parameter was already specified.
-   *
-   * @param siteId unique site type id
-   * @param epsilon
-   * @param charge
-   */
-  void addCoulombParametersToSite(unsigned long siteId, double epsilon, double charge);
-
-  /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
    *
    * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
@@ -770,12 +760,6 @@ class MDFlexConfig {
                                                              "Foldername for output of energy and rvite values."};
 
   /**
-   * useApproxForceRespa
-   */
-  MDFlexOption<bool, __LINE__> useApproxForceRespa{false, "use-approx-force-respa", true,
-                                                   "If an approximate force should be used for CG Respa steps."};
-
-  /**
    * useSecondAutpasInstance
    */
   MDFlexOption<bool, __LINE__> useSecondAutpasInstance{
@@ -869,16 +853,6 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
-  /**
-   * chargeMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> chargeMap{
-      {}, "charge", true, "Mapping from site type to a charge value."};
-  /**
-   * coulombEpsilonMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> coulombEpsilonMap{
-      {}, "coulomb-epsilon", true, "Mapping from site type to an coulomb epsilon value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

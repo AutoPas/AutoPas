@@ -366,11 +366,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.rotationalAnalysisEndIteration.description;
 
         config.rotationalAnalysisEndIteration.value = node[key].as<size_t>();
-      } else if (key == config.useApproxForceRespa.name) {
-        expected = "Boolean Value.";
-        description = config.useApproxForceRespa.description;
-
-        config.useApproxForceRespa.value = node[key].as<bool>();
       } else if (key == config.useSecondAutpasInstance.name) {
         expected = "Boolean Value.";
         description = config.useSecondAutpasInstance.description;
@@ -916,14 +911,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
              ++siteIterator) {
           siteErrors.clear();
           siteID = std::distance(node[MDFlexConfig::siteStr].begin(), siteIterator);
-
-          // Check Coulomb parameters
-          const auto charge = parseComplexTypeValueSingle<double>(siteIterator->second, config.chargeMap.name.c_str(),
-                                                                  siteErrors, false);
-          const auto coulombEpsilon = parseComplexTypeValueSingle<double>(
-              siteIterator->second, config.coulombEpsilonMap.name.c_str(), siteErrors, false);
-
-          config.addCoulombParametersToSite(siteID, coulombEpsilon, charge);
 
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);

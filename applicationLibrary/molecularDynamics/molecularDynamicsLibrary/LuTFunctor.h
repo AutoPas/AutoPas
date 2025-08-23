@@ -92,14 +92,12 @@ class LuTFunctor
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift.
    */
-  explicit LuTFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
-                      int subtractForces)
+  explicit LuTFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LuTFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
-    _subtractForces = static_cast<double>(subtractForces);
   }
 
   void setLuT(std::shared_ptr<LookupTable> lookupTable) { _lookupTable = lookupTable; }
@@ -136,7 +134,7 @@ class LuTFunctor
     double dUdr2 = _lookupTable->getDerivativeValue(dr2);
 
     // Compute force: F = -2 * dU/dr^2 * dr
-    auto force = -2.0 * dUdr2 * dr * _subtractForces;
+    auto force = -2.0 * dUdr2 * dr;
 
     i.addF(force);
     if (newton3) {
@@ -149,7 +147,7 @@ class LuTFunctor
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * force;
-      double potentialEnergy = _lookupTable->interpolateLinearInR(dr2) * _subtractForces;
+      double potentialEnergy = _lookupTable->interpolateLinearInR(dr2);
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
@@ -428,17 +426,10 @@ class LuTFunctor
 
   const double _cutoffSquared;
 
-  double _subtractForces;
-
   /**
    * List of relative unrotated LJ Site Positions. This is to be used when there is no mixing of molecules.
    */
   const std::vector<std::array<double, 3>> _sitePositionsLJ{};
-
-  /**
-   * List of relative unrotated Coulomb Site Positions. This is to be used when there is no mixing of molecules.
-   */
-  const std::vector<std::array<double, 3>> _sitePositionsCoulomb{};
 
   /**
    * Particle property library. Not used if all sites are of the same species.

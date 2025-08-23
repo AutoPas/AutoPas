@@ -64,7 +64,6 @@ rdf-end-iteration                    :  20000
 #rotational-analysis-step-interval    :  10
 #rotational-analysis-filename         :  rot
 #rotational-analysis-output-folder    :  IBIMultisiteTestOutputRS10
-use-approx-force-respa               :  false
 #ibi-equilibrate-iterations           :  50000
 #ibi-update-alpha                     :  1
 #ibi-convergence-threshold            :  0.99

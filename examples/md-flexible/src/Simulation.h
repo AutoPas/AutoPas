@@ -295,8 +295,6 @@ class Simulation {
 
   bool _distanceClassSimulation{false};
 
-  bool _applyCoulombFunctor{false};
-
   std::vector<double> _potentialEnergyInnerLoop;
 
   std::vector<double> _potentialEnergyOuterLoop;
@@ -368,8 +366,7 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  std::optional<std::pair<double, double>> updateInteractionForces(ForceType forceTypeToCalculate,
-                                                                   bool subtractForces = false);
+  std::optional<std::pair<double, double>> updateInteractionForces(ForceType forceTypeToCalculate);
 
   double calculateKineticEnergy();
 
@@ -423,8 +420,7 @@ class Simulation {
    * Calculates the pairwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  std::tuple<bool, std::optional<double>, std::optional<double>> calculatePairwiseForces(ForceType forceType,
-                                                                                         bool subtractForces = false);
+  std::tuple<bool, std::optional<double>, std::optional<double>> calculatePairwiseForces(ForceType forceType);
 
   /**
    * Calculates the triwise forces between particles in the autopas container.
@@ -468,8 +464,7 @@ class Simulation {
    * @return Return value of f.
    */
   template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctor(FunctionType f, ForceType forceType = ForceType::FullParticle,
-                                    bool subtractForces = false);
+  ReturnType applyWithChosenFunctor(FunctionType f, ForceType forceType = ForceType::FullParticle);
 
   /**
    *

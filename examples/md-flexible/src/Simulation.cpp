@@ -234,10 +234,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     }
   }
 
-  if (not _configuration.lutInputFile.value.empty() and _configuration.useApproxForceRespa.value) {
-    throw std::runtime_error("Can not use LuT CG forces and approximate forces at the same time!");
-  }
-
   if (_configuration.respaDistanceClassMode.value == autopas::DistanceClassOption::ibi and
       _configuration.lutInputFile.value.empty() and _configuration.ibiEquilibrateIterations.value == 0) {
     throw std::runtime_error("Please specify a lut input file to be used with LuT functor in outer distance class!");
@@ -291,18 +287,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     _cgSimulation = true;
   }
 
-  if (_configuration.useApproxForceRespa.value) {
-    _cgSimulation = true;
-  }
-
   if (_configuration.respaDistanceClassMode.value != autopas::DistanceClassOption::disabled) {
     _distanceClassSimulation = true;
-  }
-
-  for (size_t i = 0; i < _configuration.getParticlePropertiesLibrary()->getNumberRegisteredSiteTypes(); ++i) {
-    if (_configuration.getParticlePropertiesLibrary()->getCoulombEpsilon(i) > 0) {
-      _applyCoulombFunctor = true;
-    }
   }
 }
 
@@ -420,9 +406,6 @@ void Simulation::run() {
             if (not respaStarted) {
               // do a first force evaluation
               updateInteractionForces(ForceType::FullParticle);
-              if (not _configuration.multiMultisiteModelsRespa.value) {
-                updateInteractionForces(ForceType::CoarseGrain, true);
-              }
             }
             updateVelocities(/*resetForce*/ true, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -596,9 +579,6 @@ void Simulation::run() {
 #endif
         } else {
           potentialEnergyAndVirial = updateInteractionForces(ForceType::FullParticle);
-          if (not _configuration.multiMultisiteModelsRespa.value) {
-            potentialEnergyAndVirial = updateInteractionForces(ForceType::CoarseGrain, true);
-          }
           updateVelocities(false, RespaIterationType::OuterStep);
 #if MD_FLEXIBLE_MODE == MULTISITE
           if (_configuration.multiMultisiteModelsRespa.value) {
@@ -1180,8 +1160,7 @@ void Simulation::updateQuaternions(bool resetTorques) {
   _timers.quaternionUpdate.stop();
 }
 
-std::optional<std::pair<double, double>> Simulation::updateInteractionForces(ForceType forceTypeToCalculate,
-                                                                             bool subtractForces) {
+std::optional<std::pair<double, double>> Simulation::updateInteractionForces(ForceType forceTypeToCalculate) {
   _timers.forceUpdateTotal.start();
 
   _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
@@ -1194,7 +1173,7 @@ std::optional<std::pair<double, double>> Simulation::updateInteractionForces(For
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
     std::tuple<bool, std::optional<double>, std::optional<double>> wasTuningIterationPotentialEnergyVirial =
-        calculatePairwiseForces(forceTypeToCalculate, subtractForces);
+        calculatePairwiseForces(forceTypeToCalculate);
     _currentIterationIsTuningIteration =
         (_currentIterationIsTuningIteration | std::get<0>(wasTuningIterationPotentialEnergyVirial));
     if (std::get<1>(wasTuningIterationPotentialEnergyVirial).has_value()) {
@@ -1310,7 +1289,7 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 std::tuple<bool, std::optional<double>, std::optional<double>> Simulation::calculatePairwiseForces(
-    ForceType forceType, bool subtractForces) {
+    ForceType forceType) {
   auto autopasInstanceToUse = _autoPasContainer;
   if (_useSecondAutopasInstanceForRespa) {
     if (forceType == ForceType::CGMolOuter or forceType == ForceType::FPOuter or forceType == ForceType::IBIOuter) {
@@ -1330,35 +1309,8 @@ std::tuple<bool, std::optional<double>, std::optional<double>> Simulation::calcu
             return std::make_tuple<bool, std::optional<double>, std::optional<double>>(std::move(wasTuningIteration),
                                                                                        std::nullopt, std::nullopt);
           },
-          forceType, subtractForces);
+          forceType);
 
-#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-  if (_applyCoulombFunctor and not(forceType == ForceType::CoarseGrain or forceType == ForceType::IBIOuter)) {
-    auto wasTuningIterationPotentialEnergyVirialCoulomb =
-        applyWithChosenFunctorElectrostatic<std::tuple<bool, std::optional<double>, std::optional<double>>>(
-            [&](auto &&functor) {
-              auto wasTuningIteration = autopasInstanceToUse->template computeInteractions(&functor);
-              if (functor.getCalculateGlobals()) {
-                const auto potentialEnergy = functor.getPotentialEnergy();
-                const auto virial = functor.getVirial();
-                return std::make_tuple<bool, std::optional<double>, std::optional<double>>(
-                    std::move(wasTuningIteration), potentialEnergy, virial);
-              }
-              return std::make_tuple<bool, std::optional<double>, std::optional<double>>(std::move(wasTuningIteration),
-                                                                                         std::nullopt, std::nullopt);
-            },
-            forceType);
-    std::get<0>(wasTuningIterationPotentialEnergyVirial) |= std::get<0>(wasTuningIterationPotentialEnergyVirialCoulomb);
-    if (std::get<1>(wasTuningIterationPotentialEnergyVirial).has_value()) {
-      std::get<1>(wasTuningIterationPotentialEnergyVirial).value() +=
-          std::get<1>(wasTuningIterationPotentialEnergyVirialCoulomb).value();
-    }
-    if (std::get<2>(wasTuningIterationPotentialEnergyVirial).has_value()) {
-      std::get<2>(wasTuningIterationPotentialEnergyVirial).value() +=
-          std::get<2>(wasTuningIterationPotentialEnergyVirialCoulomb).value();
-    }
-  }
-#endif
   return wasTuningIterationPotentialEnergyVirial;
 }
 
@@ -1658,24 +1610,18 @@ void Simulation::loadParticles() {
 }
 
 template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctor(FunctionType f, ForceType forceType, bool subtractForces) {
+ReturnType Simulation::applyWithChosenFunctor(FunctionType f, ForceType forceType) {
   const bool useCGFunctor = forceType == ForceType::CoarseGrain;
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   if (useCGFunctor) {
-    if (_configuration.useApproxForceRespa.value) {
-      auto func = LJFunctorTypeAutovecApproxMultisite{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
-      return f(func);
-    } else {
-      auto func = LuTFunctorType{cutoff, particlePropertiesLibrary, subtractForces ? -1 : 1};
+      auto func = LuTFunctorType{cutoff, particlePropertiesLibrary};
       func.setLuT(_lut);
       return f(func);
-    }
   }
 
   if (forceType == ForceType::IBIOuter) {
-    auto func = LuTFunctorType{cutoff * _configuration.cutoffFactorRespa.value, particlePropertiesLibrary,
-                               subtractForces ? -1 : 1};
+    auto func = LuTFunctorType{cutoff * _configuration.cutoffFactorRespa.value, particlePropertiesLibrary};
     func.setInnerCutoff(cutoff);
     func.setLuT(_lut);
     return f(func);
@@ -1721,26 +1667,6 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f, ForceType forceTyp
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
     }
   }
-}
-
-template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctorElectrostatic(FunctionType f, ForceType forceType) {
-  const double cutoff = _configuration.cutoff.value;
-  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
-
-#if defined(MD_FLEXIBLE_FUNCTOR_COULOMB)
-  if (forceType == ForceType::FPOuter or forceType == ForceType::CGMolOuter) {
-    auto func = CoulombFunctorTypeAutovec{cutoff * _configuration.cutoffFactorRespa.value, particlePropertiesLibrary};
-    func.setInnerCutoff(cutoff);
-    return f(func);
-  } else {
-    return f(CoulombFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
-  }
-#else
-  throw std::runtime_error(
-      "MD-Flexible was not compiled with support for Coulomb interactions. Activate it via `cmake "
-      "-DMD_FLEXIBLE_FUNCTOR_COULOMB=ON`.");
-#endif
 }
 
 template <class ReturnType, class FunctionType>

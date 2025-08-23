@@ -35,11 +35,11 @@ namespace mdLib {
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true, bool useApproxMultisiteForce = true>
+          bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctor
     : public autopas::PairwiseFunctor<Particle_T,
                                       LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                countFLOPs, relevantForTuning, useApproxMultisiteForce>> {
+                                                countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -64,7 +64,7 @@ class LJFunctor
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                       countFLOPs, relevantForTuning, useApproxMultisiteForce>>(cutoff),
+                                                       countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -98,14 +98,12 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
-                     int subtractForces = 1)
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
-    _subtractForces = static_cast<double>(subtractForces);
   }
 
   std::string getName() final { return "LJFunctorAutoVec"; }
@@ -144,17 +142,6 @@ class LJFunctor
       }
     }
 
-    if constexpr (useApproxMultisiteForce) {
-      if constexpr (not useMixing) {
-        throw autopas::utils::ExceptionHandler::AutoPasException("Approximate Multisiteforces only work with mixing");
-      }
-      // get number of sites
-      const size_t numSitesA = _PPLibrary->getNumSites(i.getTypeId());
-      const size_t numSitesB = _PPLibrary->getNumSites(j.getTypeId());
-      const double factor = numSitesA * numSitesB;
-      epsilon24 *= factor;
-    }
-
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
@@ -168,7 +155,7 @@ class LJFunctor
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac * _subtractForces;
+    auto f = dr * fac;
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
@@ -188,7 +175,7 @@ class LJFunctor
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * f;
-      double potentialEnergy6 = _subtractForces * (epsilon24 * lj12m6 + shift6);
+      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
@@ -1240,7 +1227,5 @@ class LJFunctor
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
-
-  double _subtractForces;
 };
 }  // namespace mdLib
