@@ -5,32 +5,37 @@
 #include <math.h>
 #include <array>
 
+#include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+
 namespace autopas {
     
     class FFT {
 
         public:
-        using RealGridType = typename std::vector<std::vector<std::vector<double>>>;
-        using ComplexGridType = std::vector<std::vector<std::vector<std::complex<double>>>>;
+        using RealGridType = typename std::vector<double>;
+        using ComplexGridType = std::vector<std::complex<double>>;
 
         private:
         std::vector<std::complex<double>> inBuffer;
         std::vector<std::complex<double>> outBuffer;
+        std::vector<std::complex<double>> ws;
         ComplexGridType fftBuffer3D;
         bool correct_scaling;
 
+        // requires x = result in initial call
         void fft(std::vector<std::complex<double>> &x, unsigned int N, int start, std::vector<std::complex<double>> &result, bool forward, int stride = 1){
             if(N == 1){
-                result[start] = x[start];
+                //result[start] = x[start];
                 return;
             }
             //split
-            for(unsigned int i = 0; i < N/2; i++){
+            /*for(unsigned int i = 0; i < N/2; i++){
                 result[start + i] = x[start + 2*i];
                 result[start + N/2 + i] = x[start + 2*i+1];
-            }
-            fft(x, N/2, start, result, forward, 2*stride);
-            fft(x, N/2, start + stride, result, forward, 2*stride);
+            }*/
+            fft(result, N/2, start, x, forward, 2*stride);
+            fft(result, N/2, start + stride, x, forward, 2*stride);
 
             std::complex<double> w_n;
             if(forward){
@@ -40,9 +45,9 @@ namespace autopas {
             }
             std::complex<double> w = std::complex(1.,0.);
 
-            for(unsigned int k = 0; k < N/2; k += stride){
-                result[start + k] = result[start + k] + w * result[start + N/2 + k];
-                result[start + (N/2) + k] = result[start + k] - w * result[start + N/2 + k];
+            for(unsigned int k = 0; k < (N/2); k++){
+                result[start + k*stride] = x[start + 2*k*stride] + w * x[start + (2*k + 1)*stride];
+                result[start + (N/2 + k)*stride] = x[start + 2*k*stride] - w * x[start + (2*k + 1)*stride];
                 w *=  w_n;
             }
         }
@@ -62,18 +67,16 @@ namespace autopas {
             inBuffer = std::vector<std::complex<double>>(maxGridDim);
             outBuffer = std::vector<std::complex<double>>(maxGridDim);
 
-            fftBuffer3D = ComplexGridType(N[0]);
-            for(unsigned int i = 0; i < N[0]; i++){
-                fftBuffer3D[i] = std::vector<std::vector<std::complex<double>>>(N[1]);
-                for(unsigned int k = 0; k < N[1]; k++){
-                    fftBuffer3D[i][k] = std::vector<std::complex<double>>(N[2]);
-                }
-            }
+            fftBuffer3D = ComplexGridType(N[0] * N[1] * N[2]);
+
+            ws = std::vector<std::complex<double>>((int) std::log2(maxGridDim));
+            
         }
 
         //TOOD move construction
 
         void forward(std::vector<std::complex<double>> &x, unsigned int N, std::vector<std::complex<double>> &result){
+            result = x;
             fft(x, N, 0, result, true);
             if(correct_scaling){
                 for(unsigned int i = 0; i < N; i++){
@@ -83,6 +86,7 @@ namespace autopas {
         }
 
         void backward(std::vector<std::complex<double>> &x, unsigned int N, std::vector<std::complex<double>> &result){
+            result = x;
             fft(x, N, 0, result, false);
             if(correct_scaling){
                 for(unsigned int i = 0; i < N; i++){
@@ -96,7 +100,7 @@ namespace autopas {
             
         }
 
-        void forward3DdirectionAt(ComplexGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims, int direction, int xIndx, int yIndx, int zIndx){
+        /*void forward3DdirectionAt(ComplexGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims, int direction, int xIndx, int yIndx, int zIndx){
             for(unsigned int m = 0; m < grid_dims[direction]; m++){
                 // copy values into buffer
                 switch(direction){
@@ -127,59 +131,62 @@ namespace autopas {
                         break;
                 }
             }
-        }
+        }*/
 
         void forward3D(RealGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims){
             AUTOPAS_OPENMP(parallel for schedule(static))
-            for(unsigned int i = 0; i < grid_dims[0]; i++){
-                for(unsigned int j = 0; j < grid_dims[1]; j++){
-                    for(unsigned int k = 0; k < grid_dims[2]; k++){
-                        fftBuffer3D[i][j][k] = std::complex<double>(in[i][j][k]);
-                    }
-                }
+            for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
+                fftBuffer3D[i] = std::complex<double>(in[i]);
             }
 
+
             AUTOPAS_OPENMP(parallel for schedule(static) firstprivate(inBuffer, outBuffer))
-            for (unsigned int i = 0; i < grid_dims[0]; i++){
+            for (unsigned int z = 0; z < grid_dims[2]; z++){
                 // do all FFTs for one x-Plane
-                for(unsigned int j = 0; j < grid_dims[1]; j++){
-                    // FFTs in z-direction
-                    for(unsigned int k = 0; k < grid_dims[2]; k++){
-                        inBuffer[k] = fftBuffer3D[i][j][k];
-                    }
-                    forward(inBuffer, grid_dims[2], outBuffer);
-                    for(unsigned int k = 0; k < grid_dims[2]; k++){
-                        fftBuffer3D[i][j][k] = outBuffer[k];
-                    }
-                }
-                for(unsigned int k = 0; k < grid_dims[2]; k++){
-                    // FFTs in y-direction on the already transformed values
-                    for(unsigned int j = 0; j < grid_dims[1]; j++){
-                        inBuffer[j] = fftBuffer3D[i][j][k];
-                    }
-                    forward(inBuffer, grid_dims[1], outBuffer);
-                    for(unsigned int j = 0; j < grid_dims[1]; j++){
-                        fftBuffer3D[i][j][k] = outBuffer[j];
-                    }
-                }
-            }
-
-            //FFTs in x-direction
-            AUTOPAS_OPENMP(parallel for schedule(static) firstprivate(inBuffer, outBuffer))
-            for(unsigned j = 0; j < grid_dims[1]; j++){
-                for(unsigned k = 0; k < grid_dims[2]; k++){
-                    for(unsigned i = 0; i < grid_dims[0]; i++){
-                        inBuffer[i] = fftBuffer3D[i][j][k];
+                for(unsigned int y = 0; y < grid_dims[1]; y++){
+                    // FFTs in x-direction
+                    for(unsigned int x = 0; x < grid_dims[0]; x++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        inBuffer[x] = fftBuffer3D[index1d];
                     }
                     forward(inBuffer, grid_dims[0], outBuffer);
-                    for(unsigned i = 0; i < grid_dims[0]; i++){
-                        out[i][j][k] = outBuffer[i];
+                    for(unsigned int x = 0; x < grid_dims[0]; x++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        fftBuffer3D[index1d] = outBuffer[x];
+                    }
+                }
+                for(unsigned int x = 0; x < grid_dims[0]; x++){
+                    // FFTs in y-direction on the already transformed values
+                    for(unsigned int y = 0; y < grid_dims[1]; y++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        inBuffer[y] = fftBuffer3D[index1d];
+                    }
+                    forward(inBuffer, grid_dims[1], outBuffer);
+                    for(unsigned int y = 0; y < grid_dims[1]; y++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        fftBuffer3D[index1d] = outBuffer[y];
+                    }
+                }
+            }
+
+            //FFTs in z-direction
+            AUTOPAS_OPENMP(parallel for schedule(static) firstprivate(inBuffer, outBuffer))
+            for(unsigned y = 0; y < grid_dims[1]; y++){
+                for(unsigned x = 0; x < grid_dims[0]; x++){
+                    for(unsigned z = 0; z < grid_dims[2]; z++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        inBuffer[z] = fftBuffer3D[index1d];
+                    }
+                    forward(inBuffer, grid_dims[2], outBuffer);
+                    for(unsigned z = 0; z < grid_dims[2]; z++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        out[index1d] = outBuffer[z];
                     }
                 }
             }
         }
 
-        void backward3DdirectionAt(ComplexGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims, int direction, int xIndx, int yIndx, int zIndx){
+        /*void backward3DdirectionAt(ComplexGridType &in, ComplexGridType &out, std::array<unsigned int, 3> &grid_dims, int direction, int xIndx, int yIndx, int zIndx){
             for(unsigned int m = 0; m < grid_dims[direction]; m++){
                 // copy values into buffer
                 switch(direction){
@@ -209,56 +216,58 @@ namespace autopas {
                         break;
                 }
             }
-        }
+        }*/
 
         void backward3D(ComplexGridType &in, RealGridType &out, std::array<unsigned int, 3> &grid_dims){
             AUTOPAS_OPENMP(parallel for schedule(static) firstprivate(inBuffer, outBuffer))
-            for (unsigned int i = 0; i < grid_dims[0]; i++){
+            for (unsigned int z = 0; z < grid_dims[2]; z++){
                 // do all FFTs for one x-Plane
-                for(unsigned int j = 0; j < grid_dims[1]; j++){
-                    // FFTs in z-direction
-                    for(unsigned int k = 0; k < grid_dims[2]; k++){
-                        inBuffer[k] = in[i][j][k];
+                for(unsigned int y = 0; y < grid_dims[1]; y++){
+                    // FFTs in x-direction
+                    for(unsigned int x = 0; x < grid_dims[0]; x++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        inBuffer[x] = in[index1d];
                     }
-                    backward(inBuffer, grid_dims[2], outBuffer);
-                    for(unsigned int k = 0; k < grid_dims[2]; k++){
-                        fftBuffer3D[i][j][k] = outBuffer[k];
+                    backward(inBuffer, grid_dims[0], outBuffer);
+                    for(unsigned int x = 0; x < grid_dims[0]; x++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        fftBuffer3D[index1d] = outBuffer[x];
                     }
                 }
-                for(unsigned int k = 0; k < grid_dims[2]; k++){
+                for(unsigned int x = 0; x < grid_dims[0]; x++){
                     // FFTs in y-direction on the already transformed values
-                    for(unsigned int j = 0; j < grid_dims[1]; j++){
-                        inBuffer[j] = fftBuffer3D[i][j][k];
+                    for(unsigned int y = 0; y < grid_dims[1]; y++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        inBuffer[y] = fftBuffer3D[index1d];
                     }
                     backward(inBuffer, grid_dims[1], outBuffer);
-                    for(unsigned int j = 0; j < grid_dims[1]; j++){
-                        fftBuffer3D[i][j][k] = outBuffer[j];
+                    for(unsigned int y = 0; y < grid_dims[1]; y++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        fftBuffer3D[index1d] = outBuffer[y];
                     }
                 }
             }
 
-            //FFTs in x-direction
+            //FFTs in z-direction
             AUTOPAS_OPENMP(parallel for schedule(static) firstprivate(inBuffer, outBuffer))
-            for(unsigned j = 0; j < grid_dims[1]; j++){
-                for(unsigned k = 0; k < grid_dims[2]; k++){
-                    for(unsigned i = 0; i < grid_dims[0]; i++){
-                        inBuffer[i] = fftBuffer3D[i][j][k];
+            for(unsigned y = 0; y < grid_dims[1]; y++){
+                for(unsigned x = 0; x < grid_dims[0]; x++){
+                    for(unsigned z = 0; z < grid_dims[2]; z++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        inBuffer[z] = fftBuffer3D[index1d];
                     }
-                    backward(inBuffer, grid_dims[0], outBuffer);
-                    for(unsigned i = 0; i < grid_dims[0]; i++){
-                        fftBuffer3D[i][j][k] = outBuffer[i];
+                    backward(inBuffer, grid_dims[2], outBuffer);
+                    for(unsigned z = 0; z < grid_dims[2]; z++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                        fftBuffer3D[index1d] = outBuffer[z];
                     }
                 }
             }
 
             // Make output real
             AUTOPAS_OPENMP(parallel for schedule(static))
-            for(unsigned int i = 0; i < grid_dims[0]; i++){
-                for(unsigned int j = 0; j < grid_dims[1]; j++){
-                    for(unsigned int k = 0; k < grid_dims[2]; k++){
-                        out[i][j][k] = std::real(fftBuffer3D[i][j][k]);
-                    }
-                }
+            for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
+                out[i] = std::real(fftBuffer3D[i]);
             }
         }
 

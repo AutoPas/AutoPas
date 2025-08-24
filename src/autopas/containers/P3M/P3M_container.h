@@ -7,6 +7,7 @@
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
 
 #include "autopas/utils/Timer.h"
 
@@ -22,8 +23,8 @@ class P3M_container : public LinkedCells<Particle_T> {
 
     using LinkedParticleCell = typename LinkedCells<Particle_T>::ParticleCell;
     using ParticleType = typename LinkedCells<Particle_T>::ParticleType;
-    using GridType = typename std::vector<std::vector<std::vector<double>>>;
-    using ComplexGridType = std::vector<std::vector<std::vector<std::complex<double>>>>;
+    using GridType = typename std::vector<double>;
+    using ComplexGridType = std::vector<std::complex<double>>;
 
     public:
     P3M_container(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, std::array<unsigned int, 3> &N, const double cutoff,
@@ -40,26 +41,14 @@ class P3M_container : public LinkedCells<Particle_T> {
     
         for (int i = 0; i < 3; i++){
             box_lengths[i] = boxMax[i] - boxMin[i];
-        } 
-
-        rs_grid = GridType(grid_dims[0]);
-        for(int i = 0; i < grid_dims[0]; i++){
-            rs_grid[i] = std::vector<std::vector<double>>(grid_dims[1]);
-            for(int k = 0; k < grid_dims[1]; k++){
-                rs_grid[i][k] = std::vector<double>(grid_dims[2]);
-            }
         }
 
-        ks_grid = ComplexGridType(grid_dims[0]);
-        optForceInfluence = ComplexGridType(grid_dims[0]);
-        for(int i = 0; i < grid_dims[0]; i++){
-            ks_grid[i] = std::vector<std::vector<std::complex<double>>>(grid_dims[1]);
-            optForceInfluence[i] = std::vector<std::vector<std::complex<double>>>(grid_dims[1]);
-            for(int k = 0; k < grid_dims[1]; k++){
-                ks_grid[i][k] = std::vector<std::complex<double>>(grid_dims[2]);
-                optForceInfluence[i][k] = std::vector<std::complex<double>>(grid_dims[2]);
-            }
-        }
+        unsigned int totalLength = grid_dims[0] * grid_dims[1] * grid_dims[2];
+
+        rs_grid = GridType(totalLength);
+
+        ks_grid = ComplexGridType(totalLength);
+        optForceInfluence = ComplexGridType(totalLength);
 
         for(int i = 0; i < 3; i++){
             grid_dist[i] = (boxMax[i] - boxMin[i]) / N[i];
@@ -82,10 +71,11 @@ class P3M_container : public LinkedCells<Particle_T> {
         }
 
         /*std::cout << "Influence: " << std::endl;
-        for (int x = 0; x < grid_dims[0]; x++){
-            for(int y = 0; y < grid_dims[1]; y++){
-                for(int z = 0; z < grid_dims[2]; z++){
-                    std::cout << optForceInfluence[x][y][z] << ", ";
+        for (unsigned int x = 0; x < grid_dims[0]; x++){
+            for(unsigned int y = 0; y < grid_dims[1]; y++){
+                for(unsigned int z = 0; z < grid_dims[2]; z++){
+                    unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                    std::cout << optForceInfluence[index1d] << ", ";
                 }
                 std::cout << std::endl;
             }
@@ -138,13 +128,14 @@ class P3M_container : public LinkedCells<Particle_T> {
             computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
 
             AUTOPAS_OPENMP(for schedule(static))
-            for(int ix=0; ix < grid_dims[0]; ix++){
-                for(int iy = 0; iy < grid_dims[1]; iy++){
-                    for(int iz = 0; iz < grid_dims[2]; iz++){
+            for(unsigned int iz=0; iz < grid_dims[2]; iz++){
+                for(unsigned int iy = 0; iy < grid_dims[1]; iy++){
+                    for(unsigned int ix = 0; ix < grid_dims[0]; ix++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(ix, iy, iz, grid_dims);
                         if(ix%(grid_dims[0]/2) == 0 and iy%(grid_dims[1]/2) == 0 and iz%(grid_dims[2]/2) == 0){
-                            optForceInfluence[ix][iy][iz] = std::complex<double>(0.0);
+                            optForceInfluence[index1d] = std::complex<double>(0.0);
                         }else{
-                            optForceInfluence[ix][iy][iz] = computeForceInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+                            optForceInfluence[index1d] = computeForceInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
                         }
                     }
                 }
@@ -285,13 +276,14 @@ class P3M_container : public LinkedCells<Particle_T> {
             computeBrillouinShift(brillouinShiftedZ, grid_dims[2]);
 
             AUTOPAS_OPENMP(for schedule(static))
-            for(unsigned int ix=0; ix < grid_dims[0]; ix++){
+            for(unsigned int iz=0; iz < grid_dims[2]; iz++){
                 for(unsigned int iy = 0; iy < grid_dims[1]; iy++){
-                    for(unsigned int iz = 0; iz < grid_dims[2]; iz++){
+                    for(unsigned int ix = 0; ix < grid_dims[0]; ix++){
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(ix, iy, iz, grid_dims);
                         if(ix == 0 and iy == 0 and iz == 0){
-                            optForceInfluence[ix][iy][iz] = std::complex<double>(0.0);
+                            optForceInfluence[index1d] = std::complex<double>(0.0);
                         }else{
-                            optForceInfluence[ix][iy][iz] = computeEnergyInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+                            optForceInfluence[index1d] = computeEnergyInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
                         }
                     }
                 }
@@ -408,7 +400,6 @@ class P3M_container : public LinkedCells<Particle_T> {
             for (int coeff = 1; coeff <= 2; coeff++){
                 factor *= coeff;
 
-                //TODO parallelize
                 double selfForceCoeff = 0.0;
                 AUTOPAS_OPENMP(parallel for schedule(static) reduction(+: selfForceCoeff))
                 for (unsigned int zind = 0; zind < grid_dims[2]; zind++){
@@ -431,7 +422,8 @@ class P3M_container : public LinkedCells<Particle_T> {
                                 precoeff = Usum(brillouinShiftedX[xind], brillouinShiftedY[yind], brillouinShiftedZ[zind], 0, 0, coeff);
                                 break;
                             }
-                            selfForceCoeff += real(optForceInfluence[xind][yind][zind]) * precoeff;
+                            unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(xind, yind, zind, grid_dims);
+                            selfForceCoeff += real(optForceInfluence[index1d]) * precoeff;
                         }
                     }   
                 }
@@ -451,8 +443,7 @@ class P3M_container : public LinkedCells<Particle_T> {
         this->prepareTraversal(shortRangeTraversal);
         auto *traversalP3M = dynamic_cast<P3M_traversal<LinkedParticleCell> *>(traversal);
         if (traversalP3M) {
-            traversalP3M->set_traversal_parameters(cao, grid_dims, this->getBoxMin(), grid_dist, rs_grid, /*rs_grid_shifted,*/ 
-                ks_grid, /*ks_grid_shifted,*/ optForceInfluence, fft, selfForceCoeffs, this,
+            traversalP3M->set_traversal_parameters(cao, grid_dims, grid_dist, this->getBoxMin(), selfForceCoeffs, this,
                 shortRangeTraversal);
             traversalP3M->set_Timers(&fftTimer, &shortRangeTimer, &chargeAssignmentTimer, &forceInterpolationTimer);
         } else {
@@ -480,9 +471,23 @@ class P3M_container : public LinkedCells<Particle_T> {
         return ContainerOption::p3m;
     }
 
-    private:
+    
+    public:
     autopas::FFT fft;
+    // real_space charge grid
+    GridType rs_grid;
+    //GridType rs_grid_shifted;
+    // transformed grid
+    ComplexGridType ks_grid;
+    //ComplexGridType ks_grid_shifted;
 
+    // array for all ks_grid points
+    ComplexGridType optForceInfluence;
+    // array for all ks_grid points
+    ComplexGridType optEnergyInfluence;
+
+
+    private:
     // ewald splitting parameter
     double alpha;
 
@@ -494,18 +499,6 @@ class P3M_container : public LinkedCells<Particle_T> {
     std::array<double, 3> grid_dist;
     std::array<double, 3> box_lengths;
 
-    // real_space charge grid
-    GridType rs_grid;
-    //GridType rs_grid_shifted;
-    // transformed grid
-    ComplexGridType ks_grid;
-    //ComplexGridType ks_grid_shifted;
-
-
-    // array for all ks_grid points
-    ComplexGridType optForceInfluence;
-    // array for all ks_grid points
-    ComplexGridType optEnergyInfluence;
     // coefficients to approximate selfForce
     std::vector<std::vector<double>> selfForceCoeffs;
 

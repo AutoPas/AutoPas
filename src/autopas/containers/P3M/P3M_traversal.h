@@ -11,6 +11,7 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/P3M/P3M_shortRangeFunctor.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
 
 #include "autopas/utils/Timer.h"
 
@@ -25,8 +26,8 @@ class P3M_container;
 template <class ParticleCell>
 class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
-    using GridType = typename std::vector<std::vector<std::vector<double>>>;
-    using ComplexGridType = std::vector<std::vector<std::vector<std::complex<double>>>>;
+    using GridType = typename std::vector<double>;
+    using ComplexGridType = std::vector<std::complex<double>>;
     using ParticleType = typename ParticleCell::ParticleType;
 
 
@@ -43,18 +44,11 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     //        fft = FFT();
     //}
 
-    void set_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, const std::array<double, 3> &boxMin, std::array<double, 3> grid_dist, GridType &rs_grid, /*GridType &rs_shifted,*/ 
-        ComplexGridType &ks_grid, /*ComplexGridType &ks_shifted,*/ ComplexGridType &optForceInfluence, FFT &fft, std::vector<std::vector<double>> &selfForceCoeffs,
-        P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
+    void set_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, std::array<double, 3> grid_dist, const std::array<double, 3> &boxMin,
+         std::vector<std::vector<double>> &selfForceCoeffs, P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
         this->cao = cao;
         this->grid_dims = grid_dims;
         this->grid_dist = grid_dist;
-        this->rs_grid = rs_grid;
-        //this->rs_grid_shifted = rs_shifted;
-        this->ks_grid = ks_grid;
-        //this->ks_grid_shifted = ks_shifted;
-        this->optForceInfluence = optForceInfluence;
-        this->fft = fft;
         this->boxMin = boxMin;
         this->selfForceCoeffs = selfForceCoeffs;
         this->container = container;
@@ -69,8 +63,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     }
 
     private:
-    autopas::FFT fft;
-
     // ewald splitting parameter
     double alpha;
 
@@ -81,19 +73,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     std::array<unsigned int, 3> grid_dims;
     std::array<double, 3> grid_dist;
     std::array<double, 3> boxMin;
-
-    // real_space charge grid
-    GridType rs_grid;
-    GridType rs_grid_shifted;
-    // transformed grid
-    ComplexGridType ks_grid;
-    ComplexGridType ks_grid_shifted;
-
-
-    // array for all ks_grid points
-    ComplexGridType optForceInfluence;
-    // array for all ks_grid points
-    ComplexGridType optEnergyInfluence;
 
     std::vector<std::vector<double>> selfForceCoeffs;
 
@@ -134,17 +113,21 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             
             getChargeAssignmentFractions(pPos, closestGridpoint, caFractionsX, caFractionsY, caFractionsZ);
             // charge assignment according to computed fractions
-            for(int xi = 0; xi < cao; xi++){
+            for(int zi = 0; zi < cao; zi++){
+                int zii = zi - (cao/2);
+                unsigned int zIndex = (closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2];
                 for(int yi = 0; yi < cao; yi++){
-                    for(int zi = 0; zi < cao; zi++){
+                    int yii = yi - (cao/2);
+                    unsigned int yIndex = (closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1];
+                    for(int xi = 0; xi < cao; xi++){
                         int xii = xi - (cao/2);
-                        int yii = yi - (cao/2);
-                        int zii = zi - (cao/2);
-                        // 1/V factor may not be needed
+                        unsigned int xIndex = (closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0];
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(xIndex, yIndex, zIndex, grid_dims);
+                        
+
                         double chargeFraction = caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * iter->getQ() * gridCellVolumeInv;
                         AUTOPAS_OPENMP(atomic)
-                        rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]]
-                            += chargeFraction;
+                        container->rs_grid[index1d] += chargeFraction;
                     }
                 }
             }
@@ -230,12 +213,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     // multiplies the ks_grid with an influence function
     void applyInfluenceFunction(){
         AUTOPAS_OPENMP(parallel for schedule(static))
-        for(unsigned int i = 0; i < grid_dims[0]; i++){
-            for(unsigned int j = 0; j < grid_dims[1]; j++){
-                for(unsigned int k = 0; k < grid_dims[2]; k++){
-                    ks_grid[i][j][k] *= optForceInfluence[i][j][k];
-                }
-            }
+        for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
+            container->ks_grid[i] *= container->optForceInfluence[i];
         }
     }
 
@@ -264,14 +243,20 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             getCAFDeriveative(pPos, closestGridpoint, caFractionsDX, caFractionsDY, caFractionsDZ);
             // charge assignment according to computed fractions
             std::array<double, 3> totalForce = {0., 0., 0.};
-            for(int xi = 0; xi < cao; xi++){
+            for(int zi = 0; zi < cao; zi++){
+                int zii = zi - (cao/2);
+                unsigned int zIndex = (closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2];
                 for(int yi = 0; yi < cao; yi++){
-                    for(int zi = 0; zi < cao; zi++){
+                    int yii = yi - (cao/2);
+                    unsigned int yIndex = (closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1];
+                    for(int xi = 0; xi < cao; xi++){
                         int xii = xi - (cao/2);
-                        int yii = yi - (cao/2);
-                        int zii = zi - (cao/2);
+                        unsigned int xIndex = (closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0];
+                        unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(xIndex, yIndex, zIndex, grid_dims);
+                        
+                        
 
-                        double force = rs_grid[(closestGridpoint[0] + xii + grid_dims[0]) % grid_dims[0]][(closestGridpoint[1] + yii + grid_dims[1])%grid_dims[1]][(closestGridpoint[2] + zii + grid_dims[2]) % grid_dims[2]];
+                        double force = container->rs_grid[index1d];
                         totalForce[0] -= caFractionsDX[xi] * caFractionsY[yi] * caFractionsZ[zi] * gridDistInvX * force * charge;
                         totalForce[1] -= caFractionsX[xi] * caFractionsDY[yi] * caFractionsZ[zi] * gridDistInvY * force * charge;
                         totalForce[2] -= caFractionsX[xi] * caFractionsY[yi] * caFractionsDZ[zi] * gridDistInvZ * force * charge;
@@ -366,30 +351,32 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         chargeAssignmentTimer->start();
         assignChargeDensities();
         chargeAssignmentTimer->stop();
-        std::cout << "Charge Grid:" << std::endl;
+        /*std::cout << "Charge Grid:" << std::endl;
         for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[0]; k++){
-                    std::cout << rs_grid[k][j][i] << ", ";
+                    unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(k, j, i, grid_dims);
+                    std::cout << container->rs_grid[index1d] << ", ";
                 }
                 std::cout << std::endl;
             }
             std::cout << std::endl;
-        }
+        }*/
         fftTimer->start();
-        fft.forward3D(rs_grid, ks_grid, grid_dims);
+        container->fft.forward3D(container->rs_grid, container->ks_grid, grid_dims);
         fftTimer->stop();
 
         applyInfluenceFunction();
         
         fftTimer->start();
-        fft.backward3D(ks_grid, rs_grid, grid_dims);
+        container->fft.backward3D(container->ks_grid, container->rs_grid, grid_dims);
         fftTimer->stop();
         /*std::cout << "Force Grid:" << std::endl;
         for(unsigned int i = 0; i < grid_dims[2]; i++){
             for(unsigned int j = 0; j < grid_dims[1]; j++){
                 for(unsigned int k = 0; k < grid_dims[0]; k++){
-                    std::cout << rs_grid[k][j][i] << ", ";
+                    unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(k, j, i, grid_dims);
+                    std::cout << container->rs_grid[index1d] << ", ";
                 }
                 std::cout << std::endl;
             }
@@ -459,13 +446,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     void initTraversal() override {
         // zero out the grids
         AUTOPAS_OPENMP(parallel for schedule(static))
-        for(unsigned int x = 0; x < grid_dims[0]; x++){
-            for(unsigned int y = 0; y < grid_dims[1]; y++){
-                for(unsigned int z = 0; z < grid_dims[2]; z++){
-                    rs_grid[x][y][z] = 0;
-                    ks_grid[x][y][z] = std::complex<double>(0.0);
-                }
-            }
+        for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
+            container->rs_grid[i] = 0;
+            container->ks_grid[i] = std::complex<double>(0.0);
         }
     }
 
