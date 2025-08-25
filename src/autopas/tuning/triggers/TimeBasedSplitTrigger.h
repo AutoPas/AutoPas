@@ -30,30 +30,33 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
    */
   TimeBasedSplitTrigger(float triggerFactor, unsigned nSamples) : _triggerFactor(triggerFactor) {
     if (triggerFactor < 0) {
-      AutoPasLog(WARN, "triggerFactor for TimeBasedSplitTrigger is {}, but has to be >= 0. Defaulted to 1.",
+      AutoPasLog(WARN, "triggerFactor for TimeBasedSplitTrigger is {}, but has to be >= 0. Defaulted to 1.25.",
                  triggerFactor);
-      _triggerFactor = 1.0;
+      _triggerFactor = 1.25;
     }
     if (nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedSplitTrigger is {}, but has to be > 0. Defaulted to 10.", nSamples);
-      nSamples = 10;
+      AutoPasLog(WARN, "nSamples for TimeBasedSplitTrigger is {}, but has to be > 0. Defaulted to 500.", nSamples);
+      nSamples = 500;
     }
 
     _intervalLengthA = (nSamples + 1) / 2;
     _intervalLengthB = nSamples / 2;
-    _runtimeSamples.reserve(_intervalLengthA + _intervalLengthB);
+    _nSamples = nSamples;
+    _runtimeSamples.resize(_nSamples);
+    _headElement = 0;
+    _sampleSumA = 0;
+    _sampleSumB = 0;
+    _bufferFull = false;
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
     bool oldTriggerState = _wasTriggered;
     _wasTriggered = false;
 
-    if (_runtimeSamples.size() < _intervalLengthA + _intervalLengthB) return oldTriggerState;
+    if (!_bufferFull) return oldTriggerState;
 
-    unsigned long averageA =
-        std::reduce(_runtimeSamples.begin(), _runtimeSamples.begin() + _intervalLengthA) / _intervalLengthA;
-    unsigned long averageB =
-        std::reduce(_runtimeSamples.begin() + _intervalLengthA, _runtimeSamples.end()) / _intervalLengthB;
+    unsigned long averageA = _sampleSumA / _intervalLengthA;
+    unsigned long averageB = _sampleSumB / _intervalLengthB;
 
     _wasTriggered = (averageB >= (_triggerFactor * averageA));
     return oldTriggerState;
@@ -62,12 +65,34 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
-    if (_runtimeSamples.size() == _intervalLengthA + _intervalLengthB) _runtimeSamples.erase(_runtimeSamples.begin());
-    _runtimeSamples.push_back(sample);
+    // do not compare to stale samples from before tuning phase
+    if (_wasTriggered) [[unlikely]] {
+      _runtimeSamples.clear();
+      _runtimeSamples.resize(_nSamples);
+      _headElement = 0;
+      _bufferFull = false;
+      return;
+    }
 
-    // if we start a new tuning phase, clear runtime samples such that we do not compare runtimes between different
-    // configurations
-    if (_wasTriggered) _runtimeSamples.clear();
+    // use a simple circular buffer to store the last _nSamples samples
+    if (!_bufferFull && (_headElement < _intervalLengthA)) {
+      _runtimeSamples[_headElement] = sample;
+      _sampleSumA += sample;
+    } else {
+      if (_bufferFull) {
+        _sampleSumA -= _runtimeSamples[_headElement];
+      }
+      _runtimeSamples[_headElement] = sample;
+      _sampleSumB += sample;
+
+      // the sample passing from interval B to A
+      unsigned long midpoint = _runtimeSamples[(_headElement + _intervalLengthA) % _nSamples];
+      _sampleSumA += midpoint;
+      _sampleSumB -= midpoint;
+    }
+
+    _headElement = (_headElement + 1) % _nSamples;
+    _bufferFull = _bufferFull || (_headElement == 0);
   }
 
   TuningTriggerOption getOptionType() const override { return TuningTriggerOption::timeBasedSplit; }
@@ -76,6 +101,11 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   float _triggerFactor;
   unsigned _intervalLengthA;
   unsigned _intervalLengthB;
+  unsigned long _nSamples;
   std::vector<unsigned long> _runtimeSamples;
+  size_t _headElement;
+  unsigned long _sampleSumA;
+  unsigned long _sampleSumB;
+  bool _bufferFull;
 };
 }  // namespace autopas

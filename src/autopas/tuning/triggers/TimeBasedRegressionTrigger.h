@@ -25,16 +25,15 @@ namespace autopas {
  * \hat\beta_1' = \frac{1}{B}\sum_{k=0}^{n-1}(k-A)(t_{i-n-1+k}-\bar t)
  * Where A = \frac{n-1}{2}, B=\sum_{k=0}^{n-1}(k-A)^2 can be precomputed at initialization.
  *
- * Then, we normalize $\hat\beta_1'$ to make it independent of the scenario by dividing it by the average iteration
- * runtime in the current interval.
+ * Then, we normalize $\hat\beta_1'$ to make it independent of the scenario.
  */
 class TimeBasedRegressionTrigger : public TuningTriggerInterface {
  public:
   /**
    * Constructor
    *
-   * @param triggerFactor The positive threshold value at which, if exceeded by the normalized slope of the regression, a new
-   * tuning phase is triggered.
+   * @param triggerFactor The positive threshold value at which, if exceeded by the normalized slope of the regression,
+   * a new tuning phase is triggered.
    * @param nSamples The number of runtime samples to consider.
    */
   TimeBasedRegressionTrigger(float triggerFactor, unsigned nSamples)
@@ -45,8 +44,9 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
       _triggerFactor = 1.5;
     }
     if (_nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 10.", _nSamples);
-      _nSamples = 10;
+      AutoPasLog(WARN, "nSamples for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 1000.",
+                 _nSamples);
+      _nSamples = 1000;
     }
 
     _A = (_nSamples - 1.0) / 2.0;
@@ -54,39 +54,54 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
     for (size_t k = 0; k < _nSamples; k++) B += (k - _A) * (k - _A);
     _B_reciprocal = 1.0 / B;
 
-    _runtimeSamples.reserve(nSamples);
+    _runtimeSamples.resize(_nSamples);
+    _headElement = 0;
+    _sampleSum = 0;
+    _bufferFull = false;
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
     bool oldTriggerState = _wasTriggered;
     _wasTriggered = false;
 
-    if (_runtimeSamples.size() < _nSamples) return oldTriggerState;
+    if (!_bufferFull) [[unlikely]]
+      return oldTriggerState;
 
-    double t_avg = std::reduce(_runtimeSamples.begin(), _runtimeSamples.end()) / (_nSamples * 1.0);
+    double t_avg = _sampleSum / (_nSamples * 1.0);
 
     double beta = 0.0;
     for (size_t k = 0; k < _nSamples; k++) {
-      beta += (k - _A) * (_runtimeSamples.at(k) - t_avg);
+      beta += (k - _A) * (_runtimeSamples.at((_headElement + k) % _nSamples) - t_avg);
     }
 
     beta *= _B_reciprocal;
-    double beta_normalized = 1 + _nSamples * beta / t_avg;
+    double beta_normalized = 1 + (0.5 * _nSamples * beta) / t_avg;
 
     _wasTriggered = beta_normalized >= _triggerFactor;
-
     return oldTriggerState;
   }
 
   inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
-    if (_runtimeSamples.size() == _nSamples) _runtimeSamples.erase(_runtimeSamples.begin());
-    _runtimeSamples.push_back(sample);
+    // do not compare to stale samples from before tuning phase
+    if (_wasTriggered) [[unlikely]] {
+      _runtimeSamples.clear();
+      _runtimeSamples.resize(_nSamples);
+      _headElement = 0;
+      _bufferFull = false;
+      return;
+    }
 
-    // if we start a new tuning phase, clear runtime samples such that we do not compare runtimes between different
-    // configurations
-    if (_wasTriggered) _runtimeSamples.clear();
+    // use a simple circular buffer to store the last _nSamples samples
+    if (_bufferFull) {
+      _sampleSum -= _runtimeSamples[_headElement];
+    }
+    _runtimeSamples[_headElement] = sample;
+    _sampleSum += sample;
+
+    _headElement = (_headElement + 1) % _nSamples;
+    _bufferFull = _bufferFull || (_headElement == 0);
   }
 
   TuningTriggerOption getOptionType() const override { return TuningTriggerOption::timeBasedRegression; }
@@ -97,5 +112,8 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
   double _A;
   double _B_reciprocal;
   std::vector<unsigned long> _runtimeSamples;
+  size_t _headElement;
+  unsigned long _sampleSum;
+  bool _bufferFull;
 };
 }  // namespace autopas

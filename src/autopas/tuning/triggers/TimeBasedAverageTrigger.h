@@ -27,25 +27,29 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
    */
   TimeBasedAverageTrigger(float triggerFactor, unsigned nSamples) : _triggerFactor(triggerFactor), _nSamples(nSamples) {
     if (triggerFactor < 0) {
-      AutoPasLog(WARN, "triggerFactor for TimeBasedAverageTrigger is {}, but has to be >= 0. Defaulted to 1.",
+      AutoPasLog(WARN, "triggerFactor for TimeBasedAverageTrigger is {}, but has to be >= 0. Defaulted to 1.25.",
                  triggerFactor);
-      _triggerFactor = 1.0;
+      _triggerFactor = 1.25;
     }
     if (_nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedAverageTrigger is {}, but has to be > 0. Defaulted to 10.", _nSamples);
-      _nSamples = 10;
+      AutoPasLog(WARN, "nSamples for TimeBasedAverageTrigger is {}, but has to be > 0. Defaulted to 500.", _nSamples);
+      _nSamples = 500;
     }
 
-    _runtimeSamples.reserve(_nSamples);
+    _runtimeSamples.resize(_nSamples);
+    _headElement = 0;
+    _sampleSum = 0;
+    _bufferFull = false;
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
     bool oldTriggerState = _wasTriggered;
     _wasTriggered = false;
 
-    if (_runtimeSamples.size() < _nSamples) return oldTriggerState;
+    if (!_bufferFull) [[unlikely]]
+      return oldTriggerState;
 
-    unsigned long average = std::reduce(_runtimeSamples.begin(), _runtimeSamples.end()) / _nSamples;
+    unsigned long average = _sampleSum / _nSamples;
     _wasTriggered = (_currentIterationRuntime >= (_triggerFactor * average));
     return oldTriggerState;
   }
@@ -53,8 +57,24 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
   inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
-    if (_runtimeSamples.size() == _nSamples) _runtimeSamples.erase(_runtimeSamples.begin());
-    _runtimeSamples.push_back(_currentIterationRuntime);
+    // do not compare to stale samples from before tuning phase
+    if (_wasTriggered) [[unlikely]] {
+      _runtimeSamples.clear();
+      _runtimeSamples.resize(_nSamples);
+      _headElement = 0;
+      _bufferFull = false;
+      return;
+    }
+
+    // we use a simple circular buffer to store the last _nSamples samples
+    if (_bufferFull) {
+      _sampleSum -= _runtimeSamples[_headElement];
+    }
+    _runtimeSamples[_headElement] = _currentIterationRuntime;
+    _sampleSum += _currentIterationRuntime;
+
+    _headElement = (_headElement + 1) % _nSamples;
+    _bufferFull = _bufferFull || (_headElement == 0);
     _currentIterationRuntime = sample;
   }
 
@@ -65,5 +85,8 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
   unsigned _nSamples;
   unsigned long _currentIterationRuntime;
   std::vector<unsigned long> _runtimeSamples;
+  size_t _headElement;
+  unsigned long _sampleSum;
+  bool _bufferFull;
 };
 }  // namespace autopas
