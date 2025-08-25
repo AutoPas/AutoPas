@@ -25,13 +25,14 @@ using ::testing::ValuesIn;
  * @param cutoff Cutoff radius.
  * @param container Container selector used to retrieve the current container.
  * @param ListInner All particles inside the bounding box.
- * @param ListHaloWithinCutoff All particles in the halo.
- * @param ListHaloOutsideCutoff All particles in the halo.
+ * @param ListHaloWithinCutoff All particles in the halo but within cutoff of the bounding box.
+ * @param ListHaloOutsideCutoff All particles in the halo and outside the cutoff of the bounding box.
  */
 template <class Container>
-void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3> &bBoxMax, const double cutoff,
-               Container &container, std::vector<ParticleFP64> &ListInner,
-               std::vector<ParticleFP64> &ListHaloWithinCutoff, std::vector<ParticleFP64> &ListHaloOutsideCutoff) {
+void gatherContainerParticles(const std::array<double, 3> &bBoxMin, const std::array<double, 3> &bBoxMax,
+                              const double cutoff, Container &container, std::vector<ParticleFP64> &ListInner,
+                              std::vector<ParticleFP64> &ListHaloWithinCutoff,
+                              std::vector<ParticleFP64> &ListHaloOutsideCutoff) {
   using namespace autopas::utils::ArrayMath::literals;
 
   for (auto iter = container.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -117,21 +118,22 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
       logicHandler.getContainer().getContainerType() == config1.container ? config2.container : config1.container;
 
   // Start the second iteration which should swap the container to the secondContainerType configuration.
-  static_cast<void>(logicHandler.updateContainer());
+  auto emigrants = logicHandler.updateContainer();
+  ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
   addParticlesToContainer(logicHandler.getContainer());
 
   std::vector<ParticleFP64> beforeListInner, beforeListHaloWithinCutoff,
       beforeListHaloOutsideCutoff /*for particles only in verlet containers*/;
-  getStatus(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), beforeListInner, beforeListHaloWithinCutoff,
-            beforeListHaloOutsideCutoff);
+  gatherContainerParticles(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), beforeListInner,
+                           beforeListHaloWithinCutoff, beforeListHaloOutsideCutoff);
 
   // Container swap should happen during computeInteractions
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
   ASSERT_EQ(logicHandler.getContainer().getContainerType(), secondContainerType);
 
   std::vector<ParticleFP64> afterListInner, afterListHaloWithinCutoff, afterListHaloOutsideCutoff;
-  getStatus(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), afterListInner, afterListHaloWithinCutoff,
-            afterListHaloOutsideCutoff);
+  gatherContainerParticles(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), afterListInner,
+                           afterListHaloWithinCutoff, afterListHaloOutsideCutoff);
 
   EXPECT_EQ(afterListInner.size(), beforeListInner.size());
   EXPECT_EQ(afterListHaloWithinCutoff.size(), beforeListHaloWithinCutoff.size());
@@ -148,15 +150,17 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
 
   // Reset tuning, so third iteration should swap back to firstContainerType
   tunerMap[autopas::InteractionTypeOption::pairwise]->forceRetune();
-  static_cast<void>(logicHandler.updateContainer());
+  emigrants = logicHandler.updateContainer();
+  ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
+
   addParticlesToContainer(logicHandler.getContainer());
 
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
   ASSERT_EQ(logicHandler.getContainer().getContainerType(), firstContainerType);
 
   std::vector<ParticleFP64> after2ListInner, after2ListHaloWithinCutoff, after2ListHaloOutsideCutoff;
-  getStatus(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), after2ListInner, after2ListHaloWithinCutoff,
-            after2ListHaloOutsideCutoff);
+  gatherContainerParticles(bBoxMin, bBoxMax, cutoff, logicHandler.getContainer(), after2ListInner,
+                           after2ListHaloWithinCutoff, after2ListHaloOutsideCutoff);
 
   EXPECT_EQ(after2ListInner.size(), afterListInner.size());
   EXPECT_EQ(after2ListHaloWithinCutoff.size(), afterListHaloWithinCutoff.size());
@@ -199,8 +203,19 @@ std::vector<autopas::Configuration> containerConfigs = {
     {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
      autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
 
+// Generates all unique pairs of configurations, order does not matter and no pairs of the same configuration.
 std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateUniquePairs(
     const std::vector<autopas::Configuration> &configs) {
+  // Check that all container options are covered.
+  std::set<autopas::ContainerOption> givenConfigs;
+  for (const auto &config : configs) {
+    givenConfigs.insert(config.container);
+  }
+  if (givenConfigs != autopas::ContainerOption::getAllOptions()) {
+    throw std::runtime_error("ContainerSwapTest: Given configurations do not cover all container options!");
+  }
+
+  // Generate all unique pairs.
   std::vector<std::pair<autopas::Configuration, autopas::Configuration>> pairs;
   for (size_t i = 0; i < configs.size(); ++i) {
     for (size_t j = i + 1; j < configs.size(); ++j) {
