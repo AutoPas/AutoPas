@@ -50,7 +50,8 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle_T> {
   /**
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    */
-  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle_T> &linkedCells, bool useNewton3) {
+  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle_T> &linkedCells,
+                            bool useNewton3) override {
     using namespace utils::ArrayMath::literals;
     // Sanity check.
     if (linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {

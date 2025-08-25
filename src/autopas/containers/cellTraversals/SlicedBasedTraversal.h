@@ -9,9 +9,8 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/utils/DataLayoutConverter.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
-#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -135,6 +134,22 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
       }
     }
   }
+
+  /**
+   * Update cell information based on VerletClusterLists
+   * @param vcl Pointer to the VerletClusterLists object from which cell information is extracted.
+   */
+  void reinitForVCL(const VerletClusterLists<typename ParticleCell::ParticleType> *vcl) {
+    // Reinitialize the sliced traversal with up to date tower information
+    auto towerSideLength = vcl->getTowerSideLength();
+    this->_cellLength = {towerSideLength[0], towerSideLength[1], vcl->getBoxMax()[2] - vcl->getBoxMin()[2]};
+    auto towersPerDim = vcl->getTowersPerDimension();
+    this->_cellsPerDimension = {towersPerDim[0], towersPerDim[1], 1};
+
+    // reinitialize
+    init();
+  }
+
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
