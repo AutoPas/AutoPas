@@ -211,7 +211,7 @@ class LogicHandler {
     const auto &oldMin = _currentContainer->getBoxMin();
     const auto &oldMax = _currentContainer->getBoxMax();
 
-    // if nothing changed do nothing
+    // if nothing changed, do nothing
     if (oldMin == boxMin and oldMax == boxMax) {
       return {};
     }
@@ -243,6 +243,10 @@ class LogicHandler {
       }
     }
 
+    // The new box size is valid, so update the current container info.
+    _currentContainerSelectorInfo.boxMin = boxMin;
+    _currentContainerSelectorInfo.boxMax = boxMax;
+
     // check all particles
     std::vector<Particle_T> particlesNowOutside;
     for (auto pIter = _currentContainer->begin(); pIter.isValid(); ++pIter) {
@@ -261,13 +265,11 @@ class LogicHandler {
       }
     }
 
-    // actually resize the container
-    _currentContainerSelectorInfo.boxMin = boxMin;
-    _currentContainerSelectorInfo.boxMax = boxMax;
+    // Resize by generating a new container with the new box size and moving all particles to it.
     auto newContainer = ContainerSelector<Particle_T>::generateContainer(_currentContainer->getContainerType(),
                                                                          _currentContainerSelectorInfo);
     setCurrentContainer(std::move(newContainer));
-    // The container might have changed sufficiently enough so that we need more or less spatial locks
+    // The container might have changed sufficiently that we would need a different number of spatial locks.
     const auto boxLength = boxMax - boxMin;
     const auto interactionLengthInv = 1. / _currentContainer->getInteractionLength();
     initSpacialLocks(boxLength, interactionLengthInv);
@@ -1823,23 +1825,20 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
 #ifdef AUTOPAS_LOG_LIVEINFO
-  // if live info has not been gathered yet, gather it now and log it
-  if (info.get().empty()) {
-    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+  auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+  info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                 _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-  }
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     auto configuration = autoTuner.getCurrentConfig();
-    auto [traversalPtr, ignore] = isConfigurationApplicable(configuration, functor);
+    auto [traversalPtr, _] = isConfigurationApplicable(configuration, functor);
 
     if (not traversalPtr) {
       // TODO: Can we handle this case gracefully?
-      AutoPasLog(WARN,
+      utils::ExceptionHandler::exception(
                  "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
                  functor.getName());
     }
@@ -1847,15 +1846,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   }
 
   if (autoTuner.needsLiveInfo()) {
-    // Gather Live Info
-    utils::Timer timerGatherLiveInfo;
-    timerGatherLiveInfo.start();
+    // If live info has not been gathered yet, gather it now and send it to the tuner.
+    if (info.get().empty()) {
     auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-    timerGatherLiveInfo.stop();
-    AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
-
+      info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+    }
     autoTuner.receiveLiveInfo(info);
   }
 
