@@ -17,9 +17,6 @@
 
 namespace autopas {
 
-// template <class Particle_T>
-// class VLCCellPairNeighborList;
-
 /**
  * Linked Cells with Verlet Lists container.
  * The VerletListsCells class uses neighborhood lists for each cell

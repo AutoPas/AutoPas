@@ -21,8 +21,8 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleBinStructure.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

@@ -1827,7 +1827,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 #ifdef AUTOPAS_LOG_LIVEINFO
   auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
   info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+              _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
@@ -1839,8 +1839,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     if (not traversalPtr) {
       // TODO: Can we handle this case gracefully?
       utils::ExceptionHandler::exception(
-                 "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
-                 functor.getName());
+          "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
+          functor.getName());
     }
     return {configuration, std::move(traversalPtr), false};
   }
@@ -1848,7 +1848,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   if (autoTuner.needsLiveInfo()) {
     // If live info has not been gathered yet, gather it now and send it to the tuner.
     if (info.get().empty()) {
-    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+      auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                   _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
     }
@@ -1999,7 +1999,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
-  // Generates a traversal if applicable, otherwise returns std::nullopt
+  // Generates a traversal if applicable, otherwise returns a nullptr
   auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
       config, functor, containerPtr->getTraversalSelectorInfo());
 

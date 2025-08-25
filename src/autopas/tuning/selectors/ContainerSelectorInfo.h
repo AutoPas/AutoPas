@@ -75,7 +75,7 @@ class ContainerSelectorInfo {
 
   /**
    * Comparison operator for ContainerSelectorInfo objects.
-   * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkin, verletClusterSize,
+   * Configurations are compared member wise in the order: cellSizeFactor, verletSkin, verletClusterSize,
    * sortingThreshold, loadEstimator
    *
    * @param other
@@ -115,7 +115,7 @@ class ContainerSelectorInfo {
    */
   unsigned int verletClusterSize;
   /**
-   * Number of particles in two cells from which sorting should be performed.
+   * Threshold beyond which, if the sum of the number of particles in two cells is greater, the cells are sorted.
    */
   size_t sortingThreshold;
   /**
