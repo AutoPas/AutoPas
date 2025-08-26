@@ -294,7 +294,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             int firstPoint = (int)((pPos[dim] - boxMin[dim]) / grid_dist[dim]);
             int secondPoint = (firstPoint + 1);
             closestGridpoint[dim] = secondPoint % grid_dims[dim];
-            closestGridPos = (firstPoint * grid_dims[dim] + secondPoint * grid_dims[dim]) / 2;
+            closestGridPos = (firstPoint * grid_dist[dim] + secondPoint * grid_dist[dim]) / 2;
         }
         return closestGridPos;
     }
