@@ -43,6 +43,5 @@ class LogicHandlerInfo {
    * time step to be used in the simulation. Used in rf Estimation.
    */
   double deltaT{0};
-
 };
 }  // namespace autopas

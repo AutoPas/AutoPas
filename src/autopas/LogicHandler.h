@@ -623,12 +623,12 @@ class LogicHandler {
   }
 
 /**
-  * Estimates the rebuild frequency based on the current maximum velocity in the container
-  * Using the formula rf = skin/deltaT/vmax/2 + 1
-  * @param skin double is the skin length used in the simulation.
-  * @param deltaT double is the time step
-  * @return estimate of the rebuild frequency
-  */
+ * Estimates the rebuild frequency based on the current maximum velocity in the container
+ * Using the formula rf = skin/deltaT/vmax/2 + 1
+ * @param skin double is the skin length used in the simulation.
+ * @param deltaT double is the time step
+ * @return estimate of the rebuild frequency
+ */
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   double getVelocityMethodEstimate(double skin, double deltaT) const {
     // Initialize the maximum velocity
@@ -637,7 +637,7 @@ class LogicHandler {
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
       double tempVelAbs = sqrt(tempVel[0] * tempVel[0] + tempVel[1] * tempVel[1] + tempVel[2] * tempVel[2]);
-      maxVelocity =  tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
+      maxVelocity = tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
     }
     // return estimate using formula
     return skin / maxVelocity / deltaT / 2 + 1;
