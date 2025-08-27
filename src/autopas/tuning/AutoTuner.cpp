@@ -190,8 +190,8 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
 }
 
 std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely) {
-  if (searchSpaceIsTrivial() or _configQueue.size() == 1) {
-    utils::ExceptionHandler::exception("Rejected the only configuration left in the search space!\n{}",
+  if (searchSpaceIsTrivial()) {
+    utils::ExceptionHandler::exception("Rejected the only configuration in the search space!\n{}",
                                        rejectedConfig.toString());
   }
 
