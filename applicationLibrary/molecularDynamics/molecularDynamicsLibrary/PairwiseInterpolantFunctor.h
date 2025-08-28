@@ -32,7 +32,15 @@ class PairwiseInterpolantFunctor
 
   using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
- public:
+  
+#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
+    static constexpr bool accuracyBenchmark {true};
+#else
+    static constexpr bool accuracyBenchmark {false};
+#endif
+
+
+public:
   PairwiseInterpolantFunctor() = delete;
 
  private:
@@ -201,7 +209,8 @@ class PairwiseInterpolantFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  inline void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+  template <bool benchmark>
+  inline void AoSFunctorImpl(Particle_T& i, Particle_T& j, bool newton3) {
     using namespace autopas::utils::ArrayMath::literals;
 
     /* Filter unnecessary force computations */
@@ -225,9 +234,9 @@ class PairwiseInterpolantFunctor
     /* Evaluate Polynomial */
     double d = std::sqrt(dr2);
 
-#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-    _distanceStatistics[threadnum].push_back(dr2);
-#endif
+    if constexpr (benchmark) {
+      _distanceStatistics[threadnum].push_back(dr2);
+    }
 
     int interval = 0;
     double a = _a;
@@ -244,17 +253,17 @@ class PairwiseInterpolantFunctor
     }
     const double x = mapToCheb(d, a, b);
     const double fac = evaluateChebyshevFast(x, _numNodes.at(interval), _coefficients.at(interval));
-    double interpolationError = 0.;
-    double relInterpolationError = 0.;
     const auto f = dr * fac;
 
-#if defined(MD_FLEXIBLE_BENCHMARK_INTERPOLANT_ACCURACY)
-    double real_fac = _kernel.calculatePairForce(d);
-    interpolationError = std::abs(real_fac - fac);
-    if (real_fac != 0.) {
-      relInterpolationError = std::abs(interpolationError / real_fac);
+    double interpolationError = 0.;
+    double relInterpolationError = 0.;
+    if constexpr (benchmark) {
+      double real_fac = _kernel.calculatePairForce(d);
+      interpolationError = std::abs(real_fac - fac);
+      if (real_fac != 0.) {
+        relInterpolationError = std::abs(interpolationError / real_fac);
+      }
     }
-#endif
 
     i.addF(f);
     if (newton3) {
@@ -270,7 +279,6 @@ class PairwiseInterpolantFunctor
     }
 
     if constexpr (calculateGlobals) {
-      // TODO: delegate potential energy to kernel?
       double potentialEnergy = _kernel.calculatePairPotential(dr2);
       auto virial = dr * f;
       if (i.isOwned()) {
@@ -286,6 +294,10 @@ class PairwiseInterpolantFunctor
         _aosThreadDataGlobals[threadnum].relErrorSum += relInterpolationError;
       }
     }
+  }
+
+  inline void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+    AoSFunctorImpl<accuracyBenchmark>(i, j, newton3);
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {}
