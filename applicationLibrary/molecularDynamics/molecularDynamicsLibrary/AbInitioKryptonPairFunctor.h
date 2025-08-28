@@ -33,7 +33,7 @@ template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN
           bool calculateGlobals = false, bool countFLOPs = false, bool relevantForTuning = true>
 class AbInitioKryptonPairFunctor
     : public autopas::PairwiseFunctor<
-          Particle, AbInitioKryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>> {
+          Particle, AbInitioKryptonPairFunctor<Particle, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
