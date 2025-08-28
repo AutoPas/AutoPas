@@ -9,7 +9,6 @@
 #include <memory>
 #include <set>
 
-#include "LogicHandler.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/NumberSet.h"

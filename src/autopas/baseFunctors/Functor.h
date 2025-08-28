@@ -176,16 +176,14 @@ class Functor {
   virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}
 
   /**
-   * Getter for boolean if functor is relevant to pattern selection
+   * Returns true if the functor can make use of a vector pattern lookup table.
    * @return boolean
    */
-
-  virtual bool getPatternSelection() { return false; };
-
+  virtual bool canUseVectorPatternLookupTable() { return false; };
   /**
-   * set pattern vector with optimal patterns for functor
-   * @param patternMapNewton3On pattern map for newton3 on
-   * @param patternMapNewton3Off pattern map for newton3 off
+   * Set Vectorisation Pattern lookup table.
+   * @param patternMapNewton3On Flattened 2D array storing, for a given (i, j) coordinate, the optimal vector pattern for two cells with i and j particles; if newton3 is on.
+   * @param patternMapNewton3Off Flattened 2D array storing, for a given (i, j) coordinate, the optimal vector pattern for two cells with i and j particles; if newton3 is off.
    */
 
   virtual void setPatternSelection(
@@ -193,10 +191,7 @@ class Functor {
           *patternMapNewton3On,
       std::array<autopas::VectorizationPatternOption::Value, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize>
           *patternMapNewton3Off){};
-  /**
-   * Get status whether functor uses mixing or not
-   * @return boolean
-   */
+
 
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.

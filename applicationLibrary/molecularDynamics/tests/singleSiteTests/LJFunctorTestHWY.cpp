@@ -504,7 +504,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   // EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorAVX.getVirial(), tolerance) << "global virial";
 }
 template <bool mixing>
-void LJFunctorTestHWY::testPatternSelection(bool newton3) {
+void LJFunctorTestHWY::testPatternBenchmarkSelection(bool newton3) {
   constexpr size_t benchmarkSize = autopas::AutoTuner::_benchmarkSize;
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
@@ -533,6 +533,8 @@ void LJFunctorTestHWY::testPatternSelection(bool newton3) {
   }
   ljFunctorHWY.setVecPattern(mdLib::VectorizationPattern::p2xVecDiv2);
   std::array<autopas::VectorizationPatternOption::Value, benchmarkSize * benchmarkSize> benchmarkResults;
+  //fcs: number of particles in first cell
+  //scs: number of particles in second cell
   for (size_t fcs = 1; fcs <= benchmarkSize; ++fcs) {
     for (size_t scs = 1; scs <= benchmarkSize; ++scs) {
       if (fcs == benchmarkSize && scs == benchmarkSize) {
@@ -649,13 +651,13 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
     testLJFunctorAVXvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, true, vecPattern);
   }
 }
-
-TEST_P(LJFunctorTestHWY, selectionTest) {
+// test pattern benchmark class with and without newton3 applied
+TEST_P(LJFunctorTestHWY, benchmarkSelectionTest) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testPatternSelection<true>(newton3);
+    testPatternBenchmarkSelection<true>(newton3);
   } else {
-    testPatternSelection<false>(newton3);
+    testPatternBenchmarkSelection<false>(newton3);
   }
 }
 

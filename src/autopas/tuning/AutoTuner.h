@@ -455,12 +455,12 @@ class AutoTuner {
 
  public:
   /**
-   * maximum particles per cell for LJFunctorHWY benchmark for vectorization pattern selection
+   * maximum particles per cell for vectorization pattern selection benchmarking.
    */
   static constexpr size_t _benchmarkSize = 30;
 
   /**
-   * both variables are relevant for pattern selection for LJFunctorHWY, only set once per simulations
+   * both variables represent the optimal pattern results for vectorization pattern selection benchmarking. They are only set once at the beginning of the simulation.
    */
   std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3On;
   std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3Off;

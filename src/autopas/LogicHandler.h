@@ -1833,7 +1833,7 @@ void csvOutput(Functor &functor, std::vector<Cell> &cells) {
   csvFile.close();
 }
 /**
- * Helper method to intialize particle cells used in pattern benchmark.
+ * Helper method to initialize particle cells used in pattern benchmark by adding particles to each cell to match given numbers of particles and hit rates.
  *
  * @tparam Functor_T Functor type for benchmark.
  * @tparam Cell_T Cell type for benchmark.
@@ -1849,11 +1849,10 @@ void initialization(Functor_T &functor, std::vector<Cell_T> &cells, const std::v
                     double cutoff, double hitRate) {
   // initialize cells with randomly distributed particles
 
-  double cellLength = 0.;
 
   // this is a formula determined by regression (based on a mapping from hitrate to div with random sample values)
-  double div = 2.86 * (hitRate * hitRate * hitRate) - 4.13 * (hitRate * hitRate) + 2.81 * hitRate + 0.42;
-  cellLength = cutoff / div;
+  const double div = 2.86 * (hitRate * hitRate * hitRate) - 4.13 * (hitRate * hitRate) + 2.81 * hitRate + 0.42;
+  const double cellLength = cutoff / div;
 
   cells[0].reserve(numParticlesPerCell[0]);
   cells[1].reserve(numParticlesPerCell[1]);
@@ -1861,9 +1860,9 @@ void initialization(Functor_T &functor, std::vector<Cell_T> &cells, const std::v
     for (size_t particleId = 0; particleId < numParticlesPerCell[cellId]; ++particleId) {
       Particle_T p{{
                        // particles are next to each other in X direction
-                       rand() / static_cast<double>(RAND_MAX) * cellLength + cellLength * cellId,
-                       rand() / static_cast<double>(RAND_MAX) * cellLength,
-                       rand() / static_cast<double>(RAND_MAX) * cellLength,
+                       std::rand() / static_cast<double>(RAND_MAX) * cellLength + cellLength * static_cast<double>(cellId),
+                       std::rand() / static_cast<double>(RAND_MAX) * cellLength,
+                       std::rand() / static_cast<double>(RAND_MAX) * cellLength,
                    },
                    {
                        0.,
@@ -1899,43 +1898,42 @@ void applyFunctorPair(Functor_T &functor, std::vector<Cell_T> &cells,
   timer.at("Functor").stop();
 }
 /**
- * Helper method to run a single pattern benchmark for one combination of first cell size and second cell size
+ * Helper method to run a single pattern benchmark for one combination of the number of particles in the first and second SoA buffer.
  *
  * @tparam Functor_T Functor type for benchmark.
- * @tparam ParticleType_T Particle type in benchmark.
+ * @tparam Particle_T Particle type in benchmark.
  * @param functor functor that is used in benchmark.
- * @param repetitions amount of repetitions with updated particle positions
- * @param iterations amount of iterations
- * @param firstnumParticles amount of particles in first cell
- * @param secondnumParticles amount of particles in second cell
+ * @param repetitions amount of repetitions for this constellation; particle positions are newly generated in each repetition
+ * @param iterations amount of iterations per repetition; particle positions remain the same for all iterations; per iteration the pairwise forces between particles in the first and second SoA buffer are calculated and the execution time is measured
+ * @param firstnumParticles amount of particles in first SoA buffer
+ * @param secondnumParticles amount of particles in second SoA buffer
  * @param hitRate average hitRate that a particle pair is inside cutoff range in benchmark.
- * @param vec_pat vectorization pattern applied in this benchmark
+ * @param vecPattern vectorization pattern applied in this benchmark
  * @param timer timer to measure time in benchmark
  * @param newton3 true if newton3 optimization is applied
  * @return amount of time the benchmark took in nanoseconds
  */
-template <class Functor_T, class ParticleType_T>
-long patternHelper(Functor_T &functor, size_t repetitions, size_t iterations, size_t firstnumParticles,
-                   size_t secondnumParticles, double hitRate, autopas::VectorizationPatternOption::Value vec_pat,
+template <class Functor_T, class Particle_T>
+unsigned long runSingleBenchmark(Functor_T &functor, size_t repetitions, size_t iterations, size_t firstnumParticles,
+                   size_t secondnumParticles, double hitRate, autopas::VectorizationPatternOption::Value vecPattern,
                    std::map<std::string, autopas::utils::Timer> &timer, bool newton3) {
-  using Particle = ParticleType_T;
-  using Cell = autopas::FullParticleCell<Particle>;
-  constexpr autopas::FunctorN3Modes functorN3Modes{autopas::FunctorN3Modes::Both};
+  using ParticleType = Particle_T;
+  using CellType = autopas::FullParticleCell<ParticleType>;
 
   const double cutoff{functor.getCutoff()};  // is also the cell size
 
-  std::vector<uint64_t> times{};
+  std::vector<long> times{};
   times.reserve(repetitions);
-  functor.setVecPattern(vec_pat);
+  functor.setVecPattern(vecPattern);
 
   for (int n = 0; n < repetitions; ++n) {
     // define scenario
     const std::vector<size_t> numParticlesPerCell{firstnumParticles, secondnumParticles};
 
     // repeat the whole experiment multiple times and average results
-    std::vector<Cell> cells{2};
+    std::vector<CellType> cells{2};
 
-    initialization<Functor_T, Cell, Particle>(functor, cells, numParticlesPerCell, cutoff, hitRate);
+    initialization<Functor_T, CellType, ParticleType>(functor, cells, numParticlesPerCell, cutoff, hitRate);
     for (size_t iteration = 0; iteration < iterations; ++iteration) {
       // actual benchmark
       applyFunctorPair(functor, cells, timer, newton3);
@@ -1947,42 +1945,41 @@ long patternHelper(Functor_T &functor, size_t repetitions, size_t iterations, si
       t.reset();
     }
   }
-  long sum = std::accumulate(times.begin(), times.end(), static_cast<long>(0));
+  unsigned long sum = std::accumulate(times.begin(), times.end(), static_cast<long>(0));
   return sum;
 }
 /**
  * helper method to turn vectorization pattern enum into string
  *
- * @param vec_pat vectorization pattern
+ * @param vecPattern vectorization pattern
  * @return string
  */
-inline std::string checkVecPattern(const autopas::VectorizationPatternOption::Value vec_pat) {
-  if (vec_pat == autopas::VectorizationPatternOption::Value::p1xVec) {
+inline std::string checkVecPattern(const autopas::VectorizationPatternOption::Value vecPattern) {
+  if (vecPattern == autopas::VectorizationPatternOption::Value::p1xVec) {
     return "p1xVec";
-  } else if (vec_pat == autopas::VectorizationPatternOption::Value::p2xVecDiv2) {
+  } else if (vecPattern == autopas::VectorizationPatternOption::Value::p2xVecDiv2) {
     return "p2xVecDiv2";
-  } else if (vec_pat == autopas::VectorizationPatternOption::Value::pVecDiv2x2) {
+  } else if (vecPattern == autopas::VectorizationPatternOption::Value::pVecDiv2x2) {
     return "pVecDiv2x2";
   } else {
     return "pVecx1";
   }
 }
 /**
- * This method calculates the 30x30 pattern benchmark to determine the optimal pattern in each combination of cellsizes.
+ * This method calculates the benchmarkSize x benchmarkSize pattern benchmark to determine the optimal vector pattern for some given combination of SoA sizes.
  * @tparam Functor_T Functor type for benchmark.
- * @tparam ParticleType_T Particle type in benchmark.
+ * @tparam Particle_T Particle type in benchmark.
  * @param functor functor that is used in benchmark.
  * @param newton3 true if newton3 optimization is applied
- * @return vector with optimal pattern for each 30x30 combination of cell sizes
+ * @return array with optimal vector pattern for different combinations of SoA sizes.
  */
-template <class Functor_T, class ParticleType_T>
+template <class Functor_T, class Particle_T>
 std::array<autopas::VectorizationPatternOption::Value, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize>
-pattern_map_calc(Functor_T &functor, bool newton3) {
+calculateVecPatternMap(Functor_T &functor, bool newton3) {
   using patterntype = autopas::VectorizationPatternOption::Value;
   std::vector<patterntype> patterns = {patterntype::p1xVec, patterntype::p2xVecDiv2, patterntype::pVecDiv2x2,
                                        patterntype::pVecx1};
-  std::vector<std::vector<long>> all_results(
-      4, std::vector<long>(AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize, 1));
+  std::array<std::array<unsigned long, 4>, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize> all_results{};
   std::map<std::string, autopas::utils::Timer> timer{
       {"Initialization", autopas::utils::Timer()},
       {"Functor", autopas::utils::Timer()},
@@ -1991,31 +1988,32 @@ pattern_map_calc(Functor_T &functor, bool newton3) {
   };
   for (size_t i = 0; i < patterns.size(); i++) {
     patterntype current_pattern = patterns[i];
-    for (size_t firstnumberParticles = 1; firstnumberParticles <= AutoTuner::_benchmarkSize; firstnumberParticles++) {
-      for (size_t secondnumberParticles = 1; secondnumberParticles <= AutoTuner::_benchmarkSize;
-           secondnumberParticles++) {
-        long test = patternHelper<Functor_T, ParticleType_T>(
-            functor, 100, 100, firstnumberParticles, secondnumberParticles, 0.16, current_pattern, timer, newton3);
-        all_results[i][firstnumberParticles - 1 + AutoTuner::_benchmarkSize * (secondnumberParticles - 1)] = test;
+    for (size_t numberParticlesSoA1 = 1; numberParticlesSoA1 <= AutoTuner::_benchmarkSize; numberParticlesSoA1++) {
+      for (size_t numberParticlesSoA2 = 1; numberParticlesSoA2 <= AutoTuner::_benchmarkSize;
+           numberParticlesSoA2++) {
+        // we set the hit rate to 16 percent, as this is the average for linked cells
+
+        all_results[numberParticlesSoA1 - 1 + AutoTuner::_benchmarkSize * (numberParticlesSoA2 - 1)][i] = runSingleBenchmark<Functor_T, Particle_T>(
+              functor, 100, 100, numberParticlesSoA1, numberParticlesSoA2, 0.16, current_pattern, timer, newton3);
       }
     }
   }
 
-  std::array<patterntype, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize> optimal_patterns;
+  std::array<patterntype, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize> optimalPatterns{};
   for (size_t i = 0; i < AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize; i++) {
-    long min = all_results[0][i];
+    long min = all_results[i][0];
     long min_index = 0;
-    for (int j = 1; j < 4; j++) {
-      if (all_results[j][i] < min) {
-        min = all_results[j][i];
+    for (int j = 1; j < patterns.size(); j++) {
+      if (all_results[i][j] < min) {
+        min = all_results[i][j];
         min_index = j;
       }
     }
 
-    optimal_patterns[i] = patterns[min_index];
+    optimalPatterns[i] = patterns[min_index];
   }
 
-  return optimal_patterns;
+  return optimalPatterns;
 }
 
 template <typename Particle_T>
@@ -2097,14 +2095,13 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   }
   functor.setVecPattern(configuration.vecPattern);
 
-  /* optimal patterns for LJFunctorHWY are calculated once and made available to
-   functor through pointer everytime this method is called.
+  /* An optimal vectorisation pattern map is calculated once at the start and stored in the Autotuner
    */
 
-  if (functor.getPatternSelection()) {
-    if (!autoTuner._patternsCalculated) {
-      autoTuner._optimalPatternsNewton3On = pattern_map_calc<Functor, Particle_T>(functor, true);
-      autoTuner._optimalPatternsNewton3Off = pattern_map_calc<Functor, Particle_T>(functor, false);
+  if (functor.canUseVectorPatternLookupTable()) {
+    if (not autoTuner._patternsCalculated) {
+      autoTuner._optimalPatternsNewton3On = calculateVecPatternMap<Functor, Particle_T>(functor, true);
+      autoTuner._optimalPatternsNewton3Off = calculateVecPatternMap<Functor, Particle_T>(functor, false);
       autoTuner._patternsCalculated = true;
 
       std::ofstream newton3File("newton3on_patterns.csv", std::ios::out);

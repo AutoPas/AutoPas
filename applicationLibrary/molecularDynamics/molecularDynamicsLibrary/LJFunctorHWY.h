@@ -199,20 +199,7 @@ class LJFunctorHWY
     }
   }
 
-  /**
-   * Helper method to get string from patternOption enum
-   */
-  inline std::string checkVecPattern(autopas::VectorizationPatternOption::Value vec_pat) {
-    if (vec_pat == autopas::VectorizationPatternOption::Value::p1xVec) {
-      return "p1xVec";
-    } else if (vec_pat == autopas::VectorizationPatternOption::Value::p2xVecDiv2) {
-      return "p2xVecDiv2";
-    } else if (vec_pat == autopas::VectorizationPatternOption::Value::pVecDiv2x2) {
-      return "pVecDiv2x2";
-    } else {
-      return "pVecx1";
-    }
-  }
+ 
   // clang-format off
   /**
   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
@@ -220,54 +207,19 @@ class LJFunctorHWY
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    // first attempt at pattern selection
     // check if a pattern map with optimal pattern is provided
 
-    if (_patternMapNewton3On != nullptr && _patternMapNewton3Off != nullptr) {
+    if (_patternMapNewton3On != nullptr or _patternMapNewton3Off != nullptr) {
       autopas::VectorizationPatternOption::Value vectorizationPattern =
           autopas::VectorizationPatternOption::Value::p1xVec;
 
-      if (soa1.size() != 0 && soa2.size() != 0) {
-        if (soa1.size() <= autopas::AutoTuner::_benchmarkSize && soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
-          if (newton3) {
-            vectorizationPattern =
-                (*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
-          } else {
-            vectorizationPattern =
-                (*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
-          }
+      if (soa1.size() != 0 and soa2.size() != 0) {
+        if (newton3) {
+          vectorizationPattern =
+              (*_patternMapNewton3On)[(std::min(soa1.size(),autopas::AutoTuner::_benchmarkSize) - 1) + autopas::AutoTuner::_benchmarkSize * (std::min(soa2.size(),autopas::AutoTuner::_benchmarkSize) - 1)];
         } else {
-          if (newton3) {
-            if (soa1.size() <= autopas::AutoTuner::_benchmarkSize) {
-              vectorizationPattern =
-                  (*_patternMapNewton3On)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
-                                                                  (autopas::AutoTuner::_benchmarkSize - 1)];
-
-            } else if (soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
-              vectorizationPattern = (*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                             autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
-
-            } else {
-              vectorizationPattern = (*_patternMapNewton3On)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                             autopas::AutoTuner::_benchmarkSize *
-                                                                 (autopas::AutoTuner::_benchmarkSize - 1)];
-            }
-          } else {
-            if (soa1.size() <= autopas::AutoTuner::_benchmarkSize) {
-              vectorizationPattern =
-                  (*_patternMapNewton3Off)[(soa1.size() - 1) + autopas::AutoTuner::_benchmarkSize *
-                                                                   (autopas::AutoTuner::_benchmarkSize - 1)];
-
-            } else if (soa2.size() <= autopas::AutoTuner::_benchmarkSize) {
-              vectorizationPattern = (*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                              autopas::AutoTuner::_benchmarkSize * (soa2.size() - 1)];
-
-            } else {
-              vectorizationPattern = (*_patternMapNewton3Off)[(autopas::AutoTuner::_benchmarkSize - 1) +
-                                                              autopas::AutoTuner::_benchmarkSize *
-                                                                  (autopas::AutoTuner::_benchmarkSize - 1)];
-            }
-          }
+          vectorizationPattern =
+              (*_patternMapNewton3Off)[(std::min(soa1.size(),autopas::AutoTuner::_benchmarkSize) - 1) + autopas::AutoTuner::_benchmarkSize * (std::min(soa2.size(),autopas::AutoTuner::_benchmarkSize) - 1)];
         }
       }
       switch (vectorizationPattern) {
@@ -1429,23 +1381,16 @@ class LJFunctorHWY
    */
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
-  /**
-   * getter for the vectorization pattern option
-   * @return vecPattern
-   */
-  autopas::VectorizationPatternOption::Value getVecPattern() { return _vecPattern; }
 
   /**
-   * @copydoc autopas::Functor::getPatternSelection()
-   * Getter for boolean if functor is relevant to pattern selection
+   * Returns true if the functor can make use of a vector pattern lookup table.
    * @return boolean
    */
-
-  bool getPatternSelection() final { return true; }
+  virtual bool canUseVectorPatternLookupTable() { return true; };
 
   /**
    * @copydoc autopas::Functor::setPatternSelection()
-   * set pattern vector with optimal patterns for functor
+   * Set Vectorisation Pattern lookup table.
    * @param patternMapNewton3On, patternMapNewton3Off
    */
 
