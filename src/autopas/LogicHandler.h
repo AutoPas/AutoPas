@@ -622,6 +622,7 @@ class LogicHandler {
 #endif
   }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 /**
  * Estimates the rebuild frequency based on the current maximum velocity in the container
  * Using the formula rf = skin/deltaT/vmax/2 + 1
@@ -629,7 +630,6 @@ class LogicHandler {
  * @param deltaT double is the time step
  * @return estimate of the rebuild frequency
  */
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   double getVelocityMethodEstimate(double skin, double deltaT) const {
     // Initialize the maximum velocity
     double maxVelocity = 0;
