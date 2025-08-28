@@ -148,48 +148,26 @@ private:
 
       const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs = _coeffsVec(intervalX, intervalY, intervalZ);
 
-      //auto startZ = std::chrono::high_resolution_clock::now();
       /* Flatten z dimension */
       const size_t newNx = nX + (8 - nX % 8)%8;
-      const size_t newNy = nY + (8 - nY % 8)%8;
-      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xyCoeffs (newNx, newNy);
+      const size_t newNz = nZ + (8 - nZ % 8)%8;
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xzCoeffs (newNx, newNz);
       for (size_t i = 0; i < nX; ++i) {
         for (size_t j = 0; j < nY; j+=8) {
-          const __m512d values = evalChebFast1DTensor(z, nZ, coeffs, i, j);
-          _mm512_store_pd(&xyCoeffs(i, j), values);
+          const __m512d values = evalChebFast1DTensor(y, nY, coeffs, i, j);
+          _mm512_store_pd(&xzCoeffs(i, j), values);
         } // nY / 8 * (7+(nZ-1)*4)
       } // nX * nY/8 * (7+(nZ-1)*4)
 
-      //auto endZ = std::chrono::high_resolution_clock::now();
-      //auto startT = std::chrono::high_resolution_clock::now();
-      // if (intervalX != intervalY || intervalY != intervalZ) {
-      //  xyCoeffs.transposeInPlace();
-      //}
-      //auto endT = std::chrono::high_resolution_clock::now();
-
-      //auto startY = std::chrono::high_resolution_clock::now();
       /* Flatten y dimension */
-      Eigen::VectorXd xCoeffs (newNx);
-      for (size_t j = 0; j < nY; j+=8) {
-        const __m512d values = evalChebFast1DMatrix(x, nX, xyCoeffs, j);
-        _mm512_store_pd(&xCoeffs(j), values);
+      Eigen::VectorXd zCoeffs (newNz);
+      for (size_t i = 0; i < nX; i+=8) {
+        const __m512d values = evalChebFast1DMatrix(x, nX, xzCoeffs, i);
+        _mm512_store_pd(&zCoeffs(i), values);
       } // nY / 8 * (7+(nX-1)*4)
-      //auto endY = std::chrono::high_resolution_clock::now();
 
-      //auto startX = std::chrono::high_resolution_clock::now();
       /* Flatten x dimension */
-      double result = evalChebFast1DVector(y, nY, xCoeffs); // 7+(nY-1)*4
-      //auto endX = std::chrono::high_resolution_clock::now();
-
-      //auto durationZ = std::chrono::duration_cast<std::chrono::nanoseconds>(endZ - startZ);
-      //auto durationY = std::chrono::duration_cast<std::chrono::nanoseconds>(endY - startY);
-      //auto durationX = std::chrono::duration_cast<std::chrono::nanoseconds>(endX - startX);
-      //auto durationT = std::chrono::duration_cast<std::chrono::nanoseconds>(endT - startT);
-
-      //auto timeZ = durationZ.count();
-      //auto timeY = durationY.count();
-      //auto timeX = durationX.count();
-      //auto timeT = durationT.count();
+      double result = evalChebFast1DVector(z, nZ, zCoeffs); // 7+(nY-1)*4
 
       return result;
     }
@@ -347,7 +325,7 @@ private:
       } // nx * (7+4*(ny-1))
 
       /* Flatten x dimension */
-      return evalChebFast1D(x, nX, xCoeffs); // (7+4*(nz-1))
+      return evalChebFast1D(x, nX, xCoeffs); // (7+4*(nx-1))
     }
 
     inline double mapToInterval(double x, double a, double b) {
@@ -445,7 +423,7 @@ private:
                     forcesXYZ[i][j][k] *= (1./nX * 1./nY * 1./ nZ);
                     coeffsZ.push_back(forcesXYZ[i][j][k]);
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
-                    coeffsVec(i, k, j) = forcesXYZ[i][j][k];
+                    coeffsVec(i, j, k) = forcesXYZ[i][j][k];
                     coe(i, j, k) = forcesXYZ[i][j][k];
 #endif
                   }

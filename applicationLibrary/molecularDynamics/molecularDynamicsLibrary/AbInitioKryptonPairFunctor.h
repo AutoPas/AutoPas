@@ -30,7 +30,7 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool relevantForTuning = true>
+          bool calculateGlobals = false, bool countFLOPs = false, bool relevantForTuning = true>
 class AbInitioKryptonPairFunctor
     : public autopas::PairwiseFunctor<
           Particle, AbInitioKryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>> {
