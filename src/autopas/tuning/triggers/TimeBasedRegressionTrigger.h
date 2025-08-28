@@ -84,7 +84,7 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
   inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
-    // do not compare to stale samples from before tuning phase
+    // Do not compare to stale samples from before tuning phase.
     if (_wasTriggered) [[unlikely]] {
       _runtimeSamples.clear();
       _runtimeSamples.resize(_nSamples);
@@ -93,7 +93,7 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
       return;
     }
 
-    // use a simple circular buffer to store the last _nSamples samples
+    // Use a simple circular buffer to store the last _nSamples samples.
     if (_bufferFull) {
       _sampleSum -= _runtimeSamples[_headElement];
     }

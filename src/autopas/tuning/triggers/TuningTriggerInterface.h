@@ -40,6 +40,8 @@ class TuningTriggerInterface {
    * Checks whether the trigger on which this call is performed requires information about the runtime of individual
    * iterations.
    *
+   * This is implemented to facilitate future triggers that are based on other metrics, e.g. liveInfo statistics.
+   * 
    * @return Boolean value signalling whether the trigger needs runtime samples.
    */
   virtual bool needsRuntimeSample() const = 0;
@@ -50,9 +52,6 @@ class TuningTriggerInterface {
    * @param sample The runtime of a singular iteration.
    */
   virtual void passRuntimeSample(unsigned long sample) = 0;
-
-  // virtual void needsLiveInfoSample() const = 0;
-  // virtual void passLiveInfoSample(long sample) = 0;
 
   /**
    * Get this object's associated TuningTriggerOption type.

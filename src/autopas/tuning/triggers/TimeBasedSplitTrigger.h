@@ -65,7 +65,7 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
-    // do not compare to stale samples from before tuning phase
+    // Do not compare to stale samples from before tuning phase.
     if (_wasTriggered) [[unlikely]] {
       _runtimeSamples.clear();
       _runtimeSamples.resize(_nSamples);
@@ -74,7 +74,7 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
       return;
     }
 
-    // use a simple circular buffer to store the last _nSamples samples
+    // Use a simple circular buffer to store the last _nSamples samples.
     if (!_bufferFull && (_headElement < _intervalLengthA)) {
       _runtimeSamples[_headElement] = sample;
       _sampleSumA += sample;
@@ -85,7 +85,7 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
       _runtimeSamples[_headElement] = sample;
       _sampleSumB += sample;
 
-      // the sample passing from interval B to A
+      // Handles the sample passing from interval B to A.
       unsigned long midpoint = _runtimeSamples[(_headElement + _intervalLengthA) % _nSamples];
       _sampleSumA += midpoint;
       _sampleSumB -= midpoint;
