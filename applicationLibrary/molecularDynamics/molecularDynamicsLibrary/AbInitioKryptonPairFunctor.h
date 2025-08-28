@@ -56,7 +56,7 @@ class AbInitioKryptonPairFunctor
    */
   explicit AbInitioKryptonPairFunctor(double cutoff)
       : autopas::PairwiseFunctor<Particle,
-                                 AbInitioKryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>>(
+                                 AbInitioKryptonPairFunctor<Particle, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
