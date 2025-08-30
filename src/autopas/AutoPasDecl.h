@@ -1103,6 +1103,22 @@ class AutoPas {
   void setUseTuningLogger(bool useTuningLogger) { _useTuningStrategyLoggerProxy = useTuningLogger; }
 
   /**
+   * Set if vectorization pattern selection based on benchmark is applied.
+   * @param useBenchmarkPatternSelection
+   */
+  void setUseBenchmarkPatternSelection(bool useBenchmarkPatternSelection) {
+    _logicHandlerInfo.useBenchmarkPatternSelection = useBenchmarkPatternSelection;
+  }
+
+  /**
+   * Set if csv file output for pattern benchmark results should be created.
+   * @param createPatternBenchmarkOutput
+   */
+  void setCreatePatternBenchmarkOutput(bool createPatternBenchmarkOutput) {
+    _logicHandlerInfo.createPatternBenchmarkOutput = createPatternBenchmarkOutput;
+  }
+
+  /**
    * Set rule file name for the RuleBasedTuning.
    * @param ruleFileName The name of the rule file to use during rule based tuning.
    */

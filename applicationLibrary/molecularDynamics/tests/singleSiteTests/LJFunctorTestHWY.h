@@ -35,9 +35,10 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * Tests, if the Benchmark class can properly select optimal vectorization patterns from its benchmark results.
    *
-   * @param newton3 true if we want to select from benchmark results with newton3 applied; false if we select from benchmark results without newton3
+   * @param newton3 true if we want to select from benchmark results with newton3 applied; false if we select from
+   * benchmark results without newton3
    */
-  template <bool mixing>
+
   void testPatternBenchmarkSelection(bool newton3);
 
   template <bool mixing>

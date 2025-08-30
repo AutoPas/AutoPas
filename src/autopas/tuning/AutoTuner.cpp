@@ -476,4 +476,6 @@ void AutoTuner::checkEarlyStoppingCondition() {
   }
 }
 
+PatternBenchmark AutoTuner::patternBenchmark;
+
 }  // namespace autopas

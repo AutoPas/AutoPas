@@ -18,6 +18,7 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/utils/EnergySensor.h"
+#include "autopas/utils/PatternBenchmark.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -455,19 +456,8 @@ class AutoTuner {
 
  public:
   /**
-   * maximum particles per cell for vectorization pattern selection benchmarking.
+   * This variable stores the results of the vectorization pattern benchmark
    */
-  static constexpr size_t _benchmarkSize = 30;
-
-  /**
-   * both variables represent the optimal pattern results for vectorization pattern selection benchmarking. They are only set once at the beginning of the simulation.
-   */
-  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3On;
-  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3Off;
-
-  /**
-   * boolean to determine of results of pattern benchmark are available
-   */
-  bool _patternsCalculated{false};
+  static PatternBenchmark patternBenchmark;
 };
 }  // namespace autopas

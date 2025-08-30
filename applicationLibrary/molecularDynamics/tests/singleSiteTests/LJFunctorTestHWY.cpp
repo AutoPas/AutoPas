@@ -8,6 +8,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
+#include "autopas/utils/PatternBenchmark.h"
 #include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
@@ -503,38 +504,12 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   // EXPECT_NEAR(ljFunctorHWY.getUpot(), ljFunctorAVX.getPotentialEnergy(), tolerance) << "global uPot";
   // EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorAVX.getVirial(), tolerance) << "global virial";
 }
-template <bool mixing>
-void LJFunctorTestHWY::testPatternBenchmarkSelection(bool newton3) {
-  constexpr size_t benchmarkSize = autopas::AutoTuner::_benchmarkSize;
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addLJParametersToSite(0, 1., 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addLJParametersToSite(1, 2., 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addLJParametersToSite(2, 1., 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addLJParametersToSite(3, 2., 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addLJParametersToSite(4, 1., 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
-  auto ljFunctorHWY = [&]() {
-    if constexpr (mixing) {
-      return mdLib::LJFunctorHWY<Molecule, false, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
-    } else {
-      return mdLib::LJFunctorHWY<Molecule, false, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
-    }
-  }();
-  if constexpr (not mixing) {
-    ljFunctorHWY.setParticleProperties(_epsilon, _sigma);
-  }
-  ljFunctorHWY.setVecPattern(mdLib::VectorizationPattern::p2xVecDiv2);
+void LJFunctorTestHWY::testPatternBenchmarkSelection(bool newton3) {
+  constexpr size_t benchmarkSize = autopas::PatternBenchmark::_benchmarkSize;
   std::array<autopas::VectorizationPatternOption::Value, benchmarkSize * benchmarkSize> benchmarkResults;
-  //fcs: number of particles in first cell
-  //scs: number of particles in second cell
+  // fcs: number of particles in first SoABuffer
+  // scs: number of particles in second SoABuffer
   for (size_t fcs = 1; fcs <= benchmarkSize; ++fcs) {
     for (size_t scs = 1; scs <= benchmarkSize; ++scs) {
       if (fcs == benchmarkSize && scs == benchmarkSize) {
@@ -550,51 +525,29 @@ void LJFunctorTestHWY::testPatternBenchmarkSelection(bool newton3) {
       }
     }
   }
-  ljFunctorHWY.setPatternSelection(&benchmarkResults, &benchmarkResults);
+  autopas::PatternBenchmark patternBenchmark;
+  patternBenchmark._optimalPatternsNewton3On = benchmarkResults;
+  patternBenchmark._optimalPatternsNewton3Off = benchmarkResults;
+  patternBenchmark._patternsCalculated = true;
 
-  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  // bottom left corner
 
-  // not edge case
-  FMCell cell1;
-  FMCell cell2;
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, _lowCorner, _highCorner, 1);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, _lowCorner, _highCorner, 1);
-  ljFunctorHWY.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-  // ASSERT_EQ(ljFunctorHWY.getVecPattern(), mdLib::VectorizationPattern::p1xVec);
+  ASSERT_EQ(patternBenchmark.getBenchmarkResult(1, 1, newton3), mdLib::VectorizationPattern::p1xVec);
+
   //  right edge
-  FMCell cell3;
-  FMCell cell4;
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell3, defaultParticle, _lowCorner, _highCorner,
-                                                                2 * benchmarkSize);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell4, defaultParticle, _lowCorner, _highCorner, 1);
-  ljFunctorHWY.SoALoader(cell3, cell3._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoALoader(cell4, cell4._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
-  // ASSERT_EQ(ljFunctorHWY.getVecPattern(), mdLib::VectorizationPattern::p2xVecDiv2);
+
+  EXPECT_EQ(patternBenchmark.getBenchmarkResult(2 * benchmarkSize, 1, newton3),
+            mdLib::VectorizationPattern::p2xVecDiv2);
 
   // upper edge
-  FMCell cell5;
-  FMCell cell6;
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell5, defaultParticle, _lowCorner, _highCorner, 1);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell6, defaultParticle, _lowCorner, _highCorner,
-                                                                2 * benchmarkSize);
-  ljFunctorHWY.SoALoader(cell5, cell5._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoALoader(cell6, cell6._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoAFunctorPair(cell5._particleSoABuffer, cell6._particleSoABuffer, newton3);
-  // ASSERT_EQ(ljFunctorHWY.getVecPattern(), mdLib::VectorizationPattern::pVecDiv2x2);
+
+  EXPECT_EQ(patternBenchmark.getBenchmarkResult(1, 2 * benchmarkSize, newton3),
+            mdLib::VectorizationPattern::pVecDiv2x2);
+
   //  top right corner
-  FMCell cell7;
-  FMCell cell8;
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell7, defaultParticle, _lowCorner, _highCorner,
-                                                                2 * benchmarkSize);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell8, defaultParticle, _lowCorner, _highCorner,
-                                                                2 * benchmarkSize);
-  ljFunctorHWY.SoALoader(cell7, cell7._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoALoader(cell8, cell8._particleSoABuffer, 0, false);
-  ljFunctorHWY.SoAFunctorPair(cell7._particleSoABuffer, cell8._particleSoABuffer, newton3);
-  // ASSERT_EQ(ljFunctorHWY.getVecPattern(), mdLib::VectorizationPattern::pVecx1);
+
+  EXPECT_EQ(patternBenchmark.getBenchmarkResult(2 * benchmarkSize, 2 * benchmarkSize, newton3),
+            mdLib::VectorizationPattern::pVecx1);
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
@@ -655,9 +608,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
 TEST_P(LJFunctorTestHWY, benchmarkSelectionTest) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testPatternBenchmarkSelection<true>(newton3);
+    testPatternBenchmarkSelection(newton3);
   } else {
-    testPatternBenchmarkSelection<false>(newton3);
+    testPatternBenchmarkSelection(newton3);
   }
 }
 

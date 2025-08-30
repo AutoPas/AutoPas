@@ -180,18 +180,6 @@ class Functor {
    * @return boolean
    */
   virtual bool canUseVectorPatternLookupTable() { return false; };
-  /**
-   * Set Vectorisation Pattern lookup table.
-   * @param patternMapNewton3On Flattened 2D array storing, for a given (i, j) coordinate, the optimal vector pattern for two cells with i and j particles; if newton3 is on.
-   * @param patternMapNewton3Off Flattened 2D array storing, for a given (i, j) coordinate, the optimal vector pattern for two cells with i and j particles; if newton3 is off.
-   */
-
-  virtual void setPatternSelection(
-      std::array<autopas::VectorizationPatternOption::Value, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize>
-          *patternMapNewton3On,
-      std::array<autopas::VectorizationPatternOption::Value, AutoTuner::_benchmarkSize * AutoTuner::_benchmarkSize>
-          *patternMapNewton3Off){};
-
 
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.
