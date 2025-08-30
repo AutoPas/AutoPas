@@ -1889,7 +1889,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   if (not _logicHandlerInfo.useBenchmarkPatternSelection) {
     functor.setVecPattern(configuration.vecPattern);
   } else {
-    /* An optimal  pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object
+    /* An optimal  pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object if the functor can use pattern selection.
      */
     if (functor.canUseVectorPatternLookupTable()) {
       if (not AutoTuner::patternBenchmark._patternsCalculated) {
