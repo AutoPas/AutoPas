@@ -18,6 +18,7 @@
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/tuning/AutoTuner.h"
 
 namespace mdLib {
 

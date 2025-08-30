@@ -11,7 +11,6 @@
 
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
-#include "autopas/tuning/AutoTuner.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 #include "autopas/utils/logging/FLOPLogger.h"
