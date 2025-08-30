@@ -1892,8 +1892,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     /* An optimal  pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object
      */
     if (functor.canUseVectorPatternLookupTable()) {
-      if (not autoTuner.patternBenchmark._patternsCalculated) {
-        autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
+      if (not AutoTuner::patternBenchmark._patternsCalculated) {
+        AutoTuner::patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
                                                                      _logicHandlerInfo.createPatternBenchmarkOutput);
       }
     }
