@@ -13,11 +13,12 @@
 namespace autopas {
 
 /**
- * Represents a time-based trigger. This trigger considers the last n runtime samples and divides them up into two
- * intervals, A and B. A new tuning phase is triggered, if avg(B) is greater or equal to the avg(A) times triggerFactor.
+ * Represents a time-based trigger. This trigger considers the last n runtime samples together with the current
+ * iteration runtime and divides them up into twointervals, A and B. A new tuning phase is triggered, if avg(B) is
+ * greater or equal to the avg(A) times triggerFactor.
  *
  * The detailed construction of A, B is as follows:  A := [t_{i−n}, t_{i−j}], B := [t_{i−j+1}, t_i], where j =
- * floor(n/2).
+ * ceil(n/2).
  */
 class TimeBasedSplitTrigger : public TuningTriggerInterface {
  public:
@@ -40,20 +41,20 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
     }
 
     _intervalLengthA = (nSamples + 1) / 2;
-    _intervalLengthB = nSamples / 2;
-    _nSamples = nSamples;
-    _runtimeSamples.resize(_nSamples);
-    _headElement = 0;
-    _sampleSumA = 0;
-    _sampleSumB = 0;
-    _bufferFull = false;
+    // Interval B contains the current iteration, therefore its length is increased by 1.
+    _intervalLengthB = nSamples / 2 + 1;
+    _runtimeSamplesA.resize(_intervalLengthA);
+    _runtimeSamplesB.resize(_intervalLengthB);
+    _headElementA = _headElementB = 0;
+    _sampleSumA = _sampleSumB = 0;
+    _bufferFullA = _bufferFullB = false;
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
     bool oldTriggerState = _wasTriggered;
     _wasTriggered = false;
 
-    if (!_bufferFull) return oldTriggerState;
+    if (!_bufferFullB) return oldTriggerState;
 
     unsigned long averageA = _sampleSumA / _intervalLengthA;
     unsigned long averageB = _sampleSumB / _intervalLengthB;
@@ -67,32 +68,37 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   void passRuntimeSample(unsigned long sample) override {
     // Do not compare to stale samples from before tuning phase.
     if (_wasTriggered) [[unlikely]] {
-      _runtimeSamples.clear();
-      _runtimeSamples.resize(_nSamples);
-      _headElement = 0;
-      _bufferFull = false;
-      return;
+      _headElementA = _headElementB = 0;
+      _sampleSumA = _sampleSumB = 0;
+      _bufferFullA = _bufferFullB = false;
     }
 
-    // Use a simple circular buffer to store the last _nSamples samples.
-    if (!_bufferFull && (_headElement < _intervalLengthA)) {
-      _runtimeSamples[_headElement] = sample;
+    // Use two circular buffers to store the last (_nSamples+1) samples.
+    if (!_bufferFullA) {
+      _runtimeSamplesA[_headElementA] = sample;
       _sampleSumA += sample;
+      _headElementA = (_headElementA + 1) % _intervalLengthA;
+
+      _bufferFullA = _headElementA == 0;
     } else {
-      if (_bufferFull) {
-        _sampleSumA -= _runtimeSamples[_headElement];
+      if (_bufferFullB) {
+        _sampleSumA -= _runtimeSamplesA[_headElementA];
+
+        // Handles the sample passing from interval B to A.
+        unsigned long passing_sample = _runtimeSamplesB[_headElementB];
+        _runtimeSamplesA[_headElementA] = passing_sample;
+        _sampleSumA += passing_sample;
+        _headElementA = (_headElementA + 1) % _intervalLengthA;
+
+        _sampleSumB -= passing_sample;
       }
-      _runtimeSamples[_headElement] = sample;
+
+      _runtimeSamplesB[_headElementB] = sample;
       _sampleSumB += sample;
+      _headElementB = (_headElementB + 1) % _intervalLengthB;
 
-      // Handles the sample passing from interval B to A.
-      unsigned long midpoint = _runtimeSamples[(_headElement + _intervalLengthA) % _nSamples];
-      _sampleSumA += midpoint;
-      _sampleSumB -= midpoint;
+      _bufferFullB = _bufferFullB || (_headElementB == 0);
     }
-
-    _headElement = (_headElement + 1) % _nSamples;
-    _bufferFull = _bufferFull || (_headElement == 0);
   }
 
   TuningTriggerOption getOptionType() const override { return TuningTriggerOption::timeBasedSplit; }
@@ -101,11 +107,13 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   float _triggerFactor;
   unsigned _intervalLengthA;
   unsigned _intervalLengthB;
-  unsigned long _nSamples;
-  std::vector<unsigned long> _runtimeSamples;
-  size_t _headElement;
+  std::vector<unsigned long> _runtimeSamplesA;
+  std::vector<unsigned long> _runtimeSamplesB;
+  size_t _headElementA;
+  size_t _headElementB;
   unsigned long _sampleSumA;
   unsigned long _sampleSumB;
-  bool _bufferFull;
+  bool _bufferFullA;
+  bool _bufferFullB;
 };
 }  // namespace autopas

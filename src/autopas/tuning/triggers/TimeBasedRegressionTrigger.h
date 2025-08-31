@@ -22,10 +22,11 @@ namespace autopas {
  * In the following, $n$ is the number of samples, $t_k$ the runtime at iteration $k$, $i$ the current iteration and
  * $\bar t$ the average runtime.
  * As we only care for the slope factor estimate \hat\beta_1, we can transform the standard simple linear regression to
- * \hat\beta_1' = \frac{1}{B}\sum_{k=0}^{n-1}(k-A)(t_{i-n-1+k}-\bar t)
- * Where A = \frac{n-1}{2}, B=\sum_{k=0}^{n-1}(k-A)^2 can be precomputed at initialization.
+ * \hat\beta_1' = \frac{1}{C_2}\sum_{k=0}^{n}(k-C_1)(t_{i-n+k}-\bar t)
+ * Where C_1=\frac{n}{2}, C_2=\sum_{k=0}^{n}(k-C_1)^2=\frac{n(n+1)(n+2)}{12} can be precomputed at initialization.
  *
- * Then, we normalize $\hat\beta_1'$ to make it independent of the scenario.
+ * Then, we normalize $\hat\beta_1'$ to make it independent of the scenario:
+ * \hat\beta_{\text{norm}} = 1+\frac{(n+1)\hat\beta_1'}{2\bar t}
  */
 class TimeBasedRegressionTrigger : public TuningTriggerInterface {
  public:
@@ -49,12 +50,11 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
       _nSamples = 1000;
     }
 
-    _A = (_nSamples - 1.0) / 2.0;
-    double B = .0;
-    for (size_t k = 0; k < _nSamples; k++) B += (k - _A) * (k - _A);
-    _B_reciprocal = 1.0 / B;
+    _C1 = _nSamples / 2.0;
+    _C2_reciprocal = 12.0 / (_nSamples * (_nSamples + 1) * (_nSamples + 2));
 
-    _runtimeSamples.resize(_nSamples);
+    // The vector also contains the current iteration, therefore its length is _nSamples +1.
+    _runtimeSamples.resize(_nSamples + 1);
     _headElement = 0;
     _sampleSum = 0;
     _bufferFull = false;
@@ -67,15 +67,15 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
     if (!_bufferFull) [[unlikely]]
       return oldTriggerState;
 
-    double t_avg = _sampleSum / (_nSamples * 1.0);
+    double t_avg = _sampleSum / (_nSamples + 1.0);
 
     double beta = 0.0;
-    for (size_t k = 0; k < _nSamples; k++) {
-      beta += (k - _A) * (_runtimeSamples.at((_headElement + k) % _nSamples) - t_avg);
+    for (size_t k = 0; k < (_nSamples + 1); k++) {
+      beta += (k - _C1) * (_runtimeSamples.at((_headElement + k) % (_nSamples + 1)) - t_avg);
     }
 
-    beta *= _B_reciprocal;
-    double beta_normalized = 1 + (0.5 * _nSamples * beta) / t_avg;
+    beta *= _C2_reciprocal;
+    double beta_normalized = 1 + (0.5 * (_nSamples + 1) * beta) / t_avg;
 
     _wasTriggered = beta_normalized >= _triggerFactor;
     return oldTriggerState;
@@ -86,21 +86,19 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
   void passRuntimeSample(unsigned long sample) override {
     // Do not compare to stale samples from before tuning phase.
     if (_wasTriggered) [[unlikely]] {
-      _runtimeSamples.clear();
-      _runtimeSamples.resize(_nSamples);
       _headElement = 0;
+      _sampleSum = 0;
       _bufferFull = false;
-      return;
     }
 
-    // Use a simple circular buffer to store the last _nSamples samples.
+    // Use a simple circular buffer to store the last (_nSamples+1) samples.
     if (_bufferFull) {
       _sampleSum -= _runtimeSamples[_headElement];
     }
     _runtimeSamples[_headElement] = sample;
     _sampleSum += sample;
 
-    _headElement = (_headElement + 1) % _nSamples;
+    _headElement = (_headElement + 1) % (_nSamples + 1);
     _bufferFull = _bufferFull || (_headElement == 0);
   }
 
@@ -109,8 +107,8 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
  private:
   float _triggerFactor;
   unsigned _nSamples;
-  double _A;
-  double _B_reciprocal;
+  double _C1;
+  double _C2_reciprocal;
   std::vector<unsigned long> _runtimeSamples;
   size_t _headElement;
   unsigned long _sampleSum;
