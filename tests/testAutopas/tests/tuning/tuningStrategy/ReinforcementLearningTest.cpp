@@ -106,8 +106,7 @@ TEST_F(ReinforcementLearningTest, resetInvalidConfigurationCount) {
   configQueue.push_back(*searchSpace.begin());
   configQueue.push_back(*(searchSpace.begin()++));
 
-  EXPECT_THROW(rl.reset(0, 0, configQueue, evidenceCollection),
-               autopas::utils::ExceptionHandler::AutoPasException)
+  EXPECT_THROW(rl.reset(0, 0, configQueue, evidenceCollection), autopas::utils::ExceptionHandler::AutoPasException)
       << "Reset should throw if the config queue is too short.";
 }
 
