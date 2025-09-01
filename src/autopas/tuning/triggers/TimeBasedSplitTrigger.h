@@ -109,8 +109,8 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   unsigned _intervalLengthB;
   std::vector<unsigned long> _runtimeSamplesA;
   std::vector<unsigned long> _runtimeSamplesB;
-  size_t _headElementA;
-  size_t _headElementB;
+  unsigned long _headElementA;
+  unsigned long _headElementB;
   unsigned long _sampleSumA;
   unsigned long _sampleSumB;
   bool _bufferFullA;

@@ -26,7 +26,7 @@ namespace autopas {
  * Where C_1=\frac{n}{2}, C_2=\sum_{k=0}^{n}(k-C_1)^2=\frac{n(n+1)(n+2)}{12}
  *
  * Then, we normalize $\hat\beta_1'$ to make it independent of the scenario:
- * \hat\beta_{\text{norm}} = 1+\frac{(n+1)\hat\beta_1'}{2\bar t}
+ * \hat\beta_{\text{norm}} = \frac{2t_i+(n+1)\hat\beta_1'}{2\bar t}
  */
 class TimeBasedRegressionTrigger : public TuningTriggerInterface {
  public:
@@ -64,18 +64,23 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
     if (!_bufferFull) [[unlikely]]
       return oldTriggerState;
 
-    double t_avg = _sampleSum / (_nSamples + 1.0);
+    double tAverage = _sampleSum / (_nSamples + 1.0);
+    double constant1 = _nSamples / 2.0;
+    double constant2 = 12.0 / (_nSamples * (_nSamples + 1) * (_nSamples + 2));
 
+    // Computes the transformed slope estimate \hat\beta_1'
     double beta = 0.0;
-    double c1 = _nSamples / 2.0;
     for (size_t k = 0; k < (_nSamples + 1); k++) {
-      beta += (k - c1) * (_runtimeSamples.at((_headElement + k) % (_nSamples + 1)) - t_avg);
+      int currentSampleIndex = (_headElement + k) % (_nSamples + 1);
+      beta += (k - constant1) * (_runtimeSamples.at(currentSampleIndex) - tAverage);
     }
+    beta *= constant2;
 
-    beta *= 12.0 / (_nSamples * (_nSamples + 1) * (_nSamples + 2));
-    double beta_normalized = 1 + (0.5 * (_nSamples + 1) * beta) / t_avg;
+    // For the normalization part, we need the last added sample (t_i).
+    int lastSampleIndex = (_headElement + _nSamples) % (_nSamples + 1);
+    double betaNormalized = (2 * _runtimeSamples[lastSampleIndex] + (_nSamples + 1) * beta) / (2 * tAverage);
 
-    _wasTriggered = beta_normalized >= _triggerFactor;
+    _wasTriggered = betaNormalized >= _triggerFactor;
     return oldTriggerState;
   }
 
@@ -106,7 +111,7 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
   float _triggerFactor;
   unsigned _nSamples;
   std::vector<unsigned long> _runtimeSamples;
-  size_t _headElement;
+  unsigned long _headElement;
   unsigned long _sampleSum;
   bool _bufferFull;
 };

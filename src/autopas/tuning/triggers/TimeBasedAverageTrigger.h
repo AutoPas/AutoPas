@@ -85,7 +85,7 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
   unsigned _nSamples;
   unsigned long _currentIterationRuntime;
   std::vector<unsigned long> _runtimeSamples;
-  size_t _headElement;
+  unsigned long _headElement;
   unsigned long _sampleSum;
   bool _bufferFull;
 };
