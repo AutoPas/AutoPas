@@ -9,9 +9,9 @@
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 
 /**
- * Test if invalid configuration counts are handled correctly.
+ * Test if invalid configuration counts are handled correctly by the constructor.
  */
-TEST_F(ReinforcementLearningTest, invalidConfigurationCount) {
+TEST_F(ReinforcementLearningTest, invalidConfigurationConstructor) {
   // Set the exception policy to throw exceptions
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
@@ -74,6 +74,44 @@ TEST_F(ReinforcementLearningTest, invalidConfigurationCount) {
 }
 
 /**
+ * Test that reset handles too few configurations.
+ */
+TEST_F(ReinforcementLearningTest, resetInvalidConfigurationCount) {
+  // Create the core variables
+  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
+                                                            autopas::ContainerOption::verletLists,
+                                                            autopas::ContainerOption::pairwiseVerletLists};
+  const std::set<autopas::TraversalOption> traversalOptions{
+      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
+      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
+  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
+  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
+                                                              autopas::DataLayoutOption::soa};
+  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
+                                                        autopas::Newton3Option::enabled};
+  const autopas::NumberSetFinite<double> cellSizeFactors{0.5, 1, 2.0};
+
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise);
+  autopas::EvidenceCollection evidenceCollection{};
+
+  autopas::ReinforcementLearning rl(searchSpace, 0.8, 0.8, 3);
+
+  std::vector<autopas::Configuration> configQueue;
+
+  EXPECT_THROW(rl.reset(0, 0, configQueue, evidenceCollection), autopas::utils::ExceptionHandler::AutoPasException)
+      << "Reset should throw if the config queue is too short.";
+
+  configQueue.push_back(*searchSpace.begin());
+  configQueue.push_back(*(searchSpace.begin()++));
+
+  EXPECT_THROW(rl.reset(0, 0, configQueue, evidenceCollection),
+               autopas::utils::ExceptionHandler::AutoPasException)
+      << "Reset should throw if the config queue is too short.";
+}
+
+/**
  * Test that the first search is a full search.
  */
 TEST_F(ReinforcementLearningTest, firstSearchIsFullSearch) {
@@ -106,7 +144,7 @@ TEST_F(ReinforcementLearningTest, firstSearchIsFullSearch) {
       << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
   EXPECT_EQ(configQueueResetCopy, configQueue)
-      << "ReinforcementLearning should not change the config queue during the reset.";
+      << "ReinforcementLearning should not change the config queue during the full search.";
 
   const autopas::Evidence evidence{0, 0, 100};
   while (true) {
@@ -166,7 +204,6 @@ TEST_F(ReinforcementLearningTest, correctConfigExplorationPhase) {
 
   // Perform an initial full search
   rl.reset(0, 0, configQueue, evidenceCollection);
-  rl.optimizeSuggestions(configQueue, evidenceCollection);
 
   while (!configQueue.empty()) {
     rl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
@@ -189,15 +226,21 @@ TEST_F(ReinforcementLearningTest, correctConfigExplorationPhase) {
   evidenceMap[bestConfig].value = 1;
 
   // Test the second search
-  std::vector<autopas::Configuration> configQueueResetCopy = configQueue;
   EXPECT_FALSE(rl.reset(1, searchSpace.size() * 2, configQueue, evidenceCollection))
       << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
-  EXPECT_EQ(configQueueResetCopy, configQueue)
-      << "ReinforcementLearning should not change the config queue during the reset.";
+  EXPECT_EQ(configQueue.size(), searchSpace.size())
+      << "ReinforcementLearning should choose the exploration samples during the reset.";
 
   autopas::Configuration lastConfig;
   size_t it = 0;
+
+  it++;
+  rl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+
+  lastConfig = configQueue.back();
+  configQueue.pop_back();
+
   while (true) {
     bool ret = rl.optimizeSuggestions(configQueue, evidenceCollection);
 
@@ -259,16 +302,20 @@ TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
   }
 
   // Test the second search
+  size_t it = 0;
   std::copy(searchSpace.begin(), searchSpace.end(), std::back_inserter(configQueue));
   evidence.tuningPhase = 1;
-  std::vector<autopas::Configuration> configQueueResetCopy2 = configQueue;
+
   EXPECT_FALSE(rl.reset(1, searchSpace.size() * 2, configQueue, evidenceCollection))
       << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
-  EXPECT_EQ(configQueueResetCopy2, configQueue)
-      << "ReinforcementLearning should not change the config queue during the reset.";
+  EXPECT_EQ(configQueue.size(), 4)
+      << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
-  size_t it = 0;
+  it++;
+  rl.addEvidence(configQueue.back(), evidence);
+  configQueue.pop_back();
+
   while (true) {
     bool ret = rl.optimizeSuggestions(configQueue, evidenceCollection);
 
@@ -279,7 +326,6 @@ TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
 
     it++;
     rl.addEvidence(configQueue.back(), evidence);
-
     configQueue.pop_back();
   }
 
@@ -289,14 +335,17 @@ TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
   // Test the third search
   std::copy(searchSpace.begin(), searchSpace.end(), std::back_inserter(configQueue));
   evidence.tuningPhase = 2;
-  std::vector<autopas::Configuration> configQueueResetCopy3 = configQueue;
-  EXPECT_FALSE(rl.reset(2, searchSpace.size() * 4, configQueue, evidenceCollection))
+
+  EXPECT_FALSE(rl.reset(1, searchSpace.size() * 2, configQueue, evidenceCollection))
       << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
-  EXPECT_EQ(configQueueResetCopy3, configQueue)
-      << "ReinforcementLearning should not change the config queue during the reset.";
+  EXPECT_EQ(configQueue.size(), 4)
+      << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
-  it = 0;
+  it = 1;
+  rl.addEvidence(configQueue.back(), evidence);
+  configQueue.pop_back();
+
   while (true) {
     bool ret = rl.optimizeSuggestions(configQueue, evidenceCollection);
 
@@ -307,10 +356,96 @@ TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
 
     it++;
     rl.addEvidence(configQueue.back(), evidence);
-
     configQueue.pop_back();
   }
 
   EXPECT_EQ(it, 5) << "ReinforcementLearning should search the number of random explorations, the previous best and "
                       "the new best configuration.";
+}
+
+/**
+ * Test that if there is a single best configuration is throughout the entire search, this configuration is always
+ * sampled.
+ */
+TEST_F(ReinforcementLearningTest, singleBestConfigAlwaysSampled) {
+  // Create the core variables
+  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
+                                                            autopas::ContainerOption::verletLists,
+                                                            autopas::ContainerOption::pairwiseVerletLists};
+  const std::set<autopas::TraversalOption> traversalOptions{
+      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
+      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
+  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
+  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
+                                                              autopas::DataLayoutOption::soa};
+  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
+                                                        autopas::Newton3Option::enabled};
+  const autopas::NumberSetFinite<double> cellSizeFactors{0.5, 1, 2.0};
+
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise);
+
+  autopas::ReinforcementLearning rl(searchSpace, 0.8, 0.8, 3);
+  ASSERT_GT(searchSpace.size(), 5);
+
+  autopas::Configuration targetConfig = *(searchSpace.begin()++);
+  std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
+  autopas::EvidenceCollection evidenceCollection{};
+  std::unordered_map<autopas::Configuration, autopas::Evidence, autopas::ConfigHash> evidenceMap;
+  for (const auto &config : configQueue) {
+    evidenceMap[config] = autopas::Evidence{0, 0, config == targetConfig ? 100 : 110};
+  }
+
+  // Perform an initial full search
+  rl.reset(0, 0, configQueue, evidenceCollection);
+  rl.optimizeSuggestions(configQueue, evidenceCollection);
+
+  while (!configQueue.empty()) {
+    rl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+    configQueue.pop_back();
+    rl.optimizeSuggestions(configQueue, evidenceCollection);
+  }
+
+  // Perform the other searches
+  for (size_t i = 0; i < 100; i++) {
+    std::copy(searchSpace.begin(), searchSpace.end(), std::back_inserter(configQueue));
+    int occurrences = 0;
+
+    EXPECT_FALSE(rl.reset(1, searchSpace.size() * 2, configQueue, evidenceCollection))
+        << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
+
+    EXPECT_EQ(configQueue.size(), 4) << "ReinforcementLearning should choose the exploration samples during the reset.";
+
+    autopas::Configuration lastConfig;
+    rl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+
+    if (configQueue.back() == targetConfig) {
+      occurrences++;
+    }
+
+    lastConfig = configQueue.back();
+    configQueue.pop_back();
+
+    while (true) {
+      bool ret = rl.optimizeSuggestions(configQueue, evidenceCollection);
+
+      if (configQueue.empty()) {
+        EXPECT_TRUE(ret) << "ReinforcementLearning should return true when the config queue is empty.";
+        break;
+      }
+
+      if (configQueue.back() == targetConfig) {
+        occurrences++;
+      }
+
+      rl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+
+      lastConfig = configQueue.back();
+      configQueue.pop_back();
+    }
+
+    EXPECT_EQ(occurrences, 2) << "ReinforcementLearning should always sample the best configuration twice (1. "
+                                 "Exploration phase, 2. Exploitation Sample).";
+  }
 }

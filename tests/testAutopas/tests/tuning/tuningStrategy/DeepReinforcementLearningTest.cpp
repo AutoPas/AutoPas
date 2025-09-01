@@ -95,9 +95,13 @@ TEST_F(DeepReinforcementLearningTest, firstSearchIsFullSearch) {
             << "DeepReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
         EXPECT_EQ(configQueueResetCopy, configQueue)
-            << "DeepReinforcementLearning should not change the config queue during the reset.";
+            << "DeepReinforcementLearning should not change the config queue during the reset for the full search.";
 
         const autopas::Evidence evidence{0, 0, 100};
+
+        drl.addEvidence(configQueue.back(), evidence);
+        configQueue.pop_back();
+
         while (true) {
           const std::vector<autopas::Configuration> configQueueCopy = configQueue;
           bool ret = drl.optimizeSuggestions(configQueue, evidenceCollection);
@@ -160,16 +164,19 @@ TEST_F(DeepReinforcementLearningTest, validExplorationExploitationSize) {
         drl.reset(0, 0, configQueue, evidenceCollection);
         const autopas::Evidence evidence{0, 0, 100};
 
-        while (true) {
-          const std::vector<autopas::Configuration> configQueueCopy = configQueue;
-          drl.optimizeSuggestions(configQueue, evidenceCollection);
+        drl.addEvidence(configQueue.back(), evidence);
+        configQueue.pop_back();
 
+        while (true) {
           if (configQueue.empty()) {
             break;
           }
 
           drl.addEvidence(configQueue.back(), evidence);
           configQueue.pop_back();
+
+          const std::vector<autopas::Configuration> configQueueCopy = configQueue;
+          drl.optimizeSuggestions(configQueue, evidenceCollection);
         }
 
         // Perform the future searches
@@ -180,16 +187,15 @@ TEST_F(DeepReinforcementLearningTest, validExplorationExploitationSize) {
           std::vector<autopas::Configuration> configQueueResetCopy = configQueue;
           EXPECT_FALSE(drl.reset(tuningPhase, tuningPhase * 1000, configQueue, evidenceCollection))
               << "DeepReinforcementLearning should not clear the queue ever intentionally when resetting.";
-
-          EXPECT_EQ(configQueueResetCopy, configQueue)
-              << "DeepReinforcementLearning should not change the config queue during the reset.";
-
-          // Choose Exploration samples
-          const std::vector<autopas::Configuration> initialConfigQueueCopy = configQueue;
-          drl.optimizeSuggestions(configQueue, evidenceCollection);
-
           EXPECT_EQ(configQueue.size(), explorationSamples)
               << "DeepReinforcementLearning should shrink the config queue to the number of exploration samples.";
+
+          drl.addEvidence(configQueue.back(), evidence);
+          configQueue.pop_back();
+
+          if (configQueue.empty()) {
+            break;
+          }
 
           // Search all exploration samples
           while (true) {
@@ -233,6 +239,126 @@ TEST_F(DeepReinforcementLearningTest, validExplorationExploitationSize) {
                 << "DeepReinforcementLearning should not change the config queue during the exploitation search.";
           }
         }
+      }
+    }
+  }
+}
+
+/**
+ * Test that a bad configuration does not starve.
+ */
+TEST_F(DeepReinforcementLearningTest, badConfigurationDoesNotStarve) {
+  // Set the exception policy to throw exceptions
+  autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
+
+  // Create the core variables
+  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
+                                                            autopas::ContainerOption::verletLists,
+                                                            autopas::ContainerOption::pairwiseVerletLists};
+  const std::set<autopas::TraversalOption> traversalOptions{
+      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
+      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
+  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
+  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
+                                                              autopas::DataLayoutOption::soa};
+  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
+                                                        autopas::Newton3Option::enabled};
+  const autopas::NumberSetFinite<double> cellSizeFactors{1};
+
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise);
+
+  // This test only applies to the polynomial exploration method. A lower number of exploration sample options is
+  // searched, for the test to be faster.
+  for (const bool train : {true, false}) {
+    for (size_t explorationSamples = 3; explorationSamples <= 5; explorationSamples++) {
+      for (const autopas::DeepReinforcementLearning::ExplorationMethod explorationMethod :
+           {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial}) {
+        autopas::DeepReinforcementLearning drl(train, explorationSamples, explorationMethod);
+        std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
+        autopas::EvidenceCollection evidenceCollection{};
+        autopas::Configuration targetConfig = *(searchSpace.begin()++);
+        std::unordered_map<autopas::Configuration, autopas::Evidence, autopas::ConfigHash> evidenceMap;
+
+        for (const auto &config : configQueue) {
+          evidenceMap[config] = autopas::Evidence{0, 0, config == targetConfig ? 224 : 112};
+        }
+
+        // Perform the initial full search
+        drl.reset(0, 0, configQueue, evidenceCollection);
+
+        drl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+        configQueue.pop_back();
+
+        while (true) {
+          if (configQueue.empty()) {
+            break;
+          }
+
+          drl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+          configQueue.pop_back();
+
+          const std::vector<autopas::Configuration> configQueueCopy = configQueue;
+          drl.optimizeSuggestions(configQueue, evidenceCollection);
+        }
+
+        int occurrences = 0;
+
+        // Perform the future searches
+        for (size_t tuningPhase = 1; tuningPhase < 10000; tuningPhase++) {
+          configQueue = {searchSpace.begin(), searchSpace.end()};
+
+          // Reset
+          std::vector<autopas::Configuration> configQueueResetCopy = configQueue;
+          drl.reset(tuningPhase, tuningPhase * 1000, configQueue, evidenceCollection);
+
+          if (configQueue.back() == targetConfig) {
+            occurrences++;
+          }
+
+          drl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+
+          configQueue.pop_back();
+
+          if (configQueue.empty()) {
+            break;
+          }
+
+          // Search all exploration samples
+          while (true) {
+            if (configQueue.back() == targetConfig) {
+              occurrences++;
+            }
+
+            drl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+            configQueue.pop_back();
+
+            if (configQueue.empty()) {
+              break;
+            }
+
+            const std::vector<autopas::Configuration> configQueueCopy = configQueue;
+            drl.optimizeSuggestions(configQueue, evidenceCollection);
+          }
+
+          // Search all exploitation samples
+          drl.optimizeSuggestions(configQueue, evidenceCollection);
+
+          while (!configQueue.empty()) {
+            if (configQueue.back() == targetConfig) {
+              occurrences++;
+            }
+
+            drl.addEvidence(configQueue.back(), evidenceMap[configQueue.back()]);
+            configQueue.pop_back();
+
+            const std::vector<autopas::Configuration> configQueueCopy = configQueue;
+            drl.optimizeSuggestions(configQueue, evidenceCollection);
+          }
+        }
+
+        EXPECT_GT(occurrences, 0) << "The worst configuration must not starve.";
       }
     }
   }
