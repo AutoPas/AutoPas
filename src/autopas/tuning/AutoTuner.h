@@ -458,6 +458,6 @@ class AutoTuner {
   /**
    * This variable stores the results of the vectorization pattern benchmark
    */
-  static PatternBenchmark patternBenchmark;
+  PatternBenchmark patternBenchmark{};
 };
 }  // namespace autopas

@@ -17,8 +17,8 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/PatternBenchmark.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/tuning/AutoTuner.h"
 
 namespace mdLib {
 
@@ -209,9 +209,9 @@ class LJFunctorHWY
                              bool newton3) final {
     // check if a pattern map with optimal pattern is provided
 
-    if (autopas::AutoTuner::patternBenchmark._patternsCalculated) {
+    if (_patternBenchmark != nullptr) {
       autopas::VectorizationPatternOption::Value vectorizationPattern =
-          autopas::AutoTuner::patternBenchmark.getBenchmarkResult(soa1.size(), soa2.size(), newton3);
+          (*_patternBenchmark).getBenchmarkResult(soa1.size(), soa2.size(), newton3);
 
       switch (vectorizationPattern) {
         case VectorizationPattern::p1xVec: {
@@ -249,43 +249,44 @@ class LJFunctorHWY
         default:
           break;
       }
-      return;
-    }
-    switch (_vecPattern) {
-      case VectorizationPattern::p1xVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+
+    } else {
+      switch (_vecPattern) {
+        case VectorizationPattern::p1xVec: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+          }
+          break;
         }
-        break;
-      }
-      case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+        case VectorizationPattern::p2xVecDiv2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          }
+          break;
         }
-        break;
-      }
-      case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+        case VectorizationPattern::pVecDiv2x2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          }
+          break;
         }
-        break;
-      }
-      case VectorizationPattern::pVecx1: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+        case VectorizationPattern::pVecx1: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+          }
+          break;
         }
-        break;
+        default:
+          break;
       }
-      default:
-        break;
     }
   }
 
@@ -1373,6 +1374,12 @@ class LJFunctorHWY
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
   /**
+   * Setter for the patternBenchmark attribute for functors that use this benchmark to select performance efficient
+   * vectorization patterns
+   * @param patternBenchmark pointer to the pattern benchmark object
+   */
+  void setPatternBenchmark(autopas::PatternBenchmark *patternBenchmark) final { _patternBenchmark = patternBenchmark; }
+  /**
    * Returns true if the functor can make use of a vector pattern lookup table.
    * @return boolean
    */
@@ -1423,5 +1430,7 @@ class LJFunctorHWY
   bool _masksInitialized{false};
 
   VectorizationPattern _vecPattern;
+
+  autopas::PatternBenchmark *_patternBenchmark = nullptr;
 };
 }  // namespace mdLib

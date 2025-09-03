@@ -29,23 +29,28 @@ class PatternBenchmark {
   /**
    * Helper method to run benchmark for optimal patterns selection
    *
-   * @tparam Functor Functor type for benchmark.
-   * @tparam Cell Cell type for benchmark.
+   * @tparam Functor_T Functor type for benchmark.
+   * @tparam Cell_T Cell type for benchmark.
    * @param functor functor that is used in benchmark.
    * @param cells list of cells included in benchmark
    */
-  template <class Functor, class Cell>
-  void csvOutput(Functor &functor, std::vector<Cell> &cells) {
+  template <class Functor_T, class Cell_T>
+  void csvOutput(Functor_T &functor, std::pair<Cell_T, Cell_T> &cells) {
     std::ofstream csvFile("particles.csv");
     if (not csvFile.is_open()) {
-      throw std::runtime_error("FILE NOT OPEN!");
+      autopas::utils::ExceptionHandler::exception("FILE NOT OPEN!");
+      return;
     }
     csvFile << "CellId,ParticleId,rX,rY,rZ,fX,fY,fZ\n";
-    for (size_t cellId = 0; cellId < cells.size(); ++cellId) {
-      functor.SoAExtractor(cells[cellId], cells[cellId]._particleSoABuffer, 0);
-      for (size_t particleId = 0; particleId < cells[cellId].getNumberOfParticles(autopas::IteratorBehavior::owned);
+
+    for (size_t cellId = 0; cellId < 2; ++cellId) {
+      functor.SoAExtractor((cellId == 0 ? cells.first : cells.second),
+                           (cellId == 0 ? cells.first : cells.second)._particleSoABuffer, 0);
+      for (size_t particleId = 0;
+           particleId <
+           (cellId == 0 ? cells.first : cells.second).getNumberOfParticles(autopas::IteratorBehavior::owned);
            ++particleId) {
-        const auto &p = cells[cellId][particleId];
+        const auto &p = (cellId == 0 ? cells.first : cells.second)[particleId];
         using autopas::utils::ArrayUtils::to_string;
         csvFile << cellId << "," << p.getID() << "," << to_string(p.getR(), ",", {"", ""}) << ","
                 << to_string(p.getF(), ",", {"", ""}) << "\n";
@@ -67,18 +72,19 @@ class PatternBenchmark {
    * @param hitRate average hitRate that a particle pair is inside cutoff range in benchmark.
    */
   template <class Functor_T, class Cell_T, class Particle_T>
-  void initialization(Functor_T &functor, std::vector<Cell_T> &cells, const std::vector<size_t> &numParticlesPerCell,
-                      double cutoff, double hitRate) {
+  void initialization(Functor_T &functor, std::pair<Cell_T, Cell_T> &cells,
+                      const std::pair<size_t, size_t> &numParticlesPerCell, double cutoff, double hitRate) {
     // initialize cells with randomly distributed particles
 
     // this is a formula determined by regression (based on a mapping from hitrate to div with random sample values)
     const double div = 2.86 * (hitRate * hitRate * hitRate) - 4.13 * (hitRate * hitRate) + 2.81 * hitRate + 0.42;
     const double cellLength = cutoff / div;
 
-    cells[0].reserve(numParticlesPerCell[0]);
-    cells[1].reserve(numParticlesPerCell[1]);
-    for (size_t cellId = 0; cellId < numParticlesPerCell.size(); ++cellId) {
-      for (size_t particleId = 0; particleId < numParticlesPerCell[cellId]; ++particleId) {
+    cells.first.reserve(numParticlesPerCell.first);
+    cells.second.reserve(numParticlesPerCell.second);
+    for (size_t cellId = 0; cellId < 2; ++cellId) {
+      for (size_t particleId = 0; particleId < (cellId == 0 ? numParticlesPerCell.first : numParticlesPerCell.second);
+           ++particleId) {
         Particle_T p{
             {
                 // particles are next to each other in X direction
@@ -92,11 +98,12 @@ class PatternBenchmark {
                 0.,
             },
             // every cell gets its own id space
-            particleId + ((std::numeric_limits<size_t>::max() / numParticlesPerCell.size()) * cellId),
+            particleId + ((std::numeric_limits<size_t>::max() / 2) * cellId),
             particleId % 5};
-        cells[cellId].addParticle(p);
+        (cellId == 0 ? cells.first : cells.second).addParticle(p);
       }
-      functor.SoALoader(cells[cellId], cells[cellId]._particleSoABuffer, 0, false);
+      functor.SoALoader((cellId == 0 ? cells.first : cells.second),
+                        (cellId == 0 ? cells.first : cells.second)._particleSoABuffer, 0, false);
     }
   }
 
@@ -111,11 +118,11 @@ class PatternBenchmark {
    * @param newton3 true if newton3 optimization is used.
    */
   template <class Functor_T, class Cell_T>
-  void applyFunctorPair(Functor_T &functor, std::vector<Cell_T> &cells,
+  void applyFunctorPair(Functor_T &functor, std::pair<Cell_T, Cell_T> &cells,
                         std::map<std::string, autopas::utils::Timer> &timer, bool newton3) {
     timer.at("Functor").start();
 
-    functor.SoAFunctorPair(cells[0]._particleSoABuffer, cells[1]._particleSoABuffer, newton3);
+    functor.SoAFunctorPair(cells.first._particleSoABuffer, cells.second._particleSoABuffer, newton3);
 
     timer.at("Functor").stop();
   }
@@ -126,7 +133,7 @@ class PatternBenchmark {
    * @tparam Functor_T Functor type for benchmark.
    * @tparam Particle_T Particle type in benchmark.
    * @param functor functor that is used in benchmark.
-   * @param repetitions amount of repetitions for this constellation; particle positions are newly generated in each
+   * @param repetitions amount of repetitions for this combination; particle positions are newly generated in each
    * repetition
    * @param iterations amount of iterations per repetition; particle positions remain the same for all iterations; per
    * iteration the pairwise forces between particles in the first and second SoA buffer are calculated and the execution
@@ -155,10 +162,10 @@ class PatternBenchmark {
 
     for (int n = 0; n < repetitions; ++n) {
       // define scenario
-      const std::vector<size_t> numParticlesPerCell{firstnumParticles, secondnumParticles};
+      const std::pair<size_t, size_t> numParticlesPerCell{firstnumParticles, secondnumParticles};
 
       // repeat the whole experiment multiple times and average results
-      std::vector<CellType> cells{2};
+      std::pair<CellType, CellType> cells{};
 
       initialization<Functor_T, CellType, ParticleType>(functor, cells, numParticlesPerCell, cutoff, hitRate);
       for (size_t iteration = 0; iteration < iterations; ++iteration) {
@@ -204,10 +211,10 @@ class PatternBenchmark {
   template <class Functor_T, class Particle_T>
   std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> calculateVecPatternMap(
       Functor_T &functor, bool newton3) {
-    using patterntype = autopas::VectorizationPatternOption::Value;
-    std::vector<patterntype> patterns = {patterntype::p1xVec, patterntype::p2xVecDiv2, patterntype::pVecDiv2x2,
-                                         patterntype::pVecx1};
-    std::array<std::array<unsigned long, 4>, _benchmarkSize * _benchmarkSize> all_results{};
+    using PatternType = autopas::VectorizationPatternOption::Value;
+    std::vector<PatternType> patterns = {PatternType::p1xVec, PatternType::p2xVecDiv2, PatternType::pVecDiv2x2,
+                                         PatternType::pVecx1};
+    std::array<std::array<unsigned long, 4>, _benchmarkSize * _benchmarkSize> allResults{};
     std::map<std::string, autopas::utils::Timer> timer{
         {"Initialization", autopas::utils::Timer()},
         {"Functor", autopas::utils::Timer()},
@@ -215,30 +222,30 @@ class PatternBenchmark {
         {"InteractionCounter", autopas::utils::Timer()},
     };
     for (size_t i = 0; i < patterns.size(); i++) {
-      patterntype current_pattern = patterns[i];
+      PatternType current_pattern = patterns[i];
       for (size_t numberParticlesSoA1 = 1; numberParticlesSoA1 <= _benchmarkSize; numberParticlesSoA1++) {
         for (size_t numberParticlesSoA2 = 1; numberParticlesSoA2 <= _benchmarkSize; numberParticlesSoA2++) {
           // we set the hit rate to 16 percent, as this is the average for linked cells
 
-          all_results[numberParticlesSoA1 - 1 + _benchmarkSize * (numberParticlesSoA2 - 1)][i] =
+          allResults[numberParticlesSoA1 - 1 + _benchmarkSize * (numberParticlesSoA2 - 1)][i] =
               runSingleBenchmark<Functor_T, Particle_T>(functor, 100, 100, numberParticlesSoA1, numberParticlesSoA2,
                                                         0.16, current_pattern, timer, newton3);
         }
       }
     }
 
-    std::array<patterntype, _benchmarkSize * _benchmarkSize> optimalPatterns{};
+    std::array<PatternType, _benchmarkSize * _benchmarkSize> optimalPatterns{};
     for (size_t i = 0; i < _benchmarkSize * _benchmarkSize; i++) {
-      long min = all_results[i][0];
-      long min_index = 0;
+      long min = allResults[i][0];
+      long minIndex = 0;
       for (int j = 1; j < patterns.size(); j++) {
-        if (all_results[i][j] < min) {
-          min = all_results[i][j];
-          min_index = j;
+        if (allResults[i][j] < min) {
+          min = allResults[i][j];
+          minIndex = j;
         }
       }
 
-      optimalPatterns[i] = patterns[min_index];
+      optimalPatterns[i] = patterns[minIndex];
     }
 
     return optimalPatterns;
@@ -264,12 +271,12 @@ class PatternBenchmark {
           "newton3on_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
           std::ios::out);
       if (newton3File.is_open()) {
-        newton3File << "pattern,fcs,scs\n";
-        for (size_t second_size = 1; second_size <= _benchmarkSize; second_size++) {
-          for (size_t first_size = 1; first_size <= _benchmarkSize; first_size++) {
+        newton3File << "pattern,firstCellSize,SecondCellSize\n";
+        for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
+          for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
             newton3File << checkVecPattern(
-                               _optimalPatternsNewton3On[(second_size - 1) * _benchmarkSize + (first_size - 1)])
-                        << "," << first_size << "," << second_size << "\n";
+                               _optimalPatternsNewton3On[(secondSize - 1) * _benchmarkSize + (firstSize - 1)])
+                        << "," << firstSize << "," << secondSize << "\n";
           }
         }
         newton3File.close();
@@ -278,12 +285,12 @@ class PatternBenchmark {
           "newton3off_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
           std::ios::out);
       if (newton3offFile.is_open()) {
-        newton3offFile << "pattern,fcs,scs\n";
-        for (size_t second_size = 1; second_size <= _benchmarkSize; second_size++) {
-          for (size_t first_size = 1; first_size <= _benchmarkSize; first_size++) {
+        newton3offFile << "pattern,firstCellSize,SecondCellSize\n";
+        for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
+          for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
             newton3offFile << checkVecPattern(
-                                  _optimalPatternsNewton3Off[(second_size - 1) * _benchmarkSize + (first_size - 1)])
-                           << "," << first_size << "," << second_size << "\n";
+                                  _optimalPatternsNewton3Off[(secondSize - 1) * _benchmarkSize + (firstSize - 1)])
+                           << "," << firstSize << "," << secondSize << "\n";
           }
         }
         newton3offFile.close();
@@ -301,6 +308,7 @@ class PatternBenchmark {
                                                               bool newton3) {
     autopas::VectorizationPatternOption::Value vectorizationPattern =
         autopas::VectorizationPatternOption::Value::p1xVec;
+    // if at least one buffer has 0 particles it should just return p1xVec
     if (firstBufferSize != 0 and secondBufferSize != 0) {
       if (newton3) {
         vectorizationPattern =

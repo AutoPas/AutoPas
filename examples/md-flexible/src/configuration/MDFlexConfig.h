@@ -851,8 +851,8 @@ class MDFlexConfig {
    */
   MDFlexOption<bool, __LINE__> useBenchmarkPatternSelection{
       true, "use-benchmark-pattern-selection", true,
-      "If true, benchmark pattern selection is applied; if false, auto-tuning pattern selection is applied. Possible "
-      "Values: (true false)"};
+      "If true, benchmark-based vectorization pattern selection is applied; if false, standard AutoPas auto-tuning is "
+      "used to select a globally applied pattern. Possible Values: (true false)"};
 
   /**
    * This determines if benchmark pattern result is created as two csv files for newton3 on and off.

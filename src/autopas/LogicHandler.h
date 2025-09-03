@@ -83,7 +83,8 @@ class LogicHandler {
       checkMinimalSize();
 
       // give outputSuffix to PatternBenchmark object in AutoTuner
-      AutoTuner::patternBenchmark.outputSuffix = outputSuffix;
+      auto &autoTuner = *_autoTunerRefs[interactionType];
+      autoTuner.patternBenchmark.outputSuffix = outputSuffix;
     }
 
     // initialize locks needed for remainder traversal
@@ -1889,13 +1890,15 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   if (not _logicHandlerInfo.useBenchmarkPatternSelection) {
     functor.setVecPattern(configuration.vecPattern);
   } else {
-    /* An optimal  pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object if the functor can use pattern selection.
+    /* An optimal  pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object
+     * if the functor can use pattern selection.
      */
     if (functor.canUseVectorPatternLookupTable()) {
-      if (not AutoTuner::patternBenchmark._patternsCalculated) {
-        AutoTuner::patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
+      if (not autoTuner.patternBenchmark._patternsCalculated) {
+        autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
                                                                      _logicHandlerInfo.createPatternBenchmarkOutput);
       }
+      functor.setPatternBenchmark(&(autoTuner.patternBenchmark));
     }
   }
 
