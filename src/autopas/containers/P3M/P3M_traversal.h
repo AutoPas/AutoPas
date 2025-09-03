@@ -141,6 +141,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
         /*if(x > 0.5 || x < -0.5){
             std::cout << "error in charge Fraction" << std::endl;
         }*/
+        // TODO remove assert
         assert(x <= 0.5);
         assert(x >= -0.5);
         switch(cao){

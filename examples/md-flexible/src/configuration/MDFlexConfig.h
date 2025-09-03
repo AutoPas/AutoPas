@@ -712,6 +712,8 @@ class MDFlexConfig {
    * particlesPerObjectStr
    */
   static inline const char *const particlesPerObjectStr{"numberOfParticles"};
+
+  static inline const char *const seed{"seed"};
   /**
    * cubeGridObjectsStr
    */

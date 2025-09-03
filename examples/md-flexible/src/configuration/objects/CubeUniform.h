@@ -23,11 +23,12 @@ class CubeUniform : public Object {
    * @param bottomLeftCorner
    */
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
-              const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+              const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner, unsigned int seed = 42)
       : Object(velocity, typeId),
         _numParticles(numParticles),
         _boxLength(boxLength),
-        _bottomLeftCorner(bottomLeftCorner) {}
+        _bottomLeftCorner(bottomLeftCorner),
+        _seed(seed) {}
 
   /**
    * Returns the total amount of particles which will be / have been generated.
@@ -82,7 +83,7 @@ class CubeUniform : public Object {
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
     autopasTools::generators::UniformGenerator::fillWithParticles(particlesWrapper, dummyParticle, _bottomLeftCorner,
-                                                                  boxMax, _numParticles);
+                                                                  boxMax, _numParticles, _seed);
   }
 
  private:
@@ -100,4 +101,6 @@ class CubeUniform : public Object {
    * The Coordinates of the bottom left front corner.
    */
   std::array<double, 3> _bottomLeftCorner;
+
+  unsigned int _seed;
 };

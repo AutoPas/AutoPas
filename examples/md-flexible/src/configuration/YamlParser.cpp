@@ -57,8 +57,10 @@ const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexC
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+  const auto seed =
+      parseComplexTypeValueSingle<unsigned int>(node, MDFlexConfig::seed, objectErrors);
 
-  const CubeUniform cubeUniform(velocity, particleType, numParticles, boxLength, bottomLeftCorner);
+  const CubeUniform cubeUniform(velocity, particleType, numParticles, boxLength, bottomLeftCorner, seed);
   return cubeUniform;
 }
 
