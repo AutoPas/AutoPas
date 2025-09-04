@@ -5,7 +5,10 @@
  */
 #include <gtest/gtest.h>
 #include "autopas/utils/PatternBenchmark.h"
-
+/**
+   *
+   * Tests, if the Benchmark class can properly select optimal vectorization patterns from its benchmark results.
+   */
 TEST(PatternBenchmarkTest,getBenchmarkResultTest) {
   constexpr size_t benchmarkSize = autopas::PatternBenchmark::_benchmarkSize;
   std::array<autopas::VectorizationPatternOption::Value, benchmarkSize * benchmarkSize> benchmarkResults{};
