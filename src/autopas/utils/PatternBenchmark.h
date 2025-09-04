@@ -182,23 +182,7 @@ class PatternBenchmark {
     unsigned long sum = std::accumulate(times.begin(), times.end(), static_cast<long>(0));
     return sum;
   }
-  /**
-   * helper method to turn vectorization pattern enum into string
-   *
-   * @param vecPattern vectorization pattern
-   * @return string
-   */
-  inline std::string checkVecPattern(const autopas::VectorizationPatternOption::Value vecPattern) {
-    if (vecPattern == autopas::VectorizationPatternOption::Value::p1xVec) {
-      return "p1xVec";
-    } else if (vecPattern == autopas::VectorizationPatternOption::Value::p2xVecDiv2) {
-      return "p2xVecDiv2";
-    } else if (vecPattern == autopas::VectorizationPatternOption::Value::pVecDiv2x2) {
-      return "pVecDiv2x2";
-    } else {
-      return "pVecx1";
-    }
-  }
+
   /**
    * This method calculates the benchmarkSize x benchmarkSize pattern benchmark to determine the optimal vector pattern
    * for some given combination of SoA sizes.
@@ -212,8 +196,16 @@ class PatternBenchmark {
   std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> calculateVecPatternMap(
       Functor_T &functor, bool newton3) {
     using PatternType = autopas::VectorizationPatternOption::Value;
-    std::vector<PatternType> patterns = {PatternType::p1xVec, PatternType::p2xVecDiv2, PatternType::pVecDiv2x2,
-                                         PatternType::pVecx1};
+    std::set<VectorizationPatternOption> patternSet = VectorizationPatternOption::getAllOptions();
+    std::vector<PatternType> patterns{};
+    for (auto vecOption : patternSet) {
+      patterns.push_back(vecOption);
+    }
+    constexpr size_t numPatterns = 4;
+    if (patterns.size() != numPatterns) {
+      utils::ExceptionHandler::exception("PatternBenchmark assumes there are only {} vectorization patterns, but"
+      "there is actually {}!", numPatterns, patterns.size());
+    }
     std::array<std::array<unsigned long, 4>, _benchmarkSize * _benchmarkSize> allResults{};
     std::map<std::string, autopas::utils::Timer> timer{
         {"Initialization", autopas::utils::Timer()},
@@ -221,31 +213,31 @@ class PatternBenchmark {
         {"Output", autopas::utils::Timer()},
         {"InteractionCounter", autopas::utils::Timer()},
     };
-    for (size_t i = 0; i < patterns.size(); i++) {
-      PatternType current_pattern = patterns[i];
+    for (const auto pattern : patterns) {
+
       for (size_t numberParticlesSoA1 = 1; numberParticlesSoA1 <= _benchmarkSize; numberParticlesSoA1++) {
         for (size_t numberParticlesSoA2 = 1; numberParticlesSoA2 <= _benchmarkSize; numberParticlesSoA2++) {
           // we set the hit rate to 16 percent, as this is the average for linked cells
 
-          allResults[numberParticlesSoA1 - 1 + _benchmarkSize * (numberParticlesSoA2 - 1)][i] =
+          allResults[numberParticlesSoA1 - 1 + _benchmarkSize * (numberParticlesSoA2 - 1)][pattern] =
               runSingleBenchmark<Functor_T, Particle_T>(functor, 100, 100, numberParticlesSoA1, numberParticlesSoA2,
-                                                        0.16, current_pattern, timer, newton3);
+                                                        0.16, pattern, timer, newton3);
         }
       }
     }
 
     std::array<PatternType, _benchmarkSize * _benchmarkSize> optimalPatterns{};
     for (size_t i = 0; i < _benchmarkSize * _benchmarkSize; i++) {
-      long min = allResults[i][0];
-      long minIndex = 0;
-      for (int j = 1; j < patterns.size(); j++) {
-        if (allResults[i][j] < min) {
-          min = allResults[i][j];
-          minIndex = j;
+      long min = allResults[i][PatternType::p1xVec];
+      PatternType minIndex = PatternType::p1xVec;
+      for (const auto pattern : patterns) {
+        if (allResults[i][pattern] < min) {
+          min = allResults[i][pattern];
+          minIndex = pattern;
         }
       }
 
-      optimalPatterns[i] = patterns[minIndex];
+      optimalPatterns[i] = minIndex;
     }
 
     return optimalPatterns;
@@ -260,7 +252,7 @@ class PatternBenchmark {
    * @param printPatternResults whether csv output for the benchmark results should be created
    */
   template <class Functor_T, typename Particle_T>
-  void runBenchmark(Functor_T functor, bool printPatternResults) {
+  void runBenchmark(Functor_T &functor, bool printPatternResults) {
     _optimalPatternsNewton3On = calculateVecPatternMap<Functor_T, Particle_T>(functor, true);
     _optimalPatternsNewton3Off = calculateVecPatternMap<Functor_T, Particle_T>(functor, false);
     _patternsCalculated = true;
@@ -274,8 +266,9 @@ class PatternBenchmark {
         newton3File << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3File << checkVecPattern(
-                               _optimalPatternsNewton3On[(secondSize - 1) * _benchmarkSize + (firstSize - 1)])
+            newton3File << VectorizationPatternOption{_optimalPatternsNewton3On[(secondSize - 1) * _benchmarkSize +
+                                                                                (firstSize - 1)]}
+                               .to_string()
                         << "," << firstSize << "," << secondSize << "\n";
           }
         }
@@ -288,8 +281,9 @@ class PatternBenchmark {
         newton3offFile << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3offFile << checkVecPattern(
-                                  _optimalPatternsNewton3Off[(secondSize - 1) * _benchmarkSize + (firstSize - 1)])
+            newton3offFile << VectorizationPatternOption{_optimalPatternsNewton3Off[(secondSize - 1) * _benchmarkSize +
+                                                                                    (firstSize - 1)]}
+                                  .to_string()
                            << "," << firstSize << "," << secondSize << "\n";
           }
         }
@@ -298,8 +292,11 @@ class PatternBenchmark {
     }
   }
   /**
-   * This method initializes the PatternBenchmark class by running the benchmark with and without newton3 applied and
-   * storing the results.
+   * This method gets an optimal vectorization pattern from the pattern benchmark results for a buffer-size-pair also
+   * depending on the newton3 optimization. If at least one buffer has 0 particles it should default to p1xVec, as in
+   * this case there the optimal vectorization pattern doesn't exist as there are no pairwise force calculations between
+   * the particles in the two buffers. As we want a standardized behavior in this edge case, we always default to
+   * p1xVec.
    * @param firstBufferSize number of particles in the first buffer
    * @param secondBufferSize number of particles in the second buffer
    * @param newton3 whether newton3 optimization is applied.
