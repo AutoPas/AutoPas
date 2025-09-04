@@ -71,4 +71,4 @@ class ComputationLoadOption : public autopas::Option<ComputationLoadOption> {
    * Stores the value of the option.
    */
   Value _value{Value(-1)};
-}; 
+};
