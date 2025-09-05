@@ -172,6 +172,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  _autoPasContainer->setLearningRate(_configuration.learningRate.value);
+  _autoPasContainer->setDiscountFactor(_configuration.discountFactor.value);
+  _autoPasContainer->setExplorationSamples(_configuration.explorationSamples.value);
+  _autoPasContainer->setDoReinforcementUpdates(_configuration.doReinforcementUpdates.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
