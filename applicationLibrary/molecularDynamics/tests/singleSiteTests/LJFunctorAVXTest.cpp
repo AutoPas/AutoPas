@@ -129,6 +129,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
     }
+    particle.setTypeId(particle.getID() % 5);
   }
 
   // copy cells

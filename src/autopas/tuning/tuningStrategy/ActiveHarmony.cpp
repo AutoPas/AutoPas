@@ -18,8 +18,9 @@ ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
                              const std::set<TraversalOption> &allowedTraversalOptions,
                              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                             const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer,
-                             AutoPas_MPI_Comm comm)
+                             const std::set<Newton3Option> &allowedNewton3Options,
+                             const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
+                             bool mpiDivideAndConquer, AutoPas_MPI_Comm comm)
     : _interactionType(interactionType),
       _allowedContainerOptions(allowedContainerOptions),
       _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
@@ -27,6 +28,7 @@ ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
       _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
       _allowedDataLayoutOptions(allowedDataLayoutOptions),
       _allowedNewton3Options(allowedNewton3Options),
+      _allowedVecPatterns(allowedVecPatternOptions),
       _mpiDivideAndConquer(mpiDivideAndConquer),
       _comm(comm),
       _nonLocalServer(getenv("HARMONY_HOST") != nullptr and mpiDivideAndConquer) {
@@ -93,6 +95,7 @@ Configuration ActiveHarmony::fetchConfiguration() {
   const auto applicableLoadEstimators =
       loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, _allowedLoadEstimatorOptions);
   const auto loadEstimatorOption = fetchTuningParameter(loadEstimatorOptionName, applicableLoadEstimators);
+  const auto vecPatternOption = fetchTuningParameter(vecPatternOptionName, _allowedVecPatterns);
 
   double cellSizeFactor = 0;
   if (_allowedCellSizeFactors->isFinite()) {
@@ -105,8 +108,8 @@ Configuration ActiveHarmony::fetchConfiguration() {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
 
-  return {containerOption,  cellSizeFactor, traversalOption, loadEstimatorOption,
-          dataLayoutOption, newton3Option,  _interactionType};
+  return {containerOption,  cellSizeFactor, traversalOption,  loadEstimatorOption,
+          dataLayoutOption, newton3Option,  _interactionType, vecPatternOption};
 #else
   return {};
 #endif
@@ -320,6 +323,7 @@ void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
   configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
   configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
   configureTuningParameter(hdef, loadEstimatorOptionName, _allowedLoadEstimatorOptions);
+  configureTuningParameter(hdef, vecPatternOptionName, _allowedVecPatterns);
 
   // use ActiveHarmony's implementation of the Nelder-Mead method
   ah_def_strategy(hdef, "pro.so");

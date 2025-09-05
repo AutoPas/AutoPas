@@ -1877,6 +1877,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
+  functor.setVecPattern(configuration.vecPattern);
 
 #ifdef AUTOPAS_LOG_LIVEINFO
   // if live info has not been gathered yet, gather it now and log it
