@@ -26,38 +26,7 @@ class PatternBenchmark {
    */
   static constexpr size_t _benchmarkSize = 30;
 
-  /**
-   * Helper method to run benchmark for optimal patterns selection
-   *
-   * @tparam Functor_T Functor type for benchmark.
-   * @tparam Cell_T Cell type for benchmark.
-   * @param functor functor that is used in benchmark.
-   * @param cells list of cells included in benchmark
-   */
-  template <class Functor_T, class Cell_T>
-  void csvOutput(Functor_T &functor, std::pair<Cell_T, Cell_T> &cells) {
-    std::ofstream csvFile("particles.csv");
-    if (not csvFile.is_open()) {
-      autopas::utils::ExceptionHandler::exception("FILE NOT OPEN!");
-      return;
-    }
-    csvFile << "CellId,ParticleId,rX,rY,rZ,fX,fY,fZ\n";
 
-    for (size_t cellId = 0; cellId < 2; ++cellId) {
-      functor.SoAExtractor((cellId == 0 ? cells.first : cells.second),
-                           (cellId == 0 ? cells.first : cells.second)._particleSoABuffer, 0);
-      for (size_t particleId = 0;
-           particleId <
-           (cellId == 0 ? cells.first : cells.second).getNumberOfParticles(autopas::IteratorBehavior::owned);
-           ++particleId) {
-        const auto &p = (cellId == 0 ? cells.first : cells.second)[particleId];
-        using autopas::utils::ArrayUtils::to_string;
-        csvFile << cellId << "," << p.getID() << "," << to_string(p.getR(), ",", {"", ""}) << ","
-                << to_string(p.getF(), ",", {"", ""}) << "\n";
-      }
-    }
-    csvFile.close();
-  }
   /**
    * Helper method to initialize particle cells used in pattern benchmark by adding particles to each cell to match
    * given numbers of particles and hit rates.
@@ -172,8 +141,7 @@ class PatternBenchmark {
         // actual benchmark
         applyFunctorPair(functor, cells, timer, newton3);
       }
-      // print particles to CSV for checking and prevent compiler from optimizing everything away.
-      csvOutput(functor, cells);
+
       times.push_back(timer["Functor"].getTotalTime());
       for (auto &[_, t] : timer) {
         t.reset();
