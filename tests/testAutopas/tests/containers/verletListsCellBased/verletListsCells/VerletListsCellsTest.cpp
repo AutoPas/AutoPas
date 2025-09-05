@@ -9,6 +9,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopasTools/generators/UniformGenerator.h"
@@ -25,10 +26,9 @@ void applyFunctor(MockPairwiseFunctor<ParticleFP64> &functor, const double cellS
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  unsigned int rebuildFrequency = 20;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<ParticleFP64, autopas::VLCAllCellsNeighborList<ParticleFP64>> verletLists(
-      min, max, cutoff, skin, rebuildFrequency, cellSizefactor, loadEstimator, buildType);
+      min, max, cutoff, skin, cellSizefactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
   ParticleFP64 p(r, {0., 0., 0.}, 0);
@@ -74,9 +74,9 @@ void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers::VLCB
   }
 
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
-      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, cellSizeFactor, loadEstimator, buildType);
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists2(
-      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),

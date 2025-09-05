@@ -75,7 +75,7 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
 
  protected:
   template <class ContainerType>
-  static void executeShift(ContainerType &containerPtr, double magnitude, size_t numTotalParticles);
+  static void executeShift(ContainerType &container, double magnitude, size_t numTotalParticles);
 
   template <typename ContainerT>
   static void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles, unsigned seed,
