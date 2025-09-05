@@ -196,4 +196,44 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 #endif
 }
 
+// Inertialess position update: applies force to position (overdamped update)
+void updatePositionsInertialess(autopas::AutoPas<ParticleType> &autoPasContainer, const double &deltaT) {
+  using namespace autopas::utils::ArrayMath::literals;
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    auto f = iter->getF();
+    auto displacement = f * deltaT;
+    iter->addR(displacement);
+    // Reset forces after update
+    iter->setF({0., 0., 0.});
+  }
+}
+
+// Inertialess quaternion update: applies angular velocity to quaternion, then sets angular velocity to zero
+void updateQuaternionsInertialess(autopas::AutoPas<ParticleType> &autoPasContainer, const double &deltaT) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::L2Norm;
+  using autopas::utils::quaternion::qMul;
+
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    auto q = iter->getQuaternion();
+    auto torque = iter->getTorque();
+
+    // Convert torque directly to angular velocity (inertialess)
+    std::array<double, 4> omega_quat = {0.0, torque[0], torque[1], torque[2]};
+
+    // Update quaternion: dq = 0.5 * q * omega_quat * deltaT
+    auto dq = qMul(q, omega_quat) * (0.5 * deltaT);
+
+    for (int i = 0; i < 4; ++i) q[i] += dq[i];
+    // Normalize quaternion
+    double norm = L2Norm(q);
+    for (int i = 0; i < 4; ++i) q[i] /= norm;
+    iter->setQuaternion(q);
+    // Reset torque and angular velocity (inertialess)
+    iter->setTorque({0., 0., 0.});
+  }
+}
+
 }  // namespace TimeDiscretization
