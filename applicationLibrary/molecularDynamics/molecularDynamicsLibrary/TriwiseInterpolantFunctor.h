@@ -146,15 +146,13 @@ private:
       const size_t nY = _numNodes.at(1).at(intervalY);
       const size_t nZ = _numNodes.at(2).at(intervalZ);
 
-      const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs = _coeffsVec(intervalX, intervalY, intervalZ);
-
       /* Flatten z dimension */
       const size_t newNx = nX + (8 - nX % 8)%8;
       const size_t newNz = nZ + (8 - nZ % 8)%8;
       Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> xzCoeffs (newNx, newNz);
       for (size_t i = 0; i < nX; ++i) {
         for (size_t j = 0; j < nY; j+=8) {
-          const __m512d values = evalChebFast1DTensor(y, nY, coeffs, i, j);
+          const __m512d values = evalChebFast1DTensor(y, nY, _coeffsVec(intervalX, intervalY, intervalZ), i, j);
           _mm512_store_pd(&xzCoeffs(i, j), values);
         } // nY / 8 * (7+(nZ-1)*4)
       } // nX * nY/8 * (7+(nZ-1)*4)
@@ -331,14 +329,12 @@ private:
       size_t nY = _numNodes.at(1).at(intervalY);
       size_t nZ = _numNodes.at(2).at(intervalZ);
 
-      const auto& coeffs = _coeffs(intervalX, intervalY, intervalZ);
-
       /* Flatten z dimension */
       Eigen::MatrixXd xyCoeffs (nX, nY);
       for (size_t i = 0; i < nX; ++i) {
         for (size_t j = 0; j < nY; ++j) {
           
-          double value = evalChebFast1D(z, nZ, coeffs, i, j); // 7 + 4 * (nZ-1)
+          double value = evalChebFast1D(z, nZ, _coeffs(intervalX, intervalY, intervalZ), i, j); // 7 + 4 * (nZ-1)
           xyCoeffs(i, j) = value;
         } // nY * (7+4*(nZ-1))
       } // nx * nY * (7+4*(nZ-1))
