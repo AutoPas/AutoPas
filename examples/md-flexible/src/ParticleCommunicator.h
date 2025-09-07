@@ -41,23 +41,6 @@ class ParticleCommunicator {
   void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
 
   /**
-   * Optimized method to send and receive particles to/from left and right neighbors simultaneously.
-   * Uses non-blocking MPI calls with unique tags to eliminate MPI_Probe overhead. In the future,
-   * we could break this up into two functions, one for sending and one for receiving to make communication
-   * intertwined with the computation.
-   * @param particlesToLeft The particles to send to the left neighbor.
-   * @param particlesToRight The particles to send to the right neighbor.
-   * @param receivedParticles The container where received particles will be stored.
-   * @param leftNeighbor The rank of the left neighbor.
-   * @param rightNeighbor The rank of the right neighbor.
-   * @param dimension The dimension index (0,1,2) for unique tagging.
-   */
-  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
-                                           const std::vector<ParticleType> &particlesToRight,
-                                           std::vector<ParticleType> &receivedParticles, int leftNeighbor,
-                                           int rightNeighbor, int dimension);
-
-  /**
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();
@@ -77,14 +60,6 @@ class ParticleCommunicator {
    * A temporary buffer for data which is sent by MPI_Send.
    */
   std::vector<std::vector<char>> _sendBuffers;
-
-  /**
-   * Reusable send buffers for left/right communication to avoid repeated allocations.
-   */
-  std::vector<char> _reusableLeftSendBuffer;
-  std::vector<char> _reusableRightSendBuffer;
-  std::vector<char> _reusableLeftRecvBuffer;
-  std::vector<char> _reusableRightRecvBuffer;
 
   /**
    * Sends data to a specific neighbor of this domain.

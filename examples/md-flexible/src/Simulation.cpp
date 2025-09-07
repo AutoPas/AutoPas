@@ -40,7 +40,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
-#include "domainDecomposition/ComputationLoadOption.h"
+#include "options/ComputationLoadOption.h"
 
 namespace {
 /**
@@ -234,18 +234,7 @@ void Simulation::run() {
       _timers.computationalLoad.stop();
 
       // Calculate computation load based on selected option
-      auto totalTime = calculateComputationLoad();
-      double computationalLoad;
-      if (_configuration.computationLoad.value == ComputationLoadOption::particleCount) {
-        // For particle count, use the raw count directly
-        computationalLoad = totalTime;
-      } else {
-        // For time-based options, calculate delta from previous iteration
-        computationalLoad = totalTime - _previousTimerValue;
-        _previousTimerValue = totalTime;
-      }
-
-      std::cout << "Computational load: " << computationalLoad << std::endl;
+      const auto computationalLoad = calculateComputationLoad();
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
@@ -526,24 +515,41 @@ void Simulation::updateThermostat() {
   }
 }
 
-double Simulation::calculateComputationLoad() const {
+double Simulation::calculateComputationLoad() {
+  double totalTime;
   switch (_configuration.computationLoad.value) {
     case ComputationLoadOption::completeCycle:
-      return static_cast<double>(
+      totalTime = static_cast<double>(
           _timers.computationalLoad.getTotalTime() + _timers.haloParticleExchange.getTotalTime() +
           _timers.migratingParticleExchange.getTotalTime() + _timers.reflectParticlesAtBoundaries.getTotalTime());
+      break;
     case ComputationLoadOption::forceUpdate:
-      return static_cast<double>(_timers.forceUpdateTotal.getTotalTime());
+      totalTime = static_cast<double>(_timers.forceUpdateTotal.getTotalTime());
+      break;
     case ComputationLoadOption::MPICommunication:
-      return static_cast<double>(_timers.haloParticleExchange.getTotalTime() +
-                                 _timers.migratingParticleExchange.getTotalTime());
+      totalTime = static_cast<double>(_timers.haloParticleExchange.getTotalTime() +
+                                      _timers.migratingParticleExchange.getTotalTime());
+      break;
     case ComputationLoadOption::particleCount:
-      // === KEY CHANGE: Use particle count instead of computation time ===
+      // For particle count, use the raw count directly
       return static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));
     default:
       // Default to complete cycle if unknown option
-      return static_cast<double>(_timers.computationalLoad.getTotalTime());
+      std::cout << "WARNING: Unknown computation load option, defaulting to complete cycle." << std::endl;
+      totalTime = static_cast<double>(_timers.computationalLoad.getTotalTime());
+      break;
   }
+
+  // For time-based options, calculate delta from previous iteration
+  double computationalLoad = totalTime - _previousTimerValue;
+  _previousTimerValue = totalTime;
+
+  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    std::cout << "Computational load on rank " << _domainDecomposition->getDomainIndex() << ": " << computationalLoad
+              << std::endl;
+  }
+
+  return computationalLoad;
 }
 
 long Simulation::accumulateTime(const long &time) {
