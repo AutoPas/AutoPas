@@ -32,15 +32,18 @@ class TuningTriggerInterface {
    * This is used to look ahead if a new tuning phase might start in the next iteration, such that containers may be
    * adapted.
    *
+   * @param currentIteration The current iteration.
+   * @param tuningInterval The tuningInterval in the currentIteration.
    * @return Boolean value signalling whether shouldStartTuningPhase() returns true in the next iteration.
    */
-  bool shouldStartTuningPhaseNextIteration() const { return _wasTriggered; };
+  virtual bool shouldStartTuningPhaseNextIteration(size_t currentIteration, size_t tuningInterval) const { return _wasTriggered; };
 
   /**
    * Checks whether the trigger on which this call is performed requires information about the runtime of individual
    * iterations.
    *
    * This is implemented to facilitate future triggers that are based on other metrics, e.g. liveInfo statistics.
+   * Right now, this method is never called.
    * 
    * @return Boolean value signalling whether the trigger needs runtime samples.
    */

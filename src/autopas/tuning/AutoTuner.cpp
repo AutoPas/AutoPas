@@ -311,7 +311,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 }
 
 void AutoTuner::passIterationRuntime(size_t sample) {
-  if (!_isTuning && _tuningTrigger->needsRuntimeSample()) _tuningTrigger->passRuntimeSample(sample);
+  if (!_isTuning) _tuningTrigger->passRuntimeSample(sample);
 }
 
 void AutoTuner::bumpIterationCounters(bool needToWait) {
@@ -341,7 +341,7 @@ bool AutoTuner::willRebuildNeighborLists() const {
   // _iteration + 1 since we want to look ahead to the next iteration
 
 #ifdef AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
-  if (_tuningTrigger->shouldStartTuningPhaseNextIteration()) return true;
+  if (_tuningTrigger->shouldStartTuningPhaseNextIteration(_iteration, _tuningInterval)) return true;
 #else
   if ((_iteration + 1) % _tuningInterval == 0) return true;
 #endif

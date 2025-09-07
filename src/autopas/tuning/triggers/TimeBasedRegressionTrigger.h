@@ -40,14 +40,14 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
   TimeBasedRegressionTrigger(float triggerFactor, unsigned nSamples)
       : _triggerFactor(triggerFactor), _nSamples(nSamples) {
     if (triggerFactor <= 0) {
-      AutoPasLog(WARN, "triggerFactor for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 1.25.",
+      AutoPasLog(WARN, "triggerFactor for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 1.5.\n",
                  triggerFactor);
-      _triggerFactor = 1.25;
+      _triggerFactor = 1.5;
     }
     if (_nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 1000.",
+      AutoPasLog(WARN, "nSamples for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 500.\n",
                  _nSamples);
-      _nSamples = 1000;
+      _nSamples = 500;
     }
 
     // The vector also contains the current iteration, therefore its length is _nSamples +1.

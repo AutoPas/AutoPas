@@ -24,9 +24,9 @@ class TimeBasedSimpleTrigger : public TuningTriggerInterface {
    */
   TimeBasedSimpleTrigger(float triggerFactor) : _triggerFactor(triggerFactor) {
     if (triggerFactor < 0) {
-      AutoPasLog(WARN, "triggerFactor for TimeBasedSimpleTrigger is {}, but has to be >= 0. Defaulted to 1.",
+      AutoPasLog(WARN, "triggerFactor for TimeBasedSimpleTrigger is {}, but has to be >= 0. Defaulted to 1.5.\n",
                  triggerFactor);
-      _triggerFactor = 1.0;
+      _triggerFactor = 1.5;
     }
   };
 

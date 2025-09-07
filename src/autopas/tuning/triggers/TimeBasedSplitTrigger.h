@@ -31,13 +31,13 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
    */
   TimeBasedSplitTrigger(float triggerFactor, unsigned nSamples) : _triggerFactor(triggerFactor) {
     if (triggerFactor < 0) {
-      AutoPasLog(WARN, "triggerFactor for TimeBasedSplitTrigger is {}, but has to be >= 0. Defaulted to 1.25.",
+      AutoPasLog(WARN, "triggerFactor for TimeBasedSplitTrigger is {}, but has to be >= 0. Defaulted to 1.5.\n",
                  triggerFactor);
-      _triggerFactor = 1.25;
+      _triggerFactor = 1.5;
     }
     if (nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedSplitTrigger is {}, but has to be > 0. Defaulted to 500.", nSamples);
-      nSamples = 500;
+      AutoPasLog(WARN, "nSamples for TimeBasedSplitTrigger is {}, but has to be > 0. Defaulted to 1000.\n", nSamples);
+      nSamples = 1000;
     }
 
     _intervalLengthA = (nSamples + 1) / 2;

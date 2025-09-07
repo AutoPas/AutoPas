@@ -22,10 +22,12 @@ class StaticSimpleTrigger : public TuningTriggerInterface {
   StaticSimpleTrigger() = default;
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
-    bool oldTriggerState = _wasTriggered;
-    _wasTriggered = (currentIteration % tuningInterval == 0);
-    return oldTriggerState;
+    return (currentIteration % tuningInterval) == 0;
   }
+
+  inline bool shouldStartTuningPhaseNextIteration(size_t currentIteration, size_t tuningInterval) const override {
+    return ((currentIteration + 1) % tuningInterval) == 0;
+  };
 
   inline bool needsRuntimeSample() const override { return false; }
   void passRuntimeSample(unsigned long sample) override {}

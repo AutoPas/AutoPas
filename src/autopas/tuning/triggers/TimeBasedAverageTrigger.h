@@ -27,15 +27,15 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
    */
   TimeBasedAverageTrigger(float triggerFactor, unsigned nSamples) : _triggerFactor(triggerFactor), _nSamples(nSamples) {
     if (triggerFactor < 0) {
-      AutoPasLog(WARN, "triggerFactor for TimeBasedAverageTrigger is {}, but has to be >= 0. Defaulted to 1.25.",
+      AutoPasLog(WARN, "triggerFactor for TimeBasedAverageTrigger is {}, but has to be >= 0. Defaulted to 1.5.\n",
                  triggerFactor);
-      _triggerFactor = 1.25;
+      _triggerFactor = 1.5;
     }
     if (_nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedAverageTrigger is {}, but has to be > 0. Defaulted to 500.", _nSamples);
+      AutoPasLog(WARN, "nSamples for TimeBasedAverageTrigger is {}, but has to be > 0. Defaulted to 500.\n", _nSamples);
       _nSamples = 500;
     }
-
+    
     _runtimeSamples.resize(_nSamples);
     _headElement = 0;
     _sampleSum = 0;
@@ -51,6 +51,7 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
 
     unsigned long average = _sampleSum / _nSamples;
     _wasTriggered = (_currentIterationRuntime >= (_triggerFactor * average));
+
     return oldTriggerState;
   }
 
