@@ -64,7 +64,7 @@ private:
         }
 
         // initialize vectors
-        _coeffs = Eigen::Tensor<std::vector<std::vector<std::vector<double>>>, 3, Eigen::RowMajor>
+        _coeffs = Eigen::Tensor<Eigen::Tensor<double, 3, Eigen::RowMajor>, 3, Eigen::RowMajor>
           (_numNodes.at(0).size(), _numNodes.at(1).size(), _numNodes.at(2).size());
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
@@ -279,18 +279,48 @@ private:
     }
 #endif
 
-    inline double evalChebFast1D(double input, int n, const std::vector<double>& coeffs) {
+    inline double evalChebFast1D(double input, int n, const Eigen::Tensor<double, 3, Eigen::RowMajor>& coeffs, int i, int j) {
       // see PairwiseInterpolantFunctor.h for reference
       double b_n = 0.;
       double b_n1 = 0.;
       double b_n2 = 0.;
       for (int k = n - 1; k > 0; --k) {
-        b_n = coeffs.at(k) + 2. * input * b_n1 - b_n2; // 4
+        b_n = coeffs(i, j, k) + 2. * input * b_n1 - b_n2; // 4
         b_n2 = b_n1;
         b_n1 = b_n;
       } // (n-1) * 4
 
-      b_n = 2. * coeffs.at(0) + 2. * input * b_n1 - b_n2; // 5
+      b_n = 2. * coeffs(i, j, 0) + 2. * input * b_n1 - b_n2; // 5
+      return (b_n - b_n2) / 2.; // 2
+    } // 7 + 4 * (n-1)
+
+    inline double evalChebFast1D(double input, int n, const Eigen::MatrixXd& coeffs, int i) {
+      // see PairwiseInterpolantFunctor.h for reference
+      double b_n = 0.;
+      double b_n1 = 0.;
+      double b_n2 = 0.;
+      for (int k = n - 1; k > 0; --k) {
+        b_n = coeffs(i, k) + 2. * input * b_n1 - b_n2; // 4
+        b_n2 = b_n1;
+        b_n1 = b_n;
+      } // (n-1) * 4
+
+      b_n = 2. * coeffs(i, 0) + 2. * input * b_n1 - b_n2; // 5
+      return (b_n - b_n2) / 2.; // 2
+    } // 7 + 4 * (n-1)
+
+    inline double evalChebFast1D(double input, int n, const Eigen::VectorXd& coeffs) {
+      // see PairwiseInterpolantFunctor.h for reference
+      double b_n = 0.;
+      double b_n1 = 0.;
+      double b_n2 = 0.;
+      for (int k = n - 1; k > 0; --k) {
+        b_n = coeffs(k) + 2. * input * b_n1 - b_n2; // 4
+        b_n2 = b_n1;
+        b_n1 = b_n;
+      } // (n-1) * 4
+
+      b_n = 2. * coeffs(0) + 2. * input * b_n1 - b_n2; // 5
       return (b_n - b_n2) / 2.; // 2
     } // 7 + 4 * (n-1)
 
@@ -301,27 +331,22 @@ private:
       size_t nY = _numNodes.at(1).at(intervalY);
       size_t nZ = _numNodes.at(2).at(intervalZ);
 
-      auto coeffs = _coeffs(intervalX, intervalY, intervalZ);
+      const auto& coeffs = _coeffs(intervalX, intervalY, intervalZ);
 
       /* Flatten z dimension */
-      auto xyCoeffs = std::vector<std::vector<double>> {};
-      xyCoeffs.reserve(nX);
+      Eigen::MatrixXd xyCoeffs (nX, nY);
       for (size_t i = 0; i < nX; ++i) {
-        std::vector<double> yCoeffs {};
-        yCoeffs.reserve(nY);
         for (size_t j = 0; j < nY; ++j) {
           
-          double value = evalChebFast1D(z, nZ, coeffs.at(i).at(j)); // 7 + 4 * (nZ-1)
-          yCoeffs.push_back(value);
+          double value = evalChebFast1D(z, nZ, coeffs, i, j); // 7 + 4 * (nZ-1)
+          xyCoeffs(i, j) = value;
         } // nY * (7+4*(nZ-1))
-        xyCoeffs.push_back(yCoeffs);
       } // nx * nY * (7+4*(nZ-1))
 
       /* Flatten y dimension */
-      std::vector<double> xCoeffs {};
-      xCoeffs.reserve(nX);
+      Eigen::VectorXd xCoeffs (nX);
       for (size_t i = 0; i < nX; ++i) {
-        xCoeffs.push_back(evalChebFast1D(y, nY, xyCoeffs.at(i))); // (7+4*(nY-1))
+        xCoeffs(i) = evalChebFast1D(y, nY, xyCoeffs, i); // (7+4*(nY-1))
       } // nx * (7+4*(ny-1))
 
       /* Flatten x dimension */
@@ -385,10 +410,6 @@ private:
                 FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_ESTIMATE);
             fftw_execute(plan_test);
             fftw_destroy_plan(plan_test);
-            
-
-            std::vector<std::vector<std::vector<double>>> &coeffs = _coeffs(intervalX, intervalY, intervalZ);
-            coeffs = std::vector<std::vector<std::vector<double>>>(nX);
 
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
             // Extend Coefficients Tensor such that it is aligned
@@ -401,15 +422,13 @@ private:
 
             Eigen::Tensor<double, 3, Eigen::RowMajor> &coe = _coeffsVec2(intervalX, intervalY, intervalZ);
             coe = Eigen::Tensor<double, 3, Eigen::RowMajor>(newNx, newNz, newNy);
-            #endif
+#endif
+            Eigen::Tensor<double, 3, Eigen::RowMajor> &coeffs = _coeffs(intervalX, intervalY, intervalZ);
+            coeffs = Eigen::Tensor<double, 3, Eigen::RowMajor>(nX, nY, nZ);
 
             /* Scale the coefficients according to the Chebyshev interpolation */
               for (int i = 0; i < nX; ++i) {
-                std::vector<std::vector<double>> coeffsYZ {};
-                coeffsYZ.reserve(nY);
                 for (int j = 0; j < nY; ++j) {
-                  std::vector<double> coeffsZ {};
-                  coeffsZ.reserve(nZ);
                   for (int k = 0; k < nZ; ++k) {                    
                     if (i == 0) {
                       forcesXYZ[i][j][k] *= 0.5;
@@ -421,15 +440,13 @@ private:
                       forcesXYZ[i][j][k] *= 0.5;
                     }
                     forcesXYZ[i][j][k] *= (1./nX * 1./nY * 1./ nZ);
-                    coeffsZ.push_back(forcesXYZ[i][j][k]);
+                    coeffs(i, j, k) = forcesXYZ[i][j][k];
 #if defined(MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
                     coeffsVec(i, j, k) = forcesXYZ[i][j][k];
                     coe(i, j, k) = forcesXYZ[i][j][k];
 #endif
                   }
-                  coeffsYZ.emplace_back(coeffsZ);
                 }
-                coeffs.at(i) = coeffsYZ;
               }
 
             aZ = bZ;
@@ -841,9 +858,9 @@ public:
        const std::array<std::vector<double>, 3> _intervalSplits {};
 
        Eigen::Tensor<
-          std::vector<std::vector<std::vector<double>>>,
+          Eigen::Tensor<double, 3, Eigen::RowMajor>,
           3,
-          Eigen::RowMajor> _coeffs  {};
+          Eigen::RowMajor> _coeffsVec {};
 
        Eigen::Tensor<
           Eigen::Tensor<double, 3, Eigen::RowMajor>,
@@ -853,7 +870,7 @@ public:
        Eigen::Tensor<
           Eigen::Tensor<double, 3, Eigen::RowMajor>,
           3,
-          Eigen::RowMajor> _coeffsVec  {};
+          Eigen::RowMajor> _coeffs  {};
 
        const double PI = 2 * std::acos(0.);
 
