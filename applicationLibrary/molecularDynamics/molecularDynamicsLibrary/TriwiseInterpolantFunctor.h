@@ -566,8 +566,8 @@ public:
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
         const double fac_ij = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
         const double fac_ki = evalChebFast3DVector(z, x, y, intervalZ, intervalX, intervalY);
-        const double fac_ij_test = chebVector3D(x, y, z, intervalX, intervalY, intervalZ);
-        const double fac_ki_test = chebVector3D(z, x, y, intervalZ, intervalX, intervalY);
+        //const double fac_ij_test = chebVector3D(x, y, z, intervalX, intervalY, intervalZ);
+        //const double fac_ki_test = chebVector3D(z, x, y, intervalZ, intervalX, intervalY);
 #else
         const double fac_ij = evalChebFast3D(x, y, z, intervalX, intervalY, intervalZ);
         const double fac_ki = evalChebFast3D(z, x, y, intervalZ, intervalX, intervalY);
