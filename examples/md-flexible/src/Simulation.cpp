@@ -52,7 +52,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -282,6 +282,23 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
+#ifdef MD_FLEXIBLE_FUNCTOR_PCC
+    std::vector<ParticleType> newParticles;
+    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      particle->grow(_configuration.deltaT.value, 0.005, 0.05);
+      particle->setStress(0);
+
+      auto newParticle = particle->divide();
+
+      if (newParticle) {
+        newParticles.push_back(newParticle.value());
+      }
+    }
+    for (auto &particle : newParticles) {
+      _autoPasContainer->addParticle(particle);
+    }
+#endif
+
     updateInteractionForces();
 
     if (_configuration.pauseSimulationDuringTuning.value) {
@@ -438,17 +455,25 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+  TimeDiscretization::updatePositionsInertialess(*_autoPasContainer, _configuration.deltaT.value);
+#else
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+#endif
   _timers.positionUpdate.stop();
 }
 
 void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.start();
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+  TimeDiscretization::updateQuaternionsInertialess(*_autoPasContainer, _configuration.deltaT.value);
+#else
   TimeDiscretization::calculateQuaternionsAndResetTorques(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value);
+#endif
   _timers.quaternionUpdate.stop();
 }
 
@@ -492,20 +517,23 @@ void Simulation::updateVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
   if (deltaT != 0) {
+#ifndef MD_FLEXIBLE_FUNCTOR_PCC
     _timers.velocityUpdate.start();
     TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             deltaT);
     _timers.velocityUpdate.stop();
+#endif
   }
 }
 
 void Simulation::updateAngularVelocities() {
   const double deltaT = _configuration.deltaT.value;
-
+#ifndef MD_FLEXIBLE_FUNCTOR_PCC
   _timers.angularVelocityUpdate.start();
   TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                  deltaT);
   _timers.angularVelocityUpdate.stop();
+#endif
 }
 
 void Simulation::updateThermostat() {
@@ -823,6 +851,11 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+#if MD_FLEXIBLE_FUNCTOR_PCC
+    case MDFlexConfig::FunctorOption::cellCollective: {
+      return f(pccLib::SpherocylinderCellFunctor{});
+    }
+#endif
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));

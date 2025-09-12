@@ -80,4 +80,29 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
+/**
+ * Update the position for every particle using inertialess dynamics.
+ *
+ * For overdamped dynamics (no inertia), velocity is proportional to force:
+ *    x_{n+1} = x_n + F * delta_t
+ * After update, store current force as old force and reset force to zero.
+ *
+ * @param autoPasContainer The container for which to update the positions.
+ * @param deltaT The time step width.
+ */
+void updatePositionsInertialess(autopas::AutoPas<ParticleType> &autoPasContainer, const double &deltaT);
+
+/**
+ * Update the quaternion for every particle using inertialess dynamics.
+ *
+ * For inertialess dynamics, we:
+ * 1. Apply current angular velocity to update orientation:
+ *    q_{n+1} = q_n + 0.5 * q_n * omega_n * delta_t
+ * 2. Set angular velocity to zero (no inertia)
+ *
+ * @param autoPasContainer The container for which to update the quaternions.
+ * @param deltaT The time step width.
+ */
+void updateQuaternionsInertialess(autopas::AutoPas<ParticleType> &autoPasContainer, const double &deltaT);
+
 }  // namespace TimeDiscretization

@@ -50,6 +50,21 @@ target_link_libraries(SPHLibrary PUBLIC autopas)
 
 target_include_directories(SPHLibrary PUBLIC ./sph)
 
+# --- proliferating cell collectives ---
+
+file(
+        GLOB_RECURSE
+        LIB_PCC_SRC
+        "proliferatingCellCollectives/proliferatingCellCollectivesLibrary/*.h"
+        "proliferatingCellCollectives/proliferatingCellCollectivesLibrary/*.cpp"
+)
+
+add_library(proliferatingCellCollectivesLibrary STATIC ${LIB_PCC_SRC})
+
+target_link_libraries(proliferatingCellCollectivesLibrary PUBLIC autopas molecularDynamicsLibrary)
+
+target_include_directories(proliferatingCellCollectivesLibrary PUBLIC ./molecularDynamics/molecularDynamicsLibrary ./proliferatingCellCollectives)
+
 # --------------------------------tests---------------------------------------
 
 # --- molecular dynamics ---
