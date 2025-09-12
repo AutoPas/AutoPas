@@ -263,6 +263,7 @@ class Functor {
     }
   }
 
+ protected:
   double _cutoff;
 };
 

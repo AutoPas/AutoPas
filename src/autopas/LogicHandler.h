@@ -59,7 +59,8 @@ class LogicHandler {
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
-        _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
+        _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff,
+                           logicHandlerInfo.cutoffs),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
@@ -1160,13 +1161,24 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+  double maxDistanceSquare = 0;
+  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild) reduction(max : maxDistanceSquare))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+    maxDistanceSquare = std::max(maxDistanceSquare, distanceSquare);
   }
+  if (_neighborListInvalidDoDynamicRebuild) {
+    // will be rebuilt, set max displacement to 0
+    getContainer().setMaxDisplacement(0);
+  } else {
+    // set maxDisplacement to the maximum over all particles
+    // trim if displacement is larger than skin/2 (can cause problems in some tests otherwise)
+    getContainer().setMaxDisplacement(std::sqrt(maxDistanceSquare) + 1e-15);
+  }
+
 #endif
 }
 
@@ -1344,7 +1356,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // in three helper functions.
 
   // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   autopas::utils::Timer timerBufferContainer;
   autopas::utils::Timer timerPBufferPBuffer;
   autopas::utils::Timer timerPBufferHBuffer;
@@ -1397,6 +1409,15 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
     for (auto &buffer : particleBuffers) {
       f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
     }
+  }
+
+  size_t particleBufferSize = 0;
+  for (const auto &buffer : particleBuffers) {
+    particleBufferSize += buffer.size();
+  }
+  size_t haloParticleBufferSize = 0;
+  for (const auto &buffer : haloParticleBuffers) {
+    haloParticleBufferSize += buffer.size();
   }
 
   AutoPasLog(TRACE, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime());

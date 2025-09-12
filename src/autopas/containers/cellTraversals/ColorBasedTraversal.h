@@ -46,6 +46,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
         _dataLayoutConverter(functor, dataLayout) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
+      this->_haloRegionLength[d] = _overlap[d];
     }
   }
 
@@ -80,6 +81,12 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.storeDataLayout(cells[i]);
       }
+    }
+  }
+
+  void setHaloRegionLength(const double haloRegionLength) override {
+    for (unsigned int d = 0; d < 3; d++) {
+      _haloRegionLength[d] = std::ceil(haloRegionLength / _cellLength[d]);
     }
   }
 
@@ -119,6 +126,10 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    * overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   std::array<unsigned long, 3> _overlap;
+  /**
+   * Halo region length in each dimension.
+   */
+  std::array<unsigned long, 3> _haloRegionLength;
 
  private:
   /**

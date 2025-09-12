@@ -366,6 +366,14 @@ long AutoTuner::estimateRuntimeFromSamples() const {
           ? reducedValueBuilding
           : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
 
+  if (_rebuildFrequency == 1) {
+    long samples = _samplesRebuildingNeighborLists.size() + _samplesNotRebuildingNeighborLists.size();
+    // weighted avg
+    return (reducedValueBuilding * _samplesRebuildingNeighborLists.size() +
+            reducedValueNotBuilding * _samplesNotRebuildingNeighborLists.size()) /
+           samples;
+  }
+
   // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
 }

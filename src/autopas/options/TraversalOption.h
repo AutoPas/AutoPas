@@ -196,6 +196,19 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+    // HierarchicalGrid Traversals:
+    /**
+     * For each level, LCC08Traversal is used. For the cross-level interactions, for each level x only smaller levels
+     * are iterated (newton3 on only). The cells on level x are iterated with colors (dynamic color count based on ratio
+     * of cell lengths between level x and y) so that the cells on the lower level y
+     * that are considered for each cell on level x do not intersect.
+     * To reduce number of colors and increase memory efficiency, instead of only 1 upper
+     * level cell a block of cells is assigned to a thread at a time. The size of block is calculated dynamically
+     * by considering upper and lower cell lengths and number of threads. The number of blocks per color is at least
+     * num_threads * 4 or 8, depending on the option.
+     */
+    hgrid_block4,
+    hgrid_block8,
   };
 
   /**
@@ -331,6 +344,10 @@ class TraversalOption : public Option<TraversalOption> {
         // Octree Traversals:
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
+
+        // HierarchicalGrid Traversals:
+        {TraversalOption::hgrid_block4, "hgrid_block4"},
+        {TraversalOption::hgrid_block8, "hgrid_block8"},
     };
   };
 

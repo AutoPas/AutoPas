@@ -8,6 +8,7 @@
 
 #include "array"
 #include "string"
+#include "vector"
 
 namespace autopas {
 /**
@@ -39,5 +40,13 @@ class LogicHandlerInfo {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t sortingThreshold{8};
+  /**
+   * Cutoff radius for each level of a HierarchicalGrid
+   * If cutoffs is set, i.e. not empty, other containers will also use last value of cutoffs as cutoff.
+   * In that case normal cutoff value will be used as baseCutoff for HierarchicalGrid.
+   * And in md-flexible LJ-Functor will also be initialized in scaling-cutoff mode (dynamic cutoff between each pair of
+   * particles according to their sigma values)
+   */
+  std::vector<double> cutoffs{};
 };
 }  // namespace autopas

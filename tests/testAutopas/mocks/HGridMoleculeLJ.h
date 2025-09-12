@@ -1,38 +1,44 @@
 /**
- * @file MoleculeLJ.h
- *
- * @date 17 Jan 2018
- * @author tchipevn
+ * @file HGridMoleculeLJ.h
+ * @author atacann
+ * @date 07.12.2024
  */
 
 #pragma once
 
-#include <vector>
+#include <gmock/gmock-function-mocker.h>
 
-#include "ParticlePropertiesLibrary.h"
-#include "autopas/particles/ParticleDefinitions.h"
-#include "autopas/utils/ExceptionHandler.h"
+#include <random>
 
-namespace mdLib {
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 
-/**
- * Molecule class for the LJFunctor.
- */
-class MoleculeLJ : public autopas::ParticleBaseFP64 {
+class HGridMoleculeLJ : public mdLib::MoleculeLJ {
  public:
-  MoleculeLJ() = default;
+  HGridMoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
+                  unsigned long typeId = 0)
+      : mdLib::MoleculeLJ(pos, v, moleculeId, typeId) {
+    generateSize();
+  }
+  HGridMoleculeLJ() : mdLib::MoleculeLJ() { generateSize(); };
+  ~HGridMoleculeLJ() override = default;
 
-  /**
-   * Constructor of lennard jones molecule with initialization of typeID.
-   * @param pos Position of the molecule.
-   * @param v Velocity of the molecule.
-   * @param moleculeId Unique Id of the molecule.
-   * @param typeId TypeId of the molecule.
-   */
-  MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-             unsigned long typeId = 0);
+  // Explicitly define copy constructor and assignment operator
+  HGridMoleculeLJ(const HGridMoleculeLJ &other) : mdLib::MoleculeLJ(other) { _size = other._size; }
 
-  ~MoleculeLJ() override = default;
+  HGridMoleculeLJ &operator=(const HGridMoleculeLJ &other) {
+    if (this != &other) {
+      mdLib::MoleculeLJ::operator=(other);
+      _size = other._size;
+    }
+    return *this;
+  }
+
+  void generateSize() {
+    std::mt19937 gen(std::random_device{}());
+    const int n = 4;
+    std::uniform_int_distribution<int> dist(1, n);
+    _size = dist(gen) * 1.0 / n;
+  }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -56,6 +62,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     ownershipState
   };
 
+  double getSize() const override { return _size; }
+
   /**
    * The type for the SoA storage.
    *
@@ -64,7 +72,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+      typename autopas::utils::SoAType<HGridMoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
                                        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
@@ -167,75 +175,18 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   }
 
   /**
-   * Get the old force.
-   * @return
-   */
-  [[nodiscard]] const std::array<double, 3> &getOldF() const;
-
-  /**
-   * Set old force.
-   * @param oldForce
-   */
-  void setOldF(const std::array<double, 3> &oldForce);
-
-  /**
-   * Get TypeId.
-   * @return
-   */
-  [[nodiscard]] size_t getTypeId() const;
-
-  /**
-   * Set the type id of the Molecule.
-   * @param typeId
-   */
-  void setTypeId(size_t typeId);
-
-  [[nodiscard]] double getSize() const override;
-
-  /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  [[nodiscard]] std::string toString() const override;
-
-  /**
-   * Set the particle properties library.
-   * @param particlePropertiesLibrary Shared pointer to the particle properties library.
-   */
-  static void setParticlePropertiesLibrary(
-      const std::shared_ptr<ParticlePropertiesLibrary<> > &particlePropertiesLibrary) {
-    _particlePropertiesLibrary = particlePropertiesLibrary;
+  std::string toString() const override {
+    using autopas::utils::ArrayUtils::operator<<;
+    std::ostringstream text;
+    // clang-format off
+    text << MoleculeLJ::toString()
+        << "\nSize               : " << _size;
+    // clang-format on
+    return text.str();
   }
 
-  /**
-   * Set the cutoff multiplier.
-   * @param cutoffMultiplier The new cutoff multiplier value.
-   */
-  static void setCutoffMultiplier(double cutoffMultiplier) { _cutoffMultiplier = cutoffMultiplier; }
-
- protected:
-  /**
-   * Molecule type id. In single-site simulations, this is used as a siteId to look up site attributes in the particle
-   * properties library.
-   *
-   * In multi-site simulations, where a multi-site molecule class inheriting from this class is used, typeId is used as
-   * a molId to look up molecular attributes (including siteIds of the sites).
-   */
-  size_t _typeId = 0;
-
-  /**
-   * Old Force of the particle experiences as 3D vector.
-   */
-  std::array<double, 3> _oldF = {0., 0., 0.};
-
-  /**
-   * A static refernce to particlePropertiesLibrary so that sigma of particles can be used in getSize() function.
-   */
-  static std::shared_ptr<ParticlePropertiesLibrary<> > _particlePropertiesLibrary;
-  /**
-   * The multiplier the sigma values will be scaled by.
-   */
-  static double _cutoffMultiplier;
+  double _size;
 };
-
-}  // namespace mdLib

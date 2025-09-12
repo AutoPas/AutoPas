@@ -604,6 +604,23 @@ class AutoPas {
   }
 
   /**
+   * Get cutoffs for each level of Hierarchical Grid container
+   * @return cutoffs
+   */
+  [[nodiscard]] std::vector<double> getCutoffs() const { return _logicHandlerInfo.cutoffs; }
+
+  /**
+   * Set cutoffs for each level of Hierarchical Grid container
+   * @param cutoffs
+   */
+  void setCutoffs(const std::vector<double> cutoffs) {
+    if (std::any_of(cutoffs.begin(), cutoffs.end(), [](double cutoff) { return cutoff <= 0.0; })) {
+      utils::ExceptionHandler::exception("Error: Cutoff has to be positive {} <= 0.0!");
+    };
+    _logicHandlerInfo.cutoffs = cutoffs;
+  }
+
+  /**
    * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
