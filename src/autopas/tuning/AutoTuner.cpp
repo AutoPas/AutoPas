@@ -171,7 +171,13 @@ bool AutoTuner::tuneConfiguration() {
   return _isTuning;
 }
 
-const Configuration &AutoTuner::getCurrentConfig() const { return _configQueue.back(); }
+const Configuration &AutoTuner::getCurrentConfig() const {
+  if (_configQueue.empty()) {
+    utils::ExceptionHandler::exception(
+        "AutoTuner::getCurrentConfig(): Cannot get the current Configuration as the config queue is empty");
+  }
+  return _configQueue.back();
+}
 
 std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
