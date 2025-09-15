@@ -15,5 +15,6 @@
 #ifdef __ARM_FEATURE_SVE
 #include "LJFunctorSVE.h"
 #endif
+#include "AxilrodTellerFunctor.h"
 #include "MoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
