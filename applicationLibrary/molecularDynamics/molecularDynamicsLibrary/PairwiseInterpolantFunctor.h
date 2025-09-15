@@ -279,7 +279,7 @@ public:
     }
 
     if constexpr (calculateGlobals) {
-      double potentialEnergy = _kernel.calculatePairPotential(dr2);
+      double potentialEnergy = _kernel.calculatePairPotential(d);
       auto virial = dr * f;
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
