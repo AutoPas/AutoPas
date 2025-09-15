@@ -235,8 +235,8 @@ std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte
   return configurations;
 }
 
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedHomogeneity,
-                              double maxDensity, double MPITuningMaxDifferenceForBucket,
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedPDBinStdDevDensity,
+                              double smoothedPDBinMaxDensity, double MPITuningMaxDifferenceForBucket,
                               double MPITuningWeightForMaxDensity) {
   int rank{};
   AutoPas_MPI_Comm_rank(comm, &rank);
@@ -244,18 +244,18 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
   AutoPas_MPI_Comm_size(comm, &commSize);
 
   // If invalid values are passed, every rank gets its own bucket.
-  if (smoothedHomogeneity < 0 or maxDensity < 0) {
+  if (smoothedPDBinStdDevDensity < 0 or smoothedPDBinMaxDensity < 0) {
     AutoPas_MPI_Comm_split(comm, rank, rank, bucket);
     return;
   }
 
   std::vector<double> similarityMetrics(commSize);
-  double similarityMetric = smoothedHomogeneity + MPITuningWeightForMaxDensity * maxDensity;
+  double similarityMetric = smoothedPDBinStdDevDensity + MPITuningWeightForMaxDensity * smoothedPDBinMaxDensity;
 
   // debug print for evaluation
-  AutoPasLog(DEBUG, "similarityMetric    of rank {} is: {}", rank, similarityMetric);
-  AutoPasLog(DEBUG, "smoothedHomogeneity of rank {} is: {}", rank, smoothedHomogeneity);
-  AutoPasLog(DEBUG, "smoothedMaxDensity  of rank {} is: {}", rank, maxDensity);
+  AutoPasLog(DEBUG, "similarityMetric           of rank {} is: {}", rank, similarityMetric);
+  AutoPasLog(DEBUG, "smoothedPDBinStdDevDensity of rank {} is: {}", rank, smoothedPDBinStdDevDensity);
+  AutoPasLog(DEBUG, "smoothedPDBinMaxDensity    of rank {} is: {}", rank, smoothedPDBinMaxDensity);
 
   // get all the similarityMetrics of the other ranks
   AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,

@@ -10,10 +10,8 @@
 #include <algorithm>
 
 #include "autopas/containers/cellTraversals/SlicedBalancedBasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

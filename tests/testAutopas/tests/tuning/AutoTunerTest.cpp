@@ -89,15 +89,6 @@ void AutoTunerTest::testAllConfigsOfType(Functor &functor, size_t numExpectedCon
     if (collectedSamples == autoTunerInfo.maxSamples) {
       collectedSamples = 0;
       logicHandler.getContainer().deleteAllParticles();
-      // add particles, so VerletClusterLists uses more than one tower, otherwise its traversals are invalid.
-      if (logicHandler.getContainer().getContainerType() == autopas::ContainerOption::verletClusterLists) {
-        const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
-        const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
-        const std::array<double, 3> offset = {0.125, 0.125, 0.125};
-        Molecule defaultParticle{};
-        autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), particlesPerDim,
-                                                                   defaultParticle, spacing, offset);
-      }
     }
 
     // Should not have any leaving particles in this test
