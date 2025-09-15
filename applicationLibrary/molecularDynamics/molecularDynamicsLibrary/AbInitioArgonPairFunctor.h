@@ -104,7 +104,7 @@ class AbInitioArgonPairFunctor
     }
 
     if (calculateGlobals) {
-      double potentialEnergy = 0.; // TODO: implement
+      double potentialEnergy = _argonKernel.calculatePairPotential(dist);
       auto virial = displacement * f;
 
       const int threadnum = autopas::autopas_get_thread_num();

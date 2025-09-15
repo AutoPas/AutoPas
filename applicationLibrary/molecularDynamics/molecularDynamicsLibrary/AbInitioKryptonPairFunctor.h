@@ -106,7 +106,7 @@ class AbInitioKryptonPairFunctor
     }
 
     if (calculateGlobals) {
-      double potentialEnergy = 0.; // TODO: implement
+      double potentialEnergy = _kryptonKernel.calculatePairPotential(dist);
       auto virial = displacement * f;
 
       const int threadnum = autopas::autopas_get_thread_num();

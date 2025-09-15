@@ -32,7 +32,14 @@ class TestKernel : public Kernel<TestKernel> {
   }
 
   std::array<double, 3> calculateTripletForce(double dr1, double dr2, double dr3) {
-    return std::array{2.*dr1 + 2.*dr2 + 2.*dr3, 0., 0.};
+
+    auto test = 0.1234;
+
+    for (int i = 0; i < 32; ++i) {
+      test+= std::exp(dr1*test) * std::exp(dr2*test) + std::exp(dr3*test);
+    }
+
+    return std::array{test, test, test};
   }
 
 };
