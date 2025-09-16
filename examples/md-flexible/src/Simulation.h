@@ -95,7 +95,7 @@ class Simulation {
   /**
    * Maximum distance travelled in the current iteration.
    */
-   double _maxR{};
+  double _maxR{};
 
   /**
    * Number of completed iterations. Aka. number of current iteration.

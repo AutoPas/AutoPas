@@ -1176,7 +1176,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
   }
    */
-  _neighborListInvalidDoDynamicRebuild = _maxRSinceRebuild >= halfSkinSquare;
+  _neighborListInvalidDoDynamicRebuild = _maxRSinceRebuild >= skin * 0.5;
 #endif
 }
 

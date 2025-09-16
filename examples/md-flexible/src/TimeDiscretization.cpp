@@ -17,12 +17,13 @@ namespace TimeDiscretization {
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow, double maxR) {
+                                      bool fastParticlesThrow, double &maxR) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  AUTOPAS_OPENMP(parallel reduction(max: maxR))
+  maxR = 0;
+  AUTOPAS_OPENMP(parallel reduction(max : maxR))
 #else
   const auto maxAllowedDistanceMoved =
       autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency() / 2.;
@@ -42,8 +43,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    auto displacementScalar = dot(displacement, displacement);
-    maxR = displacementScalar > maxR ? displacementScalar : maxR;
+    auto displacementScalar = std::sqrt(dot(displacement, displacement));
+    maxR = std::max(maxR, displacementScalar);
     iter->addR(displacement);
 #else
     // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
