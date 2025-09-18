@@ -4,6 +4,8 @@
 #include <vector>
 #include <array>
 #include <stdio.h>
+#include <functional>
+
 #include "FFT.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -83,34 +85,12 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     utils::Timer *shortRangeTimer;
     utils::Timer *chargeAssignmentTimer;
     utils::Timer *forceInterpolationTimer;
-        
 
-    // assigns the charges of particles to cao number of points in the rs_grid
-    void assignChargeDensities(){
-        AUTOPAS_OPENMP(parallel){
+    void lamdaFunc (std::vector<double> &caFractionsX, std::vector<double> &caFractionsY, std::vector<double> &caFractionsZ, std::array<int, 3> &closestGridpoint, ParticleType particle) {
         double gridCellVolumeInv = (1./ (grid_dist[0]*grid_dist[1]*grid_dist[2]));
 
-        std::array<int, 3> closestGridpoint = {0,0,0};
-        std::vector<double> caFractionsX = std::vector<double>(cao);
-        std::vector<double> caFractionsY = std::vector<double>(cao);
-        std::vector<double> caFractionsZ = std::vector<double>(cao);
+        std::array<double, 3> pPos = particle.getR();
 
-        //using region iterators
-        int i = autopas_get_thread_num();
-        int n = autopas_get_num_threads();
-        std::array<double, 3> lowerCorner = {boxMin[0] + (container->getBoxMax()[0] - boxMin[0]) * i, boxMin[1], boxMin[2]};
-        std::array<double, 3> upperCorner;
-        if(i != n){
-            upperCorner = {boxMin[0] + (container->getBoxMax()[0] - boxMin[0]) * (i+1), container->getBoxMax()[1], container->getBoxMax()[2]};
-        }else{
-            upperCorner = container->getBoxMax();
-        }
-        
-        auto iter = container->getRegionIterator(lowerCorner, upperCorner, autopas::IteratorBehavior::owned);
-
-        for (iter; iter.isValid(); ++iter){
-            std::array<double, 3> pPos = iter->getR();
-            
             getChargeAssignmentFractions(pPos, closestGridpoint, caFractionsX, caFractionsY, caFractionsZ);
             // charge assignment according to computed fractions
             for(int zi = 0; zi < cao; zi++){
@@ -125,13 +105,41 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
                         unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(xIndex, yIndex, zIndex, grid_dims);
                         
 
-                        double chargeFraction = caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * iter->getQ() * gridCellVolumeInv;
+                        double chargeFraction = caFractionsX[xi] * caFractionsY[yi] * caFractionsZ[zi] * particle.getQ() * gridCellVolumeInv;
                         AUTOPAS_OPENMP(atomic)
                         container->rs_grid[index1d] += chargeFraction;
                     }
                 }
             }
+    }
+
+    // assigns the charges of particles to cao number of points in the rs_grid
+    void assignChargeDensities(){
+        AUTOPAS_OPENMP(parallel){
+        double gridCellVolumeInv = (1./ (grid_dist[0]*grid_dist[1]*grid_dist[2]));
+
+        std::array<int, 3> closestGridpoint = {0,0,0};
+        std::vector<double> caFractionsX = std::vector<double>(cao);
+        std::vector<double> caFractionsY = std::vector<double>(cao);
+        std::vector<double> caFractionsZ = std::vector<double>(cao);
+
+        //using region iterators
+        int i = autopas_get_thread_num();
+        int n = autopas_get_num_threads();
+        double iterLength = (container->getBoxMax()[0] - boxMin[0]) / n;
+        std::array<double, 3> lowerCorner = {boxMin[0] + iterLength * i, boxMin[1], boxMin[2]};
+        std::array<double, 3> upperCorner;
+        if(i != n){
+            upperCorner = {boxMin[0] + iterLength * (i+1), container->getBoxMax()[1], container->getBoxMax()[2]};
+        }else{
+            upperCorner = container->getBoxMax();
         }
+        
+        
+        using std::placeholders::_1;
+        
+        std::function<void(ParticleType)> lambda = std::bind(&P3M_traversal::lamdaFunc, this, caFractionsX, caFractionsY, caFractionsZ, closestGridpoint, _1);
+            container->forEachInRegion(lambda , lowerCorner, upperCorner, autopas::IteratorBehavior::owned);
         }
 
     }
