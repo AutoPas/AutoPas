@@ -8,13 +8,12 @@
 
 #include "autopas/options/TuningTriggerOption.h"
 #include "autopas/tuning/triggers/StaticSimpleTrigger.h"
-#include "autopas/tuning/triggers/TimeBasedSimpleTrigger.h"
 #include "autopas/tuning/triggers/TimeBasedAverageTrigger.h"
-#include "autopas/tuning/triggers/TimeBasedSplitTrigger.h"
 #include "autopas/tuning/triggers/TimeBasedRegressionTrigger.h"
+#include "autopas/tuning/triggers/TimeBasedSimpleTrigger.h"
+#include "autopas/tuning/triggers/TimeBasedSplitTrigger.h"
 
 namespace autopas::TuningTriggerFactory {
-
 
 std::unique_ptr<TuningTriggerInterface> generateTuningTrigger(TuningTriggerOption tuningTriggerOption,
                                                               const TuningTriggerFactoryInfo &info) {

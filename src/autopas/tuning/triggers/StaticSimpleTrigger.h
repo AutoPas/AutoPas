@@ -11,7 +11,7 @@
 namespace autopas {
 
 /**
- * Represents a trigger with the same behavior as static tuning, i.e. it triggers a tuning phase on each
+ * Represents a trigger with the same behavior as static tuning intervals, i.e. it triggers a tuning phase on each
  * multiple of tuningInterval.
  */
 class StaticSimpleTrigger : public TuningTriggerInterface {
@@ -29,8 +29,7 @@ class StaticSimpleTrigger : public TuningTriggerInterface {
     return ((currentIteration + 1) % tuningInterval) == 0;
   };
 
-  inline bool needsRuntimeSample() const override { return false; }
-  void passRuntimeSample(unsigned long sample) override {}
+  void passRuntimeSample([[maybe_unused]] unsigned long sample) override {}
 
   TuningTriggerOption getOptionType() const override { return TuningTriggerOption::staticSimple; }
 };

@@ -45,9 +45,9 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
       _triggerFactor = 1.5;
     }
     if (_nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 500.\n",
+      AutoPasLog(WARN, "nSamples for TimeBasedRegressionTrigger is {}, but has to be > 0. Defaulted to 1000.\n",
                  _nSamples);
-      _nSamples = 500;
+      _nSamples = 1000;
     }
 
     // The vector also contains the current iteration, therefore its length is _nSamples +1.
@@ -83,8 +83,6 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
     _wasTriggered = betaNormalized >= _triggerFactor;
     return oldTriggerState;
   }
-
-  inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
     // Do not compare to stale samples from before tuning phase.

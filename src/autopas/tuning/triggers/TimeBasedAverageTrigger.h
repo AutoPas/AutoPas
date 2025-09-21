@@ -32,10 +32,11 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
       _triggerFactor = 1.5;
     }
     if (_nSamples < 1) {
-      AutoPasLog(WARN, "nSamples for TimeBasedAverageTrigger is {}, but has to be > 0. Defaulted to 500.\n", _nSamples);
-      _nSamples = 500;
+      AutoPasLog(WARN, "nSamples for TimeBasedAverageTrigger is {}, but has to be > 0. Defaulted to 1000.\n",
+                 _nSamples);
+      _nSamples = 1000;
     }
-    
+
     _runtimeSamples.resize(_nSamples);
     _headElement = 0;
     _sampleSum = 0;
@@ -54,8 +55,6 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
 
     return oldTriggerState;
   }
-
-  inline bool needsRuntimeSample() const override { return true; }
 
   void passRuntimeSample(unsigned long sample) override {
     // Do not compare to stale samples from before tuning phase.

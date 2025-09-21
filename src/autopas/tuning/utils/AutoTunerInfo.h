@@ -45,7 +45,7 @@ struct AutoTunerInfo {
   /**
    * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
    */
-  bool useLOESSSmoothening{true};
+  bool useLOESSSmoothening{false};
 
   /**
    * Type of the trigger used for dynamic tuning.

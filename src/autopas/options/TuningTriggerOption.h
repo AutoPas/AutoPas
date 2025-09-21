@@ -13,7 +13,7 @@
 namespace autopas {
 inline namespace options {
 /**
- * Class representing the different types of triggers that can be used to dynamically trigger tuning phases.
+ * Class representing the different types of triggers that can be used to dynamically initiate tuning phases.
  */
 class TuningTriggerOption : public Option<TuningTriggerOption> {
  public:
@@ -22,25 +22,28 @@ class TuningTriggerOption : public Option<TuningTriggerOption> {
    */
   enum Value {
     /**
-     * Default static trigger. Triggers tuning phase on multiples of tuningInterval.
+     * Same behavior as with the default static tuning intervals. Triggers tuning phases on multiples of tuningInterval.
      */
     staticSimple,
     /**
-     * Compare runtime of current iteration to runtime of last iteration, retune if current iteration runtime is greater
-     * or equal than triggerFactor times last iteration runtime.
+     * Compares runtime of current iteration to runtime of last iteration, retunes if current iteration runtime is
+     * greater than or equal to triggerFactor times last iteration runtime.
      */
     timeBasedSimple,
 
     /**
-     *  Similar to timeBasedSimple, but compares to the moving average of last n iterations.
+     * Similar to timeBasedSimple, but compares the current iteration runtime to the moving average of last n
+     * iterations.
      **/
     timeBasedAverage,
     /**
-     *  Splits up last n samples into two intervals A, B. Triggers if avg(B) is greater or equal than triggerFactor times avg(A).
+     * Splits up last n runtime samples samples into two intervals A, B. Triggers if avg(B) is greater than or equal to
+     * triggerFactor times avg(A).
      **/
     timeBasedSplit,
     /**
-     *  Performs a linear regression on the last n iteration runtimes. Triggers if the slope is bigger than triggerFactor.
+     * Performs a linear regression on the last n runtime samples. Triggers if the normalized slope estimator is
+     * greater than or equal to triggerFactor.
      **/
     timeBasedRegression,
   };

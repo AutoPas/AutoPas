@@ -1108,22 +1108,21 @@ class AutoPas {
 
   /**
    * Set the type of the trigger used for dynamic tuning.
-   * 
+   *
    * @param tuningTriggerType
    */
-  void setTuningTriggerType(const TuningTriggerOption &tuningTriggerType){
+  void setTuningTriggerType(const TuningTriggerOption &tuningTriggerType) {
     _autoTunerInfo.tuningTriggerType = tuningTriggerType;
   }
 
   /**
    * Set the info needed to construct the trigger used for dynamic tuning.
-   * 
+   *
    * @param tuningTriggerInfo
    */
-  void setTuningTriggerInfo( const TuningTriggerFactoryInfo &tuningTriggerInfo){
+  void setTuningTriggerInfo(const TuningTriggerFactoryInfo &tuningTriggerInfo) {
     _autoTunerInfo.tuningTriggerInfo = tuningTriggerInfo;
   }
-
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();

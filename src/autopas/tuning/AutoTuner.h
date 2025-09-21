@@ -15,9 +15,9 @@
 #include "autopas/options/TuningTriggerOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
-#include "autopas/tuning/triggers/TuningTriggerInterface.h"
-#include "autopas/tuning/triggers/TuningTriggerFactory.h"
 #include "autopas/tuning/triggers/StaticSimpleTrigger.h"
+#include "autopas/tuning/triggers/TuningTriggerFactory.h"
+#include "autopas/tuning/triggers/TuningTriggerInterface.h"
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
@@ -206,7 +206,7 @@ class AutoTuner {
   /**
    * Passes the current iteration runtime to the autotuner's dynamic tuning trigger.
    * For correct trigger behaviour, the time sample should not contain the runtime of rebuildNeighborLists.
-   * 
+   *
    * @param sample The current iteration runtime.
    */
   void passIterationRuntime(size_t sample);
@@ -481,6 +481,5 @@ class AutoTuner {
    * Iteration in which the last tuning phase was triggered.
    */
   unsigned long _lastTunigPhaseStartIteration = 0;
-
 };
 }  // namespace autopas

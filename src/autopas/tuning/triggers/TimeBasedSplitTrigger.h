@@ -63,8 +63,6 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
     return oldTriggerState;
   }
 
-  inline bool needsRuntimeSample() const override { return true; }
-
   void passRuntimeSample(unsigned long sample) override {
     // Do not compare to stale samples from before tuning phase.
     if (_wasTriggered) [[unlikely]] {

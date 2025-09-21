@@ -109,7 +109,9 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
+      struct option retStruct {
+        name.c_str(), requiresArgument, nullptr, getOptChar
+      };
       return retStruct;
     }
   };
@@ -646,7 +648,7 @@ class MDFlexConfig {
    */
   MDFlexOption<bool, __LINE__> useTuningTrigger{
       false, "tuning-trigger", true,
-      "(De)Activate dynamic tuning triggers. Only useful when used to overwrite a yaml file. "
+      "Activate dynamic tuning triggers. Needed for dynamic tuning interval estimation."
       "Possible Values: (true false) Default: false"};
   /**
    * dynamic tuning trigger type
@@ -655,7 +657,7 @@ class MDFlexConfig {
       {},
       "trigger-type",
       true,
-      "Trigger type that should be used for dynamic tuning. "
+      "Trigger type that should be used for dynamic tuning interval estimation. "
       "Leave empty to use static tuning trigger. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(
               []() {
@@ -666,13 +668,14 @@ class MDFlexConfig {
   /**
    * dynamic tuning trigger factor
    */
-  MDFlexOption<float, __LINE__> tuningTriggerFactor{1.0, "trigger-factor", true,
-                                                    "Factor on which to trigger a dynamic retune."};
+  MDFlexOption<float, __LINE__> tuningTriggerFactor{
+      1.0, "trigger-factor", true,
+      "Factor on which to trigger a new tuning phase when using dynamic tuning interval estimation."};
   /**
    * dynamic tuning n samples
    */
   MDFlexOption<unsigned, __LINE__> tuningTriggerNSamples{
-      10, "trigger-n-samples", true, "Number of iteration samples to consider when deciding on trigger."};
+      10, "trigger-n-samples", true, "Number of iteration samples to consider for dynamic tuning interval estimation."};
 
   // Molecule Type Generation
   // Strings for parsing yaml files.
