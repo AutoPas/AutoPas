@@ -126,7 +126,7 @@ public:
 
   void dct(const std::vector<double> &values, int interval) {
     for (int i = 0; i < _numNodes[interval]; ++i) {
-      float coefficient = 0.;
+      double coefficient = 0.;
       for (int k = 0; k < _numNodes[interval]; ++k) {
         coefficient += values[k] * std::cos(PI * i * (2 * k + 1) / (2 * _numNodes[interval]));
       }
@@ -523,7 +523,7 @@ public:
   };
 
   /* Interpolation Parameters */
-  const float PI = 2 * std::acos(0.0);
+  const double PI = 2 * std::acos(0.0);
   const double _a;
   const double _b;
   const std::vector<size_t> _numNodes;
