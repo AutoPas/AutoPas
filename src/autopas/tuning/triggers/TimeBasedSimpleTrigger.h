@@ -31,9 +31,19 @@ class TimeBasedSimpleTrigger : public TuningTriggerInterface {
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
-    bool oldTriggerState = _wasTriggered;
-    _wasTriggered = _currentIterationRuntime >= (_triggerFactor * _lastIterationRuntime);
-    return oldTriggerState;
+    if (!_wasTriggered) {
+      _wasTriggered = _currentIterationRuntime >= (_triggerFactor * _lastIterationRuntime);
+      _triggerCountdown = 10;
+    } else {
+      --_triggerCountdown;
+    }
+
+    if (_wasTriggered && (_triggerCountdown == 0)) {
+      _wasTriggered = false;
+      return true;
+    }
+
+    return false;
   }
 
   void passRuntimeSample(unsigned long sample) override {

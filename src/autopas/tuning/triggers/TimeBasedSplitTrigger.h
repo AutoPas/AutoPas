@@ -51,26 +51,31 @@ class TimeBasedSplitTrigger : public TuningTriggerInterface {
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
-    bool oldTriggerState = _wasTriggered;
-    _wasTriggered = false;
+    if (!_bufferFullB) return false;
 
-    if (!_bufferFullB) return oldTriggerState;
+    if (!_wasTriggered) {
+      unsigned long averageA = _sampleSumA / _intervalLengthA;
+      unsigned long averageB = _sampleSumB / _intervalLengthB;
 
-    unsigned long averageA = _sampleSumA / _intervalLengthA;
-    unsigned long averageB = _sampleSumB / _intervalLengthB;
+      _wasTriggered = (averageB >= (_triggerFactor * averageA));
+      _triggerCountdown = 10;
+    } else {
+      --_triggerCountdown;
+    }
 
-    _wasTriggered = (averageB >= (_triggerFactor * averageA));
-    return oldTriggerState;
-  }
-
-  void passRuntimeSample(unsigned long sample) override {
-    // Do not compare to stale samples from before tuning phase.
-    if (_wasTriggered) [[unlikely]] {
+    if (_wasTriggered && (_triggerCountdown == 0)) {
+      // Do not compare to stale samples from before tuning phase.
       _headElementA = _headElementB = 0;
       _sampleSumA = _sampleSumB = 0;
       _bufferFullA = _bufferFullB = false;
+      _wasTriggered = false;
+      return true;
     }
 
+    return false;
+  }
+
+  void passRuntimeSample(unsigned long sample) override {
     // Use two circular buffers to store the last (_nSamples+1) samples.
     if (!_bufferFullA) {
       _runtimeSamplesA[_headElementA] = sample;

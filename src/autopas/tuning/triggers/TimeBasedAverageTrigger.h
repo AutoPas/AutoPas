@@ -44,28 +44,30 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
-    bool oldTriggerState = _wasTriggered;
-    _wasTriggered = false;
-
     if (!_bufferFull) [[unlikely]]
-      return oldTriggerState;
+      return false;
 
-    unsigned long average = _sampleSum / _nSamples;
-    _wasTriggered = (_currentIterationRuntime >= (_triggerFactor * average));
+    if (!_wasTriggered) {
+      unsigned long average = _sampleSum / _nSamples;
+      _wasTriggered = (_currentIterationRuntime >= (_triggerFactor * average));
+      _triggerCountdown = 10;
+    } else {
+      --_triggerCountdown;
+    }
 
-    return oldTriggerState;
+    if (_wasTriggered && (_triggerCountdown == 0)) {
+      // Do not compare to stale samples from before tuning phase.
+      _headElement = 0;
+      _sampleSum = 0;
+      _bufferFull = false;
+      _wasTriggered = false;
+      return true;
+    }
+
+    return false;
   }
 
   void passRuntimeSample(unsigned long sample) override {
-    // Do not compare to stale samples from before tuning phase.
-    if (_wasTriggered) [[unlikely]] {
-      _runtimeSamples.clear();
-      _runtimeSamples.resize(_nSamples);
-      _headElement = 0;
-      _bufferFull = false;
-      return;
-    }
-
     // Use a simple circular buffer to store the last _nSamples samples.
     if (_bufferFull) {
       _sampleSum -= _runtimeSamples[_headElement];

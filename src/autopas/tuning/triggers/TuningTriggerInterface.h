@@ -39,11 +39,26 @@ class TuningTriggerInterface {
    */
   virtual bool shouldStartTuningPhaseNextIteration([[maybe_unused]] size_t currentIteration,
                                                    [[maybe_unused]] size_t tuningInterval) const {
+    return _wasTriggered and (_triggerCountdown == 0);
+  };
+
+  /**
+   * Gives the return value of shouldStartTuningPhase() for the next iteration.
+   *
+   * This is used to look ahead if a new tuning phase might start in the next iteration, such that containers may be
+   * adapted.
+   *
+   * @param currentIteration The current iteration.
+   * @param tuningInterval The tuningInterval in the currentIteration.
+   * @return Boolean value signalling whether shouldStartTuningPhase() returns true in less than 10 iterations from now.
+   */
+  virtual bool shouldStartTuningPhaseSoon([[maybe_unused]] size_t currentIteration,
+                                          [[maybe_unused]] size_t tuningInterval) const {
     return _wasTriggered;
   };
 
   /**
-   * Passes a singular iteration runtime to the trigger.AutoPas_MPI_Cart_create
+   * Passes a singular iteration runtime to the trigger.
    *
    * @param sample The runtime of a singular iteration.
    */
@@ -57,5 +72,6 @@ class TuningTriggerInterface {
 
  protected:
   bool _wasTriggered;
+  unsigned long _triggerCountdown;
 };
 }  // namespace autopas

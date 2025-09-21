@@ -29,6 +29,11 @@ class StaticSimpleTrigger : public TuningTriggerInterface {
     return ((currentIteration + 1) % tuningInterval) == 0;
   };
 
+  inline bool shouldStartTuningPhaseSoon([[maybe_unused]] size_t currentIteration,
+                                         [[maybe_unused]] size_t tuningInterval) const override {
+    return currentIteration % tuningInterval > tuningInterval - 10;
+  };
+
   void passRuntimeSample([[maybe_unused]] unsigned long sample) override {}
 
   TuningTriggerOption getOptionType() const override { return TuningTriggerOption::staticSimple; }

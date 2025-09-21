@@ -58,40 +58,45 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
-    bool oldTriggerState = _wasTriggered;
-    _wasTriggered = false;
-
     if (!_bufferFull) [[unlikely]]
-      return oldTriggerState;
+      return false;
 
-    double tAverage = _sampleSum / (_nSamples + 1.0);
-    double constant1 = _nSamples / 2.0;
-    double constant2 = 12.0 / (_nSamples * (_nSamples + 1) * (_nSamples + 2));
+    if (!_wasTriggered) {
+      double tAverage = _sampleSum / (_nSamples + 1.0);
+      double constant1 = _nSamples / 2.0;
+      double constant2 = 12.0 / (_nSamples * (_nSamples + 1) * (_nSamples + 2));
 
-    // Computes the transformed slope estimate \hat\beta_1'
-    double beta = 0.0;
-    for (size_t k = 0; k < (_nSamples + 1); k++) {
-      int currentSampleIndex = (_headElement + k) % (_nSamples + 1);
-      beta += (k - constant1) * (_runtimeSamples.at(currentSampleIndex) - tAverage);
+      // Computes the transformed slope estimate \hat\beta_1'
+      double beta = 0.0;
+      for (size_t k = 0; k < (_nSamples + 1); k++) {
+        int currentSampleIndex = (_headElement + k) % (_nSamples + 1);
+        beta += (k - constant1) * (_runtimeSamples.at(currentSampleIndex) - tAverage);
+      }
+      beta *= constant2;
+
+      // For the normalization part, we need the last added sample (t_i).
+      int lastSampleIndex = (_headElement + _nSamples) % (_nSamples + 1);
+      double betaNormalized = (2 * _runtimeSamples[lastSampleIndex] + (_nSamples + 1) * beta) / (2 * tAverage);
+
+      _wasTriggered = betaNormalized >= _triggerFactor;
+      _triggerCountdown = 10;
+    } else {
+      --_triggerCountdown;
     }
-    beta *= constant2;
 
-    // For the normalization part, we need the last added sample (t_i).
-    int lastSampleIndex = (_headElement + _nSamples) % (_nSamples + 1);
-    double betaNormalized = (2 * _runtimeSamples[lastSampleIndex] + (_nSamples + 1) * beta) / (2 * tAverage);
-
-    _wasTriggered = betaNormalized >= _triggerFactor;
-    return oldTriggerState;
-  }
-
-  void passRuntimeSample(unsigned long sample) override {
-    // Do not compare to stale samples from before tuning phase.
-    if (_wasTriggered) [[unlikely]] {
+    if (_wasTriggered && (_triggerCountdown == 0)) {
+      // Do not compare to stale samples from before tuning phase.
       _headElement = 0;
       _sampleSum = 0;
       _bufferFull = false;
+      _wasTriggered = false;
+      return true;
     }
 
+    return false;
+  }
+
+  void passRuntimeSample(unsigned long sample) override {
     // Use a simple circular buffer to store the last (_nSamples+1) samples.
     if (_bufferFull) {
       _sampleSum -= _runtimeSamples[_headElement];
