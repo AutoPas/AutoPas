@@ -37,24 +37,23 @@ class TuningTriggerInterface {
    * @param tuningInterval The tuningInterval in the currentIteration.
    * @return Boolean value signalling whether shouldStartTuningPhase() returns true in the next iteration.
    */
-  virtual bool shouldStartTuningPhaseNextIteration([[maybe_unused]] size_t currentIteration,
-                                                   [[maybe_unused]] size_t tuningInterval) const {
-    return _wasTriggered and (_triggerCountdown == 0);
+  inline bool shouldStartTuningPhaseNextIteration([[maybe_unused]] size_t currentIteration,
+                                                  [[maybe_unused]] size_t tuningInterval) const {
+    return (currentIteration = _nextTriggeringIteration - 1);
   };
 
   /**
-   * Gives the return value of shouldStartTuningPhase() for the next iteration.
+   * Checks wether a new tuning phase will be triggered in less than 10 iterations from now.
    *
-   * This is used to look ahead if a new tuning phase might start in the next iteration, such that containers may be
-   * adapted.
+   * This is used to facilitate liveinfo collection before a new tuning phase starts.
    *
    * @param currentIteration The current iteration.
    * @param tuningInterval The tuningInterval in the currentIteration.
    * @return Boolean value signalling whether shouldStartTuningPhase() returns true in less than 10 iterations from now.
    */
-  virtual bool shouldStartTuningPhaseSoon([[maybe_unused]] size_t currentIteration,
-                                          [[maybe_unused]] size_t tuningInterval) const {
-    return _wasTriggered;
+  inline bool shouldStartTuningPhaseSoon([[maybe_unused]] size_t currentIteration,
+                                         [[maybe_unused]] size_t tuningInterval) const {
+    return (currentIteration > _nextTriggeringIteration - 10);
   };
 
   /**
@@ -71,7 +70,6 @@ class TuningTriggerInterface {
   virtual TuningTriggerOption getOptionType() const = 0;
 
  protected:
-  bool _wasTriggered;
-  unsigned long _triggerCountdown;
+  unsigned long _nextTriggeringIteration = 10;
 };
 }  // namespace autopas

@@ -22,11 +22,11 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
    *   - set up a AutoTuner with the MPI divide and conquer strategy
    *   - trigger the strategy to resort / filter the queues
    *   - check that all queues have the correct size and add up correctly
-   * @param homogeneities
+   * @param particleDependentBinDensityStdDevs
    * @param expectedNumLocalConfigs
    * @param searchSpace
    */
-  void testBucketDistribution(const std::array<double, numRanksExpected> &homogeneities,
+  void testBucketDistribution(const std::array<double, numRanksExpected> &particleDependentBinDensityStdDevs,
                               const std::array<size_t, numRanksExpected> &expectedNumLocalConfigs,
                               const std::set<autopas::Configuration> &searchSpace);
 

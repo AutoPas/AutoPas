@@ -438,9 +438,14 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
 bool AutoTuner::inTuningPhase() const {
+#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  return (_tuningTrigger->shouldStartTuningPhase(_iteration, _tuningInterval) or _isTuning or _forceRetune) and
+         not searchSpaceIsTrivial();
+#else
   // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
   // been called yet.
   return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
+#endif
 }
 
 bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }

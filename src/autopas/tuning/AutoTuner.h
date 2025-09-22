@@ -479,9 +479,5 @@ class AutoTuner {
    * The type of the trigger used for dynamic tuning interval estimation.
    */
   TuningTriggerType _tuningTrigger;
-  /**
-   * Iteration in which the last tuning phase was triggered.
-   */
-  unsigned long _lastTunigPhaseStartIteration = 0;
 };
 }  // namespace autopas

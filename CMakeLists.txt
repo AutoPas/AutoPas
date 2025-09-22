@@ -33,7 +33,7 @@ if (CMAKE_VERSION VERSION_LESS 3.17)
             STATUS
             "Setting CMAKE_CXX_STANDARD globally because cmake < 3.17 is used."
     )
-    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD 20)
 endif ()
 
 if (NOT CYGWIN)

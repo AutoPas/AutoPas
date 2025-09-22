@@ -58,10 +58,13 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
-    if (!_bufferFull) [[unlikely]]
-      return false;
+    bool _wasTriggered =
+        (currentIteration > _nextTriggeringIteration - 10) && (currentIteration <= _nextTriggeringIteration);
 
     if (!_wasTriggered) {
+      if (!_bufferFull) [[unlikely]]
+        return false;
+
       double tAverage = _sampleSum / (_nSamples + 1.0);
       double constant1 = _nSamples / 2.0;
       double constant2 = 12.0 / (_nSamples * (_nSamples + 1) * (_nSamples + 2));
@@ -78,21 +81,17 @@ class TimeBasedRegressionTrigger : public TuningTriggerInterface {
       int lastSampleIndex = (_headElement + _nSamples) % (_nSamples + 1);
       double betaNormalized = (2 * _runtimeSamples[lastSampleIndex] + (_nSamples + 1) * beta) / (2 * tAverage);
 
-      _wasTriggered = betaNormalized >= _triggerFactor;
-      _triggerCountdown = 10;
-    } else {
-      --_triggerCountdown;
+      if (betaNormalized >= _triggerFactor) _nextTriggeringIteration = currentIteration + 10;
+      return false;
     }
 
-    if (_wasTriggered && (_triggerCountdown == 0)) {
+    if (currentIteration == _nextTriggeringIteration) {
       // Do not compare to stale samples from before tuning phase.
       _headElement = 0;
       _sampleSum = 0;
       _bufferFull = false;
-      _wasTriggered = false;
       return true;
     }
-
     return false;
   }
 

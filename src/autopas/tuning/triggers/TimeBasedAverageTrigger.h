@@ -44,26 +44,25 @@ class TimeBasedAverageTrigger : public TuningTriggerInterface {
   };
 
   inline bool shouldStartTuningPhase(size_t currentIteration, size_t tuningInterval) override {
-    if (!_bufferFull) [[unlikely]]
-      return false;
+    bool _wasTriggered =
+        (currentIteration > _nextTriggeringIteration - 10) && (currentIteration <= _nextTriggeringIteration);
 
     if (!_wasTriggered) {
+      if (!_bufferFull) [[unlikely]]
+        return false;
+
       unsigned long average = _sampleSum / _nSamples;
-      _wasTriggered = (_currentIterationRuntime >= (_triggerFactor * average));
-      _triggerCountdown = 10;
-    } else {
-      --_triggerCountdown;
+      if (_currentIterationRuntime >= (_triggerFactor * average)) _nextTriggeringIteration = currentIteration + 10;
+      return false;
     }
 
-    if (_wasTriggered && (_triggerCountdown == 0)) {
+    if (currentIteration == _nextTriggeringIteration) {
       // Do not compare to stale samples from before tuning phase.
       _headElement = 0;
       _sampleSum = 0;
       _bufferFull = false;
-      _wasTriggered = false;
       return true;
     }
-
     return false;
   }
 

@@ -6,13 +6,6 @@
 
 #pragma once
 
-#include <string>
-
-#include "autopas/options/AcquisitionFunctionOption.h"
-#include "autopas/options/ExtrapolationMethodOption.h"
-#include "autopas/options/InteractionTypeOption.h"
-#include "autopas/utils/WrapMPI.h"
-
 namespace autopas {
 
 /**
