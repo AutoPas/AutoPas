@@ -70,6 +70,9 @@ class TuningTriggerInterface {
   virtual TuningTriggerOption getOptionType() const = 0;
 
  protected:
+  /**
+   * The iteration in which the next tuning phase will start.
+   */
   unsigned long _nextTriggeringIteration = 10;
 };
 }  // namespace autopas

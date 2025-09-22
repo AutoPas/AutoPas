@@ -50,10 +50,10 @@ struct AutoTunerInfo {
   /**
    * Type of the trigger used for dynamic tuning.
    */
-  TuningTriggerOption tuningTriggerType;
+  TuningTriggerOption tuningTriggerType{TuningTriggerOption::staticSimple};
   /**
    * Info used to construct the trigger.
    */
-  TuningTriggerFactoryInfo tuningTriggerInfo;
+  TuningTriggerFactoryInfo tuningTriggerInfo{.triggerFactor = 1.0, .nSamples = 1000};
 };
 }  // namespace autopas

@@ -17,16 +17,6 @@ namespace autopas {
  * regression on them to get an estimate of the normalized slope of runtime increase. A new tuning phase is triggered,
  * if this slope is greater or equal to triggerFactor. This means that a slope > 1.0 can be interpreted as a projected
  * increase in iteration runtime, and a slope < 1.0 as projected decrease in iteration runtime.
- *
- * The detailed method is as follows:
- * In the following, $n$ is the number of samples, $t_k$ the runtime at iteration $k$, $i$ the current iteration and
- * $\bar t$ the average runtime.
- * As we only care for the slope factor estimate \hat\beta_1, we can transform the standard simple linear regression to
- * \hat\beta_1' = \frac{1}{C_2}\sum_{k=0}^{n}(k-C_1)(t_{i-n+k}-\bar t)
- * Where C_1=\frac{n}{2}, C_2=\sum_{k=0}^{n}(k-C_1)^2=\frac{n(n+1)(n+2)}{12}
- *
- * Then, we normalize $\hat\beta_1'$ to make it independent of the scenario:
- * \hat\beta_{\text{norm}} = \frac{2t_i+(n+1)\hat\beta_1'}{2\bar t}
  */
 class TimeBasedRegressionTrigger : public TuningTriggerInterface {
  public:

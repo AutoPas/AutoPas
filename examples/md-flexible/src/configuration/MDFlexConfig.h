@@ -654,9 +654,7 @@ class MDFlexConfig {
    * dynamic tuning trigger type
    */
   MDFlexOption<autopas::TuningTriggerOption, __LINE__> tuningTriggerType{
-      {},
-      "trigger-type",
-      true,
+      autopas::TuningTriggerOption::staticSimple, "trigger-type", true,
       "Trigger type that should be used for dynamic tuning interval estimation. "
       "Leave empty to use static tuning trigger. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(
