@@ -1,9 +1,9 @@
 
-// Generated from
-// Autopas/tuning/tuningStrategy/fuzzyTuning\FuzzyLanguage.g4 by
-// ANTLR 4.9.1
+// Generated from FuzzyLanguage.g4 by ANTLR 4.13.2
 
 #pragma once
+
+#include <any>
 
 #include "antlr4-runtime.h"
 
@@ -53,15 +53,20 @@ class FuzzyLanguageParser : public antlr4::Parser {
   };
 
   explicit FuzzyLanguageParser(antlr4::TokenStream *input);
-  ~FuzzyLanguageParser();
 
-  virtual std::string getGrammarFileName() const override;
-  virtual const antlr4::atn::ATN &getATN() const override { return _atn; };
-  virtual const std::vector<std::string> &getTokenNames() const override {
-    return _tokenNames;
-  };  // deprecated: use vocabulary instead.
-  virtual const std::vector<std::string> &getRuleNames() const override;
-  virtual antlr4::dfa::Vocabulary &getVocabulary() const override;
+  FuzzyLanguageParser(antlr4::TokenStream *input, const antlr4::atn::ParserATNSimulatorOptions &options);
+
+  ~FuzzyLanguageParser() override;
+
+  std::string getGrammarFileName() const override;
+
+  const antlr4::atn::ATN &getATN() const override;
+
+  const std::vector<std::string> &getRuleNames() const override;
+
+  const antlr4::dfa::Vocabulary &getVocabulary() const override;
+
+  antlr4::atn::SerializedATNView getSerializedATN() const override;
 
   class Rule_fileContext;
   class SettingsContext;
@@ -87,7 +92,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Fuzzy_ruleContext *> fuzzy_rule();
     Fuzzy_ruleContext *fuzzy_rule(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Rule_fileContext *rule_file();
@@ -101,7 +106,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<antlr4::tree::TerminalNode *> STRING();
     antlr4::tree::TerminalNode *STRING(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   SettingsContext *settings();
@@ -116,7 +121,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Fuzzy_termContext *> fuzzy_term();
     Fuzzy_termContext *fuzzy_term(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Linguistic_variableContext *linguistic_variable();
@@ -128,7 +133,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     antlr4::tree::TerminalNode *STRING();
     FunctionContext *function();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Fuzzy_termContext *fuzzy_term();
@@ -141,7 +146,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<antlr4::tree::TerminalNode *> NUMBER();
     antlr4::tree::TerminalNode *NUMBER(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   FunctionContext *function();
@@ -153,7 +158,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Fuzzy_setContext *> fuzzy_set();
     Fuzzy_setContext *fuzzy_set(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Fuzzy_ruleContext *fuzzy_rule();
@@ -176,7 +181,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Fuzzy_setContext *> fuzzy_set();
     Fuzzy_setContext *fuzzy_set(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   class BracketsContext : public Fuzzy_setContext {
@@ -185,7 +190,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
 
     Fuzzy_setContext *fuzzy_set();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   class AndContext : public Fuzzy_setContext {
@@ -195,7 +200,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Fuzzy_setContext *> fuzzy_set();
     Fuzzy_setContext *fuzzy_set(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   class SelectContext : public Fuzzy_setContext {
@@ -205,7 +210,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<antlr4::tree::TerminalNode *> STRING();
     antlr4::tree::TerminalNode *STRING(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   class NegateContext : public Fuzzy_setContext {
@@ -214,7 +219,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
 
     Fuzzy_setContext *fuzzy_set();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Fuzzy_setContext *fuzzy_set();
@@ -226,7 +231,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Output_entryContext *> output_entry();
     Output_entryContext *output_entry(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Output_mappingContext *output_mapping();
@@ -239,7 +244,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Pattern_mappingContext *> pattern_mapping();
     Pattern_mappingContext *pattern_mapping(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Output_entryContext *output_entry();
@@ -252,7 +257,7 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<Configuration_patternContext *> configuration_pattern();
     Configuration_patternContext *configuration_pattern(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Pattern_mappingContext *pattern_mapping();
@@ -266,30 +271,21 @@ class FuzzyLanguageParser : public antlr4::Parser {
     std::vector<antlr4::tree::TerminalNode *> STRING();
     antlr4::tree::TerminalNode *STRING(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Configuration_patternContext *configuration_pattern();
 
-  virtual bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
+  bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
+
   bool fuzzy_setSempred(Fuzzy_setContext *_localctx, size_t predicateIndex);
 
+  // By default the static state used to implement the parser is lazily initialized during the first
+  // call to the constructor. You can call this function if you wish to initialize the static state
+  // ahead of time.
+  static void initialize();
+
  private:
-  static std::vector<antlr4::dfa::DFA> _decisionToDFA;
-  static antlr4::atn::PredictionContextCache _sharedContextCache;
-  static std::vector<std::string> _ruleNames;
-  static std::vector<std::string> _tokenNames;
-
-  static std::vector<std::string> _literalNames;
-  static std::vector<std::string> _symbolicNames;
-  static antlr4::dfa::Vocabulary _vocabulary;
-  static antlr4::atn::ATN _atn;
-  static std::vector<uint16_t> _serializedATN;
-
-  struct Initializer {
-    Initializer();
-  };
-  static Initializer _init;
 };
 
 }  // namespace AutopasGeneratedFuzzyRuleSyntax
