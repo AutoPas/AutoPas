@@ -301,8 +301,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
 
     case TraversalOption::p3m_p3m: {
       //using ParticleType = typename ParticleCell::ParticleType; /*<ParticleCell, PairwiseFunctor>*/ /*&pairwiseFunctor,*/ /*traversalInfo.interactionLength,*/
-      return std::make_unique<P3M_traversal<ParticleCell>>(
-           traversalInfo.interactionLength,  dataLayout, useNewton3);
+      return std::make_unique<P3M_traversal<ParticleCell, PairwiseFunctor>>(
+           &pairwiseFunctor, traversalInfo.interactionLength,  dataLayout, useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",

@@ -11,6 +11,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/P3M/P3M_traveralInterface.h"
 #include "autopas/containers/P3M/P3M_shortRangeFunctor.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -24,9 +25,9 @@ template <class Particle_Type>
 class P3M_container;
 
 
-//template <class ParticleCell, class Functor>
-template <class ParticleCell>
-class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
+template <class ParticleCell, class Functor>
+//template <class ParticleCell>
+class P3M_traversal : public LCTraversalInterface, public TraversalInterface, public P3MTraversalInterface<ParticleCell> {
 
     using GridType = typename std::vector<double>;
     using ComplexGridType = std::vector<std::complex<double>>;
@@ -35,8 +36,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     public:
 
-    P3M_traversal(/*Functor *functor,*/ const double interactionLength, DataLayoutOption dataLayout, bool useNewton3) 
-        : TraversalInterface(dataLayout, useNewton3){
+    P3M_traversal(Functor *functor, const double interactionLength, DataLayoutOption dataLayout, bool useNewton3) 
+        : TraversalInterface(dataLayout, useNewton3), functor(functor), interactionLength(interactionLength){
     }
 
     //P3M_traversal()
@@ -46,7 +47,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
     //        fft = FFT();
     //}
 
-    void set_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, std::array<double, 3> grid_dist, const std::array<double, 3> &boxMin,
+    void set_p3m_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, std::array<double, 3> grid_dist, const std::array<double, 3> &boxMin,
          std::vector<std::vector<double>> &selfForceCoeffs, P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
         this->cao = cao;
         this->grid_dims = grid_dims;
@@ -80,6 +81,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
 
     P3M_container<ParticleType> *container;
     LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal;
+    Functor *functor;
+    double interactionLength;
 
     utils::Timer *fftTimer;
     utils::Timer *shortRangeTimer;
@@ -430,7 +433,18 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface {
             shortRangeTraversal->traverseParticles();
             shortRangeTraversal->endTraversal();
             return;
-        } 
+        }
+
+        auto LJTraversal =
+        LCC08Traversal<ParticleCell, Functor>(
+            container->getCellBlock().getCellsPerDimensionWithHalo(), functor, container->getCutoff(),
+            container->getCellBlock().getCellLength(), DataLayoutOption::aos, false);
+
+        LJTraversal.initTraversal();
+        LJTraversal.traverseParticles();
+        LJTraversal.endTraversal();
+        // LJ functor einfügen
+        //TODO Thermostat.h addBrownianMotion() z-coordiante auf 0 setzen.
     }
 
     public:

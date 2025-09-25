@@ -441,9 +441,9 @@ class P3M_container : public LinkedCells<Particle_T> {
     template <typename Traversal>
     void prepareTraversalP3M(Traversal &traversal, LCC08Traversal<LinkedParticleCell, P3M_shortRangeFunctor<Particle_T>> *shortRangeTraversal) {
         this->prepareTraversal(shortRangeTraversal);
-        auto *traversalP3M = dynamic_cast<P3M_traversal<LinkedParticleCell> *>(traversal);
+        auto *traversalP3M = dynamic_cast<P3MTraversalInterface<LinkedParticleCell> *>(traversal);
         if (traversalP3M) {
-            traversalP3M->set_traversal_parameters(cao, grid_dims, grid_dist, this->getBoxMin(), selfForceCoeffs, this,
+            traversalP3M->set_p3m_traversal_parameters(cao, grid_dims, grid_dist, this->getBoxMin(), selfForceCoeffs, this,
                 shortRangeTraversal);
             traversalP3M->set_Timers(&fftTimer, &shortRangeTimer, &chargeAssignmentTimer, &forceInterpolationTimer);
         } else {
@@ -465,6 +465,12 @@ class P3M_container : public LinkedCells<Particle_T> {
         traversal->initTraversal();
         traversal->traverseParticles();
         traversal->endTraversal();
+
+        /*for(auto iter = this->begin(); iter.isValid(); ++iter){
+            if(iter->isOwned()){
+                std::cout << "Particle " << iter->getQ() << " pos : " << iter->getR()[0] << ", " << iter->getR()[1] << ", " << iter->getR()[2] << " final F: " << iter->getF()[0] << ", " << iter->getF()[1] << ", " << iter->getF()[2] << std::endl;
+            }
+        }*/
     }
 
     ContainerOption getContainerType() const override{
