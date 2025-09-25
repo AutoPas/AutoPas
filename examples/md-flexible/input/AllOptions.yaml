@@ -47,21 +47,6 @@ tuning-acquisition-function          :  upper-confidence-bound
 fastParticlesThrow                   :  false
 globalForce                          :  [0, 0, 0]
 load-balancer                        :  InvertedPressure
-# Uncomment and edit below to run a DEM simulation with custom parameters.
-# demElasticStiffness                  : 150
-# demNormalViscosity                   : 1e-3
-# demFrictionViscosity                 : 1e-1
-# demRollingViscosity                  : 1e-2
-# demTorsionViscosity                  : 1e-2
-# demStaticFrictionCoeff               : 7.5
-# demDynamicFrictionCoeff              : 5
-# demRollingFrictionCoeff              : 2.5
-# demTorsionFrictionCoeff              : 2.5
-# demHeatConductivity                  : 1
-# demHeatGenerationFactor              : 1e-1
-# demBackgroundForceFrictionCoeff      : 1e-2
-# demBackgroundTorqueFrictionCoeff     : 1e-2
-
 Sites:
   0:
     epsilon                          :  1.

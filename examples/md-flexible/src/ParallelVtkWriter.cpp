@@ -41,9 +41,8 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 }
 
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const RegularGridDecomposition &decomposition,
-                                       const ParticlePropertiesLibraryType &particlePropertiesLib) const {
-  recordParticleStates(currentIteration, autoPasContainer, particlePropertiesLib);
+                                       const RegularGridDecomposition &decomposition) const {
+  recordParticleStates(currentIteration, autoPasContainer);
   const auto currentConfig = autoPasContainer.getCurrentConfigs();
   recordDomainSubdivision(currentIteration, currentConfig, decomposition);
 }
@@ -54,8 +53,7 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
 void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
-                                             const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                             const ParticlePropertiesLibraryType &particlePropertiesLib) const {
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer) const {
   if (_mpiRank == 0) {
     createParticlesPvtuFile(currentIteration);
   }
