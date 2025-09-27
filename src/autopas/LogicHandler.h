@@ -1113,6 +1113,9 @@ class LogicHandler {
    * Logger for FLOP count and hit rate.
    */
   FLOPLogger _flopLogger;
+
+  std::unordered_map<std::string, std::unique_ptr<FunctorWrapperInterface<Particle_T>>> wrappers_;
+
 };
 
 template <typename Particle_T>
