@@ -182,7 +182,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install requirements
         run: |
-          brew install libomp gcc@14
+          brew install libomp gcc@14 ninja
       - name: Configure and Build md-flexible
         run: |
           mkdir build && cd build
