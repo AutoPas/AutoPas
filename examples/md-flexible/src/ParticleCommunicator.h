@@ -15,6 +15,11 @@
  */
 class ParticleCommunicator {
  public:
+ /**
+  * Enum for left/right send/recv direction.
+  */
+ enum Direction { left, right };
+
   /**
    * Constructor
    * @param communicator: The MPI communicator used for communication.
@@ -30,32 +35,17 @@ class ParticleCommunicator {
    * Sends particles of type ParticleType to a receiver.
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particles.
+   * @param direction The direction which the particles are sent to.
    */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
+  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver, Direction direction);
 
   /**
    * Receives particles sent by a sender.
    * @param receivedParticles The container where the received particles will be stored.
    * @param source The sender id/rank.
+   * @param direction The direction from which the particles are sent.
    */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
-
-  /**
-   * Optimized method to send and receive particles to/from left and right neighbors simultaneously.
-   * Uses non-blocking MPI calls with unique tags to eliminate MPI_Probe overhead. In the future,
-   * we could break this up into two functions, one for sending and one for receiving to make communication
-   * intertwined with the computation.
-   * @param particlesToLeft The particles to send to the left neighbor.
-   * @param particlesToRight The particles to send to the right neighbor.
-   * @param receivedParticles The container where received particles will be stored.
-   * @param leftNeighbor The rank of the left neighbor.
-   * @param rightNeighbor The rank of the right neighbor.
-   * @param dimension The dimension index (0,1,2) for unique tagging.
-   */
-  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
-                                           const std::vector<ParticleType> &particlesToRight,
-                                           std::vector<ParticleType> &receivedParticles, int leftNeighbor,
-                                           int rightNeighbor, int dimension);
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source, Direction direction);
 
   /**
    * Waits for all send requests to be finished.
@@ -96,7 +86,7 @@ class ParticleCommunicator {
   /**
    * Receives data that has been sent by a specific neighbor of this domain.
    * @param neighbor The neighbor where the data originates from.
-   * @param dataBuffer The buffer where the received data will be stored.
+   * @param receiveBuffer The buffer where the received data will be stored.
    */
-  void receiveDataFromNeighbor(const int &neighbor, std::vector<char> &dataBuffer);
+  void receiveDataFromNeighbor(const int &neighbor, std::vector<char> &receiveBuffer) const;
 };

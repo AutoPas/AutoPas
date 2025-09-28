@@ -16,6 +16,15 @@
  */
 namespace ParticleSerializationTools {
 /**
+ * The combined size in byte of the simple attributes which need to be communicated using MPI.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+constexpr size_t AttributesSize = 200;
+#else
+constexpr size_t AttributesSize = 120;
+#endif
+
+/**
  * Serializes a particle and appends it to the serializedParticles container.
  * @param particle The particle which will be serialized.
  * @param serializedParticles The container to wich the serialized particle will be appended.
@@ -25,7 +34,7 @@ void serializeParticle(const ParticleType &particle, std::vector<char> &serializ
 /**
  * Deserializes a serialized particle.
  * @param particleData A pointer to the serialized particle data.
- * @param particle The particle to which the desierialized attributes will be applied.
+ * @param particle The particle to which the deserialized attributes will be applied.
  */
 void deserializeParticle(char *particleData, ParticleType &particle);
 

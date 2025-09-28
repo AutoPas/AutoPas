@@ -58,14 +58,6 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
     mdLib::MoleculeLJ::AttributeNames::ownershipState};
 #endif
 
-/**
- * The combined size in byte of the simple attributes which need to be communicated using MPI.
- */
-#if MD_FLEXIBLE_MODE == MULTISITE
-constexpr size_t AttributesSize = 200;
-#else
-constexpr size_t AttributesSize = 120;
-#endif
 
 /**
  * Serializes the attribute of a molecule defined by I.
@@ -74,7 +66,7 @@ constexpr size_t AttributesSize = 120;
  * @param startIndex: The startindex in the container where to store the serialized attribute.
  */
 template <size_t I>
-void serializeAttribute(const ParticleType &particle, std::vector<char> &attributeVector, size_t &startIndex) {
+void serializeAttribute(const ParticleType &particle, std::array<char, ParticleSerializationTools::AttributesSize> &attributeVector, size_t &startIndex) {
   const auto attribute = particle.get<Attributes[I]>();
   const auto sizeOfValue = sizeof(attribute);
   std::memcpy(&attributeVector[startIndex], &attribute, sizeOfValue);
@@ -106,7 +98,7 @@ void serializeParticleImpl(const ParticleType &particle, std::vector<char> &seri
                            std::index_sequence<I...>) {
   // Serialize particle attributes
   size_t startIndex = 0;
-  std::vector<char> attributesVector(AttributesSize);
+  std::array<char, ParticleSerializationTools::AttributesSize> attributesVector{};
   (serializeAttribute<I>(particle, attributesVector, startIndex), ...);
 
   // Add serialized attributes to serialized particle

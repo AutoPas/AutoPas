@@ -315,12 +315,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param receivedParticlesBuffer In-out parameter where the received particles will be placed in.
    * @param leftNeighbor: The left neighbor's index / rank.
    * @param rightNeighbor: The right neighbor's index / rank.
-   * @param dimension: The dimension index (0,1,2) for unique tagging.
    */
   void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
                                            const std::vector<ParticleType> &particlesToRight,
                                            std::vector<ParticleType> &receivedParticlesBuffer, int leftNeighbor,
-                                           int rightNeighbor, int dimension);
+                                           int rightNeighbor);
 
   /**
    * Helper function to reduce code duplication between collectHaloParticlesForLeftNeighbor() and
