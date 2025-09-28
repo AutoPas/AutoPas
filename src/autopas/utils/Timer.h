@@ -15,7 +15,7 @@
 namespace autopas::utils {
 
 /**
- * Timer class to stop times.
+ * Timer class to measure timings.
  */
 class Timer {
  public:
@@ -30,27 +30,38 @@ class Timer {
 
   /**
    * Stops the timer and returns the time elapsed in nanoseconds since the last call to start.
-   * It also adds the duration to the total time.
+   * It also adds the duration to the total time and the lap time.
    * @return elapsed time in nanoseconds
    */
   long stop();
 
   /**
-   * Resets the timer to 0.
+   * Resets the timer (and lap timer) to 0.
    */
   void reset();
 
   /**
-   * Adds the given amount of nanoseconds to the total time.
+   * Resets "lap" counters to 0.
+   */
+  void resetLap();
+
+  /**
+   * Adds the given amount of nanoseconds to the total time and lap time.
    * @param nanoseconds
    */
   void addTime(long nanoseconds);
 
   /**
    * Get total accumulated time.
-   * @return Total time in nano seconds.
+   * @return Total time in nanoseconds.
    */
   [[nodiscard]] long getTotalTime() const { return _totalTime; }
+
+  /**
+   * Get the total accumulated time since the start of the "lap".
+   * @return Time in nanoseconds.
+   */
+  long getLapTime() const { return _lapTime; }
 
   /**
    * Create a date stamp for the current moment with the given format.
@@ -76,6 +87,12 @@ class Timer {
    * Accumulated total time.
    */
   long _totalTime = 0;
+
+  /**
+   * Accumulated "lap" time. This can serve as an additional timer accumulator which can be reset without affecting
+   * the total time, similarly to laps in many stopwatches.
+   */
+  long _lapTime = 0;
 
   /**
    * Indicator if this timer currently is measuring.

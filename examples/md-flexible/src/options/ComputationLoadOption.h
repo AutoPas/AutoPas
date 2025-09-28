@@ -8,8 +8,8 @@
 #include "autopas/options/Option.h"
 
 /**
- * Class representing the choices for computation load tracking during the MD-Flexible simulation.
- * Users can choose between different computation load metrics to track.
+ * Class representing the choices for computational load tracking during the MD-Flexible simulation.
+ * Users can choose between different computational load metrics to track.
  */
 class ComputationLoadOption : public autopas::Option<ComputationLoadOption> {
  public:
@@ -18,22 +18,27 @@ class ComputationLoadOption : public autopas::Option<ComputationLoadOption> {
    */
   enum Value {
     /**
-     * Track complete cycle computation load.
+     * Use the complete cycle as the computational load.
      */
     completeCycle,
 
     /**
-     * Track force update computation load.
+     * Use the non-boundary calculations as the computational load.
+     */
+    nonBoundaryCalculations,
+
+    /**
+     * Use the force update as the computational load.
      */
     forceUpdate,
 
     /**
-     * Track MPI communication computation load.
+     * Use the MPI communication as the computational load.
      */
     MPICommunication,
 
     /**
-     * Track particle count computation load.
+     * Use the particle count as the computational load.
      */
     particleCount
   };
@@ -60,10 +65,11 @@ class ComputationLoadOption : public autopas::Option<ComputationLoadOption> {
    * @return map option -> string representation
    */
   static std::map<ComputationLoadOption, std::string> getOptionNames() {
-    return {{ComputationLoadOption::completeCycle, "CompleteCycle"},
-            {ComputationLoadOption::forceUpdate, "ForceUpdate"},
-            {ComputationLoadOption::MPICommunication, "MPICommunication"},
-            {ComputationLoadOption::particleCount, "ParticleCount"}};
+    return {{completeCycle, "CompleteCycle"},
+            {nonBoundaryCalculations, "NonBoundaryCalculations"},
+            {forceUpdate, "ForceUpdate"},
+            {MPICommunication, "MPICommunication"},
+            {particleCount, "ParticleCount"}};
   }
 
  private:

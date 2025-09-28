@@ -224,9 +224,9 @@ class Simulation {
     autopas::utils::Timer loadBalancing;
 
     /**
-     * Used for the diffuse load balancing as the metric to determine the imbalance.
+     * Records the time required for non-boundary calculations.
      */
-    autopas::utils::Timer computationalLoad;
+    autopas::utils::Timer nonBoundaryCalculations;
 
     /**
      * Records the time required for the update of the AutoPas container.
@@ -323,16 +323,11 @@ class Simulation {
   std::shared_ptr<RegularGridDecomposition> _domainDecomposition;
 
   /**
-   * Stores the previous timer value for computation load calculation.
-   * Used to calculate the delta between current and previous timer values.
+   * Get the computational load based corresponding to the selected computation load option. Defaults to particle count
+   * if it is the zeroth iteration. Particle counts are forced to be at least one to prevent division by zero.
+   * @return The computational load value as a double.
    */
-  double _previousTimerValue = 0.0;
-
-  /**
-   * Calculates the computation load based on the selected computation load option.
-   * @return The computation load value based on the configuration.
-   */
-  [[nodiscard]] double calculateComputationLoad();
+  [[nodiscard]] double getComputationalLoad() const;
 
   /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.
