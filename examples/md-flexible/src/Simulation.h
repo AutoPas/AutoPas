@@ -332,7 +332,7 @@ class Simulation {
    * Calculates the computation load based on the selected computation load option.
    * @return The computation load value based on the configuration.
    */
-  [[nodiscard]] double calculateComputationLoad() const;
+  [[nodiscard]] double calculateComputationLoad();
 
   /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.

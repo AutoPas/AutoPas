@@ -69,7 +69,7 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
   // 0) check if applicable
   const auto overLapps23 = [&]() -> std::array<size_t, 2> {
     if (this->_spaciallyForward) {
-      return {this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
+      return {this->_overlap[this->_dimsSortedByLength[1]], this->_overlap[this->_dimsSortedByLength[2]]};
     } else {
       return {0ul, 0ul};
     }
@@ -93,7 +93,7 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
     timers[slice].start();
     array<unsigned long, 3> myStartArray{0, 0, 0};
     for (size_t i = 0; i < slice; ++i) {
-      myStartArray[this->_dimsPerLength[0]] += this->_sliceThickness[i];
+      myStartArray[this->_dimsSortedByLength[0]] += this->_sliceThickness[i];
     }
 
     // all but the first slice need to lock their starting layers.
@@ -103,28 +103,28 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
         locks[lockBaseIndex + i].lock();
       }
     }
-    const auto lastLayer = myStartArray[this->_dimsPerLength[0]] + this->_sliceThickness[slice];
+    const auto lastLayer = myStartArray[this->_dimsSortedByLength[0]] + this->_sliceThickness[slice];
     for (unsigned long sliceOffset = 0ul; sliceOffset < this->_sliceThickness[slice]; ++sliceOffset) {
-      const auto dimSlice = myStartArray[this->_dimsPerLength[0]] + sliceOffset;
+      const auto dimSlice = myStartArray[this->_dimsSortedByLength[0]] + sliceOffset;
       // at the last layers request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
       if (slice != numSlices - 1 and dimSlice >= lastLayer - this->_overlapLongestAxis) {
         locks[((slice + 1) * this->_overlapLongestAxis) - (lastLayer - dimSlice)].lock();
       }
-      for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[this->_dimsPerLength[1]] - overLapps23[0];
-           ++dimMedium) {
-        for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[this->_dimsPerLength[2]] - overLapps23[1];
-             ++dimShort) {
+      for (unsigned long dimMedium = 0;
+           dimMedium < this->_cellsPerDimension[this->_dimsSortedByLength[1]] - overLapps23[0]; ++dimMedium) {
+        for (unsigned long dimShort = 0;
+             dimShort < this->_cellsPerDimension[this->_dimsSortedByLength[2]] - overLapps23[1]; ++dimShort) {
           array<unsigned long, 3> idArray = {};
-          idArray[this->_dimsPerLength[0]] = dimSlice;
-          idArray[this->_dimsPerLength[1]] = dimMedium;
-          idArray[this->_dimsPerLength[2]] = dimShort;
+          idArray[this->_dimsSortedByLength[0]] = dimSlice;
+          idArray[this->_dimsSortedByLength[1]] = dimMedium;
+          idArray[this->_dimsSortedByLength[2]] = dimShort;
 
           loopBody(idArray[0], idArray[1], idArray[2]);
         }
       }
       // at the end of the first layers release the lock
-      if (slice > 0 and dimSlice < myStartArray[this->_dimsPerLength[0]] + this->_overlapLongestAxis) {
+      if (slice > 0 and dimSlice < myStartArray[this->_dimsSortedByLength[0]] + this->_overlapLongestAxis) {
         locks[lockBaseIndex + sliceOffset].unlock();
         // if lastLayer is reached within overlap area, unlock all following locks
         // this should never be the case if slice thicknesses are set up properly; thickness should always be

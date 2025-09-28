@@ -34,6 +34,7 @@
 #include "src/domainDecomposition/ComputationLoadOption.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "src/options/ComputationLoadOption.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
