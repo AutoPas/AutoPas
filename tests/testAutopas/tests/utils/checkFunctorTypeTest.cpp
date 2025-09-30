@@ -14,16 +14,14 @@ using namespace autopas;
 // Define different kind of Functors for testing
 class PairwiseTestFunctor : public PairwiseFunctor<ParticleFP64, PairwiseTestFunctor> {
  public:
-  PairwiseTestFunctor() : PairwiseFunctor(1.0){};
-  std::string getName() override { return "PairwiseTestFunctor"; };
+  PairwiseTestFunctor() : PairwiseFunctor(1.0, "PairwiseTestFunctor"){};
   bool allowsNewton3() override { return true; };
   bool allowsNonNewton3() override { return true; };
   bool isRelevantForTuning() override { return true; };
 };
 class TriwiseTestFunctor : public TriwiseFunctor<ParticleFP64, TriwiseTestFunctor> {
  public:
-  TriwiseTestFunctor() : TriwiseFunctor(1.0){};
-  std::string getName() override { return "TriwiseTestFunctor"; };
+  TriwiseTestFunctor() : TriwiseFunctor(1.0, "TriwiseTestFunctor"){};
   bool allowsNewton3() override { return true; };
   bool allowsNonNewton3() override { return true; };
   bool isRelevantForTuning() override { return true; };

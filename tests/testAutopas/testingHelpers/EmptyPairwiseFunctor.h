@@ -27,7 +27,7 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPa
   /**
    * Default constructor.
    */
-  EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>>(0.){};
+  EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>>(0., "EmptyPairwiseFunctor"){};
 
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()
@@ -64,11 +64,6 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPa
    * @copydoc autopas::Functor::allowsNonNewton3()
    */
   bool allowsNonNewton3() override { return true; }
-
-  /**
-   * @copydoc autopas::Functor::getName()
-   */
-  std::string getName() override { return "EmptyPairwiseFunctor"; }
 
   /**
    * @copydoc autopas::Functor::isRelevantForTuning()

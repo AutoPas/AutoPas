@@ -26,7 +26,7 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<ParticleFP64
   std::array<double, 3> _max;
 
   CollectParticlePairsFunctor(double cutoff, std::array<double, 3> min, std::array<double, 3> max)
-      : PairwiseFunctor(cutoff), _min(min), _max(max) {}
+      : PairwiseFunctor(cutoff, "CollectParticlePairsFunctor"), _min(min), _max(max) {}
 
   void initTraversal() override { _pairs.clear(); }
 
@@ -43,8 +43,6 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<ParticleFP64
       if (newton3) _pairs.emplace_back(&j, &i);
     };
   }
-
-  std::string getName() override { return "CollectParticlePairsFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 
@@ -63,7 +61,7 @@ class CollectParticlesPerThreadFunctor
   std::array<std::vector<std::set<ParticleFP64 *>>, 8> _particlesPerThreadPerColor;
 
  public:
-  CollectParticlesPerThreadFunctor() : PairwiseFunctor(0) {}
+  CollectParticlesPerThreadFunctor() : PairwiseFunctor(0, "CollectParticlesPerThreadFunctor") {}
 
   void initTraversal() override {
     for (int i = 0; i < 8; i++) {
@@ -79,8 +77,6 @@ class CollectParticlesPerThreadFunctor
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&i);
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&j);
   }
-
-  std::string getName() override { return "CollectParticlesPerThreadFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 

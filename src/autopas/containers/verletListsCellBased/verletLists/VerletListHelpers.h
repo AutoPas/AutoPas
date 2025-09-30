@@ -41,11 +41,9 @@ class VerletListHelpers {
      * @param interactionLength
      */
     VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
-        : PairwiseFunctor<Particle_T, VerletListGeneratorFunctor>(interactionLength),
+        : PairwiseFunctor<Particle_T, VerletListGeneratorFunctor>(interactionLength, "VerletListGeneratorFunctor"),
           _verletListsAoS(verletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
-
-    std::string getName() override { return "VerletListGeneratorFunctor"; }
 
     bool isRelevantForTuning() override { return false; }
 

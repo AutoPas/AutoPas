@@ -79,7 +79,8 @@ class LJFunctorSVE
   }
 #else
       : autopas::PairwiseFunctor<Particle_T, LJFunctorSVE<Particle_T, applyShift, useMixing, useNewton3,
-                                                          calculateGlobals, countFLOPs, relevantForTuning>>(cutoff) {
+                                                          calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff, "LJFunctorSVE") {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
 #endif
@@ -111,8 +112,6 @@ class LJFunctorSVE
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
-
-  std::string getName() final { return "LJFunctorSVE"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 

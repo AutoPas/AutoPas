@@ -115,7 +115,7 @@ class LJMultisiteFunctor
   explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<Particle_T, LJMultisiteFunctor<Particle_T, applyShift, useMixing, useNewton3,
                                                                 calculateGlobals, relevantForTuning, countFLOPs>>(
-            cutoff),
+            cutoff, "LJMultisiteFunctor"),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -156,8 +156,6 @@ class LJMultisiteFunctor
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
-
-  std::string getName() final { return "LJMultisiteFunctor"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 

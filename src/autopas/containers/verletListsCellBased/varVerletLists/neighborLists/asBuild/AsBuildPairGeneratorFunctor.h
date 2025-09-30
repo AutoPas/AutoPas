@@ -66,11 +66,9 @@ class AsBuildPairGeneratorFunctor
    * @param cutoffskin The cutoff skin to use.
    */
   AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle_T> &neighborList, double cutoffskin)
-      : autopas::PairwiseFunctor<Particle_T, AsBuildPairGeneratorFunctor>(cutoffskin),
+      : autopas::PairwiseFunctor<Particle_T, AsBuildPairGeneratorFunctor>(cutoffskin, "AsBuildPairGeneratorFunctor"),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
-
-  std::string getName() override { return "AsBuildPairGeneratorFunctor"; }
 
   [[nodiscard]] bool isRelevantForTuning() override { return false; }
 

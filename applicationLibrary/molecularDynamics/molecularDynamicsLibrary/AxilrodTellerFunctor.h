@@ -123,7 +123,7 @@ class AxilrodTellerFunctor
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
       : autopas::TriwiseFunctor<Particle_T,
                                 AxilrodTellerFunctor<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
-            cutoff),
+            cutoff, "AxilrodTellerFunctorAutoVec"),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -165,8 +165,6 @@ class AxilrodTellerFunctor
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
-
-  std::string getName() final { return "AxilrodTellerFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return true; }
 

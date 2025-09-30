@@ -62,7 +62,8 @@ class LJFunctorAVX
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
       : autopas::PairwiseFunctor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3,
-                                                          calculateGlobals, countFLOPs, relevantForTuning>>(cutoff),
+                                                          calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff, "LJFunctorAVX"),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -110,8 +111,6 @@ class LJFunctorAVX
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
-
-  std::string getName() final { return "LJFunctorAVX"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 

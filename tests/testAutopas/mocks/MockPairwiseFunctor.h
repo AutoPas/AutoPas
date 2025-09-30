@@ -61,7 +61,4 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, MockPair
 
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
-
-  //  std::string getName() { return "functorName"; }
-  MOCK_METHOD(std::string, getName, (), (override));
 };

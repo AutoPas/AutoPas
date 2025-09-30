@@ -7,21 +7,14 @@
 
 #pragma once
 
-#include <type_traits>
-
 #include "Functor.h"
-#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
 
-template <class Particle>
-class VerletListHelpers;
-
 /**
- * PairwiseFunctor class. This class describes the pairwise interactions between
- * particles.
+ * PairwiseFunctor class. This class describes the pairwise interactions between particles.
  * @copydoc autopas::Functor
  *
  * @tparam Particle_T the type of Particle
@@ -38,16 +31,17 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   /**
    * Constructor
    * @param cutoff
+   * @param name
    */
-  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
+  explicit PairwiseFunctor(double cutoff, std::string name = "PairwiseFunctor")
+      : Functor<Particle_T, CRTP_T>(cutoff, name){};
 
-  virtual ~PairwiseFunctor() = default;
+  ~PairwiseFunctor() override = default;
 
   /**
    * PairwiseFunctor for arrays of structures (AoS).
    *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between two particles.
+   * This functor should calculate the forces or any other pair-wise interaction between two particles.
    * This should include a cutoff check if needed!
    * @param i Particle i
    * @param j Particle j
@@ -60,8 +54,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   /**
    * PairwiseFunctor for structure of arrays (SoA)
    *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between all particles in an soa.
+   * This functor should calculate the forces or any other pair-wise interaction between all particles in an soa.
    * This should include a cutoff check if needed!
    *
    * @param soa Structure of arrays
@@ -72,10 +65,24 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   /**
+   * PairwiseFunctor for structure of arrays (SoA)
+   *
+   * This functor should calculate the forces or any other pair-wise interaction between all particles of soa1 and soa2.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
+    utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
+  }
+
+  /**
    * PairwiseFunctor for structure of arrays (SoA) for neighbor lists
    *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between the particle in the SoA with index indexFirst and all particles with indices in the neighborList.
+   * This functor should calculate the forces or any other pair-wise interaction between the particle in the SoA with
+   * index indexFirst and all particles with indices in the neighborList.
    * This should include a cutoff check if needed!
    *
    * @param soa Structure of arrays
@@ -86,21 +93,6 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                                 const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
-  }
-
-  /**
-   * PairwiseFunctor for structure of arrays (SoA)
-   *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between all particles of soa1 and soa2.
-   * This should include a cutoff check if needed!
-   *
-   * @param soa1 First structure of arrays.
-   * @param soa2 Second structure of arrays.
-   * @param newton3 defines whether or whether not to use newton 3
-   */
-  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
-    utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
   }
 };
 

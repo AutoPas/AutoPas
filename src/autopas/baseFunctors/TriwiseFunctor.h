@@ -7,18 +7,14 @@
 
 #pragma once
 
-#include <type_traits>
-
 #include "Functor.h"
-#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
 
 /**
- * TriwiseFunctor class. This class describes the triwise interactions between
- * particles.
+ * TriwiseFunctor class. This class describes the triwise interactions between particles.
  * @copydoc autopas::Functor
  *
  * @tparam Particle_T the type of Particle
@@ -35,16 +31,17 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
   /**
    * Constructor
    * @param cutoff
+   * @param name
    */
-  explicit TriwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
+  explicit TriwiseFunctor(double cutoff, std::string name = "TriwiseFunctor")
+      : Functor<Particle_T, CRTP_T>(cutoff, name){};
 
-  virtual ~TriwiseFunctor() = default;
+  ~TriwiseFunctor() override = default;
 
   /**
    * TriwiseFunctor for arrays of structures (AoS).
    *
-   * This functor should calculate the forces or any triwise interaction
-   * between three particles.
+   * This functor should calculate the forces or any triwise interaction between three particles.
    * This should include a cutoff check if needed!
    * @param i Particle i
    * @param j Particle j
@@ -58,8 +55,7 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
   /**
    * TriwiseFunctor for structure of arrays (SoA)
    *
-   * This functor should calculate the forces or any other triwise interaction
-   * between all particles in an soa.
+   * This functor should calculate the forces or any other triwise interaction between all particles in an soa.
    * This should include a cutoff check if needed!
    *
    * @param soa Structure of arrays
@@ -72,10 +68,9 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
   /**
    * TriwiseFunctor for structure of arrays (SoA)
    *
-   * This functor should calculate the forces or any other triwise interaction
-   * between all particles of soa1 and soa2. It should always calculate forces for all particles in soa1, even when
-   * newton3 == false.
-   * This should include a cutoff check if needed!
+   * This functor should calculate the forces or any other triwise interaction between all particles of soa1 and soa2.
+   * It should always calculate forces for all particles in soa1, even when newton3 == false. This should include a
+   * cutoff check if needed!
    *
    * @param soa1 First structure of arrays.
    * @param soa2 Second structure of arrays.
@@ -88,9 +83,8 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
   /**
    * TriwiseFunctor for structure of arrays (SoA)
    *
-   * This functor should calculate the forces or any other triwise interaction
-   * between all particles of soa1 and soa2 and soa3.
-   * This should include a cutoff check if needed!
+   * This functor should calculate the forces or any other triwise interaction between all particles of soa1 and soa2
+   * and soa3. This should include a cutoff check if needed!
    *
    * @param soa1 First structure of arrays.
    * @param soa2 Second structure of arrays.
@@ -105,9 +99,8 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
   /**
    * TriwiseFunctor for structure of arrays (SoA) for neighbor lists
    *
-   * This functor should calculate the forces or any other triwise interaction
-   * between the particles in the SoA with index indexFirst and all particles with indices in the neighborList.
-   * This should include a cutoff check if needed!
+   * This functor should calculate the forces or any other triwise interaction between the particles in the SoA with
+   * index indexFirst and all particles with indices in the neighborList. This should include a cutoff check if needed!
    *
    * @param soa Structure of arrays
    * @param indexFirst The index of the first particle for each interaction

@@ -63,7 +63,7 @@ class LJFunctor
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                       countFLOPs, relevantForTuning>>(cutoff),
+                                                       countFLOPs, relevantForTuning>>(cutoff, "LJFunctorAutoVec"),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -104,8 +104,6 @@ class LJFunctor
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
-
-  std::string getName() final { return "LJFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
