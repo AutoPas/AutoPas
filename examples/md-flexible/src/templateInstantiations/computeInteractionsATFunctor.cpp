@@ -12,7 +12,7 @@
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress
-template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
+template bool autopas::AutoPas<ParticleType>::computeInteractions(ATMFunctor *);
 //! @endcond
 
 #endif

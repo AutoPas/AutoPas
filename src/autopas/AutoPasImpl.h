@@ -124,10 +124,22 @@ void AutoPas<Particle_T>::init() {
 }
 
 template <class Particle_T>
-template <class Functor>
-bool AutoPas<Particle_T>::computeInteractions(Functor *f) {
+template <class Functor_T>
+Functor_T *AutoPas<Particle_T>::registerFunctor(Functor_T &&functor, std::optional<std::string> name) {
+  auto functorName = name.value_or(functor.getName());
+  if (_functorMap.contains(functorName)) {
+    AutoPasLog(WARN, "Functor with name '{}' already registered. Overwriting previous functor.", functorName);
+  }
+  _functorMap[functorName] = std::make_unique<Functor_T>(std::forward<Functor_T>(functor));
+
+  return static_cast<Functor_T *>(_functorMap[functorName].get());
+}
+
+template <class Particle_T>
+template <class Functor_T>
+bool AutoPas<Particle_T>::computeInteractions(Functor_T *f) {
   static_assert(
-      not std::is_same_v<Functor, autopas::Functor<Particle_T, Functor>>,
+      not std::is_same_v<Functor_T, autopas::Functor<Particle_T, Functor_T>>,
       "The static type of Functor in computeInteractions is not allowed to be autopas::Functor. Please use the "
       "derived type instead, e.g. by using a dynamic_cast.");
   if (f->getCutoff() > this->getCutoff()) {
@@ -135,10 +147,10 @@ bool AutoPas<Particle_T>::computeInteractions(Functor *f) {
                                        f->getCutoff(), this->getCutoff());
   }
 
-  if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    return _logicHandler->template computeInteractionsPipeline<Functor>(f, InteractionTypeOption::pairwise);
-  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    return _logicHandler->template computeInteractionsPipeline<Functor>(f, InteractionTypeOption::triwise);
+  if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
+    return _logicHandler->template computeInteractionsPipeline<Functor_T>(f, InteractionTypeOption::pairwise);
+  } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
+    return _logicHandler->template computeInteractionsPipeline<Functor_T>(f, InteractionTypeOption::triwise);
   } else {
     utils::ExceptionHandler::exception(
         "Functor is not valid. Only pairwise and triwise functors are supported. Please use a functor derived from "

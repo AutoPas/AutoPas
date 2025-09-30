@@ -26,7 +26,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATMFunctor *);
 #endif
 //! @endcond
 
@@ -177,6 +177,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
+  registerFunctors();
   _autoPasContainer->init();
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
@@ -460,13 +461,13 @@ void Simulation::updateInteractionForces() {
   long timeIteration = 0;
 
   // Calculate pairwise forces
-  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+  if (_configuration.getInteractionTypes().contains(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
     _currentIterationIsTuningIteration |= calculatePairwiseForces();
     timeIteration += _timers.forceUpdatePairwise.stop();
   }
   // Calculate triwise forces
-  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+  if (_configuration.getInteractionTypes().contains(autopas::InteractionTypeOption::triwise)) {
     _timers.forceUpdateTriwise.start();
     _currentIterationIsTuningIteration |= calculateTriwiseForces();
     timeIteration += _timers.forceUpdateTriwise.stop();
@@ -525,14 +526,50 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  bool wasTuningIteration{false};
+  // Compile time error check is already done in selectFunctors()
+  switch (_configuration.functorOption.value) {
+    case MDFlexConfig::FunctorOption::lj12_6: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+      wasTuningIteration = _autoPasContainer->computeInteractions(_ljFunctorAutoVec);
+#endif
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+      wasTuningIteration = _autoPasContainer->computeInteractions(_ljFunctorAVX);
+#endif
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+#if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+      wasTuningIteration = _autoPasContainer->computeInteractions(_ljFunctorSVE);
+#endif
+      break;
+    }
+    default: {
+      throw std::runtime_error("Unknown pairwise functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption.value)));
+    }
+  }
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  bool wasTuningIteration{false};
+  // Compile time error check is already done in selectFunctors()
+  switch (_configuration.functorOption3B.value) {
+    case MDFlexConfig::FunctorOption3B::at: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
+      wasTuningIteration = _autoPasContainer->computeInteractions(_atmFunctor);
+#endif
+      break;
+    }
+    default: {
+      throw std::runtime_error("Unknown triwise functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
+    }
+  }
   return wasTuningIteration;
 }
 
@@ -791,62 +828,67 @@ void Simulation::loadParticles() {
   }
 }
 
-template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
+void Simulation::registerFunctors() {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
-  switch (_configuration.functorOption.value) {
-    case MDFlexConfig::FunctorOption::lj12_6: {
+
+  // Register all selected pairwise functors
+  if (_configuration.getInteractionTypes().contains(autopas::InteractionTypeOption::pairwise)) {
+    switch (_configuration.functorOption.value) {
+      case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+        _ljFunctorAutoVec = _autoPasContainer.registerFunctor(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
+        throw std::runtime_error(
+            "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
+            "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
 #endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
+        break;
+      }
+      case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
+        _ljFunctorAVX = _autoPasContainer->registerFunctor(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
 #else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
+        throw std::runtime_error(
+            "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
+            "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
 #endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+        break;
+      }
+      case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
+        _ljFunctorSVE = _autoPasContainer->registerFunctor(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
 #else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+        throw std::runtime_error(
+            "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
+            "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
-    }
-    default: {
-      throw std::runtime_error("Unknown pairwise functor choice" +
-                               std::to_string(static_cast<int>(_configuration.functorOption.value)));
+        break;
+      }
+      default: {
+        throw std::runtime_error("Unknown pairwise functor choice" +
+                                 std::to_string(static_cast<int>(_configuration.functorOption.value)));
+      }
     }
   }
-}
 
-template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value;
-  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
-  switch (_configuration.functorOption3B.value) {
-    case MDFlexConfig::FunctorOption3B::at: {
+  // Register all selected triwise functors
+  if (_configuration.getInteractionTypes().contains(autopas::InteractionTypeOption::triwise)) {
+    switch (_configuration.functorOption3B.value) {
+      case MDFlexConfig::FunctorOption3B::at: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-      return f(ATFunctor{cutoff, particlePropertiesLibrary});
+        _atmFunctor = _autoPasContainer->registerFunctor(ATMFunctor{cutoff, particlePropertiesLibrary});
 #else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
+        throw std::runtime_error(
+            "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
+            "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
-    }
-    default: {
-      throw std::runtime_error("Unknown triwise functor choice" +
-                               std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
+        break;
+      }
+      default: {
+        throw std::runtime_error("Unknown triwise functor choice" +
+                                 std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
+      }
     }
   }
 }

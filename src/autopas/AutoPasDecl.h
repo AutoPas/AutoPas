@@ -254,13 +254,24 @@ class AutoPas {
   bool deleteParticle(Particle_T &particle);
 
   /**
+   * Register a functor for tuning.
+   * @tparam Functor_T Type of the functor to be registered.
+   * @param functor The functor to be registered.
+   * @param name Optional name for the functor. If not given functor.getName() is used.
+   * @return Reference to the registered functor. This is useful if a temporary functor was passed.
+   */
+  template <class Functor_T>
+  Functor_T *registerFunctor(Functor_T &&functor, std::optional<std::string> name = std::nullopt);
+
+  /**
    * Function to iterate over all inter-particle interactions in the container
    * This function only handles short-range interactions.
+   * @tparam Functor_T Type of the functor that's used to compute the interactions.
    * @param f Functor that describes the interaction (e.g. force).
    * @return true if this was a tuning iteraction.
    */
-  template <class Functor>
-  bool computeInteractions(Functor *f);
+  template <class Functor_T>
+  bool computeInteractions(Functor_T *f);
 
   /**
    * Iterate over all particles by using
@@ -1186,6 +1197,8 @@ class AutoPas {
    * There can be up to one per interaction type.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
+
+  std::unordered_map<std::string, std::unique_ptr<autopas::FunctorBase>> _functorMap;
 
   /**
    * Stores whether the mpi communicator was provided externally or not

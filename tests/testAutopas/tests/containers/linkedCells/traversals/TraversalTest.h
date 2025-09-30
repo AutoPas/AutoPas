@@ -48,7 +48,8 @@ class TraversalTest
     using floatType = double;
 
     CountFunctor(floatType cutoff)
-        : autopas::PairwiseFunctor<ParticleFP64, CountFunctor>(cutoff, "TraversalTestCountFunctor"), _cutoffSquare(cutoff * cutoff){};
+        : autopas::PairwiseFunctor<ParticleFP64, CountFunctor>(cutoff, "TraversalTestCountFunctor"),
+          _cutoffSquare(cutoff * cutoff){};
 
     bool isRelevantForTuning() override { return true; }
 

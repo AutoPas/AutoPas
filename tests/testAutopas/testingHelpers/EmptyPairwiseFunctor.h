@@ -27,7 +27,8 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPa
   /**
    * Default constructor.
    */
-  EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>>(0., "EmptyPairwiseFunctor"){};
+  EmptyPairwiseFunctor()
+      : autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>>(0., "EmptyPairwiseFunctor"){};
 
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()

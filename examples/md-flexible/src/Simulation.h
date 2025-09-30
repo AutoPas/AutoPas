@@ -16,7 +16,6 @@
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
-#include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
@@ -70,6 +69,34 @@ class Simulation {
   void finalize();
 
  protected:
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+  /**
+   * Pointer to the Lennard-Jones functor using AutoVec.
+   */
+  LJFunctorTypeAutovec *_ljFunctorAutovec{nullptr};
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+  /**
+   * Pointer to the Lennard-Jones functor using AVX.
+   */
+  LJFunctorTypeAVX *_ljFunctorAVX{nullptr};
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+  /**
+   * Pointer to the Lennard-Jones functor using SVE.
+   */
+  LJFunctorTypeSVE *_ljFunctorSVE{nullptr};
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
+  /**
+   * Pointer to the Axilrod-Teller-Muto functor using AutoVec.
+   */
+  ATMFunctor *_atmFunctor{nullptr};
+#endif
+
   /**
    * Stores the configuration used for the simulation.
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
@@ -251,6 +278,11 @@ class Simulation {
 
  private:
   /**
+   * Selects and registers the functors used for this simulation to AutoPas.
+   */
+  void registerFunctors();
+
+  /**
    * Load particles from this object's config into this object's AutoPas container.
    *
    * @note This also clears all particles from the config file!
@@ -382,30 +414,4 @@ class Simulation {
    */
   [[maybe_unused]] void checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
                                           int lineNumber);
-
-  /**
-   *
-   * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
-   * @note This templated function is private and hence implemented in the .cpp
-   *
-   * @tparam ReturnType Return type of f.
-   * @tparam FunctionType Function type ReturnType f(auto functor).
-   * @param f lambda function.
-   * @return Return value of f.
-   */
-  template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctor(FunctionType f);
-
-  /**
-   *
-   * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
-   * @note This templated function is private and hence implemented in the .cpp
-   *
-   * @tparam ReturnType Return type of f.
-   * @tparam FunctionType Function type ReturnType f(auto functor).
-   * @param f lambda function.
-   * @return Return value of f.
-   */
-  template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctor3B(FunctionType f);
 };
