@@ -690,6 +690,6 @@ double boxDistanceSquared(const std::array<T, SIZE> &aMin, const std::array<T, S
   const auto aToB = max(std::array<T, SIZE>{}, aMin - bMax);
   const auto bToA = max(std::array<T, SIZE>{}, bMin - aMax);
 
-  return dot(aToB, aToB) + dot(bToA, bToA);
+  return std::min(dot(aToB, aToB), dot(bToA, bToA));
 }
 }  // namespace autopas::utils::ArrayMath
