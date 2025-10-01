@@ -6,11 +6,13 @@
 
 #include "TuningStrategyFactory.h"
 
+#include "NotRelevantForTuning.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
 #include "autopas/tuning/tuningStrategy/BayesianClusterSearch.h"
 #include "autopas/tuning/tuningStrategy/BayesianSearch.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
+#include "autopas/tuning/tuningStrategy/NotRelevantForTuning.h"
 #include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
 #include "autopas/tuning/tuningStrategy/RandomSearch.h"
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
@@ -134,6 +136,11 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::sortByName: {
       tuningStrategy = std::make_unique<SortByName>();
+      break;
+    }
+
+    case TuningStrategyOption::notRelevantForTuning: {
+      tuningStrategy = std::make_unique<NotRelevantForTuning>();
       break;
     }
 

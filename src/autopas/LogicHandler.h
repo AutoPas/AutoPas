@@ -9,6 +9,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -36,6 +37,12 @@
 
 namespace autopas {
 
+struct FunctorTunerBundle {
+  InteractionTypeOption interactionType;
+  std::unique_ptr<FunctorBase> functor;
+  std::unique_ptr<AutoTuner> tuner;
+};
+
 /**
  * The LogicHandler takes care of the containers s.t. they are all in the same valid state.
  * This is mainly done by incorporating a global container rebuild frequency, which defines when containers and their
@@ -51,26 +58,27 @@ class LogicHandler {
    * @param rebuildFrequency
    * @param outputSuffix
    */
-  LogicHandler(std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &autotuners,
+  LogicHandler(std::unordered_map<std::string, FunctorTunerBundle> &functorTunerMap,
                const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
-      : _autoTunerRefs(autotuners),
+      : _autoTunerRefs(functorTunerMap),
         _logicHandlerInfo(logicHandlerInfo),
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
-        _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
-                                                   [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
+        _iterationLogger(outputSuffix,
+                         std::any_of(functorTunerMap.begin(), functorTunerMap.end(),
+                                     [](const auto &entry) { return entry.second.tuner->canMeasureEnergy(); })),
         _flopLogger(outputSuffix),
         _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // Initialize AutoPas with tuners for given interaction types
-    for (const auto &[interactionType, tuner] : autotuners) {
-      _interactionTypes.insert(interactionType);
+    for (const auto &bundle : std::views::values(functorTunerMap)) {
+      _interactionTypes.insert(bundle.interactionType);
 
-      const auto configuration = tuner->getCurrentConfig();
+      const auto configuration = bundle.tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
       _currentContainerSelectorInfo = ContainerSelectorInfo{_logicHandlerInfo.boxMin,
                                                             _logicHandlerInfo.boxMax,
@@ -167,13 +175,13 @@ class LogicHandler {
 
     if (_functorCalls > 0) {
       // Bump iteration counters for all autotuners
-      for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
-        const bool needsToWait = checkTuningStates(interactionType);
+      for (const auto &bundle : std::views::values(_autoTunerRefs)) {
+        const bool needsToWait = checkTuningStates(bundle.interactionType);
         // Called before bumpIterationCounters as it would return false after that.
-        if (autoTuner->inLastTuningIteration()) {
+        if (bundle.tuner->inLastTuningIteration()) {
           _iterationAtEndOfLastTuningPhase = _iteration;
         }
-        autoTuner->bumpIterationCounters(needsToWait);
+        bundle.tuner->bumpIterationCounters(needsToWait);
       }
 
       // We will do a rebuild in this timestep
@@ -435,11 +443,11 @@ class LogicHandler {
    *
    * @tparam Functor
    * @param functor
-   * @param interactionType
+   * @param functorName
    * @return True if this was a tuning iteration.
    */
   template <class Functor>
-  bool computeInteractionsPipeline(Functor *functor, const InteractionTypeOption &interactionType);
+  bool computeInteractionsPipeline(Functor *functor, const std::string &functorName);
 
   /**
    * Create the additional vectors vector for a given iterator behavior.
@@ -556,7 +564,7 @@ class LogicHandler {
     // Goes over all pairs in _autoTunerRefs and returns true as soon as one is `inTuningPhase()`.
     // The tuner associated with the given interaction type is ignored.
     return std::any_of(std::begin(_autoTunerRefs), std::end(_autoTunerRefs), [&](const auto &entry) {
-      return not(entry.first == interactionType) and entry.second->inTuningPhase();
+      return not(entry.second.interactionType == interactionType) and entry.second.tuner->inTuningPhase();
     });
   }
 
@@ -731,12 +739,12 @@ class LogicHandler {
    * Gathers dynamic data from the domain if necessary and retrieves the next configuration to use.
    * @tparam Functor
    * @param functor
-   * @param interactionType
+   * @param functorName
    * @return
    */
   template <class Functor>
   std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(
-      Functor &functor, const InteractionTypeOption &interactionType);
+      Functor &functor, const std::string &functorName);
 
   /**
    * Sets the current container to the given one and transfers all particles from the old container to the new one.
@@ -1014,7 +1022,7 @@ class LogicHandler {
   /**
    * Reference to the map of AutoTuners which are managed by the AutoPas main interface.
    */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &_autoTunerRefs;
+  std::unordered_map<std::string, FunctorTunerBundle> &_autoTunerRefs;
 
   /**
    * The current container holding the particles.
@@ -1150,16 +1158,17 @@ bool LogicHandler<Particle_T>::getNeighborListsInvalidDoDynamicRebuild() {
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
   // Implement rebuild indicator as function, so it is only evaluated when needed.
-  const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
-    return _interactionTypes.count(interactionOption) != 0 and
-           _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
+  const auto needRebuildAnyTuner = [&]() {
+    for (const auto &bundle : std::views::values(_autoTunerRefs)) {
+      return bundle.tuner->willRebuildNeighborLists();
+    }
   };
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
       or getNeighborListsInvalidDoDynamicRebuild()
 #endif
-      or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
+      or needRebuildAnyTuner()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -1249,7 +1258,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     }
   }();
 
-  auto &autoTuner = *_autoTunerRefs[interactionType];
+  auto &autoTuner = *_autoTunerRefs[functor.getName()].tuner;
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
     autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
@@ -1818,8 +1827,8 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
 template <typename Particle_T>
 template <class Functor>
 std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::selectConfiguration(
-    Functor &functor, const InteractionTypeOption &interactionType) {
-  auto &autoTuner = *_autoTunerRefs[interactionType];
+    Functor &functor, const std::string &functorName) {
+  auto &autoTuner = *_autoTunerRefs[functorName].tuner;
 
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
@@ -1897,8 +1906,8 @@ void LogicHandler<Particle_T>::setCurrentContainer(
 
 template <typename Particle_T>
 template <class Functor>
-bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
-                                                           const InteractionTypeOption &interactionType) {
+bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor, const std::string &functorName) {
+  const auto interactionType = _autoTunerRefs[functorName].interactionType;
   if (not _interactionTypes.count(interactionType)) {
     utils::ExceptionHandler::exception(
         "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
@@ -1908,9 +1917,9 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
-  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
+  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, functorName);
   tuningTimer.stop();
-  auto &autoTuner = *_autoTunerRefs[interactionType];
+  auto &autoTuner = *_autoTunerRefs[functorName].tuner;
   autoTuner.logTuningResult(stillTuning, tuningTimer.getTotalTime());
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.

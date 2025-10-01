@@ -77,6 +77,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * Sort the queue by Name (=Configuration::operator<()) to minimize container conversion overhead.
      */
     sortByName,
+    /**
+     * Used for functors that do not need tuning. Just looks for a valid configuration.
+     */
+    notRelevantForTuning,
   };
 
   /**
@@ -108,6 +112,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         TuningStrategyOption::randomSearch,
         // Not a valid option anymore. Only exists to tell users not to use it.
         TuningStrategyOption::fullSearch,
+        //  Used for functors that do not need tuning. Just looks for a valid configuration.
+        TuningStrategyOption::notRelevantForTuning,
     };
   }
 
@@ -129,6 +135,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
         {TuningStrategyOption::sortByName, "sort-by-name"},
         {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
+        {TuningStrategyOption::notRelevantForTuning, "not-relevant-for-tuning"},
     };
   }
 

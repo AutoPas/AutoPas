@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 
+#include "LogicHandler.h"
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
@@ -36,11 +37,12 @@ namespace autopas {
 template <class Particle_T>
 class LogicHandler;
 
+struct FunctorTunerBundle;
+
 /**
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle_T Class for particles
- * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle_T>
 class AutoPas {
@@ -975,10 +977,10 @@ class AutoPas {
   [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
   getCurrentConfigs() const {
     std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
-    currentConfigs.reserve(_autoTuners.size());
-
-    for (const auto &[type, tuner] : _autoTuners) {
-      currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
+    // TODO: don't overwrite
+    for (const auto &bundle : std::views::values(_functorTunerMap)) {
+      const auto &type = bundle.interactionType;
+      currentConfigs.emplace(type, std::cref(bundle.tuner->getCurrentConfig()));
     }
     return currentConfigs;
   }
@@ -1118,9 +1120,12 @@ class AutoPas {
   size_t getSortingThreshold() const { return _sortingThreshold; }
 
  private:
-  autopas::ParticleContainerInterface<Particle_T> &getContainer();
+  ParticleContainerInterface<Particle_T> &getContainer();
 
-  const autopas::ParticleContainerInterface<Particle_T> &getContainer() const;
+  const ParticleContainerInterface<Particle_T> &getContainer() const;
+
+  void createAutoTuner(const std::string &functorName);
+
   /**
    * Information needed for TuningStrategyFactory::generateTuningStrategy().
    */
@@ -1190,15 +1195,15 @@ class AutoPas {
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler;
+  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler{nullptr};
 
   /**
    * All AutoTuners used in this instance of AutoPas.
    * There can be up to one per interaction type.
    */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
+  // std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
 
-  std::unordered_map<std::string, std::unique_ptr<autopas::FunctorBase>> _functorMap;
+  std::unordered_map<std::string, autopas::FunctorTunerBundle> _functorTunerMap;
 
   /**
    * Stores whether the mpi communicator was provided externally or not

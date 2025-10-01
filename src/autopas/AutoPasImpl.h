@@ -9,6 +9,7 @@
 #include <array>
 #include <memory>
 #include <ostream>
+#include <ranges>
 #include <type_traits>
 #include <vector>
 
@@ -57,7 +58,7 @@ AutoPas<Particle_T>::~AutoPas() {
 
 template <class Particle_T>
 AutoPas<Particle_T> &AutoPas<Particle_T>::operator=(AutoPas &&other) noexcept {
-  _autoTuners = std::move(other._autoTuners);
+  _functorTunerMap = std::move(other._functorTunerMap);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
@@ -83,56 +84,44 @@ void AutoPas<Particle_T>::init() {
 
   _logicHandlerInfo.sortingThreshold = _sortingThreshold;
 
-  // If an interval was given for the cell size factor, change it to the relevant values.
-  // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
-  const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
-    if (const auto *csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
-      const auto interactionLength = _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkin;
-      const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
-      return {SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX)};
-    } else {
-      // in this case _allowedCellSizeFactors is a finite set
-      return {_allowedCellSizeFactors->getAll()};
-    }
-  }();
-
-  // Create autotuners for each interaction type
-  for (const auto &interactionType : _allowedInteractionTypeOptions) {
-    const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
-        _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
-        _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
-        interactionType);
-
-    AutoTuner::TuningStrategiesListType tuningStrategies;
-    tuningStrategies.reserve(_tuningStrategyOptions.size());
-    for (const auto &strategy : _tuningStrategyOptions) {
-      tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-          searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
-    }
-    if (_useTuningStrategyLoggerProxy) {
-      tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
-    }
-    auto tunerOutputSuffix = _outputSuffix + "_" + interactionType.to_string();
-    _autoTuners.emplace(interactionType,
-                        std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                             _verletRebuildFrequency, tunerOutputSuffix));
+  // Create autotuners for all relevant functors
+  for (auto &[functorName, bundle] : _functorTunerMap) {
+    createAutoTuner(functorName);
   }
 
   // Create logic handler
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
+      _functorTunerMap, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
 template <class Particle_T>
 template <class Functor_T>
 Functor_T *AutoPas<Particle_T>::registerFunctor(Functor_T &&functor, std::optional<std::string> name) {
   auto functorName = name.value_or(functor.getName());
-  if (_functorMap.contains(functorName)) {
+  if (_functorTunerMap.contains(functorName)) {
     AutoPasLog(WARN, "Functor with name '{}' already registered. Overwriting previous functor.", functorName);
   }
-  _functorMap[functorName] = std::make_unique<Functor_T>(std::forward<Functor_T>(functor));
 
-  return static_cast<Functor_T *>(_functorMap[functorName].get());
+  FunctorTunerBundle bundle{};
+  if (utils::isPairwiseFunctor<Functor_T>()) {
+    bundle.interactionType = InteractionTypeOption::pairwise;
+  } else if (utils::isTriwiseFunctor<Functor_T>()) {
+    bundle.interactionType = InteractionTypeOption::triwise;
+  } else {
+    utils::ExceptionHandler::exception(
+        "Functor is not valid. Only pairwise and triwise functors are supported. Please use a functor derived from "
+        "PairwiseFunctor or TriwiseFunctor.");
+  }
+  bundle.functor = std::make_unique<Functor_T>(std::forward<Functor_T>(functor));
+  bundle.tuner = nullptr;
+  _functorTunerMap[functorName] = std::move(bundle);
+
+  // Add AutoTuner if AutoPas was already initialized (aka. has a LogicHandler)
+  if (not _logicHandler) {
+    createAutoTuner(functorName);
+  }
+
+  return static_cast<Functor_T *>(_functorTunerMap[functorName].functor.get());
 }
 
 template <class Particle_T>
@@ -148,9 +137,9 @@ bool AutoPas<Particle_T>::computeInteractions(Functor_T *f) {
   }
 
   if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
-    return _logicHandler->template computeInteractionsPipeline<Functor_T>(f, InteractionTypeOption::pairwise);
+    return _logicHandler->template computeInteractionsPipeline<Functor_T>(f, f->getName());
   } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
-    return _logicHandler->template computeInteractionsPipeline<Functor_T>(f, InteractionTypeOption::triwise);
+    return _logicHandler->template computeInteractionsPipeline<Functor_T>(f, f->getName());
   } else {
     utils::ExceptionHandler::exception(
         "Functor is not valid. Only pairwise and triwise functors are supported. Please use a functor derived from "
@@ -253,8 +242,8 @@ std::vector<Particle_T> AutoPas<Particle_T>::resizeBox(const std::array<double, 
 
 template <class Particle_T>
 void AutoPas<Particle_T>::forceRetune() {
-  for (auto &[interaction, tuner] : _autoTuners) {
-    tuner->forceRetune();
+  for (const auto &bundle : std::views::values(_functorTunerMap)) {
+    bundle.tuner->forceRetune();
   }
 }
 
@@ -363,15 +352,58 @@ autopas::ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getContain
 }
 
 template <class Particle_T>
-const autopas::ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getContainer() const {
+const ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getContainer() const {
   return _logicHandler->getContainer();
+}
+
+template <class Particle_T>
+void AutoPas<Particle_T>::createAutoTuner(const std::string &functorName) {
+  auto &bundle = _functorTunerMap.at(functorName);
+  const auto &interactionType = bundle.interactionType;
+
+  // If an interval was given for the cell size factor, change it to the relevant values.
+  // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
+  const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
+    if (const auto *csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
+      const auto interactionLength = _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkin;
+      const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
+      return {SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX)};
+    } else {
+      // in this case _allowedCellSizeFactors is a finite set
+      return {_allowedCellSizeFactors->getAll()};
+    }
+  }();
+
+  const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
+      _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
+      _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors, interactionType);
+
+  AutoTuner::TuningStrategiesListType tuningStrategies;
+  if (_functorTunerMap[functorName].functor->isRelevantForTuning()) {
+    tuningStrategies.reserve(_tuningStrategyOptions.size());
+    for (const auto &strategy : _tuningStrategyOptions) {
+      tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
+          searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
+    }
+  } else {
+    tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
+        searchSpace, TuningStrategyOption::notRelevantForTuning, _tuningStrategyFactoryInfo, _outputSuffix));
+  }
+
+  if (_useTuningStrategyLoggerProxy) {
+    tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
+  }
+
+  auto tunerOutputSuffix = _outputSuffix + "_" + functorName;
+  bundle.tuner = std::make_unique<AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo, _verletRebuildFrequency,
+                                             tunerOutputSuffix);
 }
 
 template <class Particle_T>
 bool AutoPas<Particle_T>::searchSpaceIsTrivial() {
   bool isTrivial = true;
-  for (auto &[interaction, tuner] : _autoTuners) {
-    isTrivial = isTrivial and tuner->searchSpaceIsTrivial();
+  for (const auto &bundle : std::views::values(_functorTunerMap)) {
+    isTrivial = isTrivial and bundle.tuner->searchSpaceIsTrivial();
   }
   return isTrivial;
 }
