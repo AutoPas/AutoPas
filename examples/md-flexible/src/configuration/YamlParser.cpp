@@ -844,15 +844,27 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
-      } else if (key == config.computationLoad.name) {
+      } else if (key == config.computationLoadMetric.name) {
         expected = "YAML-sequence of possible values.";
-        description = config.computationLoad.description;
+        description = config.computationLoadMetric.description;
 
         const auto parsedOptions = ComputationLoadOption::parseOptions(
             parseSequenceOneElementExpected(node[key], "Pass Exactly one computation load option!"));
 
-        config.computationLoad.value = *parsedOptions.begin();
+        config.computationLoadMetric.value = *parsedOptions.begin();
 
+      } else if (key == config.computationalLoadMeasurementPeriod.name) {
+        expected = "Unsigned Integer > 0.";
+        description = config.computationalLoadMeasurementPeriod.description;
+
+        try {
+          config.computationalLoadMeasurementPeriod.value = node[key][config.computationalLoadMeasurementPeriod.name].as<size_t>();
+          if (config.computationalLoadMeasurementPeriod.value < 1) {
+            throw std::runtime_error("computationalLoadMeasurementPeriod has to be > 0");
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

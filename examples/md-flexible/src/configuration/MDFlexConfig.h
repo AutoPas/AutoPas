@@ -821,12 +821,20 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
-   * computationLoad
+   * computationLoadMetric
    */
-  MDFlexOption<ComputationLoadOption, __LINE__> computationLoad{
-      ComputationLoadOption::completeCycle, "computation-load", true,
+  MDFlexOption<ComputationLoadOption, __LINE__> computationLoadMetric{
+      ComputationLoadOption::completeCycle, "computation-load-metric", true,
       "Defines which computation load metric will be tracked during the simulation. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(ComputationLoadOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * computationalLoadMeasurementPeriod
+   */
+  MDFlexOption<size_t, __LINE__> computationalLoadMeasurementPeriod{
+      100, "computational-load-measurement-period", true, "Defines "
+      "from how many iterations before load balancing is applied is the computation load metric measured."};
+
 
   /**
    * Whether to use the tuning logger or not.

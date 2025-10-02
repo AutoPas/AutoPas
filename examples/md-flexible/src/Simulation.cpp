@@ -44,9 +44,6 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 
 
 namespace {
-
-  constexpr size_t loadBalancingTrackingIterations = 100;
-
 /**
  * Tries to identify the width of the terminal where the simulation is running.
  * If no width can be identified, the function defaults to 80.
@@ -228,7 +225,7 @@ void Simulation::run() {
     // If we are within loadBalancingTrackingIterations of load balancing, reset the lap-timers of everything relevant
     // for load balancing
     if (_iteration % _configuration.loadBalancingInterval.value
-      > _configuration.loadBalancingInterval.value - loadBalancingTrackingIterations) {
+      > _configuration.loadBalancingInterval.value - _configuration.computationalLoadMeasurementPeriod.value) {
       _timers.nonBoundaryCalculations.resetLap();
       _timers.haloParticleExchange.resetLap();
       _timers.migratingParticleExchange.resetLap();
@@ -533,12 +530,12 @@ void Simulation::updateThermostat() {
 double Simulation::getComputationalLoad() const {
   double computationalLoad;
   // Default to particle count if zeroth iteration (where timer-based metrics do not have values yet)
-  if (_iteration == 0 or _configuration.computationLoad.value == ComputationLoadOption::particleCount) {
+  if (_iteration == 0 or _configuration.computationLoadMetric.value == ComputationLoadOption::particleCount) {
     // For particle count, use the raw count directly. If the count is zero, then we use a particleCount of 1 to
     // prevent division by zero errors.
     computationalLoad = std::max(static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned)), 1.0);
   } else {
-    switch (_configuration.computationLoad.value) {
+    switch (_configuration.computationLoadMetric.value) {
       case ComputationLoadOption::completeCycle:
         computationalLoad = static_cast<double>(
             _timers.nonBoundaryCalculations.getLapTime() + _timers.haloParticleExchange.getLapTime() +
