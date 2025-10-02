@@ -12,8 +12,9 @@
 ParticleCommunicator::ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator)
     : _communicator(communicator) {}
 
-void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &particles, const int &receiver, const Direction direction) {
-  auto &buffer = direction == left ? _reusableLeftSendBuffer : _reusableRightSendBuffer;
+void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &particles, const int &receiver, const std::optional<Direction> direction = std::nullopt) {
+  std::vector<char> localBuffer;
+  auto &buffer = direction.has_value() ? direction.value() == left ? _reusableLeftSendBuffer : _reusableRightSendBuffer : localBuffer;
 
   // Reserve extra space in reusable buffer if needed.
   buffer.resize(particles.size() * ParticleSerializationTools::AttributesSize);
@@ -25,8 +26,9 @@ void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &partic
   sendDataToNeighbor(buffer, receiver);
 }
 
-void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source, const Direction direction) {
-  auto &buffer = direction == left ? _reusableLeftRecvBuffer : _reusableRightRecvBuffer;
+void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source, const std::optional<Direction> direction= std::nullopt) {
+  std::vector<char> localBuffer;
+  auto &buffer = direction.has_value() ? direction.value() == left ? _reusableLeftRecvBuffer : _reusableRightRecvBuffer : localBuffer;
 
   receiveDataFromNeighbor(source, buffer);
 

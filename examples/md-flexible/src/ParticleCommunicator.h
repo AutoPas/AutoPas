@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vector>
+#include <optional>
 
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
@@ -35,17 +36,19 @@ class ParticleCommunicator {
    * Sends particles of type ParticleType to a receiver.
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particles.
-   * @param direction The direction which the particles are sent to.
+   * @param direction The direction which the particles are sent to. If provided, a reusable buffer for that direction
+   * will be used to avoid memory reallocations. If not, a non-reusable buffer will be used.
    */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver, Direction direction);
+  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver, std::optional<Direction> direction);
 
   /**
    * Receives particles sent by a sender.
    * @param receivedParticles The container where the received particles will be stored.
    * @param source The sender id/rank.
-   * @param direction The direction from which the particles are sent.
+   * @param direction The direction from which the particles are sent. If provided, a reusable buffer for that direction
+   * will be used to avoid memory reallocations. If not, a non-reusable buffer will be used.
    */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source, Direction direction);
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source, std::optional<Direction> direction);
 
   /**
    * Waits for all send requests to be finished.
