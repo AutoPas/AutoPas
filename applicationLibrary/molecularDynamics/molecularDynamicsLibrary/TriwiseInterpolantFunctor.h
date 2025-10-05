@@ -724,8 +724,8 @@ public:
     
           _postProcessed = true;
           
-          AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
-          AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+          AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+          AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
           AutoPasLog(DEBUG, "Final absolute error   {} {} {}", _absErrorSum.at(0), _absErrorSum.at(1), _absErrorSum.at(2));
           AutoPasLog(DEBUG, "Final relative error   {} {} {}", _relErrorSum.at(0), _relErrorSum.at(1), _relErrorSum.at(2));
           AutoPasLog(DEBUG, "Number of kernel calls {}", numKernelCalls);
