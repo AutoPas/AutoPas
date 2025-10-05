@@ -573,6 +573,8 @@ public:
 
         double fac_jk = 0.;
         double fac_jk_vec = 0.;
+        auto forceJ = forceI;
+        auto forceK = forceI;
         if (newton3) {
 #if defined (MD_FLEXIBLE_INTERPOLANT_VECTORIZATION)
           // fac_jk = evalChebFast3DVector(x, y, z, intervalX, intervalY, intervalZ);
@@ -581,8 +583,8 @@ public:
           fac_jk = evalChebFast3D(y, z, x, intervalY, intervalZ, intervalX);
 #endif
 
-          const auto forceJ = drIJ * -fac_ij + drJK * fac_jk;
-          const auto forceK = (forceI + forceJ) * (-1.);
+          forceJ = drIJ * -fac_ij + drJK * fac_jk;
+          forceK = (forceI + forceJ) * (-1.);
 
           j.addF(forceJ);
           k.addF(forceK);
@@ -594,6 +596,33 @@ public:
           }
           else {
             ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
+          }
+        }
+
+        if constexpr (calculateGlobals) {
+          const double potentialEnergy = _kernel.calculateTripletPotential(dIJ, dKI, dJK);
+          const auto virialI = forceI * i.getR();
+          if (i.isOwned()) {
+            _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+            _aosThreadDataGlobals[threadnum].virialSum += virialI;
+          }
+          // for non-newton3 particles j and/or k will be considered in a separate calculation
+          if (newton3 and j.isOwned()) {
+            const auto virialJ = forceJ * j.getR();
+            _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+            _aosThreadDataGlobals[threadnum].virialSum += virialJ;
+          }
+          if (newton3 and k.isOwned()) {
+            const auto virialK = forceK * k.getR();
+            _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+            _aosThreadDataGlobals[threadnum].virialSum += virialK;
+          }
+          if constexpr (countFLOPs) {
+            if (newton3) {
+              ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+            } else {
+              ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+            }
           }
         }
 
@@ -662,10 +691,6 @@ public:
             data.setZero();
           }
         }
-
-        for (auto & stat : _distanceStatistics) {
-          stat.clear();
-        }
       }
 
     void endTraversal(bool newton3) final {
@@ -698,22 +723,6 @@ public:
           _potentialEnergySum /= 3.;
     
           _postProcessed = true;
-
-          size_t number = 0;
-          std::vector<double> cuts{};
-          for (double cut = _a.at(0); cut <= _b.at(0); cut+= 0.25) {
-            cuts.push_back(cut);
-          }
-          double prev_cut = 0.;
-          for (auto cut : cuts) {
-            number = 0;
-            for (const auto &stat : _distanceStatistics) {
-              number += std::count_if(stat.begin(), stat.end(),
-                                      [cut, prev_cut](double value) { return value <= cut && value > prev_cut; });
-            }
-            AutoPasLog(DEBUG, "Distances below {} : {}", cut, number);
-            prev_cut = cut;
-          }
           
           AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
           AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
