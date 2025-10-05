@@ -687,4 +687,9 @@ void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t 
       loadParticlesFromRankRecord(filename, i, particles);
     }
   }
+
+  // quick way to set the charges of all particles at generation
+    for(auto &particle : particles){
+      particle.setQ(_particlePropertiesLibrary->getCharge(particle.getTypeId()));
+    }
 }
