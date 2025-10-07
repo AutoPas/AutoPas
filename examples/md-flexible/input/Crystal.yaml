@@ -1,0 +1,112 @@
+container                            :  [p3m]
+# Configuration options for pairwise interactions
+functor                              :  Lennard-Jones (12-6) avx
+traversal                            :  [p3m_p3m]
+newton3                              :  [enabled]
+data-layout                          :  [AoS]
+
+# General options
+verlet-rebuild-frequency             :  20
+verlet-skin-radius                   :  0
+cutoff                               :  4
+box-min                              :  [0, 0, 0]
+box-max                              :  [32, 32, 32]
+cao				     :  5
+alpha				     :  1.05
+grid-dimensions			     :  [256, 256, 256]
+cell-size                            :  [1]
+deltaT                               :  0.0001
+pause-simulation-during-tuning       :  true
+sorting-threshold                    :  8
+tuning-phases                        :  0
+iterations                           :  1000
+boundary-type                        :  [periodic, periodic, periodic]
+subdivide-dimension                  :  [true, true, true]
+load-balancing-interval              :  100
+load-estimator                       :  [none, squared-particles-per-cell, neighbor-list-length]
+relative-optimum-range               :  1.2
+max-tuning-phases-without-test       :  5
+relative-blacklist-range             :  0
+evidence-for-prediction              :  3
+extrapolation-method                 :  linear-regression
+tuning-acquisition-function          :  upper-confidence-bound
+fastParticlesThrow                   :  false
+globalForce                          :  [0, 0, 0]
+load-balancer                        :  InvertedPressure
+Sites:
+  0:
+    epsilon                          :  1.
+    sigma                            :  1.
+    mass                             :  0.5
+    charge			     :  1.0
+  1:
+    epsilon			     : 1.
+    sigma			     : 1.
+    mass			     : 0.5
+    charge			     : -1.0
+#Objects:                         
+#  CubeGrid:
+#    0:
+#      particles-per-dimension        :  [16, 16, 16]
+#      particle-spacing               :  2.0
+#      bottomLeftCorner               :  [0.5, 0.5, 0.5]
+#      velocity                       :  [0, 0, 0]
+#      particle-type-id               :  0
+#  CubeGrid:
+#    1:
+#      particles-per-dimension	     :  [16, 16, 16]
+#      particle-spacing		     :  2.0
+#      bottomLeftCorner		     :  [0.5, 1.5, 1.5]
+#      velocity			     :  [0, 0, 0]
+#      particle-type-id		     :  0
+#  CubeGrid:
+#    2:
+#      particles-per-dimension	     :  [16, 16, 16]
+#      particle-spacing		     :  2.0
+#      bottomLeftCorner		     :  [1.5, 0.5, 1.5]
+#      velocity			     :  [0, 0, 0]
+#      particle-type-id		     :  0
+#  CubeGrid:
+#    3:
+#      particles-per-dimension	     :  [16, 16, 16]
+#      particle-spacing		     :  2.0
+#      bottomLeftCorner		     :  [1.5, 1.5, 0.5]
+#      velocity			     :  [0, 0, 0]
+#      particle-type-id		     :  0
+#  CubeGrid:
+#    4:
+#      particles-per-dimension	     :  [16, 16, 16]
+#      particle-spacing		     :  2.0
+#      bottomLeftCorner		     :  [1.5, 0.5, 0.5]
+#      velocity			     :  [0, 0, 0]
+#      particle-type-id		     :  1
+#  CubeGrid:
+#    5:
+#      particles-per-dimension	     :  [16, 16, 16]
+#      particle-spacing		     :  2.0
+#      bottomLeftCorner		     :  [0.5, 1.5, 0.5]
+#      velocity			     :  [0, 0, 0]
+#      particle-type-id		     :  1
+#  CubeGrid:
+#    6:
+#      particles-per-dimension	     :  [16, 16, 16]
+#      particle-spacing		     :  2.0
+#      bottomLeftCorner		     :  [0.5, 0.5, 1.5]
+#      velocity			     :  [0, 0, 0]
+#      particle-type-id		     :  1
+#  CubeGrid:
+#    7:
+#      particles-per-dimension	     :  [16, 16, 16]
+#      particle-spacing		     :  2.0
+#      bottomLeftCorner		     :  [1.5, 1.5, 1.5]
+#      velocity			     :  [0, 0, 0]
+#      particle-type-id		     :  1
+
+log-level                            :  info
+no-end-config                        :  true
+no-progress-bar                      :  true
+vtk-filename                         :  Crystal
+vtk-output-folder                    :  Crystal
+vtk-write-frequency                  :  100
+checkpoint                          : ./Crystal_Particles_0.pvtu
+#log-file                            : log.txt
