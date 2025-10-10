@@ -17,9 +17,17 @@
 template <class FuncType>
 class ATFunctorTestGlobals : public ATFunctorTest {
  public:
+  struct OwnershipConfig {
+    double factor;
+    std::string where_str;
+    bool owned1, owned2, owned3;
+  };
+
   ATFunctorTestGlobals() : ATFunctorTest() {}
 
   static void ATFunctorTestGlobalsNoMixingAoS(where_type where, bool newton3);
+
+  void runATFunctorGlobalsTest(where_type where, SoAFunctorType soaFunctorType, bool newton3);
   static void ATFunctorTestGlobalsNoMixingSoASingle(where_type where, bool newton3);
   static void ATFunctorTestGlobalsNoMixingSoAPair12(where_type where, bool newton3);
   static void ATFunctorTestGlobalsNoMixingSoAPair21(where_type where, bool newton3);
