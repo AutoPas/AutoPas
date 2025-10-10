@@ -1169,8 +1169,8 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
   }
 #if (AUTOPAS_INCLUDE_MPI)
-  AutoPas_MPI_Allreduce(&_neighborListInvalidDoDynamicRebuild, &_neighborListInvalidDoDynamicRebuild, 1,
-                        AUTOPAS_MPI_CXX_BOOL, AUTOPAS_MPI_LOR, AUTOPAS_MPI_COMM_WORLD);
+  AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &_neighborListInvalidDoDynamicRebuild, 1, AUTOPAS_MPI_CXX_BOOL,
+                        AUTOPAS_MPI_LOR, AUTOPAS_MPI_COMM_WORLD);
 #endif
 
 #endif
