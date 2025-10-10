@@ -203,8 +203,7 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
   constexpr bool newton3 = TypeParam::newton3;
 
   // Helper lambdas to check the forces
-  auto testNonZeroForce = [&](const std::array<double, 3> &particleForce,
-                              const std::array<double, 3> &expectedForce) {
+  auto testNonZeroForce = [&](const std::array<double, 3> &particleForce, const std::array<double, 3> &expectedForce) {
     for (size_t i = 0; i < 3; i++) {
       EXPECT_NEAR(particleForce[i], expectedForce[i], this->absDelta);
     }
@@ -245,7 +244,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     if (soaFunctorType == TestType::SoAFunctorType::single || soaFunctorType == TestType::SoAFunctorType::pair21 ||
         soaFunctorType == TestType::SoAFunctorType::verlet) {
       cell1.addParticle(p2);
-    } else if (soaFunctorType == TestType::SoAFunctorType::pair12 || soaFunctorType == TestType::SoAFunctorType::triple) {
+    } else if (soaFunctorType == TestType::SoAFunctorType::pair12 ||
+               soaFunctorType == TestType::SoAFunctorType::triple) {
       cell2.addParticle(p2);
     } else {
       FAIL();
@@ -255,7 +255,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     Molecule p3({0.3, 0.2, 0.1}, {0., 0., 0.}, 2, (mixing) ? 2 : 0);
     if (soaFunctorType == TestType::SoAFunctorType::single || soaFunctorType == TestType::SoAFunctorType::verlet) {
       cell1.addParticle(p3);
-    } else if (soaFunctorType == TestType::SoAFunctorType::pair21 || soaFunctorType == TestType::SoAFunctorType::pair12) {
+    } else if (soaFunctorType == TestType::SoAFunctorType::pair21 ||
+               soaFunctorType == TestType::SoAFunctorType::pair12) {
       cell2.addParticle(p3);
     } else if (soaFunctorType == TestType::SoAFunctorType::triple) {
       cell3.addParticle(p3);
@@ -319,12 +320,12 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     if (soaFunctorType == TestType::SoAFunctorType::pair12 or soaFunctorType == TestType::SoAFunctorType::triple) {
       f2 = &cell2.begin()->getF();
     }
-    if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or soaFunctorType == TestType::SoAFunctorType::pair21 or
-        soaFunctorType == TestType::SoAFunctorType::verlet) {
+    if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or
+        soaFunctorType == TestType::SoAFunctorType::pair21 or soaFunctorType == TestType::SoAFunctorType::verlet) {
       // If particle 2 is in the same cell as particle 1, its forces should already be calculated
       const auto expectedForceIter1P2 = mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2;
       testNonZeroForce(*f2, expectedForceIter1P2);
-    } else { // Particle 2 is in a different cell, so the forces are zero when newton3 == false
+    } else {  // Particle 2 is in a different cell, so the forces are zero when newton3 == false
       testZeroForce(*f2);
     }
 
@@ -338,7 +339,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
       f3 = &cell3.begin()->getF();
     }
 
-    if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or soaFunctorType == TestType::SoAFunctorType::verlet) {
+    if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or
+        soaFunctorType == TestType::SoAFunctorType::verlet) {
       const auto expectedForceIter1P3 = mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3;
       testNonZeroForce(*f3, expectedForceIter1P3);
     } else {

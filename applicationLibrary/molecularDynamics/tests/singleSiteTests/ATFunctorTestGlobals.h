@@ -19,7 +19,12 @@ class ATFunctorTestGlobals : public ATFunctorTest {
  public:
   ATFunctorTestGlobals() : ATFunctorTest() {}
 
-  static void ATFunctorTestGlobalsNoMixing(where_type where, bool newton3);
+  static void ATFunctorTestGlobalsNoMixingAoS(where_type where, bool newton3);
+  static void ATFunctorTestGlobalsNoMixingSoASingle(where_type where, bool newton3);
+  static void ATFunctorTestGlobalsNoMixingSoAPair12(where_type where, bool newton3);
+  static void ATFunctorTestGlobalsNoMixingSoAPair21(where_type where, bool newton3);
+  static void ATFunctorTestGlobalsNoMixingSoATriple(where_type where, bool newton3);
+
   static void testSoAGlobalsAT(where_type where, bool newton3, SoAFunctorType interactionType,
                                size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas,
                                bool mixedNewton3FunctorCalls);

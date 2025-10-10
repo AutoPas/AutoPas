@@ -458,9 +458,13 @@ class AxilrodTellerFunctor
           fyptr[j] += forceJY;
           fzptr[j] += forceJZ;
 
-          fxptr[k] -= forceIX + forceJX;
-          fyptr[k] -= forceIY + forceJY;
-          fzptr[k] -= forceIZ + forceJZ;
+          const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+          const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+          const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+
+          fxptr[k] += forceKX;
+          fyptr[k] += forceKY;
+          fzptr[k] += forceKZ;
 
           if constexpr (countFLOPs) {
             numDistanceCalculationSum += ownedStateK != autopas::OwnershipState::dummy ? 1 : 0;
@@ -469,10 +473,25 @@ class AxilrodTellerFunctor
 
           if constexpr (calculateGlobals) {
             const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
-            SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                                             (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) +
-                                             (ownedStateK == autopas::OwnershipState::owned ? 1. : 0.);
-            potentialEnergySum += potentialEnergy3 * energyFactor;
+
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * xptr[i];
+              virialSumY += forceIY * yptr[i];
+              virialSumZ += forceIZ * zptr[i];
+            }
+            if (ownedStateJ == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceJX * xptr[j];
+              virialSumY += forceJY * yptr[j];
+              virialSumZ += forceJZ * zptr[j];
+            }
+            if (ownedStateK == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceKX * xptr[k];
+              virialSumY += forceKY * yptr[k];
+              virialSumZ += forceKZ * zptr[k];
+            }
 
             if constexpr (countFLOPs) {
               numGlobalCalcsSum += mask;
@@ -492,9 +511,9 @@ class AxilrodTellerFunctor
     }
     if (calculateGlobals) {
       _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-      // _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-      // _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-      // _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -674,9 +693,32 @@ class AxilrodTellerFunctor
             fyptr2[j] += forceJY;
             fzptr2[j] += forceJZ;
 
-            fxptr2[k] -= forceIX + forceJX;
-            fyptr2[k] -= forceIY + forceJY;
-            fzptr2[k] -= forceIZ + forceJZ;
+            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+
+            fxptr2[k] += forceKX;
+            fyptr2[k] += forceKY;
+            fzptr2[k] += forceKZ;
+
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+              if (ownedStateJ == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceJX * xptr2[j];
+                virialSumY += forceJY * yptr2[j];
+                virialSumZ += forceJZ * zptr2[j];
+              }
+              if (ownedStateK == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceKX * xptr2[k];
+                virialSumY += forceKY * yptr2[k];
+                virialSumZ += forceKZ * zptr2[k];
+              }
+              if constexpr (countFLOPs) {
+                numGlobalCalcsN3Sum += mask;
+              }
+            }
           }
 
           if constexpr (countFLOPs) {
@@ -690,18 +732,16 @@ class AxilrodTellerFunctor
 
           if constexpr (calculateGlobals) {
             const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
-            SoAFloatPrecision energyFactor =
-                (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.) +
-                (newton3 ? (ownedStateK == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
-            potentialEnergySum += potentialEnergy3 * energyFactor;
+
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * xptr1[i];
+              virialSumY += forceIY * yptr1[i];
+              virialSumZ += forceIZ * zptr1[i];
+            }
 
             if constexpr (countFLOPs) {
-              if constexpr (newton3) {
-                numGlobalCalcsN3Sum += mask;
-              } else {
-                numGlobalCalcsNoN3Sum += mask;
-              }
+              numGlobalCalcsNoN3Sum += mask;
             }
           }
         }
@@ -823,9 +863,25 @@ class AxilrodTellerFunctor
           fzptr1[j] += forceJZ;
 
           if constexpr (newton3) {
-            fxptr2[k] -= forceIX + forceJX;
-            fyptr2[k] -= forceIY + forceJY;
-            fzptr2[k] -= forceIZ + forceJZ;
+            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+            fxptr2[k] += forceKX;
+            fyptr2[k] += forceKY;
+            fzptr2[k] += forceKZ;
+
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+              if (ownedStateK == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceKX * xptr2[k];
+                virialSumY += forceKY * yptr2[k];
+                virialSumZ += forceKZ * zptr2[k];
+              }
+              if constexpr (countFLOPs) {
+                numGlobalCalcsN3Sum += mask;
+              }
+            }
           }
 
           if constexpr (countFLOPs) {
@@ -839,18 +895,20 @@ class AxilrodTellerFunctor
 
           if constexpr (calculateGlobals) {
             const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
-            SoAFloatPrecision energyFactor =
-                (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.) +
-                (newton3 ? (ownedStateK == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
-            potentialEnergySum += potentialEnergy3 * energyFactor;
-
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * xptr1[i];
+              virialSumY += forceIY * yptr1[i];
+              virialSumZ += forceIZ * zptr1[i];
+            }
+            if (ownedStateJ == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceJX * xptr1[j];
+              virialSumY += forceJY * yptr1[j];
+              virialSumZ += forceJZ * zptr1[j];
+            }
             if constexpr (countFLOPs) {
-              if constexpr (newton3) {
-                numGlobalCalcsN3Sum += mask;
-              } else {
-                numGlobalCalcsNoN3Sum += mask;
-              }
+              numGlobalCalcsNoN3Sum += mask;
             }
           }
         }
@@ -868,9 +926,9 @@ class AxilrodTellerFunctor
     }
     if (calculateGlobals) {
       _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-      // _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-      // _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-      // _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1059,9 +1117,32 @@ class AxilrodTellerFunctor
             fyptr2[j] += forceJY;
             fzptr2[j] += forceJZ;
 
-            fxptr3[k] -= forceIX + forceJX;
-            fyptr3[k] -= forceIY + forceJY;
-            fzptr3[k] -= forceIZ + forceJZ;
+            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+
+            fxptr3[k] += forceKX;
+            fyptr3[k] += forceKY;
+            fzptr3[k] += forceKZ;
+
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+              if (ownedStateJ == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceJX * xptr2[j];
+                virialSumY += forceJY * yptr2[j];
+                virialSumZ += forceJZ * zptr2[j];
+              }
+              if (ownedStateK == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceKX * xptr3[k];
+                virialSumY += forceKY * yptr3[k];
+                virialSumZ += forceKZ * zptr3[k];
+              }
+              if constexpr (countFLOPs) {
+                numGlobalCalcsN3Sum += mask;
+              }
+            }
           }
 
           if constexpr (countFLOPs) {
@@ -1075,18 +1156,16 @@ class AxilrodTellerFunctor
 
           if constexpr (calculateGlobals) {
             const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
-            SoAFloatPrecision energyFactor =
-                (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.) +
-                (newton3 ? (ownedStateK == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
-            potentialEnergySum += potentialEnergy3 * energyFactor;
+
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * xptr1[i];
+              virialSumY += forceIY * yptr1[i];
+              virialSumZ += forceIZ * zptr1[i];
+            }
 
             if constexpr (countFLOPs) {
-              if constexpr (newton3) {
-                numGlobalCalcsN3Sum += mask;
-              } else {
-                numGlobalCalcsNoN3Sum += mask;
-              }
+              numGlobalCalcsNoN3Sum += mask;
             }
           }
         }
@@ -1104,9 +1183,9 @@ class AxilrodTellerFunctor
     }
     if (calculateGlobals) {
       _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-      // _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-      // _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-      // _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 

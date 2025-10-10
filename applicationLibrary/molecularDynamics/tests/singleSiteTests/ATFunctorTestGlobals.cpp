@@ -9,8 +9,8 @@
 TYPED_TEST_SUITE_P(ATFunctorTestGlobals);
 
 template <class FuncType>
-void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestGlobals<FuncType>::where_type where,
-                                                                  bool newton3) {
+void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingAoS(ATFunctorTestGlobals<FuncType>::where_type where,
+                                                                     bool newton3) {
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
@@ -60,6 +60,304 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestG
   if (not newton3) {
     functor.AoSFunctor(p2, p1, p3, newton3);
     functor.AoSFunctor(p3, p1, p2, newton3);
+  }
+  functor.endTraversal(newton3);
+
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
+
+  const double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
+
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+}
+
+template <class FuncType>
+void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingSoASingle(
+    ATFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
+  FuncType functor(cutoff);
+  functor.setParticleProperties(nu);
+
+  double whereFactor;
+  std::string where_str;
+  bool owned1, owned2, owned3;
+  switch (where) {
+    case allInside:
+      whereFactor = 1.;
+      where_str = "inside";
+      owned1 = owned2 = owned3 = true;
+      break;
+    case ininout:
+      whereFactor = 2. / 3.;
+      where_str = "ininout";
+      owned1 = owned2 = true;
+      owned3 = false;
+      break;
+    case inoutout:
+      whereFactor = 1. / 3.;
+      where_str = "inoutout";
+      owned2 = true;
+      owned1 = owned3 = false;
+      break;
+    case allOutside:
+      whereFactor = 0.;
+      where_str = "outside";
+      owned1 = owned2 = owned3 = false;
+      break;
+    default:
+      FAIL() << "not in enum where_type";
+  }
+
+  const std::array<double, 3> p1Pos{0., 0., 0.};
+  const std::array<double, 3> p2Pos{0.1, 0., 0.};
+  const std::array<double, 3> p3Pos{0., 0.2, 0.3};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
+  p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+  p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p3(p3Pos, {0., 0., 0.}, 2, 0);
+  p3.setOwnershipState(owned3 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+
+  FMCell cell{};
+  cell.addParticle(p1);
+  cell.addParticle(p2);
+  cell.addParticle(p3);
+
+  functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+  functor.initTraversal();
+  functor.SoAFunctorSingle(cell._particleSoABuffer, newton3);
+  functor.endTraversal(newton3);
+
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
+
+  const double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
+
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+}
+
+template <class FuncType>
+void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingSoAPair12(
+    ATFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
+  FuncType functor(cutoff);
+  functor.setParticleProperties(nu);
+
+  double whereFactor;
+  std::string where_str;
+  bool owned1, owned2, owned3;
+  switch (where) {
+    case allInside:
+      whereFactor = 1.;
+      where_str = "inside";
+      owned1 = owned2 = owned3 = true;
+      break;
+    case ininout:
+      whereFactor = 2. / 3.;
+      where_str = "ininout";
+      owned1 = owned2 = true;
+      owned3 = false;
+      break;
+    case inoutout:
+      whereFactor = 1. / 3.;
+      where_str = "inoutout";
+      owned2 = true;
+      owned1 = owned3 = false;
+      break;
+    case allOutside:
+      whereFactor = 0.;
+      where_str = "outside";
+      owned1 = owned2 = owned3 = false;
+      break;
+    default:
+      FAIL() << "not in enum where_type";
+  }
+
+  const std::array<double, 3> p1Pos{0., 0., 0.};
+  const std::array<double, 3> p2Pos{0.1, 0., 0.};
+  const std::array<double, 3> p3Pos{0., 0.2, 0.3};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
+  p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+  p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p3(p3Pos, {0., 0., 0.}, 2, 0);
+  p3.setOwnershipState(owned3 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+
+  FMCell cell1{};
+  FMCell cell2{};
+  cell1.addParticle(p1);
+  cell2.addParticle(p2);
+  cell2.addParticle(p3);
+
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+  functor.initTraversal();
+  functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+  if (not newton3) {
+    functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+  }
+  functor.endTraversal(newton3);
+
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
+
+  const double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
+
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+}
+
+template <class FuncType>
+void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingSoAPair21(
+    ATFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
+  FuncType functor(cutoff);
+  functor.setParticleProperties(nu);
+
+  double whereFactor;
+  std::string where_str;
+  bool owned1, owned2, owned3;
+  switch (where) {
+    case allInside:
+      whereFactor = 1.;
+      where_str = "inside";
+      owned1 = owned2 = owned3 = true;
+      break;
+    case ininout:
+      whereFactor = 2. / 3.;
+      where_str = "ininout";
+      owned1 = owned2 = true;
+      owned3 = false;
+      break;
+    case inoutout:
+      whereFactor = 1. / 3.;
+      where_str = "inoutout";
+      owned2 = true;
+      owned1 = owned3 = false;
+      break;
+    case allOutside:
+      whereFactor = 0.;
+      where_str = "outside";
+      owned1 = owned2 = owned3 = false;
+      break;
+    default:
+      FAIL() << "not in enum where_type";
+  }
+
+  const std::array<double, 3> p1Pos{0., 0., 0.};
+  const std::array<double, 3> p2Pos{0.1, 0., 0.};
+  const std::array<double, 3> p3Pos{0., 0.2, 0.3};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
+  p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+  p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p3(p3Pos, {0., 0., 0.}, 2, 0);
+  p3.setOwnershipState(owned3 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+
+  FMCell cell1{};
+  FMCell cell2{};
+  cell1.addParticle(p1);
+  cell1.addParticle(p2);
+  cell2.addParticle(p3);
+
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+  functor.initTraversal();
+  functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+  if (not newton3) {
+    functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+  }
+  functor.endTraversal(newton3);
+
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
+
+  const double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
+
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+}
+
+template <class FuncType>
+void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingSoATriple(
+    ATFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
+  FuncType functor(cutoff);
+  functor.setParticleProperties(nu);
+
+  double whereFactor;
+  std::string where_str;
+  bool owned1, owned2, owned3;
+  switch (where) {
+    case allInside:
+      whereFactor = 1.;
+      where_str = "inside";
+      owned1 = owned2 = owned3 = true;
+      break;
+    case ininout:
+      whereFactor = 2. / 3.;
+      where_str = "ininout";
+      owned1 = owned2 = true;
+      owned3 = false;
+      break;
+    case inoutout:
+      whereFactor = 1. / 3.;
+      where_str = "inoutout";
+      owned2 = true;
+      owned1 = owned3 = false;
+      break;
+    case allOutside:
+      whereFactor = 0.;
+      where_str = "outside";
+      owned1 = owned2 = owned3 = false;
+      break;
+    default:
+      FAIL() << "not in enum where_type";
+  }
+
+  const std::array<double, 3> p1Pos{0., 0., 0.};
+  const std::array<double, 3> p2Pos{0.1, 0., 0.};
+  const std::array<double, 3> p3Pos{0., 0.2, 0.3};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
+  p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+  p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+  Molecule p3(p3Pos, {0., 0., 0.}, 2, 0);
+  p3.setOwnershipState(owned3 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+
+  FMCell cell1{};
+  FMCell cell2{};
+  FMCell cell3{};
+  cell1.addParticle(p1);
+  cell2.addParticle(p2);
+  cell3.addParticle(p3);
+
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+  functor.initTraversal();
+  functor.SoAFunctorTriple(cell1._particleSoABuffer, cell2._particleSoABuffer, cell3._particleSoABuffer, newton3);
+  if (not newton3) {
+    functor.SoAFunctorTriple(cell2._particleSoABuffer, cell1._particleSoABuffer, cell3._particleSoABuffer, newton3);
+    functor.SoAFunctorTriple(cell3._particleSoABuffer, cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
   }
   functor.endTraversal(newton3);
 
@@ -166,7 +464,38 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobals) {
   for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
                                               TestType::where_type::inoutout, TestType::where_type::allOutside}) {
     for (bool newton3 : {false, true}) {
-      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixing(where, newton3); });
+      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixingAoS(where, newton3); });
+          msg != "") {
+        GTEST_SKIP() << msg;
+      }
+    }
+  }
+}
+
+TYPED_TEST_P(ATFunctorTestGlobals, testSoAATFunctorGlobals) {
+  using FuncType = TypeParam;
+  using TestType = ATFunctorTestGlobals<FuncType>;
+
+  for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
+                                              TestType::where_type::inoutout, TestType::where_type::allOutside}) {
+    for (bool newton3 : {false, true}) {
+      if (auto msg =
+              this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixingSoASingle(where, newton3); });
+          msg != "") {
+        GTEST_SKIP() << msg;
+      }
+      if (auto msg =
+              this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixingSoAPair12(where, newton3); });
+          msg != "") {
+        GTEST_SKIP() << msg;
+      }
+      if (auto msg =
+              this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixingSoAPair21(where, newton3); });
+          msg != "") {
+        GTEST_SKIP() << msg;
+      }
+      if (auto msg =
+              this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixingSoATriple(where, newton3); });
           msg != "") {
         GTEST_SKIP() << msg;
       }
@@ -175,7 +504,7 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobals) {
 }
 
 REGISTER_TYPED_TEST_SUITE_P(ATFunctorTestGlobals, testAoSATFunctorGlobals, testATFunctorGlobalsThrowBad,
-                            testAoSATFunctorGlobalsOpenMPParallel);
+                            testAoSATFunctorGlobalsOpenMPParallel, testSoAATFunctorGlobals);
 
 using MyTypes = ::testing::Types<ATFunNoMixGlob
 #ifdef __AVX__
