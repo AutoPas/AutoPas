@@ -8,6 +8,7 @@
 
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -453,13 +454,13 @@ class AxilrodTellerFunctor
           const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
           const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
 
-          fxptr[j] = forceJX;
-          fyptr[j] = forceJY;
-          fzptr[j] = forceJZ;
+          fxptr[j] += forceJX;
+          fyptr[j] += forceJY;
+          fzptr[j] += forceJZ;
 
-          fxptr[k] = -(forceIX + forceJX);
-          fyptr[k] = -(forceIY + forceJY);
-          fzptr[k] = -(forceIZ + forceJZ);
+          fxptr[k] -= forceIX + forceJX;
+          fyptr[k] -= forceIY + forceJY;
+          fzptr[k] -= forceIZ + forceJZ;
 
           if constexpr (countFLOPs) {
             numDistanceCalculationSum += ownedStateK != autopas::OwnershipState::dummy ? 1 : 0;
@@ -669,13 +670,13 @@ class AxilrodTellerFunctor
             const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
             const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
 
-            fxptr2[j] = forceJX;
-            fyptr2[j] = forceJY;
-            fzptr2[j] = forceJZ;
+            fxptr2[j] += forceJX;
+            fyptr2[j] += forceJY;
+            fzptr2[j] += forceJZ;
 
-            fxptr2[k] = -(forceIX + forceJX);
-            fyptr2[k] = -(forceIY + forceJY);
-            fzptr2[k] = -(forceIZ + forceJZ);
+            fxptr2[k] -= forceIX + forceJX;
+            fyptr2[k] -= forceIY + forceJY;
+            fzptr2[k] -= forceIZ + forceJZ;
           }
 
           if constexpr (countFLOPs) {
@@ -817,14 +818,14 @@ class AxilrodTellerFunctor
           const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
           const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
 
-          fxptr1[j] = forceJX;
-          fyptr1[j] = forceJY;
-          fzptr1[j] = forceJZ;
+          fxptr1[j] += forceJX;
+          fyptr1[j] += forceJY;
+          fzptr1[j] += forceJZ;
 
           if constexpr (newton3) {
-            fxptr2[k] = -(forceIX + forceJX);
-            fyptr2[k] = -(forceIY + forceJY);
-            fzptr2[k] = -(forceIZ + forceJZ);
+            fxptr2[k] -= forceIX + forceJX;
+            fyptr2[k] -= forceIY + forceJY;
+            fzptr2[k] -= forceIZ + forceJZ;
           }
 
           if constexpr (countFLOPs) {
@@ -1054,13 +1055,13 @@ class AxilrodTellerFunctor
             const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
             const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
 
-            fxptr2[j] = forceJX;
-            fyptr2[j] = forceJY;
-            fzptr2[j] = forceJZ;
+            fxptr2[j] += forceJX;
+            fyptr2[j] += forceJY;
+            fzptr2[j] += forceJZ;
 
-            fxptr3[k] = -(forceIX + forceJX);
-            fyptr3[k] = -(forceIY + forceJY);
-            fzptr3[k] = -(forceIZ + forceJZ);
+            fxptr3[k] -= forceIX + forceJX;
+            fyptr3[k] -= forceIY + forceJY;
+            fzptr3[k] -= forceIZ + forceJZ;
           }
 
           if constexpr (countFLOPs) {

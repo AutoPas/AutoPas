@@ -293,7 +293,7 @@ class ParticlePropertiesLibrary {
    * @param k Id of site three.
    * @return
    */
-  auto getATMixingData(intType i, intType j, intType k) const {
+  auto getATMMixingData(intType i, intType j, intType k) const {
     return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
                                  k];
   }
