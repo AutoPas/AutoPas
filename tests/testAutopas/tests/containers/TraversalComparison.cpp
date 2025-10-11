@@ -107,8 +107,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
         functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
   } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-    mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                                globals /*calculateGlobals*/>
+    mdLib::AxilrodTellerMutoFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                                    globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_nu);
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
@@ -239,11 +239,6 @@ void TraversalComparison::generateReference(mykey_t key) {
 TEST_P(TraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = GetParam();
-  // Todo: Remove this when the AxilrodTeller functor implements SoA
-  if (interactionType == autopas::InteractionTypeOption::triwise and
-      dataLayoutOption == autopas::DataLayoutOption::soa) {
-    GTEST_SKIP_("SoAs are not yet implemented for triwise traversals/functors.");
-  }
 
   TraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,
                                    globals,      interactionType};
