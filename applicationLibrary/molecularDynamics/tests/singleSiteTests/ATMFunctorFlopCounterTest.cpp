@@ -1,16 +1,16 @@
 /**
- * @file ATFunctorFlopCounterTest.cpp
+ * @file ATMFunctorFlopCounterTest.cpp
  * @author muehlhaeusser
  * @date 30.07.2024
  */
 
-#include "ATFunctorFlopCounterTest.h"
+#include "ATMFunctorFlopCounterTest.h"
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/AutoPasImpl.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 // AutoPas is instantiated in AutoPasInstantiations.cpp
@@ -18,12 +18,12 @@
 // so they have to be explicitly instantiated here.
 extern template class autopas::AutoPas<Molecule>;
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, false, /*countFLOPs*/ true> *);
+    mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, false, /*countFLOPs*/ true> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true> *);
+    mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true> *);
 
 /**
- * Generates a square of four particles, iterates over it with the AxilrodTellerFunctor and checks the values of
+ * Generates a square of four particles, iterates over it with the AxilrodTellerMutoFunctor and checks the values of
  * getNumFLOPs() and getHitRate()
  * @tparam calculateGlobals
  * @param dataLayoutOption
@@ -31,13 +31,13 @@ template bool autopas::AutoPas<Molecule>::computeInteractions(
  * @param isVerlet
  */
 template <bool calculateGlobals>
-void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3,
-                                               bool isVerlet) {
+void ATMFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3,
+                                                bool isVerlet) {
   const auto isSoA = dataLayoutOption == autopas::DataLayoutOption::soa;
 
-  if (isVerlet or isSoA) {
+  if (isVerlet) {
     autopas::utils::ExceptionHandler::exception(
-        "ATFunctorFlopCounterTest::testFLOPCounter Tests are not yet implemented for SoA or VerletSoAs!");
+        "ATMFunctorFlopCounterTest::testFLOPCounter Tests are not yet implemented for VerletSoAs!");
   }
 
   autopas::AutoPas<Molecule> autoPas;
@@ -82,13 +82,13 @@ void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
     autoPas.addParticle(m);
   }
 
-  //  // update container
+  //  update container
   //  auto buffer = autoPas.updateContainer();  // buffer is meaningless here
 
-  mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atFunctor(
+  mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atmFunctor(
       autoPas.getCutoff());
 
-  autoPas.computeInteractions(&atFunctor);
+  autoPas.computeInteractions(&atmFunctor);
 
   // See above for reasoning.
   const auto expectedDistanceCalculations = newton3 ? 4 : 12;
@@ -111,15 +111,15 @@ void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
       expectedDistanceCalculations * numFLOPsPerDistanceCalc + expectedN3KernelCalls * numFLOPsPerN3KernelCall +
       expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedN3GlobalsCalcs * numFLOPsPerN3GlobalsCall +
       expectedNoN3GlobalsCalcs * numFLOPsPerNoN3GlobalsCall;
-  ASSERT_EQ(expectedFlops, atFunctor.getNumFLOPs());
+  ASSERT_EQ(expectedFlops, atmFunctor.getNumFLOPs());
 
   const auto expectedHitRate =
       ((double)expectedN3KernelCalls + (double)expectedNoN3KernelCalls) / (double)expectedDistanceCalculations;
-  ASSERT_NEAR(expectedHitRate, atFunctor.getHitRate(), 1e-14);
+  ASSERT_NEAR(expectedHitRate, atmFunctor.getHitRate(), 1e-14);
 }
 
 template <bool calculateGlobals>
-void ATFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
+void ATMFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
   Molecule p3({0.3, 0.2, 0.1}, {0., 0., 0.}, 2, 0);
@@ -130,27 +130,28 @@ void ATFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
 
   const double cutoff = 1.;
 
-  mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atFunctor(cutoff);
+  mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atmFunctor(
+      cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
   AUTOPAS_OPENMP(parallel sections) {
     AUTOPAS_OPENMP(section)
-    atFunctor.AoSFunctor(p1, p2, p3, newton3);
+    atmFunctor.AoSFunctor(p1, p2, p3, newton3);
     AUTOPAS_OPENMP(section)
-    atFunctor.AoSFunctor(p4, p5, p6, newton3);
+    atmFunctor.AoSFunctor(p4, p5, p6, newton3);
   }
 }
 
 /**
  * Tests that the FLOP counts produced are correct by comparing against partially hard-coded values.
  */
-TEST_P(ATFunctorFlopCounterTest, testFLOPCountingNoOMP) {
+TEST_P(ATMFunctorFlopCounterTest, testFLOPCountingNoOMP) {
   const auto [dataLayout, newton3, calculateGlobals, isVerlet] = GetParam();
   if (calculateGlobals) {
-    ATFunctorFlopCounterTest::testFLOPCounter<true>(dataLayout, newton3, isVerlet);
+    ATMFunctorFlopCounterTest::testFLOPCounter<true>(dataLayout, newton3, isVerlet);
   } else {
-    ATFunctorFlopCounterTest::testFLOPCounter<false>(dataLayout, newton3, isVerlet);
+    ATMFunctorFlopCounterTest::testFLOPCounter<false>(dataLayout, newton3, isVerlet);
   }
 }
 
@@ -158,33 +159,33 @@ TEST_P(ATFunctorFlopCounterTest, testFLOPCountingNoOMP) {
  * Tests that FLOP counting has no data races by performing interactions in parallel. With thread sanitizer enabled,
  * this should produce errors. Without thread sanitizer enabled, this test will generally not throw errors.
  */
-TEST_P(ATFunctorFlopCounterTest, testFLOPCountingOMP) {
+TEST_P(ATMFunctorFlopCounterTest, testFLOPCountingOMP) {
   const auto [dataLayout, newton3, calculateGlobals, isVerlet] = GetParam();
   if (calculateGlobals) {
     if (dataLayout == autopas::DataLayoutOption::aos) {
-      ATFunctorFlopCounterTest::testFLOPCounterAoSOMP<true>(newton3);
+      ATMFunctorFlopCounterTest::testFLOPCounterAoSOMP<true>(newton3);
     } else {
       if (isVerlet) {
-        ATFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP<true>(newton3);
+        ATMFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP<true>(newton3);
       } else {
-        ATFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true>(newton3);
+        ATMFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true>(newton3);
       }
     }
   } else {
     if (dataLayout == autopas::DataLayoutOption::aos) {
-      ATFunctorFlopCounterTest::testFLOPCounterAoSOMP<false>(newton3);
+      ATMFunctorFlopCounterTest::testFLOPCounterAoSOMP<false>(newton3);
     } else {
       if (isVerlet) {
-        ATFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP<false>(newton3);
+        ATMFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP<false>(newton3);
       } else {
-        ATFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<false>(newton3);
+        ATMFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<false>(newton3);
       }
     }
   }
 }
 
 /**
- * We test AxilrodTellerFunctor FLOP counting for a combination of data layouts, newton3, calcGlobals, isVerlet.
+ * We test AxilrodTellerMutoFunctor FLOP counting for a combination of data layouts, newton3, calcGlobals, isVerlet.
  *
  * isVerlet is specifically to test the SoA Verlet functor so only relevant with SoA.
  * TODO: Enable SoA and Verlet configurations once they are implemented.
@@ -192,7 +193,7 @@ TEST_P(ATFunctorFlopCounterTest, testFLOPCountingOMP) {
  * @return
  */
 INSTANTIATE_TEST_SUITE_P(
-    ATFunctorFlopTestSuite, ATFunctorFlopCounterTest,
+    ATMFunctorFlopTestSuite, ATMFunctorFlopCounterTest,
     /*                               Data Layout                 , n3, calcGlob, isVerlet */
     testing::Values(std::make_tuple(autopas::DataLayoutOption::aos, false, false, false),
                     std::make_tuple(autopas::DataLayoutOption::aos, true, false, false),

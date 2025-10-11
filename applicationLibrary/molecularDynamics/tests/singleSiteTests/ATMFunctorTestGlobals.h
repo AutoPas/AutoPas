@@ -8,19 +8,19 @@
 
 #include <gtest/gtest.h>
 
-#include "ATFunctorTest.h"
+#include "ATMFunctorTest.h"
 #include "AutoPasTestBase.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/ATPotential.h"
+#include "testingHelpers/ATMPotential.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <class FuncType>
-class ATFunctorTestGlobals : public ATFunctorTest {
+class ATMFunctorTestGlobals : public ATMFunctorTest {
  public:
-  ATFunctorTestGlobals() : ATFunctorTest() {}
+  ATMFunctorTestGlobals() : ATMFunctorTest() {}
 
-  static void ATFunctorTestGlobalsNoMixing(where_type where, bool newton3);
-  static void testSoAGlobalsAT(where_type where, bool newton3, InteractionType interactionType,
+  static void ATMFunctorTestGlobalsNoMixing(where_type where, bool newton3);
+  static void testSoAGlobalsATM(where_type where, bool newton3, InteractionType interactionType,
                                size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas,
                                bool mixedNewton3FunctorCalls);
 
