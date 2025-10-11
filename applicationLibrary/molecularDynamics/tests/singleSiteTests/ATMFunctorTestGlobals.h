@@ -1,5 +1,5 @@
 /**
- * @file ATFunctorTestGlobals.h
+ * @file ATMFunctorTestGlobals.h
  * @author muehlhaeusser
  * @date 29.08.23
  */
@@ -8,11 +8,11 @@
 
 #include <gtest/gtest.h>
 
-#include "ATFunctorTest.h"
+#include "ATMFunctorTest.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <class FuncType>
-class ATFunctorTestGlobals : public ATFunctorTest {
+class ATMFunctorTestGlobals : public ATMFunctorTest {
  public:
   struct OwnershipConfig {
     double factor{};
@@ -20,11 +20,11 @@ class ATFunctorTestGlobals : public ATFunctorTest {
     bool owned1{}, owned2{}, owned3{};
   };
 
-  ATFunctorTestGlobals() : ATFunctorTest() {}
+  ATMFunctorTestGlobals() : ATMFunctorTest() {}
 
-  static void ATFunctorTestGlobalsNoMixingAoS(where_type where, bool newton3);
+  static void ATMFunctorTestGlobalsNoMixingAoS(where_type where, bool newton3);
 
-  void runATFunctorGlobalsTest(where_type where, SoAFunctorType soaFunctorType, bool newton3);
+  void runATMSoAFunctorGlobalsTest(where_type where, SoAFunctorType soaFunctorType, bool newton3);
 
   constexpr static double cutoff{5.};
   constexpr static double nu{0.7};

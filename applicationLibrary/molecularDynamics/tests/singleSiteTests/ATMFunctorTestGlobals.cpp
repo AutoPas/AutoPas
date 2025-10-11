@@ -1,18 +1,18 @@
 /**
- * @file ATFunctorTestGlobals.cpp
+ * @file ATMFunctorTestGlobals.cpp
  * @author muehlhaeusser
  * @date 29.08.23
  */
 
-#include "ATFunctorTestGlobals.h"
+#include "ATMFunctorTestGlobals.h"
 
-#include "testingHelpers/ATPotential.h"
+#include "testingHelpers/ATMPotential.h"
 
-TYPED_TEST_SUITE_P(ATFunctorTestGlobals);
+TYPED_TEST_SUITE_P(ATMFunctorTestGlobals);
 
 template <class FuncType>
-void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingAoS(ATFunctorTestGlobals<FuncType>::where_type where,
-                                                                     bool newton3) {
+void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsNoMixingAoS(
+    ATMFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
@@ -46,8 +46,8 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingAoS(ATFunctorTe
   const double potentialEnergy = functor.getPotentialEnergy();
   const double virial = functor.getVirial();
 
-  constexpr double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
-  const auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  constexpr double expectedEnergy = calculateATMPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const auto [virial1, virial2, virial3] = calculateATMVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
   const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
 
   EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
@@ -56,8 +56,8 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingAoS(ATFunctorTe
 }
 
 template <class FuncType>
-void ATFunctorTestGlobals<FuncType>::runATFunctorGlobalsTest(where_type where, SoAFunctorType soaFunctorType,
-                                                             bool newton3) {
+void ATMFunctorTestGlobals<FuncType>::runATMSoAFunctorGlobalsTest(where_type where, SoAFunctorType soaFunctorType,
+                                                                  bool newton3) {
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
@@ -150,8 +150,8 @@ void ATFunctorTestGlobals<FuncType>::runATFunctorGlobalsTest(where_type where, S
   double potentialEnergy = functor.getPotentialEnergy();
   double virial = functor.getVirial();
 
-  double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
-  auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  double expectedEnergy = calculateATMPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  auto [virial1, virial2, virial3] = calculateATMVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
   double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
 
   EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
@@ -161,21 +161,21 @@ void ATFunctorTestGlobals<FuncType>::runATFunctorGlobalsTest(where_type where, S
                                                 << ", particles are: " << to_string(where) << ", newton3: " << newton3;
 }
 
-TYPED_TEST_P(ATFunctorTestGlobals, testSoAATFunctorGlobals) {
+TYPED_TEST_P(ATMFunctorTestGlobals, testSoAATMFunctorGlobals) {
   using FuncType = TypeParam;
-  using TestType = ATFunctorTestGlobals<FuncType>;
+  using TestType = ATMFunctorTestGlobals<FuncType>;
   for (typename TestType::SoAFunctorType soaFunctorType :
        {TestType::single, TestType::pair12, TestType::pair21, TestType::triple, /*TestType::verlet*/}) {
     for (bool newton3 : {false, true}) {
       for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
                                                   TestType::where_type::inoutout, TestType::where_type::allOutside}) {
-        this->runATFunctorGlobalsTest(where, soaFunctorType, newton3);
+        this->runATMSoAFunctorGlobalsTest(where, soaFunctorType, newton3);
       }
     }
   }
 }
 
-TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobalsOpenMPParallel) {
+TYPED_TEST_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobalsOpenMPParallel) {
   using FuncType = TypeParam;
 
   constexpr bool newton3 = true;
@@ -225,10 +225,10 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobalsOpenMPParallel) {
   const double potentialEnergy = functor.getPotentialEnergy();
   const double virial = functor.getVirial();
 
-  const double expectedEnergyTriplet1 = calculateATPotential(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
-  const double expectedVirialTriplet1 = calculateATVirialTotal(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
-  const double expectedEnergyTriplet2 = calculateATPotential(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
-  const double expectedVirialTriplet2 = calculateATVirialTotal(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
+  const double expectedEnergyTriplet1 = calculateATMPotential(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
+  const double expectedVirialTriplet1 = calculateATMVirialTotal(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
+  const double expectedEnergyTriplet2 = calculateATMPotential(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
+  const double expectedVirialTriplet2 = calculateATMVirialTotal(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
   const double expectedEnergy = expectedEnergyTriplet1 + expectedEnergyTriplet2;
   const double expectedVirial = expectedVirialTriplet1 + expectedVirialTriplet2;
 
@@ -236,7 +236,7 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobalsOpenMPParallel) {
   EXPECT_NEAR(virial, expectedVirial, this->absDelta) << "newton3: " << newton3;
 }
 
-TYPED_TEST_P(ATFunctorTestGlobals, testATFunctorGlobalsThrowBad) {
+TYPED_TEST_P(ATMFunctorTestGlobals, testATMFunctorGlobalsThrowBad) {
   using exception_type = autopas::utils::ExceptionHandler::AutoPasException;
 
   using FuncType = TypeParam;
@@ -258,14 +258,15 @@ TYPED_TEST_P(ATFunctorTestGlobals, testATFunctorGlobalsThrowBad) {
   EXPECT_NO_THROW(functor.endTraversal(true));
 }
 
-TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobals) {
+TYPED_TEST_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobals) {
   using FuncType = TypeParam;
-  using TestType = ATFunctorTestGlobals<FuncType>;
+  using TestType = ATMFunctorTestGlobals<FuncType>;
 
   for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
                                               TestType::where_type::inoutout, TestType::where_type::allOutside}) {
     for (bool newton3 : {false, true}) {
-      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixingAoS(where, newton3); });
+      if (auto msg =
+              this->shouldSkipIfNotImplemented([&]() { this->ATMFunctorTestGlobalsNoMixingAoS(where, newton3); });
           msg != "") {
         GTEST_SKIP() << msg;
       }
@@ -273,14 +274,14 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobals) {
   }
 }
 
-REGISTER_TYPED_TEST_SUITE_P(ATFunctorTestGlobals, testAoSATFunctorGlobals, testATFunctorGlobalsThrowBad,
-                            testAoSATFunctorGlobalsOpenMPParallel, testSoAATFunctorGlobals);
+REGISTER_TYPED_TEST_SUITE_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobals, testATMFunctorGlobalsThrowBad,
+                            testAoSATMFunctorGlobalsOpenMPParallel, testSoAATMFunctorGlobals);
 
-using MyTypes = ::testing::Types<ATFunNoMixGlob
+using MyTypes = ::testing::Types<ATMFunNoMixGlob
 #ifdef __AVX__
 
 // TODO: Add AVX Functor
 #endif
                                  >;
 
-INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATFunctorTestGlobals, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestGlobals, MyTypes);
