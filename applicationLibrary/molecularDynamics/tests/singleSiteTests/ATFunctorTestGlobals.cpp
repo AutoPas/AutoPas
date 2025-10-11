@@ -6,6 +6,8 @@
 
 #include "ATFunctorTestGlobals.h"
 
+#include "testingHelpers/ATPotential.h"
+
 TYPED_TEST_SUITE_P(ATFunctorTestGlobals);
 
 template <class FuncType>
@@ -14,39 +16,17 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingAoS(ATFunctorTe
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
-  double whereFactor;
-  std::string where_str;
-  bool owned1, owned2, owned3;
-  switch (where) {
-    case allInside:
-      whereFactor = 1.;
-      where_str = "inside";
-      owned1 = owned2 = owned3 = true;
-      break;
-    case ininout:
-      whereFactor = 2. / 3.;
-      where_str = "ininout";
-      owned1 = owned2 = true;
-      owned3 = false;
-      break;
-    case inoutout:
-      whereFactor = 1. / 3.;
-      where_str = "inoutout";
-      owned2 = true;
-      owned1 = owned3 = false;
-      break;
-    case allOutside:
-      whereFactor = 0.;
-      where_str = "outside";
-      owned1 = owned2 = owned3 = false;
-      break;
-    default:
-      FAIL() << "not in enum where_type";
-  }
+  // Map `where` to configuration values
+  const std::map<where_type, std::tuple<double, bool, bool, bool>> whereConfig = {
+      {allInside, {1., true, true, true}},
+      {ininout, {2. / 3., true, true, false}},
+      {inoutout, {1. / 3., false, true, false}},
+      {allOutside, {0., false, false, false}}};
+  const auto &[whereFactor, owned1, owned2, owned3] = whereConfig.at(where);
 
-  const std::array<double, 3> p1Pos{0., 0., 0.};
-  const std::array<double, 3> p2Pos{0.1, 0., 0.};
-  const std::array<double, 3> p3Pos{0., 0.2, 0.3};
+  constexpr std::array<double, 3> p1Pos{0., 0., 0.};
+  constexpr std::array<double, 3> p2Pos{0.1, 0., 0.};
+  constexpr std::array<double, 3> p3Pos{0., 0.2, 0.3};
 
   Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
   p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
@@ -66,13 +46,13 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixingAoS(ATFunctorTe
   const double potentialEnergy = functor.getPotentialEnergy();
   const double virial = functor.getVirial();
 
-  const double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  constexpr double expectedEnergy = calculateATPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
   const auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
   const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
 
   EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
-      << "where: " << where_str << ", newton3: " << newton3;
-  EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+      << "where: " << to_string(where) << ", newton3: " << newton3;
+  EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << to_string(where) << ", newton3: " << newton3;
 }
 
 template <class FuncType>
@@ -89,9 +69,9 @@ void ATFunctorTestGlobals<FuncType>::runATFunctorGlobalsTest(where_type where, S
       {allOutside, {0., false, false, false}}};
   const auto &[whereFactor, owned1, owned2, owned3] = whereConfig.at(where);
 
-  const std::array<double, 3> p1Pos{0., 0., 0.};
-  const std::array<double, 3> p2Pos{0.1, 0., 0.};
-  const std::array<double, 3> p3Pos{0., 0.2, 0.3};
+  constexpr std::array<double, 3> p1Pos{0., 0., 0.};
+  constexpr std::array<double, 3> p2Pos{0.1, 0., 0.};
+  constexpr std::array<double, 3> p3Pos{0., 0.2, 0.3};
   Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
   p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
   Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
@@ -104,60 +84,65 @@ void ATFunctorTestGlobals<FuncType>::runATFunctorGlobalsTest(where_type where, S
   std::vector<FMCell *> cells;
 
   // Distribute the particles according to the SoAFunctorType to test
-  if (soaFunctorType == single) {
-    cell1.addParticle(p1);
-    cell1.addParticle(p2);
-    cell1.addParticle(p3);
-    cells = {&cell1};
-  } else if (soaFunctorType == pair12) {
-    cell1.addParticle(p1);
-    cell2.addParticle(p2);
-    cell2.addParticle(p3);
-    cells = {&cell1, &cell2};
-  } else if (soaFunctorType == pair21) {
-    cell1.addParticle(p1);
-    cell1.addParticle(p2);
-    cell2.addParticle(p3);
-    cells = {&cell1, &cell2};
-  } else if (soaFunctorType == triple) {
-    cell1.addParticle(p1);
-    cell2.addParticle(p2);
-    cell3.addParticle(p3);
-    cells = {&cell1, &cell2, &cell3};
-  } else {
-    FAIL() << "Not a valid SoAFunctorType";
+  switch (soaFunctorType) {
+    case single:
+      cell1.addParticle(p1);
+      cell1.addParticle(p2);
+      cell1.addParticle(p3);
+      cells = {&cell1};
+      break;
+    case pair12:
+      cell1.addParticle(p1);
+      cell2.addParticle(p2);
+      cell2.addParticle(p3);
+      cells = {&cell1, &cell2};
+      break;
+    case pair21:
+      cell1.addParticle(p1);
+      cell1.addParticle(p2);
+      cell2.addParticle(p3);
+      cells = {&cell1, &cell2};
+      break;
+    case triple:
+      cell1.addParticle(p1);
+      cell2.addParticle(p2);
+      cell3.addParticle(p3);
+      cells = {&cell1, &cell2, &cell3};
+      break;
+    default:
+      FAIL() << "Not a valid SoAFunctorType";
   }
 
   // Fill SoA for all involved cells
-  for (auto *c : cells) functor.SoALoader(*c, c->_particleSoABuffer, 0, false);
-
+  for (auto *c : cells) {
+    functor.SoALoader(*c, c->_particleSoABuffer, 0, false);
+  }
   functor.initTraversal();
 
   // Invoke the appropriate SoA functor based on the SoAFunctorType and newton3
-  // For single-cell test
-  if (soaFunctorType == single) {
-    functor.SoAFunctorSingle(cells[0]->_particleSoABuffer, newton3);
-  } else if (soaFunctorType == pair12) {
-    functor.SoAFunctorPair(cells[0]->_particleSoABuffer, cells[1]->_particleSoABuffer, newton3);
-    if (not newton3) {
-      functor.SoAFunctorPair(cells[1]->_particleSoABuffer, cells[0]->_particleSoABuffer, newton3);
-    }
-  } else if (soaFunctorType == pair21) {
-    functor.SoAFunctorPair(cells[0]->_particleSoABuffer, cells[1]->_particleSoABuffer, newton3);
-    if (not newton3) {
-      functor.SoAFunctorPair(cells[1]->_particleSoABuffer, cells[0]->_particleSoABuffer, newton3);
-    }
-  } else if (soaFunctorType == triple) {
-    functor.SoAFunctorTriple(cells[0]->_particleSoABuffer, cells[1]->_particleSoABuffer, cells[2]->_particleSoABuffer,
-                             newton3);
-    if (not newton3) {
-      functor.SoAFunctorTriple(cells[1]->_particleSoABuffer, cells[0]->_particleSoABuffer, cells[2]->_particleSoABuffer,
+  switch (soaFunctorType) {
+    case single:
+      functor.SoAFunctorSingle(cells[0]->_particleSoABuffer, newton3);
+      break;
+    case pair12:
+    case pair21:
+      functor.SoAFunctorPair(cells[0]->_particleSoABuffer, cells[1]->_particleSoABuffer, newton3);
+      if (not newton3) {
+        functor.SoAFunctorPair(cells[1]->_particleSoABuffer, cells[0]->_particleSoABuffer, newton3);
+      }
+      break;
+    case triple:
+      functor.SoAFunctorTriple(cells[0]->_particleSoABuffer, cells[1]->_particleSoABuffer, cells[2]->_particleSoABuffer,
                                newton3);
-      functor.SoAFunctorTriple(cells[2]->_particleSoABuffer, cells[0]->_particleSoABuffer, cells[1]->_particleSoABuffer,
-                               newton3);
-    }
-  } else {
-    FAIL() << "Not a valid SoAFunctorType";
+      if (not newton3) {
+        functor.SoAFunctorTriple(cells[1]->_particleSoABuffer, cells[0]->_particleSoABuffer,
+                                 cells[2]->_particleSoABuffer, newton3);
+        functor.SoAFunctorTriple(cells[2]->_particleSoABuffer, cells[0]->_particleSoABuffer,
+                                 cells[1]->_particleSoABuffer, newton3);
+      }
+      break;
+    default:
+      FAIL() << "Not a valid SoAFunctorType";
   }
 
   functor.endTraversal(newton3);
@@ -180,7 +165,7 @@ TYPED_TEST_P(ATFunctorTestGlobals, testSoAATFunctorGlobals) {
   using FuncType = TypeParam;
   using TestType = ATFunctorTestGlobals<FuncType>;
   for (typename TestType::SoAFunctorType soaFunctorType :
-       {TestType::single, TestType::pair12, TestType::pair21, TestType::triple}) {
+       {TestType::single, TestType::pair12, TestType::pair21, TestType::triple, /*TestType::verlet*/}) {
     for (bool newton3 : {false, true}) {
       for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
                                                   TestType::where_type::inoutout, TestType::where_type::allOutside}) {
@@ -192,9 +177,8 @@ TYPED_TEST_P(ATFunctorTestGlobals, testSoAATFunctorGlobals) {
 
 TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobalsOpenMPParallel) {
   using FuncType = TypeParam;
-  using TestType = ATFunctorTestGlobals<FuncType>;
 
-  const bool newton3 = true;
+  constexpr bool newton3 = true;
 
   constexpr std::array<double, 3> p1Pos{0., 0., 0.};
   constexpr std::array<double, 3> p2Pos{0.1, 0., 0.};
@@ -216,7 +200,7 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobalsOpenMPParallel) {
 
   functor.initTraversal();
 
-  std::string msg = "";
+  std::string msg;
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
   // reduction for appending strings: "abc" + "def" -> "abcdef"

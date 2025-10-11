@@ -9,18 +9,15 @@
 #include <gtest/gtest.h>
 
 #include "ATFunctorTest.h"
-#include "AutoPasTestBase.h"
-#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/ATPotential.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <class FuncType>
 class ATFunctorTestGlobals : public ATFunctorTest {
  public:
   struct OwnershipConfig {
-    double factor;
+    double factor{};
     std::string where_str;
-    bool owned1, owned2, owned3;
+    bool owned1{}, owned2{}, owned3{};
   };
 
   ATFunctorTestGlobals() : ATFunctorTest() {}
@@ -28,14 +25,6 @@ class ATFunctorTestGlobals : public ATFunctorTest {
   static void ATFunctorTestGlobalsNoMixingAoS(where_type where, bool newton3);
 
   void runATFunctorGlobalsTest(where_type where, SoAFunctorType soaFunctorType, bool newton3);
-  static void ATFunctorTestGlobalsNoMixingSoASingle(where_type where, bool newton3);
-  static void ATFunctorTestGlobalsNoMixingSoAPair12(where_type where, bool newton3);
-  static void ATFunctorTestGlobalsNoMixingSoAPair21(where_type where, bool newton3);
-  static void ATFunctorTestGlobalsNoMixingSoATriple(where_type where, bool newton3);
-
-  static void testSoAGlobalsAT(where_type where, bool newton3, SoAFunctorType interactionType,
-                               size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas,
-                               bool mixedNewton3FunctorCalls);
 
   constexpr static double cutoff{5.};
   constexpr static double nu{0.7};
