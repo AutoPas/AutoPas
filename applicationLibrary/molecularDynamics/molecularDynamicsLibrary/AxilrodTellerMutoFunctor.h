@@ -100,12 +100,12 @@ class AxilrodTellerMutoFunctor
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle_T::SoAArraysType;
+  using SoAArraysType = Particle_T::SoAArraysType;
 
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = Particle_T::ParticleSoAFloatPrecision;
 
  public:
   /**
@@ -289,8 +289,7 @@ class AxilrodTellerMutoFunctor
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
-    if constexpr (countFLOPs) {
-    }
+
     const auto threadnum = autopas::autopas_get_thread_num();
 
     const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -394,8 +393,11 @@ class AxilrodTellerMutoFunctor
 
           const SoAFloatPrecision distSquaredKI = distSquaredXKI + distSquaredYKI + distSquaredZKI;
 
-          const bool mask = distSquaredJK <= cutoffSquared and distSquaredKI <= cutoffSquared and
-                            ownedStateK != autopas::OwnershipState::dummy;
+          // Due to low 3-body hitrate, mostly better than masking
+          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared or
+              ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           // Calculate prefactor
           const SoAFloatPrecision allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
@@ -427,9 +429,9 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision forceYIDirectionKI = distYKI * factorIDirectionKI;
           const SoAFloatPrecision forceZIDirectionKI = distZKI * factorIDirectionKI;
 
-          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI) * mask;
-          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI) * mask;
-          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI) * mask;
+          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI);
+          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI);
+          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI);
 
           fxacc += forceIX;
           fyacc += forceIY;
@@ -453,9 +455,9 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision forceYJDirectionJK = distYJK * factorJDirectionJK;
           const SoAFloatPrecision forceZJDirectionJK = distZJK * factorJDirectionJK;
 
-          const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK) * mask;
-          const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
-          const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
+          const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK);
+          const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK);
+          const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK);
 
           fxptr[j] += forceJX;
           fyptr[j] += forceJY;
@@ -470,12 +472,12 @@ class AxilrodTellerMutoFunctor
           fzptr[k] += forceKZ;
 
           if constexpr (countFLOPs) {
-            numDistanceCalculationSum += ownedStateK != autopas::OwnershipState::dummy ? 1 : 0;
-            numKernelCallsN3Sum += mask;
+            numDistanceCalculationSum += 1;
+            numKernelCallsN3Sum += 1;
           }
 
           if constexpr (calculateGlobals) {
-            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
             if (ownedStateI == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
@@ -497,7 +499,7 @@ class AxilrodTellerMutoFunctor
             }
 
             if constexpr (countFLOPs) {
-              numGlobalCalcsSum += mask;
+              numGlobalCalcsSum += 1;
             }
           }
         }
@@ -628,8 +630,11 @@ class AxilrodTellerMutoFunctor
 
           const SoAFloatPrecision distSquaredKI = distSquaredXKI + distSquaredYKI + distSquaredZKI;
 
-          const bool mask = distSquaredJK <= cutoffSquared and distSquaredKI <= cutoffSquared and
-                            ownedStateK != autopas::OwnershipState::dummy;
+          // Due to low 3-body hitrate, mostly better than masking
+          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared or
+              ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           // Calculate prefactor
           const SoAFloatPrecision allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
@@ -661,9 +666,9 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision forceYIDirectionKI = distYKI * factorIDirectionKI;
           const SoAFloatPrecision forceZIDirectionKI = distZKI * factorIDirectionKI;
 
-          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI) * mask;
-          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI) * mask;
-          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI) * mask;
+          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI);
+          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI);
+          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI);
 
           fxacc += forceIX;
           fyacc += forceIY;
@@ -688,9 +693,9 @@ class AxilrodTellerMutoFunctor
             const SoAFloatPrecision forceYJDirectionJK = distYJK * factorJDirectionJK;
             const SoAFloatPrecision forceZJDirectionJK = distZJK * factorJDirectionJK;
 
-            const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK) * mask;
-            const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
-            const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
+            const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK);
+            const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK);
+            const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK);
 
             fxptr2[j] += forceJX;
             fyptr2[j] += forceJY;
@@ -705,7 +710,7 @@ class AxilrodTellerMutoFunctor
             fzptr2[k] += forceKZ;
 
             if constexpr (calculateGlobals) {
-              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
               if (ownedStateJ == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
                 virialSumX += forceJX * xptr2[j];
@@ -719,22 +724,22 @@ class AxilrodTellerMutoFunctor
                 virialSumZ += forceKZ * zptr2[k];
               }
               if constexpr (countFLOPs) {
-                numGlobalCalcsN3Sum += mask;
+                numGlobalCalcsN3Sum += 1;
               }
             }
           }
 
           if constexpr (countFLOPs) {
-            numDistanceCalculationSum += ownedStateK != autopas::OwnershipState::dummy ? 1 : 0;
+            numDistanceCalculationSum += 1;
             if constexpr (newton3) {
-              numKernelCallsN3Sum += mask;
+              numKernelCallsN3Sum += 1;
             } else {
-              numKernelCallsNoN3Sum += mask;
+              numKernelCallsNoN3Sum += 1;
             }
           }
 
           if constexpr (calculateGlobals) {
-            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
             if (ownedStateI == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
@@ -744,7 +749,7 @@ class AxilrodTellerMutoFunctor
             }
 
             if constexpr (countFLOPs) {
-              numGlobalCalcsNoN3Sum += mask;
+              numGlobalCalcsNoN3Sum += 1;
             }
           }
         }
@@ -798,8 +803,11 @@ class AxilrodTellerMutoFunctor
 
           const SoAFloatPrecision distSquaredKI = distSquaredXKI + distSquaredYKI + distSquaredZKI;
 
-          const bool mask = distSquaredJK <= cutoffSquared and distSquaredKI <= cutoffSquared and
-                            ownedStateK != autopas::OwnershipState::dummy;
+          // Due to low 3-body hitrate, mostly better than masking
+          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared or
+              ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           // Calculate prefactor
           const SoAFloatPrecision allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
@@ -831,9 +839,9 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision forceYIDirectionKI = distYKI * factorIDirectionKI;
           const SoAFloatPrecision forceZIDirectionKI = distZKI * factorIDirectionKI;
 
-          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI) * mask;
-          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI) * mask;
-          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI) * mask;
+          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI);
+          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI);
+          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI);
 
           fxacc += forceIX;
           fyacc += forceIY;
@@ -857,9 +865,9 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision forceYJDirectionJK = distYJK * factorJDirectionJK;
           const SoAFloatPrecision forceZJDirectionJK = distZJK * factorJDirectionJK;
 
-          const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK) * mask;
-          const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
-          const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
+          const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK);
+          const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK);
+          const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK);
 
           fxptr1[j] += forceJX;
           fyptr1[j] += forceJY;
@@ -874,7 +882,7 @@ class AxilrodTellerMutoFunctor
             fzptr2[k] += forceKZ;
 
             if constexpr (calculateGlobals) {
-              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
               if (ownedStateK == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
                 virialSumX += forceKX * xptr2[k];
@@ -882,22 +890,22 @@ class AxilrodTellerMutoFunctor
                 virialSumZ += forceKZ * zptr2[k];
               }
               if constexpr (countFLOPs) {
-                numGlobalCalcsN3Sum += mask;
+                numGlobalCalcsN3Sum += 1;
               }
             }
           }
 
           if constexpr (countFLOPs) {
-            numDistanceCalculationSum += ownedStateK != autopas::OwnershipState::dummy ? 1 : 0;
+            numDistanceCalculationSum += 1;
             if constexpr (newton3) {
-              numKernelCallsN3Sum += mask;
+              numKernelCallsN3Sum += 1;
             } else {
-              numKernelCallsNoN3Sum += mask;
+              numKernelCallsNoN3Sum += 1;
             }
           }
 
           if constexpr (calculateGlobals) {
-            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
             if (ownedStateI == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
               virialSumX += forceIX * xptr1[i];
@@ -911,7 +919,7 @@ class AxilrodTellerMutoFunctor
               virialSumZ += forceJZ * zptr1[j];
             }
             if constexpr (countFLOPs) {
-              numGlobalCalcsNoN3Sum += mask;
+              numGlobalCalcsNoN3Sum += 1;
             }
           }
         }
@@ -1052,8 +1060,11 @@ class AxilrodTellerMutoFunctor
 
           const SoAFloatPrecision distSquaredKI = distSquaredXKI + distSquaredYKI + distSquaredZKI;
 
-          const bool mask = distSquaredJK <= cutoffSquared and distSquaredKI <= cutoffSquared and
-                            ownedStateK != autopas::OwnershipState::dummy;
+          // Due to low 3-body hitrate, mostly better than masking
+          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared or
+              ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           // Calculate prefactor
           const SoAFloatPrecision allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
@@ -1085,9 +1096,9 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision forceYIDirectionKI = distYKI * factorIDirectionKI;
           const SoAFloatPrecision forceZIDirectionKI = distZKI * factorIDirectionKI;
 
-          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI) * mask;
-          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI) * mask;
-          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI) * mask;
+          const SoAFloatPrecision forceIX = (forceXIDirectionJK + forceXIDirectionIJ + forceXIDirectionKI);
+          const SoAFloatPrecision forceIY = (forceYIDirectionJK + forceYIDirectionIJ + forceYIDirectionKI);
+          const SoAFloatPrecision forceIZ = (forceZIDirectionJK + forceZIDirectionIJ + forceZIDirectionKI);
 
           fxacc += forceIX;
           fyacc += forceIY;
@@ -1112,9 +1123,9 @@ class AxilrodTellerMutoFunctor
             const SoAFloatPrecision forceYJDirectionJK = distYJK * factorJDirectionJK;
             const SoAFloatPrecision forceZJDirectionJK = distZJK * factorJDirectionJK;
 
-            const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK) * mask;
-            const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK) * mask;
-            const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK) * mask;
+            const SoAFloatPrecision forceJX = (forceXJDirectionKI + forceXJDirectionIJ + forceXJDirectionJK);
+            const SoAFloatPrecision forceJY = (forceYJDirectionKI + forceYJDirectionIJ + forceYJDirectionJK);
+            const SoAFloatPrecision forceJZ = (forceZJDirectionKI + forceZJDirectionIJ + forceZJDirectionJK);
 
             fxptr2[j] += forceJX;
             fyptr2[j] += forceJY;
@@ -1129,7 +1140,7 @@ class AxilrodTellerMutoFunctor
             fzptr3[k] += forceKZ;
 
             if constexpr (calculateGlobals) {
-              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
               if (ownedStateJ == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
                 virialSumX += forceJX * xptr2[j];
@@ -1143,22 +1154,22 @@ class AxilrodTellerMutoFunctor
                 virialSumZ += forceKZ * zptr3[k];
               }
               if constexpr (countFLOPs) {
-                numGlobalCalcsN3Sum += mask;
+                numGlobalCalcsN3Sum += 1;
               }
             }
           }
 
           if constexpr (countFLOPs) {
-            numDistanceCalculationSum += ownedStateK != autopas::OwnershipState::dummy ? 1 : 0;
+            numDistanceCalculationSum += 1;
             if constexpr (newton3) {
-              numKernelCallsN3Sum += mask;
+              numKernelCallsN3Sum += 1;
             } else {
-              numKernelCallsNoN3Sum += mask;
+              numKernelCallsNoN3Sum += 1;
             }
           }
 
           if constexpr (calculateGlobals) {
-            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts) * mask;
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
             if (ownedStateI == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
@@ -1168,7 +1179,7 @@ class AxilrodTellerMutoFunctor
             }
 
             if constexpr (countFLOPs) {
-              numGlobalCalcsNoN3Sum += mask;
+              numGlobalCalcsNoN3Sum += 1;
             }
           }
         }
