@@ -365,16 +365,16 @@ long AutoTuner::estimateRuntimeFromSamples() const {
   }
 
   // Reduce the values for rebuild and non-rebuild iterations according to the selector strategy.
-  // If there is no data for either variant we have to assume that rebuilding and non-rebuilding iterations take the same time. This might neither be a good estimate nor fair but the best we can do.
+  // If there is no data for either variant we have to assume that rebuilding and non-rebuilding iterations take the
+  // same time. This might neither be a good estimate nor fair but the best we can do.
   auto reducedValueNotBuilding =
       hasNotRebuildSamples
-        ? autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy)
-        : autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
+          ? autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy)
+          : autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
 
   auto reducedValueBuilding =
-      hasRebuildSamples
-        ? autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy)
-        : reducedValueNotBuilding;
+      hasRebuildSamples ? autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy)
+                        : reducedValueNotBuilding;
 
   // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
