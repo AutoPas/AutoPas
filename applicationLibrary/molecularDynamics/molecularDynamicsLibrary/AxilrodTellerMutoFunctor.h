@@ -328,9 +328,6 @@ class AxilrodTellerMutoFunctor
 
     for (unsigned int i = 0; i < soa.size(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
-      if (ownedStateI == autopas::OwnershipState::dummy) {
-        continue;
-      }
 
       SoAFloatPrecision fxacc = 0.;
       SoAFloatPrecision fyacc = 0.;
@@ -348,9 +345,7 @@ class AxilrodTellerMutoFunctor
 
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr[j];
-        if (ownedStateJ == autopas::OwnershipState::dummy) {
-          continue;
-        }
+
         const SoAFloatPrecision distXIJ = xptr[j] - xptr[i];
         const SoAFloatPrecision distYIJ = yptr[j] - yptr[i];
         const SoAFloatPrecision distZIJ = zptr[j] - zptr[i];
@@ -362,7 +357,6 @@ class AxilrodTellerMutoFunctor
 
         for (unsigned int k = j + 1; k < soa.size(); ++k) {
           const auto ownedStateK = ownedStatePtr[k];
-          if (ownedStateK == autopas::OwnershipState::dummy) continue;
 
           SoAFloatPrecision nu = const_nu;
           if constexpr (useMixing) {
@@ -510,9 +504,6 @@ class AxilrodTellerMutoFunctor
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       const auto ownedStateI = ownedStatePtr1[i];
-      if (ownedStateI == autopas::OwnershipState::dummy) {
-        continue;
-      }
 
       SoAFloatPrecision fxacc = 0.;
       SoAFloatPrecision fyacc = 0.;
@@ -521,9 +512,7 @@ class AxilrodTellerMutoFunctor
       // CASE: Particle i is in soa1, j and k are both in soa2
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
-        if (ownedStateJ == autopas::OwnershipState::dummy) {
-          continue;
-        }
+
         const SoAFloatPrecision distXIJ = xptr2[j] - xptr1[i];
         const SoAFloatPrecision distYIJ = yptr2[j] - yptr1[i];
         const SoAFloatPrecision distZIJ = zptr2[j] - zptr1[i];
@@ -552,8 +541,7 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
 
           // Due to low 3-body hitrate, mostly better than masking
-          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared or
-              ownedStateK == autopas::OwnershipState::dummy) {
+          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared) {
             continue;
           }
 
@@ -646,9 +634,7 @@ class AxilrodTellerMutoFunctor
       // CASE: Particle i and j are both in soa1, k is in soa2
       for (unsigned int j = i + 1; j < soa1.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr1[j];
-        if (ownedStateJ == autopas::OwnershipState::dummy) {
-          continue;
-        }
+
         const SoAFloatPrecision distXIJ = xptr1[j] - xptr1[i];
         const SoAFloatPrecision distYIJ = yptr1[j] - yptr1[i];
         const SoAFloatPrecision distZIJ = zptr1[j] - zptr1[i];
@@ -677,8 +663,7 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
 
           // Due to low 3-body hitrate, mostly better than masking
-          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared or
-              ownedStateK == autopas::OwnershipState::dummy) {
+          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared) {
             continue;
           }
 
@@ -829,9 +814,6 @@ class AxilrodTellerMutoFunctor
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       const auto ownedStateI = ownedStatePtr1[i];
-      if (ownedStateI == autopas::OwnershipState::dummy) {
-        continue;
-      }
 
       SoAFloatPrecision fxacc = 0.;
       SoAFloatPrecision fyacc = 0.;
@@ -839,9 +821,7 @@ class AxilrodTellerMutoFunctor
 
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
-        if (ownedStateJ == autopas::OwnershipState::dummy) {
-          continue;
-        }
+
         const SoAFloatPrecision distXIJ = xptr2[j] - xptr1[i];
         const SoAFloatPrecision distYIJ = yptr2[j] - yptr1[i];
         const SoAFloatPrecision distZIJ = zptr2[j] - zptr1[i];
@@ -870,8 +850,7 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
 
           // Due to low 3-body hitrate, mostly better than masking
-          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared or
-              ownedStateK == autopas::OwnershipState::dummy) {
+          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared) {
             continue;
           }
 
