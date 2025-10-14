@@ -24,9 +24,11 @@ class P3MTraversalInterface {
 
   
   virtual void set_p3m_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, std::array<double, 3> grid_dist, const std::array<double, 3> &boxMin,
-         std::vector<std::vector<double>> &selfForceCoeffs, P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal);
+         std::vector<std::vector<double>> &selfForceCoeffs, P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal) = 0;
 
-  virtual void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer, utils::Timer *chargeAssignmentTimer, utils::Timer *forceInterpolationTimer);
+  virtual void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer, utils::Timer *chargeAssignmentTimer, utils::Timer *forceInterpolationTimer) = 0;
+
+  virtual double getPotential();
 
   };
 }

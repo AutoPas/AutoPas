@@ -433,6 +433,12 @@ class P3M_container : public LinkedCells<Particle_T> {
         }
     }
 
+    // helps to make the traversal pointer an lvalue
+    template <typename Traversal>
+    void prepHelp(Traversal *t){
+        this->prepareTraversal(t);
+    }
+
     /**
      * Checks if a given traversal is allowed for P3M and sets it up for the force interactions.
      * @tparam Traversal Traversal type. E.g. pairwise, triwise
@@ -465,6 +471,10 @@ class P3M_container : public LinkedCells<Particle_T> {
         traversal->initTraversal();
         traversal->traverseParticles();
         traversal->endTraversal();
+
+        // do potential calc
+        auto *traversalP3M = dynamic_cast<P3MTraversalInterface<LinkedParticleCell> *>(traversal);
+        //std::cout << "electro-static potential: pair: " << f.getPotentialEnergy() << " long: " << traversalP3M->getPotential() << std::endl;
 
         /*for(auto iter = this->begin(); iter.isValid(); ++iter){
             if(iter->isOwned()){

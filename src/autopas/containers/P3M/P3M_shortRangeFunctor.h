@@ -3,6 +3,7 @@
 #include <math.h>
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 #include <iostream>
 
@@ -13,6 +14,8 @@ namespace autopas{
         private:
         double alpha;
         double cutoffSquared;
+
+        double potentialEnergySum = 0.0;
 
         P3M_shortRangeFunctor(): PairwiseFunctor<Particle_T, P3M_shortRangeFunctor<Particle_T>>(0.0), alpha(0.0), cutoffSquared(0.0){}
 
@@ -36,8 +39,10 @@ namespace autopas{
             double f1 = M_2_SQRTPI * alpha * exp(- adist * adist);
             double f2 = erfc(adist) / dist;
 
+            //double scaling = 992.573;
+
             // does not include coulomb constant
-            auto f = dr * i.getQ() * j.getQ() * ((f1 + f2)/dist2);
+            auto f = dr * i.getQ() * j.getQ() * ((f1 + f2)/dist2) /** scaling*/;
             //if(i.isOwned())
             //    std::cout << "Particle " << i.getQ() << " short Range F: " << f[0] << ", " << f[1] << ", " << f[2] << std::endl;
             i.addF(f);
@@ -47,6 +52,23 @@ namespace autopas{
                 // only if we use newton 3 here, we want to
                 j.subF(f);
             }
+
+            // second 0.5 is the half the energy, since it will be counted for both particles and not just the pair
+            /*double potentialEnergy = f2 * i.getQ() * j.getQ() * 0.5 * 0.5;
+
+            if (i.isOwned()) {
+                AUTOPAS_OPENMP(atomic)
+                potentialEnergySum += potentialEnergy;
+            }
+            // for non-newton3 the second particle will be considered in a separate calculation
+            if (newton3 and j.isOwned()) {
+                AUTOPAS_OPENMP(atomic)
+                potentialEnergySum += potentialEnergy;
+            }*/
+        }
+
+        double getPotentialEnergy(){
+            return potentialEnergySum;
         }
 
         bool allowsNewton3(){

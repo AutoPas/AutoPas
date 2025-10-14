@@ -37,7 +37,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
     public:
 
     P3M_traversal(Functor *functor, const double interactionLength, DataLayoutOption dataLayout, bool useNewton3) 
-        : TraversalInterface(dataLayout, useNewton3), functor(functor), interactionLength(interactionLength){
+        : TraversalInterface(dataLayout, useNewton3), functor(functor), interactionLength(interactionLength), potential(0.0){
     }
 
     //P3M_traversal()
@@ -48,7 +48,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
     //}
 
     void set_p3m_traversal_parameters(unsigned int cao, std::array<unsigned int, 3> grid_dims, std::array<double, 3> grid_dist, const std::array<double, 3> &boxMin,
-         std::vector<std::vector<double>> &selfForceCoeffs, P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal){
+         std::vector<std::vector<double>> &selfForceCoeffs, P3M_container<ParticleType> *container, LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal) override {
         this->cao = cao;
         this->grid_dims = grid_dims;
         this->grid_dist = grid_dist;
@@ -58,7 +58,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         this->shortRangeTraversal = shortRangeTraversal;
     }
 
-    void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer, utils::Timer *chargeAssignmentTimer, utils::Timer *forceInterpolationTimer){
+    void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer, utils::Timer *chargeAssignmentTimer, utils::Timer *forceInterpolationTimer) override {
         this->fftTimer = fftTimer;
         this->shortRangeTimer = shortRangeTimer;
         this->chargeAssignmentTimer = chargeAssignmentTimer;
@@ -83,6 +83,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
     LCC08Traversal<ParticleCell, P3M_shortRangeFunctor<ParticleType>> *shortRangeTraversal;
     Functor *functor;
     double interactionLength;
+    double potential;
 
     utils::Timer *fftTimer;
     utils::Timer *shortRangeTimer;
@@ -224,6 +225,16 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
 
     // multiplies the ks_grid with an influence function
     void applyInfluenceFunction(){
+        //compute potential energy
+        /*double inv = 1.0 / (grid_dims[0] * grid_dims[1] * grid_dims[2]);
+        potential = 0.0;
+        AUTOPAS_OPENMP(parallel for schedule(static) reduction(+: potential))
+        for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
+            potential += inv * inv * std::norm(container->ks_grid[i]) * std::real(container->optForceInfluence[i]);
+        }*/
+
+        // *inv is done automatically in the backtransform of the FFT implementation
+
         AUTOPAS_OPENMP(parallel for schedule(static))
         for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
             container->ks_grid[i] *= container->optForceInfluence[i];
@@ -278,7 +289,12 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
             /*AUTOPAS_OPENMP(critical){
             std::cout << "Particle " << iter->getQ() << " long Range F: " << totalForce[0] << ", " << totalForce[1] << ", " << totalForce[2] << std::endl;
             }*/
+           //double scaling = 992.573;
+          /*totalForce[0] *= scaling;
+            totalForce[1] *= scaling;
+            totalForce[2] *= scaling;*/
             subtractSelfForce(*iter, totalForce);
+            
             iter->addF(totalForce);
         }
     }
@@ -378,6 +394,18 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         container->fft.forward3D(container->rs_grid, container->ks_grid, grid_dims);
         fftTimer->stop();
 
+        /*std::cout << "Transformed Charge Density: " << std::endl;
+        for (unsigned int x = 0; x < grid_dims[0]; x++){
+            for(unsigned int y = 0; y < grid_dims[1]; y++){
+                for(unsigned int z = 0; z < grid_dims[2]; z++){
+                    unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
+                    std::cout << container->ks_grid[index1d] << ", ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }*/
+
         applyInfluenceFunction();
         
         fftTimer->start();
@@ -432,7 +460,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
             shortRangeTraversal->initTraversal();
             shortRangeTraversal->traverseParticles();
             shortRangeTraversal->endTraversal();
-            return;
         }
 
         auto LJTraversal =
@@ -440,6 +467,9 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
             container->getCellBlock().getCellsPerDimensionWithHalo(), functor, container->getCutoff(),
             container->getCellBlock().getCellLength(), DataLayoutOption::aos, false);
 
+        //dynamic_cast<LCC08Traversal<ParticleCell, Functor>>()
+
+        container->prepHelp(&LJTraversal);
         LJTraversal.initTraversal();
         LJTraversal.traverseParticles();
         LJTraversal.endTraversal();
@@ -477,6 +507,10 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
 
     void endTraversal() override {
         
+    }
+
+    double getPotential() override {
+        return potential;
     }
 };
 }
