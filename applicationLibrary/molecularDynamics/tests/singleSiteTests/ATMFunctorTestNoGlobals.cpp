@@ -203,14 +203,14 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
   constexpr bool newton3 = TypeParam::newton3;
 
   // Helper lambdas to check the forces
-  auto testNonZeroForce = [&](const std::array<double, 3> &particleForce, const std::array<double, 3> &expectedForce) {
+  auto testNonZeroForce = [&](const std::array<double, 3> &particleForce, const std::array<double, 3> &expectedForce, const std::string &type) {
     for (size_t i = 0; i < 3; i++) {
-      EXPECT_NEAR(particleForce[i], expectedForce[i], this->absDelta);
+      EXPECT_NEAR(particleForce[i], expectedForce[i], this->absDelta) << "Failed for SoAFunctor: " << type << ", Newton3: " << newton3;
     }
   };
-  auto testZeroForce = [&](const std::array<double, 3> &particleForce) {
+  auto testZeroForce = [&](const std::array<double, 3> &particleForce, const std::string &type) {
     for (size_t i = 0; i < 3; i++) {
-      EXPECT_DOUBLE_EQ(particleForce[i], 0);
+      EXPECT_DOUBLE_EQ(particleForce[i], 0) << "Failed for SoAFunctor: " << type << ", Newton3: " << newton3;
     }
   };
 
@@ -314,7 +314,7 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
     // Test the forces on all three particles after the first interaction
     auto *f1 = &cell1.begin()->getF();
     const auto expectedForceIter1P1 = mixing ? this->expectedForceMixingP1 : this->expectedForceNonMixingP1;
-    testNonZeroForce(*f1, expectedForceIter1P1);
+    testNonZeroForce(*f1, expectedForceIter1P1, ATMFunctorTest::to_string(soaFunctorType));
 
     auto *f2 = &(++cell1.begin())->getF();
     if (soaFunctorType == TestType::SoAFunctorType::pair12 or soaFunctorType == TestType::SoAFunctorType::triple) {
@@ -324,9 +324,9 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
         soaFunctorType == TestType::SoAFunctorType::pair21 or soaFunctorType == TestType::SoAFunctorType::verlet) {
       // If particle 2 is in the same cell as particle 1, its forces should already be calculated
       const auto expectedForceIter1P2 = mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2;
-      testNonZeroForce(*f2, expectedForceIter1P2);
+      testNonZeroForce(*f2, expectedForceIter1P2, ATMFunctorTest::to_string(soaFunctorType));
     } else {  // Particle 2 is in a different cell, so the forces are zero when newton3 == false
-      testZeroForce(*f2);
+      testZeroForce(*f2, ATMFunctorTest::to_string(soaFunctorType));
     }
 
     // force of particle 3
@@ -342,9 +342,9 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
     if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or
         soaFunctorType == TestType::SoAFunctorType::verlet) {
       const auto expectedForceIter1P3 = mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3;
-      testNonZeroForce(*f3, expectedForceIter1P3);
+      testNonZeroForce(*f3, expectedForceIter1P3, ATMFunctorTest::to_string(soaFunctorType));
     } else {
-      testZeroForce(*f3);
+      testZeroForce(*f3, ATMFunctorTest::to_string(soaFunctorType));
     }
 
     // Second cell interaction for types with multiple cells
@@ -370,7 +370,7 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
       f1 = &cell1.begin()->getF();
       const auto expectedForceIter2P1 =
           (mixing ? this->expectedForceMixingP1 : this->expectedForceNonMixingP1) * factor;
-      testNonZeroForce(*f1, expectedForceIter2P1);
+      testNonZeroForce(*f1, expectedForceIter2P1, ATMFunctorTest::to_string(soaFunctorType));
 
       f2 = &(++cell1.begin())->getF();
       if (soaFunctorType == TestType::SoAFunctorType::pair12 or soaFunctorType == TestType::SoAFunctorType::triple) {
@@ -379,7 +379,7 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
 
       const auto expectedForceIter2P2 =
           (mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2) * factor;
-      testNonZeroForce(*f2, expectedForceIter2P2);
+      testNonZeroForce(*f2, expectedForceIter2P2, ATMFunctorTest::to_string(soaFunctorType));
 
       switch (soaFunctorType) {
         case TestType::SoAFunctorType::pair21:
@@ -398,9 +398,9 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
       if (newton3 or soaFunctorType != TestType::SoAFunctorType::triple) {
         const auto expectedForceIter2P3 =
             (mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3) * factor;
-        testNonZeroForce(*f3, expectedForceIter2P3);
+        testNonZeroForce(*f3, expectedForceIter2P3, ATMFunctorTest::to_string(soaFunctorType));
       } else {
-        testZeroForce(*f3);
+        testZeroForce(*f3, ATMFunctorTest::to_string(soaFunctorType));
       }
 
       // Third interaction for 3 cells
@@ -420,9 +420,9 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
         const auto expectedForceIter3P3 =
             (mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3) * factor;
 
-        testNonZeroForce(*f1, expectedForceIter3P1);
-        testNonZeroForce(*f2, expectedForceIter3P2);
-        testNonZeroForce(*f3, expectedForceIter3P3);
+        testNonZeroForce(*f1, expectedForceIter3P1, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(*f2, expectedForceIter3P2, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(*f3, expectedForceIter3P3, ATMFunctorTest::to_string(soaFunctorType));
       }
     }
 
