@@ -280,6 +280,13 @@ class ParticleBase {
   }
 
   /**
+   * get the size of the Particle, used in Hierarchical Grid to see which hierarchy the particle belongs to
+   * default 1, can be overridden to whatever is appropitate for the custom Particle type
+   * @return floatType size of the Particle
+   */
+  virtual floatType getSize() const { return 1; }
+
+  /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */

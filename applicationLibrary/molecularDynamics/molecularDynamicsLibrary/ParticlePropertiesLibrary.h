@@ -104,8 +104,9 @@ class ParticlePropertiesLibrary {
 
   /**
    * Calculates the actual mixing coefficients.
+   * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
-  void calculateMixingCoefficients();
+  void calculateMixingCoefficients(bool scalingCutoff = false);
 
   ~ParticlePropertiesLibrary() = default;
 
@@ -292,9 +293,10 @@ class ParticlePropertiesLibrary {
    * @param epsilon24 epsilon * 24
    * @param sigmaSquared sigma squared
    * @param cutoffSquared squared cutoff of the lennard-jones potential
+   * @param scalingCutoff if true, the cutoff will be scaled by the sigma of the particles
    * @return shift multiplied by 6
    */
-  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared);
+  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared, bool scalingCutoff = false);
 
   /**
    * Returns the precomputed mixed epsilon * 24.
@@ -503,7 +505,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
+void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(bool scalingCutoff) {
   if (_numRegisteredSiteTypes == 0) {
     autopas::utils::ExceptionHandler::AutoPasException(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
@@ -528,7 +530,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
         _computedLJMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
         // shift6
-        const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+        const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared, scalingCutoff);
         _computedLJMixingData[globalIndex].shift6 = shift6;
       }
     }
@@ -659,7 +661,10 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMoleculesLargestSigm
 
 template <typename floatType, typename intType>
 double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon24, double sigmaSquared,
-                                                                 double cutoffSquared) {
+                                                                 double cutoffSquared, bool scalingCutoff) {
+  if (scalingCutoff) {
+    cutoffSquared *= sigmaSquared;
+  }
   const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
   const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
   const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);

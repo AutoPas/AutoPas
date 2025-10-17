@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/linkedCells/HierarchicalGrid.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -54,6 +55,8 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
           dynamic_cast<autopas::VarVerletLists<Particle_T, VerletNeighborListAsBuild<Particle_T>> &>(container));
     case ContainerOption::octree:
       return function(dynamic_cast<autopas::Octree<Particle_T> &>(container));
+    case ContainerOption::hierarchicalGrid:
+      return function(dynamic_cast<autopas::HierarchicalGrid<Particle_T> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container.getContainerType());

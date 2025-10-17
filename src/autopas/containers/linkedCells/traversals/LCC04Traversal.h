@@ -58,7 +58,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
    * @return information about applicability
    */
   [[nodiscard]] bool isApplicable() const override {
-    // The cellsize cannot be smaller then the cutoff, if OpenMP is used.
+    // The cellsize cannot be smaller than the cutoff, if OpenMP is used.
     // Also see: https://github.com/AutoPas/AutoPas/issues/464
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
     const unsigned long minDim = *std::min_element(this->_cellsPerDimension.cbegin(), this->_cellsPerDimension.cend());

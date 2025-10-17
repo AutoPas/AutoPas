@@ -31,8 +31,8 @@ namespace IteratorTestHelper {
  *   3. All owned particles in the box of interest.
  *   3. All halo particles in the box of interest.
  */
-template <class AutoPasT>
-auto fillContainerAroundBoundary(AutoPasT &autoPas, const std::array<double, 3> &boxOfInterestMin,
+template <template <typename> class AutoPasT, class ParticleT>
+auto fillContainerAroundBoundary(AutoPasT<ParticleT> &autoPas, const std::array<double, 3> &boxOfInterestMin,
                                  const std::array<double, 3> &boxOfInterestMax) {
   constexpr size_t numParticles1DTotal = 10;
 
@@ -73,7 +73,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, const std::array<double, 3> 
     for (auto y : generateInteresting1DPositions(boxMin[1], boxMax[1])) {
       for (auto z : generateInteresting1DPositions(boxMin[2], boxMax[2])) {
         std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id++, 0);
+        ParticleT p(pos, {0., 0., 0.}, id++, 0);
         // add the particle as actual or halo particle
         if (autopas::utils::inBox(pos, boxMin, boxMax)) {
           autoPas.addParticle(p);
@@ -128,8 +128,8 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
  * @param sparsity
  * @return Vector of all particle IDs added.
  */
-template <class AutoPasT>
-auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
+template <template <typename> class AutoPasT, class ParticleT>
+auto fillContainerWithGrid(AutoPasT<ParticleT> &autoPas, double sparsity) {
   using namespace autopas::utils::ArrayMath::literals;
 
   auto cutoff = autoPas.getCutoff();
@@ -148,7 +148,7 @@ auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
     for (double y = gridWidth3D[1] / 2; y < boxLength[1]; y += sparsity * gridWidth3D[1]) {
       for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += sparsity * gridWidth3D[2]) {
         const std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id++, 0);
+        ParticleT p(pos, {0., 0., 0.}, id++, 0);
         autoPas.addParticle(p);
         particleIDs.push_back(p.getID());
       }

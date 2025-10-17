@@ -68,6 +68,13 @@ class TraversalInterface {
    */
   [[nodiscard]] DataLayoutOption getDataLayout() const { return _dataLayout; }
 
+  /**
+   * This function os used in case halo region length is different from interactionLength, i.e. for Hierarchical Grid's
+   * lower levels.
+   * @param haloRegionLength length of the halo region, it is usually cutoff + skin
+   */
+  virtual void setHaloRegionLength(const double haloRegionLength) {}
+
  protected:
   /**
    * The datalayout used by this traversal.

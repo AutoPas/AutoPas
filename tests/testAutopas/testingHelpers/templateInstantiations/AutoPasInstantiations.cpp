@@ -14,6 +14,7 @@
 //! @cond Doxygen_Suppress
 template class autopas::AutoPas<Molecule>;
 template class autopas::AutoPas<NonConstructibleParticle>;
+template class autopas::AutoPas<HGridMockMolecule>;
 
 template bool autopas::AutoPas<Molecule>::computeInteractions(mdLib::LJFunctor<Molecule> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
@@ -25,5 +26,6 @@ template bool autopas::AutoPas<Molecule>::computeInteractions(
 template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 template bool autopas::AutoPas<NonConstructibleParticle>::computeInteractions(
     MockPairwiseFunctor<NonConstructibleParticle> *);
+template bool autopas::AutoPas<HGridMockMolecule>::computeInteractions(EmptyPairwiseFunctor<HGridMockMolecule> *);
 
 //! @endcond

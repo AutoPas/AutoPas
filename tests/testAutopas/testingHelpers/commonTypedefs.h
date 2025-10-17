@@ -8,6 +8,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
+#include "mocks/HGridMoleculeLJ.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "mocks/MockTriwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -28,6 +29,11 @@ using FPCell = autopas::FullParticleCell<ParticleFP64>;
  * Short for the AutoPas single site Lennard-Jones molecule
  */
 using Molecule = mdLib::MoleculeLJ;
+/**
+ * Short for the AutoPas single site Lennard-Jones molecule, but with a random size so that they
+ * get assigned to different levels in HierarchicalGrid container
+ */
+using HGridMockMolecule = HGridMoleculeLJ;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */

@@ -22,6 +22,7 @@ option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Fun
 option(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC "Compile auto vectorized Axilrod Teller Functor." OFF)
 option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
 option(MD_FLEXIBLE_FUNCTOR_DEM "Compile DEM Functor using DEM force, torque, and heat models." OFF)
+option(MD_FLEXIBLE_SCALING_CUTOFF "Use scaling cutoff for Lennard-Jones functor." OFF)
 
 target_compile_definitions(
         md-flexible
@@ -31,6 +32,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
+        $<$<BOOL:${MD_FLEXIBLE_SCALING_CUTOFF}>:MD_FLEXIBLE_SCALING_CUTOFF>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_DEM}>:MD_FLEXIBLE_FUNCTOR_DEM>
 )
 

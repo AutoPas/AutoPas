@@ -358,6 +358,7 @@ std::string MDFlexConfig::to_string() const {
   }
 
   printOption(cutoff);
+  printOption(cutoffs);
   printOption(boxMin);
   printOption(boxMax);
   printOption(cellSizeFactors);
@@ -660,8 +661,8 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
                                            momentOfInertiaMap.at(molTypeId));
   }
 #endif
-
-  _particlePropertiesLibrary->calculateMixingCoefficients();
+  // using scaling cutoff if cutoffs value was set in the config file
+  _particlePropertiesLibrary->calculateMixingCoefficients(mdFlexibleTypeDefs::scalingCutoff);
 }
 
 void MDFlexConfig::initializeObjects() {

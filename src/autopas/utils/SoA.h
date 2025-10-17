@@ -21,7 +21,7 @@
 namespace autopas {
 
 /**
- * Structur of the array class.
+ * Structure of the array class.
  * @tparam SoAArraysType The SoAArrayType to be used for storage.
  */
 template <class SoAArraysType>

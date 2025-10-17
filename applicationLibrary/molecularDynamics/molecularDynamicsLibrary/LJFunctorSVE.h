@@ -133,6 +133,7 @@ class LJFunctorSVE
     auto sigmaSquared = _sigmaSquaredAoS;
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
+    auto cutoffSquared = _cutoffSquaredAoS;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
@@ -143,7 +144,7 @@ class LJFunctorSVE
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffSquaredAoS) {
+    if (dr2 > cutoffSquared) {
       return;
     }
 
@@ -849,7 +850,8 @@ class LJFunctorSVE
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
+      _shift6AoS =
+          ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS, false);
     } else {
       _shift6AoS = 0.;
     }
@@ -885,7 +887,7 @@ class LJFunctorSVE
   double _sigmaSquared{0.};
 #endif
 
-  const double _cutoffSquaredAoS;
+  double _cutoffSquaredAoS;
   double _epsilon24AoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;

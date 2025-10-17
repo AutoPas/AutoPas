@@ -469,6 +469,27 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    */
   std::vector<ParticleCell> &getCells() { return this->_cells; }
 
+  /**
+   * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
+   * @tparam Traversal Traversal type. E.g. pairwise, triwise
+   * @param traversal
+   */
+  template <typename Traversal>
+  void prepareTraversal(Traversal &traversal) {
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
+    }
+    if (traversalInterface && cellTraversal) {
+      cellTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "The selected traversal is not compatible with the LinkedCells container. TraversalID: {}",
+          traversal->getTraversalType());
+    }
+  }
+
  protected:
   /**
    * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
@@ -533,27 +554,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
 
     // the indices returned at this point should always be valid
     return {cellIndex, particleIndex};
-  }
-
-  /**
-   * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
-   * @tparam Traversal Traversal type. E.g. pairwise, triwise
-   * @param traversal
-   */
-  template <typename Traversal>
-  void prepareTraversal(Traversal &traversal) {
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
-    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
-      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
-    }
-    if (traversalInterface && cellTraversal) {
-      cellTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "The selected traversal is not compatible with the LinkedCells container. TraversalID: {}",
-          traversal->getTraversalType());
-    }
   }
 
   /**
