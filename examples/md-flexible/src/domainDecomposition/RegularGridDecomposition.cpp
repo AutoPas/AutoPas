@@ -35,7 +35,14 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 #else
           false
 #endif
-      ) {
+      ),
+_demParameters(
+      configuration.demElasticStiffness.value,     configuration.demNormalViscosity.value,
+      configuration.demFrictionViscosity.value,    configuration.demRollingViscosity.value,
+      configuration.demTorsionViscosity.value,     configuration.demStaticFrictionCoeff.value,
+      configuration.demDynamicFrictionCoeff.value, configuration.demRollingFrictionCoeff.value,
+      configuration.demTorsionFrictionCoeff.value, configuration.demHeatConductivity.value,
+      configuration.demHeatGenerationFactor.value){
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
   // if there is only one rank, but we are running with MPI we actually do not need it.
   if (_subdomainCount == 1) {
@@ -48,11 +55,11 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // only for particles within sixthRootOfTwo * sigma / 2.0 of the boundary. For minimal redundant iterating over
   // particles, we iterate once over particles within the largest possible range where a particle might experience a
   // repulsion, i.e. sixthRootOfTwo * maxSigma / 2.0.
-  double maxSigma{0};
-  for (const auto &[_, sigma] : configuration.sigmaMap.value) {
-    maxSigma = std::max(maxSigma, sigma);
+  double maxRadius{0};
+  for (const auto &[_, radius] : configuration.radiusMap.value) {
+    maxRadius = std::max(maxRadius, radius);
   }
-  _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
+  _maxReflectiveSkin = maxRadius;
 
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();
@@ -303,6 +310,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   using autopas::utils::Math::isNearRel;
+  using namespace autopas::utils::ArrayMath::literals;
+  using namespace autopas::utils::ArrayMath;
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
@@ -364,6 +373,104 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
                                      particlePropertiesLib.getSigma(p->getTypeId());
 #endif
 
+        const auto radius = particlePropertiesLib.getRadius(p->getTypeId());
+
+        if (radius > distanceToBoundary) {
+          const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
+            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
+            auto returnedPosition = position;
+            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
+            return returnedPosition;
+          }();
+
+          const auto displacement = sub(position, mirrorPosition);
+          const auto distance = L2Norm(displacement);
+
+          const double overlap = radius + radius - distance;
+          const bool overlapIsPositive = overlap > 0;
+
+          if (not overlapIsPositive) return;
+
+          const std::array<double, 3> normalUnit = displacement / distance;
+          const double overlapHalf = overlap / 2.;
+          const double radiusIReduced = radius - overlapHalf;
+          const double radiusJReduced = radius - overlapHalf;
+          const double radiusReduced = radiusIReduced * radiusJReduced / (radiusIReduced + radiusJReduced);
+          const std::array<double, 3> relVel{0., 0., 0.};
+          const double relVelDotNormalUnit = dot(normalUnit, relVel);
+
+          // Compute Forces
+          // Compute normal forces (3 + 3 = 6 FLOPS)
+          const double normalFMag = _demParameters.getElasticStiffness() * overlap -
+                                    _demParameters.getNormalViscosity() * relVelDotNormalUnit;  // 3 FLOPS
+          const std::array<double, 3> normalF = mulScalar(normalUnit, normalFMag);              // 3 FLOPS
+
+          // Compute tangential force (30 + 3 + 3 + 1 + 3 + 6 = 46 FLOPS)
+          const std::array<double, 3> tanRelVel = relVel + cross(normalUnit * radiusIReduced, p->getAngularVel()) +
+                                                  cross(normalUnit * radiusJReduced, p->getAngularVel());  // 30 FLOPS
+          const std::array<double, 3> normalRelVel = normalUnit * relVelDotNormalUnit;                    // 3 FLOPS
+          const std::array<double, 3> tanVel = tanRelVel - normalRelVel;                                  // 3 FLOPS
+          const double coulombLimit = _demParameters.getStaticFrictionCoeff() * (normalFMag);             // 1 FLOPS
+          const double coulombLimitSquared = coulombLimit * coulombLimit;                                 // 1 FLOPS
+          std::array<double, 3> tanF = tanVel * (-_demParameters.getFrictionViscosity());                 // 3 FLOPS
+          const double tanFMagSquared = dot(tanF, tanF);                                                  // 5 FLOPS
+          if (tanFMagSquared > coulombLimit) {
+            const double tanFMag = std::sqrt(tanFMagSquared);                                        // 1 FLOPS
+            const double scale = _demParameters.getDynamicFrictionCoeff() * (normalFMag) / tanFMag;  // 2 FLOPS
+            tanF = tanF * scale;                                                                     // 3 FLOPS
+          }
+
+          // Compute total force (3 FLOPS)
+          const std::array<double, 3> totalF = normalF + tanF;  // 3 FLOPS
+
+          p->addF(totalF);  // 3 FLOPS
+
+          // Compute Torques
+          // Compute frictional torque (12 FLOPS)
+          const std::array<double, 3> frictionQI = cross(normalUnit * (-radiusIReduced), tanF);  // 3 + 9 = 12 FLOPS
+
+          // Compute rolling torque (15 + 3 + 6 + 12 = 36 FLOPS)
+          const std::array<double, 3> rollingRelVel{0., 0., 0.};         // 15 FLOPS
+          std::array<double, 3> rollingF = rollingRelVel * (-_demParameters.getRollingViscosity());  // 3 FLOPS
+          const double rollingFMagSquared = dot(rollingF, rollingF);                                 // 5 FLOPS
+          if (rollingFMagSquared > coulombLimitSquared) {
+            const double rollingFMag = std::sqrt(rollingFMagSquared);                                  // 1 FLOPS
+            const double scale = _demParameters.getRollingFrictionCoeff() * normalFMag / rollingFMag;  // 2 FLOPS
+            rollingF = rollingF * scale;
+          }
+          const std::array<double, 3> rollingQI = cross(normalUnit * radiusReduced, rollingF);  // 3 + 9 = 12 FLOPS
+
+          // Compute torsional torque (11 + 3 + 6 + 3 = 23 FLOPS)
+          const std::array<double, 3> torsionRelVel = normalUnit * dot(normalUnit, {0., 0., 0.}) *
+                                                      radiusReduced;  // 1 + 3 + 5 + 2 = 11 FLOPS
+          std::array<double, 3> torsionF = torsionRelVel * (-_demParameters.getTorsionViscosity());  // 3 FLOPS
+          const double torsionFMagSquared = dot(torsionF, torsionF);                                 // 5 FLOPS
+          if (torsionFMagSquared > coulombLimitSquared) {
+            const double torsionFMag = std::sqrt(torsionFMagSquared);                                  // 1 FLOPS
+            const double scale = _demParameters.getTorsionFrictionCoeff() * normalFMag / torsionFMag;  // 2 FLOPS
+            torsionF = torsionF * scale;
+          }
+          const std::array<double, 3> torsionQI = torsionF * radiusReduced;  // 3 FLOPS
+
+          // Apply torques (if newton3: 19 FLOPS, if not: 9 FLOPS)
+          p->addTorque(frictionQI + rollingQI + torsionQI);  // 9 FLOPS
+
+          // Heat Transfer (4 + 2 + 1 = 7 FLOPS, for newton3 additional 1 FLOP)
+          const auto geometricMeanRadius = particlePropertiesLib.getMixingGeometricMeanRadius(p->getTypeId(), p->getTypeId());
+
+          const double conductance =
+              2. * _demParameters.getHeatConductivity() *
+              std::pow((3. * _demParameters.getElasticStiffness() * overlap * geometricMeanRadius) / 4., 1. / 3.);
+          const double heatFluxI = conductance * 0.;
+
+          // Heat Generation (7 + 1 = 13 FLOPS, for newton3 additional 1 FLOP)
+          const double heatFluxGenerated =
+              _demParameters.getHeatGenerationFactor() * std::sqrt(tanFMagSquared) * L2Norm(tanVel);
+
+          p->addHeatFlux(heatFluxI + heatFluxGenerated);
+
+        }
+
         if (reflectMoleculeFlag) {
 #if MD_FLEXIBLE_MODE == MULTISITE
           // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
@@ -409,17 +516,17 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             }
           }
 #else
-          const auto siteType = p->getTypeId();
-          const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
-            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
-            auto returnedPosition = position;
-            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
-            return returnedPosition;
-          }();
-          const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
-          const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
-          const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF(force);
+          // const auto siteType = p->getTypeId();
+          // const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
+          //   const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
+          //   auto returnedPosition = position;
+          //   returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
+          //   return returnedPosition;
+          // }();
+          // const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
+          // const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
+          // const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
+          // p->addF(force);
 #endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE

@@ -275,6 +275,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::vector<ParticleType> _haloParticles{};
 
+    demLib::DEMParameters _demParameters;
+
+
+
+
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * The ALL load balancer used for diffuse load balancing
