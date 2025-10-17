@@ -46,9 +46,9 @@ file(
 
 add_library(demLibrary STATIC ${LIB_DEM_SRC})
 
-target_link_libraries(demLibrary PUBLIC autopas)
+target_link_libraries(demLibrary PUBLIC autopas molecularDynamicsLibrary)
 
-target_include_directories(demLibrary PUBLIC ./dem)
+target_include_directories(demLibrary PUBLIC ./dem ./molecularDynamics)
 
 # --- sph ---
 

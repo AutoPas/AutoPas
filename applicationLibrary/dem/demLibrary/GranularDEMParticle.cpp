@@ -47,6 +47,17 @@ void GranularDEMParticle::setHeatFlux(double heatFlux) { _heatFlux = heatFlux; }
 void GranularDEMParticle::addHeatFlux(double heatFlux) { _heatFlux += heatFlux; }
 void GranularDEMParticle::subHeatFlux(double heatFlux) { _heatFlux -= heatFlux; }
 
+  std::shared_ptr<ParticlePropertiesLibrary<> > GranularDEMParticle::_particlePropertiesLibrary = nullptr;
+  double GranularDEMParticle::_cutoffMultiplier = 1.0;
+
+  double GranularDEMParticle::getSize() const {
+    if (_particlePropertiesLibrary == nullptr) {
+      // if particlePropertiesLibrary is not set then we are not using scaling cutoff, return default value
+      return 1.0 * _cutoffMultiplier;
+    }
+    return _particlePropertiesLibrary->getRadius(_typeId) * _cutoffMultiplier;
+  }
+
 std::string GranularDEMParticle::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;

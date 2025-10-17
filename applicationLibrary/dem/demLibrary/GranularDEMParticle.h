@@ -1,5 +1,5 @@
 /**
- * @file GranularDEM.h
+ * @file GranularDEMParticle.h
  * @author Joon Kim
  * @date 27/03/2025
  */
@@ -10,6 +10,7 @@
 
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 namespace demLib {
 
@@ -339,6 +340,23 @@ class GranularDEMParticle : public autopas::ParticleBaseFP64 {
    */
   void subHeatFlux(double heatFlux);
 
+  [[nodiscard]] double getSize() const override;
+
+  /**
+   * Set the particle properties library.
+   * @param particlePropertiesLibrary Shared pointer to the particle properties library.
+   */
+  static void setParticlePropertiesLibrary(
+      const std::shared_ptr<ParticlePropertiesLibrary<> > &particlePropertiesLibrary) {
+    _particlePropertiesLibrary = particlePropertiesLibrary;
+  }
+
+  /**
+   * Set the cutoff multiplier.
+   * @param cutoffMultiplier The new cutoff multiplier value.
+   */
+  static void setCutoffMultiplier(double cutoffMultiplier) { _cutoffMultiplier = cutoffMultiplier; }
+
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
@@ -375,5 +393,14 @@ class GranularDEMParticle : public autopas::ParticleBaseFP64 {
    * Heatflux (flow of heat energy) of the particle.
    */
   double _heatFlux{};
+
+  /**
+ * A static refernce to particlePropertiesLibrary so that sigma of particles can be used in getSize() function.
+ */
+  static std::shared_ptr<ParticlePropertiesLibrary<> > _particlePropertiesLibrary;
+  /**
+   * The multiplier the sigma values will be scaled by.
+   */
+  static double _cutoffMultiplier;
 };
 }  // namespace demLib
