@@ -296,6 +296,16 @@ class Simulation {
   void updateQuaternions();
 
   /**
+   * Resets the torques of the particles in the local AutoPas container.et
+   */
+  void resetTorques();
+
+  /**
+   * Resets the heat fluxes of the particles in the local AutoPas container.
+   */
+  void resetHeatFluxes();
+
+  /**
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
@@ -370,6 +380,17 @@ class Simulation {
    * @param globalForce The global force which will be applied to each particle in the container.
    */
   void calculateGlobalForces(const std::array<double, 3> &globalForce);
+
+ /**
+  * Implements rational global forces on the particles in the container.
+  *
+  * @globalForce The global force vector to be applied before the iterationFrom
+  * @param globalForceMagnitude The magnitude of the rotational global force.
+  * @param angularFrequency The angular frequency of the rotational global force.
+  * @param iterationFrom The iteration from which the rotational global force should be applied.
+  */
+ std::array<double, 3> calculateRotationalGlobalForce(const std::array<double, 3> &globalForce, const double globalForceMagnitude, const double angularFrequency, const size_t iterationFrom) const;
+
 
   /**
    * Adds background friction to the particles in the container.

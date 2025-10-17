@@ -213,6 +213,9 @@ void Simulation::finalize() {
 
 void Simulation::run() {
   _timers.simulate.start();
+
+  const size_t settlingEndingIteration = 0;
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -221,12 +224,15 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
+    const size_t rotationalGlobalForceIterationFrom = 150000;
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      updatePositionsAndResetForces();
+      updatePositionsAndResetForces();  // normal case parameter: _configuration.globalForce.value
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
     }
+    resetTorques();
+    resetHeatFluxes();
 
     // We update the container, even if dt=0, to bump the iteration counter, which is needed to ensure containers can
     // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
@@ -284,9 +290,14 @@ void Simulation::run() {
 
     updateInteractionForces();
 #if defined(MD_FLEXIBLE_FUNCTOR_DEM)
-    applyBackgroundFriction(_configuration.demBackgroundForceFrictionCoeff.value,
+    if (_iteration < settlingEndingIteration) {
+      applyBackgroundFriction(0.9, 0.975, *_configuration.getParticlePropertiesLibrary());
+    } else {
+      applyBackgroundFriction(_configuration.demBackgroundForceFrictionCoeff.value,
                             _configuration.demBackgroundTorqueFrictionCoeff.value,
                             *_configuration.getParticlePropertiesLibrary());
+    }
+
 #endif
 
     if (_configuration.pauseSimulationDuringTuning.value) {
@@ -445,10 +456,13 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 }
 
 void Simulation::updatePositionsAndResetForces() {
+  const size_t rotationalGlobalForceIterationFrom = 150000;
+  const std::array<double, 3> globalForce = calculateRotationalGlobalForce(
+          _configuration.globalForce.value, -(2.5) , (M_PI/16.) , rotationalGlobalForceIterationFrom);  // TODO: precalculate the global force magnitude
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+      globalForce, _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -459,6 +473,15 @@ void Simulation::updateQuaternions() {
       _configuration.globalForce.value);
   _timers.quaternionUpdate.stop();
 }
+
+void Simulation::resetTorques() {
+  TimeDiscretization::resetTorques(*_autoPasContainer);
+}
+
+void Simulation::resetHeatFluxes() {
+  TimeDiscretization::resetHeatFluxes(*_autoPasContainer);
+}
+
 
 void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();
@@ -556,6 +579,35 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }
+}
+
+std::array<double, 3> Simulation::calculateRotationalGlobalForce(const std::array<double, 3> &globalForce,
+                                                                 const double globalForceMagnitude,
+                                                                 const double angularFrequency,
+                                                                 const size_t iterationFrom) const {
+  /**
+   * Formula:
+   * theta(t) = angularFrequency * (t - iterationFrom * deltaT)
+   * g_x(t) = globalForceMagnitude * sin(theta(t))
+   * g_y(t) = globalForceMagnitude * cos(theta(t))
+   * g_z = 0
+   */
+  if (iterationFrom > _configuration.iterations.value) {
+    std::cerr << "Simulation::calculateRoationalGlobalForce(): iterationFrom=" << iterationFrom
+              << " has to be larger than the number of whole iterations=" << _configuration.iterations.value
+              << std::endl;
+  }
+
+  if (_iteration < iterationFrom) {
+    return globalForce;
+  }
+
+  const double theta = angularFrequency * (_iteration - iterationFrom) * _configuration.deltaT.value;
+  const double g_x = globalForceMagnitude * sin(theta);
+  const double g_y = globalForceMagnitude * cos(theta);
+  const double g_z = 0;
+
+  return {g_x, g_y, g_z};
 }
 
 void Simulation::applyBackgroundFriction(const double backgroundForceFrictionCoeff,

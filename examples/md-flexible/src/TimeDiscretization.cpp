@@ -149,6 +149,20 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #endif
 }
 
+void resetTorques(autopas::AutoPas<ParticleType> &autoPasContainer) {
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->setTorque({0., 0., 0.});
+  }
+}
+
+void resetHeatFluxes(autopas::AutoPas<ParticleType> &autoPasContainer) {
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->setHeatFlux(0.);
+  }
+}
+
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
