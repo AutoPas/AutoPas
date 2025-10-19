@@ -110,7 +110,7 @@ constexpr std::array<std::array<double, 3>, 3> calculateATMForce(const std::arra
 
   // loop over all dimensions
   for (size_t i = 0; i < 3; i++) {
-    forceI[i] = posIToPosK[i] * cosI * (cosJ - cosK) +
+    forceI[i] = posKToPosJ[i] * cosI * (cosJ - cosK) +
                 posJToPosI[i] * (cosJ * cosK - distKJSquared * distIKSquared + 5.0 * cos6 / distJISquared) +
                 posIToPosK[i] * (-cosJ * cosK + distJISquared * distKJSquared - 5.0 * cos6 / distIKSquared);
 

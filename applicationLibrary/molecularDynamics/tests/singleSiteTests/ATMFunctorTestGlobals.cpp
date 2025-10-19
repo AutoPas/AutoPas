@@ -10,9 +10,14 @@
 
 TYPED_TEST_SUITE_P(ATMFunctorTestGlobals);
 
+/*
+ * Tests potential energy and virial calculations the AoSFunctor
+ * @tparam FuncType The type of the functor to test
+ * @param where The triplet configuration which is either all halo, 1 halo and 2 owned, 2 halo and 1 owned or 3 owned
+ * @param newton3 Whether to use newton 3
+ */
 template <class FuncType>
-void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsNoMixingAoS(
-    ATMFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
+void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsNoMixingAoS(where_type where, bool newton3) {
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
@@ -55,9 +60,16 @@ void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsNoMixingAoS(
   EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << to_string(where) << ", newton3: " << newton3;
 }
 
+/*
+ * Tests potential energy and virial calculations the AoSFunctor
+ * @tparam FuncType The type of the functor to test
+ * @param where The triplet configuration which is either all halo, 1 halo and 2 owned, 2 halo and 1 owned or 3 owned
+ * @param soaFunctorType Test for SoAFunctorSingle, SoAFunctorPair12, SoAFunctorPair21 or SoAFunctorTriple
+ * @param newton3 Whether to use newton 3
+ */
 template <class FuncType>
-void ATMFunctorTestGlobals<FuncType>::runATMSoAFunctorGlobalsTest(where_type where, SoAFunctorType soaFunctorType,
-                                                                  bool newton3) {
+void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestSoAGlobals(where_type where, SoAFunctorType soaFunctorType,
+                                                               bool newton3) {
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
@@ -161,6 +173,136 @@ void ATMFunctorTestGlobals<FuncType>::runATMSoAFunctorGlobalsTest(where_type whe
                                                 << ", particles are: " << to_string(where) << ", newton3: " << newton3;
 }
 
+/*
+ * Tests potential energy and virial calculations for a triplet split over periodic boundary conditions.
+ * This especially interesting for the virial
+ * @tparam FuncType The type of the functor to test
+ * @param functorToTest Test either AoS, SoAPair or SoATriple
+ * @param newton3 Whether to use newton 3
+ */
+template <class FuncType>
+void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsPeriodicBCs(std::string functorToTest, bool newton3) {
+  using namespace autopas::utils::ArrayMath::literals;
+  FuncType functor(5.0);
+  functor.setParticleProperties(nu);
+
+  // Imaginary box is from {0, 0, 0} to {10, 10, 10}
+  // p1 is close to the left border, p2 and p3 close to the right border
+  // They will interact as a triplet with their corresponding halo particles
+  constexpr std::array<double, 3> p1OwnedPos{1., 4., 5.};
+  constexpr std::array<double, 3> p2OwnedPos{9., 5., 4.};
+  constexpr std::array<double, 3> p3OwnedPos{9., 4., 4.};
+
+  constexpr std::array<double, 3> p1HaloPos{11., 4., 5.};
+  constexpr std::array<double, 3> p2HaloPos{-1., 5., 4.};
+  constexpr std::array<double, 3> p3HaloPos{-1., 4., 4.};
+
+  Molecule p1(p1OwnedPos, {0., 0., 0.}, 0, 0);
+  p1.setOwnershipState(autopas::OwnershipState::owned);
+  Molecule p2(p2OwnedPos, {0., 0., 0.}, 1, 0);
+  p2.setOwnershipState(autopas::OwnershipState::owned);
+  Molecule p3(p3OwnedPos, {0., 0., 0.}, 2, 0);
+  p3.setOwnershipState(autopas::OwnershipState::owned);
+
+  Molecule p1Halo(p1HaloPos, {0., 0., 0.}, 3, 0);
+  p1Halo.setOwnershipState(autopas::OwnershipState::halo);
+  Molecule p2Halo(p2HaloPos, {0., 0., 0.}, 4, 0);
+  p2Halo.setOwnershipState(autopas::OwnershipState::halo);
+  Molecule p3Halo(p3HaloPos, {0., 0., 0.}, 5, 0);
+  p3Halo.setOwnershipState(autopas::OwnershipState::halo);
+
+  if (functorToTest == "AoS") {
+    functor.initTraversal();
+    functor.AoSFunctor(p1, p2Halo, p3Halo, newton3);
+    functor.AoSFunctor(p1Halo, p2, p3, newton3);
+    if (not newton3) {
+      functor.AoSFunctor(p2, p3, p1Halo, newton3);
+      functor.AoSFunctor(p3, p2, p1Halo, newton3);
+    }
+    functor.endTraversal(newton3);
+  } else if (functorToTest == "SoAPair") {
+    FMCell ownedCell{}, haloCellLeft{}, haloCellRight{};
+    haloCellLeft.addParticle(p2Halo);
+    haloCellLeft.addParticle(p3Halo);
+    ownedCell.addParticle(p1);
+    ownedCell.addParticle(p2);
+    ownedCell.addParticle(p3);
+    haloCellRight.addParticle(p1Halo);
+    functor.SoALoader(ownedCell, ownedCell._particleSoABuffer, 0, false);
+    functor.SoALoader(haloCellLeft, haloCellLeft._particleSoABuffer, 0, false);
+    functor.SoALoader(haloCellRight, haloCellRight._particleSoABuffer, 0, false);
+
+    functor.initTraversal();
+    functor.SoAFunctorPair(ownedCell._particleSoABuffer, haloCellLeft._particleSoABuffer, newton3);
+    functor.SoAFunctorPair(ownedCell._particleSoABuffer, haloCellRight._particleSoABuffer, newton3);
+    functor.endTraversal(newton3);
+  } else {
+    FMCell ownedCell1{}, ownedCell2{}, ownedCell3{}, haloCellLeft1{}, haloCellLeft2{}, haloCellRight{};
+    haloCellLeft1.addParticle(p2Halo);
+    haloCellLeft2.addParticle(p3Halo);
+    ownedCell1.addParticle(p1);
+    ownedCell2.addParticle(p2);
+    ownedCell3.addParticle(p3);
+    haloCellRight.addParticle(p1Halo);
+    functor.SoALoader(ownedCell1, ownedCell1._particleSoABuffer, 0, false);
+    functor.SoALoader(ownedCell2, ownedCell2._particleSoABuffer, 0, false);
+    functor.SoALoader(ownedCell3, ownedCell3._particleSoABuffer, 0, false);
+    functor.SoALoader(haloCellLeft1, haloCellLeft1._particleSoABuffer, 0, false);
+    functor.SoALoader(haloCellLeft2, haloCellLeft2._particleSoABuffer, 0, false);
+    functor.SoALoader(haloCellRight, haloCellRight._particleSoABuffer, 0, false);
+
+    functor.initTraversal();
+    functor.SoAFunctorTriple(ownedCell1._particleSoABuffer, haloCellLeft1._particleSoABuffer,
+                             haloCellLeft2._particleSoABuffer, newton3);
+    functor.SoAFunctorTriple(ownedCell2._particleSoABuffer, ownedCell3._particleSoABuffer,
+                             haloCellRight._particleSoABuffer, newton3);
+    if (not newton3) {
+      functor.SoAFunctorTriple(ownedCell3._particleSoABuffer, ownedCell2._particleSoABuffer,
+                               haloCellRight._particleSoABuffer, newton3);
+    }
+    functor.endTraversal(newton3);
+  }
+
+  // Get reference globals for both mixed owned/halo triplets
+  // Note on virial: W = f_12 * r_12 + f_13 * r_13 + f_23 * r_23
+  // Only for non-periodic BCs, this is equal to W = f_1 * r_1 + f_2 * r_2 + f_3 + r_3
+  const auto expectedVirial1 = calculateATMVirialTotal(p1OwnedPos, p2HaloPos, p3HaloPos, cutoff, nu);
+  const auto expectedVirial2 = calculateATMVirialTotal(p1HaloPos, p2OwnedPos, p3OwnedPos, cutoff, nu);
+
+  constexpr double expectedEnergy1 = calculateATMPotential(p1OwnedPos, p2HaloPos, p3HaloPos, cutoff, nu);
+  constexpr double expectedEnergy2 = calculateATMPotential(p1HaloPos, p2OwnedPos, p3OwnedPos, cutoff, nu);
+
+  // Sanity check; Globals should only depend on relative positions
+  EXPECT_NEAR(expectedVirial1, expectedVirial2, absDelta);
+  EXPECT_NEAR(expectedEnergy1, expectedEnergy2, absDelta);
+
+  // Get calculated globals from functor
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double globalVirial = functor.getVirial();
+
+  EXPECT_NEAR(potentialEnergy, expectedEnergy1, absDelta)
+      << "FunctorType: " << functorToTest << ", newton3: " << newton3;
+  EXPECT_NEAR(globalVirial, expectedVirial1, absDelta) << "FunctorType: " << functorToTest << ", newton3: " << newton3;
+}
+
+// Tests global values for the AoS functor with various owned/halo configurations
+TYPED_TEST_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobals) {
+  using FuncType = TypeParam;
+  using TestType = ATMFunctorTestGlobals<FuncType>;
+
+  for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
+                                              TestType::where_type::inoutout, TestType::where_type::allOutside}) {
+    for (bool newton3 : {false, true}) {
+      if (auto msg =
+              this->shouldSkipIfNotImplemented([&]() { this->ATMFunctorTestGlobalsNoMixingAoS(where, newton3); });
+          msg != "") {
+        GTEST_SKIP() << msg;
+      }
+    }
+  }
+}
+
+// Tests global values for all the SoA functor variants with various owned/halo configurations
 TYPED_TEST_P(ATMFunctorTestGlobals, testSoAATMFunctorGlobals) {
   using FuncType = TypeParam;
   using TestType = ATMFunctorTestGlobals<FuncType>;
@@ -169,8 +311,19 @@ TYPED_TEST_P(ATMFunctorTestGlobals, testSoAATMFunctorGlobals) {
     for (bool newton3 : {false, true}) {
       for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
                                                   TestType::where_type::inoutout, TestType::where_type::allOutside}) {
-        this->runATMSoAFunctorGlobalsTest(where, soaFunctorType, newton3);
+        this->ATMFunctorTestSoAGlobals(where, soaFunctorType, newton3);
       }
+    }
+  }
+}
+
+// Tests global values for a triplet that interacts over periodic boundaries.
+TYPED_TEST_P(ATMFunctorTestGlobals, testGlobalsWithPeriodicBCs) {
+  using FuncType = TypeParam;
+  using TestType = ATMFunctorTestGlobals<FuncType>;
+  for (const auto &functorToTest : {"AoS", "SoAPair", "SoATriple"}) {
+    for (bool newton3 : {false, true}) {
+      this->ATMFunctorTestGlobalsPeriodicBCs(functorToTest, newton3);
     }
   }
 }
@@ -258,24 +411,9 @@ TYPED_TEST_P(ATMFunctorTestGlobals, testATMFunctorGlobalsThrowBad) {
   EXPECT_NO_THROW(functor.endTraversal(true));
 }
 
-TYPED_TEST_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobals) {
-  using FuncType = TypeParam;
-  using TestType = ATMFunctorTestGlobals<FuncType>;
-
-  for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
-                                              TestType::where_type::inoutout, TestType::where_type::allOutside}) {
-    for (bool newton3 : {false, true}) {
-      if (auto msg =
-              this->shouldSkipIfNotImplemented([&]() { this->ATMFunctorTestGlobalsNoMixingAoS(where, newton3); });
-          msg != "") {
-        GTEST_SKIP() << msg;
-      }
-    }
-  }
-}
-
 REGISTER_TYPED_TEST_SUITE_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobals, testATMFunctorGlobalsThrowBad,
-                            testAoSATMFunctorGlobalsOpenMPParallel, testSoAATMFunctorGlobals);
+                            testAoSATMFunctorGlobalsOpenMPParallel, testSoAATMFunctorGlobals,
+                            testGlobalsWithPeriodicBCs);
 
 using MyTypes = ::testing::Types<ATMFunNoMixGlob
 #ifdef __AVX__
