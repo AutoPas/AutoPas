@@ -203,9 +203,11 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
   constexpr bool newton3 = TypeParam::newton3;
 
   // Helper lambdas to check the forces
-  auto testNonZeroForce = [&](const std::array<double, 3> &particleForce, const std::array<double, 3> &expectedForce, const std::string &type) {
+  auto testNonZeroForce = [&](const std::array<double, 3> &particleForce, const std::array<double, 3> &expectedForce,
+                              const std::string &type) {
     for (size_t i = 0; i < 3; i++) {
-      EXPECT_NEAR(particleForce[i], expectedForce[i], this->absDelta) << "Failed for SoAFunctor: " << type << ", Newton3: " << newton3;
+      EXPECT_NEAR(particleForce[i], expectedForce[i], this->absDelta)
+          << "Failed for SoAFunctor: " << type << ", Newton3: " << newton3;
     }
   };
   auto testZeroForce = [&](const std::array<double, 3> &particleForce, const std::string &type) {

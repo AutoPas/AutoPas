@@ -262,19 +262,19 @@ class AxilrodTellerMutoFunctor
 
       // Virial is calculated as f_i * r_i
       // see Thompson et al.: https://doi.org/10.1063/1.3245303
-      const auto virialI = forceI * i.getR();
       if (i.isOwned()) {
+        const auto virialI = forceI * (displacementKI - displacementIJ);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        const auto virialJ = forceJ * j.getR();
+        const auto virialJ = forceJ * (displacementIJ - displacementJK);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
-        const auto virialK = forceK * k.getR();
+        const auto virialK = forceK * (displacementJK - displacementKI);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialK;
       }
@@ -407,26 +407,11 @@ class AxilrodTellerMutoFunctor
           }
 
           if constexpr (calculateGlobals) {
-            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-
-            if (ownedStateI == autopas::OwnershipState::owned) {
-              potentialEnergySum += potentialEnergy3;
-              virialSumX += forceIX * xi;
-              virialSumY += forceIY * yi;
-              virialSumZ += forceIZ * zi;
-            }
-            if (ownedStateJ == autopas::OwnershipState::owned) {
-              potentialEnergySum += potentialEnergy3;
-              virialSumX += forceJX * xj;
-              virialSumY += forceJY * yj;
-              virialSumZ += forceJZ * zj;
-            }
-            if (ownedStateK == autopas::OwnershipState::owned) {
-              potentialEnergySum += potentialEnergy3;
-              virialSumX += forceKX * xk;
-              virialSumY += forceKY * yk;
-              virialSumZ += forceKZ * zk;
-            }
+            // All particles here should be owned, so add full potE and virial
+            potentialEnergySum += 3.0 * factor * (allDistsSquared - 3.0 * allDotProducts);
+            virialSumX += forceIX * (distXKI - distXIJ) + forceJX * (distXIJ - distXJK) + forceKX * (distXJK - distXKI);
+            virialSumY += forceIY * (distYKI - distYIJ) + forceJY * (distYIJ - distYJK) + forceKY * (distYJK - distYKI);
+            virialSumZ += forceIZ * (distZKI - distZIJ) + forceJZ * (distZIJ - distZJK) + forceKZ * (distZJK - distZKI);
 
             if constexpr (countFLOPs) {
               ++numGlobalCalcsSum;
@@ -561,6 +546,7 @@ class AxilrodTellerMutoFunctor
 
       // Additionally, we have always calculated 3*potentialEnergy, so we divide by 3 again.
       _potentialEnergySum /= 3.;
+      _virialSum *= (1. / 3.);
 
       _postProcessed = true;
 
@@ -777,7 +763,7 @@ class AxilrodTellerMutoFunctor
           }
 
           // Actual return values are IK, not KI
-          const auto &[distXKI, distYKI, distZKI, distSquaredKI] = soa1Soa2Dists[i * soa2Size + k];
+          const auto &[distXIK, distYIK, distZIK, distSquaredKI] = soa1Soa2Dists[i * soa2Size + k];
 
           // Due to low 3-body hitrate, mostly better than masking
           if (distSquaredKI > cutoffSquared) {
@@ -796,7 +782,7 @@ class AxilrodTellerMutoFunctor
             // Compute only force I without Newton3
             SoAFloatPrecision forceIX, forceIY, forceIZ;
             SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-            SoAKernelNoN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, -distXKI, -distYKI, -distZKI,
+            SoAKernelNoN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, -distXIK, -distYIK, -distZIK,
                           distSquaredIJ, distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, factor,
                           allDotProducts, allDistsSquared);
 
@@ -812,9 +798,9 @@ class AxilrodTellerMutoFunctor
 
               if (ownedStateI == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * xi;
-                virialSumY += forceIY * yi;
-                virialSumZ += forceIZ * zi;
+                virialSumX += forceIX * (-distXIK - distXIJ);
+                virialSumY += forceIY * (-distYIK - distYIJ);
+                virialSumZ += forceIZ * (-distZIK - distZIJ);
               }
               if constexpr (countFLOPs) {
                 ++numGlobalCalcsNoN3Sum;
@@ -825,9 +811,9 @@ class AxilrodTellerMutoFunctor
             SoAFloatPrecision forceIX, forceIY, forceIZ;
             SoAFloatPrecision forceJX, forceJY, forceJZ;
             SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-            SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, -distXKI, -distYKI, -distZKI, distSquaredIJ,
-                        distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
-                        allDotProducts, allDistsSquared);
+            SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, -distXIK, -distYIK, -distZIK,
+                        distSquaredIJ, distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY,
+                        forceJZ, factor, allDotProducts, allDistsSquared);
 
             fXAccI += forceIX;
             fYAccI += forceIY;
@@ -854,21 +840,21 @@ class AxilrodTellerMutoFunctor
 
               if (ownedStateI == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * xi;
-                virialSumY += forceIY * yi;
-                virialSumZ += forceIZ * zi;
+                virialSumX += forceIX * (-distXIK - distXIJ);
+                virialSumY += forceIY * (-distYIK - distYIJ);
+                virialSumZ += forceIZ * (-distZIK - distZIJ);
               }
               if (ownedStateJ == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceJX * xptr2[j];
-                virialSumY += forceJY * yptr2[j];
-                virialSumZ += forceJZ * zptr2[j];
+                virialSumX += forceJX * (distXIJ - distXJK);
+                virialSumY += forceJY * (distYIJ - distYJK);
+                virialSumZ += forceJZ * (distZIJ - distZJK);
               }
               if (ownedStateK == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceKX * xptr2[k];
-                virialSumY += forceKY * yptr2[k];
-                virialSumZ += forceKZ * zptr2[k];
+                virialSumX += forceKX * (distXJK + distXIK);
+                virialSumY += forceKY * (distYJK + distYIK);
+                virialSumZ += forceKZ * (distZJK + distZIK);
               }
               if constexpr (countFLOPs) {
                 ++numGlobalCalcsN3Sum;
@@ -909,7 +895,7 @@ class AxilrodTellerMutoFunctor
             continue;
           }
 
-          const auto &[distXKI, distYKI, distZKI, distSquaredKI] = soa1Soa2Dists[i * soa2Size + k];
+          const auto &[distXIK, distYIK, distZIK, distSquaredKI] = soa1Soa2Dists[i * soa2Size + k];
 
           if (distSquaredKI > cutoffSquared) {
             continue;
@@ -918,7 +904,7 @@ class AxilrodTellerMutoFunctor
           SoAFloatPrecision forceIX, forceIY, forceIZ;
           SoAFloatPrecision forceJX, forceJY, forceJZ;
           SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-          SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, -distXKI, -distYKI, -distZKI, distSquaredIJ,
+          SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, -distXIK, -distYIK, -distZIK, distSquaredIJ,
                       distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
                       allDotProducts, allDistsSquared);
 
@@ -942,9 +928,9 @@ class AxilrodTellerMutoFunctor
               const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
               if (ownedStateK == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceKX * xptr2[k];
-                virialSumY += forceKY * yptr2[k];
-                virialSumZ += forceKZ * zptr2[k];
+                virialSumX += forceKX * (distXJK + distXIK);
+                virialSumY += forceKY * (distYJK + distYIK);
+                virialSumZ += forceKZ * (distZJK + distZIK);
               }
               if constexpr (countFLOPs) {
                 ++numGlobalCalcsN3Sum;
@@ -965,15 +951,15 @@ class AxilrodTellerMutoFunctor
             const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
             if (ownedStateI == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
-              virialSumX += forceIX * xptr1[i];
-              virialSumY += forceIY * yptr1[i];
-              virialSumZ += forceIZ * zptr1[i];
+              virialSumX += forceIX * (-distXIK - distXIJ);
+              virialSumY += forceIY * (-distYIK - distYIJ);
+              virialSumZ += forceIZ * (-distZIK - distZIJ);
             }
             if (ownedStateJ == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
-              virialSumX += forceJX * xptr1[j];
-              virialSumY += forceJY * yptr1[j];
-              virialSumZ += forceJZ * zptr1[j];
+              virialSumX += forceJX * (distXIJ - distXJK);
+              virialSumY += forceJY * (distYIJ - distYJK);
+              virialSumZ += forceJZ * (distZIJ - distZJK);
             }
             if constexpr (countFLOPs and not newton3) {
               ++numGlobalCalcsNoN3Sum;
@@ -1132,9 +1118,9 @@ class AxilrodTellerMutoFunctor
 
               if (ownedStateI == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * xi;
-                virialSumY += forceIY * yi;
-                virialSumZ += forceIZ * zi;
+                virialSumX += forceIX * (distXKI - distXIJ);
+                virialSumY += forceIY * (distYKI - distYIJ);
+                virialSumZ += forceIZ * (distZKI - distZIJ);
               }
 
               if constexpr (countFLOPs) {
@@ -1170,21 +1156,21 @@ class AxilrodTellerMutoFunctor
               const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
               if (ownedStateI == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * xi;
-                virialSumY += forceIY * yi;
-                virialSumZ += forceIZ * zi;
+                virialSumX += forceIX * (distXKI - distXIJ);
+                virialSumY += forceIY * (distYKI - distYIJ);
+                virialSumZ += forceIZ * (distZKI - distZIJ);
               }
               if (ownedStateJ == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceJX * xj;
-                virialSumY += forceJY * yj;
-                virialSumZ += forceJZ * zj;
+                virialSumX += forceJX * (distXIJ - distXJK);
+                virialSumY += forceJY * (distYIJ - distYJK);
+                virialSumZ += forceJZ * (distZIJ - distZJK);
               }
               if (ownedStateK == autopas::OwnershipState::owned) {
                 potentialEnergySum += potentialEnergy3;
-                virialSumX += forceKX * xptr3[k];
-                virialSumY += forceKY * yptr3[k];
-                virialSumZ += forceKZ * zptr3[k];
+                virialSumX += forceKX * (distXJK - distXKI);
+                virialSumY += forceKY * (distYJK - distYKI);
+                virialSumZ += forceKZ * (distZJK - distZKI);
               }
               if constexpr (countFLOPs) {
                 ++numGlobalCalcsN3Sum;
