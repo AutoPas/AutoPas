@@ -141,9 +141,9 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    */
   void reinitForVCL(const VerletClusterLists<typename ParticleCell::ParticleType> *vcl) {
     // Reinitialize the sliced traversal with up to date tower information
-    auto towerSideLength = vcl->getTowerSideLength();
+    const auto towerSideLength = vcl->getTowerSideLength();
     this->_cellLength = {towerSideLength[0], towerSideLength[1], vcl->getBoxMax()[2] - vcl->getBoxMin()[2]};
-    auto towersPerDim = vcl->getTowersPerDimension();
+    const auto towersPerDim = vcl->getTowersPerDimension();
     this->_cellsPerDimension = {towersPerDim[0], towersPerDim[1], 1};
 
     // reinitialize
