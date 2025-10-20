@@ -150,9 +150,9 @@ constexpr std::array<std::array<double, 3>, 3> calculateATMVirials(const std::ar
   const auto forceJ = forces[1];
   const auto forceK = forces[2];
 
-  const auto virialI = forceI * posI;
-  const auto virialJ = forceJ * posJ;
-  const auto virialK = forceK * posK;
+  const auto virialI = forceI * (posI * 2. - posJ - posK) / 3.;
+  const auto virialJ = forceJ * (posJ * 2. - posI - posK) / 3.;
+  const auto virialK = forceK * (posK * 2. - posI - posJ) / 3.;
 
   return {virialI, virialJ, virialK};
 }
