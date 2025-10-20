@@ -189,7 +189,8 @@ class AxilrodTellerMutoFunctor
     const auto threadnum = autopas::autopas_get_thread_num();
 
     if constexpr (countFLOPs) {
-      ++_aosThreadDataFLOPs[threadnum].numDistCalls;
+      ++_aosThreadDataFLOPs[threadnum].numTripletsCount;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += 3;
     }
 
     auto nu = _nu;
@@ -289,7 +290,7 @@ class AxilrodTellerMutoFunctor
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    if (soa.size() == 0) return;
+    if (soa.size() <= 2) return;
 
     const auto threadnum = autopas::autopas_get_thread_num();
 
@@ -312,15 +313,18 @@ class AxilrodTellerMutoFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
-    size_t numKernelCallsNoN3Sum = 0;
     size_t numGlobalCalcsSum = 0;
 
     const SoAFloatPrecision const_nu = _nu;
     const size_t soaSize = soa.size();
+    if constexpr (countFLOPs) {
+      numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
+    }
 
-    for (unsigned int i = 0; i < soaSize; ++i) {
+    for (unsigned int i = 0; i < soaSize - 2; ++i) {
       const auto ownedStateI = ownedStatePtr[i];
 
       SoAFloatPrecision fXAccI = 0.;
@@ -331,7 +335,7 @@ class AxilrodTellerMutoFunctor
       const SoAFloatPrecision yi = yptr[i];
       const SoAFloatPrecision zi = zptr[i];
 
-      for (unsigned int j = i + 1; j < soaSize; ++j) {
+      for (unsigned int j = i + 1; j < soaSize - 1; ++j) {
         const auto ownedStateJ = ownedStatePtr[j];
 
         const SoAFloatPrecision xj = xptr[j];
@@ -343,6 +347,9 @@ class AxilrodTellerMutoFunctor
         const SoAFloatPrecision distZIJ = zj - zi;
         const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
 
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
@@ -368,13 +375,22 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision distZJK = zk - zj;
           const SoAFloatPrecision distSquaredJK = distXJK * distXJK + distYJK * distYJK + distZJK * distZJK;
 
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredJK > cutoffSquared) {
+            continue;
+          }
+
           const SoAFloatPrecision distXKI = xi - xk;
           const SoAFloatPrecision distYKI = yi - yk;
           const SoAFloatPrecision distZKI = zi - zk;
           const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
 
-          // Due to low 3-body hitrate, mostly better than masking
-          if (distSquaredJK > cutoffSquared or distSquaredKI > cutoffSquared) {
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredKI > cutoffSquared) {
             continue;
           }
 
@@ -402,7 +418,6 @@ class AxilrodTellerMutoFunctor
           fzptr[k] += forceKZ;
 
           if constexpr (countFLOPs) {
-            ++numDistanceCalculationSum;
             ++numKernelCallsN3Sum;
           }
 
@@ -427,8 +442,8 @@ class AxilrodTellerMutoFunctor
       fzptr[i] += fZAccI;
     }
     if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
       _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
     }
@@ -646,8 +661,8 @@ class AxilrodTellerMutoFunctor
       constexpr size_t numFLOPsPerDistanceCall = 24;
       constexpr size_t numFLOPsPerN3KernelCall = 100;
       constexpr size_t numFLOPsPerNoN3KernelCall = 59;
-      constexpr size_t numFLOPsPerN3GlobalCalc = 24;
-      constexpr size_t numFLOPsPerNoN3GlobalCalc = 10;
+      constexpr size_t numFLOPsPerN3GlobalCalc = 33;
+      constexpr size_t numFLOPsPerNoN3GlobalCalc = 13;
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
              numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
@@ -660,9 +675,9 @@ class AxilrodTellerMutoFunctor
 
   [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {
-      const size_t numDistCallsAcc =
+      const size_t numTripletsCount =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+                          [](size_t sum, const auto &data) { return sum + data.numTripletsCount; });
       const size_t numKernelCallsN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
@@ -671,7 +686,7 @@ class AxilrodTellerMutoFunctor
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
       return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
-             (static_cast<double>(numDistCallsAcc));
+             (static_cast<double>(numTripletsCount));
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<double>::quiet_NaN();
@@ -709,6 +724,7 @@ class AxilrodTellerMutoFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
@@ -719,6 +735,9 @@ class AxilrodTellerMutoFunctor
 
     size_t soa1Size = soa1.size();
     size_t soa2Size = soa2.size();
+    if constexpr (countFLOPs) {
+      numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
+    }
 
     // Precompute distances between soa1 and soa2
     std::vector<std::array<SoAFloatPrecision, 4>, autopas::AlignedAllocator<std::array<SoAFloatPrecision, 4>>>
@@ -975,6 +994,7 @@ class AxilrodTellerMutoFunctor
       fzptr1[i] += fZAccI;
     }
     if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
@@ -1028,6 +1048,7 @@ class AxilrodTellerMutoFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
@@ -1039,6 +1060,9 @@ class AxilrodTellerMutoFunctor
     const auto soa1Size = soa1.size();
     const auto soa2Size = soa2.size();
     const auto soa3Size = soa3.size();
+    if constexpr (countFLOPs) {
+      numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
+    }
 
     // Precompute distances between soa2 and soa3
     std::vector<std::array<SoAFloatPrecision, 4>, autopas::AlignedAllocator<std::array<SoAFloatPrecision, 4>>> jkDists(
@@ -1193,6 +1217,7 @@ class AxilrodTellerMutoFunctor
       fzptr1[i] += fZAccI;
     }
     if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
@@ -1332,6 +1357,7 @@ class AxilrodTellerMutoFunctor
     void setZero() {
       numKernelCallsNoN3 = 0;
       numKernelCallsN3 = 0;
+      numTripletsCount = 0;
       numDistCalls = 0;
       numGlobalCalcsN3 = 0;
       numGlobalCalcsNoN3 = 0;
@@ -1348,6 +1374,13 @@ class AxilrodTellerMutoFunctor
      * Used for calculating number of FLOPs and hit rate.
      */
     size_t numKernelCallsN3 = 0;
+
+    /**
+     * Number of totally traversed triplets counted.
+     * Used for calculating the hit rate. Differs from the number of distance calculations because
+     * not all 3 distances are always calculated.
+     */
+    size_t numTripletsCount = 0;
 
     /**
      * Number of distance calculations.
@@ -1369,7 +1402,7 @@ class AxilrodTellerMutoFunctor
     /**
      * dummy parameter to get the right size (64 bytes)
      */
-    double __remainingTo64[(64 - 5 * sizeof(size_t)) / sizeof(size_t)];
+    double __remainingTo64[(64 - 6 * sizeof(size_t)) / sizeof(size_t)];
   };
 
   // make sure of the size of AoSThreadDataGlobals
