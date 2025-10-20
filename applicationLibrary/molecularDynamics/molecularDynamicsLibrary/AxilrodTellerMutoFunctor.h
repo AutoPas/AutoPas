@@ -634,10 +634,11 @@ class AxilrodTellerMutoFunctor
    *
    * For the globals calculation, this is:
    * - potential: 3
-   * - virial: 3 without n3, 9 with n3
+   * - virial: 6 without n3, 18 with n3
    * - accumulation: 4 without n3, 12 with n3
-   * - Total: 10 without n3, 24 with n3
-   *
+   * - Total: 13 without n3, 33 with n3
+   * @note The exact number of FLOPs can slightly deviate due to SoAFunctorPair sometimes doing a N3 kernel call for
+   * only 2 out of three particles.
    * @return number of FLOPs since initTraversal() is called.
    */
   [[nodiscard]] size_t getNumFLOPs() const override {
@@ -658,7 +659,7 @@ class AxilrodTellerMutoFunctor
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
 
-      constexpr size_t numFLOPsPerDistanceCall = 24;
+      constexpr size_t numFLOPsPerDistanceCall = 8;
       constexpr size_t numFLOPsPerN3KernelCall = 100;
       constexpr size_t numFLOPsPerNoN3KernelCall = 59;
       constexpr size_t numFLOPsPerN3GlobalCalc = 33;
@@ -673,6 +674,10 @@ class AxilrodTellerMutoFunctor
     }
   }
 
+  /**
+   * @copydoc autopas::Functor::getHitRate()
+   * @note Specifically, the hitrate for this functor is defined as: (# kernel calls) / (# possible triplets)
+   */
   [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {
       const size_t numTripletsCount =
@@ -751,6 +756,9 @@ class AxilrodTellerMutoFunctor
         soa1Soa2Dists[j + i * soa2Size] = std::array<SoAFloatPrecision, 4>{distXIJ, distYIJ, distZIJ, distSquaredIJ};
       }
     }
+    if constexpr (countFLOPs) {
+      numDistanceCalculationSum += soa1Size * soa2Size;
+    }
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       const auto ownedStateI = ownedStatePtr1[i];
@@ -793,6 +801,10 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision distYJK = yptr2[k] - yptr2[j];
           const SoAFloatPrecision distZJK = zptr2[k] - zptr2[j];
           const SoAFloatPrecision distSquaredJK = distXJK * distXJK + distYJK * distYJK + distZJK * distZJK;
+
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
           if (distSquaredJK > cutoffSquared) {
             continue;
           }
@@ -895,6 +907,9 @@ class AxilrodTellerMutoFunctor
         const SoAFloatPrecision distZIJ = zptr1[j] - zi;
         const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
 
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
@@ -935,6 +950,9 @@ class AxilrodTellerMutoFunctor
           fyptr1[j] += forceJY;
           fzptr1[j] += forceJZ;
 
+          if constexpr (countFLOPs) {
+            ++numKernelCallsN3Sum;
+          }
           if constexpr (newton3) {
             const SoAFloatPrecision forceKX = -(forceIX + forceJX);
             const SoAFloatPrecision forceKY = -(forceIY + forceJY);
@@ -951,18 +969,6 @@ class AxilrodTellerMutoFunctor
                 virialSumY += forceKY * (distYJK + distYIK);
                 virialSumZ += forceKZ * (distZJK + distZIK);
               }
-              if constexpr (countFLOPs) {
-                ++numGlobalCalcsN3Sum;
-              }
-            }
-          }
-
-          if constexpr (countFLOPs) {
-            ++numDistanceCalculationSum;
-            if constexpr (newton3) {
-              ++numKernelCallsN3Sum;
-            } else {
-              ++numKernelCallsNoN3Sum;
             }
           }
 
@@ -980,8 +986,8 @@ class AxilrodTellerMutoFunctor
               virialSumY += forceJY * (distYIJ - distYJK);
               virialSumZ += forceJZ * (distZIJ - distZJK);
             }
-            if constexpr (countFLOPs and not newton3) {
-              ++numGlobalCalcsNoN3Sum;
+            if constexpr (countFLOPs) {
+              ++numGlobalCalcsN3Sum;
             }
           }
         }
@@ -1076,6 +1082,9 @@ class AxilrodTellerMutoFunctor
         jkDists[k + j * soa3Size] = std::array<SoAFloatPrecision, 4>{distXJK, distYJK, distZJK, distSquaredJK};
       }
     }
+    if constexpr (countFLOPs) {
+      numDistanceCalculationSum += soa2Size * soa3Size;
+    }
 
     for (unsigned int i = 0; i < soa1Size; ++i) {
       const auto ownedStateI = ownedStatePtr1[i];
@@ -1098,6 +1107,9 @@ class AxilrodTellerMutoFunctor
         const SoAFloatPrecision distZIJ = zj - zi;
         const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
 
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
@@ -1112,7 +1124,6 @@ class AxilrodTellerMutoFunctor
 
           const auto &[distXJK, distYJK, distZJK, distSquaredJK] = jkDists[j * soa3Size + k];
 
-          // Due to low 3-body hitrate, mostly better than masking
           if (distSquaredJK > cutoffSquared) {
             continue;
           }
@@ -1122,6 +1133,9 @@ class AxilrodTellerMutoFunctor
           const SoAFloatPrecision distZKI = zi - zptr3[k];
           const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
 
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
           if (distSquaredKI > cutoffSquared) {
             continue;
           }
@@ -1137,6 +1151,9 @@ class AxilrodTellerMutoFunctor
             fYAccI += forceIY;
             fZAccI += forceIZ;
 
+            if constexpr (countFLOPs) {
+              ++numKernelCallsNoN3Sum;
+            }
             if constexpr (calculateGlobals) {
               const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
@@ -1176,6 +1193,9 @@ class AxilrodTellerMutoFunctor
             fyptr3[k] += forceKY;
             fzptr3[k] += forceKZ;
 
+            if constexpr (countFLOPs) {
+              ++numKernelCallsN3Sum;
+            }
             if constexpr (calculateGlobals) {
               const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
               if (ownedStateI == autopas::OwnershipState::owned) {
@@ -1199,15 +1219,6 @@ class AxilrodTellerMutoFunctor
               if constexpr (countFLOPs) {
                 ++numGlobalCalcsN3Sum;
               }
-            }
-          }
-
-          if constexpr (countFLOPs) {
-            ++numDistanceCalculationSum;
-            if constexpr (newton3) {
-              ++numKernelCallsN3Sum;
-            } else {
-              ++numKernelCallsNoN3Sum;
             }
           }
         }
