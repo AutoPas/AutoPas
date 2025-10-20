@@ -101,12 +101,12 @@ class AxilrodTellerMutoFunctor
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = Particle_T::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
  public:
   /**
