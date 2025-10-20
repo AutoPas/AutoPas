@@ -422,11 +422,25 @@ class AxilrodTellerMutoFunctor
           }
 
           if constexpr (calculateGlobals) {
-            // All particles here should be owned, so add full potE and virial
-            potentialEnergySum += 3.0 * factor * (allDistsSquared - 3.0 * allDotProducts);
-            virialSumX += forceIX * (distXKI - distXIJ) + forceJX * (distXIJ - distXJK) + forceKX * (distXJK - distXKI);
-            virialSumY += forceIY * (distYKI - distYIJ) + forceJY * (distYIJ - distYJK) + forceKY * (distYJK - distYKI);
-            virialSumZ += forceIZ * (distZKI - distZIJ) + forceJZ * (distZIJ - distZJK) + forceKZ * (distZJK - distZKI);
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * (distXKI - distXIJ);
+              virialSumY += forceIY * (distYKI - distYIJ);
+              virialSumZ += forceIZ * (distZKI - distZIJ);
+            }
+            if (ownedStateJ == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceJX * (distXIJ - distXJK);
+              virialSumY += forceJY * (distYIJ - distYJK);
+              virialSumZ += forceJZ * (distZIJ - distZJK);
+            }
+            if (ownedStateK == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceKX * (distXJK - distXKI);
+              virialSumY += forceKY * (distYJK - distYKI);
+              virialSumZ += forceKZ * (distZJK - distZKI);
+            }
 
             if constexpr (countFLOPs) {
               ++numGlobalCalcsSum;
