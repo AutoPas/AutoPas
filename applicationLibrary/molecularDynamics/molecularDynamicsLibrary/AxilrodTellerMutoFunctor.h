@@ -326,7 +326,9 @@ class AxilrodTellerMutoFunctor
 
     for (unsigned int i = 0; i < soaSize - 2; ++i) {
       const auto ownedStateI = ownedStatePtr[i];
-
+      if (ownedStateI == autopas::OwnershipState::dummy) {
+        continue;
+      }
       SoAFloatPrecision fXAccI = 0.;
       SoAFloatPrecision fYAccI = 0.;
       SoAFloatPrecision fZAccI = 0.;
@@ -337,6 +339,9 @@ class AxilrodTellerMutoFunctor
 
       for (unsigned int j = i + 1; j < soaSize - 1; ++j) {
         const auto ownedStateJ = ownedStatePtr[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
 
         const SoAFloatPrecision xj = xptr[j];
         const SoAFloatPrecision yj = yptr[j];
@@ -360,6 +365,9 @@ class AxilrodTellerMutoFunctor
 
         for (unsigned int k = j + 1; k < soaSize; ++k) {
           const auto ownedStateK = ownedStatePtr[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           SoAFloatPrecision nu = const_nu;
           if constexpr (useMixing) {
@@ -776,7 +784,9 @@ class AxilrodTellerMutoFunctor
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       const auto ownedStateI = ownedStatePtr1[i];
-
+      if (ownedStateI == autopas::OwnershipState::dummy) {
+        continue;
+      }
       SoAFloatPrecision fXAccI = 0.;
       SoAFloatPrecision fYAccI = 0.;
       SoAFloatPrecision fZAccI = 0.;
@@ -788,6 +798,9 @@ class AxilrodTellerMutoFunctor
       // CASE: Particle i is in soa1, j and k are both in soa2
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
 
         const auto &[distXIJ, distYIJ, distZIJ, distSquaredIJ] = soa1Soa2Dists[i * soa2Size + j];
 
@@ -797,6 +810,9 @@ class AxilrodTellerMutoFunctor
 
         for (unsigned int k = j + 1; k < soa2.size(); ++k) {
           const auto ownedStateK = ownedStatePtr2[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           SoAFloatPrecision nu = const_nu;
           if constexpr (useMixing) {
@@ -911,10 +927,14 @@ class AxilrodTellerMutoFunctor
 
       // CASE: Particle i and j are both in soa1, k is in soa2
       for (unsigned int j = i + 1; j < soa1.size(); ++j) {
+        const auto ownedStateJ = ownedStatePtr1[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
         SoAFloatPrecision fXAccJ = 0.;
         SoAFloatPrecision fYAccJ = 0.;
         SoAFloatPrecision fZAccJ = 0.;
-        const auto ownedStateJ = ownedStatePtr1[j];
 
         const SoAFloatPrecision distXIJ = xptr1[j] - xi;
         const SoAFloatPrecision distYIJ = yptr1[j] - yi;
@@ -930,6 +950,9 @@ class AxilrodTellerMutoFunctor
 
         for (unsigned int k = 0; k < soa2.size(); ++k) {
           const auto ownedStateK = ownedStatePtr2[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           SoAFloatPrecision nu = const_nu;
           if constexpr (useMixing) {
@@ -1102,6 +1125,10 @@ class AxilrodTellerMutoFunctor
 
     for (unsigned int i = 0; i < soa1Size; ++i) {
       const auto ownedStateI = ownedStatePtr1[i];
+      if (ownedStateI == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
       const SoAFloatPrecision xi = xptr1[i];
       const SoAFloatPrecision yi = yptr1[i];
       const SoAFloatPrecision zi = zptr1[i];
@@ -1112,6 +1139,10 @@ class AxilrodTellerMutoFunctor
 
       for (unsigned int j = 0; j < soa2Size; ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
         const SoAFloatPrecision xj = xptr2[j];
         const SoAFloatPrecision yj = yptr2[j];
         const SoAFloatPrecision zj = zptr2[j];
@@ -1130,6 +1161,9 @@ class AxilrodTellerMutoFunctor
 
         for (unsigned int k = 0; k < soa3Size; ++k) {
           const auto ownedStateK = ownedStatePtr3[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
 
           SoAFloatPrecision nu = const_nu;
           if constexpr (useMixing) {
