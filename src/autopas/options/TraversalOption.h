@@ -46,11 +46,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c04,
     /**
-     * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
-     * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
-     */
-    // lc_c04_3b,
-    /**
      * LCC04HCPTraversal : Same as LCC04Traversal but with only one block shape.
      */
     lc_c04_HCP,
@@ -244,7 +239,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOptions() {
-    return {Value::ds_sequential, Value::lc_c01, Value::lc_c08, Value::lc_sliced};
+    return {Value::ds_sequential, Value::lc_c01, Value::lc_c04, Value::lc_c08, Value::lc_sliced};
   }
 
   /**
@@ -305,7 +300,6 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
-        // {TraversalOption::lc_c04_3b, "lc_c04_3b"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},

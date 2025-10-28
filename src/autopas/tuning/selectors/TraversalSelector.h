@@ -336,11 +336,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell_T>::generateT
     //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
     //       dataLayout, useNewton3);
     // }
-    // case TraversalOption::lc_c04_3b: {
-    //   return std::make_unique<LCC04Traversal3B<ParticleCell_T, TriwiseFunctor_T>>(
-    //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-    //       dataLayout, useNewton3);
-    // }
+    case TraversalOption::lc_c04: {
+      return std::make_unique<LCC04Traversal<ParticleCell_T, TriwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+    }
     case TraversalOption::lc_sliced: {
       return std::make_unique<LCSlicedTraversal<ParticleCell_T, TriwiseFunctor_T>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
