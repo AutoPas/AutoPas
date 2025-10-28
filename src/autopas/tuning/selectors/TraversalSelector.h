@@ -331,11 +331,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell_T>::generateT
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
     }
-    // case TraversalOption::lc_c08_opt: {
-    //   return std::make_unique<LCC08Traversal3BOptimized<ParticleCell_T, TriwiseFunctor_T>>(
-    //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-    //       dataLayout, useNewton3);
-    // }
     case TraversalOption::lc_c04: {
       return std::make_unique<LCC04Traversal<ParticleCell_T, TriwiseFunctor_T>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
