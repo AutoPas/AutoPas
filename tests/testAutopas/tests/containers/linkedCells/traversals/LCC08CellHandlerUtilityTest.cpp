@@ -33,7 +33,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
   };
 
   const auto actualOffsetPairs =
-      computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairs>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+      computePairwiseCellOffsetsC08<C08OffsetMode::noSorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
   // Ensure the correct amount of interaction pairs
   ASSERT_EQ(actualOffsetPairs.size(), 14);
 
@@ -43,7 +43,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
   // E.g. (0, 1) or (12, 13) would both be valid (if the pattern is applied everywhere the same, it'ls like applying
   // the same interaction, but always shifted in y += 1). Here it is just tested as 1
   std::vector<unsigned long> actualPairOffsetsDiffercnes =
-      transformAndSortOffsetPairs<C08OffsetMode::c08CellPairs>(actualOffsetPairs);
+      transformAndSortOffsetPairs<C08OffsetMode::noSorting>(actualOffsetPairs);
   ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
 
   // This test case is more senstive, it will fail in case the ordering of the output-pairs is wrong
@@ -71,8 +71,8 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1_Sort
       {0.57735, 0.57735, -0.57735},
   }};
 
-  const auto actualOffsetTriplets = computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
-      CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  const auto actualOffsetTriplets =
+      computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
   // Ensure the correct amount of interaction pairs
   ASSERT_EQ(actualOffsetTriplets.size(), 14);
 
@@ -98,14 +98,14 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2) {
       266, 274, 275, 276, 277, 278, 286, 287, 288, 289, 290, 298, 299, 300, 301, 302, 310, 311, 312, 313, 314,
   };
 
-  const auto actualOffsetPairs = computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
-      CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  const auto actualOffsetPairs =
+      computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
   // Ensure the correct amount of interaction pairs
   ASSERT_EQ(actualOffsetPairs.size(), 63);
 
   // Flatten to offset differences (explaination, see ComputePairwiseCellOffsetsC08Test_1x1x1 test case)
   std::vector<unsigned long> actualPairOffsetsDiffercnes =
-      transformAndSortOffsetPairs<C08OffsetMode::c08CellPairsSorting>(actualOffsetPairs);
+      transformAndSortOffsetPairs<C08OffsetMode::sorting>(actualOffsetPairs);
   ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
 }
 
@@ -178,8 +178,8 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2_Sort
       {0.57735, 0.57735, -0.57735},
   }};
 
-  const auto actualOffsetTriplets = computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
-      CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  const auto actualOffsetTriplets =
+      computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
   // Ensure the correct amount of interaction pairs
   ASSERT_EQ(actualOffsetTriplets.size(), 63);
 
@@ -210,13 +210,13 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_3x3x3) {
       434, 435, 441, 442, 443, 444, 445, 446, 447, 453, 454, 455, 456, 457, 458, 459, 466, 467, 468, 469, 470,
   };
 
-  const auto actualOffsetPairs = computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
-      CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  const auto actualOffsetPairs =
+      computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
   // Ensure the correct amount of interaction pairs
   EXPECT_EQ(actualOffsetPairs.size(), 168);
 
   // Flatten to offset differences (explaination, see ComputePairwiseCellOffsetsC08Test_1x1x1 test case)
   std::vector<unsigned long> actualPairOffsetsDiffercnes =
-      transformAndSortOffsetPairs<C08OffsetMode::c08CellPairsSorting>(actualOffsetPairs);
+      transformAndSortOffsetPairs<C08OffsetMode::sorting>(actualOffsetPairs);
   ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
 }

@@ -134,7 +134,7 @@ inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTrav
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
 
-AUTOPAS_OPENMP(parallel) {
+  AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
       AUTOPAS_OPENMP(single) {

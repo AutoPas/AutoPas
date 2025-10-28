@@ -254,14 +254,12 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for triwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {
-      Value::ds_sequential,
-      Value::lc_c01,
-      Value::lc_c08_3b,
-      Value::lc_c08_3b_opt,
-      Value::lc_c04_3b
-      //Value::lc_sliced_3b
-  }; }
+  static std::set<TraversalOption> getAllTriwiseOptions() {
+    return {
+        Value::ds_sequential, Value::lc_c01, Value::lc_c08_3b, Value::lc_c08_3b_opt, Value::lc_c04_3b
+        // Value::lc_sliced_3b
+    };
+  }
 
   /**
    * Set of all pairwise traversals without discouraged options.
