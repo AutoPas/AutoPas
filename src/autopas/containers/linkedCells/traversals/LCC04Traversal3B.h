@@ -47,7 +47,7 @@ class LCC04Traversal3B : public C08BasedTraversal<ParticleCell, Functor>, public
 
   void traverseParticles() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04; }
 
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.

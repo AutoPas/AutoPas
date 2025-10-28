@@ -49,7 +49,7 @@ class TraversalOption : public Option<TraversalOption> {
      * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
      * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
      */
-    lc_c04_3b,
+    // lc_c04_3b,
     /**
      * LCC04HCPTraversal : Same as LCC04Traversal but with only one block shape.
      */
@@ -68,8 +68,7 @@ class TraversalOption : public Option<TraversalOption> {
      * LCC08Traversal : More compact form of LCC18Traversal. Eight-way domain coloring in minimally small interaction
      * blocks. High degree of parallelism and good load balancing due to fine granularity.
      */
-    lc_c08_3b,
-    lc_c08_3b_opt,
+    // lc_c08_3b_opt,
     /**
      * LCC18Traversal : More compact form of LCC01Traversal supporting Newton3 by only accessing forward neighbors.
      */
@@ -83,7 +82,7 @@ class TraversalOption : public Option<TraversalOption> {
      * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
      * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
      */
-    lc_sliced_3b,
+    // lc_sliced_3b,
     /**
      * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
      * LoadEstimatorOption.
@@ -98,7 +97,7 @@ class TraversalOption : public Option<TraversalOption> {
      * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
      * coloring of slices.
      */
-    lc_sliced_c02_3b,
+    // lc_sliced_c02_3b,
 
     // Octree Traversals:
     /**
@@ -256,8 +255,8 @@ class TraversalOption : public Option<TraversalOption> {
    */
   static std::set<TraversalOption> getAllTriwiseOptions() {
     return {
-        Value::ds_sequential, Value::lc_c01, Value::lc_c08_3b, Value::lc_c08_3b_opt, Value::lc_c04_3b
-        // Value::lc_sliced_3b
+        Value::ds_sequential, Value::lc_c01, Value::lc_c08
+        // Value::lc_sliced
     };
   }
 
@@ -314,19 +313,19 @@ class TraversalOption : public Option<TraversalOption> {
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
-        {TraversalOption::lc_sliced_3b, "lc_sliced_3b"},
+        // {TraversalOption::lc_sliced_3b, "lc_sliced_3b"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
-        {TraversalOption::lc_sliced_c02_3b, "lc_sliced_c02_3b"},
+        // {TraversalOption::lc_sliced_c02_3b, "lc_sliced_c02_3b"},
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
-        {TraversalOption::lc_c04_3b, "lc_c04_3b"},
+        // {TraversalOption::lc_c04_3b, "lc_c04_3b"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
-        {TraversalOption::lc_c08_3b, "lc_c08_3b"},
-        {TraversalOption::lc_c08_3b_opt, "lc_c08_3b_opt"},
+        // {TraversalOption::lc_c08_3b, "lc_c08_3b"},
+        // {TraversalOption::lc_c08_3b_opt, "lc_c08_3b_opt"},
         {TraversalOption::lc_c18, "lc_c18"},
 
         // VerletClusterLists Traversals:

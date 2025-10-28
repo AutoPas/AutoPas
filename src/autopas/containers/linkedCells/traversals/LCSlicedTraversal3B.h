@@ -50,7 +50,7 @@ class LCSlicedTraversal3B : public SlicedLockBasedTraversal<ParticleCell, Functo
 
   void traverseParticles() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced; }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()

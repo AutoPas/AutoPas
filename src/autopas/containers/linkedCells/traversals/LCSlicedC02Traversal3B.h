@@ -51,7 +51,7 @@ class LCSlicedC02Traversal3B : public SlicedC02BasedTraversal<ParticleCell, Func
 
   void traverseParticles() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_c02_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_c02; }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
