@@ -57,7 +57,7 @@ class LCC08CellHandlerUtilityTest : public AutoPasTestBase {
   template <autopas::LCC08CellHandlerUtility::C08OffsetMode Mode>
   static std::vector<unsigned long> transformAndSortOffsetPairs(
       const autopas::LCC08CellHandlerUtility::OffsetPairType<Mode> &offsetPairs) {
-    static_assert(Mode != autopas::LCC08CellHandlerUtility::C08OffsetMode::c04CellPairs,
+    static_assert(Mode != autopas::LCC08CellHandlerUtility::C08OffsetMode::c04NoSorting,
                   "A two dimensional vector is not supported!");
     std::vector<unsigned long> pairOffsetsDiffercnes;
     pairOffsetsDiffercnes.reserve(offsetPairs.size());

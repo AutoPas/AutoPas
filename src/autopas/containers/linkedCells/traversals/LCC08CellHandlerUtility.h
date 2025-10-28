@@ -32,6 +32,8 @@ namespace autopas::LCC08CellHandlerUtility {
  */
 using OffsetPairSorting = std::tuple<unsigned long, unsigned long, std::array<double, 3>>;
 
+using OffsetTripletSorting = std::tuple<unsigned long, unsigned long, unsigned long, std::array<double, 3>>;
+
 /**
  * An offset is the distance from a base cell to another cell
  * in one dimensional coordinates. Hence, this is a pair consisting of.
@@ -40,10 +42,14 @@ using OffsetPairSorting = std::tuple<unsigned long, unsigned long, std::array<do
  */
 using OffsetPair = std::pair<unsigned long, unsigned long>;
 
+using OffsetTriplet = std::tuple<unsigned long, unsigned long, unsigned long>;
+
 /**
  * A vector of OffsetPairs
  */
 using OffsetPairVector = std::vector<OffsetPair>;
+
+using OffsetTripletVector = std::vector<OffsetTriplet>;
 
 /**
  * Compile Time Modes for the function autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08
@@ -53,11 +59,11 @@ using OffsetPairVector = std::vector<OffsetPair>;
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
-  c08CellPairs = 0,
+  noSorting = 0,
   /** Returns the C08 base step cell pairs with sorting directions (for SortedView projection) */
-  c08CellPairsSorting = 1,
+  sorting = 1,
   /** Returns the C08 base step cell pairs adapted to C04, i.e. two-dimensions resolved on X-axis */
-  c04CellPairs = 2,
+  c04NoSorting = 2,
 };
 
 /**
@@ -66,8 +72,13 @@ enum class C08OffsetMode {
  */
 template <C08OffsetMode Mode>
 using OffsetPairType = std::vector<
-    std::conditional_t<Mode == C08OffsetMode::c08CellPairsSorting, OffsetPairSorting,
-                       std::conditional_t<Mode == C08OffsetMode::c04CellPairs, OffsetPairVector, OffsetPair>>>;
+    std::conditional_t<Mode == C08OffsetMode::sorting, OffsetPairSorting,
+                       std::conditional_t<Mode == C08OffsetMode::c04NoSorting, OffsetPairVector, OffsetPair>>>;
+
+template <C08OffsetMode Mode>
+using OffsetTripletType = std::vector<
+    std::conditional_t<Mode == C08OffsetMode::sorting, OffsetTripletSorting,
+                       std::conditional_t<Mode == C08OffsetMode::c04NoSorting, OffsetTripletVector, OffsetTriplet>>>;
 
 namespace internal {
 
@@ -156,5 +167,26 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
 template <C08OffsetMode Mode>
 OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                                    const std::array<double, 3> &cellLength, double interactionLength);
+
+/**
+ * Computes the cell pair offsets for the C08 base step and the normalized vector between pair of cell-centers,
+ * which is later used for early stopping the evaluation of the pairwise cell interactions due to being out-of-reach.
+ * @tparam Mode Determines the concret return type (see {@link C08OffsetMode}
+ * @param cellsPerDimension the number of cells per dimension
+ * @param cellLength the length of a cell in CellBlock3D.
+ * @param interactionLength the interaction length consisting of cutoff + skin
+ * @return depending on template parameters a
+ *  - vector containing cell offset pairs
+ *  - vector containg cell offsets + sorting/ vector between cell centers triplets
+ *  - vector of vector containing cell offsets (pre-sorted after X dimension)
+ */
+template <C08OffsetMode Mode>
+OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
+                                                     const std::array<double, 3> &cellLength, double interactionLength);
+
+template <C08OffsetMode Mode>
+OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<unsigned long, 3> &cellsPerDimension,
+                                                              const std::array<double, 3> &cellLength,
+                                                              double interactionLength);
 
 }  // namespace autopas::LCC08CellHandlerUtility
