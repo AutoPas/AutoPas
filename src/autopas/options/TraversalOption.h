@@ -88,11 +88,6 @@ class TraversalOption : public Option<TraversalOption> {
      * coloring of slices.
      */
     lc_sliced_c02,
-    /**
-     * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
-     * coloring of slices.
-     */
-    // lc_sliced_c02_3b,
 
     // Octree Traversals:
     /**
@@ -307,7 +302,6 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced, "lc_sliced"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
-        // {TraversalOption::lc_sliced_c02_3b, "lc_sliced_c02_3b"},
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
