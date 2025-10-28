@@ -79,11 +79,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced,
     /**
-     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
-     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
-     */
-    // lc_sliced_3b,
-    /**
      * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
      * LoadEstimatorOption.
      */
@@ -254,10 +249,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOptions() {
-    return {
-        Value::ds_sequential, Value::lc_c01, Value::lc_c08
-        // Value::lc_sliced
-    };
+    return {Value::ds_sequential, Value::lc_c01, Value::lc_c08, Value::lc_sliced};
   }
 
   /**
@@ -313,7 +305,6 @@ class TraversalOption : public Option<TraversalOption> {
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
-        // {TraversalOption::lc_sliced_3b, "lc_sliced_3b"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         // {TraversalOption::lc_sliced_c02_3b, "lc_sliced_c02_3b"},
@@ -324,7 +315,6 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
-        // {TraversalOption::lc_c08_3b, "lc_c08_3b"},
         // {TraversalOption::lc_c08_3b_opt, "lc_c08_3b_opt"},
         {TraversalOption::lc_c18, "lc_c18"},
 

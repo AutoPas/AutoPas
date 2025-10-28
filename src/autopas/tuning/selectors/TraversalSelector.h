@@ -25,7 +25,6 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCSlicedTraversal3B.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
@@ -345,11 +344,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell_T>::generateT
     //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
     //       dataLayout, useNewton3);
     // }
-    // case TraversalOption::lc_sliced_3b: {
-    //   return std::make_unique<LCSlicedTraversal3B<ParticleCell_T, TriwiseFunctor_T>>(
-    //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-    //       dataLayout, useNewton3);
-    // }
+    case TraversalOption::lc_sliced: {
+      return std::make_unique<LCSlicedTraversal<ParticleCell_T, TriwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+    }
     // case TraversalOption::lc_sliced_c02_3b: {
     //   return std::make_unique<LCSlicedC02Traversal3B<ParticleCell_T, TriwiseFunctor_T>>(
     //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
