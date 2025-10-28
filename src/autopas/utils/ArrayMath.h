@@ -247,7 +247,11 @@ template <class T, std::size_t SIZE>
  */
 template <class T>
 [[nodiscard]] constexpr std::array<T, 3> cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
-  return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
+  return {
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+  };
 }
 
 /**
@@ -318,33 +322,37 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Floors all array elements and converts them to integers.
- * @tparam T floating point type
+ * Floors all array elements and converts them to a different type. Useful to floor array elements and cast them to
+ * some integer type.
+ * @tparam target_T target type. By default int.
+ * @tparam float_T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with floored elements of new type int.
+ * @return New array with floored elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <typename target_T = int, typename float_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<target_T, SIZE> floorAndCast(const std::array<float_T, SIZE> &a) {
+  std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::floor(a[d]));
+    result[d] = static_cast<target_T>(std::floor(a[d]));
   }
   return result;
 }
 
 /**
- * Ceils all array elements and converts them to integers.
- * @tparam T floating point type
+ * Ceils all array elements and converts them to a different type. Useful to ceil array elements and cast them to some
+ * integer type.
+ * @tparam target_T target type. By default int.
+ * @tparam float_T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with ceiled elements of new type int.
+ * @return New array with ceiled elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <class target_T = int, class float_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<target_T, SIZE> ceilAndCast(const std::array<float_T, SIZE> &a) {
+  std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::ceil(a[d]));
+    result[d] = static_cast<target_T>(std::ceil(a[d]));
   }
   return result;
 }
@@ -355,15 +363,15 @@ template <class T, std::size_t SIZE>
  * @tparam SIZE size of the array
  * @param a input array
  * @param b input array
- * @param relativeDifference
+ * @param maxRelativeDifference
  * @return
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNear(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
-                          double relativeDifference = 1e-9) {
+[[nodiscard]] bool isNearRel(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
+                             double maxRelativeDifference = 1e-9) {
   bool arraysAreNear = true;
   for (std::size_t i = 0; i < SIZE; ++i) {
-    arraysAreNear = arraysAreNear and utils::Math::isNear(a[i], b[i], relativeDifference);
+    arraysAreNear = arraysAreNear and utils::Math::isNearRel(a[i], b[i], maxRelativeDifference);
   }
   return arraysAreNear;
 }
@@ -375,19 +383,19 @@ template <class T, std::size_t SIZE>
  * @tparam SIZE size of the array
  * @param a input vector of arrays
  * @param b input vector of arrays
- * @param relativeDifference
+ * @param maxRelativeDifference
  * @return
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNear(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
-                          double relativeDifference = 1e-9) {
+[[nodiscard]] bool isNearRel(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
+                             double maxRelativeDifference = 1e-9) {
   const auto size = a.size();
   if (size != b.size()) {
     return false;
   }
   bool arraysAreNear = true;
   for (std::size_t i = 0; i < size; ++i) {
-    arraysAreNear = arraysAreNear and utils::ArrayMath::isNear(a[i], b[i], relativeDifference);
+    arraysAreNear = arraysAreNear and utils::ArrayMath::isNearRel(a[i], b[i], maxRelativeDifference);
   }
   return arraysAreNear;
 }
@@ -410,6 +418,23 @@ template <class T>
     arraysAreEqual = arraysAreEqual and (a[i] == b[i]);
   }
   return arraysAreEqual;
+}
+
+/**
+ * static_casts all elements of an array to a new type.
+ * @tparam new_T
+ * @tparam old_T
+ * @tparam SIZE
+ * @param a Old Array
+ * @return
+ */
+template <typename new_T, typename old_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<new_T, SIZE> staticCastArray(const std::array<old_T, SIZE> &a) {
+  std::array<new_T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<new_T>(a[d]);
+  }
+  return result;
 }
 
 // namespace for templated operators

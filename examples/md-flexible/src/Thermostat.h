@@ -30,9 +30,7 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary)
-#endif
+  AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -79,24 +77,28 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
 
+  const auto numberComponents =
+#if MD_FLEXIBLE_MODE == SINGLESITE
+      particlePropertiesLibrary.getNumberRegisteredSiteTypes();
+#elif MD_FLEXIBLE_MODE == MULTISITE
+      particlePropertiesLibrary.getNumberRegisteredMolTypes();
+#endif
+
   // map of: particle typeID -> kinetic energy times 2 for this type
   std::map<size_t, double> kineticEnergyMul2Map;
   // map of: particle typeID -> number of particles of this type
   std::map<size_t, size_t> numParticleMap;
 
-  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+  for (int typeID = 0; typeID < numberComponents; typeID++) {
     kineticEnergyMul2Map[typeID] = 0.;
     numParticleMap[typeID] = 0ul;
   }
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  {
+  AUTOPAS_OPENMP(parallel) {
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
     std::map<size_t, size_t> numParticleMapThread;
-    for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+    for (int typeID = 0; typeID < numberComponents; typeID++) {
       kineticEnergyMul2MapThread[typeID] = 0.;
       numParticleMapThread[typeID] = 0ul;
     }
@@ -114,11 +116,8 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread.at(iter->getTypeId())++;
     }
     // manual reduction
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-    {
-      for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+    AUTOPAS_OPENMP(critical) {
+      for (int typeID = 0; typeID < numberComponents; typeID++) {
         kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
         numParticleMap[typeID] += numParticleMapThread[typeID];
       }
@@ -131,7 +130,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   constexpr unsigned int degreesOfFreedom{3};
 #endif
 
-  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+  for (int typeID = 0; typeID < numberComponents; typeID++) {
     // workaround for MPICH: send and receive buffer must not be the same.
     autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
                                    AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
@@ -140,10 +139,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
                                    AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   }
 
-  auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
-
-  for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
-       kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
+  auto kineticEnergyMapIter = kineticEnergyMul2Map.begin();
+  auto numParticleMapIter = numParticleMap.begin();
+  for (int typeID = 0; typeID < numberComponents; ++typeID, ++kineticEnergyMapIter, ++numParticleMapIter) {
     // The calculation below assumes that the Boltzmann constant is 1.
     kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
   }
@@ -181,7 +179,14 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   std::map<size_t, double> translationalVelocityScale;
   std::map<size_t, std::array<double, 3>> rotationalVelocityScale;
 
-  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+  const auto numberComponents =
+#if MD_FLEXIBLE_MODE == SINGLESITE
+      particlePropertiesLibrary.getNumberRegisteredSiteTypes();
+#elif MD_FLEXIBLE_MODE == MULTISITE
+      particlePropertiesLibrary.getNumberRegisteredMolTypes();
+#endif
+
+  for (int typeID = 0; typeID < numberComponents; typeID++) {
     translationalVelocityScale.emplace(typeID,
                                        std::sqrt(targetTemperature / particlePropertiesLibrary.getMolMass(typeID)));
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -193,10 +198,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
   }
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
-#endif
-  {
+  AUTOPAS_OPENMP(parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)) {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
@@ -228,6 +230,9 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
   using namespace autopas::utils::ArrayMath::literals;
+
+  AutoPasLog(DEBUG, "Applying Thermostat");
+
   const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
@@ -248,12 +253,14 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
             : std::max(currentTemperature - absoluteDeltaTemperature, targetTemperature);
     // Determine a scaling factor for each particle type.
     scalingMap[particleTypeID] = std::sqrt(immediateTargetTemperature / currentTemperature);
+
+    AutoPasLog(DEBUG, "Current temperature of typeID {}: {}", particleTypeID, currentTemperature);
+    AutoPasLog(DEBUG, "Temperature of typeID {} after application of thermostat: {}", particleTypeID,
+               immediateTargetTemperature);
   }
 
   // Scale velocities (and angular velocities) with the scaling map
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(autopas, scalingMap)
-#endif
+  AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
 #if MD_FLEXIBLE_MODE == MULTISITE

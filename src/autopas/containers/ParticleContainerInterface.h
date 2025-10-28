@@ -23,7 +23,7 @@
 namespace autopas {
 
 // forward declaration
-template <class Particle, bool modifiable, bool regionIter>
+template <class Particle_T, bool modifiable, bool regionIter>
 class ContainerIterator;
 
 /**
@@ -31,15 +31,15 @@ class ContainerIterator;
  * It defines method interfaces for addition and deletion of particles, accessing general container
  * properties and creating iterators.
  *
- * @tparam Particle Class for particle.
+ * @tparam Particle_T Class for particle.
  */
-template <class Particle>
+template <class Particle_T>
 class ParticleContainerInterface {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = Particle;
+  using ParticleType = Particle_T;
 
   /**
    * Get the ParticleCell type as an Enum
@@ -48,9 +48,10 @@ class ParticleContainerInterface {
   virtual CellType getParticleCellTypeEnum() const = 0;
 
   /**
-   * Default constructor
+   * Constructor
+   * @param skin Skin distance a particle is allowed to move.
    */
-  ParticleContainerInterface() = default;
+  ParticleContainerInterface(double skin) : _skin(skin) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -92,7 +93,7 @@ class ParticleContainerInterface {
    * @param p The particle to be added.
    */
   template <bool checkInBox = true>
-  void addParticle(const Particle &p) {
+  void addParticle(const Particle_T &p) {
     if constexpr (checkInBox) {
       if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
         utils::ExceptionHandler::exception(
@@ -113,7 +114,7 @@ class ParticleContainerInterface {
    * @param p The particle to be added. This particle is already checked to be inside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be inside of the bounding box!
    */
-  virtual void addParticleImpl(const Particle &p) = 0;
+  virtual void addParticleImpl(const Particle_T &p) = 0;
 
  public:
   /**
@@ -123,7 +124,7 @@ class ParticleContainerInterface {
    * already been performed.
    */
   template <bool checkInBox = true>
-  void addHaloParticle(const Particle &haloParticle) {
+  void addHaloParticle(const Particle_T &haloParticle) {
     if constexpr (checkInBox) {
       /// @todo do we want a check of the particle not being too far away in here as well?
       if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
@@ -145,7 +146,7 @@ class ParticleContainerInterface {
    * @param haloParticle Particle to be added. This particle is already checked to be outside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be outside of the bounding box!
    */
-  virtual void addHaloParticleImpl(const Particle &haloParticle) = 0;
+  virtual void addHaloParticleImpl(const Particle_T &haloParticle) = 0;
 
  public:
   /**
@@ -153,13 +154,13 @@ class ParticleContainerInterface {
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  virtual bool updateHaloParticle(const Particle &haloParticle) = 0;
+  virtual bool updateHaloParticle(const Particle_T &haloParticle) = 0;
 
   /**
-   * Rebuilds the neighbor lists.
-   * @param traversal The used pairwise traversal.
+   * Rebuilds the neighbor lists for the next traversals.
+   * @param traversal The used traversal.
    */
-  virtual void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) = 0;
+  virtual void rebuildNeighborLists(TraversalInterface *traversal) = 0;
 
   /**
    * Deletes all halo particles.
@@ -241,26 +242,15 @@ class ParticleContainerInterface {
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
-   * End expression for all containers, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
+   * @copydoc autopas::AutoPas::end()
    */
   [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
-   * Iterates over all particle pairs in the container.
+   * Iterates over all particle multiples (e.g. pairs, triplets) in the container using the given traversal.
    * @param traversal The traversal to use for the iteration.
    */
-  virtual void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) = 0;
-
-  /**
-   * Iterates over all particle triplets in the container.
-   * @note iterateTriwise does not have to be implemented by the container if it is not used.
-   * @param traversal The traversal to use for the iteration.
-   */
-  virtual void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) {
-    utils::ExceptionHandler::exception("iterateTriwise called but has not been implemented!");
-  }
+  virtual void computeInteractions(TraversalInterface *traversal) = 0;
 
   /**
    * Get the upper corner of the container without halo.
@@ -287,10 +277,26 @@ class ParticleContainerInterface {
   virtual void setCutoff(double cutoff) = 0;
 
   /**
-   * Return the verletSkin of the container verletSkinPerTimestep*rebuildFrequency
+   * Return the verletSkin of the container verletSkin
    * @return verletSkin
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
+
+  /**
+   * Return the number of time-steps since last neighbor list rebuild
+   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
+   * return 0
+   * @return steps since last rebuild
+   */
+  [[nodiscard]] virtual size_t getStepsSinceLastRebuild() const { return _stepsSinceLastRebuild; }
+
+  /**
+   * Set the number of time-steps since last neighbor list rebuild
+   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
+   */
+  virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
+    _stepsSinceLastRebuild = stepsSinceLastRebuild;
+  }
 
   /**
    * Return the interaction length (cutoff+skin) of the container.
@@ -332,21 +338,21 @@ class ParticleContainerInterface {
    * even exist.
    * The only guarantee is that the indices {0,0} yield the first particle in the container that satisfies the iterator
    * requirements.
-
    *
    * @note This function should handle any offsets if used in a parallel iterator.
    *
    * @param cellIndex Index of the cell the particle is located in.
    * @param particleIndex Particle index within the cell.
    * @param iteratorBehavior Which ownership states should be considered for the next particle.
-   * @return Pointer to the particle and its indices.
+   * @return Pointer to the particle and its indices. tuple<Particle_T*, cellIndex, particleIndex>
    * If a index pair is given that does not exist but is also not beyond the last cell, the next fitting particle shall
-   * be returned. Example: If [4,2] does not exist, [5,1] shall be returned (or whatever is the next particle that
-   * fulfills the iterator requirements).
+   * be returned.
+   * Example: If [4,2] does not exist, [5,1] shall be returned
+   * (or whatever is the next particle that fulfills the iterator requirements).
    * If there is no next fitting particle {nullptr, 0, 0} is returned.
    */
-  virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                                   IteratorBehavior iteratorBehavior) const = 0;
+  virtual std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                                     IteratorBehavior iteratorBehavior) const = 0;
 
   /**
    * @copydoc getParticle(size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior) const
@@ -356,10 +362,10 @@ class ParticleContainerInterface {
    * @param boxMax end of region in which the next particle should be. The coordinates are expected to be within the
    * domain.
    */
-  virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                                   IteratorBehavior iteratorBehavior,
-                                                                   const std::array<double, 3> &boxMin,
-                                                                   const std::array<double, 3> &boxMax) const = 0;
+  virtual std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                                     IteratorBehavior iteratorBehavior,
+                                                                     const std::array<double, 3> &boxMin,
+                                                                     const std::array<double, 3> &boxMax) const = 0;
 
   // clang-format off
   /**
@@ -368,16 +374,16 @@ class ParticleContainerInterface {
    * @note non-const region iter version
    */
   // clang-format on
-  std::tuple<Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                     IteratorBehavior iteratorBehavior,
-                                                     const std::array<double, 3> &boxMin,
-                                                     const std::array<double, 3> &boxMax) {
-    const Particle *ptr;
-    size_t nextCellIndex, nextParticleIndex;
+  std::tuple<Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                       IteratorBehavior iteratorBehavior,
+                                                       const std::array<double, 3> &boxMin,
+                                                       const std::array<double, 3> &boxMax) {
+    const Particle_T *ptr{};
+    size_t nextCellIndex{}, nextParticleIndex{};
     std::tie(ptr, nextCellIndex, nextParticleIndex) =
-        const_cast<const ParticleContainerInterface<Particle> *>(this)->getParticle(cellIndex, particleIndex,
-                                                                                    iteratorBehavior, boxMin, boxMax);
-    return {const_cast<Particle *>(ptr), nextCellIndex, nextParticleIndex};
+        const_cast<const ParticleContainerInterface<Particle_T> *>(this)->getParticle(cellIndex, particleIndex,
+                                                                                      iteratorBehavior, boxMin, boxMax);
+    return {const_cast<Particle_T *>(ptr), nextCellIndex, nextParticleIndex};
   }
 
   /**
@@ -385,14 +391,14 @@ class ParticleContainerInterface {
    *
    * @note non-const non-region iter version
    */
-  std::tuple<Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                     IteratorBehavior iteratorBehavior) {
-    const Particle *ptr;
-    size_t nextCellIndex, nextParticleIndex;
+  std::tuple<Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                       IteratorBehavior iteratorBehavior) {
+    const Particle_T *ptr{};
+    size_t nextCellIndex{}, nextParticleIndex{};
     std::tie(ptr, nextCellIndex, nextParticleIndex) =
-        const_cast<const ParticleContainerInterface<Particle> *>(this)->getParticle(cellIndex, particleIndex,
-                                                                                    iteratorBehavior);
-    return {const_cast<Particle *>(ptr), nextCellIndex, nextParticleIndex};
+        const_cast<const ParticleContainerInterface<Particle_T> *>(this)->getParticle(cellIndex, particleIndex,
+                                                                                      iteratorBehavior);
+    return {const_cast<Particle_T *>(ptr), nextCellIndex, nextParticleIndex};
   }
 
   /**
@@ -402,7 +408,7 @@ class ParticleContainerInterface {
    * @param particle Reference to the particle that is to be deleted.
    * @return True if the given pointer still points to a new particle.
    */
-  virtual bool deleteParticle(Particle &particle) = 0;
+  virtual bool deleteParticle(Particle_T &particle) = 0;
 
   /**
    * Deletes the particle at the given index positions as long as this does not compromise the validity of the
@@ -413,6 +419,19 @@ class ParticleContainerInterface {
    * @return True if the given indices still point to a new particle.
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
+
+ protected:
+  /**
+   * Stores the number of time-steps since last neighbor list rebuild
+   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
+   * be 0
+   */
+  size_t _stepsSinceLastRebuild{0};
+
+  /**
+   * Skin distance a particle is allowed to move in one time-step.
+   */
+  double _skin;
 };
 
 }  // namespace autopas

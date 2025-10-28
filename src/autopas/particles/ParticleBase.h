@@ -32,16 +32,39 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
+  ParticleBase()
+      : _r({0.0, 0.0, 0.0}),
+        _v({0., 0., 0.}),
+        _f({0.0, 0.0, 0.0}),
+        _id(0),
+        _ownershipState(OwnershipState::owned)
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        ,
+        _rAtRebuild({0.0, 0.0, 0.0})
+#endif
+  {
+  }
 
   /**
    * Constructor of the Particle class.
    * @param r Position of the particle.
    * @param v Velocity of the particle.
    * @param id Id of the particle.
+   * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
-  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
+  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
+               OwnershipState ownershipState = OwnershipState::owned)
+      : _r(r),
+        _v(v),
+        _f({0.0, 0.0, 0.0}),
+        _id(id),
+        _ownershipState(ownershipState)
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        ,
+        _rAtRebuild(r)
+#endif
+  {
+  }
 
   /**
    * Destructor of ParticleBase class
@@ -53,6 +76,13 @@ class ParticleBase {
    * Particle position as 3D coordinates.
    */
   std::array<floatType, 3> _r;
+
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  /**
+   * Particle position during last rebuild as 3D coordinates.
+   */
+  std::array<floatType, 3> _rAtRebuild;
+#endif
 
   /**
    * Particle velocity as 3D vector.
@@ -72,7 +102,7 @@ class ParticleBase {
   /**
    * Defines the state of the ownership of the particle.
    */
-  OwnershipState _ownershipState{OwnershipState::owned};
+  OwnershipState _ownershipState;
 
  public:
   /**
@@ -152,6 +182,56 @@ class ParticleBase {
    */
   void setR(const std::array<double, 3> &r) { _r = r; }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  /**
+   * Get the last rebuild position of the particle
+   * @return current rebuild position
+   */
+  [[nodiscard]] const std::array<double, 3> &getRAtRebuild() const { return _rAtRebuild; }
+  /**
+   * Set the rebuild position of the particle
+   * @param r rebuild position to be set
+   */
+  void setRAtRebuild(const std::array<double, 3> &r) { _rAtRebuild = r; }
+
+  /**
+   * Update the rebuild position of the particle to current position
+   */
+  void resetRAtRebuild() { this->setRAtRebuild(_r); }
+
+  /**
+   * Calculate the distance since the last rebuild.
+   * This is used to check if neighbor lists are still valid inside the logic handler
+   * @return displacement vector of particle since rebuild
+   */
+  const std::array<double, 3> calculateDisplacementSinceRebuild() const {
+    return utils::ArrayMath::sub(_rAtRebuild, _r);
+  }
+#endif
+
+  /**
+   * Add a distance vector to the position of the particle and check if the distance between the old and new position
+   * is less than a given max distance.
+   * This max distance usually should be the skin per timestep divided by two.
+   *
+   * @param r vector to be added
+   * @param maxDistSquared The maximum expected movement distance squared.
+   * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
+   */
+  bool setRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto distanceVec = r - _r;
+    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
+    setR(r);
+    const bool distanceIsFine =
+        distanceSquared < maxDistSquared or autopas::utils::Math::isNearAbs(maxDistSquared, 0., 1e-12);
+    if (not distanceIsFine) {
+      AutoPasLog(WARN, "Particle {}: Distance between old and new position is larger than expected: {} > {}", _id,
+                 distanceSquared, maxDistSquared);
+    }
+    return distanceIsFine;
+  }
+
   /**
    * Add a distance vector to the position of the particle
    * @param r vector to be added
@@ -159,6 +239,23 @@ class ParticleBase {
   void addR(const std::array<double, 3> &r) {
     using namespace autopas::utils::ArrayMath::literals;
     _r += r;
+  }
+
+  /**
+   * Add a distance vector to the position of the particle and check if the distance between the old and new position
+   * is less than a given max distance.
+   * This max distance usually should be the skin per timestep divided by two.
+   *
+   * @note uses setRDistanceCheck()
+   *
+   * @param r vector to be added
+   * @param maxDistSquared The maximum expected movement distance squared.
+   * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
+   */
+  bool addRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto newR = _r + r;
+    return setRDistanceCheck(newR, maxDistSquared);
   }
 
   /**

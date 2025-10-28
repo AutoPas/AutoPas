@@ -19,7 +19,7 @@ namespace autopas {
  * This interface exists to provide a row interface for octree to add its cells.
  */
 template <typename ParticleCell>
-class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pairwise> {
+class OTTraversalInterface : public TraversalInterface {
   /**
    * The particle type used in this traversal.
    */
@@ -30,8 +30,11 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    * Create a new traversal interface, which provides functionality that is required by all octree traversals.
    *
    * @param interactionLength The interaction length
+   * @param dataLayout
+   * @param useNewton3
    */
-  OTTraversalInterface(double interactionLength) : _interactionLength(interactionLength) {}
+  OTTraversalInterface(double interactionLength, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _interactionLength(interactionLength) {}
 
   /**
    * Notify the traversal about the cells that it is able to traverse.
@@ -47,8 +50,8 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    * @param wrapper The octree to load the leaves from
    * @param leaves The list to store the leaves in
    */
-  template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
-  void loadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
+  template <typename PairwiseFunctor>
+  void loadBuffers(utils::DataLayoutConverter<PairwiseFunctor> &dataLayoutConverter,
                    OctreeNodeWrapper<ParticleType> *wrapper, std::vector<OctreeLeafNode<ParticleType> *> &leaves) {
     wrapper->appendAllLeaves(leaves);
 
@@ -63,8 +66,8 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    * @param dataLayoutConverter The converter to convert the buffers
    * @param leaves The list to unload the leaves from
    */
-  template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
-  void unloadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
+  template <typename PairwiseFunctor>
+  void unloadBuffers(utils::DataLayoutConverter<PairwiseFunctor> &dataLayoutConverter,
                      std::vector<OctreeLeafNode<ParticleType> *> &leaves) {
     for (OctreeLeafNode<ParticleType> *leaf : leaves) {
       dataLayoutConverter.storeDataLayout(*leaf);

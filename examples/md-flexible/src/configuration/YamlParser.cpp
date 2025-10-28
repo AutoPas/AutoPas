@@ -228,8 +228,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-        } else if (strArg.find("glob") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
@@ -242,12 +240,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-        if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
+        if (strArg.find("atm") != std::string::npos or strArg.find("axilrod-teller-muto") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
-          throw std::runtime_error("Unrecognized 3-body functor!");
+          throw std::runtime_error("Unrecognized triwise functor!");
         }
-        config.addInteractionType(autopas::InteractionTypeOption::threeBody);
+        config.addInteractionType(autopas::InteractionTypeOption::triwise);
       } else if (key == config.iterations.name) {
         expected = "Unsigned Integer > 0";
         description = config.iterations.description;
@@ -265,12 +263,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningPhases.value < 0) {
           throw std::runtime_error("The number of tuning phases has to be a positive integer.");
         }
-      } else if (key == config.dontMeasureFlops.name) {
-        expected = "Boolean Value";
-        description = config.dontMeasureFlops.description;
-
-        // "not" needed because of semantics
-        config.dontMeasureFlops.value = not node[key].as<bool>();
       } else if (key == config.dontCreateEndConfig.name) {
         expected = "Boolean Value";
         description = config.dontCreateEndConfig.description;
@@ -305,6 +297,17 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.energySensorOption.name) {
+        expected = "Exactly one energy sensor out of the possible options.";
+        description = config.energySensorOption.description;
+        const auto parsedOptions = autopas::EnergySensorOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!"));
+        config.energySensorOption.value = *parsedOptions.begin();
+      } else if (key == config.pauseSimulationDuringTuning.name) {
+        expected = "Boolean Value";
+        description = config.pauseSimulationDuringTuning.description;
+
+        config.pauseSimulationDuringTuning.value = node[key].as<bool>();
       } else if (key == config.sortingThreshold.name) {
         expected = "Unsigned Integer >= 0.";
         description = config.sortingThreshold.description;
@@ -359,6 +362,19 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
         }
+      } else if (key == config.earlyStoppingFactor.name) {
+        expected = "Floating point value > 1";
+        description = config.earlyStoppingFactor.description;
+
+        config.earlyStoppingFactor.value = node[key].as<double>();
+        if (config.earlyStoppingFactor.value <= 1) {
+          throw std::runtime_error("EarlyStoppingFactor has to be greater than 1!");
+        }
+      } else if (key == config.useLOESSSmoothening.name) {
+        expected = "Boolean Value";
+        description = config.useLOESSSmoothening.description;
+
+        config.useLOESSSmoothening.value = node[key].as<bool>();
       } else if (key == config.tuningMaxEvidence.name) {
         expected = "Unsigned Integer >= 1";
         description = config.tuningMaxEvidence.description;
@@ -504,6 +520,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.ruleFilename.value.empty()) {
           throw std::runtime_error("Parsed rule filename is empty!");
         }
+      } else if (key == config.fuzzyRuleFilename.name) {
+        expected = "String";
+        description = config.fuzzyRuleFilename.description;
+
+        config.fuzzyRuleFilename.value = node[key].as<std::string>();
+        if (config.fuzzyRuleFilename.value.empty()) {
+          throw std::runtime_error("Parsed rule filename is empty!");
+        }
       } else if (key == config.verletRebuildFrequency.name) {
         expected = "Unsigned Integer >= 1";
         description = config.verletRebuildFrequency.description;
@@ -513,11 +537,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.verletRebuildFrequency.value < 1) {
           throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
-      } else if (key == config.verletSkinRadiusPerTimestep.name) {
+      } else if (key == config.verletSkinRadius.name) {
         expected = "Positive floating-point value.";
-        description = config.verletSkinRadiusPerTimestep.description;
+        description = config.verletSkinRadius.description;
 
-        config.verletSkinRadiusPerTimestep.value = node[key].as<double>();
+        config.verletSkinRadius.value = node[key].as<double>();
       } else if (key == config.fastParticlesThrow.name) {
         expected = "Boolean Value";
         description = config.fastParticlesThrow.description;
@@ -596,16 +620,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           siteErrors.clear();
           siteID = std::distance(node[MDFlexConfig::siteStr].begin(), siteIterator);
 
-          const auto epsilon =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(), siteErrors);
-          const auto sigma =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
-          const auto nu =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
 
-          config.addSiteType(siteID, epsilon, sigma, nu, mass);
+          config.addSiteType(siteID, mass);
+          // Check LJ parameters
+          const auto epsilon = parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(),
+                                                                   siteErrors, false);
+          const auto sigma = parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(),
+                                                                 siteErrors, false);
+          config.addLJParametersToSite(siteID, epsilon, sigma);
+
+          // Check Axilrod-Teller-Muto parameter
+          const auto nu =
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
+          config.addATParametersToSite(siteID, nu);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
@@ -807,6 +836,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!"));
 
         config.loadBalancer.value = *parsedOptions.begin();
+
+#ifndef MD_FLEXIBLE_ENABLE_ALLLBL
+        if (config.loadBalancer.value == LoadBalancerOption::all) {
+          errors.push_back(makeErrorMsg(mark, key,
+                                        "The input file requests ALL but md-flexible was not compiled with ALL.",
+                                        expected, description));
+        }
+#endif
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

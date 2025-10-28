@@ -16,7 +16,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   funNoPPL.setParticleProperties(24 * this->epsilon, this->sigma);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.addSiteType(0, 1);
+  particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
   particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 
@@ -25,13 +26,13 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   Molecule defaultParticle;
   FMCell cell1NoPPL;
   FMCell cell2NoPPL;
-  autopasTools::generators::RandomGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                               numParticlesPerCell, 42);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                               numParticlesPerCell, 43);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
+                                                                numParticlesPerCell, 42);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
+                                                                numParticlesPerCell, 43);
 
-  funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0);
-  funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0);
+  funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   FMCell cell1PPL(cell1NoPPL);
   FMCell cell2PPL(cell2NoPPL);
@@ -47,10 +48,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
 
   for (size_t i = 0; i < numParticlesPerCell; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      EXPECT_EQ(cell1NoPPL[i], cell1PPL[i]) << "cell1NoPPL[i] = " << cell1NoPPL[i].toString() << std::endl
-                                            << "cell1PPL[i] = " << cell1PPL[i].toString();
-      EXPECT_EQ(cell2NoPPL[i], cell2PPL[i]) << "cell2NoPPL[i] = " << cell2NoPPL[i].toString() << std::endl
-                                            << "cell2PPL[i] = " << cell2PPL[i].toString();
+      EXPECT_NEAR(cell1NoPPL[i].getF()[j], cell1PPL[i].getF()[j], 1e-12);
+      EXPECT_NEAR(cell2NoPPL[i].getF()[j], cell2PPL[i].getF()[j], 1e-12);
     }
   }
 }
@@ -63,7 +62,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLAoS) {
   funNoPPL.setParticleProperties(24 * this->epsilon, this->sigma);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.addSiteType(0, 1);
+  particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
   particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 

@@ -32,10 +32,12 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
 
 void initPPL(ParticlePropertiesLibrary<> &PPL) {
 #if MD_FLEXIBLE_MODE == MULTISITE
-  PPL.addSiteType(0, 1., 1., 0.5);
+  PPL.addSiteType(0, 0.5);
+  PPL.addLJParametersToSite(0, 1., 1.);
   PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
 #else
-  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(0, 1.);
+  PPL.addLJParametersToSite(0, 1., 1.);
 #endif
   PPL.calculateMixingCoefficients();
 }
@@ -80,8 +82,8 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   fillWithParticlesAndInit(*autoPas);
   initPPL(*PPL);
 
-  // Set verlet skin per timestep to something large so no error messages are displayed
-  autoPas->setVerletSkinPerTimestep(1.);
+  // Set verlet skin to something large so no error messages are displayed
+  autoPas->setVerletSkin(10.);
 
   // The reference positions are the position of the particles in the AutoPas container before
   // calling calculatePositions.
@@ -170,7 +172,8 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   autopasContainer->init();
 
   // Init PPL
-  PPL->addSiteType(0, 1, 1, 0.5);
+  PPL->addSiteType(0, 0.5);
+  PPL->addLJParametersToSite(0, 1, 1);
 #if MD_FLEXIBLE_MODE == MULTISITE
   const std::array<double, 3> momentOfInertiaM = {5.23606798, 0.76393202, 6.};
   PPL->addMolType(0, {0, 0, 0},
@@ -308,7 +311,8 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   autopasContainer->init();
 
   // Init PPL
-  PPL->addSiteType(0, 1, 1, 0.5);
+  PPL->addSiteType(0, 0.5);
+  PPL->addLJParametersToSite(0, 1., 1.);
   PPL->addMolType(0, {0, 0, 0},
                   {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}},
                   {5.23606798, 0.76393202, 6.});
@@ -443,7 +447,8 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   autopasContainer->init();
 
   // Init PPL
-  PPL->addSiteType(0, 1, 1, 0.5);
+  PPL->addSiteType(0, 0.5);
+  PPL->addLJParametersToSite(0, 1, 1);
   PPL->calculateMixingCoefficients();
 
   // add particle
@@ -459,6 +464,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 #endif
 }
 
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 /**
  * Test the mechanism that throws an exception when particles travel faster than skin/2/rebuildFreq
  */
@@ -468,7 +474,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
   autoPas->setBoxMin({0., 0., 0.});
   autoPas->setBoxMax({10., 10., 10.});
-  autoPas->setVerletSkinPerTimestep(.02);
+  autoPas->setVerletSkin(.2);
   autoPas->setVerletRebuildFrequency(10);
   autoPas->init();
 
@@ -490,7 +496,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
                std::runtime_error)
       << "The particle moved farther than the allowed change in position but no exception was thrown.";
 }
-
+#endif
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641
 // https://github.com/AutoPas/AutoPas/issues/641
 // @note: since this issue was made, these tests have been converted to templates for either Molecule or

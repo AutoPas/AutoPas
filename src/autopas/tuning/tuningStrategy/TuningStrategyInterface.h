@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <functional>
+#include <optional>
+
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
@@ -25,7 +28,7 @@ class TuningStrategyInterface {
    * Get this object's associated TuningStrategyOption type.
    * @return TuningStrategyOption
    */
-  virtual TuningStrategyOption getOptionType() = 0;
+  virtual TuningStrategyOption getOptionType() const = 0;
 
   /**
    * Notifies the strategy about empirically collected information for the given configuration.
@@ -50,8 +53,9 @@ class TuningStrategyInterface {
    *
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
+   * @return boolean value to signal if the tuning strategy has intentionally wiped the config queue
    */
-  virtual void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  virtual bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                                    const EvidenceCollection &evidenceCollection) = 0;
 
   /**
@@ -63,8 +67,9 @@ class TuningStrategyInterface {
    * @param tuningPhase Gives the current tuning phase to the tuning strategy.
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
+   * @return boolean value to signal if the tuning strategy has intentionally wiped the config queue
    */
-  virtual void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  virtual bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                      const autopas::EvidenceCollection &evidenceCollection) = 0;
 
   /**
@@ -90,16 +95,17 @@ class TuningStrategyInterface {
   virtual void rejectConfiguration(const Configuration &configuration, bool indefinitely){};
 
   /**
-   * Indicate whether the strategy needs smoothed values of homogeneity and max density
+   * Indicate whether the strategy needs domain similarity statistics.
    * @return
    */
-  virtual bool needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+  [[nodiscard]] virtual bool needsDomainSimilarityStatistics() const { return false; }
 
   /**
-   * Method to pass smoothed homogeneity and the maximal density to the tuning strategy.
-   * @param homogeneity
-   * @param maxDensity
+   * Method to pass smoothed domain similarity statistics (particle-dependent bin standard deviation in density and max
+   * density) to the tuning strategy. See LiveInfo::gather for meaning of particle dependent bin.
+   * @param pdBinStdDevDensity particle-dependent bin density standard deviation.
+   * @param pdBinMaxDensity particle-dependent bin maximum density.
    */
-  virtual void receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity){};
+  virtual void receiveDomainSimilarityStatistics(double pdBinStdDevDensity, double pdBinMaxDensity){};
 };
 }  // namespace autopas

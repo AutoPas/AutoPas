@@ -35,34 +35,33 @@ namespace autopas {
  * particles in neighboring cells.
  * @tparam ParticleCell type of the ParticleCells that are used to store the particles
  */
-template <class Particle>
-class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle>> {
+template <class Particle_T>
+class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle_T>> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = Particle;
+  using ParticleType = Particle_T;
   /**
    *  Type of the ParticleCell.
    */
-  using ReferenceCell = ReferenceParticleCell<Particle>;
+  using ReferenceCell = ReferenceParticleCell<Particle_T>;
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skinPerTimestep
+   * @param skin
    * @param rebuildFrequency
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                        const double skinPerTimestep, const unsigned int rebuildFrequency,
-                        const double cellSizeFactor = 1.0,
+                        const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   /**
@@ -83,9 +82,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
-    ParticleType pCopy = p;
     addParticleLock.lock();
-    _particleList.push_back(pCopy);
+    _particleList.push_back(p);
     updateDirtyParticleReferences();
     addParticleLock.unlock();
   }
@@ -94,10 +92,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
     addParticleLock.lock();
-    _particleList.push_back(pCopy);
+    _particleList.push_back(haloParticle);
     updateDirtyParticleReferences();
     addParticleLock.unlock();
   }
@@ -106,16 +102,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
+    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
     }
-    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
+    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
   }
 
@@ -132,7 +126,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @return load estimator function object.
    */
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
-    switch (this->_loadEstimator) {
+    // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
+    switch (static_cast<LoadEstimatorOption::Value>(this->_loadEstimator)) {
       case LoadEstimatorOption::squaredParticlesPerCell: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
@@ -149,12 +144,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
-   */
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
-    updateDirtyParticleReferences();
-  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   /**
    * Updates all the References in the cells that are out of date.
@@ -180,9 +170,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
@@ -196,18 +186,18 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior,
-                                                           const std::array<double, 3> &boxMin,
-                                                           const std::array<double, 3> &boxMax) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior,
+                                                             const std::array<double, 3> &boxMin,
+                                                             const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                           IteratorBehavior iteratorBehavior) const override {
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                             IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                            std::numeric_limits<double>::lowest()};
@@ -229,14 +219,26 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const {
+  std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                                 IteratorBehavior iteratorBehavior,
+                                                                 const std::array<double, 3> &boxMin,
+                                                                 const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= this->getVerletSkin();
+      boxMaxWithSafetyMargin += this->getVerletSkin();
+    }
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
+        // We extend the search box for cells here since particles might have moved
+        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
+                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -263,19 +265,20 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
       std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax,
+                                             boxMinWithSafetyMargin, boxMaxWithSafetyMargin, endCellIndex);
     }
 
     // shortcut if the given index doesn't exist
     if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
     }
-    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+    const Particle_T *retPtr = &this->_cells[cellIndex][particleIndex];
 
     return {retPtr, cellIndex, particleIndex};
   }
 
-  bool deleteParticle(Particle &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(particle);
     return false;
@@ -298,15 +301,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     bool exceptionCaught{false};
     std::string exceptionMsg{""};
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif  // AUTOPAS_OPENMP
-    {
+    AUTOPAS_OPENMP(parallel) {
       // private for each thread!
       std::vector<ParticleType> myInvalidParticles, myInvalidNotOwnedParticles;
-#ifdef AUTOPAS_OPENMP
-#pragma omp for
-#endif  // AUTOPAS_OPENMP
+      AUTOPAS_OPENMP(for)
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
         this->getCells()[cellId].deleteDummyParticles();
@@ -350,15 +348,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         }
       } catch (const std::exception &e) {
         exceptionCaught = true;
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
+        AUTOPAS_OPENMP(critical)
         exceptionMsg.append(e.what());
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      {
+      AUTOPAS_OPENMP(critical) {
         // merge private vectors to global one.
         invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
                                 myInvalidNotOwnedParticles.end());
@@ -366,7 +359,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     if (exceptionCaught) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(exceptionMsg);
+      autopas::utils::ExceptionHandler::exception(exceptionMsg);
     }
 
     // we have to remove halo particles after the above for-loop since removing halo particles changes the underlying
@@ -542,16 +535,18 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @param cellIndex
    * @param particleIndex
    * @param iteratorBehavior
-   * @param boxMin
-   * @param boxMax
+   * @param boxMin The actual search box min
+   * @param boxMax The actual search box max
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skin
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skin
    * @param endCellIndex Last relevant cell index
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>
-  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
-                                                    IteratorBehavior iteratorBehavior,
-                                                    const std::array<double, 3> &boxMin,
-                                                    const std::array<double, 3> &boxMax, size_t endCellIndex) const {
+  std::tuple<size_t, size_t> advanceIteratorIndices(
+      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
+      const std::array<double, 3> &boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
     const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
@@ -566,10 +561,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         if (isRelevant) {
           // is the cell in the region?
           const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
-          // particles can move over cell borders. Calculate the volume this cell's particles can be.
-          const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellLowCorner, this->getVerletSkin() * 0.5);
-          const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellHighCorner, this->getVerletSkin() * 0.5);
-          isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
+          isRelevant =
+              utils::boxesOverlap(cellLowCorner, cellHighCorner, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
         }
       }
       return isRelevant;

@@ -16,10 +16,10 @@
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/options/Newton3Option.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 
 using ::testing::_;
 
@@ -211,9 +211,9 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(ruf->getBoxMax(), max);
 }
 
-template <typename Particle>
-static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeInterface<Particle> *node,
-                               autopas::OctreeNodeInterface<Particle> *neighbor) {
+template <typename Particle_T>
+static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeInterface<Particle_T> *node,
+                               autopas::OctreeNodeInterface<Particle_T> *neighbor) {
   using namespace autopas;
 
   int touchAxis = getAxis(face);
@@ -266,9 +266,9 @@ static std::array<double, 3> random3D(std::array<double, 3> min, std::array<doub
  * @param max The maximum coordinate of the cube from which the position is sampled
  * @return A particle with no speed and id 0
  */
-static autopas::ParticleFP64 getRandomlyDistributedParticle(std::array<double, 3> min, std::array<double, 3> max) {
+static autopas::ParticleBaseFP64 getRandomlyDistributedParticle(std::array<double, 3> min, std::array<double, 3> max) {
   auto randomPosition = random3D(min, max);
-  return autopas::ParticleFP64(randomPosition, {0, 0, 0}, 0);
+  return autopas::ParticleBaseFP64(randomPosition, {0, 0, 0}, 0);
 }
 
 /**
@@ -278,10 +278,10 @@ static autopas::ParticleFP64 getRandomlyDistributedParticle(std::array<double, 3
  * @param max The maximum coordinate of the octree's bounding box
  * @param randomParticleCount How many particles should be spawned
  */
-static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> createRandomOctree(
+static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleBaseFP64>> createRandomOctree(
     std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount, int treeSplitThreshold = 16) {
   using namespace autopas;
-  std::unique_ptr<OctreeNodeInterface<autopas::ParticleFP64>> root =
+  std::unique_ptr<OctreeNodeInterface<autopas::ParticleBaseFP64>> root =
       std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, treeSplitThreshold, 1, 1.0);
   for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
     auto randomParticle = getRandomlyDistributedParticle(min, max);
@@ -464,13 +464,13 @@ TEST_F(OctreeTest, testAbleToSplit) {
   }
 }
 
-#if !defined(AUTOPAS_OPENMP)
+#if !defined(AUTOPAS_USE_OPENMP)
 std::pair<OctreeTest::Vector3DList, std::vector<std::tuple<unsigned long, unsigned long, double>>>
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
                                     size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMin,
-                                    std::array<double, 3> boxMax, double cellSizeFactor, double cutoff,
-                                    double skinPerTimestep, unsigned int rebuildFrequency, double interactionLength,
+                                    std::array<double, 3> boxMax, double cellSizeFactor, double cutoff, double skin,
+                                    unsigned int rebuildFrequency, double interactionLength,
                                     Vector3DList particlePositions, Vector3DList haloParticlePositions) {
   using namespace autopas;
 
@@ -480,14 +480,12 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Construct container
   ContainerSelector<Molecule> selector{boxMin, boxMax, cutoff};
-  selector.selectContainer(containerOption,
-                           autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
-                                                          autopas::LoadEstimatorOption::none});
+  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
+                                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
-  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                   false /*calculateGlobals*/>
+  LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, false /*calculateGlobals*/>
       ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
 
@@ -500,13 +498,14 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   for (int unsigned i = 0; i < numHaloParticles; ++i) {
     auto position = haloParticlePositions[i];
     auto particle = Molecule(position, {0, 0, 0}, numParticles + i);
+    particle.setOwnershipState(autopas::OwnershipState::halo);
     container.addHaloParticle(particle);
   }
 
   // Obtain a compatible traversal
   auto traversal = autopas::utils::withStaticCellType<
       Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-    return autopas::TraversalSelector<decltype(particleCellDummy), InteractionTypeOption::pairwise>::generateTraversal(
+    return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(mockFunctor)>(
         traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
   });
 
@@ -538,7 +537,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
-  container.iteratePairwise(traversal.get());
+  container.computeInteractions(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
   // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has
@@ -597,9 +596,9 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   std::array<double, 3> _boxMin{0, 0, 0};
   double _cutoff{1.};
-  double skinPerTimestep = _cutoff * 0.1;
+  double skin = _cutoff * 0.1;
   unsigned int rebuildFrequency = 1;
-  double interactionLength = _cutoff + skinPerTimestep * rebuildFrequency;
+  double interactionLength = _cutoff + skin;
 
   // Obtain a starting configuration
   auto containerOption = ContainerOption::octree;
@@ -637,14 +636,14 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   // Calculate the forces using the octree
   auto [calculatedForces, calculatedPairs] =
       calculateForcesAndPairs(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                              numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skinPerTimestep,
-                              rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
+                              numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin, rebuildFrequency,
+                              interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate the forces using the reference implementation
   auto [referenceForces, referencePairs] = calculateForcesAndPairs(
       autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
-      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff,
-      skinPerTimestep, rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
+      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin,
+      rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   // std::sort(calculatedPairs.begin(), calculatedPairs.end());
@@ -737,7 +736,7 @@ TEST_F(OctreeTest, testLeafIDs) {
   // Get leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
-  OTC18Traversal<ParticleFP64, mdLib::LJFunctor<ParticleFP64>, DataLayoutOption::aos, true>::assignIDs(leaves);
+  OTC18Traversal<ParticleFP64, MockPairwiseFunctor<ParticleFP64>>::assignIDs(leaves);
 
   std::vector<int> ids, expected;
   for (int i = 0; i < leaves.size(); ++i) {

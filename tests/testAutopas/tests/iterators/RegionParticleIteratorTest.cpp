@@ -7,21 +7,35 @@
 
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
+using ::testing::Combine;
+using ::testing::UnorderedElementsAreArray;
+using ::testing::Values;
+using ::testing::ValuesIn;
+
+// Helper struct to represent region iterator boxes.
+struct Box {
+  std::array<double, 3> min;
+  std::array<double, 3> max;
+};
+
+static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
+
 template <typename AutoPasT>
-auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
-                                             double cellSizeFactor) {
+auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
+                                                 double cellSizeFactor) {
   using namespace autopas::utils::ArrayMath::literals;
 
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkinPerTimestep(0.1);
+  autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
@@ -43,7 +57,7 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::C
  * 3. Run the region iterator for its full range and track the IDs it encounters
  * 4. Compare the found IDs to the expectations from the initialization.
  */
-TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
+TEST_P(RegionParticleIteratorTestOne, testRegionAroundCorner) {
   using namespace autopas::utils::ArrayMath::literals;
 
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
@@ -103,23 +117,16 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
       [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
-using ::testing::Combine;
-using ::testing::UnorderedElementsAreArray;
-using ::testing::Values;
-using ::testing::ValuesIn;
-
-static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
-
-INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
+INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestOne,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
-                         RegionParticleIteratorTest::PrintToStringParamName());
+                         RegionParticleIteratorTestOne::PrintToStringParamName());
 
 /**
  * Tests that AutoPas rejects regions where regionMin > regionMax.
  */
-TEST_F(RegionParticleIteratorTest, testInvalidBox) {
+TEST_F(RegionParticleIteratorTestOne, testInvalidBox) {
   // setup
   autopas::AutoPas<Molecule> autoPas{};
   const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, autopas::ContainerOption::directSum, 1.);
@@ -146,7 +153,7 @@ TEST_F(RegionParticleIteratorTest, testInvalidBox) {
  * Fills a container with (halo) particles, invokes region iterators with force sequential, and expects all of them to
  * find everything in the search region.
  */
-TEST_F(RegionParticleIteratorTest, testForceSequential) {
+TEST_F(RegionParticleIteratorTestOne, testForceSequential) {
   // helpers
   using autopas::utils::ArrayMath::div;
   using autopas::utils::ArrayMath::mulScalar;
@@ -195,9 +202,7 @@ TEST_F(RegionParticleIteratorTest, testForceSequential) {
   std::vector<std::vector<size_t>> encounteredIds(numThreads);
   {
     const NumThreadGuard numThreadGuard(numThreads);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
-#endif
+    AUTOPAS_OPENMP(parallel for)
     for (int t = 0; t < numThreads; ++t) {
       for (auto iter = autoPas.getRegionIterator(
                searchBoxMin, searchBoxMax,
@@ -214,3 +219,140 @@ TEST_F(RegionParticleIteratorTest, testForceSequential) {
         << "Thread " << t << " did not find the correct IDs.";
   }
 }
+
+/**
+ * This test checks whether a particle that has moved beyond the boundaries of a data structure element but is still
+ * stored in this data structure element is found.
+ */
+TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  auto containerOption = GetParam();
+
+  autopas::AutoPas<Molecule> autoPas{};
+  // Get a 10x10x10 box
+  defaultInit(autoPas, containerOption, 1.);
+  const auto shortDistance = autoPas.getVerletSkin() * 0.1;
+
+  // This function creates particle positions within the simulation box that are the offset-value distant from the
+  // boundary and the positions mirrored at the boundary. In addition, a search box is calculated for each position.
+  auto generateParticlePositions = [&autoPas, &shortDistance]() {
+    using autopas::utils::Math::isNearRel;
+    constexpr size_t numParticles1DTotal = 3;
+    constexpr double margin = 1e-10;
+
+    auto cutoff = autoPas.getCutoff();
+    auto skin = autoPas.getVerletSkin();
+    auto boxMin = autoPas.getBoxMin();
+    auto boxMax = autoPas.getBoxMax();
+    auto offset = shortDistance;
+
+    // this creates the positions (min + offset) and (max - offset) and positions mirrored at min and max (along one
+    // dimension)
+    auto generateInteresting1DPositions = [&](double min, double max) -> auto{
+      return std::array<std::tuple<double, double>, numParticles1DTotal>{
+          {{min + offset, min - offset}, {(max - min) / 2.0, (max - min) / 2.0}, {max - offset, max + offset}}};
+    };
+
+    std::vector<std::array<double, 3>> positionsInsideBox;
+    std::vector<std::array<double, 3>> positionsMirroredAtBoundary;
+    std::vector<std::tuple<Box, Box>> searchRegions;
+
+    for (auto [x, xMirrored] : generateInteresting1DPositions(boxMin[0], boxMax[0])) {
+      for (auto [y, yMirrored] : generateInteresting1DPositions(boxMin[1], boxMax[1])) {
+        for (auto [z, zMirrored] : generateInteresting1DPositions(boxMin[2], boxMax[2])) {
+          if (not(isNearRel(x, (boxMax[0] - boxMin[0]) / 2.0) and isNearRel(y, (boxMax[1] - boxMin[1]) / 2.0) and
+                  isNearRel(z, (boxMax[2] - boxMin[2]) / 2.0))) {
+            positionsInsideBox.push_back({x, y, z});
+            positionsMirroredAtBoundary.push_back({xMirrored, yMirrored, zMirrored});
+
+            // this ensures that a value that is closer than offset to the floored integer, is floored to the next
+            // smaller integer
+            auto getFlooredValue = [offset](double value) {
+              return ((value - floor(value) < (offset - margin)) and (value - floor(value) >= 0)) ? floor(value - 1)
+                                                                                                  : floor(value);
+            };
+
+            // this ensures that a value that is closer than offset to the ceiled integer, is ceiled to the next greater
+            // integer
+            auto getCeiledValue = [offset](double value) {
+              return ((ceil(value) - value < (offset - margin)) and (ceil(value) - value >= 0)) ? ceil(value + 1)
+                                                                                                : ceil(value);
+            };
+
+            // store corresponding search boxes for particles and mirrored versions. Note: we add a small margin to the
+            // boxes to ensure that only the datastructure element, that actually contains a particle is selected in
+            // getParticleImpl
+            const Box startRegion{
+                {getFlooredValue(x) + margin, getFlooredValue(y) + margin, getFlooredValue(z) + margin},
+                {getCeiledValue(x) - margin, getCeiledValue(y) - margin, getCeiledValue(z) - margin}};
+            const Box endRegion{{getFlooredValue(xMirrored) + margin, getFlooredValue(yMirrored) + margin,
+                                 getFlooredValue(zMirrored) + margin},
+                                {getCeiledValue(xMirrored) - margin, getCeiledValue(yMirrored) - margin,
+                                 getCeiledValue(zMirrored) - margin}};
+            searchRegions.push_back({startRegion, endRegion});
+          }
+        }
+      }
+    }
+    return std::make_tuple(positionsInsideBox, positionsMirroredAtBoundary, searchRegions);
+  };
+
+  const auto [positionsInsideBox, positionsMirroredAtBoundary, searchRegions] = generateParticlePositions();
+
+  std::vector<size_t> IDs;
+  for (size_t i{0}; i < positionsInsideBox.size(); ++i) {
+    autoPas.addParticle({positionsInsideBox[i], {0., 0., 0.}, i});
+    IDs.push_back(i);
+  }
+
+  // sanity check for search boxes
+  for (const auto searchRegion : searchRegions) {
+    const auto startRegion = std::get<0>(searchRegion);
+    const auto endRegion = std::get<1>(searchRegion);
+    ASSERT_FALSE(autopas::utils::boxesOverlap(startRegion.min, startRegion.max, endRegion.min, endRegion.max))
+        << "Search boxes should not overlap. If they do the test is written wrong.";
+  }
+
+  // Helper function to check if a region iterator finds a given particle with exptectedID in the given region.
+  auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max, size_t exptectedID,
+                        const std::string &context) {
+    size_t numParticlesFound = 0;
+    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      ++numParticlesFound;
+      EXPECT_EQ(iter->getID(), exptectedID) << "There should only be one particle with ID 0.\n" << context;
+    }
+    EXPECT_EQ(numParticlesFound, 1) << "Exactly one particle was inserted in the domain\n" << context;
+  };
+
+  // Actual test section
+  auto leavingParticles = autoPas.updateContainer();
+  // Ensure that particle is found with the given search region before it is moved out of the datastructure
+  for (size_t i{0}; i < searchRegions.size(); ++i) {
+    const auto startRegion = std::get<0>(searchRegions[i]);
+    testRegion(startRegion.min, startRegion.max, IDs[i], "Before particle is moved.");
+  }
+
+  // This increments the stepsSinceLastRebuild counter in the LogicHandler and container, which is needed in
+  // getParticleImpl of the containers to calculate the correct boxMin and boxMax values
+  // Note: It is important to perform this step before the particles are moved. Otherwise they would be sorted into the
+  // correct data structure element and the purpose of this test would be lost
+  EmptyPairwiseFunctor<Molecule> eFunctor;
+  autoPas.computeInteractions(&eFunctor);
+  leavingParticles = autoPas.updateContainer();
+
+  // Move the particles outside the simulations box and thus outside the data structure element (e.g: cell) where it is
+  // currently stored
+  for (auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
+    iter->setR(positionsMirroredAtBoundary[iter->getID()]);
+  }
+
+  // Now we check again with the corresponding search regions if the particles are found.
+  for (size_t i{0}; i < searchRegions.size(); ++i) {
+    const auto endRegion = std::get<1>(searchRegions[i]);
+    testRegion(endRegion.min, endRegion.max, IDs[i], "After particle was moved.");
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo, ValuesIn(getTestableContainerOptions()),
+                         RegionParticleIteratorTestTwo::PrintToStringParamName());

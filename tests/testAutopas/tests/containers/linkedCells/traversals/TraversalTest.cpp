@@ -28,8 +28,8 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   const std::array<double, 3> linkedCellsBoxMin = {0., 0., 0.};
 
   TraversalTest::CountFunctor functor(cutoff);
-  autopas::LinkedCells<Particle> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1, 1.0 / cutoff,
-                                             loadEstimatorOption);
+  autopas::LinkedCells<ParticleFP64> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1, 1.0 / cutoff,
+                                                 loadEstimatorOption);
 
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
   ASSERT_EQ(linkedCells.size(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
@@ -44,15 +44,13 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;
   // this test assumes a cell size of 1. in each direction
   autopas::TraversalSelectorInfo tsi(cellsPerDim, cutoff, {1., 1., 1.}, clusterSize);
-  std::unique_ptr<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise>> traversal;
+  std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::lc_c01) {
-    traversal =
-        autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<
-            TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, true>(traversalOption, functor, tsi);
+    traversal = autopas::TraversalSelector<FPCell>::template generatePairwiseTraversal<TraversalTest::CountFunctor>(
+        traversalOption, functor, tsi, autopas::DataLayoutOption::aos, true);
   } else {
-    traversal =
-        autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<
-            TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, false>(traversalOption, functor, tsi);
+    traversal = autopas::TraversalSelector<FPCell>::template generatePairwiseTraversal<TraversalTest::CountFunctor>(
+        traversalOption, functor, tsi, autopas::DataLayoutOption::aos, false);
   }
 
   unsigned long cellId = 0;
@@ -73,9 +71,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
     }
   }
 
-  auto pairwiseTraversal =
-      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
-  linkedCells.iteratePairwise(pairwiseTraversal);
+  linkedCells.computeInteractions(traversal.get());
 }
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {

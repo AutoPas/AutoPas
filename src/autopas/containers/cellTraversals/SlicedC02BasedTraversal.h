@@ -28,27 +28,19 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam Functor The functor that defines the interaction between particles.
- * @tparam dataLayout
- * @tparam useNewton3
- * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
- * c08)
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
-class SlicedC02BasedTraversal
-    : public SlicedBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward> {
+template <class ParticleCell, class Functor>
+class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functor> {
  public:
   /**
    * Constructor of the colored sliced traversal.
-   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
-   * y and z direction.
-   * @param functor The functor that defines the interaction between particles.
-   * @param interactionLength Interaction length (cutoff + skin).
-   * @param cellLength cell length.
+   * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                                   const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward>(
-            dims, functor, interactionLength, cellLength) {}
+                                   const double interactionLength, const std::array<double, 3> &cellLength,
+                                   DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
+      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                    useNewton3, spaciallyForward) {}
 
   /**
    * The main traversal of the colored sliced traversal.
@@ -65,7 +57,7 @@ class SlicedC02BasedTraversal
    * @return true iff the traversal can be applied.
    */
   [[nodiscard]] bool isApplicable() const override {
-    return this->_cellsPerDimension[this->_dimsPerLength[0]] >= this->_overlapLongestAxis;
+    return this->_cellsPerDimension[this->_dimsSortedByLength[0]] >= this->_overlapLongestAxis;
   }
 
   /**
@@ -79,44 +71,40 @@ class SlicedC02BasedTraversal
   }
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
+template <class ParticleCell, class Functor>
 template <typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
-    LoopBody &&loopBody) {
+void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();
-
-  std::cout << "Number of Slices C02 : " << numSlices << "    Thickness : " << this->_sliceThickness[0] << std::endl;
   // check if applicable
 
-  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
+  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsSortedByLength[1]],
+                                    this->_overlap[this->_dimsSortedByLength[2]]};
 
-  if (not spaciallyForward) {
+  if (not this->_spaciallyForward) {
     overLapps23 = {0ul, 0ul};
   }
 
   for (size_t offset = 0; offset < 2; offset++) {
-#ifdef AUTOPAS_OPENMP
-// although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-#pragma omp parallel for schedule(dynamic, 1)
-#endif
+    // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
+    AUTOPAS_OPENMP(parallel for schedule(dynamic, 1))
     for (size_t slice = offset; slice < numSlices; slice += 2) {
       array<unsigned long, 3> myStartArray{0, 0, 0};
       for (size_t i = 0; i < slice; ++i) {
-        myStartArray[this->_dimsPerLength[0]] += this->_sliceThickness[i];
+        myStartArray[this->_dimsSortedByLength[0]] += this->_sliceThickness[i];
       }
 
-      const auto lastLayer = myStartArray[this->_dimsPerLength[0]] + this->_sliceThickness[slice];
-      for (unsigned long dimSlice = myStartArray[this->_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
+      const auto lastLayer = myStartArray[this->_dimsSortedByLength[0]] + this->_sliceThickness[slice];
+      for (unsigned long dimSlice = myStartArray[this->_dimsSortedByLength[0]]; dimSlice < lastLayer; ++dimSlice) {
         for (unsigned long dimMedium = 0;
-             dimMedium < this->_cellsPerDimension[this->_dimsPerLength[1]] - overLapps23[0]; ++dimMedium) {
+             dimMedium < this->_cellsPerDimension[this->_dimsSortedByLength[1]] - overLapps23[0]; ++dimMedium) {
           for (unsigned long dimShort = 0;
-               dimShort < this->_cellsPerDimension[this->_dimsPerLength[2]] - overLapps23[1]; ++dimShort) {
+               dimShort < this->_cellsPerDimension[this->_dimsSortedByLength[2]] - overLapps23[1]; ++dimShort) {
             array<unsigned long, 3> idArray = {};
-            idArray[this->_dimsPerLength[0]] = dimSlice;
-            idArray[this->_dimsPerLength[1]] = dimMedium;
-            idArray[this->_dimsPerLength[2]] = dimShort;
+            idArray[this->_dimsSortedByLength[0]] = dimSlice;
+            idArray[this->_dimsSortedByLength[1]] = dimMedium;
+            idArray[this->_dimsSortedByLength[2]] = dimShort;
             loopBody(idArray[0], idArray[1], idArray[2]);
           }
         }

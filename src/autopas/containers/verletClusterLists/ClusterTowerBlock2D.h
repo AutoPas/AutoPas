@@ -19,9 +19,9 @@ namespace autopas::internal {
  * Class to manage the grid of towers for the Verlet Cluster Lists container.
  * This also includes the geometric shape of the container.
  *
- * @tparam Particle
+ * @tparam Particle_T
  */
-template <class Particle>
+template <class Particle_T>
 class ClusterTowerBlock2D : public CellBorderAndFlagManager {
  public:
   /**
@@ -44,36 +44,36 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    * Start iterator over towers.
    * @return
    */
-  typename std::vector<ClusterTower<Particle>>::iterator begin() { return _towers.begin(); }
+  typename std::vector<ClusterTower<Particle_T>>::iterator begin() { return _towers.begin(); }
   /**
    * Start iterator over towers.
    * @return
    */
-  typename std::vector<ClusterTower<Particle>>::const_iterator begin() const { return _towers.begin(); }
+  typename std::vector<ClusterTower<Particle_T>>::const_iterator begin() const { return _towers.begin(); }
   /**
    * End iterator over towers.
    * @return
    */
-  typename std::vector<ClusterTower<Particle>>::iterator end() { return _towers.end(); }
+  typename std::vector<ClusterTower<Particle_T>>::iterator end() { return _towers.end(); }
   /**
    * End iterator over towers.
    * @return
    */
-  typename std::vector<ClusterTower<Particle>>::const_iterator end() const { return _towers.end(); }
+  typename std::vector<ClusterTower<Particle_T>>::const_iterator end() const { return _towers.end(); }
 
   /**
    * Access operator for towers.
    * @param i 1D tower index
    * @return
    */
-  ClusterTower<Particle> &operator[](size_t i) { return _towers[i]; }
+  ClusterTower<Particle_T> &operator[](size_t i) { return _towers[i]; }
 
   /**
    * Access operator for towers.
    * @param i 1D tower index
    * @return
    */
-  const ClusterTower<Particle> &operator[](size_t i) const { return _towers[i]; }
+  const ClusterTower<Particle_T> &operator[](size_t i) const { return _towers[i]; }
 
   /**
    * Return the number of towers.
@@ -193,9 +193,12 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     if (_towersPerDim[0] == 0) {
       return {_boxMin, _boxMax};
     }
+    // towerBoxMin[0/1] does NOT start at _haloBoxMin[0/1] because the halo towers might extend beyond the halo box.
     const std::array<double, 3> towerBoxMin{
-        _haloBoxMin[0] + _towerSideLength[0] * static_cast<double>(index2D[0]),
-        _haloBoxMin[1] + _towerSideLength[1] * static_cast<double>(index2D[1]),
+        _boxMin[0] - _towerSideLength[0] * _numTowersPerInteractionLength +
+            _towerSideLength[0] * static_cast<double>(index2D[0]),
+        _boxMin[1] - _towerSideLength[1] * _numTowersPerInteractionLength +
+            _towerSideLength[1] * static_cast<double>(index2D[1]),
         _haloBoxMin[2],
     };
     const std::array<double, 3> towerBoxMax{
@@ -254,7 +257,7 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    * @param pos
    * @return
    */
-  ClusterTower<Particle> &getTowerAtPosition(const std::array<double, 3> &pos) {
+  ClusterTower<Particle_T> &getTowerAtPosition(const std::array<double, 3> &pos) {
     const auto [x, y] = getTowerIndex2DAtPosition(pos);
     return getTowerByIndex2D(x, y);
   }
@@ -265,7 +268,9 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    * @param y The y-th tower in y direction.
    * @return a reference to the tower for the given tower grid coordinates.
    */
-  ClusterTower<Particle> &getTowerByIndex2D(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
+  ClusterTower<Particle_T> &getTowerByIndex2D(const size_t x, const size_t y) {
+    return _towers[towerIndex2DTo1D(x, y)];
+  }
 
   /**
    * Returns the 1D index for the given 2D-coordinates of a tower.
@@ -334,12 +339,12 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    * Getter
    * @return
    */
-  const std::vector<ClusterTower<Particle>> &getTowers() const { return _towers; }
+  const std::vector<ClusterTower<Particle_T>> &getTowers() const { return _towers; }
   /**
    * Getter for a mutable reference
    * @return
    */
-  std::vector<ClusterTower<Particle>> &getTowersRef() { return _towers; }
+  std::vector<ClusterTower<Particle_T>> &getTowersRef() { return _towers; }
   /**
    * Getter
    * @return
@@ -420,7 +425,7 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
   /**
    * Internal storage, particles are split into a grid in xy-dimension.
    */
-  std::vector<ClusterTower<Particle>> _towers;
+  std::vector<ClusterTower<Particle_T>> _towers;
 
   /**
    * Dimensions of the 2D xy-grid including halo.

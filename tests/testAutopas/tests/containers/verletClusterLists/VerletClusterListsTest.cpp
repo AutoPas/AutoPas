@@ -9,6 +9,7 @@
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -18,55 +19,53 @@ TEST_F(VerletClusterListsTest, VerletListConstructor) {
   const std::array<double, 3> boxMin = {1, 1, 1};
   const std::array<double, 3> boxMax = {3, 3, 3};
   const double cutoff = 1.;
-  const double skinPerTimestep = 0.01;
+  const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const size_t clusterSize = 4;
-  const autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                          clusterSize);
+  const autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency,
+                                                              clusterSize);
 }
 
 TEST_F(VerletClusterListsTest, testVerletListBuild) {
   const std::array<double, 3> boxMin = {1, 1, 1};
   const std::array<double, 3> boxMax = {3, 3, 3};
   const double cutoff = 1.;
-  const double skinPerTimestep = 0.01;
+  const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                    clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
   const std::array<double, 3> r = {2, 2, 2};
-  const Particle p(r, {0., 0., 0.}, 0);
+  const ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
   const std::array<double, 3> r2 = {1.5, 2, 2};
-  const Particle p2(r2, {0., 0., 0.}, 1);
+  const ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockPairwiseFunctor<Particle> emptyFunctor;
+  MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
-  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false>
-      verletTraversal(&emptyFunctor, clusterSize);
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
+      &emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iteratePairwise(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
 }
 
 TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   const std::array<double, 3> boxMin = {1, 1, 1};
   const std::array<double, 3> boxMax = {3, 3, 3};
   const double cutoff = 1.;
-  const double skinPerTimestep = 0.01;
+  const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const unsigned long numParticles = 271;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                    clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(
-      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                verletLists.getBoxMax(), numParticles);
 
-  MockPairwiseFunctor<Particle> emptyFunctor;
-  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false>
-      verletTraversal(&emptyFunctor, clusterSize);
+  MPairwiseFunctor emptyFunctor;
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
+      &emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
   EXPECT_EQ(verletLists.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), numParticles);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -77,19 +76,18 @@ TEST_F(VerletClusterListsTest, testIterator) {
   const std::array<double, 3> boxMin = {1, 1, 1};
   const std::array<double, 3> boxMax = {3, 3, 3};
   const double cutoff = 1.;
-  const double skinPerTimestep = 0.01;
+  const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const unsigned long numParticles = 271;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                    clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(
-      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                verletLists.getBoxMax(), numParticles);
 
-  MockPairwiseFunctor<Particle> emptyFunctor;
-  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false>
-      verletTraversal(&emptyFunctor, clusterSize);
+  MockPairwiseFunctor<ParticleFP64> emptyFunctor;
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
+      &emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
 
   int numParticlesInIterator = 0;
@@ -101,10 +99,10 @@ TEST_F(VerletClusterListsTest, testIterator) {
   EXPECT_EQ(numParticlesInIterator, numParticles);
 }
 
-auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, double cutoffSqr) {
+auto calculateValidPairs(const std::vector<ParticleFP64 *> &particles, double cutoffSqr) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  std::vector<std::pair<autopas::Particle *, autopas::Particle *>> particlePairs;
+  std::vector<std::pair<ParticleFP64 *, ParticleFP64 *>> particlePairs;
   particlePairs.reserve(particlePairs.size() * (particlePairs.size() / 2));
   for (auto *particlePtr : particles) {
     for (auto *neighborPtr : particles) {
@@ -119,8 +117,8 @@ auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, doub
   return particlePairs;
 }
 
-void compareParticlePairs(const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &expected,
-                          const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &actual,
+void compareParticlePairs(const std::vector<std::pair<ParticleFP64 *, ParticleFP64 *>> &expected,
+                          const std::vector<std::pair<ParticleFP64 *, ParticleFP64 *>> &actual,
                           const std::string &errMsg) {
   using autopas::utils::ArrayUtils::operator<<;
   EXPECT_EQ(expected.size(), actual.size()) << errMsg << "\n"
@@ -139,23 +137,22 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   const std::array<double, 3> boxMax = {3, 3, 3};
   const double cutoff = 1.;
   const double cutoffSqr = cutoff * cutoff;
-  const double skinPerTimestep = 0.01;
+  const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const unsigned long numParticles = 30;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                    clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
   // Fill the container with random particles and build neighbor lists
-  autopasTools::generators::RandomGenerator::fillWithParticles(
-      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                verletLists.getBoxMax(), numParticles);
   CollectParticlePairsFunctor functor{cutoff, boxMin, boxMax};
-  autopas::VCLClusterIterationTraversal<FPCell, CollectParticlePairsFunctor, autopas::DataLayoutOption::aos, false>
-      verletTraversal(&functor, clusterSize);
+  autopas::VCLClusterIterationTraversal<FPCell, CollectParticlePairsFunctor> verletTraversal(
+      &functor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
 
   // copy all generated particles
-  std::vector<autopas::Particle *> particles;
+  std::vector<ParticleFP64 *> particles;
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
     particles.push_back(&(*it));
   }
@@ -165,7 +162,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
 
   // Use special functor to collect neighbor interactions from container neighbor lists
   functor.initTraversal();
-  verletLists.iteratePairwise(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
   functor.endTraversal(false);
   auto calculatedParticlePairs = functor.getParticlePairs();
   // Check that everything is fine so far
@@ -179,7 +176,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
     // generate some different directions
     const std::array<double, 3> direction = {static_cast<double>(i % 2), static_cast<double>(i % 3),
                                              static_cast<double>(i % numParticles) / static_cast<double>(numParticles)};
-    const auto offset = autopas::utils::ArrayMath::normalize(direction) * (skinPerTimestep * rebuildFrequency / 2.1);
+    const auto offset = autopas::utils::ArrayMath::normalize(direction) * (skin / 2.1);
     particle.addR(offset);
     // Clamp the new position to the domain boundaries
     // Upper corner is excluded
@@ -195,14 +192,14 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
 
   // generate new pairwise interactions
   functor.initTraversal();
-  verletLists.iteratePairwise(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
   functor.endTraversal(false);
   const auto calculatedParticlePairsAfterMove = functor.getParticlePairs();
   // final comparison
   compareParticlePairs(referenceParticlePairsAfterMove, calculatedParticlePairsAfterMove, "After random movement");
 }
 
-auto getClusterNeighbors(autopas::VerletClusterLists<Particle> &verletLists) {
+auto getClusterNeighbors(autopas::VerletClusterLists<ParticleFP64> &verletLists) {
   std::unordered_map<size_t, std::vector<size_t>> neighbors;
   verletLists.traverseClusters<false>([&neighbors](auto &cluster) {
     auto idFirstParticleInCluster = cluster[0].getID();
@@ -225,7 +222,7 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   const std::array<double, 3> boxMin = {0, 0, 0};
   const std::array<double, 3> boxMax = {3, 3, 3};
   const double cutoff = 1.;
-  const double skinPerTimestep = 0.01;
+  const double skin = 0.1;
   const unsigned int rebuildFrequency = 10;
   const int numParticles = 2431;
   const size_t clusterSize = 4;
@@ -233,21 +230,20 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   std::unordered_map<size_t, std::vector<size_t>> neighborsNoN3{}, neighborsN3{};
 
   for (bool newton3 : {true, false}) {
-    autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                      clusterSize);
+    autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-    autopasTools::generators::RandomGenerator::fillWithParticles(
-        verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+    autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
+                                                                  verletLists.getBoxMax(), numParticles);
 
-    MockPairwiseFunctor<Particle> functor;
+    MockPairwiseFunctor<ParticleFP64> functor;
     if (newton3) {
-      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(
-          &functor, clusterSize);
+      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor> traversalNoN3(&functor, clusterSize,
+                                                                       autopas::DataLayoutOption::aos, false);
       verletLists.rebuildNeighborLists(&traversalNoN3);
       neighborsNoN3 = getClusterNeighbors(verletLists);
     } else {
-      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> traversalN3(&functor,
-                                                                                                           clusterSize);
+      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor> traversalN3(&functor, clusterSize,
+                                                                     autopas::DataLayoutOption::aos, true);
       verletLists.rebuildNeighborLists(&traversalN3);
       neighborsN3 = getClusterNeighbors(verletLists);
     }
@@ -276,26 +272,26 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
   const double skin{0.5};
   const size_t rebuildFreq{10};
   const size_t clusterSize{4};
-  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin / rebuildFreq, rebuildFreq,
-                                                    clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin / rebuildFreq, rebuildFreq,
+                                                        clusterSize);
   size_t numParticles{0};
   // lower corner of the inner box, thus in the first inner tower
-  const Particle p0{boxMin, {0., 0., 0.}, numParticles++};
+  const ParticleFP64 p0{boxMin, {0., 0., 0.}, numParticles++};
   verletLists.addParticle(p0);
   // just outside the lower corner, thus in the halo
-  const Particle p1{boxMin - 0.1, {0., 0., 0.}, numParticles++};
+  const ParticleFP64 p1{boxMin - 0.1, {0., 0., 0.}, numParticles++};
   verletLists.addHaloParticle(p1);
   // just inside the upper corner, thus in the last inner tower
-  const Particle p2{boxMax - 0.1, {0., 0., 0.}, numParticles++};
+  const ParticleFP64 p2{boxMax - 0.1, {0., 0., 0.}, numParticles++};
   verletLists.addParticle(p2);
   // just outside the upper corner, thus in the halo
-  const Particle p3{boxMax, {0., 0., 0.}, numParticles++};
+  const ParticleFP64 p3{boxMax, {0., 0., 0.}, numParticles++};
   verletLists.addHaloParticle(p3);
 
   // we need 256 to 500 Particles for a 5x5 grid of towers with side length 2
   // so we add as many as we are missing
   for (; numParticles < 257;) {
-    const Particle pDummy{(boxMax - boxMin) / 2., {0., 0., 0.}, numParticles++};
+    const ParticleFP64 pDummy{(boxMax - boxMin) / 2., {0., 0., 0.}, numParticles++};
     verletLists.addParticle(pDummy);
   }
 
@@ -320,27 +316,26 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
             expectedTowersPerDimTotal - expectedHaloWidthInTowers);
 }
 
-#if defined(AUTOPAS_OPENMP)
+#if defined(AUTOPAS_USE_OPENMP)
 TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace) {
   const std::array<double, 3> boxMin = {0, 0, 0};
   const std::array<double, 3> boxMax = {3, 3, 3};
   const double cutoff = 1.;
-  const double skinPerTimestep = 0.01;
+  const double skin = 0.1;
   const unsigned int rebuildFrequency = 10;
   const int numParticles = 5000;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                    clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, boxMin, boxMax,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, boxMin, boxMax,
+                                                                numParticles);
 
   CollectParticlesPerThreadFunctor functor;
   ColoringTraversalWithColorChangeNotify traversal(&functor, clusterSize,
                                                    [&functor](int currentColor) { functor.nextColor(currentColor); });
   functor.initTraversal();
   verletLists.rebuildNeighborLists(&traversal);
-  verletLists.iteratePairwise(&traversal);
+  verletLists.computeInteractions(&traversal);
   functor.endTraversal(true);
 
   // Check that particles in the same color are only accessed by one thread.
@@ -358,4 +353,4 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   }
 }
 
-#endif  // AUTOPAS_OPENMP
+#endif  // AUTOPAS_USE_OPENMP

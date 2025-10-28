@@ -313,7 +313,7 @@ int main() {
   sphSystem.setBoxMin(boxMin);
   sphSystem.setBoxMax(boxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
+  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   // In case you want to use another tuning strategy, you can do that using:
@@ -348,7 +348,7 @@ int main() {
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
   autopas::utils::Timer perlooptimer;
-  for (double time = 0.; time < t_end; time += dt, ++step, sphSystem.incrementIterationCounters()) {
+  for (double time = 0.; time < t_end; time += dt, ++step) {
     perlooptimer.start();
     std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift

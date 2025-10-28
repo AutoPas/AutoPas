@@ -16,11 +16,11 @@ namespace autopas {
 class LogicHandlerInfo {
  public:
   /**
-   * Lower corner of the container.
+   * Lower corner of the container without halo.
    */
   std::array<double, 3> boxMin{0., 0., 0.};
   /**
-   * Upper corner of the container.
+   * Upper corner of the container without halo.
    */
   std::array<double, 3> boxMax{0., 0., 0.};
   /**
@@ -30,7 +30,7 @@ class LogicHandlerInfo {
   /**
    * Length added to the cutoff for the Verlet lists' skin.
    */
-  double verletSkinPerTimestep{0.02};
+  double verletSkin{0.4};
   /**
    * Number of particles in a cluster to use in VCL.
    */

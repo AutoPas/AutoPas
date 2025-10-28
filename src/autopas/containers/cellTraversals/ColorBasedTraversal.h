@@ -12,6 +12,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -20,13 +21,10 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam Functor The functor that defines the interaction between particles.
- * @tparam dataLayout
- * @tparam useNewton3
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface<interactionType> {
+template <class ParticleCell, class Functor, int collapseDepth = 3>
+class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.
@@ -35,13 +33,17 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param dataLayout The data layout with which this traversal should be initialized.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit ColorBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                               const double interactionLength, const std::array<double, 3> &cellLength)
+                               const double interactionLength, const std::array<double, 3> &cellLength,
+                               DataLayoutOption dataLayout, bool useNewton3)
       : CellTraversal<ParticleCell>(dims),
+        TraversalInterface(dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
-        _dataLayoutConverter(functor) {
+        _dataLayoutConverter(functor, dataLayout) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     }
@@ -59,10 +61,8 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   void initTraversal() override {
     if (this->_cells) {
       auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
       /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.loadDataLayout(cells[i]);
       }
@@ -75,10 +75,8 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   void endTraversal() override {
     if (this->_cells) {
       auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
       /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.storeDataLayout(cells[i]);
       }
@@ -126,29 +124,20 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   /**
    * Data Layout Converter to be used with this traversal
    */
-  utils::DataLayoutConverter<Functor, dataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<Functor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth>
+template <class ParticleCell, class Functor, int collapseDepth>
 template <typename LoopBody>
-inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3,
-                                collapseDepth>::colorTraversal(LoopBody &&loopBody,
-                                                               const std::array<unsigned long, 3> &end,
-                                                               const std::array<unsigned long, 3> &stride,
-                                                               const std::array<unsigned long, 3> &offset) {
+inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTraversal(
+    LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
+    const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
 
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
+AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp single
-#endif
-      {
+      AUTOPAS_OPENMP(single) {
         // barrier at omp for of previous loop iteration, so fine to change it for everyone!
         notifyColorChange(col);
         // implicit barrier at end of function.
@@ -160,51 +149,29 @@ inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayo
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-     /* std::cout << "\ncolor " << col << "\nstart x y z : " << start_x << " " << start_y << " " << start_z << "\nend x y z : "
-          << end_x << " " << end_y << " " << end_z << std::endl;
-      std::cout << "stride x y z : " << stride_x << " " << stride_y << " " << stride_z << std::endl;*/
-      const auto bodies_x = (end_x - start_x) / stride_x;
-      const auto bodies_y = (end_y - start_y) / stride_y;
-      const auto bodies_z = (end_z - start_z) / stride_z;
-      //std::cout << "loopbodies x y z total : " << bodies_x << " " << bodies_y << " " << bodies_z << " " <<
-        //  bodies_x * bodies_y * bodies_z << std::endl;
-      auto counter1 = 0;
-      auto counter2 = 0;
       if (collapseDepth == 2) {
-
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(2)
-#endif
+        AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(2))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {
               // Don't exchange order of execution (x must be last!), it would break other code
               loopBody(x, y, z);
-              counter1++;
             }
           }
         }
       } else {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3)
-#endif
+        AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {
               // Don't exchange order of execution (x must be last!), it would break other code
               loopBody(x, y, z);
-              counter2++;
             }
           }
         }
       }
-      //
-      // std::cout << "loop 1 : " << counter1 << "   loop 2 : " << counter2 << std::endl;
-
     }
-
   }
 }
-
 
 }  // namespace autopas

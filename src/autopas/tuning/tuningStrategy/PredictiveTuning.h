@@ -60,14 +60,15 @@ class PredictiveTuning final : public TuningStrategyInterface {
                    unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption,
                    const std::string &outputSuffix = "");
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
+                           const EvidenceCollection &evidenceCollection) override;
 
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
@@ -106,6 +107,11 @@ class PredictiveTuning final : public TuningStrategyInterface {
                         const std::vector<Evidence> &evidenceVec);
 
   /**
+   * Uses the last traversal time as a prediction for the current iteration
+   */
+  long lastResult(size_t tuningPhase, const Configuration &configuration, const std::vector<Evidence> &evidenceVec);
+
+  /**
    * Error value used as a placeholder for the predictions of configurations that are not predicted.
    */
   constexpr static long _predictionErrorValue{std::numeric_limits<long>::max()};
@@ -116,7 +122,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
   constexpr static long _predictionOverflowValue{std::numeric_limits<long>::max() - 1};
 
   /**
-   * Placeholder value used when a prediction overflows.
+   * Placeholder value used when a prediction underflows.
    */
   constexpr static long _predictionUnderflowValue{1l};
 
@@ -127,6 +133,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
    * Line Prediction: Gradient and last evidence
    * Linear Regression: Gradient and iteration
    * Newton: Vector of coefficients
+   * Last Result: Last traversal time
    */
   std::unordered_map<Configuration, std::vector<double>, ConfigHash> _predictionFunctionParameters{};
   /**

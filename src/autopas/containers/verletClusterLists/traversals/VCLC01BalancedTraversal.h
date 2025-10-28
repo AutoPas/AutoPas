@@ -8,6 +8,7 @@
 
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -15,59 +16,54 @@ namespace autopas {
  * Traversal for VerletClusterLists. Does not support newton 3.
  *
  * It uses a static scheduling that gives each thread about the same amount of cluster pairs to handle.
- * @tparam ParticleCell
+ * @tparam Particle_T Particle Type.
  * @tparam PairwiseFunctor The type of the functor.
- * @tparam dataLayout The data layout to use.
- * @tparam useNewton3 If newton 3 should be used. Only false is supported.
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption::pairwise>,
-                                public VCLTraversalInterface<Particle> {
+template <class Particle_T, class PairwiseFunctor>
+class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalInterface<Particle_T> {
  public:
   /**
    * Constructor of the VCLC01BalancedTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
+   * @param dataLayout The data layout to use.
+   * @param useNewton3 If newton 3 should be used. Only false is supported.
    */
-  explicit VCLC01BalancedTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
-      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
+  explicit VCLC01BalancedTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
+                                   bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3),
+        _functor(pairwiseFunctor),
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c01_balanced; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa) and not useNewton3;
+    return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
   }
 
   void initTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
+    if (_dataLayout != DataLayoutOption::soa) return;
 
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<Particle_T>::_verletClusterLists;
     clusterList.loadParticlesIntoSoAs(_functor);
   }
 
   void endTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
+    if (_dataLayout != DataLayoutOption::soa) return;
 
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<Particle_T>::_verletClusterLists;
     clusterList.extractParticlesFromSoAs(_functor);
   }
 
-  void traverseParticlePairs() override {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+  void traverseParticles() override {
+    auto &clusterList = *VCLTraversalInterface<Particle_T>::_verletClusterLists;
     auto &clusterThreadPartition = clusterList.getClusterThreadPartition();
 
     auto numThreads = clusterThreadPartition.size();
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(numThreads)
-#endif
-    {
+    AUTOPAS_OPENMP(parallel num_threads(numThreads)) {
       auto threadNum = autopas_get_thread_num();
       const auto &clusterRange = clusterThreadPartition[threadNum];
-      auto &towers = *VCLTraversalInterface<Particle>::_towers;
+      auto &towers = *VCLTraversalInterface<Particle_T>::_towers;
       size_t clusterCount = 0;
       for (size_t towerIndex = clusterRange.startTowerIndex;
            clusterCount < clusterRange.numClusters and towerIndex < towers.size(); towerIndex++) {
@@ -75,8 +71,7 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
         auto startIndexInTower =
             clusterCount == 0 ? clusterRange.startIndexInTower : currentTower.getFirstOwnedClusterIndex();
         for (size_t clusterIndex = startIndexInTower;
-             clusterIndex < clusterRange.numClusters and clusterCount < clusterRange.numClusters and
-             clusterIndex < currentTower.getFirstTailHaloClusterIndex();
+             clusterCount < clusterRange.numClusters and clusterIndex < currentTower.getFirstTailHaloClusterIndex();
              clusterIndex++, clusterCount++) {
           const auto isHaloCluster = clusterIndex < currentTower.getFirstOwnedClusterIndex() or
                                      clusterIndex >= currentTower.getFirstTailHaloClusterIndex();
@@ -96,6 +91,6 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
 
  private:
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
+  internal::VCLClusterFunctor<Particle_T, PairwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas

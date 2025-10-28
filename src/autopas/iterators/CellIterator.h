@@ -11,7 +11,7 @@
 
 /**
  * Wraps the iterator of arbitrary cells to provide a common interface.
- * @note This class is necessary because some cells store `Particle` and others `Particle *`.
+ * @note This class is necessary because some cells store `Particle_T` and others `Particle_T *`.
  * @tparam StorageType Type of the cell, used to derive the particle type.
  * @tparam modifiable If false, this is a const iterator, meaning, the underlying particle can not be modified.
  */
@@ -80,7 +80,9 @@ class CellIterator {
    * Dereference operator.
    * @return Pointer to the current particle.
    */
-  inline ParticleType *operator->() const { return &operator*(); }
+  inline std::conditional_t<modifiable, ParticleType *, const ParticleType *> operator->() const {
+    return &operator*();
+  }
 
   /**
    * Increment the iterator.

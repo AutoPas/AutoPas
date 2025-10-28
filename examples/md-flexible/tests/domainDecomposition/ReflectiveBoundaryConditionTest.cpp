@@ -49,10 +49,11 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.subdivideDimension.value = {true, true, true};
   const double cutoff = 0.3;
   config.cutoff.value = cutoff;
-  config.verletSkinRadiusPerTimestep.value = 0.02;
+  config.verletSkinRadius.value = 0.2;
   config.verletRebuildFrequency.value = 10;
   const double sigma = 1.;
-  config.addSiteType(0, 1., sigma, 0.1, 1.);
+  config.addSiteType(0, 1.);
+  config.addLJParametersToSite(0, 1., sigma);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -64,11 +65,13 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
-  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
+  particlePropertiesLibrary->addSiteType(0, 1.);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1., sigma);
+
 #if MD_FLEXIBLE_MODE == MULTISITE
   // Correct Moment of Inertia is irrelevant to test, so accept that they are wrong
   particlePropertiesLibrary->addMolType(
@@ -317,10 +320,12 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   const std::array<double, 3> boxLength = boxMax - boxMin;
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
-  config.verletSkinRadiusPerTimestep.value = 0.01;
+  config.verletSkinRadius.value = 0.1;
   config.verletRebuildFrequency.value = 10;
-  config.addSiteType(0, 1., sigmas[0], 0.1, 1.);
-  config.addSiteType(1, 1., sigmas[1], 0.1, 1.);
+  config.addSiteType(0, 1.);
+  config.addLJParametersToSite(0, 1., sigmas[0]);
+  config.addSiteType(1, 1.);
+  config.addLJParametersToSite(1, 1., sigmas[1]);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -332,12 +337,15 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
-  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addSiteType(0, 1., sigmas[0], 1.);
-  particlePropertiesLibrary->addSiteType(1, 1., sigmas[1], 1.);
+  particlePropertiesLibrary->addSiteType(0, 1.);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1., sigmas[0]);
+  particlePropertiesLibrary->addSiteType(1, 1.);
+  particlePropertiesLibrary->addLJParametersToSite(1, 1., sigmas[1]);
+
 #if MD_FLEXIBLE_MODE == MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   particlePropertiesLibrary->addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});
@@ -468,11 +476,14 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
-  config.verletSkinRadiusPerTimestep.value = 0.01;
+  config.verletSkinRadius.value = 0.1;
   config.verletRebuildFrequency.value = 10;
-  config.addSiteType(0, 0.1, 0.2, 0.1, 1.);
-  config.addSiteType(1, 1000., 0.4, 0.1, 1.);
-  config.addSiteType(2, 0.0001, 0.4, 0.1, 1.);
+  config.addSiteType(0, 1.);
+  config.addLJParametersToSite(0, 0.1, 0.2);
+  config.addSiteType(1, 1.);
+  config.addLJParametersToSite(1, 1000, 0.4);
+  config.addSiteType(2, 1.);
+  config.addLJParametersToSite(2, 0.0001, 0.4);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -484,13 +495,16 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
-  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addSiteType(0, 1, 0.2, 1.);
-  particlePropertiesLibrary->addSiteType(1, 1000., 0.4, 1.);
-  particlePropertiesLibrary->addSiteType(2, 0.0001, 0.4, 1.);
+  particlePropertiesLibrary->addSiteType(0, 1.);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1, 0.2);
+  particlePropertiesLibrary->addSiteType(1, 1.);
+  particlePropertiesLibrary->addLJParametersToSite(1, 1000., 0.4);
+  particlePropertiesLibrary->addSiteType(2, 1.);
+  particlePropertiesLibrary->addLJParametersToSite(2, 0.0001, 0.4);
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   // Add molecules

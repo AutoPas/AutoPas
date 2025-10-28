@@ -14,6 +14,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -32,46 +33,46 @@ namespace autopas {
 
 // Forward declare Handler so that including this header does not include the whole library with all
 // containers and traversals.
-template <class Particle>
+template <class Particle_T>
 class LogicHandler;
 
 /**
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
- * @tparam Particle Class for particles
+ * @tparam Particle_T Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle>
+template <class Particle_T>
 class AutoPas {
  public:
   /**
    * Particle type to be accessible after initialization.
    */
-  using Particle_t = Particle;
+  using ParticleType = Particle_T;
 
   /**
    * Define the iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using IteratorT = autopas::ContainerIterator<Particle, true, false>;
+  using IteratorT = autopas::ContainerIterator<Particle_T, true, false>;
 
   /**
    * Define the const iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using ConstIteratorT = autopas::ContainerIterator<Particle, false, false>;
+  using ConstIteratorT = autopas::ContainerIterator<Particle_T, false, false>;
 
   /**
    * Define the region iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using RegionIteratorT = autopas::ContainerIterator<Particle, true, true>;
+  using RegionIteratorT = autopas::ContainerIterator<Particle_T, true, true>;
 
   /**
    * Define the const region iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using RegionConstIteratorT = autopas::ContainerIterator<Particle, false, true>;
+  using RegionConstIteratorT = autopas::ContainerIterator<Particle_T, false, true>;
 
   /**
    * Constructor for the autopas class.
@@ -104,7 +105,7 @@ class AutoPas {
    * @param boxMax
    * @return Vector of particles that are outside the box after the resize.
    */
-  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
+  std::vector<Particle_T> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
   /**
    * Force the internal tuner to enter a new tuning phase upon the next call to computeInteractions().
@@ -128,7 +129,7 @@ class AutoPas {
    * and returned.
    * @return A vector of invalid particles that do no longer belong in the current container.
    */
-  [[nodiscard]] std::vector<Particle> updateContainer();
+  [[nodiscard]] std::vector<Particle_T> updateContainer();
 
   /**
    * Reserve memory for a given number of particles in the container and logic layers.
@@ -136,7 +137,7 @@ class AutoPas {
    * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
    * called.
    * @note This functions will create an estimate for the number of halo particles.
-   * @param numParticles No buffer factor is applied. It is probably wise to slighly over-reserve to account for
+   * @param numParticles No buffer factor is applied. It is probably wise to slightly over-reserve to account for
    * imbalance or particle movement.
    */
   void reserve(size_t numParticles);
@@ -157,10 +158,10 @@ class AutoPas {
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
    * @note An exception is thrown if the particle is added and it is not inside of the owned domain (defined by
-   * boxmin and boxmax) of the container.
+   * boxMin and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addParticle(const Particle &p);
+  void addParticle(const Particle_T &p);
 
   /**
    * Adds all particles from the collection to the container.
@@ -177,7 +178,7 @@ class AutoPas {
    * @note This function uses reserve().
    * @note This function uses addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
-   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle_T &) -> bool.
    * @param particles Particles that are potentially added.
    * @param predicate Condition that determines if an individual particle should be added.
    */
@@ -187,11 +188,11 @@ class AutoPas {
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
-   * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin
-   * and boxmax) of the container.
+   * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxMin
+   * and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addHaloParticle(const Particle &haloParticle);
+  void addHaloParticle(const Particle_T &haloParticle);
 
   /**
    * Adds all halo particles from the collection to the container.
@@ -208,7 +209,7 @@ class AutoPas {
    * @note This function uses reserve().
    * @note This function uses addHaloParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
-   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle_T &) -> bool.
    * @param particles Particles that are potentially added.
    * @param predicate Condition that determines if an individual particle should be added.
    */
@@ -250,13 +251,13 @@ class AutoPas {
    *
    * @return True iff the reference still points to a valid particle.
    */
-  bool deleteParticle(Particle &particle);
+  bool deleteParticle(Particle_T &particle);
 
   /**
-   * Function to iterate over all particles in the container
+   * Function to iterate over all inter-particle interactions in the container
    * This function only handles short-range interactions.
-   * @param f Functor that describes the potential.
-   * @return true if this was a tuning iteration.
+   * @param f Functor that describes the interaction (e.g. force).
+   * @return true if this was a tuning iteraction.
    */
   template <class Functor>
   bool computeInteractions(Functor *f);
@@ -278,7 +279,7 @@ class AutoPas {
 
   /**
    * execute code on all particles in parallel as defined by a lambda function
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    * @note not actually parallel until kokkos integration
@@ -301,7 +302,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
@@ -321,7 +322,7 @@ class AutoPas {
 
   /**
    * Reduce properties of particles in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle p, A &initialValue) -> void
+   * @tparam Lambda (Particle_T p, A &initialValue) -> void
    * @tparam reference to result of type A
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -346,7 +347,7 @@ class AutoPas {
 
   /**
    * Reduce properties of particles as defined by a lambda function.
-   * @tparam Lambda (Particle p, A &initialValue) -> void
+   * @tparam Lambda (Particle_T p, A &initialValue) -> void
    * @tparam reference to result of type A
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -373,17 +374,22 @@ class AutoPas {
   ConstIteratorT cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
-   * Helper to enable range-based for loops for the AutoPas object.
-   * ParticleIterator::operator==() compares its own validity state against this value. Hence, as soon as the iterator
-   * is invalid the loop ends.
+   * Dummy to make range-based for loops work.
+   *
+   * Range-Based for loops use the incremented begin() expression and compare it against the end() expression.
+   * ContainerIterator implements ContainerIterator::operator==() that accepts a bool as right hand side argument,
+   * which is triggered by this end() function.
+   * This operator then proceeds to check the validity of the iterator itself.
+   *
    * @return false
    */
   [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
-   * iterate over all particles in a specified region
-   * for(auto iter = container.getRegionIterator(lowCorner,
-   * highCorner);iter.isValid();++iter)
+   * Iterate over all particles in a specified region
+   * ```c++
+   * for (auto iter = container.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) { }
+   * ```
    * @param lowerCorner lower corner of the region
    * @param higherCorner higher corner of the region
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
@@ -402,7 +408,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
@@ -435,7 +441,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
@@ -465,7 +471,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam Lambda (Particle_T &p, A &result) -> void
    * @tparam A type of reduction value
    * @param reduceLambda code to be executed on all particles
    * @param result reference to starting and final value of reduction
@@ -500,7 +506,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam Lambda (Particle_T &p, A &result) -> void
    * @tparam A type of reduction value
    * @param reduceLambda code to be executed on all particles
    * @param result reference to starting and final value of reduction
@@ -535,7 +541,7 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @return _verletSkin
    */
-  double getVerletSkin() { return _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency; };
+  double getVerletSkin() { return _logicHandlerInfo.verletSkin; };
 
   /**
    * Returns the number of particles in this container.
@@ -567,11 +573,6 @@ class AutoPas {
    * @return bool indicating if search space is trivial.
    */
   [[nodiscard]] bool searchSpaceIsTrivial();
-
-  /**
-   * Increments any iteration-based counters within AutoPas.
-   */
-  void incrementIterationCounters();
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -632,18 +633,10 @@ class AutoPas {
   }
 
   /**
-   * Get length added to the cutoff for the Verlet lists' skin per timestep.
-   * @return _verletSkinPerTimestep
-   */
-  [[nodiscard]] double getVerletSkinPerTimestep() const { return _logicHandlerInfo.verletSkinPerTimestep; }
-
-  /**
    * Set length added to the cutoff for the Verlet lists' skin per timestep.
-   * @param verletSkinPerTimestep
+   * @param verletSkin
    */
-  void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
-    _logicHandlerInfo.verletSkinPerTimestep = verletSkinPerTimestep;
-  }
+  void setVerletSkin(double verletSkin) { _logicHandlerInfo.verletSkin = verletSkin; }
 
   /**
    * Get Verlet rebuild frequency.
@@ -695,6 +688,25 @@ class AutoPas {
   void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
 
   /**
+   * Set the earlyStoppingFactor for the auto tuner. If a configuration seems to be slower than the optimum
+   * configuration found so far by more than this factor, it will not be sampled again during that tuning phase.
+   * @param earlyStoppingFactor
+   */
+  void setEarlyStoppingFactor(double earlyStoppingFactor) { _autoTunerInfo.earlyStoppingFactor = earlyStoppingFactor; }
+
+  /**
+   * Get flag for whether a LOESS-based smoothening is used.
+   * @return
+   */
+  [[nodiscard]] bool getUseLOESSSmoothening() const { return _autoTunerInfo.useLOESSSmoothening; }
+
+  /**
+   * Set flag for whether a LOESS-based smoothening is used.
+   * @param useLOESSSmoothening
+   */
+  void setUseLOESSSmoothening(bool useLOESSSmoothening) { _autoTunerInfo.useLOESSSmoothening = useLOESSSmoothening; }
+
+  /**
    * Get maximum number of evidence for tuning
    * @return
    */
@@ -721,7 +733,7 @@ class AutoPas {
   }
 
   /**
-   * Get the maximum number of tuning phases a configuration can not be tested.
+   * Get the maximum number of tuning phases before a configuration is certainly tested again.
    * @return
    */
   [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const {
@@ -729,8 +741,7 @@ class AutoPas {
   }
 
   /**
-   * For Predictive tuning: Set the relative cutoff for configurations to be blacklisted.
-   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
+   * Set the maximum number of tuning phases before a configuration is certainly tested again.
    * @param maxTuningPhasesWithoutTest
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
@@ -851,97 +862,94 @@ class AutoPas {
 
   /**
    * Get the list of allowed traversals.
+   * @param interactionType Get allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
-  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedTraversals.at(interactionType);
+  }
 
   /**
    * Set the list of allowed traversals.
    * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
+   * @param interactionType Set allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
-    _allowedTraversals = allowedTraversals;
+  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals,
+                            const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedTraversals[iType] = allowedTraversals;
+      }
+    } else {
+      _allowedTraversals[interactionType] = allowedTraversals;
+    }
   }
 
   /**
    * Get the list of allowed data layouts.
    * @return
+   * @param interactionType Get allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedDataLayouts.at(interactionType);
+  }
 
   /**
    * Set the list of allowed data layouts.
-   * For possible data layout choices see options::DataLayoutOption::Value.
+   * For possible data layouts choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
+   * @param interactionType Set allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
-    _allowedDataLayouts = allowedDataLayouts;
+  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedDataLayouts[iType] = allowedDataLayouts;
+      }
+    } else {
+      _allowedDataLayouts[interactionType] = allowedDataLayouts;
+    }
   }
 
   /**
    * Get the list of allowed newton 3 options.
+   * @param interactionType Get allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
-  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedNewton3Options.at(interactionType);
+  }
 
   /**
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
+   * @param interactionType Set allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
-  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
-    _allowedNewton3Options = allowedNewton3Options;
-  }
-
-  /**
-   * Get the list of allowed traversals.
-   * @return
-   */
-  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals3B() const { return _allowedTraversals3B; }
-
-  /**
-   * Set the list of allowed traversals.
-   * For possible traversals choices see options::TraversalOption::Value.
-   * @param allowedTraversals
-   */
-  void setAllowedTraversals3B(const std::set<TraversalOption> &allowedTraversals) {
-    _allowedTraversals3B = allowedTraversals;
-  }
-
-  /**
-   * Get the list of allowed data layouts.
-   * @return
-   */
-  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts3B() const { return _allowedDataLayouts3B; }
-
-  /**
-   * Set the list of allowed data layouts.
-   * For possible data layout choices see options::DataLayoutOption::Value.
-   * @param allowedDataLayouts
-   */
-  void setAllowedDataLayouts3B(const std::set<DataLayoutOption> &allowedDataLayouts) {
-    _allowedDataLayouts3B = allowedDataLayouts;
-  }
-
-  /**
-   * Get the list of allowed newton 3 options.
-   * @return
-   */
-  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options3B() const { return _allowedNewton3Options3B; }
-
-  /**
-   * Set the list of allowed newton 3 options.
-   * For possible newton 3 choices see options::Newton3Option::Value.
-   * @param allowedNewton3Options
-   */
-  void setAllowedNewton3Options3B(const std::set<Newton3Option> &allowedNewton3Options) {
-    _allowedNewton3Options3B = allowedNewton3Options;
+  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options,
+                                const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedNewton3Options[iType] = allowedNewton3Options;
+      }
+    } else {
+      _allowedNewton3Options[interactionType] = allowedNewton3Options;
+    }
   }
 
   /**
    * Set the list of allowed interaction types.
-   * AutoPas will initialize
+   * AutoPas will initialize AutoTuners for the allowed interaction types.
    * For possible newton 3 choices see options::interactionTypeOption::Value.
    * @param allowedInteractionTypeOptions
    */
@@ -951,13 +959,15 @@ class AutoPas {
 
   /**
    * Getter for the currently selected configuration.
-   * @return Configuration object currently used for <pairwise interactions, 3-body interactions>.
+   * @return Configuration objects currently used for respective interaction types.
    */
-  [[nodiscard]] std::set<Configuration> getCurrentConfig() const {
-    // TODO: Avoid copying
-    std::set<Configuration> currentConfigs;
-    for (auto &[type, tuner] : _autoTuners) {
-      currentConfigs.insert(tuner.getCurrentConfig());
+  [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
+  getCurrentConfigs() const {
+    std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
+    currentConfigs.reserve(_autoTuners.size());
+
+    for (const auto &[type, tuner] : _autoTuners) {
+      currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
   }
@@ -980,6 +990,12 @@ class AutoPas {
   }
 
   /**
+   * Getter for the tuning metric option.
+   * @return
+   */
+  [[nodiscard]] const TuningMetricOption &getTuningMetricOption() const { return _autoTunerInfo.tuningMetric; }
+
+  /**
    * Setter for the tuning metric option.
    * For possible tuning metric choices see options::TuningMetricOption::Value.
    * @param tuningMetricOption
@@ -989,7 +1005,21 @@ class AutoPas {
   }
 
   /**
-   * Setter for the maximal Difference for the bucket distribution
+   * Getter for the energy sensor
+   * @return
+   */
+  [[nodiscard]] const EnergySensorOption &getEnergySensorOption() const { return _autoTunerInfo.energySensor; }
+
+  /**
+   * Setter for the energy sensor
+   * @param energySensorOption
+   */
+  void setEnergySensorOption(EnergySensorOption energySensorOption) {
+    _autoTunerInfo.energySensor = energySensorOption;
+  }
+
+  /**
+   * Setter for the maximal Difference for the bucket distribution.
    * @param MPITuningMaxDifferenceForBucket
    */
   void setMPITuningMaxDifferenceForBucket(double MPITuningMaxDifferenceForBucket) {
@@ -997,7 +1027,7 @@ class AutoPas {
   }
 
   /**
-   * Setter for the maxDensity-Weight in calculation for bucket distribution
+   * Setter for the maxDensity-Weight in calculation for bucket distribution.
    * @param MPITuningWeightForMaxDensity
    */
   void setMPITuningWeightForMaxDensity(double MPITuningWeightForMaxDensity) {
@@ -1029,6 +1059,14 @@ class AutoPas {
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
   /**
+   * Getter for the mean rebuild frequency.
+   * Helpful for determining the frequency for the dynamic containers as well as for determining fast particles by
+   * computing skinPerStep for static container
+   * @return Value of the mean rebuild frequency as double
+   */
+  double getMeanRebuildFrequency() { return _logicHandler->getMeanRebuildFrequency(); }
+
+  /**
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
    * @param useTuningLogger
    */
@@ -1041,6 +1079,14 @@ class AutoPas {
   void setRuleFileName(const std::string &ruleFileName) { _tuningStrategyFactoryInfo.ruleFileName = ruleFileName; }
 
   /**
+   * Set fuzzy rule file name for the RuleBasedTuning.
+   * @param fuzzyRuleFileName The name of the fuzzy rule file to use during rule based tuning.
+   */
+  void setFuzzyRuleFileName(const std::string &fuzzyRuleFileName) {
+    _tuningStrategyFactoryInfo.fuzzyRuleFileName = fuzzyRuleFileName;
+  }
+
+  /**
    * Get the name / path of the rule file for the RuleBasedTuning.
    * @return
    */
@@ -1050,20 +1096,20 @@ class AutoPas {
    * Set the sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
   void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
 
   /**
-   * Get the sorting-threshold for traversals that use the CellFunctor
+   * Get the sorting-threshold for traversals that use the CellFunctor.
    * @return sorting-threshold
    */
   size_t getSortingThreshold() const { return _sortingThreshold; }
 
  private:
-  autopas::ParticleContainerInterface<Particle> &getContainer();
+  autopas::ParticleContainerInterface<Particle_T> &getContainer();
 
-  const autopas::ParticleContainerInterface<Particle> &getContainer() const;
+  const autopas::ParticleContainerInterface<Particle_T> &getContainer() const;
   /**
    * Information needed for TuningStrategyFactory::generateTuningStrategy().
    */
@@ -1081,9 +1127,10 @@ class AutoPas {
    */
   bool _useTuningStrategyLoggerProxy{false};
   /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild, if a rebuild is not triggered
+   * earlier by the dynamic rebuild mechanic.
    */
-  unsigned int _verletRebuildFrequency{20};
+  unsigned int _verletRebuildFrequency{100};
   /**
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
@@ -1098,30 +1145,22 @@ class AutoPas {
    * List of pairwise traversals AutoPas can choose from.
    * For possible traversal choices see options::TraversalOption::Value.
    */
-  std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
-  /**
-   * List of 3-body traversals AutoPas can choose from.
-   * For possible traversal choices see options::TraversalOption3B::Value.
-   */
-  std::set<TraversalOption> _allowedTraversals3B{TraversalOption::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<TraversalOption>> _allowedTraversals{
+      {InteractionTypeOption::pairwise, TraversalOption::getMostPairwiseOptions()},
+      {InteractionTypeOption::triwise, TraversalOption::getMostTriwiseOptions()}};
   /**
    * List of data layouts AutoPas can choose from for pairwise interactions.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
-  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getMostOptions()};
-  /**
-   * List of data layouts AutoPas can choose from for 3-body interactions.
-   * For possible data layout choices see options::DataLayoutOption::Value.
-   */
-  std::set<DataLayoutOption> _allowedDataLayouts3B{DataLayoutOption::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedDataLayouts{
+      {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
+      {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */
-  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
-  /**
-   * Whether AutoPas is allowed to exploit Newton's third law of motion for 3-body interactions.
-   */
-  std::set<Newton3Option> _allowedNewton3Options3B{Newton3Option::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<Newton3Option>> _allowedNewton3Options{
+      {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
+      {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.
@@ -1133,25 +1172,21 @@ class AutoPas {
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
   /**
-   * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and
+   * Load estimation algorithm to be used for efficient parallelization (only relevant for LCSlicedBalancedTraversal and
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
-
-  std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner &> _autoTuners;
+  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler;
 
   /**
-   * This is the AutoTuner for pairwise interactions.
+   * All AutoTuners used in this instance of AutoPas.
+   * There can be up to one per interaction type.
    */
-  std::unique_ptr<autopas::AutoTuner> _autoTuner;
-  /**
-   * This is the AutoTuner for 3-Body interactions.
-   */
-  std::unique_ptr<autopas::AutoTuner> _autoTuner3B;
+  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
+
   /**
    * Stores whether the mpi communicator was provided externally or not
    */

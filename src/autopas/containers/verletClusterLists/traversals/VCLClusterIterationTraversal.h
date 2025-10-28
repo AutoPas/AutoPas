@@ -16,49 +16,49 @@ namespace autopas {
  * Traversal for VerletClusterLists. Does not support newton 3.
  * @tparam ParticleCell
  * @tparam PairwiseFunctor The type of the functor.
- * @tparam dataLayout The data layout to use. Currently, only AoS is supported.
- * @tparam useNewton3 If newton 3 should be used. Currently, only false is supported.
+
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLClusterIterationTraversal : public TraversalInterface<InteractionTypeOption::pairwise>,
+template <class ParticleCell, class PairwiseFunctor>
+class VCLClusterIterationTraversal : public TraversalInterface,
                                      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
-  using Particle = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCell::ParticleType;
 
  public:
   /**
    * Constructor of the VCLClusterIterationTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
+   * @param dataLayout The data layout to use. Currently, only AoS is supported.
+   * @param useNewton3 If newton 3 should be used. Currently, only false is supported.
    */
-  explicit VCLClusterIterationTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
-      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
+  explicit VCLClusterIterationTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize,
+                                        DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3),
+        _functor(pairwiseFunctor),
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) and not useNewton3;
+    return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
   }
 
   void initTraversal() override {
-    if constexpr (dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
+    if (_dataLayout == DataLayoutOption::soa) {
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
   }
 
   void endTraversal() override {
-    if constexpr (dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
+    if (_dataLayout == DataLayoutOption::soa) {
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
   }
 
-  void traverseParticlePairs() override {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+  void traverseParticles() override {
+    auto &clusterList = *VCLTraversalInterface<ParticleType>::_verletClusterLists;
 
-    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
+    const auto _clusterTraverseFunctor = [this](internal::Cluster<ParticleType> &cluster) {
       _clusterFunctor.processCluster(cluster, false);
     };
 
@@ -67,6 +67,6 @@ class VCLClusterIterationTraversal : public TraversalInterface<InteractionTypeOp
 
  private:
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
+  internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas
