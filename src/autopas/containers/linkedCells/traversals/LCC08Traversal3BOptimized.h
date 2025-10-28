@@ -47,7 +47,7 @@ class LCC08Traversal3BOptimized : public C08BasedTraversal<ParticleCell, Functor
 
   void traverseParticles() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
   /**
    * C08 traversals are always usable.

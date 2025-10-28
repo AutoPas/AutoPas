@@ -18,7 +18,6 @@
 #include "autopas/containers/linkedCells/traversals/LCC04Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04Traversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08Traversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal3BOptimized.h"
 #include "autopas/containers/linkedCells/traversals/LCC18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
@@ -384,31 +383,32 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
           dataLayout, useNewton3);
       break;
     }
-    case TraversalOption::lc_c08_3b: {
-      return std::make_unique<LCC08Traversal3B<ParticleCell, TriwiseFunctor>>(
+    case TraversalOption::lc_c08: {
+      traversal = std::make_unique<LCC08Traversal<ParticleCell_T, TriwiseFunctor_T>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
+      break;
     }
-    case TraversalOption::lc_c08_3b_opt: {
-      return std::make_unique<LCC08Traversal3BOptimized<ParticleCell, TriwiseFunctor>>(
-          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-          dataLayout, useNewton3);
-    }
-    case TraversalOption::lc_c04_3b: {
-      return std::make_unique<LCC04Traversal3B<ParticleCell, TriwiseFunctor>>(
-          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-          dataLayout, useNewton3);
-    }
-    case TraversalOption::lc_sliced_3b: {
-      return std::make_unique<LCSlicedTraversal3B<ParticleCell, TriwiseFunctor>>(
-          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-          dataLayout, useNewton3);
-    }
-    case TraversalOption::lc_sliced_c02_3b: {
-      return std::make_unique<LCSlicedC02Traversal3B<ParticleCell, TriwiseFunctor>>(
-          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-          dataLayout, useNewton3);
-    }
+    // case TraversalOption::lc_c08_opt: {
+    //   return std::make_unique<LCC08Traversal3BOptimized<ParticleCell_T, TriwiseFunctor_T>>(
+    //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+    //       dataLayout, useNewton3);
+    // }
+    // case TraversalOption::lc_c04_3b: {
+    //   return std::make_unique<LCC04Traversal3B<ParticleCell_T, TriwiseFunctor_T>>(
+    //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+    //       dataLayout, useNewton3);
+    // }
+    // case TraversalOption::lc_sliced_3b: {
+    //   return std::make_unique<LCSlicedTraversal3B<ParticleCell_T, TriwiseFunctor_T>>(
+    //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+    //       dataLayout, useNewton3);
+    // }
+    // case TraversalOption::lc_sliced_c02_3b: {
+    //   return std::make_unique<LCSlicedC02Traversal3B<ParticleCell_T, TriwiseFunctor_T>>(
+    //       traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+    //       dataLayout, useNewton3);
+    // }
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
                                          traversalType.to_string());
