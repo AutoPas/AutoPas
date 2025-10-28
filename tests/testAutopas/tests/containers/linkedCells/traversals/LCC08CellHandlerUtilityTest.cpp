@@ -13,11 +13,12 @@ using testing::Pointwise;
 
 using autopas::LCC08CellHandlerUtility::C08OffsetMode;
 using autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08;
+using autopas::LCC08CellHandlerUtility::computeTriwiseCellOffsetsC08;
 
 /*
  * The given cell length and interaction length lead to an overlap of one.
  * Ergo, we have 2x2x2 cells and shall have 14 interaction pairs in total between the cells.
- * We test that the correct offset-distance are correct (details see below)
+ * We test that the correct offset-distances are correct (details see below)
  */
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
   constexpr double interactionLength{1.0};
@@ -34,19 +35,19 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
 
   const auto actualOffsetPairs =
       computePairwiseCellOffsetsC08<C08OffsetMode::noSorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
-  // Ensure the correct amount of interaction pairs
+  // Ensure the correct number of interaction pairs
   ASSERT_EQ(actualOffsetPairs.size(), 14);
 
   // Transform the offset pairs to offset differences and sort them in-order
-  // This way, the test is agnostic towards sorting order, offset-pair-order, the concret pairs
+  // This way, the test is agnostic towards sorting order, offset-pair-order, the concrete pairs
   // E.g. (0, 1) or (1, 0) would both valid. Here it is just tested as 1
-  // E.g. (0, 1) or (12, 13) would both be valid (if the pattern is applied everywhere the same, it'ls like applying
+  // E.g. (0, 1) or (12, 13) would both be valid (if the pattern is applied everywhere the same, it's like applying
   // the same interaction, but always shifted in y += 1). Here it is just tested as 1
-  std::vector<unsigned long> actualPairOffsetsDiffercnes =
+  std::vector<unsigned long> actualPairOffsetsDifferences =
       transformAndSortOffsetPairs<C08OffsetMode::noSorting>(actualOffsetPairs);
-  ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
+  ASSERT_THAT(actualPairOffsetsDifferences, Pointwise(Eq(), expectedPairOffsetDifferences));
 
-  // This test case is more senstive, it will fail in case the ordering of the output-pairs is wrong
+  // This test case is more sensitive, it will fail in case the ordering of the output-pairs is wrong
   // If this fails, your implementation is not necessarily wrong - but different
   ASSERT_THAT(actualOffsetPairs, Pointwise(Eq(), expectedPairOffsets));
 }
@@ -73,7 +74,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1_Sort
 
   const auto actualOffsetTriplets =
       computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
-  // Ensure the correct amount of interaction pairs
+  // Ensure the correct number of interaction pairs
   ASSERT_EQ(actualOffsetTriplets.size(), 14);
 
   std::vector<std::array<double, 3>> actualSortingVectors{};
@@ -100,13 +101,13 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2) {
 
   const auto actualOffsetPairs =
       computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
-  // Ensure the correct amount of interaction pairs
+  // Ensure the correct number of interaction pairs
   ASSERT_EQ(actualOffsetPairs.size(), 63);
 
-  // Flatten to offset differences (explaination, see ComputePairwiseCellOffsetsC08Test_1x1x1 test case)
-  std::vector<unsigned long> actualPairOffsetsDiffercnes =
+  // Flatten to offset differences (explanation, see ComputePairwiseCellOffsetsC08Test_1x1x1 test case)
+  std::vector<unsigned long> actualPairOffsetsDifferences =
       transformAndSortOffsetPairs<C08OffsetMode::sorting>(actualOffsetPairs);
-  ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
+  ASSERT_THAT(actualPairOffsetsDifferences, Pointwise(Eq(), expectedPairOffsetDifferences));
 }
 
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2_Sorting) {
@@ -180,7 +181,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2_Sort
 
   const auto actualOffsetTriplets =
       computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
-  // Ensure the correct amount of interaction pairs
+  // Ensure the correct number of interaction pairs
   ASSERT_EQ(actualOffsetTriplets.size(), 63);
 
   std::vector<std::array<double, 3>> actualSortingVectors{};
@@ -212,11 +213,60 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_3x3x3) {
 
   const auto actualOffsetPairs =
       computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
-  // Ensure the correct amount of interaction pairs
+  // Ensure the correct number of interaction pairs
   EXPECT_EQ(actualOffsetPairs.size(), 168);
 
-  // Flatten to offset differences (explaination, see ComputePairwiseCellOffsetsC08Test_1x1x1 test case)
-  std::vector<unsigned long> actualPairOffsetsDiffercnes =
+  // Flatten to offset differences (explanation, see ComputePairwiseCellOffsetsC08Test_1x1x1 test case)
+  std::vector<unsigned long> actualPairOffsetsDifferences =
       transformAndSortOffsetPairs<C08OffsetMode::sorting>(actualOffsetPairs);
-  ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
+  ASSERT_THAT(actualPairOffsetsDifferences, Pointwise(Eq(), expectedPairOffsetDifferences));
+}
+
+////// Triwise Tests //////
+
+/*
+ * The given cell length and interaction length lead to an overlap of one.
+ * Ergo, we have 2x2x2 cells and shall have 58 interaction triplets in total between the cells.
+ */
+TEST_F(LCC08CellHandlerUtilityTest, ComputeTriwiseCellOffsetsC08Test_1x1x1) {
+  constexpr double interactionLength{1.0};
+  // Calculated by hand
+  std::array<std::tuple<unsigned long, unsigned long, unsigned long>, 58> expectedTripletOffsets{
+      // 1 single cell triplet
+      std::make_tuple(0, 0, 0),
+      // 13 pair cell triplets
+      std::make_tuple(0, 0, 1), std::make_tuple(0, 0, 12), std::make_tuple(0, 0, 13), std::make_tuple(0, 0, 144),
+      std::make_tuple(0, 0, 145), std::make_tuple(0, 0, 156), std::make_tuple(0, 0, 157), std::make_tuple(1, 1, 12),
+      std::make_tuple(1, 1, 144), std::make_tuple(1, 1, 156), std::make_tuple(12, 12, 144),
+      std::make_tuple(12, 12, 145), std::make_tuple(13, 13, 144),
+      // 21 cell triplets incl. base cell
+      std::make_tuple(0, 1, 12), std::make_tuple(0, 1, 13), std::make_tuple(0, 1, 144), std::make_tuple(0, 1, 145),
+      std::make_tuple(0, 1, 156), std::make_tuple(0, 1, 157), std::make_tuple(0, 12, 13), std::make_tuple(0, 12, 144),
+      std::make_tuple(0, 12, 145), std::make_tuple(0, 12, 156), std::make_tuple(0, 12, 157),
+      std::make_tuple(0, 13, 144), std::make_tuple(0, 13, 145), std::make_tuple(0, 13, 156),
+      std::make_tuple(0, 13, 157), std::make_tuple(0, 144, 145), std::make_tuple(0, 144, 156),
+      std::make_tuple(0, 144, 157), std::make_tuple(0, 145, 156), std::make_tuple(0, 145, 157),
+      std::make_tuple(0, 156, 157),
+      // 12 cell triplets incl. base 1
+      std::make_tuple(1, 12, 13), std::make_tuple(1, 12, 144), std::make_tuple(1, 12, 145), std::make_tuple(1, 12, 156),
+      std::make_tuple(1, 12, 157), std::make_tuple(1, 13, 144), std::make_tuple(1, 13, 156),
+      std::make_tuple(1, 144, 145), std::make_tuple(1, 144, 156), std::make_tuple(1, 144, 157),
+      std::make_tuple(1, 145, 156), std::make_tuple(1, 156, 157),
+      // 6 cell triplets incl. cell 12
+      std::make_tuple(12, 13, 144), std::make_tuple(12, 13, 145), std::make_tuple(12, 144, 145),
+      std::make_tuple(12, 144, 156), std::make_tuple(12, 144, 157), std::make_tuple(12, 145, 156),
+      std::make_tuple(12, 145, 157),
+      // 4 cell triplets incl. cell 13
+      std::make_tuple(13, 144, 145), std::make_tuple(13, 144, 156), std::make_tuple(13, 144, 157),
+      std::make_tuple(13, 145, 156)};
+  std::ranges::sort(expectedTripletOffsets);
+
+  const auto actualOffsetTriplets =
+      computeTriwiseCellOffsetsC08<C08OffsetMode::noSorting>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  // Ensure the correct number of interaction triplets
+  ASSERT_EQ(actualOffsetTriplets.size(), expectedTripletOffsets.size());
+
+  // Sort the cell-offset triplets and check if they match the expected triplets
+  auto sortedTripletOffsets = sortOffsetTriplets<C08OffsetMode::noSorting>(actualOffsetTriplets);
+  ASSERT_THAT(sortedTripletOffsets, Pointwise(Eq(), expectedTripletOffsets));
 }
