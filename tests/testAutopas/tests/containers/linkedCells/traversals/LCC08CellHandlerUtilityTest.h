@@ -93,4 +93,6 @@ class LCC08CellHandlerUtilityTest : public AutoPasTestBase {
     std::ranges::sort(sortedTripletOffsets);
     return sortedTripletOffsets;
   }
+
+  static std::vector<std::tuple<long, long, long>> generateC18Triplets(long overlap, double interactionLength);
 };

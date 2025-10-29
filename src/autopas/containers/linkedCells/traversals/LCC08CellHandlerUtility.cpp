@@ -195,7 +195,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
               // check distance between cell 1 and cell 2
               const auto dist12 = cellDistance(x1, y1, z1, x2, y2, z2);
               const double dist12Square = utils::ArrayMath::dot(dist12, dist12);
-              if (dist12Square > interactionLengthSquare) continue;
+              if (dist12Square >= interactionLengthSquare) continue;
 
               // offsets for the third cell
               for (long x3 = 0; x3 <= static_cast<long>(overlap[0]); ++x3) {
@@ -204,12 +204,12 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
                     // check distance between cell 1 and cell 3
                     const auto dist13 = cellDistance(x1, y1, z1, x3, y3, z3);
                     const double dist13Square = utils::ArrayMath::dot(dist13, dist13);
-                    if (dist13Square > interactionLengthSquare) continue;
+                    if (dist13Square >= interactionLengthSquare) continue;
 
                     // check distance between cell 2 and cell 3
                     const auto dist23 = cellDistance(x2, y2, z2, x3, y3, z3);
                     const double dist23Squared = utils::ArrayMath::dot(dist23, dist23);
-                    if (dist23Squared > interactionLengthSquare) continue;
+                    if (dist23Squared >= interactionLengthSquare) continue;
                     const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
                         x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
 
