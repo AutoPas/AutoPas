@@ -21,6 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleBinStructure.h"
+#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -191,6 +192,10 @@ class LiveInfo {
     using namespace utils::ArrayMath::literals;
     using utils::ArrayMath::ceilAndCast;
 
+    // Timer for debugging
+    utils::Timer timerGatherLiveInfo;
+    timerGatherLiveInfo.start();
+
     // Aliases and info of particle distribution independent information
     const auto interactionLength = cutoff + skin;
 
@@ -273,6 +278,9 @@ class LiveInfo {
     infos["meanParticlesPerBlurredBin"] = blurredBinStruct.getMeanParticlesPerBin();
     infos["relativeParticlesPerBlurredBinStdDev"] = blurredBinStruct.getRelStdDevParticlesPerBin();
     infos["particlesPerBlurredBinStdDev"] = blurredBinStruct.getStdDevParticlesPerBin();
+
+    timerGatherLiveInfo.stop();
+    AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
   }
 
   /**

@@ -34,15 +34,15 @@ class Newton3OnOffTest
   static double getCutoff() { return 1.0; }
   static double getCellSizeFactor() { return 1.0; }
   static double getVerletSkin() { return 0.0; }
-  static unsigned int getRebuildFrequency() { return 20; }
   static int getClusterSize() { return 4; }
+  static int getSortingThreshold() { return 8; }
 
   template <typename FunctorType>
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-                         autopas::DataLayoutOption dataLayout, autopas::InteractionTypeOption interationType);
+                         autopas::DataLayoutOption dataLayout);
 
   template <class Container, class Traversal>
-  void iterate(Container &container, Traversal traversal, autopas::InteractionTypeOption interactionType);
+  void iterate(Container &container, Traversal traversal);
 
   /**
    * Determines how often the functor is called for single cells and pairs of cells und run additional checks.
