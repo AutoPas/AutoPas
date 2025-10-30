@@ -13,6 +13,7 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
+#include "autopas/containers/kokkos/verletClusterLists/traversals/KokkosVCLTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -297,6 +298,13 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
       return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor>>(
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
     }
+
+    // Kokkos VerletCluster
+    case TraversalOption::kk_vcl: {
+      using ParticleType = typename ParticleCell::ParticleType;
+      return std::make_unique<containers::kokkos::traversal::KokkosVCLTraversal<ParticleType, PairwiseFunctor>>>(&pairwiseFunctor, dataLayout, useNewton3);
+    }
+
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
                                                   traversalType.to_string());

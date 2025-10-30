@@ -68,6 +68,11 @@ class ContainerOption : public Option<ContainerOption> {
      * distributed since it is space adaptive
      */
     octree,
+
+    /**
+     *  Verlet Cluster lists on GPU with Kokkos
+     */
+    kokkosVerletClusterLists,
   };
 
   /**
@@ -110,6 +115,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
         {ContainerOption::octree, "Octree"},
+        {ContainerOption::kokkosVerletClusterLists, "KokkosVerletClusterLists"},
     };
   };
 

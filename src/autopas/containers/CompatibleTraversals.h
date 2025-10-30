@@ -136,6 +136,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all traversal options applicable for the Kokkos container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allKokkosVCLCompatibleTraversals() {
+  static const auto s = filterAllOptions("kk_", InteractionTypeOption::pairwise);
+  return s;
+}
+
+/**
  * Provides a set of all traversals that only support Newton3 mode disabled.
  * @return
  */
@@ -171,6 +180,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   return {
       TraversalOption::lc_c01_combined_SoA,
       TraversalOption::lc_c04_combined_SoA,
+      // GPU traversals generally only efficient with SoA style
+      TraversalOption::kk_vcl,
   };
 };
 
@@ -212,6 +223,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::octree: {
           return allOTCompatibleTraversals();
+        }
+        case ContainerOption::kokkosVerletClusterLists: {
+          return allKokkosVCLCompatibleTraversals();
         }
       }
     }

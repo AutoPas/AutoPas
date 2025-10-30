@@ -11,6 +11,7 @@
 
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/kokkos/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -24,7 +25,7 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StringUtils.h"
-
+#include "autopas/utils/kokkos/KokkosSpace.h"
 namespace autopas {
 
 /**
@@ -98,6 +99,7 @@ class ContainerSelector {
 template <class Particle_T>
 std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelector<Particle_T>::generateContainer(
     ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
+  // TODO shouldn't this be a shared ptr because traversals are taking references to this?
   std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
     case ContainerOption::directSum: {
@@ -153,6 +155,11 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
       container =
           std::make_unique<Octree<Particle_T>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                containerInfo.verletRebuildFrequency, containerInfo.cellSizeFactor);
+      break;
+    }
+    case ContainerOption::kokkosVerletClusterLists: {
+      container = std::make_unique<KokkosVerletClusterLists<utils::kokkos::HostSpace, Kokkos::LayoutLeft, Particle_T>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency);
       break;
     }
     default: {
