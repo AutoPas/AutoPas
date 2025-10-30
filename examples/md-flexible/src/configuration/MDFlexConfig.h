@@ -164,7 +164,7 @@ class MDFlexConfig {
   void addLJParametersToSite(unsigned long siteId, double epsilon, double sigma);
 
   /**
-   * Adds the Axilrod-Teller parameter nu to the specified site.
+   * Adds the Axilrod-Teller-Muto parameter nu to the specified site.
    * Checks if the given site exists and if the parameter was already specified.
    *
    * @param siteId unique site type id
@@ -521,7 +521,8 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true,
+      "Triwise force functor to use. Possible Values: (axilrod-teller-muto)"};
   /**
    * iterations
    */

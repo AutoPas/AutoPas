@@ -10,7 +10,7 @@
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -87,7 +87,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  mdLib::AxilrodTellerFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
+  mdLib::AxilrodTellerMutoFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
       logicHandlerInfo.cutoff);
   constexpr double nu = 1.;
   functor.setParticleProperties(nu);
@@ -474,7 +474,7 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
 
   logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);
 
-  mdLib::AxilrodTellerFunctor<Molecule> functor(logicHandlerInfo.cutoff);
+  mdLib::AxilrodTellerMutoFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(1.);
   // do the actual test
   logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::triwise);
