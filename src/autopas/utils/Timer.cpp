@@ -16,7 +16,7 @@ autopas::utils::Timer::~Timer() = default;
 
 void autopas::utils::Timer::start() {
   if (_currentlyRunning) {
-    autopas::utils::ExceptionHandler::exception("Trying to start a timer that is already started!");
+    ExceptionHandler::exception("Trying to start a timer that is already started!");
   }
   _currentlyRunning = true;
   _startTime = high_resolution_clock::now();
@@ -26,7 +26,7 @@ long autopas::utils::Timer::stop() {
   const auto time(high_resolution_clock::now());
 
   if (not _currentlyRunning) {
-    autopas::utils::ExceptionHandler::exception("Trying to stop a timer that was not started!");
+    ExceptionHandler::exception("Trying to stop a timer that was not started!");
   }
   _currentlyRunning = false;
 
@@ -34,9 +34,17 @@ long autopas::utils::Timer::stop() {
 
   _totalTime += diff;
 
-  return diff;
+  return _lapTime;
 }
 
-void autopas::utils::Timer::reset() { _totalTime = 0; }
+void autopas::utils::Timer::reset() {
+  _totalTime = 0;
+  _lapTime = 0;
+}
 
-void autopas::utils::Timer::addTime(long nanoseconds) { _totalTime += nanoseconds; }
+void autopas::utils::Timer::resetLap() { _lapTime = 0; }
+
+void autopas::utils::Timer::addTime(long nanoseconds) {
+  _totalTime += nanoseconds;
+  _lapTime += nanoseconds;
+}

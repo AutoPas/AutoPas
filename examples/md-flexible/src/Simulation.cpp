@@ -40,6 +40,8 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
+#include "options/ComputationLoadOption.h"
+
 
 namespace {
 /**
@@ -220,24 +222,32 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    _timers.computationalLoad.start();
+    // If we are within loadBalancingTrackingIterations of load balancing, reset the lap-timers of everything relevant
+    // for load balancing
+    if (_iteration % _configuration.loadBalancingInterval.value
+      > _configuration.loadBalancingInterval.value - _configuration.computationalLoadMeasurementPeriod.value) {
+      _timers.nonBoundaryCalculations.resetLap();
+      _timers.haloParticleExchange.resetLap();
+      _timers.migratingParticleExchange.resetLap();
+      _timers.reflectParticlesAtBoundaries.resetLap();
+      _timers.forceUpdateTotal.resetLap();
+      _timers.updateContainer.resetLap();
+    }
+
+    _timers.nonBoundaryCalculations.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
-    }
 
-    // We update the container, even if dt=0, to bump the iteration counter, which is needed to ensure containers can
-    // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
-    // iteration counter which can be used to uniquely identify functor calls.
-    _timers.updateContainer.start();
-    auto emigrants = _autoPasContainer->updateContainer();
-    _timers.updateContainer.stop();
+      _timers.updateContainer.start();
+      auto emigrants = _autoPasContainer->updateContainer();
+      _timers.updateContainer.stop();
+      _timers.nonBoundaryCalculations.stop();
 
-    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
-
+      // Get the computation load based on selected option.
+      const auto computationalLoad = getComputationalLoad();
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
@@ -279,7 +289,7 @@ void Simulation::run() {
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
-      _timers.computationalLoad.start();
+      _timers.nonBoundaryCalculations.start();
     }
 
     updateInteractionForces();
@@ -296,7 +306,7 @@ void Simulation::run() {
 #endif
       updateThermostat();
     }
-    _timers.computationalLoad.stop();
+    _timers.nonBoundaryCalculations.stop();
 
     if (not _simulationIsPaused) {
       ++_iteration;
@@ -515,6 +525,50 @@ void Simulation::updateThermostat() {
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
   }
+}
+
+double Simulation::getComputationalLoad() const {
+  double computationalLoad;
+  // Default to particle count if zeroth iteration (where timer-based metrics do not have values yet)
+  if (_iteration == 0 or _configuration.computationLoadMetric.value == ComputationLoadOption::particleCount) {
+    // For particle count, use the raw count directly. If the count is zero, then we use a particleCount of 1 to
+    // prevent division by zero errors.
+    computationalLoad = std::max(static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned)), 1.0);
+  } else {
+    switch (_configuration.computationLoadMetric.value) {
+      case ComputationLoadOption::completeCycle:
+        computationalLoad = static_cast<double>(
+            _timers.nonBoundaryCalculations.getLapTime() + _timers.haloParticleExchange.getLapTime() +
+            _timers.migratingParticleExchange.getLapTime() + _timers.reflectParticlesAtBoundaries.getLapTime());
+        break;
+      case ComputationLoadOption::nonBoundaryCalculations:
+        computationalLoad = static_cast<double>(_timers.nonBoundaryCalculations.getLapTime());
+        break;
+      case ComputationLoadOption::forceUpdate:
+        computationalLoad = static_cast<double>(_timers.forceUpdateTotal.getLapTime() + _timers.updateContainer.getLapTime());
+        break;
+      case ComputationLoadOption::MPICommunication:
+        computationalLoad = static_cast<double>(_timers.haloParticleExchange.getLapTime() +
+                                        _timers.migratingParticleExchange.getLapTime());
+        break;
+      default:
+        // Default to complete cycle if unknown option
+        std::cout << "WARNING: Unknown computation load option, defaulting to particle count." << std::endl;
+        computationalLoad = std::max(static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned)), 1.0);
+        break;
+    }
+  }
+
+  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    std::cout << "Computational load on rank " << _domainDecomposition->getDomainIndex() << ": " << computationalLoad
+              << std::endl;
+  }
+
+  if (computationalLoad == 0.) {
+    std::cout << "WARNING: Computational load is zero. Load balancing may break" << std::endl;
+  }
+
+  return computationalLoad;
 }
 
 long Simulation::accumulateTime(const long &time) {
