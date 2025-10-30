@@ -173,6 +173,16 @@ class MDFlexConfig {
   void addATParametersToSite(unsigned long siteId, double nu);
 
   /**
+   * Adds the DEM parameters to the specified site.
+   * Checks if the given site exists and if the parameters were already specified.
+   *
+   * @param siteId unique site type id
+   * @param radius
+   * @param specificHeat
+   */
+  void addDEMParametersToSite(unsigned long siteId, double radius, double specificHeat);
+
+  /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
    *
    * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
@@ -204,7 +214,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, dem };
 
   /**
    * Choice of the Triwise functor
@@ -642,6 +652,19 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+
+  /**
+   * radiusMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> radiusMap{
+      {{0ul, 1.}}, "radius", true, "Mapping from site type to a radius value."};
+
+  /**
+   * specificHeatMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> specificHeatMap{
+      {{0ul, 1.}}, "specific-heat", true, "Mapping from site type to a specific heat value."};
+
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**
@@ -789,6 +812,97 @@ class MDFlexConfig {
       "globalForce",
       true,
       "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
+
+  /**
+   * Following options are DEM (Discrete Element Method) specific parameters.
+   *
+   * For detailed explanation of the parameters see: https://mediatum.ub.tum.de/doc/1773224/1773224.pdf
+   */
+
+  /**
+   * DEM-parameter for elastic stiffness.
+   */
+  MDFlexOption<double, __LINE__> demElasticStiffness{100., "demElasticStiffness", true,
+                                                     "DEM-parameter for elastic stiffness used in normal force model."};
+
+  /**
+   * DEM-parameter for normal viscosity.
+   */
+  MDFlexOption<double, __LINE__> demNormalViscosity{1e-3, "demNormalViscosity", true,
+                                                    "DEM-parameter for normal viscosity used in normal force model."};
+
+  /**
+   * DEM-parameter for friction viscosity.
+   */
+  MDFlexOption<double, __LINE__> demFrictionViscosity{
+      0.1, "demFrictionViscosity", true, "DEM-parameter for friction viscosity used in frictional force model."};
+
+  /**
+   * DEM-parameter for rolling viscosity.
+   */
+  MDFlexOption<double, __LINE__> demRollingViscosity{
+      0.01, "demRollingViscosity", true, "DEM-parameter for rolling viscosity used in rolling resistance model."};
+
+  /**
+   * DEM-parameter for torsion viscosity.
+   */
+  MDFlexOption<double, __LINE__> demTorsionViscosity{
+      0.01, "demTorsionViscosity", true, "DEM-parameter for torsion viscosity used in torsion resistance model."};
+
+  /**
+   * DEM-parameter for static friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demStaticFrictionCoeff{
+      7.5, "demStaticFrictionCoeff", true,
+      "DEM-parameter for static friction coefficient used in frictional force model."};
+
+  /**
+   * DEM-parameter for dynamic friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demDynamicFrictionCoeff{
+      5, "demDynamicFrictionCoeff", true,
+      "DEM-parameter for dynamic friction coefficient used in frictional force model."};
+
+  /**
+   * DEM-parameter for rolling friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demRollingFrictionCoeff{
+      5, "demRollingFrictionCoeff", true,
+      "DEM-parameter for rolling friction coefficient used in rolling resistance model."};
+
+  /**
+   * DEM-parameter for torsion friction coefficient.
+   */
+  MDFlexOption<double, __LINE__> demTorsionFrictionCoeff{
+      5, "demTorsionFrictionCoeff", true,
+      "DEM-parameter for torsion friction coefficient used in torsion resistance model."};
+
+  /**
+   * DEM-parameter for heat conductivity.
+   */
+  MDFlexOption<double, __LINE__> demHeatConductivity{
+      1, "demHeatConductivity", true, "DEM-parameter for heat conductivity used in heat transfer model."};
+
+  /**
+   * DEM-parameter for heat generation factor.
+   */
+  MDFlexOption<double, __LINE__> demHeatGenerationFactor{
+      0.1, "demHeatGenerationFactor", true,
+      "DEM-parameter for heat generation factor used in heat generation model (drawn from frictional forces)."};
+
+  /**
+   * DEM-parameter for background force friction coefficient regarding forces.
+   */
+  MDFlexOption<double, __LINE__> demBackgroundForceFrictionCoeff{
+      0.01, "demBackgroundForceFrictionCoeff", true,
+      "DEM-parameter for background friction regarding forces used in background friction model."};
+
+  /**
+   * DEM-parameter for background torque friction coefficient regarding forces.
+   */
+  MDFlexOption<double, __LINE__> demBackgroundTorqueFrictionCoeff{
+      0.01, "demBackgroundTorqueFrictionCoeff", true,
+      "DEM-parameter for background friction regarding torques used in background friction model."};
 
   /**
    * Convenience function testing if the global force contains only 0 entries.

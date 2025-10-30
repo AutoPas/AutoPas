@@ -312,6 +312,13 @@ class Simulation {
   void updateAngularVelocities();
 
   /**
+   * Updates the temperatures of the particles in the local AutoPas container.
+   *
+   * This method is used for DEM simulations.
+   */
+  void updateTemperatures();
+
+  /**
    * Updates the thermostat of for the local domain.
    * @todo The thermostat should act globally and therefore needs to be communicated to all processes.
    */
@@ -363,6 +370,18 @@ class Simulation {
    * @param globalForce The global force which will be applied to each particle in the container.
    */
   void calculateGlobalForces(const std::array<double, 3> &globalForce);
+
+  /**
+   * Adds background friction to the particles in the container.
+   *
+   * This method is used for DEM simulations.
+   *
+   * @param backgroundForceFrictionCoeff Damping coefficient for the forces.
+   * @param backgroundTorqueFrictionCoeff Damping coefficient for the torques.
+   * @param particlePropertiesLib
+   */
+  void applyBackgroundFriction(const double backgroundForceFrictionCoeff, const double backgroundTorqueFrictionCoeff,
+                               ParticlePropertiesLibraryType &particlePropertiesLib);
 
   /**
    * Indicates if enough iterations were completed yet.

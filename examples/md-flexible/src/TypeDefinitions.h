@@ -34,6 +34,12 @@
 #include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+#include "demLibrary/DEMFunctor.h"
+#include "demLibrary/DEMParameters.h"
+#include "demLibrary/GranularDEMParticle.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -50,6 +56,8 @@ using FloatPrecision = double;
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+using ParticleType = demLib::GranularDEMParticle;
 #else
 using ParticleType = mdLib::MoleculeLJ;
 #endif
@@ -133,6 +141,20 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #else
 using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#endif
+
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+/**
+ * Type of DEMFunctor used in md-flexible.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "The DEM functor des not have support for multisite molecules!"
+#else
+using DEMFunctorType =
+    demLib::DEMFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
+
 #endif
 
 #endif

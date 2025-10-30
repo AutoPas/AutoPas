@@ -73,6 +73,10 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  *
  * @note Throws error if md-flexible is compiled without multi-site support.
  *
+ * @note if MD_FLEXIBLE_FUNCTOR_DEM is defined, compute changes of angular velocities using the first-order Euler
+ * method: w_{n+1} = w_n + delta_t * (q_n / (0.4 * mass * radius^2)) For details, refer to thesis
+ * (https://mediatum.ub.tum.de/doc/1773224/1773224.pdf)
+ *
  * @param autoPasContainer
  * @param particlePropertiesLibrary
  * @param deltaT
@@ -80,4 +84,29 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
+/**
+ * Calculate and update the temperature for every particle using the first-order euler method.
+ *
+ * Specifically: T_{n+1} = T_n + delta_t * (Q_n / (mass * specificHeat))
+ *
+ * @param autoPasContainer
+ * @param particlePropertiesLibrary
+ * @param deltaT
+ */
+void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
+                           const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+
+/**
+ * Set torques of all particles to zero.
+ *
+ * @param autoPasContainer
+ */
+void setTorquesToZero(autopas::AutoPas<ParticleType> &autoPasContainer);
+
+/**
+ * Set heat fluxes of all particles to zero.
+ *
+ * @param autoPasContainer
+ */
+void setHeatFluxesToZero(autopas::AutoPas<ParticleType> &autoPasContainer);
 }  // namespace TimeDiscretization
