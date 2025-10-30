@@ -12,8 +12,12 @@
 #include <tuple>
 
 #include "autopas/options/TuningMetricOption.h"
+#include "autopas/options/TuningTriggerOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/triggers/StaticSimpleTrigger.h"
+#include "autopas/tuning/triggers/TuningTriggerFactory.h"
+#include "autopas/tuning/triggers/TuningTriggerInterface.h"
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
@@ -48,6 +52,10 @@ class AutoTuner {
    * Type for the search space holding all possible configurations.
    */
   using SearchSpaceType = std::set<Configuration>;
+  /**
+   * Type for the trigger strategy used in dynamic tuning interval estimation.
+   */
+  using TuningTriggerType = std::unique_ptr<TuningTriggerInterface>;
 
   /**
    * Constructor for the AutoTuner that generates all configurations from the given options.
@@ -78,6 +86,12 @@ class AutoTuner {
    * @return
    */
   const TuningMetricOption &getTuningMetric() const;
+
+  /**
+   * Getter for the tuning trigger type if dynamic tuning is used.
+   * @return A TuningTriggerOption representing the type of the trigger in use.
+   */
+  const TuningTriggerOption getTuningTriggerType() const;
 
   /**
    * Pass live info on to all tuning strategies.
@@ -196,6 +210,14 @@ class AutoTuner {
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
   void addMeasurement(long sample, bool neighborListRebuilt);
+
+  /**
+   * Passes the current iteration runtime to the autotuner's dynamic tuning trigger.
+   * For correct trigger behaviour, the time sample should not contain the runtime of rebuildNeighborLists.
+   *
+   * @param sample The current iteration runtime.
+   */
+  void passIterationRuntime(size_t sample);
 
   /**
    * Adds domain similarity statistics to a vector of measurements, which can be smoothed for use in MPI Tuning to find
@@ -453,5 +475,9 @@ class AutoTuner {
    * early stopping is used."
    */
   size_t _iterationBaseline{0};
+  /**
+   * The type of the trigger used for dynamic tuning interval estimation.
+   */
+  TuningTriggerType _tuningTrigger;
 };
 }  // namespace autopas

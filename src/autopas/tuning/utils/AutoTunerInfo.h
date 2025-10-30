@@ -9,6 +9,8 @@
 #include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TuningMetricOption.h"
+#include "autopas/options/TuningTriggerOption.h"
+#include "autopas/tuning/triggers/TuningTriggerFactoryInfo.h"
 namespace autopas {
 
 /**
@@ -44,5 +46,14 @@ struct AutoTunerInfo {
    * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
    */
   bool useLOESSSmoothening{false};
+
+  /**
+   * Type of the trigger used for dynamic tuning.
+   */
+  TuningTriggerOption tuningTriggerType{TuningTriggerOption::staticSimple};
+  /**
+   * Info used to construct the trigger.
+   */
+  TuningTriggerFactoryInfo tuningTriggerInfo{.triggerFactor = 1.0, .nSamples = 1000};
 };
 }  // namespace autopas

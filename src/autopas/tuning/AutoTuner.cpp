@@ -40,7 +40,9 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
-      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
+      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)),
+      _tuningTrigger(TuningTriggerFactory::generateTuningTrigger(autoTunerInfo.tuningTriggerType,
+                                                                 autoTunerInfo.tuningTriggerInfo)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _pdBinDensityStdDevOfLastTenIterations.reserve(10);
   _pdBinMaxDensityOfLastTenIterations.reserve(10);
@@ -310,6 +312,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   }
 }
 
+void AutoTuner::passIterationRuntime(size_t sample) {
+  if (!_isTuning) _tuningTrigger->passRuntimeSample(sample);
+}
+
 void AutoTuner::bumpIterationCounters(bool needToWait) {
   // reset counter after all autotuners finished tuning
   if (not(needToWait or inTuningPhase() or _iterationBaseline < _tuningInterval)) {
@@ -321,7 +327,9 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
   _endOfTuningPhase = false;
 
   if (_iteration % _tuningInterval == 0) {
+#ifndef AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
     ++_tuningPhase;
+#endif
 
     if (_isTuning) {
       AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
@@ -333,9 +341,11 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 bool AutoTuner::willRebuildNeighborLists() const {
   // if next iteration is start of new tuning phase, we need to rebuild, since the container may change
   // _iteration + 1 since we want to look ahead to the next iteration
-  if ((_iteration + 1) % _tuningInterval == 0) {
-    return true;
-  }
+#ifdef AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  if (_tuningTrigger->shouldStartTuningPhaseNextIteration(_iteration, _tuningInterval)) return true;
+#else
+  if ((_iteration + 1) % _tuningInterval == 0) return true;
+#endif
 
   // AutoTuner only triggers rebuild during the tuning phase
   const auto iterationsPerConfig = this->inTuningPhase() ? _maxSamples : std::numeric_limits<unsigned int>::max();
@@ -377,10 +387,20 @@ long AutoTuner::estimateRuntimeFromSamples() const {
 }
 
 bool AutoTuner::isStartOfTuningPhase() const {
+#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  return (_tuningTrigger->shouldStartTuningPhase(_iteration, _tuningInterval) and not _isTuning) or _forceRetune;
+#else
   return (_iteration % _tuningInterval == 0 and not _isTuning) or _forceRetune;
+#endif
 }
 
-bool AutoTuner::tuningPhaseAboutToBegin() const { return _iteration % _tuningInterval > _tuningInterval - 10; }
+bool AutoTuner::tuningPhaseAboutToBegin() const {
+#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  return _tuningTrigger->shouldStartTuningPhaseSoon(_iteration, _tuningInterval);
+#else
+  return _iteration % _tuningInterval > _tuningInterval - 10;
+#endif
+}
 
 bool AutoTuner::needsLiveInfo() const {
   return (isStartOfTuningPhase() and _needsLiveInfo) or
@@ -424,9 +444,14 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
 bool AutoTuner::inTuningPhase() const {
+#if AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  return (_tuningTrigger->shouldStartTuningPhase(_iteration, _tuningInterval) or _isTuning or _forceRetune) and
+         not searchSpaceIsTrivial();
+#else
   // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
   // been called yet.
   return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
+#endif
 }
 
 bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }

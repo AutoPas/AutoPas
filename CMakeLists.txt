@@ -104,6 +104,7 @@ include(autopas_coloring)
 include(autopas_logging)
 include(autopas_other-compileroptions)
 include(autopas_vectorization)
+include(autopas_dynamic-tuning-intervals)
 
 # tests and examples
 add_subdirectory(tests)

@@ -9,6 +9,7 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/tuning/triggers/TuningTriggerFactoryInfo.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -176,6 +177,22 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
+
+#ifdef AUTOPAS_DYNAMIC_TUNING_INTERVALS_ENABLED
+  if (configuration.useTuningTrigger.value) {
+    autopas::TuningTriggerFactoryInfo info = {.triggerFactor = _configuration.tuningTriggerFactor.value,
+                                              .nSamples = _configuration.tuningTriggerNSamples.value};
+    _autoPasContainer->setTuningTriggerType(_configuration.tuningTriggerType.value);
+    _autoPasContainer->setTuningTriggerInfo(info);
+  } else {
+    _autoPasContainer->setTuningTriggerType(autopas::TuningTriggerOption::staticSimple);
+  }
+#else
+  _autoPasContainer->setTuningTriggerType(autopas::TuningTriggerOption::staticSimple);
+  if (configuration.useTuningTrigger.value) {
+    AutoPasLog(WARN, "Dynamic tuning intervals are disabled. Defaulting to static trigger.");
+  }
+#endif
 
   _autoPasContainer->init();
 

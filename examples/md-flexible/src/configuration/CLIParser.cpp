@@ -106,6 +106,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
+      config.useTuningTrigger,
       zshCompletionsOption,
       helpOption)};
   // clang-format on
@@ -738,7 +739,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
         break;
       }
-
+      case decltype(config.useTuningTrigger)::getoptChar: {
+        config.useTuningTrigger.value = autopas::utils::StringUtils::parseBoolOption(strArg);
+        break;
+      }
       default: {
         // error message handled by getopt
         displayHelp = true;

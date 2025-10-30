@@ -118,3 +118,8 @@ vtk-output-folder                    :  allOptionsOutput
 vtk-write-frequency                  :  1
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt
+# Configuration parameters for dynamic tuning interval estimation
+tuning-trigger:
+  trigger-type                   : TimeBasedRegression
+  trigger-factor                 : 1.75
+  trigger-n-samples              : 1000

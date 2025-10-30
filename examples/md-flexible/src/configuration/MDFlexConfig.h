@@ -23,6 +23,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/TuningTriggerOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -329,7 +330,6 @@ class MDFlexConfig {
       autopas::TuningMetricOption::time, "tuning-metric", true,
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
-
   /**
    * enerySensorOption
    */
@@ -642,6 +642,39 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  // options for dynamic tuning intervals
+  /**
+   * whether to use a dynamic tuning trigger
+   */
+  MDFlexOption<bool, __LINE__> useTuningTrigger{
+      false, "tuning-trigger", true,
+      "Activate dynamic tuning triggers. Needed for dynamic tuning interval estimation."
+      "Possible Values: (true false) Default: false"};
+  /**
+   * dynamic tuning trigger type
+   */
+  MDFlexOption<autopas::TuningTriggerOption, __LINE__> tuningTriggerType{
+      autopas::TuningTriggerOption::staticSimple, "trigger-type", true,
+      "Trigger type that should be used for dynamic tuning interval estimation. "
+      "Leave empty to use static tuning trigger. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(
+              []() {
+                auto options = autopas::TuningTriggerOption::getAllOptions();
+                return options;
+              }(),
+              " ", {"(", ")"})};
+  /**
+   * dynamic tuning trigger factor
+   */
+  MDFlexOption<float, __LINE__> tuningTriggerFactor{
+      1.0, "trigger-factor", true,
+      "Factor on which to trigger a new tuning phase when using dynamic tuning interval estimation."};
+  /**
+   * dynamic tuning n samples
+   */
+  MDFlexOption<unsigned, __LINE__> tuningTriggerNSamples{
+      10, "trigger-n-samples", true, "Number of iteration samples to consider for dynamic tuning interval estimation."};
+
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

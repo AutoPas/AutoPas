@@ -452,6 +452,19 @@ std::string MDFlexConfig::to_string() const {
   printOption(loadBalancingInterval);
   printOption(subdivideDimension);
   printOption(energySensorOption);
+
+  if (useTuningTrigger.value) {
+    os << useTuningTrigger.name << ":" << endl;
+    constexpr int indentWidth = 2;
+    const auto indent = std::string(indentWidth, ' ');
+    os << indent;
+    printOption(tuningTriggerType, -indentWidth);
+    os << indent;
+    printOption(tuningTriggerFactor, -indentWidth);
+    os << indent;
+    printOption(tuningTriggerNSamples, -indentWidth);
+  }
+
   return os.str();
 }
 

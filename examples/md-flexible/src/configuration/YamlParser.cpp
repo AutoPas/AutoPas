@@ -440,6 +440,60 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
 
         config.tuningMetricOption.value = *parsedOptions.begin();
+      } else if (key == config.useTuningTrigger.name) {
+        expected = "See AllOptions.yaml for examples.";
+        description = config.useTuningTrigger.description;
+
+        config.useTuningTrigger.value = true;
+
+        // Parse optional trigger options in any order
+        const auto &subnode = itemIterator->second;
+        if (subnode && subnode.IsMap()) {
+          for (const auto &subkeyIterator : subnode) {
+            std::string subKey = subkeyIterator.first.as<std::string>();
+            const auto &subVal = subkeyIterator.second;
+            auto subkeyMark = subkeyIterator.second.Mark();
+
+            // Parse triggerType.
+            if (subKey == config.tuningTriggerType.name) {
+              expected = "Type of dynamic tuning trigger to use.";
+              description = config.tuningTriggerType.description;
+              try {
+                const auto parsedOptions = autopas::TuningTriggerOption::parseOptions(
+                    parseSequenceOneElementExpected(subVal, "Pass exactly one trigger type!"));
+                config.tuningTriggerType.value = *parsedOptions.begin();
+              } catch (const std::exception &e) {
+                errors.push_back(makeErrorMsg(subkeyMark, subKey, e.what(), expected, description));
+              }
+            }
+            // Parse triggerFactor.
+            else if (subKey == config.tuningTriggerFactor.name) {
+              expected = "Floating point Value >= 0.";
+              description = config.tuningTriggerFactor.description;
+              try {
+                config.tuningTriggerFactor.value = subVal.as<float>();
+                if (config.tuningTriggerFactor.value < 0) {
+                  throw std::runtime_error("The trigger factor for has to be greater or equal to 0!");
+                }
+              } catch (const std::exception &e) {
+                errors.push_back(makeErrorMsg(subkeyMark, subKey, e.what(), expected, description));
+              }
+            }
+            // Parse triggerNSamples.
+            else if (subKey == config.tuningTriggerNSamples.name) {
+              expected = "Unsigned integer > 0.";
+              description = config.tuningTriggerNSamples.description;
+              try {
+                config.tuningTriggerNSamples.value = subVal.as<unsigned>();
+                if (config.tuningTriggerNSamples.value < 1) {
+                  throw std::runtime_error("The number of samples has to be greater than 0!");
+                }
+              } catch (const std::exception &e) {
+                errors.push_back(makeErrorMsg(subkeyMark, subKey, e.what(), expected, description));
+              }
+            }
+          }
+        }
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
         expected = "Floating-point Value";
         description = config.MPITuningMaxDifferenceForBucket.description;
