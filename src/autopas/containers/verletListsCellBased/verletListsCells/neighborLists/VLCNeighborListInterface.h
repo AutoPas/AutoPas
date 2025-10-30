@@ -6,9 +6,14 @@
 
 #pragma once
 
+#include <numeric>
+#include <vector>
+
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/SoA.h"
 
 namespace autopas {
 /**

@@ -42,12 +42,6 @@ class ParticleContainerInterface {
   using ParticleType = Particle_T;
 
   /**
-   * Get the ParticleCell type as an Enum
-   * @return The Cell type as an Enum
-   */
-  virtual CellType getParticleCellTypeEnum() const = 0;
-
-  /**
    * Constructor
    * @param skin Skin distance a particle is allowed to move.
    */
@@ -197,28 +191,27 @@ class ParticleContainerInterface {
    * @param additionalVectors Vectors that should be included besides the container.
    * @return Iterator to the first particle.
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, true, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) = 0;
+  [[nodiscard]] virtual ContainerIterator<Particle_T, true, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, false, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors = nullptr) const = 0;
+  [[nodiscard]] virtual ContainerIterator<Particle_T, false, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, false, false> cbegin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
-          nullptr) const final {
-    return begin(behavior);
-  };
+  [[nodiscard]] ContainerIterator<Particle_T, false, false> cbegin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+    return begin(behavior, additionalVectors);
+  }
 
   /**
    * Iterate over all particles in a specified region
@@ -229,17 +222,17 @@ class ParticleContainerInterface {
    * @param additionalVectors Vectors that should be included besides the container.
    * @return Iterator to iterate over all particles in a specific region.
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, true, true> getRegionIterator(
+  [[nodiscard]] virtual ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) = 0;
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, false, true> getRegionIterator(
+  [[nodiscard]] virtual ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
    * @copydoc autopas::AutoPas::end()
@@ -311,7 +304,7 @@ class ParticleContainerInterface {
    * @param keepNeighborListsValid Defines whether the neighbor lists have to be kept valid.
    * @return A vector of invalid particles that do not belong into the container.
    */
-  [[nodiscard]] virtual std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) = 0;
+  [[nodiscard]] virtual std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) = 0;
 
   /**
    * Generates a traversal selector info for this container.
