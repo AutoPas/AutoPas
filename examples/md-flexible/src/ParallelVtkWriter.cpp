@@ -119,6 +119,34 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
+
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+  // print Euler angles for SpherocylinderCell
+  timestepFile
+      << "        <DataArray Name=\"directions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto directionVector = particle->getDirectionVector();
+    timestepFile << "        " << directionVector[0] << " " << directionVector[1] << " " << directionVector[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print stresses for SpherocylinderCell
+  timestepFile << "        <DataArray Name=\"stresses\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto stress = particle->getStress();
+    timestepFile << "        " << stress << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print lengths for SpherocylinderCell
+  timestepFile << "        <DataArray Name=\"lengths\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    timestepFile << "        " << particle->getLength() << " " << particle->getDiameter() << " "
+                 << particle->getDiameter() << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+#endif
+
 #endif
 
   // print type ids
@@ -331,6 +359,12 @@ void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
   timestepFile
       << "      <PDataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+#if defined(MD_FLEXIBLE_FUNCTOR_PCC)
+  timestepFile
+      << "      <PDataArray Name=\"directions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"stresses\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"lengths\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+#endif
 #endif
   timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
