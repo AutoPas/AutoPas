@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <spdlog/fmt/bundled/core.h>
+
 #include <algorithm>
 #include <iterator>
 #include <map>
@@ -209,5 +211,14 @@ class Option {
     return in;
   }
 };
+
 }  // namespace options
 }  // namespace autopas
+
+template <typename T>
+struct fmt::formatter<T, std::enable_if_t<std::is_base_of<autopas::options::Option<T>, T>::value, char>>
+    : fmt::formatter<std::string> {
+  auto format(const T &option, fmt::format_context &ctx) const {
+    return fmt::format_to(ctx.out(), "{}", option.to_string());
+  }
+};

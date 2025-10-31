@@ -10,6 +10,8 @@
 #include <bitset>
 #include <iostream>
 
+#include "spdlog/fmt/bundled/ostream.h"
+
 namespace autopas {
 /**
  * Enum that specifies the state of ownership.
@@ -80,3 +82,8 @@ constexpr int64_t toInt64(const OwnershipState a) { return static_cast<int64_t>(
   return os;
 }
 }  // namespace autopas
+
+namespace fmt {
+template <>
+struct formatter<autopas::OwnershipState> : ostream_formatter {};
+}  // namespace fmt

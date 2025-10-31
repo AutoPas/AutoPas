@@ -16,8 +16,24 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include "spdlog/fmt/bundled/core.h"
 
 namespace autopas {
+
+/**
+ * Enum that specifies how the verlet lists should be build
+ */
+enum BuildVerletListType {
+  /**
+   * Build it using AoS
+   */
+  VerletAoS,
+  /**
+   * Build it using AoS
+   */
+  VerletSoA,
+
+};
 
 /**
  * Verlet Lists container.
@@ -33,20 +49,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   using LinkedParticleCell = FullParticleCell<Particle_T>;
 
  public:
-  /**
-   * Enum that specifies how the verlet lists should be build
-   */
-  enum BuildVerletListType {
-    /**
-     * Build it using AoS
-     */
-    VerletAoS,
-    /**
-     * Build it using AoS
-     */
-    VerletSoA,
-  };
-
   /**
    * Constructor of the VerletLists class.
    * The neighbor lists are build using a search radius of cutoff + skin.
@@ -225,3 +227,31 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 };
 
 }  // namespace autopas
+
+namespace fmt {
+template <>
+struct formatter<autopas::BuildVerletListType> {
+  using Enum = autopas::BuildVerletListType;
+
+  char presentation = 's';
+
+  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
+
+  template <typename FormatContext>
+  auto format(const Enum &type, FormatContext &ctx) const {
+    std::string_view name;
+    switch (type) {
+      case Enum::VerletAoS:
+        name = "VerletAoS";
+        break;
+      case Enum::VerletSoA:
+        name = "VerletSoA";
+        break;
+      default:
+        name = "UnknownBuildVerletListType";
+        break;
+    }
+    return fmt::format_to(ctx.out(), "{}", name);
+  }
+};
+}  // namespace fmt

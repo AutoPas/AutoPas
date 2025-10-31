@@ -123,7 +123,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
     case ContainerOption::verletLists: {
       container = std::make_unique<VerletLists<Particle_T>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-          VerletLists<Particle_T>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+          BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletListsCells: {
