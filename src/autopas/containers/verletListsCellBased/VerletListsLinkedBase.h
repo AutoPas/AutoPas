@@ -47,7 +47,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    */
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skin, const double cellSizeFactor)
-      : ParticleContainerInterface<Particle_T>(skin),
+      : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");

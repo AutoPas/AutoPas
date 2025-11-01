@@ -13,7 +13,6 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/particles/OwnershipState.h"
@@ -497,7 +496,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    */
   template <typename Traversal>
   void prepareTraversal(Traversal &traversal) {
-    auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
+    auto *dsTraversal = dynamic_cast<TraversalInterface *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (dsTraversal && cellTraversal) {
       cellTraversal->setSortingThreshold(this->_sortingThreshold);

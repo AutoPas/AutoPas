@@ -45,12 +45,22 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   return s;
 }
 
+[[maybe_unused]] static const std::set<TraversalOption> &allKokkosDSCompatibleTraversals() {
+  static const auto s = filterAllOptions("kokkos_ds_", InteractionTypeOption::pairwise);
+  return s;
+}
+
 /**
  * Lists all triwise traversal options applicable for the Direct Sum container.
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals3B() {
   static const auto s = filterAllOptions("ds_", InteractionTypeOption::triwise);
+  return s;
+}
+
+[[maybe_unused]] static const std::set<TraversalOption> &allKokkosDSCompatibleTraversals3B() {
+  static const auto s = filterAllOptions("kokkos_ds_", InteractionTypeOption::triwise);
   return s;
 }
 
@@ -191,6 +201,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::directSum: {
           return allDSCompatibleTraversals();
+        }
+        case ContainerOption::kokkosDirectSum: {
+          return allKokkosDSCompatibleTraversals();
         }
         case ContainerOption::verletClusterLists: {
           return allVCLCompatibleTraversals();

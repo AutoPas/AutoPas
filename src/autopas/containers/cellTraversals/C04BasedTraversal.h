@@ -8,7 +8,6 @@
 
 #include "ColorBasedTraversal.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {
 

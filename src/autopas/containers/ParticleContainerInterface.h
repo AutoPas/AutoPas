@@ -44,8 +44,13 @@ class ParticleContainerInterface {
   /**
    * Constructor
    * @param skin Skin distance a particle is allowed to move.
+   * @param boxMin TODO
+   * @param boxMax TODO
    */
-  ParticleContainerInterface(double skin) : _skin(skin) {}
+  ParticleContainerInterface(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
+    : _skin(skin),
+      _boxMin(boxMin),
+      _boxMax(boxMax) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -249,13 +254,13 @@ class ParticleContainerInterface {
    * Get the upper corner of the container without halo.
    * @return Upper corner of the container.
    */
-  [[nodiscard]] virtual const std::array<double, 3> &getBoxMax() const = 0;
+  [[nodiscard]] virtual const std::array<double, 3> &getBoxMax() const { return _boxMax; };
 
   /**
    * Get the lower corner of the container without halo.
    * @return Lower corner of the container.
    */
-  [[nodiscard]] virtual const std::array<double, 3> &getBoxMin() const = 0;
+  [[nodiscard]] virtual const std::array<double, 3> &getBoxMin() const { return _boxMin; };
 
   /**
    * Return the cutoff of the container.
@@ -273,7 +278,7 @@ class ParticleContainerInterface {
    * Return the verletSkin of the container verletSkin
    * @return verletSkin
    */
-  [[nodiscard]] virtual double getVerletSkin() const = 0;
+  [[nodiscard]] virtual double getVerletSkin() const {return _skin; };
 
   /**
    * Return the number of time-steps since last neighbor list rebuild
@@ -413,6 +418,8 @@ class ParticleContainerInterface {
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
+  // TODO: missing forEachInRegion?
+
  protected:
   /**
    * Stores the number of time-steps since last neighbor list rebuild
@@ -425,6 +432,9 @@ class ParticleContainerInterface {
    * Skin distance a particle is allowed to move in one time-step.
    */
   double _skin;
+
+  std::array<double, 3> _boxMin;
+  std::array<double, 3> _boxMax;
 };
 
 }  // namespace autopas

@@ -29,6 +29,9 @@ class TraversalOption : public Option<TraversalOption> {
      */
     ds_sequential,
 
+    // KokkosDirectSum Traversals:
+    kokkos_ds_naive_parallel,
+
     // LinkedCell Traversals:
     /**
      * + LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
@@ -285,6 +288,9 @@ class TraversalOption : public Option<TraversalOption> {
     return {
         // DirectSum Traversals:
         {TraversalOption::ds_sequential, "ds_sequential"},
+
+        // KokkosDirectSum Traversals:
+        {TraversalOption::kokkos_ds_naive_parallel, "kokkos_ds_naive_parallel"},
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},

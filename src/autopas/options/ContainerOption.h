@@ -26,6 +26,9 @@ class ContainerOption : public Option<ContainerOption> {
      * Minimal overhead but bad complexity.
      */
     directSum,
+
+    kokkosDirectSum,
+
     /**
      * LinkedCells : Segmentation of the domain into a regular cell grid. Only interactions with particles from
      * neighbor cells are considered. Good data locality and vectorizability but low hit rate of particles in cutoff.
@@ -102,6 +105,7 @@ class ContainerOption : public Option<ContainerOption> {
   static std::map<ContainerOption, std::string> getOptionNames() {
     return {
         {ContainerOption::directSum, "DirectSum"},
+        {ContainerOption::kokkosDirectSum, "KokkosDirectSum"},
         {ContainerOption::linkedCells, "LinkedCells"},
         {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
         {ContainerOption::verletLists, "VerletLists"},
