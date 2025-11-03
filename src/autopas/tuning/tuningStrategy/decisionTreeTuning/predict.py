@@ -9,7 +9,7 @@ import os
 import numpy as np
 
 
-def load_model_and_encoder(model_file: str) -> tuple:
+def load_model_and_encoder(model_file: str, interaction_type: str) -> tuple:
     """
     Load the trained model, label encoder, and features from a single pickle file.
 
@@ -18,6 +18,7 @@ def load_model_and_encoder(model_file: str) -> tuple:
 
     Args:
         model_file (str): The path to the pickle file containing the model, label encoder, and features.
+        interaction_type (str): The interaction type of the algorithm to be predicted.
 
     Returns:
         model (RandomForestClassifier): The trained model for making predictions.
@@ -30,9 +31,40 @@ def load_model_and_encoder(model_file: str) -> tuple:
 
     # Load the model, encoders, and features from the pickle file
     with open(model_file, 'rb') as f:
-        combined_data = pickle.load(f)
+        try:
+            combined_data = pickle.load(f)
+        except Exception as e:
+            raise Exception(f"Error loading pickle file {model_file}: {e}")
 
-    return combined_data['model'], combined_data['label_encoder'], combined_data['features']
+    if interaction_type == "pairwise":
+        try:
+            model = combined_data['pairwise_model']
+            label_encoder = combined_data['pairwise_label_encoder']
+        except:
+            raise Exception("The Pairwise Model or Label Encoder was not found.")
+
+
+    elif interaction_type == "triwise":
+        try:
+            model = combined_data['triwise_model']
+            label_encoder = combined_data['triwise_label_encoder']
+        except:
+            raise Exception("The Triwise Model or Label Encoder was not found.")
+
+    else:
+        raise ValueError(f"Invalid interaction type: {interaction_type}")
+
+    try:
+        features = combined_data['features']
+    except:
+        raise Exception("The Features were not found.")
+
+    # Check that the model exists (e.g. that a triwise model was actually trained)
+    if model is None:
+        raise Exception(f"There is no model for {interaction_type} interactions. This could be because no Tuning Results"
+                        f" logs for this interaction type were used during training.")
+
+    return model, label_encoder, features
 
 
 def preprocess_live_info(live_info: dict, features: list) -> pd.DataFrame:
@@ -58,12 +90,15 @@ def preprocess_live_info(live_info: dict, features: list) -> pd.DataFrame:
     return live_info_df
 
 
-def predict(live_info: dict, model, label_encoder: dict, features: list) -> dict:
+def predict(live_info: dict, model, label_encoder, features: list) -> dict:
     """
     Perform a forward pass through the trained models to predict the tuning configuration.
 
-    This function takes the live info data, preprocesses it, and makes predictions using the loaded models.
-    The prediction is then decoded back into its original label using the corresponding LabelEncoder.
+    This function takes the live info data, preprocesses it, and makes predictions using the loaded model.
+    The prediction is then decoded back into its original label using the corresponding LabelEncoder, and returned
+    together with the model's "confidence"/"probability". (The leaves of each decision tree contain a number of training
+    samples. The "probability" of each configuration is simply the percentage of samples in that leaf where the
+    configuration was chosen. The random forest simply averages these probabilities.)
 
     Args:
         live_info (dict): A dictionary of live info data from C++.
@@ -72,33 +107,27 @@ def predict(live_info: dict, model, label_encoder: dict, features: list) -> dict
         features (list): A list of feature column names used for preprocessing the live info.
 
     Returns:
-        prediction (str): The predicted optimal algorithmic configuration.
-        prediction_confidence (float): The probability/confidence that the input belongs to the predicted alg. conf.
-        class.
+        prediction (dict): Dictionary containing the predicted optimal algorithmic configuration and the confidence
+        score.
     """
     # Preprocess the live info into a DataFrame
     live_info_df = preprocess_live_info(live_info, features)
 
-    # Get encoded predictions and probabilities
-    prediction_encoded = model.predict(live_info_df)
+    # Get prediction probabilities
+    probabilities = model.predict_proba(live_info_df)[0]
 
-    prediction_combined = label_encoder.inverse_transform([prediction_encoded[0]])[0]
-    prediction_split = prediction_combined.split(';')
+    # Todo, we may be able to improve the generalizability of this tuning strategy by taking e.g. the top 5 predictions
+    predicted_class_id = np.argmax(probabilities)
+
     prediction = {
-        'Container' : prediction_split[0],
-        'Traversal' : prediction_split[1],
-        'Load Estimator' : prediction_split[2],
-        'Data Layout' : prediction_split[3],
-        'Newton 3' : prediction_split[4],
-        'CellSizeFactor' : prediction_split[5]
+        "alg_config": label_encoder.inverse_transform([predicted_class_id])[0],
+        "confidence": probabilities[predicted_class_id]
     }
-    
-    prediction["confidence"]  = np.max(model.predict_proba(live_info_df)[0])
 
     return prediction
 
 
-def main(model_file: str, live_info_json: str) -> str:
+def main(model_file: str, live_info_json: str, interaction_type: str) -> str:
     """
     Main execution function for performing a forward pass using live info.
 
@@ -109,12 +138,13 @@ def main(model_file: str, live_info_json: str) -> str:
     Args:
         model_file (str): The file path of the saved models, label encoders, and features.
         live_info_json (str): A JSON string representing the live info data.
+        interaction_type (str): The interaction type of the algorithm to be predicted.
 
     Returns:
         str: A JSON string representing the predicted tuning configuration and confidence score.
     """
     # Load model, encoder, and features
-    model, label_encoder, features = load_model_and_encoder(model_file)
+    model, label_encoder, features = load_model_and_encoder(model_file, interaction_type)
 
     # Parse the live info
     live_info = json.loads(live_info_json)

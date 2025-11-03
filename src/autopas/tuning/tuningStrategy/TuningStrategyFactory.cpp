@@ -112,8 +112,10 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     }
 
     case TuningStrategyOption::decisionTreeTuning: {
+      std::cout << info.interactionType << std::endl;
       tuningStrategy =
-          std::make_unique<autopas::DecisionTreeTuning>(searchSpace, info.modelFileName, info.confidenceThreshold);
+          std::make_unique<DecisionTreeTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
+            info.interactionType);
       break;
     }
 

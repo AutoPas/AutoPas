@@ -22,8 +22,9 @@ namespace py = pybind11;
 #endif
 
 DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                                       double confidenceThreshold)
-    : _configurations(searchSpace), _modelFileName(modelFileName), _confidenceThreshold(confidenceThreshold) {
+                                       double confidenceThreshold, InteractionTypeOption interactionType)
+    : _configurations(searchSpace), _modelFileName(modelFileName), _confidenceThreshold(confidenceThreshold),
+  _interactionType(interactionType) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     // Initialize the Python interpreter using scoped_interpreter
@@ -45,7 +46,7 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
 #endif
 }
 
-DecisionTreeTuning::~DecisionTreeTuning() {}
+DecisionTreeTuning::~DecisionTreeTuning() = default;
 
 bool DecisionTreeTuning::needsLiveInfo() const { return true; }
 
@@ -82,10 +83,10 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     // Convert live info to JSON string
-    nlohmann::json liveInfoJson = _currentLiveInfo;
+    nlohmann::json liveInfoJson = _currentLiveInfo; // todo make this a reference
     std::string modelPath = _modelFileName;
     // Call the Python function and get the result
-    py::object result = _pythonMainFunc(modelPath, liveInfoJson.dump());
+    py::object result = _pythonMainFunc(modelPath, liveInfoJson.dump(), _interactionType.to_string());
     return result.cast<std::string>();
   } catch (const py::error_already_set &e) {
     utils::ExceptionHandler::exception("Error during Python function call: {}", e.what());

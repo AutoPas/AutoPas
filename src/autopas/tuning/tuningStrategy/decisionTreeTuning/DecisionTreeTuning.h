@@ -34,11 +34,12 @@ class DecisionTreeTuning : public TuningStrategyInterface {
   /**
    * Constructor of DecisionTreeTuning.
    * @param searchSpace Set of configurations to be considered.
-   * @param modelFileName Name of the file containing the decision tree model.
+   * @param modelFileName Name of the file containing the random forest models.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
+   * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
   DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                     double confidenceThreshold);
+                     double confidenceThreshold, InteractionTypeOption interactionType);
 
   ~DecisionTreeTuning() override;
 
@@ -80,6 +81,11 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    * Confidence threshold for the prediction.
    */
   double _confidenceThreshold;
+
+  /**
+   * The interaction type for which this tuning strategy predicts.
+   */
+  InteractionTypeOption _interactionType;
 
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   /**

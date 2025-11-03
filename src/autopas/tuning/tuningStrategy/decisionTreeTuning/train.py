@@ -5,7 +5,6 @@
 import os
 import argparse
 import glob
-from pyexpat import features
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -21,7 +20,9 @@ def extract_identifier(filename: str) -> str:
     Extract the rank and timestamp from the filename, to serve as a unique identifier to match Live Info csvs to
     tuning results csvs.
 
-    I.e. 'AutoPas_liveInfoLogger_Rank0_2025-05-13_14-11-48.csv' becomes 'Rank0_2025-05-13_14-11-48.csv'
+    E.g. './path/to/result/AutoPas_liveInfoLogger_Rank0_2025-05-13_14-11-48.csv' becomes 'Rank0_2025-05-13_14-11-48.csv'
+    './path/to/result/AutoPas_tuningResults_Rank0_pairwise_2025-05-13_14-11-48.csv' becomes 'Rank0_pairwise_2025-05-13_14-11-48.csv'
+    (and therefore the 'pairwise' part must then be removed by remove_interaction_type so they match).
 
     Args:
         filename (str): The filename from which to extract the identifier.
@@ -31,8 +32,23 @@ def extract_identifier(filename: str) -> str:
     """
     return filename.split('_', 2)[2]
 
+def remove_interaction_type(identifier: str) -> str:
+    """
+    Remove the interaction type from the identifier produced by extract_identifier applied to a TuningResults csv.
 
-def load_data_from_directory(results_dir: str) -> pd.DataFrame:
+    E.g. 'Rank0_pairwise_2025-05-13_14-11-48.csv' becomes 'Rank0_2025-05-13_14-11-48.csv'
+
+    Args:
+        identifier (str): The filename of a tuning results file, after extract_identifier has been applied to it.
+
+    Returns:
+        str: The identifier with the interaction type removed.
+    """
+    parts = identifier.split('_')
+    return '_'.join(parts[:1] + parts[2:])
+
+
+def load_data_from_directory(results_dir: str) -> tuple:
     """
     Load and merge multiple live info and tuning results CSV files assuming leaf folders contain all experiments with
     each folder containing matching live info and tuning result CSV files. Files are matched together using their rank
@@ -42,9 +58,11 @@ def load_data_from_directory(results_dir: str) -> pd.DataFrame:
         results_dir (str): The directory containing all experiment CSV files.
 
     Returns:
-        pd.DataFrame: A merged DataFrame containing the combined live info and tuning results from all files.
+        final_merged_df_pairwise (pd.DataFrame): A merged DataFrame containing the combined live info and pairwise tuning results from all files.
+        final_merged_df_triwise (pd.DataFrame): A merged DataFrame containing the combined live info and triwise tuning results from all files.
     """
-    merged_dfs = []
+    merged_dfs_pairwise = []
+    merged_dfs_triwise = []
 
     # Loop through all leaf folders i.e. the ones in which the csv files are outputted in
 
@@ -58,14 +76,23 @@ def load_data_from_directory(results_dir: str) -> pd.DataFrame:
             tuning_results_file_pattern = os.path.join(root,"*tuningResults*")
             tuning_results_file_list = glob.glob(tuning_results_file_pattern)
 
+            # Separate Tuning Results into Pairwise and Triwise
+            tuning_results_file_list_pairwise = [f for f in tuning_results_file_list if '_pairwise' in f]
+            tuning_results_file_list_triwise = [f for f in tuning_results_file_list if '_triwise' in f]
+
             # Create dictionaries mapping identifiers to files and use it to get a list of matching file pairs
             live_info_map = {extract_identifier(f): f for f in live_info_file_list}
-            tuning_results_map = {extract_identifier(f): f for f in tuning_results_file_list}
+            tuning_results_pairwise_map = {remove_interaction_type(extract_identifier(f)): f for f in tuning_results_file_list_pairwise}
+            tuning_results_triwise_map = {remove_interaction_type(extract_identifier(f)): f for f in tuning_results_file_list_triwise}
 
-            common_identifiers = set(live_info_map) & set(tuning_results_map)
-            csv_file_pairs = [(live_info_map[id], tuning_results_map[id]) for id in common_identifiers]
+            common_identifiers_pairwise = set(live_info_map) & set(tuning_results_pairwise_map)
+            common_identifiers_triwise = set (live_info_map) & set(tuning_results_triwise_map)
 
-            for [live_info_file, tuning_results_file] in csv_file_pairs:
+            csv_file_pairs_pairwise = [(live_info_map[id], tuning_results_pairwise_map[id]) for id in common_identifiers_pairwise]
+            csv_file_pairs_triwise = [(live_info_map[id], tuning_results_triwise_map[id]) for id in common_identifiers_triwise]
+
+            # Pairwise
+            for [live_info_file, tuning_results_file] in csv_file_pairs_pairwise:
                 # Load the live info and tuning results
                 live_info_df = pd.read_csv(live_info_file)
                 tuning_results_df = pd.read_csv(tuning_results_file)
@@ -85,12 +112,42 @@ def load_data_from_directory(results_dir: str) -> pd.DataFrame:
                 merged_df.columns = merged_df.columns.str.strip()
 
                 # Append the merged DataFrame to the list
-                merged_dfs.append(merged_df)
+                merged_dfs_pairwise.append(merged_df)
+
+            # Triwise
+            for [live_info_file, tuning_results_file] in csv_file_pairs_triwise:
+                # Load the live info and tuning results
+                live_info_df = pd.read_csv(live_info_file)
+                tuning_results_df = pd.read_csv(tuning_results_file)
+
+                # Combine the algorithmic configuration into one column
+                tuning_results_df['alg_config'] = (tuning_results_df['Container'] + ';'
+                                                   + tuning_results_df['Traversal']
+                                                   + ';' + tuning_results_df['Load Estimator'] + ';'
+                                                   + tuning_results_df['Data Layout'] + ';'
+                                                   + tuning_results_df['Newton 3'] + ';'
+                                                   + tuning_results_df['CellSizeFactor'].map(str))
+
+                # Merge them on 'Iteration' column
+                merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
+
+                # Clean column names
+                merged_df.columns = merged_df.columns.str.strip()
+
+                # Append the merged DataFrame to the list
+                merged_dfs_triwise.append(merged_df)
 
     # Combine all merged DataFrames into one
-    final_merged_df = pd.concat(merged_dfs, ignore_index=True)
+    if len(merged_dfs_pairwise) > 0:
+        final_merged_df_pairwise = pd.concat(merged_dfs_pairwise, ignore_index=True)
+    else:
+        final_merged_df_pairwise = None
+    if len(merged_dfs_triwise) > 0:
+        final_merged_df_triwise = pd.concat(merged_dfs_triwise, ignore_index=True)
+    else:
+        final_merged_df_triwise = None
 
-    return final_merged_df
+    return final_merged_df_pairwise, final_merged_df_triwise
 
 
 def preprocess_data(merged_df: pd.DataFrame, features: list) -> tuple:
@@ -112,7 +169,7 @@ def preprocess_data(merged_df: pd.DataFrame, features: list) -> tuple:
     """
     label_encoder = LabelEncoder()
 
-    merged_df['alg_config'] = label_encoder['alg_config'].fit_transform(merged_df['alg_config'])
+    merged_df['alg_config'] = label_encoder.fit_transform(merged_df['alg_config'])
     X = merged_df[features]
     y = merged_df['alg_config']
     return X, y, label_encoder
@@ -141,28 +198,37 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_estimators
 
     y_pred = model.predict(X_test)
 
-    accuracy = accuracy_score(y_test.iloc[:, 'alg_config'], y_pred[:, 'alg_config'])
+    accuracy = accuracy_score(y_test, y_pred)
     print(f'Accuracy: {accuracy:.3f}')
 
     return model
 
 
-def save_model_and_encoder(model: RandomForestClassifier, label_encoder: dict, features: list, output_file: str) -> None:
+def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_model: RandomForestClassifier,
+                             pairwise_label_encoder: dict, triwise_label_encoder: dict, features: list,
+                             output_file: str) -> None:
     """
-    Save the trained model, LabelEncoder, and feature list to a file.
+    Save the trained models, LabelEncoder, and feature list to a file.
 
-    This function saves the trained RandomForestClassifier model, LabelEncoder, and feature list as a dictionary
-    in a pickle file so they can be loaded together later for making predictions.
+    This function saves the trained RandomForestClassifier models and LabelEncoders for both pairwise and triwise
+    interactions, as well as the list of features used, as a dictionary in a pickle file so they can be loaded together
+    later for making predictions.
 
     Args:
-        model (RandomForestClassifier): The trained RandomForestClassifier model.
-        label_encoder (LabelEncoder): The LabelEncoder used for encoding the target variable (i.e. alg. config.).
+        pairwise_model (RandomForestClassifier): The trained RandomForestClassifier model for pairwise interactions.
+        triwise_model (RandomForestClassifier): The trained RandomForestClassifier model for triwise interactions.
+        pairwise_label_encoder (LabelEncoder): The LabelEncoder used for encoding the target variable (i.e. alg.
+        config.).
+        triwise_label_encoder (LabelEncoder): The LabelEncoder used for encoding the target variable (i.e. alg.
+        config.).
         features (list): The list of feature column names.
         output_file (str): Path to save the model, encoders, and features.
     """
     combined_data = {
-        'model': model,
-        'label_encoder': label_encoder,
+        'pairwise_model': pairwise_model,
+        'triwise_model': triwise_model,
+        'pairwise_label_encoder': pairwise_label_encoder,
+        'triwise_label_encoder': triwise_label_encoder,
         'features': features
     }
     print(combined_data)
@@ -181,7 +247,7 @@ def main():
                                                                        " results CSV files.")
     parser.add_argument('--features', type=str, nargs='+',
                         default=['meanParticlesPerCell', 'maxParticlesPerCell', 'relativeParticlesPerCellStdDev',
-                                 'threadCount', 'relativeParticlesPerBlurredCellStdDev', 'skin'],
+                                 'threadCount', 'relativeParticlesPerBlurredBinStdDev', 'skin'],
                         help="List of feature columns for training.")
     parser.add_argument('--test-size', type=float, default=0.2, help="Test set size as a fraction (default: 0.2).")
     parser.add_argument('--n-estimators', type=int, default=100,
@@ -190,16 +256,33 @@ def main():
     args = parser.parse_args()
 
     print("Loading and merging data...")
-    merged_df = load_data_from_directory(args.live_info_dir, args.results_dir)
+    merged_df_pairwise, merged_df_triwise = load_data_from_directory(args.results_dir)
 
-    print("Preprocessing data...")
-    X, y, label_encoder = preprocess_data(merged_df, args.features)
+    if merged_df_pairwise is None:
+        print("No tuning results were found for pairwise interactions. Skipping the training of a pairwise model.")
+        model_pairwise = None
+        label_encoder_pairwise = None
+    else:
+        print("Preprocessing pairwise data...")
+        X, y, label_encoder_pairwise = preprocess_data(merged_df_pairwise, args.features)
 
-    print("Training model...")
-    model = train_model(X, y, args.test_size, args.n_estimators)
+        print("Training pairwise model...")
+        model_pairwise = train_model(X, y, args.test_size, args.n_estimators)
 
-    print(f"Saving model and encoders to {args.output_file}...")
-    save_model_and_encoder(model, label_encoder, args.features, args.output_file)
+    if merged_df_triwise is None:
+        print("No tuning results were found for triwise interactions. Skipping the training of a triwise model.")
+        model_triwise = None
+        label_encoder_triwise = None
+    else:
+        print("Preprocessing triwise data...")
+        X, y, label_encoder_triwise = preprocess_data(merged_df_triwise, args.features)
+
+        print("Training triwise model...")
+        model_triwise = train_model(X, y, args.test_size, args.n_estimators)
+
+
+    print(f"Saving models and encoders to {args.output_file}...")
+    save_models_and_encoders(model_pairwise, model_triwise, label_encoder_pairwise, label_encoder_triwise, args.features, args.output_file)
 
     print("Model training and saving complete.")
 
