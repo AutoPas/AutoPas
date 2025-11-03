@@ -119,8 +119,16 @@ def predict(live_info: dict, model, label_encoder, features: list) -> dict:
     # Todo, we may be able to improve the generalizability of this tuning strategy by taking e.g. the top 5 predictions
     predicted_class_id = np.argmax(probabilities)
 
+    prediction = label_encoder.inverse_transform([predicted_class_id])[0]
+    prediction_split = prediction.split(";")
+
     prediction = {
-        "alg_config": label_encoder.inverse_transform([predicted_class_id])[0],
+        "Container": prediction_split[0],
+        "Traversal": prediction_split[1],
+        "Load Estimator": prediction_split[2],
+        "Data Layout": prediction_split[3],
+        "Newton 3": prediction_split[4],
+        "CellSizeFactor": prediction_split[5],
         "confidence": probabilities[predicted_class_id]
     }
 

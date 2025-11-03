@@ -97,11 +97,9 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
 
 void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQueue, const std::string &prediction) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
-  nlohmann::json predictionJson;
   try {
-    predictionJson = nlohmann::json::parse(prediction);
-    double confidence = predictionJson["confidence"];
-    if (confidence < _confidenceThreshold) {
+    nlohmann::json predictionJson = nlohmann::json::parse(prediction);
+    if (double confidence = predictionJson["confidence"]; confidence < _confidenceThreshold) {
       AutoPasLog(WARN, "Prediction confidence ({:.2f}) below threshold ({:.2f}), skipping update.", confidence,
                  _confidenceThreshold);
       return;
@@ -121,7 +119,7 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
     }
     config.loadEstimator = LoadEstimatorOption::parseOptionExact(predictionJson["Load Estimator"]);
 
-    config.interactionType = configQueue.front().interactionType;
+    config.interactionType = _interactionType;
 
     configQueue.clear();
     configQueue.push_back(config);
