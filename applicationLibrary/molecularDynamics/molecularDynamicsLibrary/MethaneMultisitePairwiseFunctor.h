@@ -65,15 +65,40 @@ class MethaneMultisitePairwiseFunctor
   /**
    * List of relative unrotated Methane Site Positions.
    */
-  const std::vector<std::array<double, 3>> _sitePositions{{0., 0., 0.},                        // C atom
-                                                          makeSitePosition(0.88, 0.88, 0.88),  // Along C-H bond
-                                                          makeSitePosition(0.88, -0.88, -0.88),
-                                                          makeSitePosition(-0.88, 0.88, -0.88),
-                                                          makeSitePosition(-0.88, -0.88, 0.88),
-                                                          makeSitePosition(-0.66, -0.66, -0.66),
-                                                          makeSitePosition(-0.66, 0.66, 0.66),
-                                                          makeSitePosition(0.66, -0.66, 0.66),
-                                                          makeSitePosition(0.66, 0.66, -0.66)};
+  const std::vector<std::array<double, 3>> _sitePositions{
+      {0., 0., 0.},                        // C atom, site "C"
+      makeSitePosition(0.88, 0.88, 0.88),  // Along C-H bond, site "H"
+      makeSitePosition(0.88, -0.88, -0.88),
+      makeSitePosition(-0.88, 0.88, -0.88),
+      makeSitePosition(-0.88, -0.88, 0.88),
+      makeSitePosition(-0.66, -0.66, -0.66),  // site "E"
+      makeSitePosition(-0.66, 0.66, 0.66),
+      makeSitePosition(0.66, -0.66, 0.66),
+      makeSitePosition(0.66, 0.66, -0.66)};
+
+  // Site IDs: C, H, H, H, H, E, E, E, E
+  const std::array<size_t, 9> _siteIds{{0, 1, 1, 1, 1, 2, 2, 2, 2}};
+
+  const std::array<double, 6> _paramA{0.262373610e7,  0.265413949e7,  0.241399203e6,
+                                      -0.271732286e6, -0.749715218e5, 0.123654939e6};
+
+  const std::array<double, 6> _paramAlpha{0.16878421e1, 0.28827219e1, 0.35917561e1,
+                                          0.16490747e1, 0.20593086e1, 0.21451641e1};
+
+  const std::array<double, 6> _paramB{0.168275675e1, 0.288261054e1, 0.384703188e1,
+                                      0.155011960e1, 0.266424603e1, 0.304993944e1};
+
+  const std::array<double, 6> _paramC6{0.112317356e7, -0.139633537e7, 0.294147230e6,
+                                       0.127844394e7, 0.169329268e6,  -0.590727146e6};
+
+  const std::array<double, 6> _paramC8{-0.120939119e9, 0.385078060e8,  -0.264781786e7,
+                                       0.174762764e7,  -0.810401688e7, 0.679543866e7};
+
+  const double _chargeH = 0.94753e2;
+  const double _chargeC = -0.379012e3;
+  const double _bCorr = 0.177e1;
+  const double _deltaC6 = 0.45347e5;
+  const double _deltaC8 = 0.432463e6;
 
   /**
    * Sum of potential energy. Only calculated if calculateGlobals is true.
