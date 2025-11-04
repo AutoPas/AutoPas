@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/kokkos/verletClusterLists/KokkosVerletClusterLists.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -16,6 +17,7 @@
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "kokkos/KokkosSpace.h"
 
 namespace autopas {
 /**
@@ -54,6 +56,10 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
           dynamic_cast<autopas::VarVerletLists<Particle_T, VerletNeighborListAsBuild<Particle_T>> &>(container));
     case ContainerOption::octree:
       return function(dynamic_cast<autopas::Octree<Particle_T> &>(container));
+    case ContainerOption::kokkosVerletClusterLists:
+      // TODO better dynamic cast
+      return function(dynamic_cast<autopas::KokkosVerletClusterLists<autopas::utils::kokkos::HostSpace,
+                                                                     Kokkos::LayoutLeft, Particle_T> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container.getContainerType());

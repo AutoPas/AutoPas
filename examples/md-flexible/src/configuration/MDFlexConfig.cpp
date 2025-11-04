@@ -305,6 +305,10 @@ std::string MDFlexConfig::to_string() const {
         os << "None selected" << endl;
         break;
       }
+      case FunctorOption::kk_lj: {
+        os << "Lennard-Jones kokkos" << endl;
+        break;
+      }
       case FunctorOption::lj12_6: {
         os << "Lennard-Jones (12-6)" << endl;
         break;

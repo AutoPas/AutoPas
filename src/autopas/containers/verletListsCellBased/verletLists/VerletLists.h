@@ -228,23 +228,20 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
 }  // namespace autopas
 
-namespace fmt {
 template <>
-struct formatter<autopas::BuildVerletListType> {
-  using Enum = autopas::BuildVerletListType;
-
+struct fmt::formatter<autopas::BuildVerletListType> {
   char presentation = 's';
 
   constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
 
   template <typename FormatContext>
-  auto format(const Enum &type, FormatContext &ctx) const {
+  auto format(autopas::BuildVerletListType const &type, FormatContext &ctx) const {
     std::string_view name;
     switch (type) {
-      case Enum::VerletAoS:
+      case autopas::BuildVerletListType::VerletAoS:
         name = "VerletAoS";
         break;
-      case Enum::VerletSoA:
+      case autopas::BuildVerletListType::VerletSoA:
         name = "VerletSoA";
         break;
       default:
@@ -254,4 +251,3 @@ struct formatter<autopas::BuildVerletListType> {
     return fmt::format_to(ctx.out(), "{}", name);
   }
 };
-}  // namespace fmt

@@ -122,8 +122,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_AVX, "Lennard-Jones AVX Functor.");
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_SVE, "Lennard-Jones SVE Functor.");
-#else
+#elif defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
+#else
+        std::make_pair(MDFlexConfig::FunctorOption::kk_lj, "Lennard-Jones Kokkos Functor.");
 #endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
@@ -796,6 +798,9 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
+    case MDFlexConfig::FunctorOption::kk_lj: {
+      return f(LJFunctorTypeKokkos{cutoff});
+    }
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
       return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});

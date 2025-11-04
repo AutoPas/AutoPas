@@ -1,18 +1,23 @@
 #pragma once
 
+#include "autopas/containers/TraversalInterface.h"
+
 namespace autopas::containers::kokkos::traversal {
 
-template <class Particle_T, class Functor_T>
+template <class Particle_T, typename Functor_T>
 class KokkosVCLTraversal : public autopas::TraversalInterface {
  public:
-  KokkosVCLTraversal( Functor_T* f,DataLayoutOption dataLayout, bool newton3)
-      : TraversalInterface(dataLayout, newton3), _functor(f) {}
+  KokkosVCLTraversal( Functor_T* f, DataLayoutOption dataLayout, bool newton3, double cutoff)
+      : TraversalInterface(dataLayout, newton3), _functor(cutoff) {}
 
   ~KokkosVCLTraversal() override = default;
 
   [[nodiscard]] autopas::TraversalOption getTraversalType() const override { return autopas::TraversalOption::kk_vcl; }
 
-  [[nodiscard]] bool isApplicable() const override {}
+  [[nodiscard]] bool isApplicable() const override {
+    // TODO
+    return true;
+  }
   void initTraversal() override {}
   void traverseParticles() override {}
   void endTraversal() override {}

@@ -9,9 +9,12 @@ using DeviceSpace = Kokkos::Cuda;
 using DeviceSpace = Kokkos::Hip;
 #endif
 
+// using SharedSpace = Kokkos::SharedSpace;
 
-using SharedSpace = Kokkos::SharedSpace;
-
+#ifdef KOKKOS_ENABLE_OPENMP
 using HostSpace = Kokkos::OpenMP;
+#else
+using HostSpace = Kokkos::Serial;
+#endif
 
 }  // namespace autopas::utils::kokkos

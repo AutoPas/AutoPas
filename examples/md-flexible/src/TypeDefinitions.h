@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include "molecularDynamicsLibrary/LJFunctorKokkos.h"
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
@@ -75,6 +76,10 @@ constexpr bool calcGlobals =
     false;
 #endif
 }  // namespace mdFlexibleTypeDefs
+
+
+using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType>;
+
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**

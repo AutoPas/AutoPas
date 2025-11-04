@@ -302,7 +302,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
     // Kokkos VerletCluster
     case TraversalOption::kk_vcl: {
       using ParticleType = typename ParticleCell::ParticleType;
-      return std::make_unique<containers::kokkos::traversal::KokkosVCLTraversal<ParticleType, PairwiseFunctor>>>(&pairwiseFunctor, dataLayout, useNewton3);
+      return std::make_unique<containers::kokkos::traversal::KokkosVCLTraversal<ParticleType, PairwiseFunctor>>(
+          &pairwiseFunctor, dataLayout, useNewton3, traversalInfo.interactionLength);
     }
 
     default: {

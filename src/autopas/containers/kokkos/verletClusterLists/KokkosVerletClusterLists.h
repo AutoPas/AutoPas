@@ -1,6 +1,9 @@
 #pragma once
+
 #include "autopas/utils/kokkos/KokkosSoA.h"
 #include "autopas/utils/kokkos/KokkosSoAType.h"
+
+namespace autopas {
 
 template <typename Space, typename Layout, typename Particle_T>
 class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Particle_T> {
@@ -13,8 +16,13 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
         _verletSkin(verlet_skin),
         _rebuildFrequency(rebuild_frequency) {}
 
-  autopas::CellType getParticleCellTypeEnum() const override {}
-  [[nodiscard]] autopas::ContainerOption getContainerType() const override {}
+  autopas::CellType getParticleCellTypeEnum() const override {
+    // TODO new type
+    return autopas::CellType::IsNoCell;
+  }
+  [[nodiscard]] autopas::ContainerOption getContainerType() const override {
+    return autopas::ContainerOption::kokkosVerletClusterLists;
+  }
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {}
 
  protected:
@@ -22,49 +30,89 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   void addHaloParticleImpl(const Particle_T &haloParticle) override {}
 
  public:
-  bool updateHaloParticle(const Particle_T &haloParticle) override {}
+  bool updateHaloParticle(const Particle_T &haloParticle) override {
+    // TODO
+    return false;
+  }
   void rebuildNeighborLists(autopas::TraversalInterface *traversal) override {}
   void deleteHaloParticles() override {}
   void deleteAllParticles() override {}
-  [[nodiscard]] size_t getNumberOfParticles(autopas::IteratorBehavior behavior) const override {}
-  [[nodiscard]] size_t size() const override {}
+  [[nodiscard]] size_t getNumberOfParticles(autopas::IteratorBehavior behavior) const override {
+    // TODO
+    return 0;
+  }
+  [[nodiscard]] size_t size() const override {
+    // TODO
+    return 0;
+  }
   [[nodiscard]] autopas::ContainerIterator<Particle_T, true, false> begin(
       autopas::IteratorBehavior behavior,
-      typename autopas::ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors) override {}
+      typename autopas::ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors) override {
+    return {};
+  }
   [[nodiscard]] autopas::ContainerIterator<Particle_T, false, false> begin(
       autopas::IteratorBehavior behavior,
       typename autopas::ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors)
-      const override {}
+      const override {
+    // TODO
+    return {};
+  }
   [[nodiscard]] autopas::ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       autopas::IteratorBehavior behavior,
-      typename autopas::ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors) override {}
+      typename autopas::ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors)
+      override {  // TODO
+    return {};
+  }
   [[nodiscard]] autopas::ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       autopas::IteratorBehavior behavior,
-      typename autopas::ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors) const override {
+      typename autopas::ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors)
+      const override {  // TODO
+    return {};
   }
   void computeInteractions(autopas::TraversalInterface *traversal) override {}
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override {}
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override {}
-  [[nodiscard]] double getCutoff() const override {}
-  void setCutoff(double cutoff) override {}
-  [[nodiscard]] double getVerletSkin() const override {}
-  [[nodiscard]] size_t getStepsSinceLastRebuild() const override {}
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
+  [[nodiscard]] double getCutoff() const override { return _cutoff; }
+  void setCutoff(double cutoff) override { _cutoff = cutoff; }
+  [[nodiscard]] double getVerletSkin() const override { return _verletSkin; }
+  [[nodiscard]] size_t getStepsSinceLastRebuild() const override { return 0; }
   void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {}
-  [[nodiscard]] double getInteractionLength() const override {}
+  [[nodiscard]] double getInteractionLength() const override { return 0; }
   [[nodiscard]] std::vector<typename autopas::ParticleContainerInterface<Particle_T>::ParticleType> updateContainer(
-      bool keepNeighborListsValid) override {}
-  [[nodiscard]] autopas::TraversalSelectorInfo getTraversalSelectorInfo() const override {}
+      bool keepNeighborListsValid) override {
+    // TODO
+    return {};
+  }
+  [[nodiscard]] autopas::TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    // TODO
+    return {};
+  }
   std::tuple<const Particle_T *, size_t, size_t> getParticle(
-      size_t cellIndex, size_t particleIndex, autopas::IteratorBehavior iteratorBehavior) const override {}
+      size_t cellIndex, size_t particleIndex, autopas::IteratorBehavior iteratorBehavior) const override {
+    // TODO
+    return {};
+  }
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                              autopas::IteratorBehavior iteratorBehavior,
                                                              const std::array<double, 3> &boxMin,
-                                                             const std::array<double, 3> &boxMax) const override {}
-  bool deleteParticle(Particle_T &particle) override {}
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {}
+                                                             const std::array<double, 3> &boxMax) const override {
+    // TODO
+    return {};
+  }
+  bool deleteParticle(Particle_T &particle) override {
+    // TODO
+    return true;
+  }
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // TODO
+    return true;
+  }
 
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {}
 
  protected:
   using Tuple = typename autopas::utils::kokkos::KokkosSoAType<Space, Layout, typename Particle_T::SoAArraysType>::Type;
@@ -77,3 +125,4 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   double _verletSkin;
   int _rebuildFrequency;
 };
+}  // namespace autopas

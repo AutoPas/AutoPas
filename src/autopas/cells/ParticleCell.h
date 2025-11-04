@@ -75,7 +75,7 @@ class ParticleCell {
    * Copy constructor that creates a new default constructed lock for the new cell.
    * @param other
    */
-  ParticleCell(const ParticleCell &other) : _cellLock(){};
+  ParticleCell(const ParticleCell &other) : _cellLock() {};
 
   /**
    * Adds a Particle to the cell.
@@ -194,3 +194,40 @@ class ParticleCell {
 };
 
 }  // namespace autopas
+
+namespace fmt {
+template <>
+struct formatter<autopas::CellType> {
+  char presentation = 's';
+
+  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
+
+  template <typename FormatContext>
+  auto format(const autopas::CellType &type, FormatContext &ctx) const {
+    std::string_view name;
+
+    switch (type) {
+      case autopas::CellType::FullParticleCell:
+        name = "FullParticleCell";
+        break;
+      case autopas::CellType::ReferenceParticleCell:
+        name = "ReferenceParticleCell";
+        break;
+      case autopas::CellType::ClusterTower:
+        name = "ClusterTower";
+        break;
+      case autopas::CellType::SortedCellView:
+        name = "SortedCellView";
+        break;
+      case autopas::CellType::IsNoCell:
+        name = "IsNoCell";
+        break;
+      default:
+        name = "UnknownCellType";
+        break;
+    }
+
+    return fmt::format_to(ctx.out(), "{}", name);
+  }
+};
+}  // namespace fmt

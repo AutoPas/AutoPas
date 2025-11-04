@@ -7,10 +7,11 @@ endif ()
 
 set(Kokkos_ENABLE_OPENMP ON)
 set(Kokkos_ENABLE_CUDA ON)
+set(Kokkos_ENABLE_SERIAL ON)
 set(Kokkos_ENABLE_CUDA_CONSTEXPR ON )
 set(Kokkos_ARCH_AMPERE86 ON)
 #set(Kokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE ON)
-set(Kokkos_ENABLE_MULTIPLE_CMAKE_LANGUAGE ON)
+#set(Kokkos_ENABLE_MULTIPLE_CMAKE_LANGUAGE ON)
 
 message(STATUS "Setting up Kokkos")
 set(Kokkos_VERSION 4.7.01)

@@ -11,7 +11,7 @@
 
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/containers/kokkos/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/kokkos/verletClusterLists/KokkosVerletClusterLists.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -123,7 +123,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
     case ContainerOption::verletLists: {
       container = std::make_unique<VerletLists<Particle_T>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
-          BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+          autopas::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::verletListsCells: {

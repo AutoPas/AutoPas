@@ -38,10 +38,10 @@ inline int needlemanWunschScore(std::string s1, std::string s2) {
 
   // initialize top and right border with cumulative gap penalties
   for (size_t i = 0; i < scoreMatrix.size(); ++i) {
-    scoreMatrix[i][0] = i * scoreGap;
+    scoreMatrix[i][0] = static_cast<int>(i) * scoreGap;
   }
   for (size_t j = 0; j < scoreMatrix[0].size(); ++j) {
-    scoreMatrix[0][j] = j * scoreGap;
+    scoreMatrix[0][j] = static_cast<int>(j) * scoreGap;
   }
 
   // fill rest of matrix
