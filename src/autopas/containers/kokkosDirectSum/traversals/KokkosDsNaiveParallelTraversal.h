@@ -21,7 +21,10 @@ public:
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::kokkos_ds_naive_parallel; }
 
-    [[nodiscard]] bool isApplicable() const final { return false; }
+    [[nodiscard]] bool isApplicable() const final { 
+        // TODO
+        return true;
+    }
 
     void initTraversal() final {
         // TODO

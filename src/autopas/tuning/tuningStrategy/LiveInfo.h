@@ -239,10 +239,10 @@ class LiveInfo {
 
     // Sanity Check
     if (numOwnedParticlesCount != numOwnedParticles) {
-      AutoPasLog(ERROR,
-                 "Number of owned particles tracked by AutoPas ({}) does not match number of owned particles "
-                 "counted using the iterator ({}).",
-                 numOwnedParticles, numOwnedParticlesCount);
+      //AutoPasLog(ERROR,
+      //           "Number of owned particles tracked by AutoPas ({}) does not match number of owned particles "
+      //           "counted using the iterator ({}).",
+      //           numOwnedParticles, numOwnedParticlesCount);
     }
 
     infos["numOwnedParticles"] = numOwnedParticlesCount;

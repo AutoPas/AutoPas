@@ -9,8 +9,9 @@
 #pragma once
 
 #include "autopas/containers/ParticleContainerInterface.h"
-
 #include "autopas/containers/TraversalInterface.h"
+
+#include <Kokkos_Core.hpp>
 
 namespace autopas {
 
@@ -44,6 +45,20 @@ template <class Particle_T>
 
             void deleteHaloParticles() override {
                 // TODO
+            }
+
+            void deleteAllParticles() override {
+                // TODO
+            }
+
+            size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
+                // TODO
+                return 0;
+            }
+
+            size_t size() const override {
+                // TODO
+                return 0;
             }
 
             void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -103,7 +118,7 @@ template <class Particle_T>
 
             [[nodiscard]] double getCutoff() const final { return 0; }
 
-            [[nodiscard]] void setCutoff(double cutoff) final { /* No-Op */ };
+            void setCutoff(double cutoff) final { /* No-Op */ };
 
             [[nodiscard]] double getInteractionLength() const final { return 0; }
 
@@ -130,5 +145,29 @@ template <class Particle_T>
                 // TODO
                 return false;
             }
+    
+    private:
+
+    #if defined(Kokkos_ENABLE_CUDA)
+        using MemSpace = Kokkos::CudaSpace;
+
+    #elif defined(Kokkos_ENABLE_OPENMP)
+        using MemSpace = Kokkos::OpenMP;
+    #endif
+        
+    
+        /* AoS Data structure */
+        Kokkos::View<Particle_T*> _ownedParticles {};
+
+        Kokkos::View<Particle_T*> _haloParticles {};
+
+        /* SoA data structure */
+
+        // TODO: implement
+
+        /* AoSoA data structure */
+
+        // TODO: implement
+
         };
 }
