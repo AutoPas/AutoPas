@@ -79,23 +79,24 @@ class MethaneMultisitePairwiseFunctor
   // Site IDs: C, H, H, H, H, E, E, E, E
   const std::array<size_t, 9> _siteIds{{0, 1, 1, 1, 1, 2, 2, 2, 2}};
 
-  const std::array<double, 6> _paramA{0.262373610e7,  0.265413949e7,  0.241399203e6,
-                                      -0.271732286e6, -0.749715218e5, 0.123654939e6};
+  const std::array<double, 6> _paramsA{0.262373610e7,  0.265413949e7,  0.241399203e6,
+                                       -0.271732286e6, -0.749715218e5, 0.123654939e6};
 
-  const std::array<double, 6> _paramAlpha{0.16878421e1, 0.28827219e1, 0.35917561e1,
-                                          0.16490747e1, 0.20593086e1, 0.21451641e1};
+  const std::array<double, 6> _paramsAlpha{0.16878421e1, 0.28827219e1, 0.35917561e1,
+                                           0.16490747e1, 0.20593086e1, 0.21451641e1};
 
-  const std::array<double, 6> _paramB{0.168275675e1, 0.288261054e1, 0.384703188e1,
-                                      0.155011960e1, 0.266424603e1, 0.304993944e1};
+  const std::array<double, 6> _paramsB{0.168275675e1, 0.288261054e1, 0.384703188e1,
+                                       0.155011960e1, 0.266424603e1, 0.304993944e1};
 
-  const std::array<double, 6> _paramC6{0.112317356e7, -0.139633537e7, 0.294147230e6,
-                                       0.127844394e7, 0.169329268e6,  -0.590727146e6};
+  const std::array<double, 6> _paramsC6{0.112317356e7, -0.139633537e7, 0.294147230e6,
+                                        0.127844394e7, 0.169329268e6,  -0.590727146e6};
 
-  const std::array<double, 6> _paramC8{-0.120939119e9, 0.385078060e8,  -0.264781786e7,
-                                       0.174762764e7,  -0.810401688e7, 0.679543866e7};
+  const std::array<double, 6> _paramsC8{-0.120939119e9, 0.385078060e8,  -0.264781786e7,
+                                        0.174762764e7,  -0.810401688e7, 0.679543866e7};
 
-  const double _chargeH = 0.94753e2;
-  const double _chargeC = -0.379012e3;
+  // Site charges {C, H, E}
+  const std::array<double, 3> _charges{-0.379012e3, 0.94753e2, 0.};
+
   const double _bCorr = 0.177e1;
   const double _deltaC6 = 0.45347e5;
   const double _deltaC8 = 0.432463e6;
@@ -196,12 +197,46 @@ class MethaneMultisitePairwiseFunctor
         autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), _sitePositions);
 
     for (int i = 0; i < numSites; i++) {
+      const auto siteTypeI = _siteIds[i];
       for (int j = 0; j < numSites; j++) {
+        const auto siteTypeJ = _siteIds[j];
+        // Map site type combination to 0-5 index
+        const int paramIndex = (siteTypeI >= siteTypeJ) ? siteTypeI * (siteTypeI + 1) / 2 + siteTypeJ
+                                                        : siteTypeJ * (siteTypeJ + 1) / 2 + siteTypeI;
+        const auto alpha = _paramsAlpha[paramIndex];
+        const auto A = _paramsA[paramIndex];
+        const auto b = _paramsB[paramIndex];
+        const auto C6 = _paramsC6[paramIndex];
+        const auto C8 = _paramsC8[paramIndex];
+
         const auto displacement = autopas::utils::ArrayMath::add(
             autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
-        const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-        const auto force = autopas::utils::ArrayMath::mulScalar(displacement, 0.0);
+        const auto distSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+        const auto dist = std::sqrt(distSquared);
+        const auto distInv = 1. / dist;
+        const auto distInv2 = distInv * distInv;
+        const auto distInv3 = distInv2 * distInv;
+        const auto distInv4 = distInv3 * distInv;
+        const auto distInv5 = distInv4 * distInv;
+        const auto distInv6 = distInv5 * distInv;
+        const auto distInv7 = distInv6 * distInv;
+        const auto distInv8 = distInv7 * distInv;
+        const auto distInv9 = distInv8 * distInv;
+
+        const auto expTerm = alpha * A * std::exp(-alpha * dist) * distInv;
+
+        const auto expBR = std::exp(-b * dist);
+
+
+        const auto tangToenniesTerm6 = expBR * 6 * C6;
+        const auto tangToenniesTerm8 = expBR * 8 * C8;
+
+
+        const auto chargeTerm = _charges[siteTypeI] * _charges[siteTypeJ] * distInv2;
+
+        const auto forceFactor = -expTerm + tangToenniesTerm6 + tangToenniesTerm8 - chargeTerm;
+        const auto force = autopas::utils::ArrayMath::mulScalar(displacement, forceFactor);
 
         // Add force on site to net force
         particleA.addF(force);
