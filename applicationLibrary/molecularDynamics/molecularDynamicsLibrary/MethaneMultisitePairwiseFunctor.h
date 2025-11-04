@@ -55,15 +55,25 @@ class MethaneMultisitePairwiseFunctor
    */
   const double _cutoffSquared;
 
-  /**
-   * List of relative unrotated LJ Site Positions. This is to be used when there is no mixing of molecules.
-   */
-  const std::vector<std::array<double, 3>> _sitePositionsLJ{};
+  constexpr std::array<double, 3> makeSitePosition(double x, double y, double z) {
+    // Precomputed value of 1.0 / sqrt(3) for tetrahedral positions.
+    constexpr double invSqrt3 = 0.5773502691896258;
+    constexpr double factor = 1.099 / invSqrt3;
+    return std::array{x * factor, y * factor, z * factor};
+  }
 
   /**
-   * Particle property library. Not used if all sites are of the same species.
+   * List of relative unrotated Methane Site Positions.
    */
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+  const std::vector<std::array<double, 3>> _sitePositions{{0., 0., 0.},                        // C atom
+                                                          makeSitePosition(0.88, 0.88, 0.88),  // Along C-H bond
+                                                          makeSitePosition(0.88, -0.88, -0.88),
+                                                          makeSitePosition(-0.88, 0.88, -0.88),
+                                                          makeSitePosition(-0.88, -0.88, 0.88),
+                                                          makeSitePosition(-0.66, -0.66, -0.66),
+                                                          makeSitePosition(-0.66, 0.66, 0.66),
+                                                          makeSitePosition(0.66, -0.66, 0.66),
+                                                          makeSitePosition(0.66, 0.66, -0.66)};
 
   /**
    * Sum of potential energy. Only calculated if calculateGlobals is true.
@@ -110,8 +120,6 @@ class MethaneMultisitePairwiseFunctor
 
  public:
   /**
-   * Constructor for Functor with particle mixing disabled. setParticleProperties() must be called.
-   * @note Only to be used with mixing == false
    * @param cutoff
    */
   explicit MethaneMultisitePairwiseFunctor(double cutoff) : MethaneMultisitePairwiseFunctor(cutoff, nullptr) {
@@ -151,42 +159,24 @@ class MethaneMultisitePairwiseFunctor
       return;
     }
 
-    // get number of sites
-    const size_t numSitesA = _sitePositionsLJ.size();
-    const size_t numSitesB = _sitePositionsLJ.size();
+    constexpr size_t numSites = 9;
 
     // get siteIds
     const std::vector<size_t> siteIdsA = std::vector<unsigned long>();
-    const std::vector<size_t> siteIdsB = std::vector<unsigned long>();
-
-    // get unrotated relative site positions
-    const std::vector<std::array<double, 3>> unrotatedSitePositionsA = _sitePositionsLJ;
-    const std::vector<std::array<double, 3>> unrotatedSitePositionsB = _sitePositionsLJ;
 
     // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), _sitePositions);
     const auto rotatedSitePositionsB =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), unrotatedSitePositionsB);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), _sitePositions);
 
-    for (int i = 0; i < numSitesA; i++) {
-      for (int j = 0; j < numSitesB; j++) {
+    for (int i = 0; i < numSites; i++) {
+      for (int j = 0; j < numSites; j++) {
         const auto displacement = autopas::utils::ArrayMath::add(
             autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-        // clang-format off
-        // Calculate potential between sites and thus force
-        // Force = (2*(distance)^12 - (sdistance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
-        //         {                         scalarMultiple                                   } * {                     displacement             }
-        // clang-format on
-        const auto invDistSquared = 1. / distanceSquared;
-        const auto lj2 = invDistSquared;
-        const auto lj6 = lj2 * lj2 * lj2;
-        const auto lj12 = lj6 * lj6;
-        const auto lj12m6 = lj12 - lj6;  // = LJ potential
-        const auto scalarMultiple = (lj12 + lj12m6) * invDistSquared;
-        const auto force = autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
+        const auto force = autopas::utils::ArrayMath::mulScalar(displacement, 0.0);
 
         // Add force on site to net force
         particleA.addF(force);
@@ -203,7 +193,7 @@ class MethaneMultisitePairwiseFunctor
         if (calculateGlobals) {
           // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
           // Potential energy has an additional factor of 6, which is also handled in endTraversal().
-          const auto potentialEnergy6;
+          const auto potentialEnergy6 = 0.0;
           const auto virial = displacement * force;
 
           const auto threadNum = autopas::autopas_get_thread_num();
@@ -271,7 +261,7 @@ class MethaneMultisitePairwiseFunctor
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
     std::vector<char, autopas::AlignedAllocator<char>> isSiteOwned;
 
-    const auto const_unrotatedSitePositions = _sitePositionsLJ;
+    const auto const_unrotatedSitePositions = _sitePositions;
 
     // count number of sites in SoA
     size_t siteCount = 0;
@@ -481,10 +471,10 @@ class MethaneMultisitePairwiseFunctor
    * Sets the molecule properties constants for this functor.
    *
    * This is only necessary if no particlePropertiesLibrary is used.
-   * @param sitePositionsLJ vector of 3D relative unrotated untranslated site positions
+   * @param sitePositions vector of 3D relative unrotated untranslated site positions
    */
-  void setParticleProperties(std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsLJ) {
-    _sitePositionsLJ = sitePositionsLJ;
+  void setParticleProperties(std::vector<std::array<SoAFloatPrecision, 3>> sitePositions) {
+    _sitePositions = sitePositions;
   }
 
   /**
@@ -701,7 +691,7 @@ class MethaneMultisitePairwiseFunctor
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesB;
     std::vector<char, autopas::AlignedAllocator<char>> isSiteOwnedBArr;
 
-    const auto const_unrotatedSitePositions = _sitePositionsLJ;
+    const auto const_unrotatedSitePositions = _sitePositions;
 
     // count number of sites in both SoAs
     size_t siteCountB = 0;
@@ -929,7 +919,7 @@ class MethaneMultisitePairwiseFunctor
 
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-    const auto const_unrotatedSitePositions = _sitePositionsLJ;
+    const auto const_unrotatedSitePositions = _sitePositions;
 
     const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict neighborListPtr = neighborList.data();
