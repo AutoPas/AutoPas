@@ -1056,6 +1056,16 @@ class LogicHandler {
   unsigned int _iteration{0};
 
   /**
+   * Amount of particles in the particle buffer before remainder traversal per iteration.
+   */
+  size_t _particleBufferSize{0};
+
+  /**
+   * The current amount of fast particles
+   */
+  size_t _numParticlesFast{0};
+
+  /**
    * The iteration number at the end of last tuning phase.
    */
   unsigned int _iterationAtEndOfLastTuningPhase{0};
@@ -1172,19 +1182,35 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
 
 template <typename Particle_T>
 void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#if defined(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS) || defined(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER)
+  _numParticlesFast = 0;
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
+#ifndef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER
   AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+#else
+  AUTOPAS_OPENMP(parallel reduction(+ : _numParticlesFast))
+#endif
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
-
+#ifndef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+#else
+    if (distanceSquare >= halfSkinSquare) {
+      Particle_T &particle = *iter;
+      Particle_T particleCopy = particle;
+
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      internal::markParticleAsDeleted(particle);
+
+      _numParticlesFast++;
+    }
+#endif
   }
 #endif
 }
@@ -1292,6 +1318,11 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
 
+  _particleBufferSize = 0;
+  for (auto &th : _particleBuffer) {
+    _particleBufferSize += th.size();
+  }
+
   timerComputeRemainder.start();
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
   const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
@@ -1313,7 +1344,11 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyWatts : nanD,
           energyMeasurementsPossible ? energyJoules : nanD,
           energyMeasurementsPossible ? energyDeltaT : nanD,
-          energyMeasurementsPossible ? energyTotal : nanL};
+          energyMeasurementsPossible ? energyTotal : nanL,
+          _particleBufferSize,
+          getNumberOfParticlesOwned(),
+          getNumberOfParticlesHalo(),
+          _numParticlesFast};
 }
 
 template <typename Particle_T>
