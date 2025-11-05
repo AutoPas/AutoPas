@@ -1,26 +1,23 @@
 #pragma once
-#include "autopas/baseFunctors/PairwiseFunctor.h"
-
+#include "autopas/baseFunctors/KokkosFunctor.h"
 namespace mdLib {
 
 template <typename Particle_T>
-class LJFunctorKokkos : public autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T>> {
+class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFunctorKokkos<Particle_T>> {
  public:
-  explicit LJFunctorKokkos(double cutoff) : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T>>(cutoff) {}
+  template <typename Space, typename Layout>
+  using SoAArraysType = autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>::template SoAArraysType<Space, Layout>;
 
-  void SoAFunctorSingle(autopas::SoAView<typename Particle_T::SoAArraysType> soa, bool newton3) override {}
-
-  void SoAFunctorVerlet(autopas::SoAView<typename Particle_T::SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<unsigned long>> &neighborList,
-                        bool newton3) override {}
-
-  void SoAFunctorPair(autopas::SoAView<typename Particle_T::SoAArraysType> soa1,
-                      autopas::SoAView<typename Particle_T::SoAArraysType> soa2, bool newton3) override {}
+  explicit LJFunctorKokkos(double cutoff) : autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>(cutoff) {}
 
   bool allowsNewton3() { return true; }
   bool allowsNonNewton3() { return false; }
   bool isRelevantForTuning() { return true; }
   std::string getName() { return "Lennard-Jones Kokkos"; }
+
+  template <typename Space, typename Layout>
+  KOKKOS_FUNCTION
+  static void KokkosSoAFunctor(SoAArraysType<Space, Layout> soa, size_t index) {};
 };
 
 }  // namespace mdLib
