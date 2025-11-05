@@ -31,7 +31,11 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
       "computeInteractionsTotal[ns],"
-      "tuning[ns]";
+      "tuning[ns],"
+      "particleBufferSize,"
+      "numParticlesOwned,"
+      "numParticlesHalo,"
+      "numParticlesFast,";
   if (energyMeasurements) {
     csvHeader.append(
         ",energyWatts[W],"
@@ -60,17 +64,19 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             const IterationMeasurements &measurements) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyWatts, energyJoules, energyDeltaT, energyTotal] = measurements;
+               energyWatts, energyJoules, energyDeltaT, energyTotal, particleBufferSize, numParticlesOwned,
+               numParticlesHalo, numParticlesFast] = measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, energyWatts, energyJoules, energyDeltaT);
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
+               inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
+               timeRemainderTraversal, timeRebuild, timeTotal, timeTuning, particleBufferSize, numParticlesOwned,
+               numParticlesHalo, numParticlesFast, energyWatts, energyJoules, energyDeltaT);
   } else {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
                configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning);
+               timeTuning, particleBufferSize, numParticlesOwned, numParticlesHalo, numParticlesFast);
   }
 #endif
 }

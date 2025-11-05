@@ -55,5 +55,25 @@ struct IterationMeasurements {
    * Total energy consumed so far
    */
   long energyTotal{};
+
+  /**
+   * Size of particle buffer at the end of updateContainer()
+   */
+  size_t particleBufferSize{};
+
+  /**
+   * Number of owned particles per iteration
+   */
+  size_t numParticlesOwned{};
+
+  /**
+   * Number of halo particles per iteration
+   */
+  size_t numParticlesHalo{};
+
+  /**
+   * Number of fast particles per iteration
+   */
+  size_t numParticlesFast{};
 };
 }  // namespace autopas
