@@ -13,6 +13,7 @@ file(
 )
 
 option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
+option(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER  "Enables fast particle buffers in all containers, thereby disabling the dynamic rebuild." OFF)
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
@@ -54,6 +55,7 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
+        $<$<BOOL:${AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER}>:AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER>
         _USE_MATH_DEFINES
 )
 
