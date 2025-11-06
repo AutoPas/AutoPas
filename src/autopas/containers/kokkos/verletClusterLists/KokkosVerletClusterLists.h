@@ -5,7 +5,7 @@
 
 namespace autopas {
 
-template <typename Space, typename Particle_T>
+template < typename Particle_T>
 class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Particle_T> {
  public:
   KokkosVerletClusterLists(const std::array<double, 3> &box_min, const std::array<double, 3> &box_max,
@@ -140,7 +140,7 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   }
 
  private:
-  using Tuple = typename utils::kokkos::KokkosSoAType<Space, typename Particle_T::SoAArraysType>::Type;
+  using Tuple = utils::kokkos::KokkosSoAType<typename Particle_T::SoAArraysType>::Type;
   utils::kokkos::KokkosSoA<Tuple> _soa;
 
   std::array<double, 3> _boxMin;
