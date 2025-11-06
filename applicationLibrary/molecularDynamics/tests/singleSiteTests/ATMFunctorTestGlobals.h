@@ -21,8 +21,8 @@ class ATMFunctorTestGlobals : public ATMFunctorTest {
 
   static void ATMFunctorTestGlobalsNoMixing(where_type where, bool newton3);
   static void testSoAGlobalsATM(where_type where, bool newton3, InteractionType interactionType,
-                               size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas,
-                               bool mixedNewton3FunctorCalls);
+                                size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas,
+                                bool mixedNewton3FunctorCalls);
 
   constexpr static double cutoff{5.};
   constexpr static double nu{0.7};

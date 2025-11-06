@@ -12,7 +12,7 @@ TYPED_TEST_SUITE_P(ATMFunctorTestGlobals);
 
 template <class FuncType>
 void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsNoMixing(ATMFunctorTestGlobals<FuncType>::where_type where,
-                                                                  bool newton3) {
+                                                                    bool newton3) {
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
