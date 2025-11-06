@@ -128,10 +128,10 @@ TYPED_TEST_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobalsOpenMPParallel) {
   const double potentialEnergy = functor.getPotentialEnergy();
   const double virial = functor.getVirial();
 
-  const double expectedEnergyTriplet1 = calculateATPotential(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
-  const double expectedVirialTriplet1 = calculateATVirialTotal(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
-  const double expectedEnergyTriplet2 = calculateATPotential(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
-  const double expectedVirialTriplet2 = calculateATVirialTotal(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
+  const double expectedEnergyTriplet1 = calculateATMPotential(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
+  const double expectedVirialTriplet1 = calculateATMVirialTotal(p1Pos, p2Pos, p3Pos, this->cutoff, this->nu);
+  const double expectedEnergyTriplet2 = calculateATMPotential(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
+  const double expectedVirialTriplet2 = calculateATMVirialTotal(p4Pos, p5Pos, p6Pos, this->cutoff, this->nu);
   const double expectedEnergy = expectedEnergyTriplet1 + expectedEnergyTriplet2;
   const double expectedVirial = expectedVirialTriplet1 + expectedVirialTriplet2;
 
@@ -168,8 +168,7 @@ TYPED_TEST_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobals) {
   for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
                                               TestType::where_type::inoutout, TestType::where_type::allOutside}) {
     for (bool newton3 : {false, true}) {
-      if (auto msg =
-              this->shouldSkipIfNotImplemented([&]() { this->ATMFunctorTestGlobalsNoMixingAoS(where, newton3); });
+      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATMFunctorTestGlobalsNoMixing(where, newton3); });
           msg != "") {
         GTEST_SKIP() << msg;
       }

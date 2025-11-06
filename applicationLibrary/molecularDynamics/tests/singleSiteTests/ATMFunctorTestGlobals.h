@@ -1,5 +1,5 @@
 /**
- * @file ATFunctorTestGlobals.h
+ * @file ATMFunctorTestGlobals.h
  * @author muehlhaeusser
  * @date 29.08.23
  */

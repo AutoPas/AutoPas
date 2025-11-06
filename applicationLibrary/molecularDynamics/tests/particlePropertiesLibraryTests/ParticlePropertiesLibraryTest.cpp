@@ -395,7 +395,7 @@ TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
   for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
     for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
       for (unsigned int k = 0; k < PPL->getNumberRegisteredSiteTypes(); k++) {
-        const auto allMixingData = PPL->getATMixingData(i, j, k);
+        const auto allMixingData = PPL->getATMMixingData(i, j, k);
         const auto nu = PPL->getMixingNu(i, j, k);
 
         EXPECT_DOUBLE_EQ(allMixingData.nu, nu);
