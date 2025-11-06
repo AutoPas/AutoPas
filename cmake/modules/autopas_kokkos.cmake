@@ -1,17 +1,33 @@
 option(AUTOPAS_ENABLE_KOKKOS "Enables the GPU backend using Kokkos" OFF)
 
+set(AUTOPAS_KOKKOS_BACKEND "CUDA" CACHE STRING "Selects Kokkos device backend (CUDA, HIP, or SYCL)" )
+
+set_property(CACHE AUTOPAS_KOKKOS_BACKEND PROPERTY STRINGS CUDA HIP SYCL)
+
+
 if (NOT ${AUTOPAS_ENABLE_KOKKOS})
     return()
 endif ()
 
 
 set(Kokkos_ENABLE_OPENMP ON)
-set(Kokkos_ENABLE_CUDA ON)
 set(Kokkos_ENABLE_SERIAL ON)
-set(Kokkos_ENABLE_CUDA_CONSTEXPR ON )
+
+if (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "CUDA")
+set(Kokkos_ENABLE_CUDA ON)
 set(Kokkos_ARCH_AMPERE86 ON)
-#set(Kokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE ON)
-#set(Kokkos_ENABLE_MULTIPLE_CMAKE_LANGUAGE ON)
+set(Kokkos_ENABLE_CUDA_CONSTEXPR ON)
+
+elseif (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "HIP")
+set(Kokkos_ENABLE_HIP ON)
+
+elseif (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "SYCL")
+set(Kokkos_ENABLE_SYCL ON)
+set(Kokkos_ARCH_INTEL_GEN12LP ON)
+
+else ()
+message(FATAL_ERROR "Unsupported Kokkos backend selected: ${AUTOPAS_KOKKOS_BACKEND}. Supported are CUDA, HIP, SYCL.")
+endif ()
 
 message(STATUS "Setting up Kokkos")
 set(Kokkos_VERSION 4.7.01)

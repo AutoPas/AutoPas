@@ -110,7 +110,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       double, // tz
       size_t, // typeid
       autopas::OwnershipState //ownerState
-  >::Type;
+  >;
   // clang-format on
 
   /**
@@ -119,7 +119,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, typename SoAArraysType::Type>::type::value_type get() {
     return this;
   }
 
@@ -131,7 +131,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+  constexpr typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -195,7 +195,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

@@ -420,7 +420,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
                                                 double,  // accY
                                                 double,  // accZ
                                                 double,  // engDot
-                                                autopas::OwnershipState>::Type;
+                                                autopas::OwnershipState>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -428,7 +428,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type get() {
     return this;
   }
 
@@ -438,7 +438,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
    * @return Value of the requested attribute.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+  constexpr typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type get() const {
     if constexpr (attribute == AttributeNames::mass) {
       return getMass();
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -484,7 +484,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
    * @param value New value of the requested attribute.
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type value) {
     if constexpr (attribute == AttributeNames::mass) {
       setMass(value);
     } else if constexpr (attribute == AttributeNames::posX) {

@@ -58,8 +58,7 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
       return function(dynamic_cast<autopas::Octree<Particle_T> &>(container));
     case ContainerOption::kokkosVerletClusterLists:
       // TODO better dynamic cast
-      return function(dynamic_cast<autopas::KokkosVerletClusterLists<autopas::utils::kokkos::HostSpace,
-                                                                     Kokkos::LayoutLeft, Particle_T> &>(container));
+      return function(dynamic_cast<autopas::KokkosVerletClusterLists<autopas::utils::kokkos::SharedSpace, Particle_T> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container.getContainerType());

@@ -9,6 +9,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
+#include "kokkos/KokkosSpace.h"
 
 namespace autopas::utils {
 

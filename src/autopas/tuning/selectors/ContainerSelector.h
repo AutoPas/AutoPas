@@ -158,7 +158,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
       break;
     }
     case ContainerOption::kokkosVerletClusterLists: {
-      container = std::make_unique<KokkosVerletClusterLists<utils::kokkos::HostSpace, Kokkos::LayoutLeft, Particle_T>>(
+      container = std::make_unique<KokkosVerletClusterLists<utils::kokkos::SharedSpace, Particle_T>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency);
       break;
     }

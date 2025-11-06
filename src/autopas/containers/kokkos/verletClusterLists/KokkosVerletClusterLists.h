@@ -5,7 +5,7 @@
 
 namespace autopas {
 
-template <typename Space, typename Layout, typename Particle_T>
+template <typename Space, typename Particle_T>
 class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Particle_T> {
  public:
   KokkosVerletClusterLists(const std::array<double, 3> &box_min, const std::array<double, 3> &box_max,
@@ -16,14 +16,13 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
         _verletSkin(verlet_skin),
         _rebuildFrequency(rebuild_frequency) {}
 
-  autopas::CellType getParticleCellTypeEnum() const override { return autopas::CellType::FullParticleCell; }
+  autopas::CellType getParticleCellTypeEnum() const override { return autopas::CellType::IsNoCell; }
+
   [[nodiscard]] autopas::ContainerOption getContainerType() const override {
     return autopas::ContainerOption::kokkosVerletClusterLists;
   }
 
-  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
-    soa.resize(numParticles);
-  }
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {}
 
  protected:
   void addParticleImpl(const Particle_T &p) override {}
@@ -48,31 +47,27 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
     autopas::utils::ExceptionHandler::exception("unimplemented");
     return 0;
   }
-  [[nodiscard]] size_t size() const override { return soa.size(); }
+  [[nodiscard]] size_t size() const override {
+    // return _cell.size();
+  }
 
   [[nodiscard]] autopas::ContainerIterator<Particle_T, true, false> begin(
       autopas::IteratorBehavior behavior,
       typename autopas::ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors) override {
-    // TODO
-
-    autopas::utils::ExceptionHandler::exception("unimplemented");
-    return {};
+    return {*this, behavior, additionalVectors};
   }
+
   [[nodiscard]] autopas::ContainerIterator<Particle_T, false, false> begin(
       autopas::IteratorBehavior behavior,
       typename autopas::ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors)
       const override {
-    // TODO
-
-    autopas::utils::ExceptionHandler::exception("unimplemented");
-    return {};
+    return {*this, behavior, additionalVectors};
   }
+
   [[nodiscard]] autopas::ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       autopas::IteratorBehavior behavior,
-      typename autopas::ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors)
-      override {  // TODO
-
+      typename autopas::ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors) override {
     autopas::utils::ExceptionHandler::exception("unimplemented");
     return {};
   }
@@ -144,12 +139,10 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
     autopas::utils::ExceptionHandler::exception("unimplemented");
   }
 
- protected:
-  using Tuple = typename autopas::utils::kokkos::KokkosSoAType<Space, Layout, typename Particle_T::SoAArraysType>::Type;
-
-  autopas::utils::kokkos::KokkosSoA<Tuple> soa;
-
  private:
+  using Tuple = typename utils::kokkos::KokkosSoAType<Space, typename Particle_T::SoAArraysType>::Type;
+  utils::kokkos::KokkosSoA<Tuple> _soa;
+
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
   double _cutoff;

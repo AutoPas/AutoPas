@@ -7,9 +7,10 @@ namespace autopas {
 template <class Particle_T, class CRTP_T>
 class KokkosFunctor : public PairwiseFunctor<Particle_T, CRTP_T> {
  public:
-  template <typename Space, typename Layout>
+
+  template <typename Space>
   using SoAArraysType =
-      typename autopas::utils::kokkos::KokkosSoAType<Space, Layout, typename Particle_T::SoAArraysType>;
+      typename autopas::utils::kokkos::KokkosSoAType<Space, typename Particle_T::SoAArraysType>;
 
   explicit KokkosFunctor(double cutoff) : autopas::PairwiseFunctor<Particle_T, CRTP_T>(cutoff) {}
 
@@ -23,8 +24,8 @@ class KokkosFunctor : public PairwiseFunctor<Particle_T, CRTP_T> {
                       SoAView<typename PairwiseFunctor<Particle_T, CRTP_T>::SoAArraysType> soa2,
                       bool newton3) override {}
 
-  template <typename Space, typename Layout>
-  void KokkosSoAFunctor(SoAArraysType<Space, Layout> soa, size_t index) {
+  template <typename Space>
+  void KokkosSoAFunctor(SoAArraysType<Space> soa, size_t index) {
     utils::ExceptionHandler::exception("{}::KokkosSoAFunctor: not implemented", this->getName());
   };
 };

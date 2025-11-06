@@ -5,8 +5,8 @@ namespace mdLib {
 template <typename Particle_T>
 class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFunctorKokkos<Particle_T>> {
  public:
-  template <typename Space, typename Layout>
-  using SoAArraysType = autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>::template SoAArraysType<Space, Layout>;
+  template <typename Space>
+  using SoAArraysType = autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>::template SoAArraysType<Space>;
 
   explicit LJFunctorKokkos(double cutoff) : autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>(cutoff) {}
 
@@ -15,9 +15,8 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
   bool isRelevantForTuning() { return true; }
   std::string getName() { return "Lennard-Jones Kokkos"; }
 
-  template <typename Space, typename Layout>
-  KOKKOS_FUNCTION
-  static void KokkosSoAFunctor(SoAArraysType<Space, Layout> soa, size_t index) {};
+  template <typename Space>
+  KOKKOS_FUNCTION static void KokkosSoAFunctor(SoAArraysType<Space> soa, size_t index) {};
 };
 
 }  // namespace mdLib

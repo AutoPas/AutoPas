@@ -66,7 +66,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -74,7 +74,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type get() {
     return this;
   }
   /**
@@ -85,7 +85,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+  constexpr typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -129,7 +129,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

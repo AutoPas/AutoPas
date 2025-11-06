@@ -352,7 +352,7 @@ class ParticleBase {
   using SoAArraysType =
       typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+                                       floatType /*fz*/, OwnershipState /*ownershipState*/>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -360,7 +360,7 @@ class ParticleBase {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type get() {
     return this;
   }
 
@@ -371,7 +371,7 @@ class ParticleBase {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+  constexpr typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -400,7 +400,7 @@ class ParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element_t<attribute, typename SoAArraysType::Type>::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

@@ -7,9 +7,11 @@ namespace autopas::utils::kokkos {
 using DeviceSpace = Kokkos::Cuda;
 #elif KOKKOS_ENABLE_HIP
 using DeviceSpace = Kokkos::Hip;
+#elif KOKKOS_ENABLE_SYCL
+usign DeviceSpace = Kokkos::Sycl;
 #endif
 
-// using SharedSpace = Kokkos::SharedSpace;
+using SharedSpace = Kokkos::SharedSpace;
 
 #ifdef KOKKOS_ENABLE_OPENMP
 using HostSpace = Kokkos::OpenMP;

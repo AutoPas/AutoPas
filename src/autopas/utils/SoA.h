@@ -74,7 +74,7 @@ class SoA {
    */
   void append(const SoA<SoAArraysType> &other) {
     if (other.size() > 0) {
-      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+      append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size_v<typename SoAArraysType::Type>>{});
     }
   }
 
@@ -84,7 +84,7 @@ class SoA {
    */
   void append(const SoAView<SoAArraysType> &other) {
     if (other.size() > 0) {
-      append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
+      append_impl(other, std::make_index_sequence<std::tuple_size_v<typename SoAArraysType::Type>>{});
     }
   }
 
@@ -246,7 +246,7 @@ class SoA {
 
   // helper function to append a single array
   template <std::size_t attribute>
-  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
+  void appendSingleArray(const utils::SoAStorage<typename SoAArraysType::Type> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto &otherVector = valArrays.template get<attribute>();
     currentVector.insert(currentVector.end(), otherVector.begin(), otherVector.end());
@@ -262,7 +262,7 @@ class SoA {
 
   // actual implementation of append
   template <std::size_t... Is>
-  void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+  void append_impl(const utils::SoAStorage<typename SoAArraysType::Type> &valArrays, std::index_sequence<Is...>) {
     // fold expression
     (appendSingleArray<Is>(valArrays), ...);
   }
@@ -277,6 +277,6 @@ class SoA {
   // ------------- members ---------------
 
   // storage container for the SoA's
-  utils::SoAStorage<SoAArraysType> soaStorage;
+  utils::SoAStorage<typename SoAArraysType::Type> soaStorage;
 };
 }  // namespace autopas
