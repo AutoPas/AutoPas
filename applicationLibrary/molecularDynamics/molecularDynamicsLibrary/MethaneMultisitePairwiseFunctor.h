@@ -224,14 +224,26 @@ class MethaneMultisitePairwiseFunctor
         const auto distInv8 = distInv7 * distInv;
         const auto distInv9 = distInv8 * distInv;
 
+        const auto b2 = b * b;
+        const auto b3 = b2 * b;
+        const auto b4 = b3 * b;
+        const auto b5 = b4 * b;
+        const auto b6 = b5 * b;
+        const auto b7 = b6 * b;
+        const auto b8 = b7 * b;
+
         const auto expTerm = alpha * A * std::exp(-alpha * dist) * distInv;
 
         const auto expBR = std::exp(-b * dist);
 
+        const auto tangToenniesSum6 = 3. * b * distInv6 + 2. * b2 * distInv5 + 3. * b3 * distInv4 / 4. +
+                                      b4 * distInv3 / 5. + b5 * distInv2 / 24. + b6 * distInv / 120.;
+        const auto tangToenniesSum8 = 4. * b * distInv8 + 8. * b2 * distInv5 / 3. + b3 * distInv6 +
+                                      4. * b4 * distInv5 / 15. + b5 * distInv4 / 18. + b6 * distInv3 / 105. +
+                                      b7 * distInv2 / 720. + b8 * distInv / 5760.;
 
-        const auto tangToenniesTerm6 = expBR * 6 * C6;
-        const auto tangToenniesTerm8 = expBR * 8 * C8;
-
+        const auto tangToenniesTerm6 = b * expBR * C6 * tangToenniesSum6;
+        const auto tangToenniesTerm8 = b * expBR * C8 * tangToenniesSum8;
 
         const auto chargeTerm = _charges[siteTypeI] * _charges[siteTypeJ] * distInv2;
 
@@ -253,18 +265,23 @@ class MethaneMultisitePairwiseFunctor
         if (calculateGlobals) {
           // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
           // Potential energy has an additional factor of 6, which is also handled in endTraversal().
-          const auto potentialEnergy6 = 0.0;
+          const auto innerSum6 = distInv6 + b * distInv5 + b2 * distInv4 / 2. + b3 * distInv3 / 6. +
+                                 b4 * distInv2 / 24. + b5 * distInv / 120. + b6 / 720.;
+          const auto innerSum8 = innerSum6 * distInv2 + b7 / 5040. * distInv + b8 / 40320.;
+          const auto potentialEnergy = A * std::exp(-alpha * displacement) - C6 * (1 - expBR * innerSum6) -
+                                       C8 * (1 - expBR * innerSum8) +
+                                       _charges[siteTypeI] * _charges[siteTypeJ] * distInv;
           const auto virial = displacement * force;
 
           const auto threadNum = autopas::autopas_get_thread_num();
 
           if (particleA.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
+            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
             _aosThreadData[threadNum].virialSum += virial;
           }
           // for non-newton3 the second particle will be considered in a separate calculation
           if (newton3 and particleB.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
+            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
             _aosThreadData[threadNum].virialSum += virial;
           }
         }
