@@ -119,6 +119,120 @@ class LiveInfo {
                                 DataLayoutOption, Newton3Option>;
 
   /**
+   * Constructor.
+   */
+  LiveInfo() = default;
+
+  /**
+   * Constructor for LiveInfo using the main parameters described in the gather method.
+   * Validates input parameters using autopas exception handler.
+   *
+   * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
+   * @param numOwnedParticles The number of owned particles in the container.
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff The cutoff.
+   * @param skin The (Verlet) skin.
+   */
+  LiveInfo(size_t numOwnedParticles, size_t numHaloParticles, double cutoff, double skin, double domainSizeX,
+           double domainSizeY, double domainSizeZ, size_t particleSize, size_t threadCount, size_t rebuildFrequency,
+           size_t numCells, size_t numEmptyCells, size_t minParticlesPerCell, size_t maxParticlesPerCell,
+           size_t medianParticlesPerCell, size_t lowerQuartileParticlesPerCell, size_t upperQuartileParticlesPerCell,
+           double meanParticlesPerCell, double particlesPerCellStdDev, double relativeParticlesPerCellStdDev,
+           size_t estimatedNumNeighborInteractions, double particleDependentBinMaxDensity,
+           double particleDependentBinDensityStdDev, size_t maxParticlesPerBlurredBin, size_t minParticlesPerBlurredBin,
+           size_t medianParticlesPerBlurredBin, size_t lowerQuartileParticlesPerBlurredBin,
+           size_t upperQuartileParticlesPerBlurredBin, double meanParticlesPerBlurredBin,
+           double particlesPerBlurredBinStdDev, double relativeParticlesPerBlurredBinStdDev) {
+    // Validate all inputs and throw exceptions if invalid
+    if (cutoff <= 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: cutoff must be greater than 0");
+    }
+    if (skin < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: skin must be non-negative");
+    }
+    if (domainSizeX <= 0 || domainSizeY <= 0 || domainSizeZ <= 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: domain sizes must be greater than 0");
+    }
+    if (particleSize == 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: particleSize must be greater than 0");
+    }
+    if (threadCount == 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: threadCount must be greater than 0");
+    }
+    if (rebuildFrequency == 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: rebuildFrequency must be greater than 0");
+    }
+    if (numCells == 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: numCells must be greater than 0");
+    }
+    if (maxParticlesPerCell < minParticlesPerCell) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: maxParticlesPerCell must be >= minParticlesPerCell");
+    }
+    if (meanParticlesPerCell < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: meanParticlesPerCell must be non-negative");
+    }
+    if (particlesPerCellStdDev < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: particlesPerCellStdDev must be non-negative");
+    }
+    if (relativeParticlesPerCellStdDev < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: relativeParticlesPerCellStdDev must be non-negative");
+    }
+    if (particleDependentBinMaxDensity < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: particleDependentBinMaxDensity must be non-negative");
+    }
+    if (particleDependentBinDensityStdDev < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: particleDependentBinDensityStdDev must be non-negative");
+    }
+    if (maxParticlesPerBlurredBin < minParticlesPerBlurredBin) {
+      autopas::utils::ExceptionHandler::exception(
+          "LiveInfo: maxParticlesPerBlurredBin must be >= minParticlesPerBlurredBin");
+    }
+    if (meanParticlesPerBlurredBin < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: meanParticlesPerBlurredBin must be non-negative");
+    }
+    if (particlesPerBlurredBinStdDev < 0) {
+      autopas::utils::ExceptionHandler::exception("LiveInfo: particlesPerBlurredBinStdDev must be non-negative");
+    }
+    if (relativeParticlesPerBlurredBinStdDev < 0) {
+      autopas::utils::ExceptionHandler::exception(
+          "LiveInfo: relativeParticlesPerBlurredBinStdDev must be non-negative");
+    }
+    // Store validated parameters in infos
+    infos["numOwnedParticles"] = numOwnedParticles;
+    infos["numHaloParticles"] = numHaloParticles;
+    infos["cutoff"] = cutoff;
+    infos["skin"] = skin;
+    infos["domainSizeX"] = domainSizeX;
+    infos["domainSizeY"] = domainSizeY;
+    infos["domainSizeZ"] = domainSizeZ;
+    infos["particleSize"] = particleSize;
+    infos["threadCount"] = threadCount;
+    infos["rebuildFrequency"] = rebuildFrequency;
+    infos["numCells"] = numCells;
+    infos["numEmptyCells"] = numEmptyCells;
+    infos["minParticlesPerCell"] = minParticlesPerCell;
+    infos["maxParticlesPerCell"] = maxParticlesPerCell;
+    infos["medianParticlesPerCell"] = medianParticlesPerCell;
+    infos["lowerQuartileParticlesPerCell"] = lowerQuartileParticlesPerCell;
+    infos["upperQuartileParticlesPerCell"] = upperQuartileParticlesPerCell;
+    infos["meanParticlesPerCell"] = meanParticlesPerCell;
+    infos["particlesPerCellStdDev"] = particlesPerCellStdDev;
+    infos["relativeParticlesPerCellStdDev"] = relativeParticlesPerCellStdDev;
+    infos["estimatedNumNeighborInteractions"] = estimatedNumNeighborInteractions;
+    infos["particleDependentBinMaxDensity"] = particleDependentBinMaxDensity;
+    infos["particleDependentBinDensityStdDev"] = particleDependentBinDensityStdDev;
+    infos["maxParticlesPerBlurredBin"] = maxParticlesPerBlurredBin;
+    infos["minParticlesPerBlurredBin"] = minParticlesPerBlurredBin;
+    infos["medianParticlesPerBlurredBin"] = medianParticlesPerBlurredBin;
+    infos["lowerQuartileParticlesPerBlurredBin"] = lowerQuartileParticlesPerBlurredBin;
+    infos["upperQuartileParticlesPerBlurredBin"] = upperQuartileParticlesPerBlurredBin;
+    infos["meanParticlesPerBlurredBin"] = meanParticlesPerBlurredBin;
+    infos["particlesPerBlurredBinStdDev"] = particlesPerBlurredBinStdDev;
+    infos["relativeParticlesPerBlurredBinStdDev"] = relativeParticlesPerBlurredBinStdDev;
+  }
+
+  /**
    * Gathers key statistics that define the computational profile of the simulation, in order to provide lower
    * dimensional and human understandable inputs for the tuning strategies.
    *
@@ -310,6 +424,7 @@ class LiveInfo {
       return std::get<T>(it->second);
     } catch (const std::bad_variant_access &e) {
       AutoPasLog(ERROR, "Type mismatch for key '" + key + "'. Requested type does not match the stored type.");
+      return T{};
     }
   }
 

@@ -9,8 +9,199 @@
 #include "autopas/AutoPas.h"
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ParticleBinStructure.h"
 #include "testingHelpers/commonTypedefs.h"
+
+/**
+ * Tests that the parametrized constructor creates the correct info mappings.
+ */
+TEST_F(LiveInfoTest, ParametrizedConstructorCreatesCorrectInfo) {
+  constexpr double epsilon = 1e-10;
+  const std::vector<std::tuple<size_t, size_t, double, double, double, double, double, size_t, size_t, size_t, size_t,
+                               size_t, size_t, size_t, size_t, size_t, size_t, double, double, double, size_t, double,
+                               double, size_t, size_t, size_t, size_t, size_t, double, double, double>>
+      parameters = {
+          {10, 5,   2.0, 0.1,  10.0, 10.0, 10.0, 64, 4, 20, 8, 2, 1,   3,   2,   1,
+           3,  2.0, 0.5, 0.25, 100,  0.8,  0.05, 4,  1, 2,  1, 3, 2.0, 0.3, 0.15},
+          {50, 25,  3.0, 0.2, 20.0, 20.0, 20.0, 128, 8, 30, 16, 4, 2,   6,   4,  2,
+           6,  3.0, 1.0, 0.5, 200,  1.6,  0.1,  8,   2, 4,  2,  6, 3.0, 0.6, 0.3},
+          {25, 8,   0.750, 0.15, 15.0, 15.0, 15.0, 96, 6, 25, 12, 3, 1,   4,    3,  2,
+           4,  1.5, 0.75,  0.35, 150,  1.2,  0.08, 6,  1, 3,  1,  4, 1.5, 0.45, 0.2},
+          // Constructor with the lowest allowed values
+          {1, 0,       epsilon, 0.0, epsilon, epsilon, epsilon, 1, 1, 1, 1, 0, 0,       0,   0,  0,
+           0, epsilon, 0.0,     0.0, 1,       epsilon, 0.0,     1, 0, 0, 0, 0, epsilon, 0.0, 0.0},
+      };
+
+  autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
+
+  for (const auto &params : parameters) {
+    autopas::LiveInfo info(std::get<0>(params),   // numOwnedParticles
+                           std::get<1>(params),   // numHaloParticles
+                           std::get<2>(params),   // cutoff
+                           std::get<3>(params),   // skin
+                           std::get<4>(params),   // domainSizeX
+                           std::get<5>(params),   // domainSizeY
+                           std::get<6>(params),   // domainSizeZ
+                           std::get<7>(params),   // particleSize
+                           std::get<8>(params),   // threadCount
+                           std::get<9>(params),   // rebuildFrequency
+                           std::get<10>(params),  // numCells
+                           std::get<11>(params),  // numEmptyCells
+                           std::get<12>(params),  // minParticlesPerCell
+                           std::get<13>(params),  // maxParticlesPerCell
+                           std::get<14>(params),  // medianParticlesPerCell
+                           std::get<15>(params),  // lowerQuartileParticlesPerCell
+                           std::get<16>(params),  // upperQuartileParticlesPerCell
+                           std::get<17>(params),  // meanParticlesPerCell
+                           std::get<18>(params),  // particlesPerCellStdDev
+                           std::get<19>(params),  // relativeParticlesPerCellStdDev
+                           std::get<20>(params),  // estimatedNumNeighborInteractions
+                           std::get<21>(params),  // particleDependentBinMaxDensity
+                           std::get<22>(params),  // particleDependentBinDensityStdDev
+                           std::get<23>(params),  // maxParticlesPerBlurredBin
+                           std::get<24>(params),  // minParticlesPerBlurredBin
+                           std::get<25>(params),  // medianParticlesPerBlurredBin
+                           std::get<26>(params),  // lowerQuartileParticlesPerBlurredBin
+                           std::get<27>(params),  // upperQuartileParticlesPerBlurredBin
+                           std::get<28>(params),  // meanParticlesPerBlurredBin
+                           std::get<29>(params),  // particlesPerBlurredBinStdDev
+                           std::get<30>(params)   // relativeParticlesPerBlurredBinStdDev
+    );
+
+    EXPECT_EQ(info.get<size_t>("numOwnedParticles"), std::get<0>(params));
+    EXPECT_EQ(info.get<size_t>("numHaloParticles"), std::get<1>(params));
+    EXPECT_EQ(info.get<double>("cutoff"), std::get<2>(params));
+    EXPECT_EQ(info.get<double>("skin"), std::get<3>(params));
+    EXPECT_EQ(info.get<double>("domainSizeX"), std::get<4>(params));
+    EXPECT_EQ(info.get<double>("domainSizeY"), std::get<5>(params));
+    EXPECT_EQ(info.get<double>("domainSizeZ"), std::get<6>(params));
+    EXPECT_EQ(info.get<size_t>("particleSize"), std::get<7>(params));
+    EXPECT_EQ(info.get<size_t>("threadCount"), std::get<8>(params));
+    EXPECT_EQ(info.get<size_t>("rebuildFrequency"), std::get<9>(params));
+    EXPECT_EQ(info.get<size_t>("numCells"), std::get<10>(params));
+    EXPECT_EQ(info.get<size_t>("numEmptyCells"), std::get<11>(params));
+    EXPECT_EQ(info.get<size_t>("minParticlesPerCell"), std::get<12>(params));
+    EXPECT_EQ(info.get<size_t>("maxParticlesPerCell"), std::get<13>(params));
+    EXPECT_EQ(info.get<size_t>("medianParticlesPerCell"), std::get<14>(params));
+    EXPECT_EQ(info.get<size_t>("lowerQuartileParticlesPerCell"), std::get<15>(params));
+    EXPECT_EQ(info.get<size_t>("upperQuartileParticlesPerCell"), std::get<16>(params));
+    EXPECT_EQ(info.get<double>("meanParticlesPerCell"), std::get<17>(params));
+    EXPECT_EQ(info.get<double>("particlesPerCellStdDev"), std::get<18>(params));
+    EXPECT_EQ(info.get<double>("relativeParticlesPerCellStdDev"), std::get<19>(params));
+    EXPECT_EQ(info.get<size_t>("estimatedNumNeighborInteractions"), std::get<20>(params));
+    EXPECT_EQ(info.get<double>("particleDependentBinMaxDensity"), std::get<21>(params));
+    EXPECT_EQ(info.get<double>("particleDependentBinDensityStdDev"), std::get<22>(params));
+    EXPECT_EQ(info.get<size_t>("maxParticlesPerBlurredBin"), std::get<23>(params));
+    EXPECT_EQ(info.get<size_t>("minParticlesPerBlurredBin"), std::get<24>(params));
+    EXPECT_EQ(info.get<size_t>("medianParticlesPerBlurredBin"), std::get<25>(params));
+    EXPECT_EQ(info.get<size_t>("lowerQuartileParticlesPerBlurredBin"), std::get<26>(params));
+    EXPECT_EQ(info.get<size_t>("upperQuartileParticlesPerBlurredBin"), std::get<27>(params));
+    EXPECT_EQ(info.get<double>("meanParticlesPerBlurredBin"), std::get<28>(params));
+    EXPECT_EQ(info.get<double>("particlesPerBlurredBinStdDev"), std::get<29>(params));
+    EXPECT_EQ(info.get<double>("relativeParticlesPerBlurredBinStdDev"), std::get<30>(params));
+  }
+}
+
+/**
+ * Tests that the parametrized constructor throws when given invalid input.
+ */
+TEST_F(LiveInfoTest, ParametrizedConstructorThrowsOnInvalidInput) {
+  autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
+
+  // cutoff <= 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 0.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // skin < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, -0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // domainSizeX <= 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 0.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+  // domainSizeY <= 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 0.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+  // domainSizeZ <= 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 0.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // particleSize == 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // threadCount == 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // rebuildFrequency == 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // numCells == 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // maxParticlesPerCell < minParticlesPerCell
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 5, 2, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // meanParticlesPerCell < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, -1.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // particlesPerCellStdDev < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, -1.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // relativeParticlesPerCellStdDev < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, -1.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // particleDependentBinMaxDensity < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, -1.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // particleDependentBinDensityStdDev < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 -1.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // maxParticlesPerBlurredBin < minParticlesPerBlurredBin
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 5, 1, 1, 1, 0.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // meanParticlesPerBlurredBin < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, -1.0, 0.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // particlesPerBlurredBinStdDev < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, -1.0, 0.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+
+  // relativeParticlesPerBlurredBinStdDev < 0
+  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
+                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, -1.0),
+               autopas::utils::ExceptionHandler::AutoPasException);
+}
 
 /**
  * Tests Live Info in the following ways:
