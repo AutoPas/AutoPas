@@ -1,14 +1,14 @@
 /**
- * @file ATFunctorTestNoGlobals.cpp
+ * @file ATMFunctorTestNoGlobals.cpp
  * @author muehlhaeusser
  * @date 26.09.23
  */
 
-#include "ATFunctorTestNoGlobals.h"
+#include "ATMFunctorTestNoGlobals.h"
 
-TYPED_TEST_SUITE_P(ATFunctorTestNoGlobals);
+TYPED_TEST_SUITE_P(ATMFunctorTestNoGlobals);
 
-TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
+TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
   using FuncType = typename TypeParam::FuncType;
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
@@ -17,13 +17,13 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   std::unique_ptr<FuncType> functor;
 
   particlePropertiesLibrary.addSiteType(0, 1.0);
-  particlePropertiesLibrary.addATParametersToSite(0, this->nu);
+  particlePropertiesLibrary.addATMParametersToSite(0, this->nu);
   if constexpr (mixing) {
     functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     particlePropertiesLibrary.addSiteType(1, 1.0);
-    particlePropertiesLibrary.addATParametersToSite(1, this->nu2);
+    particlePropertiesLibrary.addATMParametersToSite(1, this->nu2);
     particlePropertiesLibrary.addSiteType(2, 1.0);
-    particlePropertiesLibrary.addATParametersToSite(2, this->nu3);
+    particlePropertiesLibrary.addATMParametersToSite(2, this->nu3);
 
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
@@ -195,10 +195,10 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   }
 }
 
-TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
-  // TODO: Check this test after SoA for Axilrod Teller has been implemented
+TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
+  using namespace autopas::utils::ArrayMath::literals;
   using FuncType = typename TypeParam::FuncType;
-  using TestType = ATFunctorTestNoGlobals<FuncType>;
+  using TestType = ATMFunctorTestNoGlobals<FuncType>;
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
 
@@ -210,11 +210,11 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
     if constexpr (mixing) {
       particlePropertiesLibrary.addSiteType(0, 1.0);
-      particlePropertiesLibrary.addATParametersToSite(0, this->nu);
+      particlePropertiesLibrary.addATMParametersToSite(0, this->nu);
       particlePropertiesLibrary.addSiteType(1, 1.0);
-      particlePropertiesLibrary.addATParametersToSite(1, this->nu2);
+      particlePropertiesLibrary.addATMParametersToSite(1, this->nu2);
       particlePropertiesLibrary.addSiteType(2, 1.0);
-      particlePropertiesLibrary.addATParametersToSite(2, this->nu3);
+      particlePropertiesLibrary.addATMParametersToSite(2, this->nu3);
       particlePropertiesLibrary.calculateMixingCoefficients();
       functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     } else {
@@ -445,6 +445,7 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
           break;
       }
 
+      // Test the forces after the second interaction
       double factor = newton3 ? 2. : 1.;
       if (mixing) {
         EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->absDelta);
@@ -546,7 +547,7 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
   }
 }
 
-REGISTER_TYPED_TEST_SUITE_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT, testSoANoGlobalsAT);
+REGISTER_TYPED_TEST_SUITE_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM, testSoANoGlobalsATM);
 
 template <class Func, bool n3>
 struct TypeWrapper {
@@ -560,7 +561,7 @@ struct Newton3True : public TypeWrapper<FuncType, true> {};
 template <class FuncType>
 struct Newton3False : public TypeWrapper<FuncType, false> {};
 
-using MyTypes = ::testing::Types<Newton3True<ATFunMixNoGlob>, Newton3False<ATFunMixNoGlob>,
-                                 Newton3True<ATFunNoMixNoGlob>, Newton3False<ATFunNoMixNoGlob>>;
+using MyTypes = ::testing::Types<Newton3True<ATMFunMixNoGlob>, Newton3False<ATMFunMixNoGlob>,
+                                 Newton3True<ATMFunNoMixNoGlob>, Newton3False<ATMFunNoMixNoGlob>>;
 
-INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATFunctorTestNoGlobals, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestNoGlobals, MyTypes);

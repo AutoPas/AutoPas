@@ -1,9 +1,9 @@
 /**
- * @file ATPotential.h
+ * @file ATMPotential.h
  * @author muehlhaeusser
  * @date 29.08.23
  *
- * A simple reference implementation of the axilrod teller potential to calculate expected forces
+ * A simple reference implementation of the axilrod teller muto potential to calculate expected forces
  */
 
 #pragma once
@@ -13,7 +13,7 @@
 #include "autopas/utils/ConstexprMath.h"
 
 /**
- * Calculates the potential energy between particles i, j and k using the Axilrod Teller potential.
+ * Calculates the potential energy between particles i, j and k using the Axilrod Teller Muto potential.
  * Here we use the original formula with trigonometric functions.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
@@ -22,8 +22,8 @@
  * @param nu nu value for particles
  * @return potential energy
  */
-constexpr double calculateATPotential(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-                                      const std::array<double, 3> &posK, double cutoff, double nu) {
+constexpr double calculateATMPotential(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
+                                       const std::array<double, 3> &posK, double cutoff, double nu) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // the distance vectors
@@ -62,18 +62,18 @@ constexpr double calculateATPotential(const std::array<double, 3> &posI, const s
 }
 
 /**
- * Calculates the forces exerted on three particles using the Axilrod-Teller potential.
+ * Calculates the forces exerted on three particles using the Axilrod-Teller-Muto potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
  * @param posK coordinate of the third particle
  * @param cutoff the cutoff distance in which we consider interactions
- * @param nu Axilrod-Teller Factor
+ * @param nu Axilrod-Teller-Muto Factor
  * @return The forces exerted on particle i, particle j, particle k
  */
-constexpr std::array<std::array<double, 3>, 3> calculateATForce(const std::array<double, 3> &posI,
-                                                                const std::array<double, 3> &posJ,
-                                                                const std::array<double, 3> &posK, double cutoff,
-                                                                double nu) {
+constexpr std::array<std::array<double, 3>, 3> calculateATMForce(const std::array<double, 3> &posI,
+                                                                 const std::array<double, 3> &posJ,
+                                                                 const std::array<double, 3> &posK, double cutoff,
+                                                                 double nu) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // the distance vectors
@@ -130,22 +130,22 @@ constexpr std::array<std::array<double, 3>, 3> calculateATForce(const std::array
 }
 
 /**
- * Calculates the virial between three particles i,j,k from the Axilrod-Teller potential.
+ * Calculates the virial between three particles i,j,k from the Axilrod-Teller-Muto potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
  * @param posK coordinate of the third particle
  * @param cutoff the cutoff distance in which we consider interactions
- * @param nu Axilrod-Teller Factor
+ * @param nu Axilrod-Teller-Muto Factor
  * @return virial
  */
-constexpr std::array<std::array<double, 3>, 3> calculateATVirials(const std::array<double, 3> &posI,
-                                                                  const std::array<double, 3> &posJ,
-                                                                  const std::array<double, 3> &posK, double cutoff,
-                                                                  double nu) {
+constexpr std::array<std::array<double, 3>, 3> calculateATMVirials(const std::array<double, 3> &posI,
+                                                                   const std::array<double, 3> &posJ,
+                                                                   const std::array<double, 3> &posK, double cutoff,
+                                                                   double nu) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // first we need the forces
-  const auto forces = calculateATForce(posI, posJ, posK, cutoff, nu);
+  const auto forces = calculateATMForce(posI, posJ, posK, cutoff, nu);
   const auto forceI = forces[0];
   const auto forceJ = forces[1];
   const auto forceK = forces[2];
@@ -158,38 +158,38 @@ constexpr std::array<std::array<double, 3>, 3> calculateATVirials(const std::arr
 }
 
 /**
- * Calculates the sum of all components of the virial between particle i, j, k using the Axilrod-Teller potential.
+ * Calculates the sum of all components of the virial between particle i, j, k using the Axilrod-Teller-Muto potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
  * @param posK coordinate of the third particle
  * @param cutoff the cutoff distance in which we consider interactions
- * @param nu Axilrod-Teller Factor
+ * @param nu Axilrod-Teller-Muto Factor
  * @return sum of all three components of the virial vector
  */
-constexpr double calculateATVirialTotal(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-                                        const std::array<double, 3> &posK, double cutoff, double nu) {
+constexpr double calculateATMVirialTotal(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
+                                         const std::array<double, 3> &posK, double cutoff, double nu) {
   using namespace autopas::utils::ArrayMath::literals;
-  const auto [virialI, virialJ, virialK] = calculateATVirials(posI, posJ, posK, cutoff, nu);
+  const auto [virialI, virialJ, virialK] = calculateATMVirials(posI, posJ, posK, cutoff, nu);
   const auto virialSum = virialI + virialJ + virialK;
   return virialSum[0] + virialSum[1] + virialSum[2];
 }
 
 /**
- * Returns the sum of all components of the virial for each particle i, j, k individually using the Axilrod-Teller
+ * Returns the sum of all components of the virial for each particle i, j, k individually using the Axilrod-Teller-Muto
  * potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
  * @param posK coordinate of the third particle
  * @param cutoff the cutoff distance in which we consider interactions
- * @param nu Axilrod-Teller Factor
+ * @param nu Axilrod-Teller-Muto Factor
  * @return sum of all three components of the virial vector
  */
-constexpr std::array<double, 3> calculateATVirialTotalPerParticle(const std::array<double, 3> &posI,
-                                                                  const std::array<double, 3> &posJ,
-                                                                  const std::array<double, 3> &posK, double cutoff,
-                                                                  double nu) {
+constexpr std::array<double, 3> calculateATMVirialTotalPerParticle(const std::array<double, 3> &posI,
+                                                                   const std::array<double, 3> &posJ,
+                                                                   const std::array<double, 3> &posK, double cutoff,
+                                                                   double nu) {
   using namespace autopas::utils::ArrayMath::literals;
-  const auto [virialI, virialJ, virialK] = calculateATVirials(posI, posJ, posK, cutoff, nu);
+  const auto [virialI, virialJ, virialK] = calculateATMVirials(posI, posJ, posK, cutoff, nu);
   const auto virialSumI = virialI[0] + virialI[1] + virialI[2];
   const auto virialSumJ = virialJ[0] + virialJ[1] + virialJ[2];
   const auto virialSumK = virialK[0] + virialK[1] + virialK[2];
