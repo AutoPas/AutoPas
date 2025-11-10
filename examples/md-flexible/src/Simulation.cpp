@@ -848,10 +848,10 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-      return f(ATFunctor{cutoff, particlePropertiesLibrary});
+      return f(ATMFunctor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
-          "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
+          "MD-Flexible was not compiled with support for AxilrodTellerMuto Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
     }
