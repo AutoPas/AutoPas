@@ -148,7 +148,8 @@ class LiveInfo {
    * @param relativeParticlesPerCellStdDev The relative standard deviation of particles per cell. (mean normalized)
    * @param estimatedNumNeighborInteractions The estimated number of neighbor interactions.
    * @param particleDependentBinMaxDensity The maximum density of the particle-dependent bin structure.
-   * @param particleDependentBinDensityStdDev The standard deviation of the densities of the particle-dependent bin structure.
+   * @param particleDependentBinDensityStdDev The standard deviation of the densities of the particle-dependent bin
+   * structure.
    * @param maxParticlesPerBlurredBin The maximum number of particles in a blurred bin.
    * @param minParticlesPerBlurredBin The minimum number of particles in a blurred bin.
    * @param medianParticlesPerBlurredBin The median number of particles in a blurred bin.
@@ -156,7 +157,8 @@ class LiveInfo {
    * @param upperQuartileParticlesPerBlurredBin The upper quartile of particles per blurred bin.
    * @param meanParticlesPerBlurredBin The mean number of particles in a blurred bin.
    * @param particlesPerBlurredBinStdDev The standard deviation of particles per blurred bin.
-   * @param relativeParticlesPerBlurredBinStdDev The relative standard deviation of particles per blurred bin. (mean normalized)
+   * @param relativeParticlesPerBlurredBinStdDev The relative standard deviation of particles per blurred bin. (mean
+   * normalized)
    */
   LiveInfo(size_t numOwnedParticles, size_t numHaloParticles, double cutoff, double skin, double domainSizeX,
            double domainSizeY, double domainSizeZ, size_t particleSize, size_t threadCount, size_t rebuildFrequency,
