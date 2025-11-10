@@ -5,6 +5,8 @@
  */
 
 #pragma once
+#include "molecularDynamicsLibrary/AxilrodTellerMutoMultisiteFunctor.h"
+#include "molecularDynamicsLibrary/MethaneMultisitePairwiseFunctor.h"
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
@@ -12,6 +14,14 @@
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_METHANE)
+#include "molecularDynamicsLibrary/MethaneMultisitePairwiseFunctor.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
+#include "molecularDynamicsLibrary/AxilrodTellerMutoMultisiteFunctor.h"
 #endif
 
 #else
@@ -129,12 +139,26 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
  * Type of ATMFunctor used in md-flexible.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#error "The Axilrod Teller functor does not have support for multisite molecules!"
+using ATMFunctor =
+    mdLib::AxilrodTellerMutoMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
+                                             mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
 using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
                                                    mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
+#endif
+
+// Methane pairwise functor
+#if defined(MD_FLEXIBLE_FUNCTOR_METHANE)
+#if MD_FLEXIBLE_MODE == MULTISITE
+using MethaneFunctor =
+    mdLib::MethaneMultisitePairwiseFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                                           mdFlexibleTypeDefs::countFLOPs>;
+#else
+#error \
+    "There exists no pairwise functor for single-site methane molecules! Consider using LJ or multisite mode instead."
+#endif
 #endif
 
 /**

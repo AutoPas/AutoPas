@@ -19,6 +19,7 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsL
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_METHANE "Compile with pairwise Methane Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC "Compile auto vectorized Axilrod-Teller-Muto Functor." OFF)
 option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
 
@@ -28,6 +29,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_METHANE}>:MD_FLEXIBLE_FUNCTOR_METHANE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
 )
@@ -41,9 +43,9 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()
-    if (MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
-        message(WARNING "Axilrod-Teller-Muto functor has not been implemented for Multi-Site Molecules")
-    endif()
+#    if (MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
+#        message(WARNING "Axilrod-Teller-Muto functor has not been implemented for Multi-Site Molecules")
+#    endif()
 endif()
 
 # --- copy script files to build dir ---

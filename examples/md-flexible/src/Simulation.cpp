@@ -25,6 +25,9 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_METHANE)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(MethaneFunctor *);
+#endif
 #if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATMFunctor *);
 #endif
@@ -821,6 +824,15 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::methane: {
+#if defined(MD_FLEXIBLE_FUNCTOR_METHANE)
+      return f(MethaneFunctor{cutoff});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for MethaneFunctor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_METHANE=ON`.");
 #endif
     }
     default: {
