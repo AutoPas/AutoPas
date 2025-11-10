@@ -17,7 +17,8 @@ void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &partic
   auto &buffer = direction.has_value() ? direction.value() == left ? _reusableLeftSendBuffer : _reusableRightSendBuffer : localBuffer;
 
   // Reserve extra space in reusable buffer if needed.
-  buffer.resize(particles.size() * ParticleSerializationTools::AttributesSize);
+  buffer.clear();
+  buffer.reserve(particles.size() * ParticleSerializationTools::AttributesSize);
 
   for (const auto &particle : particles) {
     ParticleSerializationTools::serializeParticle(particle, buffer);
