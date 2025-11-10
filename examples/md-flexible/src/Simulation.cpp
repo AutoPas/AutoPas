@@ -246,34 +246,36 @@ void Simulation::run() {
       _timers.updateContainer.stop();
       _timers.nonBoundaryCalculations.stop();
 
-      // Get the computation load based on selected option.
-      const auto computationalLoad = getComputationalLoad();
-      // periodically resize box for MPI load balancing
-      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-        _timers.loadBalancing.start();
-        _domainDecomposition->update(computationalLoad);
-        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
-                                                                _domainDecomposition->getLocalBoxMax());
-        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
-        // container again.
-        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
-        // so that remove_if can erase them after.
-        const auto &boxMin = _autoPasContainer->getBoxMin();
-        const auto &boxMax = _autoPasContainer->getBoxMax();
-        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
-          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
-            // This only changes the ownership state in the emigrants vector, not in AutoPas
-            p.setOwnershipState(autopas::OwnershipState::dummy);
-            return true;
-          }
-          return false;
-        });
+      if (_configuration.loadBalancer.value != LoadBalancerOption::none) {
+        // Get the computation load based on selected option.
+        const auto computationalLoad = getComputationalLoad();
+        // periodically resize box for MPI load balancing
+        if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+          _timers.loadBalancing.start();
+          _domainDecomposition->update(computationalLoad);
+          auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                  _domainDecomposition->getLocalBoxMax());
+          // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
+          // container again.
+          // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+          // so that remove_if can erase them after.
+          const auto &boxMin = _autoPasContainer->getBoxMin();
+          const auto &boxMax = _autoPasContainer->getBoxMax();
+          _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+            if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+              // This only changes the ownership state in the emigrants vector, not in AutoPas
+              p.setOwnershipState(autopas::OwnershipState::dummy);
+              return true;
+            }
+            return false;
+          });
 
-        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
-                        emigrants.end());
+          emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+                          emigrants.end());
 
-        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
+          emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+          _timers.loadBalancing.stop();
+        }
       }
 
       _timers.migratingParticleExchange.start();
