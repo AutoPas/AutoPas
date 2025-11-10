@@ -124,15 +124,39 @@ class LiveInfo {
   LiveInfo() = default;
 
   /**
-   * Constructor for LiveInfo using the main parameters described in the gather method.
-   * Validates input parameters using autopas exception handler.
+   * Constructor for LiveInfo using the parameters.
    *
-   * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
-   * @param numOwnedParticles The number of owned particles in the container.
-   * @param boxMin Lower left corner of (sub)domain.
-   * @param boxMax Upper right corner of (sub)domain.
-   * @param cutoff The cutoff.
-   * @param skin The (Verlet) skin.
+   * @param numOwnedParticles The number of owned particles.
+   * @param numHaloParticles The number of halo particles.
+   * @param cutoff The cutoff radius.
+   * @param skin The skin radius.
+   * @param domainSizeX The size of the domain in x direction.
+   * @param domainSizeY The size of the domain in y direction.
+   * @param domainSizeZ The size of the domain in z direction.
+   * @param particleSize The size of a particle in bytes.
+   * @param threadCount The number of threads used.
+   * @param rebuildFrequency The rebuild frequency of the neighbor lists.
+   * @param numCells The number of cells in the container.
+   * @param numEmptyCells The number of empty cells in the container.
+   * @param minParticlesPerCell The minimum number of particles in a cell.
+   * @param maxParticlesPerCell The maximum number of particles in a cell.
+   * @param medianParticlesPerCell The median number of particles in a cell.
+   * @param lowerQuartileParticlesPerCell The lower quartile of particles per cell.
+   * @param upperQuartileParticlesPerCell The upper quartile of particles per cell.
+   * @param meanParticlesPerCell The mean number of particles per cell.
+   * @param particlesPerCellStdDev The standard deviation of particles per cell.
+   * @param relativeParticlesPerCellStdDev The relative standard deviation of particles per cell. (mean normalized)
+   * @param estimatedNumNeighborInteractions The estimated number of neighbor interactions.
+   * @param particleDependentBinMaxDensity The maximum density of the particle-dependent bin structure.
+   * @param particleDependentBinDensityStdDev The standard deviation of the densities of the particle-dependent bin structure.
+   * @param maxParticlesPerBlurredBin The maximum number of particles in a blurred bin.
+   * @param minParticlesPerBlurredBin The minimum number of particles in a blurred bin.
+   * @param medianParticlesPerBlurredBin The median number of particles in a blurred bin.
+   * @param lowerQuartileParticlesPerBlurredBin The lower quartile of particles per blurred bin.
+   * @param upperQuartileParticlesPerBlurredBin The upper quartile of particles per blurred bin.
+   * @param meanParticlesPerBlurredBin The mean number of particles in a blurred bin.
+   * @param particlesPerBlurredBinStdDev The standard deviation of particles per blurred bin.
+   * @param relativeParticlesPerBlurredBinStdDev The relative standard deviation of particles per blurred bin. (mean normalized)
    */
   LiveInfo(size_t numOwnedParticles, size_t numHaloParticles, double cutoff, double skin, double domainSizeX,
            double domainSizeY, double domainSizeZ, size_t particleSize, size_t threadCount, size_t rebuildFrequency,
