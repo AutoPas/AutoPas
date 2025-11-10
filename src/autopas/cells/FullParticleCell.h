@@ -118,7 +118,6 @@ class FullParticleCell : public ParticleCell<Particle_T> {
     const std::array<double, 3> dummy{};
     forEachImpl<true, false>(forEachLambda, dummy, dummy, behavior);
   }
-
   /**
    * Executes code for every particle in this cell as defined by lambda function.
    * @tparam Lambda (Particle_T &p) -> void
@@ -130,6 +129,43 @@ class FullParticleCell : public ParticleCell<Particle_T> {
   template <typename Lambda>
   void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    forEachImpl<true, true>(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * Executes code for every particle in this cell as defined by lambda function.
+   * @tparam Lambda (Particle_T &p) -> void
+   * @param forEachLambda code to be executed on particles
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) const {
+    const std::array<double, 3> dummy{};
+    forEachImpl<false, false>(forEachLambda, dummy, dummy);
+  }
+
+  /**
+   * Executes code for every particle in this cell as defined by lambda function.
+   * @tparam Lambda (Particle_T &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) const {
+    const std::array<double, 3> dummy{};
+    forEachImpl<true, false>(forEachLambda, dummy, dummy, behavior);
+  }
+
+  /**
+   * Executes code for every particle in this cell as defined by lambda function.
+   * @tparam Lambda (Particle_T &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) const {
     forEachImpl<true, true>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
@@ -286,6 +322,19 @@ class FullParticleCell : public ParticleCell<Particle_T> {
                    const std::array<double, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle_T &p : _particles) {
+      if ((not ownershipCheck) or behavior.contains(p)) {
+        if ((not regionCheck) or utils::inBox(p.getR(), lowerCorner, higherCorner)) {
+          forEachLambda(p);
+        }
+      }
+    }
+  }
+
+  template <bool ownershipCheck, bool regionCheck, typename Lambda>
+  void forEachImpl(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                   const std::array<double, 3> &higherCorner,
+                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) const {
+    for (Particle_T const &p : _particles) {
       if ((not ownershipCheck) or behavior.contains(p)) {
         if ((not regionCheck) or utils::inBox(p.getR(), lowerCorner, higherCorner)) {
           forEachLambda(p);

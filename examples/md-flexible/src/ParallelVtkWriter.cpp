@@ -79,60 +79,70 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   // print velocities
   timestepFile
       << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    const auto v = particle->getV();
-    timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) {
+        const auto v = particle.getV();
+        timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print forces
   timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    const auto f = particle->getF();
-    timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) {
+        const auto f = particle.getF();
+        timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   // print quaternions
   timestepFile
       << "        <DataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    const auto q = particle->getQuaternion();
-    timestepFile << "        " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) {
+        const auto q = particle.getQuaternion();
+        timestepFile << "        " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print angular velocities
   timestepFile
       << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    const auto angVel = particle->getAngularVel();
-    timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) {
+        const auto angVel = particle.getAngularVel();
+        timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print torques
   timestepFile << "        <DataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    const auto torque = particle->getTorque();
-    timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) {
+        const auto torque = particle.getTorque();
+        timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 #endif
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    timestepFile << "        " << particle->getTypeId() << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) { timestepFile << "        " << particle.getTypeId() << "\n"; },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print ids
   timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    timestepFile << "        " << particle->getID() << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) { timestepFile << "        " << particle.getID() << "\n"; },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   timestepFile << "      </PointData>\n";
@@ -142,52 +152,54 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   // print positions
   timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   const auto boxMax = autoPasContainer.getBoxMax();
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    // When we write to the file in ASCII, values are rounded to the precision of the filestream.
-    // Since a higher precision results in larger files because more characters are written,
-    // and mdflex is not intended as a perfectly precice tool for application scientists,
-    // we are fine with the rather low default precision.
-    // However, if a particle is very close to the domain border it can happen that the particle position is rounded
-    // exactly to the boundary position. This then causes problems when the checkpoint is loaded because boxMax is
-    // considered to be not part of the domain, hence such a particle would not be loaded and thus be lost.
-    // This function identifies these problematic values and raises the write precision just for this value high enough
-    // to be distinguishable from the boundary.
-    const auto writeWithDynamicPrecision = [&](double position, double border) {
-      const auto initialPrecision = timestepFile.precision();
-      // Simple and cheap check if we even need to do anything.
-      if (border - position < 0.1) {
-        using autopas::utils::Math::roundFloating;
-        using autopas::utils::Math::isNearAbs;
-        // As long as the used precision results in the two values being indistinguishable increase the precision
-        while (isNearAbs(roundFloating(position, timestepFile.precision()), border,
-                         std::pow(10, -timestepFile.precision()))) {
-          timestepFile << std::setprecision(timestepFile.precision() + 1);
-          // Abort if the numbers are indistinguishable beyond machine precision
-          constexpr auto machinePrecision = std::numeric_limits<double>::digits10;
-          if (timestepFile.precision() > machinePrecision) {
-            throw std::runtime_error(
-                "ParallelVtkWriter::writeWithDynamicPrecision(): "
-                "The two given numbers are identical up to " +
-                std::to_string(machinePrecision) +
-                " digits of precision!\n"
-                "Number: " +
-                std::to_string(position) + "\n" + particle->toString());
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) {
+        // When we write to the file in ASCII, values are rounded to the precision of the filestream.
+        // Since a higher precision results in larger files because more characters are written,
+        // and mdflex is not intended as a perfectly precice tool for application scientists,
+        // we are fine with the rather low default precision.
+        // However, if a particle is very close to the domain border it can happen that the particle position is rounded
+        // exactly to the boundary position. This then causes problems when the checkpoint is loaded because boxMax is
+        // considered to be not part of the domain, hence such a particle would not be loaded and thus be lost.
+        // This function identifies these problematic values and raises the write precision just for this value high
+        // enough to be distinguishable from the boundary.
+        const auto writeWithDynamicPrecision = [&](double position, double border) {
+          const auto initialPrecision = timestepFile.precision();
+          // Simple and cheap check if we even need to do anything.
+          if (border - position < 0.1) {
+            using autopas::utils::Math::roundFloating;
+            using autopas::utils::Math::isNearAbs;
+            // As long as the used precision results in the two values being indistinguishable increase the precision
+            while (isNearAbs(roundFloating(position, timestepFile.precision()), border,
+                             std::pow(10, -timestepFile.precision()))) {
+              timestepFile << std::setprecision(timestepFile.precision() + 1);
+              // Abort if the numbers are indistinguishable beyond machine precision
+              constexpr auto machinePrecision = std::numeric_limits<double>::digits10;
+              if (timestepFile.precision() > machinePrecision) {
+                throw std::runtime_error(
+                    "ParallelVtkWriter::writeWithDynamicPrecision(): "
+                    "The two given numbers are identical up to " +
+                    std::to_string(machinePrecision) +
+                    " digits of precision!\n"
+                    "Number: " +
+                    std::to_string(position) + "\n" + particle.toString());
+              }
+            }
           }
-        }
-      }
-      // Write with the new precision and then reset it
-      timestepFile << position << std::setprecision(initialPrecision);
-    };
+          // Write with the new precision and then reset it
+          timestepFile << position << std::setprecision(initialPrecision);
+        };
 
-    const auto pos = particle->getR();
-    timestepFile << "        ";
-    writeWithDynamicPrecision(pos[0], boxMax[0]);
-    timestepFile << " ";
-    writeWithDynamicPrecision(pos[1], boxMax[1]);
-    timestepFile << " ";
-    writeWithDynamicPrecision(pos[2], boxMax[2]);
-    timestepFile << "\n";
-  }
+        const auto pos = particle.getR();
+        timestepFile << "        ";
+        writeWithDynamicPrecision(pos[0], boxMax[0]);
+        timestepFile << " ";
+        writeWithDynamicPrecision(pos[1], boxMax[1]);
+        timestepFile << " ";
+        writeWithDynamicPrecision(pos[2], boxMax[2]);
+        timestepFile << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   timestepFile << "      </Points>\n";

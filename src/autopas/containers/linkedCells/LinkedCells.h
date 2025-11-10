@@ -324,7 +324,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @param behavior @see IteratorBehavior
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+               typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       for (auto &cell : getCells()) {
         cell.forEach(forEachLambda);
@@ -333,6 +334,45 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
       for (size_t index = 0; index < getCells().size(); index++) {
         if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
           getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
+    }
+
+    if (additionalVectors != nullptr) {
+      for (auto &v : *additionalVectors) {
+        for (auto &p : *v) {
+          forEachLambda(p);
+        }
+      }
+    }
+  }
+
+  /**
+   * Execute code on all particles in this container as defined by a lambda function.
+   * @tparam Lambda (Particle_T &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior
+   */
+  template <typename Lambda>
+  void forEach(
+      Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      for (auto const &cell : CellBasedParticleContainer<ParticleCell>::getCells()) {
+        cell.forEach(forEachLambda);
+      }
+    } else {
+      for (size_t index = 0; index < CellBasedParticleContainer<ParticleCell>::getCells().size(); index++) {
+        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
+          CellBasedParticleContainer<ParticleCell>::getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
+    }
+
+    if (additionalVectors != nullptr) {
+      for (auto const &v : *additionalVectors) {
+        for (auto const &p : *v) {
+          forEachLambda(p);
         }
       }
     }

@@ -13,6 +13,7 @@
 #include "ClusterTowerBlock2D.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/IteratorParticleContainer.h"
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/NeighborListsBuffer.h"
 #include "autopas/containers/ParticleContainerInterface.h"
@@ -53,7 +54,7 @@ namespace autopas {
  * @tparam Particle_T
  */
 template <class Particle_T>
-class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public internal::ParticleDeletedObserver {
+class VerletClusterLists : public IteratorParticleContainer<Particle_T>, public internal::ParticleDeletedObserver {
  public:
   /**
    * Defines a cluster range used in the static cluster-thread-partition.
@@ -89,7 +90,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skin, unsigned int rebuildFrequency, size_t clusterSize,
                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<Particle_T>(),
+      : IteratorParticleContainer<Particle_T>(),
         _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
@@ -459,7 +460,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::LinkedCells::forEach()
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+               typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) {
     for (auto &tower : _towerBlock) {
       tower.forEach(forEachLambda, behavior);
     }
@@ -467,6 +469,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       for (auto &particle : vector) {
         if (behavior.contains(particle)) {
           forEachLambda(particle);
+        }
+      }
+    }
+
+    if (additionalVectors != nullptr) {
+      for (auto &v : *additionalVectors) {
+        for (auto &p : *v) {
+          forEachLambda(p);
         }
       }
     }
@@ -478,7 +488,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
+  void forEach(
+      Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
@@ -499,6 +511,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
           if (behavior.contains(particle)) {
             forEachLambda(particle);
           }
+        }
+      }
+    }
+
+    if (additionalVectors != nullptr) {
+      for (auto const &v : *additionalVectors) {
+        for (auto const &p : *v) {
+          forEachLambda(p);
         }
       }
     }

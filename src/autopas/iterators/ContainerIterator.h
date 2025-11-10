@@ -13,7 +13,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/containers/IteratorParticleContainer.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -107,13 +107,13 @@ class ContainerIterator {
   /**
    * Type of the Particle Container type. Switch for const iterators.
    */
-  using ContainerType = std::conditional_t<modifiable, ParticleContainerInterface<Particle_T>,
-                                           const ParticleContainerInterface<Particle_T>>;
+  using ContainerType = std::conditional_t<modifiable, IteratorParticleContainer<Particle_T>,
+                                           const IteratorParticleContainer<Particle_T>>;
 
   /**
    * Default constructor that guarantees an invalid iterator.
    */
-  ContainerIterator() : _currentParticle(nullptr){};
+  ContainerIterator() : _currentParticle(nullptr) {};
 
   /**
    * Region Iterator constructor meant to be called from the logic handler.
@@ -298,7 +298,7 @@ class ContainerIterator {
    * Checks if the current iterator has a given validity.
    *
    * @note This is what is used implicitly in range-based loops because AutoPas::end()
-   * and ParticleContainerInterface::end() returns false.
+   * and IteratorParticleContainer::end() returns false.
    *
    * @param input
    * @return

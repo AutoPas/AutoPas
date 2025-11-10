@@ -400,7 +400,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc LinkedCells::forEach()
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy,
+               typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       // iterate over all particles, so execute directly on particle vector
       _particleList.forEach(forEachLambda);
@@ -408,6 +409,38 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       for (size_t index = 0; index < getCells().size(); index++) {
         if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
           getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
+    }
+    if (additionalVectors != nullptr) {
+      for (auto &v : *additionalVectors) {
+        for (auto &p : *v) {
+          forEachLambda(p);
+        }
+      }
+    }
+  }
+  /**
+   * @copydoc LinkedCells::forEach()
+   */
+  template <typename Lambda>
+  void forEach(
+      Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy,
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      // iterate over all particles, so execute directly on particle vector
+      _particleList.forEach(forEachLambda);
+    } else {
+      for (size_t index = 0; index < CellBasedParticleContainer<ReferenceCell>::getCells().size(); index++) {
+        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+          CellBasedParticleContainer<ReferenceCell>::getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
+    }
+    if (additionalVectors != nullptr) {
+      for (auto const &v : *additionalVectors) {
+        for (auto const &p : *v) {
+          forEachLambda(p);
         }
       }
     }

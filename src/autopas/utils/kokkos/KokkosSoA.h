@@ -1,5 +1,6 @@
 #pragma once
 
+#include "KokkosSoAType.h"
 #include "Kokkos_Core.hpp"
 #include "autopas/utils/SoAStorage.h"
 
@@ -18,7 +19,6 @@ class KokkosSoA {
 
   void clear() {
     _soaStorage.apply([](auto &view) { Kokkos::resize(view, 0); });
-
   }
   template <size_t AttributeName, typename Space>
   inline constexpr void markModified() {
@@ -42,7 +42,7 @@ class KokkosSoA {
   }
 
  private:
-  SoAStorage<SoAArraysType> _soaStorage;
+  SoAStorage<typename KokkosSoAType<SoAArraysType>::Type> _soaStorage;
 };
 
 }  // namespace autopas::utils::kokkos

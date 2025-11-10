@@ -158,7 +158,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
       break;
     }
     case ContainerOption::kokkosVerletClusterLists: {
-      container = std::make_unique<KokkosVerletClusterLists< Particle_T>>(
+      container = std::make_unique<KokkosVerletClusterLists<Particle_T>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency);
       break;
     }
@@ -177,15 +177,19 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
         _currentContainer->getInteractionLength());
 
     container->reserve(numParticlesTotal, numParticlesHalo);
-    for (auto particleIter = _currentContainer->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid();
-         ++particleIter) {
-      // add particle as inner if it is owned
-      if (particleIter->isOwned()) {
-        container->addParticle(*particleIter);
-      } else {
-        container->addHaloParticle(*particleIter);
-      }
-    }
+
+    withStaticContainerType(*_currentContainer, [&](auto &container) {
+      container.forEach(
+          [&](auto &particle) {
+            // add particle as inner if it is owned
+            if (particle.isOwned()) {
+              container.addParticle(particle);
+            } else {
+              container.addHaloParticle(particle);
+            }
+          },
+          IteratorBehavior::ownedOrHalo);
+    });
   }
 
   return container;

@@ -241,21 +241,26 @@ class LogicHandler {
 
     // check all particles
     std::vector<Particle_T> particlesNowOutside;
-    for (auto pIter = _containerSelector.getCurrentContainer().begin(); pIter.isValid(); ++pIter) {
-      // make sure only owned ones are present
-      if (not pIter->isOwned()) {
-        utils::ExceptionHandler::exception(
-            "LogicHandler::resizeBox() encountered non owned particle. "
-            "When calling resizeBox() these should be already deleted. "
-            "This could be solved by calling updateContainer() before resizeBox().");
-      }
-      // owned particles that are now outside are removed from the container and returned
-      if (not utils::inBox(pIter->getR(), boxMin, boxMax)) {
-        particlesNowOutside.push_back(*pIter);
-        decreaseParticleCounter(*pIter);
-        internal::markParticleAsDeleted(*pIter);
-      }
-    }
+
+    withStaticContainerType(_containerSelector.getCurrentContainer(), [&](auto &container) {
+      container.forEach(
+          [&](auto &particle) {
+            // make sure only owned ones are present
+            if (not particle.isOwned()) {
+              utils::ExceptionHandler::exception(
+                  "LogicHandler::resizeBox() encountered non owned particle. "
+                  "When calling resizeBox() these should be already deleted. "
+                  "This could be solved by calling updateContainer() before resizeBox().");
+            }
+            // owned particles that are now outside are removed from the container and returned
+            if (not utils::inBox(particle.getR(), boxMin, boxMax)) {
+              particlesNowOutside.push_back(particle);
+              decreaseParticleCounter(particle);
+              internal::markParticleAsDeleted(particle);
+            }
+          },
+          IteratorBehavior::ownedOrHalo);
+    });
 
     // actually resize the container
     _containerSelector.resizeBox(boxMin, boxMax);
@@ -465,22 +470,18 @@ class LogicHandler {
     return additionalVectors;
   }
 
-  /**
-   * @copydoc AutoPas::begin()
-   */
-  autopas::ContainerIterator<Particle_T, true, false> begin(IteratorBehavior behavior) {
+  template <typename Lambda>
+  void forEach(Lambda lambda, IteratorBehavior behavior) {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
-    return _containerSelector.getCurrentContainer().begin(behavior, &additionalVectors);
+    withStaticContainerType(_containerSelector.getCurrentContainer(),
+                            [&](auto &container) { container.forEach(lambda, behavior, additionalVectors); });
   }
 
-  /**
-   * @copydoc AutoPas::begin()
-   */
-  autopas::ContainerIterator<Particle_T, false, false> begin(IteratorBehavior behavior) const {
-    auto additionalVectors =
-        const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle_T, false, false>>(
-            behavior);
-    return _containerSelector.getCurrentContainer().begin(behavior, &additionalVectors);
+  template <typename Lambda>
+  void forEach(Lambda lambda, IteratorBehavior behavior) const {
+    auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, false, false>>(behavior);
+    withStaticContainerType(_containerSelector.getCurrentContainer(),
+                            [&](auto &container) { container.forEach(lambda, behavior, additionalVectors); });
   }
 
   /**
@@ -1853,9 +1854,11 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       // Gather Live Info
       utils::Timer timerGatherLiveInfo;
       timerGatherLiveInfo.start();
-      auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-      info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+      auto behavior = IteratorBehavior::ownedOrHalo;
+      auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
+      info.gather(_containerSelector.getCurrentContainer(), behavior, additionalVectors, _neighborListRebuildFrequency,
+                  getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin, _logicHandlerInfo.boxMax,
+                  _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
       timerGatherLiveInfo.stop();
       AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
 

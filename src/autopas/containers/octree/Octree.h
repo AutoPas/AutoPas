@@ -427,11 +427,42 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @param behavior @see IteratorBehavior
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+               typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) {
     if (behavior & IteratorBehavior::owned) this->_cells[OWNED].forEach(forEachLambda);
     if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEach(forEachLambda);
     if (not(behavior & IteratorBehavior::ownedOrHalo))
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+
+    if (additionalVectors != nullptr) {
+      for (auto &v : *additionalVectors) {
+        for (auto &p : *v) {
+          forEachLambda(p);
+        }
+      }
+    }
+  }
+  /**
+   * Execute code on all particles in this container as defined by a lambda function.
+   * @tparam Lambda (Particle_T &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior
+   */
+  template <typename Lambda>
+  void forEach(
+      Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+    if (behavior & IteratorBehavior::owned) this->_cells[OWNED].forEach(forEachLambda);
+    if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEach(forEachLambda);
+    if (not(behavior & IteratorBehavior::ownedOrHalo))
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    if (additionalVectors != nullptr) {
+      for (auto const &v : *additionalVectors) {
+        for (auto const &p : *v) {
+          forEachLambda(p);
+        }
+      }
+    }
   }
 
   /**

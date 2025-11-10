@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <pstl/glue_execution_defs.h>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
@@ -211,7 +213,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @copydoc LinkedCells::forEach()
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior,
+               typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) {
     if (behavior & IteratorBehavior::owned) {
       getOwnedCell().forEach(forEachLambda);
     }
@@ -220,6 +223,44 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
         cellIt->forEach(forEachLambda);
       }
     }
+
+    if (additionalVectors != nullptr) {
+      for (auto &v : *additionalVectors) {
+        for (auto &p : *v) {
+          forEachLambda(p);
+        }
+      }
+    }
+
+    // sanity check
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
+  }
+  /**
+   * @copydoc LinkedCells::forEach()
+   */
+  template <typename Lambda>
+  void forEach(
+      Lambda forEachLambda, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+    if (behavior & IteratorBehavior::owned) {
+      getOwnedCell().forEach(forEachLambda);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      for (auto cellIt = ++this->_cells.cbegin(); cellIt != this->_cells.cend(); cellIt++) {
+        cellIt->forEach(forEachLambda);
+      }
+    }
+
+    if (additionalVectors != nullptr) {
+      for (auto const &v : *additionalVectors) {
+        for (auto const &p : *v) {
+          forEachLambda(p);
+        }
+      }
+    }
+
     // sanity check
     if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
@@ -496,8 +537,10 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   }
 
   ParticleCell &getOwnedCell() { return this->_cells[0]; };
+  ParticleCell const &getOwnedCell() const { return this->_cells[0]; };
 
   ParticleCell &getHaloCell() { return this->_cells[1]; };
+  ParticleCell const &getHaloCell() const { return this->_cells[1]; };
 };
 
 }  // namespace autopas

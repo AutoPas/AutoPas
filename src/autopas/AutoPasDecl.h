@@ -262,20 +262,6 @@ class AutoPas {
   template <class Functor>
   bool computeInteractions(Functor *f);
 
-  /**
-   * Iterate over all particles by using
-   * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
-   * @param behavior The behavior of the iterator. You can specify whether to iterate over owned particles, halo
-   * particles, or both.
-   * @return iterator to the first particle.
-   */
-  IteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
-
-  /**
-   * @copydoc begin()
-   * @note const version
-   */
-  ConstIteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * Execute code on all particles as defined by a lambda function.
@@ -318,45 +304,6 @@ class AutoPas {
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
-
-  /**
-   * @copydoc begin()
-   * @note cbegin will guarantee to return a const_iterator.
-   */
-  ConstIteratorT cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
-
-  /**
-   * Dummy to make range-based for loops work.
-   *
-   * Range-Based for loops use the incremented begin() expression and compare it against the end() expression.
-   * ContainerIterator implements ContainerIterator::operator==() that accepts a bool as right hand side argument,
-   * which is triggered by this end() function.
-   * This operator then proceeds to check the validity of the iterator itself.
-   *
-   * @return false
-   */
-  [[nodiscard]] constexpr bool end() const { return false; }
-
-  /**
-   * Iterate over all particles in a specified region
-   * ```c++
-   * for (auto iter = container.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) { }
-   * ```
-   * @param lowerCorner lower corner of the region
-   * @param higherCorner higher corner of the region
-   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
-   * particles, or both.
-   * @return iterator to iterate over all particles in a specific region
-   */
-  RegionIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-                                    IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
-  /**
-   * @copydoc getRegionIterator()
-   * @note const version
-   */
-  RegionConstIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                         const std::array<double, 3> &higherCorner,
-                                         IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * Execute code on all particles in a certain region as defined by a lambda function.

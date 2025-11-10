@@ -44,11 +44,11 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 #endif
   }
   // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
-  constexpr unsigned int degreesOfFreedom {
+  constexpr unsigned int degreesOfFreedom{
 #if MD_FLEXIBLE_MODE == MULTISITE
-    6
+      6
 #else
-    3
+      3
 #endif
   };
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * degreesOfFreedom);
@@ -103,18 +103,19 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread[typeID] = 0ul;
     }
     // parallel iterators
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      const auto &vel = iter->getV();
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
+    autopas.forEach([&](auto &particle) {
+      const auto &vel = particle.getV();
+      kineticEnergyMul2MapThread.at(particle.getTypeId()) +=
+          particlePropertiesLibrary.getMolMass(particle.getTypeId()) * dot(vel, vel);
 #if MD_FLEXIBLE_MODE == MULTISITE
       // add contribution from angular momentum
-      const auto &angVel = iter->getAngularVel();
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()), angVel * angVel);
+      const auto &angVel = particle.getAngularVel();
+      kineticEnergyMul2MapThread.at(particle.getTypeId()) +=
+          dot(particlePropertiesLibrary.getMomentOfInertia(particle.getTypeId()), angVel * angVel);
 #endif
-      numParticleMapThread.at(iter->getTypeId())++;
-    }
+      numParticleMapThread.at(particle.getTypeId())++;
+    });
+
     // manual reduction
     AUTOPAS_OPENMP(critical) {
       for (int typeID = 0; typeID < numberComponents; typeID++) {
@@ -203,16 +204,17 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
     std::normal_distribution<double> normalDistribution{0, 1};
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+
+    autopas.forEach([&](auto &particle) {
       const std::array<double, 3> normal3DVecTranslational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
+      particle.addV(normal3DVecTranslational * translationalVelocityScale[particle.getTypeId()]);
 #if MD_FLEXIBLE_MODE == MULTISITE
       const std::array<double, 3> normal3DVecRotational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      iter->addAngularVel(normal3DVecRotational * rotationalVelocityScale[iter->getTypeId()]);
+      particle.addAngularVel(normal3DVecRotational * rotationalVelocityScale[particle.getTypeId()]);
 #endif
-    }
+    });
   }
 }
 
@@ -261,12 +263,14 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 
   // Scale velocities (and angular velocities) with the scaling map
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
+
+  autopas.forEach([&](auto &particle) {
+    particle.setV(particle.getV() * scalingMap[particle.getTypeId()]);
 #if MD_FLEXIBLE_MODE == MULTISITE
-    iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
+    particle.setAngularVel(particle.getAngularVel() * scalingMap[particle.getTypeId()]);
 #endif
-  }
+  });
+
   const auto currentTemperatures = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 }
 }  // namespace Thermostat

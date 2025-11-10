@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 
+#include "IteratorParticleContainer.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -22,7 +23,7 @@ namespace autopas {
  * @tparam ParticleCell Class for the particle cells
  */
 template <class ParticleCell>
-class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell::ParticleType> {
+class CellBasedParticleContainer : public IteratorParticleContainer<typename ParticleCell::ParticleType> {
   using ParticleType = typename ParticleCell::ParticleType;
 
  public:
@@ -36,7 +37,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                              const double cutoff, double skin, unsigned int rebuildFrequency)
-      : ParticleContainerInterface<ParticleType>(),
+      : IteratorParticleContainer<ParticleType>(),
         _cells(),
         _boxMin(boxMin),
         _boxMax(boxMax),

@@ -284,6 +284,17 @@ class OctreeNodeWrapper : public ParticleCell<Particle_T> {
   }
 
   /**
+   * Apply the forEach lambda to each particle.
+   *
+   * @tparam Lambda Function type
+   * @param forEachLambda Function to apply
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) const {
+    withStaticNodeType(_pointer, [&](auto nodePtr) { nodePtr->forEach(forEachLambda); });
+  }
+
+  /**
    * Apply the reduce lambda to each particle.
    *
    * @tparam Lambda Function type

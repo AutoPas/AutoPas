@@ -21,6 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleBinStructure.h"
+#include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -184,8 +185,8 @@ class LiveInfo {
    * @param cutoff The cutoff.
    * @param skin The (Verlet) skin.
    */
-  template <class Particle_T>
-  void gather(ContainerIterator<Particle_T, true, false> particleIter, size_t rebuildFrequency,
+  template <class Particle_T, typename ParticleVector>
+  void gather(ParticleContainerInterface<Particle_T>& container, IteratorBehavior behavior, ParticleVector additionalVectors, size_t rebuildFrequency,
               size_t numOwnedParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
               double skin) {
     using namespace utils::ArrayMath::literals;
@@ -218,19 +219,26 @@ class LiveInfo {
     // Count the number of owned particles per bin for each bin structure. Also include total count for halo particles.
     size_t numOwnedParticlesCount = 0;
     size_t numHaloParticlesCount = 0;
-    for (; particleIter.isValid(); ++particleIter) {
-      if (particleIter->isOwned()) {
-        numOwnedParticlesCount++;
-        const auto particlePos = particleIter->getR();
-        if (utils::inBox(particlePos, boxMin, boxMax)) {
-          cellBinStruct.countParticle(particlePos);
-          particleDependentBinStruct.countParticle(particlePos);
-          blurredBinStruct.countParticle(particlePos);
-        }
-      } else if (particleIter->isHalo()) {
-        numHaloParticlesCount++;
-      }
-    }
+
+    withStaticContainerType(container,[&](auto& container) {
+
+      container.forEach(
+            [&](auto &particle) {
+              if (particle.isOwned()) {
+                numOwnedParticlesCount++;
+                const auto particlePos = particle.getR();
+                if (utils::inBox(particlePos, boxMin, boxMax)) {
+                  cellBinStruct.countParticle(particlePos);
+                  particleDependentBinStruct.countParticle(particlePos);
+                  blurredBinStruct.countParticle(particlePos);
+                }
+              } else if (particle.isHalo()) {
+                numHaloParticlesCount++;
+              }
+            },
+            behavior, &additionalVectors);
+
+    });
 
     // Sanity Check
     if (numOwnedParticlesCount != numOwnedParticles) {
