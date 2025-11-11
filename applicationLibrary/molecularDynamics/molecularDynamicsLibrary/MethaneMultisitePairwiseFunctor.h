@@ -77,7 +77,7 @@ class MethaneMultisitePairwiseFunctor
       makeSitePosition(0.66, 0.66, -0.66)};
 
   // Site IDs: C, H, H, H, H, E, E, E, E
-  const std::array<size_t, 9> _siteIds{{0, 1, 1, 1, 1, 2, 2, 2, 2}};
+  const std::vector<size_t> _siteIds{{0, 1, 1, 1, 1, 2, 2, 2, 2}};
 
   const std::array<double, 6> _paramsA{0.262373610e7,  0.265413949e7,  0.241399203e6,
                                        -0.271732286e6, -0.749715218e5, 0.123654939e6};
@@ -116,6 +116,8 @@ class MethaneMultisitePairwiseFunctor
    */
   bool _postProcessed;
 
+  ParticlePropertiesLibrary<double, size_t> *_PPLibrary;
+
  public:
   /**
    * Delete Default constructor
@@ -150,6 +152,11 @@ class MethaneMultisitePairwiseFunctor
    */
   explicit MethaneMultisitePairwiseFunctor(double cutoff) : MethaneMultisitePairwiseFunctor(cutoff, nullptr) {}
 
+  explicit MethaneMultisitePairwiseFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : MethaneMultisitePairwiseFunctor(cutoff, nullptr) {
+    _PPLibrary = &particlePropertiesLibrary;
+  }
+
   std::string getName() final { return "MethaneMultisitePairwiseFunctor"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
@@ -183,10 +190,20 @@ class MethaneMultisitePairwiseFunctor
       return;
     }
 
-    constexpr size_t numSites = 9;
+    const size_t numSitesA = _PPLibrary ? _PPLibrary->getNumSites(particleA.getTypeId()) : 9;
+    const size_t numSitesB = _PPLibrary ? _PPLibrary->getNumSites(particleB.getTypeId()) : 9;
 
     // get siteIds
-    const std::vector<size_t> siteIdsA = std::vector<unsigned long>();
+    const auto siteIdsA =
+        _PPLibrary ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : _siteIds;
+    const auto siteIdsB =
+        _PPLibrary ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : _siteIds;
+
+    // get unrotated relative site positions
+    const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
+        _PPLibrary ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositions;
+    const std::vector<std::array<double, 3>> unrotatedSitePositionsB =
+        _PPLibrary ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositions;
 
     // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
@@ -194,10 +211,10 @@ class MethaneMultisitePairwiseFunctor
     const auto rotatedSitePositionsB =
         autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), _sitePositions);
 
-    for (int i = 0; i < numSites; i++) {
-      const auto siteTypeI = _siteIds[i];
-      for (int j = 0; j < numSites; j++) {
-        const auto siteTypeJ = _siteIds[j];
+    for (int i = 0; i < numSitesA; i++) {
+      const auto siteTypeI = siteIdsA[i];
+      for (int j = 0; j < numSitesB; j++) {
+        const auto siteTypeJ = siteIdsB[j];
         // Map site type combination to 0-5 index
         const int paramIndex = (siteTypeI >= siteTypeJ) ? siteTypeI * (siteTypeI + 1) / 2 + siteTypeJ
                                                         : siteTypeJ * (siteTypeJ + 1) / 2 + siteTypeI;
