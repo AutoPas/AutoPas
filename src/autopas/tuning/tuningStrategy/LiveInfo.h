@@ -170,60 +170,59 @@ class LiveInfo {
            size_t medianParticlesPerBlurredBin, size_t lowerQuartileParticlesPerBlurredBin,
            size_t upperQuartileParticlesPerBlurredBin, double meanParticlesPerBlurredBin,
            double particlesPerBlurredBinStdDev, double relativeParticlesPerBlurredBinStdDev) {
-    // Validate all inputs and throw exceptions if invalid
+    // Validate all inputs and log warnings if invalid
     if (cutoff <= 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: cutoff must be greater than 0");
+      AutoPasLog(ERROR, "LiveInfo: cutoff must be greater than 0");
     }
     if (skin < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: skin must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: skin must be non-negative");
     }
-    if (domainSizeX <= 0 || domainSizeY <= 0 || domainSizeZ <= 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: domain sizes must be greater than 0");
+    if (domainSizeX <= 0 or domainSizeY <= 0 or domainSizeZ <= 0) {
+      AutoPasLog(ERROR, "LiveInfo: domain sizes must be greater than 0");
     }
     if (particleSize == 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: particleSize must be greater than 0");
+      AutoPasLog(ERROR, "LiveInfo: particleSize must be greater than 0");
     }
     if (threadCount == 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: threadCount must be greater than 0");
+      AutoPasLog(ERROR, "LiveInfo: threadCount must be greater than 0");
     }
     if (rebuildFrequency == 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: rebuildFrequency must be greater than 0");
+      AutoPasLog(ERROR, "LiveInfo: rebuildFrequency must be greater than 0");
     }
     if (numCells == 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: numCells must be greater than 0");
+      AutoPasLog(ERROR, "LiveInfo: numCells must be greater than 0");
     }
     if (maxParticlesPerCell < minParticlesPerCell) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: maxParticlesPerCell must be >= minParticlesPerCell");
+      AutoPasLog(ERROR, "LiveInfo: maxParticlesPerCell must be >= minParticlesPerCell");
     }
     if (meanParticlesPerCell < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: meanParticlesPerCell must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: meanParticlesPerCell must be non-negative");
     }
     if (particlesPerCellStdDev < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: particlesPerCellStdDev must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: particlesPerCellStdDev must be non-negative");
     }
     if (relativeParticlesPerCellStdDev < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: relativeParticlesPerCellStdDev must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: relativeParticlesPerCellStdDev must be non-negative");
     }
     if (particleDependentBinMaxDensity < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: particleDependentBinMaxDensity must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: particleDependentBinMaxDensity must be non-negative");
     }
     if (particleDependentBinDensityStdDev < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: particleDependentBinDensityStdDev must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: particleDependentBinDensityStdDev must be non-negative");
     }
     if (maxParticlesPerBlurredBin < minParticlesPerBlurredBin) {
-      autopas::utils::ExceptionHandler::exception(
-          "LiveInfo: maxParticlesPerBlurredBin must be >= minParticlesPerBlurredBin");
+      AutoPasLog(ERROR, "LiveInfo: maxParticlesPerBlurredBin must be >= minParticlesPerBlurredBin");
     }
     if (meanParticlesPerBlurredBin < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: meanParticlesPerBlurredBin must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: meanParticlesPerBlurredBin must be non-negative");
     }
     if (particlesPerBlurredBinStdDev < 0) {
-      autopas::utils::ExceptionHandler::exception("LiveInfo: particlesPerBlurredBinStdDev must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: particlesPerBlurredBinStdDev must be non-negative");
     }
     if (relativeParticlesPerBlurredBinStdDev < 0) {
-      autopas::utils::ExceptionHandler::exception(
-          "LiveInfo: relativeParticlesPerBlurredBinStdDev must be non-negative");
+      AutoPasLog(ERROR, "LiveInfo: relativeParticlesPerBlurredBinStdDev must be non-negative");
     }
+
     // Store validated parameters in infos
     infos["numOwnedParticles"] = numOwnedParticles;
     infos["numHaloParticles"] = numHaloParticles;

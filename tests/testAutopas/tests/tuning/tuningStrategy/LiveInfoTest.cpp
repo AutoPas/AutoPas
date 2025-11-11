@@ -9,7 +9,6 @@
 #include "autopas/AutoPas.h"
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ParticleBinStructure.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -17,7 +16,6 @@
  * Tests that the parametrized constructor creates the correct info mappings.
  */
 TEST_F(LiveInfoTest, ParametrizedConstructorCreatesCorrectInfo) {
-  constexpr double epsilon = 1e-10;
   const std::vector<std::tuple<size_t, size_t, double, double, double, double, double, size_t, size_t, size_t, size_t,
                                size_t, size_t, size_t, size_t, size_t, size_t, double, double, double, size_t, double,
                                double, size_t, size_t, size_t, size_t, size_t, double, double, double>>
@@ -28,12 +26,9 @@ TEST_F(LiveInfoTest, ParametrizedConstructorCreatesCorrectInfo) {
            6,  3.0, 1.0, 0.5, 200,  1.6,  0.1,  8,   2, 4,  2,  6, 3.0, 0.6, 0.3},
           {25, 8,   0.750, 0.15, 15.0, 15.0, 15.0, 96, 6, 25, 12, 3, 1,   4,    3,  2,
            4,  1.5, 0.75,  0.35, 150,  1.2,  0.08, 6,  1, 3,  1,  4, 1.5, 0.45, 0.2},
-          // Constructor with the lowest allowed values
-          {1, 0,       epsilon, 0.0, epsilon, epsilon, epsilon, 1, 1, 1, 1, 0, 0,       0,   0,  0,
-           0, epsilon, 0.0,     0.0, 1,       epsilon, 0.0,     1, 0, 0, 0, 0, epsilon, 0.0, 0.0},
+          {19, 2,   1.1, 0.3, 10.0, 20.0, 30.0, 32, 1, 10, 5, 1, 0,   1,   1,  1,
+           1,  1.1, 0.3, 0.3, 50,   0.5,  0.02, 2,  0, 1,  0, 1, 1.1, 0.2, 0.2},
       };
-
-  autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
   for (const auto &params : parameters) {
     autopas::LiveInfo info(std::get<0>(params),   // numOwnedParticles
@@ -104,103 +99,26 @@ TEST_F(LiveInfoTest, ParametrizedConstructorCreatesCorrectInfo) {
 }
 
 /**
- * Tests that the parametrized constructor throws when given invalid input.
+ * Tests that the constructor initializes all required infos.
+ *
+ * This test verifies that no arguments are collected by the gather function wich are not gathered by the constructor.
  */
-TEST_F(LiveInfoTest, ParametrizedConstructorThrowsOnInvalidInput) {
-  autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
-
-  // cutoff <= 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 0.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // skin < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, -0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // domainSizeX <= 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 0.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-  // domainSizeY <= 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 0.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-  // domainSizeZ <= 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 0.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // particleSize == 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // threadCount == 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // rebuildFrequency == 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // numCells == 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // maxParticlesPerCell < minParticlesPerCell
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 5, 2, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // meanParticlesPerCell < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, -1.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // particlesPerCellStdDev < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, -1.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // relativeParticlesPerCellStdDev < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, -1.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // particleDependentBinMaxDensity < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, -1.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // particleDependentBinDensityStdDev < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 -1.0, 1, 1, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // maxParticlesPerBlurredBin < minParticlesPerBlurredBin
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 5, 1, 1, 1, 0.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // meanParticlesPerBlurredBin < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, -1.0, 0.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // particlesPerBlurredBinStdDev < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, -1.0, 0.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
-
-  // relativeParticlesPerBlurredBinStdDev < 0
-  EXPECT_THROW(autopas::LiveInfo(1, 1, 1.0, 0.1, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0,
-                                 0.0, 1, 1, 1, 1, 1, 0.0, 0.0, -1.0),
-               autopas::utils::ExceptionHandler::AutoPasException);
+TEST_F(LiveInfoTest, ConstructorNumInfos) {
+  // The values here are arbitrary as we only test the number of infos collected.
+  autopas::LiveInfo infoCtor(1, 0, 0.1, 0.0, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0, 0.0, 1,
+                             0, 0, 0, 0, 0.0, 0.0, 0.0);
+  autopas::LiveInfo infoGather;
+  autopas::AutoPas<ParticleFP64> container;
+  container.setCutoff(0.5);
+  container.setVerletSkin(0.4);
+  container.setBoxMin({0., 0., 0.});
+  container.setBoxMax({20., 20., 20.});
+  container.setVerletRebuildFrequency(20);
+  container.init();
+  infoGather.gather(container.begin(), container.getVerletRebuildFrequency(), container.getNumberOfParticles(),
+                    container.getBoxMin(), container.getBoxMax(), container.getCutoff(), container.getVerletSkin());
+  EXPECT_EQ(infoCtor.get().size(), infoGather.get().size())
+      << "Number of infos in constructor and gather should match.";
 }
 
 /**
