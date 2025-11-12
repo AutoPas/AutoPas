@@ -805,6 +805,9 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_KOKKOS: {
+      return  f(LJFunctorTypeKokkos{cutoff, particlePropertiesLibrary});
+    }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
       return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});

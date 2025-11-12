@@ -7,17 +7,20 @@
 #pragma once
 
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/kokkosDirectSum/traversals/DSKokkosTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
+
+#include <Kokkos_Core.hpp>
 
 namespace autopas {
 
-template <class Functor>
-class KokkosDsNaiveParallelTraversal : public TraversalInterface {
+template <class Functor, class Particle_T>
+class KokkosDsNaiveParallelTraversal : public TraversalInterface, public DSKokkosTraversalInterface<Particle_T> {
 
 public:
 
     explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
-        : TraversalInterface(dataLayout, useNewton3), _functor{functor} {}
+        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor} {}
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::kokkos_ds_naive_parallel; }
 
@@ -27,20 +30,31 @@ public:
     }
 
     void initTraversal() final {
-        // TODO
     }
 
     void traverseParticles() final {
-        // TODO
+      auto& owned = DSKokkosTraversalInterface<Particle_T>::_ownedParticles;
+      const bool newton3 = _useNewton3;
+
+      const auto func = _functor;
+
+      const int N = owned.size();
+
+      Kokkos::parallel_for("traverseParticles", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), [func, newton3, owned, N](int i) {
+        for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
+          if (newton3 or i != j) {
+            func->AoSFunctor(owned(i), owned(j), newton3);
+          }
+        }
+      });
     }
 
     void endTraversal() final {
-        // TODO
     }
 
 private:
 
-    const Functor *_functor;
+  Functor *_functor;
 
 };
 

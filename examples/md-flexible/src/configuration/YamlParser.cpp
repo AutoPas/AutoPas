@@ -163,9 +163,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.loadBalancingInterval.description;
 
         config.loadBalancingInterval.value = node[key].as<int>();
-        if (config.loadBalancingInterval.value < 0) {
-          throw std::runtime_error("Load balancing interval must be a positive integer.");
-        }
       } else if (key == config.selectorStrategy.name) {
         expected = "Exactly one selector strategy out of the possible values.";
         description = config.selectorStrategy.description;
@@ -226,6 +223,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
         if (strArg.find("avx") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+        } else if (strArg.find("kokkos") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_KOKKOS;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
@@ -260,9 +259,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.tuningPhases.description;
 
         config.tuningPhases.value = node[key].as<long>();
-        if (config.tuningPhases.value < 0) {
-          throw std::runtime_error("The number of tuning phases has to be a positive integer.");
-        }
       } else if (key == config.dontCreateEndConfig.name) {
         expected = "Boolean Value";
         description = config.dontCreateEndConfig.description;
@@ -552,9 +548,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.verletClusterSize.description;
 
         config.verletClusterSize.value = node[key].as<int>();
-        if (config.verletClusterSize.value < 0) {
-          throw std::runtime_error("Verlet cluster size has to be a positive integer!");
-        }
       } else if (key == config.vtkFileName.name) {
         expected = "String";
         description = config.vtkFileName.description;
@@ -607,14 +600,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         int siteID = 0;
         std::vector<std::string> siteErrors;
 
-        auto pushSiteError = [&](const std::string &error) {
-          std::stringstream ss;
-          ss << "YamlParser: Error parsing site with ID " << siteID << "." << std::endl
-             << "Message: " << error << std::endl
-             << "See AllOptions.yaml for examples." << std::endl;
-          errors.push_back(ss.str());
-        };
-
         for (auto siteIterator = node[MDFlexConfig::siteStr].begin(); siteIterator != node[MDFlexConfig::siteStr].end();
              ++siteIterator) {
           siteErrors.clear();
@@ -647,6 +632,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.molToSitePosMap.clear();
         config.momentOfInertiaMap.clear();
 
+#if MD_FLEXIBLE_MODE == MULTISITE
         int molID = 0;
         std::vector<std::string> molErrors;
 
@@ -658,7 +644,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           errors.push_back(ss.str());
         };
 
-#if MD_FLEXIBLE_MODE == MULTISITE
         for (auto molIterator = node[MDFlexConfig::moleculesStr].begin();
              molIterator != node[MDFlexConfig::moleculesStr].end(); ++molIterator) {
           molErrors.clear();

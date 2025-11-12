@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include "molecularDynamicsLibrary/LJFunctorKokkos.h"
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
@@ -91,6 +92,8 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 #endif
 
 #endif
+
+using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**

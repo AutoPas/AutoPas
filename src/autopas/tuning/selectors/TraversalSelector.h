@@ -135,7 +135,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     }
     // Kokkos Direct sum
     case TraversalOption::kokkos_ds_naive_parallel: {
-      traversal = std::make_unique<KokkosDsNaiveParallelTraversal<PairwiseFunctor_T>>(
+      traversal = std::make_unique<KokkosDsNaiveParallelTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
         &pairwiseFunctor, dataLayout, useNewton3);
       break;
     }
