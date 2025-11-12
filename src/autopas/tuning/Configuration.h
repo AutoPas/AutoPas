@@ -39,7 +39,8 @@ class Configuration {
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType, VectorizationPatternOption _vecPattern)
+                          InteractionTypeOption _interactionType,
+                          VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
       : container(_container),
         traversal(_traversal),
         vecPattern(_vecPattern),

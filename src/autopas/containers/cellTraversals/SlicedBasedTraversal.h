@@ -9,9 +9,8 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/utils/DataLayoutConverter.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
-#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -47,14 +46,14 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
       : CellTraversal<ParticleCell>(dims),
         TraversalInterface(dataLayout, useNewton3),
         _overlap{},
-        _dimsPerLength{},
+        _dimsSortedByLength{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlapLongestAxis(0),
         _sliceThickness{},
         _spaciallyForward(spaciallyForward),
         _dataLayoutConverter(functor, dataLayout) {
-    this->init(dims);
+    this->init();
   }
 
   /**
@@ -63,7 +62,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    */
   [[nodiscard]] bool isApplicable() const override {
     auto minSliceThickness = _overlapLongestAxis + 1;
-    auto maxNumSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    auto maxNumSlices = this->_cellsPerDimension[_dimsSortedByLength[0]] / minSliceThickness;
     return maxNumSlices > 0;
   }
 
@@ -72,14 +71,14 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    * @param minSliceThickness
    */
   virtual void initSliceThickness(unsigned long minSliceThickness) {
-    auto numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    auto numSlices = this->_cellsPerDimension[_dimsSortedByLength[0]] / minSliceThickness;
     _sliceThickness.clear();
 
     // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
     if (numSlices < 1) return;
 
     _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
-    auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
+    auto rest = this->_cellsPerDimension[_dimsSortedByLength[0]] - _sliceThickness[0] * numSlices;
     // remaining slices to distribute the remaining layers on
     auto remSlices = std::min(rest, numSlices);
     for (size_t i = 0; i < remSlices; ++i) {
@@ -119,9 +118,8 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
  protected:
   /**
    * Resets the cell structure of the traversal.
-   * @param dims
    */
-  void init(const std::array<unsigned long, 3> &dims);
+  void init();
 
   /**
    * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
@@ -136,15 +134,31 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
       }
     }
   }
+
+  /**
+   * Update cell information based on VerletClusterLists
+   * @param vcl Pointer to the VerletClusterLists object from which cell information is extracted.
+   */
+  void reinitForVCL(const VerletClusterLists<typename ParticleCell::ParticleType> *vcl) {
+    // Reinitialize the sliced traversal with up to date tower information
+    const auto towerSideLength = vcl->getTowerSideLength();
+    this->_cellLength = {towerSideLength[0], towerSideLength[1], vcl->getBoxMax()[2] - vcl->getBoxMin()[2]};
+    const auto towersPerDim = vcl->getTowersPerDimension();
+    this->_cellsPerDimension = {towersPerDim[0], towersPerDim[1], 1};
+
+    // reinitialize
+    init();
+  }
+
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   std::array<unsigned long, 3> _overlap;
 
   /**
-   * Store ids of dimensions ordered by number of cells per dimensions.
+   * Store ids of dimensions (0, 1, 2 = x, y, z) sorted by in decreasing order of number of cells in that dimension.
    */
-  std::array<int, 3> _dimsPerLength;
+  std::array<int, 3> _dimsSortedByLength;
 
   /**
    * Overlap of interacting cells along the longest axis.
@@ -161,16 +175,16 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    */
   bool _spaciallyForward;
 
+  /**
+   * Cell length in CellBlock3D.
+   */
+  std::array<double, 3> _cellLength;
+
  private:
   /**
    * Interaction length (cutoff + skin).
    */
   double _interactionLength;
-
-  /**
-   * Cell length in CellBlock3D.
-   */
-  std::array<double, 3> _cellLength;
 
   /**
    * Data Layout Converter to be used with this traversal.
@@ -179,7 +193,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
 };
 
 template <class ParticleCell, class Functor>
-inline void SlicedBasedTraversal<ParticleCell, Functor>::init(const std::array<unsigned long, 3> &dims) {
+void SlicedBasedTraversal<ParticleCell, Functor>::init() {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     if (not _spaciallyForward) {
@@ -190,11 +204,11 @@ inline void SlicedBasedTraversal<ParticleCell, Functor>::init(const std::array<u
 
   // find longest dimension
   auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(), this->_cellsPerDimension.end());
-  _dimsPerLength[0] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.second);
-  _dimsPerLength[2] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
-  _dimsPerLength[1] = 3 - (_dimsPerLength[0] + _dimsPerLength[2]);
+  _dimsSortedByLength[0] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.second);
+  _dimsSortedByLength[2] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
+  _dimsSortedByLength[1] = 3 - (_dimsSortedByLength[0] + _dimsSortedByLength[2]);
 
-  _overlapLongestAxis = _overlap[_dimsPerLength[0]];
+  _overlapLongestAxis = _overlap[_dimsSortedByLength[0]];
 }
 
 }  // namespace autopas

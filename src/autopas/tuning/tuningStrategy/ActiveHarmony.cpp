@@ -339,7 +339,7 @@ void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
 #endif
 }
 
-bool ActiveHarmony::needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+bool ActiveHarmony::needsDomainSimilarityStatistics() const { return false; }
 
 TuningStrategyOption ActiveHarmony::getOptionType() const { return TuningStrategyOption::activeHarmony; }
 }  // namespace autopas

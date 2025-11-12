@@ -44,8 +44,6 @@ enum class CellType {
  * The class handles to storage particles and provides an interface to add the
  * particles
  * @tparam Particle_T the type of particles to be stored in the cells
- * @tparam Iterator the type of the iterator iterate through the particles in
- * this cell
  */
 template <class Particle_T>
 class ParticleCell {
