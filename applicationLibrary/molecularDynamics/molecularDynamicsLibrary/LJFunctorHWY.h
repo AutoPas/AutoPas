@@ -131,6 +131,9 @@ class LJFunctorHWY
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
+  /**
+   * @copydoc autopas::PairwiseFunctor::AoSFunctor()
+   */
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
@@ -1322,8 +1325,6 @@ class LJFunctorHWY
 
   /**
    * @copydoc autopas::Functor::setVecPattern()
-   * Setter for the vectorization pattern to choose
-   * @param vecPattern
    */
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
