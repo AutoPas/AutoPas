@@ -99,7 +99,7 @@ TEST_F(LiveInfoTest, ParametrizedConstructorCreatesCorrectInfo) {
 }
 
 /**
- * Tests that the constructor initializes all required infos.
+ * Tests that the constructor that takes the live infos as arguments initializes all required infos.
  *
  * This test verifies that no arguments are collected by the gather function wich are not gathered by the constructor.
  */
