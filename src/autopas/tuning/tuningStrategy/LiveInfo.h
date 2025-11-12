@@ -172,55 +172,55 @@ class LiveInfo {
            double particlesPerBlurredBinStdDev, double relativeParticlesPerBlurredBinStdDev) {
     // Validate all inputs and log warnings if invalid
     if (cutoff <= 0) {
-      AutoPasLog(ERROR, "LiveInfo: cutoff must be greater than 0");
+      AutoPasLog(WARN, "LiveInfo: cutoff must be greater than 0");
     }
     if (skin < 0) {
-      AutoPasLog(ERROR, "LiveInfo: skin must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: skin must be non-negative");
     }
     if (domainSizeX <= 0 or domainSizeY <= 0 or domainSizeZ <= 0) {
-      AutoPasLog(ERROR, "LiveInfo: domain sizes must be greater than 0");
+      AutoPasLog(WARN, "LiveInfo: domain sizes must be greater than 0");
     }
     if (particleSize == 0) {
-      AutoPasLog(ERROR, "LiveInfo: particleSize must be greater than 0");
+      AutoPasLog(WARN, "LiveInfo: particleSize must be greater than 0");
     }
     if (threadCount == 0) {
-      AutoPasLog(ERROR, "LiveInfo: threadCount must be greater than 0");
+      AutoPasLog(WARN, "LiveInfo: threadCount must be greater than 0");
     }
     if (rebuildFrequency == 0) {
-      AutoPasLog(ERROR, "LiveInfo: rebuildFrequency must be greater than 0");
+      AutoPasLog(WARN, "LiveInfo: rebuildFrequency must be greater than 0");
     }
     if (numCells == 0) {
-      AutoPasLog(ERROR, "LiveInfo: numCells must be greater than 0");
+      AutoPasLog(WARN, "LiveInfo: numCells must be greater than 0");
     }
     if (maxParticlesPerCell < minParticlesPerCell) {
-      AutoPasLog(ERROR, "LiveInfo: maxParticlesPerCell must be >= minParticlesPerCell");
+      AutoPasLog(WARN, "LiveInfo: maxParticlesPerCell must be >= minParticlesPerCell");
     }
     if (meanParticlesPerCell < 0) {
-      AutoPasLog(ERROR, "LiveInfo: meanParticlesPerCell must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: meanParticlesPerCell must be non-negative");
     }
     if (particlesPerCellStdDev < 0) {
-      AutoPasLog(ERROR, "LiveInfo: particlesPerCellStdDev must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: particlesPerCellStdDev must be non-negative");
     }
     if (relativeParticlesPerCellStdDev < 0) {
-      AutoPasLog(ERROR, "LiveInfo: relativeParticlesPerCellStdDev must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: relativeParticlesPerCellStdDev must be non-negative");
     }
     if (particleDependentBinMaxDensity < 0) {
-      AutoPasLog(ERROR, "LiveInfo: particleDependentBinMaxDensity must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: particleDependentBinMaxDensity must be non-negative");
     }
     if (particleDependentBinDensityStdDev < 0) {
-      AutoPasLog(ERROR, "LiveInfo: particleDependentBinDensityStdDev must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: particleDependentBinDensityStdDev must be non-negative");
     }
     if (maxParticlesPerBlurredBin < minParticlesPerBlurredBin) {
-      AutoPasLog(ERROR, "LiveInfo: maxParticlesPerBlurredBin must be >= minParticlesPerBlurredBin");
+      AutoPasLog(WARN, "LiveInfo: maxParticlesPerBlurredBin must be >= minParticlesPerBlurredBin");
     }
     if (meanParticlesPerBlurredBin < 0) {
-      AutoPasLog(ERROR, "LiveInfo: meanParticlesPerBlurredBin must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: meanParticlesPerBlurredBin must be non-negative");
     }
     if (particlesPerBlurredBinStdDev < 0) {
-      AutoPasLog(ERROR, "LiveInfo: particlesPerBlurredBinStdDev must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: particlesPerBlurredBinStdDev must be non-negative");
     }
     if (relativeParticlesPerBlurredBinStdDev < 0) {
-      AutoPasLog(ERROR, "LiveInfo: relativeParticlesPerBlurredBinStdDev must be non-negative");
+      AutoPasLog(WARN, "LiveInfo: relativeParticlesPerBlurredBinStdDev must be non-negative");
     }
 
     // Store validated parameters in infos
