@@ -134,7 +134,6 @@ class AxilrodTellerMutoFunctor
     }
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
-      AutoPasLog(DEBUG, "Using AxilrodTellerMutoFunctor with countFLOPs is not tested for SoA datalayout.");
     }
   }
 
@@ -369,11 +368,6 @@ class AxilrodTellerMutoFunctor
             continue;
           }
 
-          SoAFloatPrecision nu = const_nu;
-          if constexpr (useMixing) {
-            nu = _PPLibrary->getMixingNu(typeptr[i], typeptr[j], typeptr[k]);
-          }
-
           const SoAFloatPrecision xk = xptr[k];
           const SoAFloatPrecision yk = yptr[k];
           const SoAFloatPrecision zk = zptr[k];
@@ -400,6 +394,11 @@ class AxilrodTellerMutoFunctor
           }
           if (distSquaredKI > cutoffSquared) {
             continue;
+          }
+
+          SoAFloatPrecision nu = const_nu;
+          if constexpr (useMixing) {
+            nu = _PPLibrary->getMixingNu(typeptr[i], typeptr[j], typeptr[k]);
           }
 
           SoAFloatPrecision forceIX, forceIY, forceIZ;
@@ -763,7 +762,7 @@ class AxilrodTellerMutoFunctor
     size_t soa1Size = soa1.size();
     size_t soa2Size = soa2.size();
     if constexpr (countFLOPs) {
-      numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
+      numTripletsCountingSum = soa1Size * soa2Size * (soa1Size + soa2Size - 2) / 2;
     }
 
     // Precompute distances between soa1 and soa2

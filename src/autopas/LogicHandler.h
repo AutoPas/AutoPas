@@ -1252,10 +1252,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   auto &autoTuner = *_autoTunerRefs[interactionType];
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
-    // Don't allow a rebuild frequency of 0
-    if (auto meanRebuildFrequency = getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true)) {
-      autoTuner.setRebuildFrequency(meanRebuildFrequency);
-    }
+    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
   }
 #endif
