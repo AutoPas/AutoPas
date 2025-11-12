@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "autopas/baseFunctors/Functor.h"
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -34,9 +34,7 @@ namespace mdLib {
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorKokkos
-    : public autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T, applyShift, useMixing, useNewton3,
-                                                            calculateGlobals, countFLOPs, relevantForTuning>> {
+class LJFunctorKokkos {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -59,9 +57,8 @@ class LJFunctorKokkos
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctorKokkos(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                       countFLOPs, relevantForTuning>>(cutoff),
+  explicit LJFunctorKokkos(double cutoff, void * /*dummy*/) :
+        _cutoff{cutoff},
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -97,19 +94,19 @@ class LJFunctorKokkos
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  std::string getName() final { return "LJFunctorKokkos"; }
+  std::string getName() { return "LJFunctorKokkos"; }
 
-  bool isRelevantForTuning() final { return relevantForTuning; }
+  bool isRelevantForTuning() { return relevantForTuning; }
 
-  bool allowsNewton3() final {
+  bool allowsNewton3() {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  bool allowsNonNewton3() final {
+  bool allowsNonNewton3() {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+  KOKKOS_INLINE_FUNCTION void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // TODO: change Particle to be a struct of data with no functions to call, easier for Kokkos
@@ -123,11 +120,11 @@ class LJFunctorKokkos
     auto epsilon24 = _epsilon24;
     // TODO: no external calls!
     if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+      //sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      //epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
     }
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    auto dr = {1.,1.,1.}; //  i.getR() - j.getR();
+    double dr2 = 1.; //autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
       return;
@@ -139,12 +136,12 @@ class LJFunctorKokkos
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
+    auto f = {fac, fac, fac};
     // TODO: no external calls
-    i.addF(f);
+    //i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
-      j.subF(f);
+      //j.subF(f);
     }
 
   }
@@ -153,7 +150,7 @@ class LJFunctorKokkos
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
    */
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) {
 
   }
 
@@ -161,7 +158,7 @@ class LJFunctorKokkos
    * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                      const bool newton3) final {
+                      const bool newton3) {
     // TODO
   }
 
@@ -188,7 +185,7 @@ class LJFunctorKokkos
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
+                        bool newton3) {
     if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -258,7 +255,7 @@ class LJFunctorKokkos
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
-  void initTraversal() final {
+  void initTraversal() {
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
@@ -268,7 +265,7 @@ class LJFunctorKokkos
    * Accumulates global values, e.g. potential energy and virial.
    * @param newton3
    */
-  void endTraversal(bool newton3) final {
+  void endTraversal(bool newton3) {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (_postProcessed) {
@@ -315,12 +312,16 @@ class LJFunctorKokkos
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
-  [[nodiscard]] size_t getNumFLOPs() const override {
+  [[nodiscard]] size_t getNumFLOPs() const {
     return std::numeric_limits<size_t>::max();
   }
 
-  [[nodiscard]] double getHitRate() const override {
+  [[nodiscard]] double getHitRate() const {
     return std::numeric_limits<double>::quiet_NaN();
+  }
+
+  double getCutoff() const {
+    return _cutoff;
   }
 
  private:
@@ -331,6 +332,7 @@ class LJFunctorKokkos
   }
 
   const double _cutoffSquared;
+  const double _cutoff;
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
 

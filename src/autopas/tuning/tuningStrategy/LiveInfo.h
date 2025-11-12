@@ -310,6 +310,7 @@ class LiveInfo {
       return std::get<T>(it->second);
     } catch (const std::bad_variant_access &e) {
       AutoPasLog(ERROR, "Type mismatch for key '" + key + "'. Requested type does not match the stored type.");
+      return T{};
     }
   }
 

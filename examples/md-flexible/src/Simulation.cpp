@@ -835,7 +835,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
 
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
-  const double cutoff = _configuration.cutoff.value;
+  //const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {

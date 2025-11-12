@@ -1,7 +1,7 @@
 option(Eigen3_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${Eigen3_ForceBundled})
-    set(expectedVersion 3.4.0)
+    set(expectedVersion 5.0.0)
     # capital E actually required...
     find_package(Eigen3 ${expectedVersion} QUIET)
     # actually I don't know our minimal supported version but this is the one I tested.
@@ -23,7 +23,7 @@ if (NOT ${Eigen3_ForceBundled})
 endif ()
 
 # system version not found -> install bundled version
-message(STATUS "Eigen3 - using bundled version 3.4.0 (Release)")
+message(STATUS "Eigen3 - using bundled version 5.0.0 (Release)")
 
 # Enable FetchContent CMake module
 include(FetchContent)
@@ -41,8 +41,8 @@ FetchContent_Declare(
         # eigen-master:
         # https://bitbucket.org/eigen/eigen/get/default.zip
         # eigen-3.3.90:
-        ${AUTOPAS_SOURCE_DIR}/libs/eigen-3.4.0.zip
-    URL_HASH MD5=994092410ba29875184f7725e0371596
+        ${AUTOPAS_SOURCE_DIR}/libs/eigen-5.0.0.zip
+    #URL_HASH MD5=994092410ba29875184f7725e0371596
 )
 # In case FetchContent_Populate gets removed:
 # Another "hacky" solution is to add the line

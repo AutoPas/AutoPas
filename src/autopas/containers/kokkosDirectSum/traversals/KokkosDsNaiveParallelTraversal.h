@@ -40,7 +40,7 @@ public:
 
       const int N = owned.size();
 
-      Kokkos::parallel_for("traverseParticles", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), [func, newton3, owned, N](int i) {
+      Kokkos::parallel_for("traverseParticles", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i) {
         for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
           if (newton3 or i != j) {
             func->AoSFunctor(owned(i), owned(j), newton3);

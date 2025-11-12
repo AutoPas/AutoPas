@@ -237,7 +237,7 @@ template <class Particle_T>
           }
 
           size_t sizeToCheck = (cellIndex == 0) ? numberOfOwned : numberOfHalo;
-          const Kokkos::View<Particle_T*>& viewToCheck = (cellIndex == 0) ? _ownedParticles : _haloParticles;
+          const Kokkos::View<Particle_T*, MemSpace>& viewToCheck = (cellIndex == 0) ? _ownedParticles : _haloParticles;
 
           if (particleIndex >= sizeToCheck or
               not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
@@ -251,7 +251,7 @@ template <class Particle_T>
             return {nullptr, 0, 0};
           }
 
-          const Kokkos::View<Particle_T*>& viewToExtract = (cellIndex == 0) ? _ownedParticles : _haloParticles;
+          const Kokkos::View<Particle_T*, MemSpace>& viewToExtract = (cellIndex == 0) ? _ownedParticles : _haloParticles;
           const Particle_T * result = &viewToExtract(particleIndex);
 
           return {result, cellIndex, particleIndex};
