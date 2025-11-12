@@ -231,11 +231,6 @@ void TraversalComparison::generateReference(mykey_t key) {
 TEST_P(TraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = GetParam();
-  // Todo: Remove this when the AxilrodTeller functor implements SoA
-  if (interactionType == autopas::InteractionTypeOption::triwise and
-      dataLayoutOption == autopas::DataLayoutOption::soa) {
-    GTEST_SKIP_("SoAs are not yet implemented for triwise traversals/functors.");
-  }
 
   TraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,
                                    globals,      interactionType};
