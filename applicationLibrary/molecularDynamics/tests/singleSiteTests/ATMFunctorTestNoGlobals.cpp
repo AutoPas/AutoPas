@@ -236,35 +236,58 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
       functor->setParticleProperties(this->nu);
     }
 
+    const auto expectedForceP1 = mixing ? this->expectedForceMixingP1 : this->expectedForceNonMixingP1;
+    const auto expectedForceP2 = mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2;
+    const auto expectedForceP3 = mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3;
+
+    // Set up the particles
+    // This array stores pointers to the 3 particles that might reside in the same or different cells
+    std::array<Molecule *, 3> moleculePtrs{};
+
     FMCell cell1, cell2, cell3;
     // Add particle 1 to cell1
     Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
     cell1.addParticle(p1);
 
-    // Add particle 2 to cell1 or cell2, depending on the SoAFunctorType to test.
+    // Distribute particles 2 and 3 depending on the SoA functor to test
+    // Gather pointers to the 3 molecules for easier testing
     Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
-    if (soaFunctorType == TestType::SoAFunctorType::single || soaFunctorType == TestType::SoAFunctorType::pair21 ||
-        soaFunctorType == TestType::SoAFunctorType::verlet) {
-      cell1.addParticle(p2);
-    } else if (soaFunctorType == TestType::SoAFunctorType::pair12 ||
-               soaFunctorType == TestType::SoAFunctorType::triple) {
-      cell2.addParticle(p2);
-    } else {
-      FAIL();
-    }
-
-    // Add particle 3 to cell1, cell2 or cell3, depending on the SoAFunctorType to test.
     Molecule p3({0.3, 0.2, 0.1}, {0., 0., 0.}, 2, (mixing) ? 2 : 0);
-    if (soaFunctorType == TestType::SoAFunctorType::single || soaFunctorType == TestType::SoAFunctorType::verlet) {
-      cell1.addParticle(p3);
-    } else if (soaFunctorType == TestType::SoAFunctorType::pair21 ||
-               soaFunctorType == TestType::SoAFunctorType::pair12) {
-      cell2.addParticle(p3);
-    } else if (soaFunctorType == TestType::SoAFunctorType::triple) {
-      cell3.addParticle(p3);
-    } else {
-      FAIL();
+    switch (soaFunctorType) {
+      case TestType::SoAFunctorType::single:
+        cell1.addParticle(p2);
+        cell1.addParticle(p3);
+        moleculePtrs[1] = &cell1._particles[1];
+        moleculePtrs[2] = &cell1._particles[2];
+        break;
+      case TestType::SoAFunctorType::pair21:
+        cell1.addParticle(p2);
+        cell2.addParticle(p3);
+        moleculePtrs[1] = &cell1._particles[1];
+        moleculePtrs[2] = &cell2._particles[0];
+        break;
+      case TestType::SoAFunctorType::pair12:
+        cell2.addParticle(p2);
+        cell2.addParticle(p3);
+        moleculePtrs[1] = &cell2._particles[0];
+        moleculePtrs[2] = &cell2._particles[1];
+        break;
+      case TestType::SoAFunctorType::triple:
+        cell2.addParticle(p2);
+        cell3.addParticle(p3);
+        moleculePtrs[1] = &cell2._particles[0];
+        moleculePtrs[2] = &cell3._particles[0];
+        break;
+      case TestType::SoAFunctorType::verlet:
+        cell1.addParticle(p2);
+        cell1.addParticle(p3);
+        moleculePtrs[1] = &cell1._particles[1];
+        moleculePtrs[2] = &cell1._particles[2];
+        break;
+      default:
+        FAIL();
     }
+    moleculePtrs[0] = &cell1._particles[0];
 
     // Create helper lambdas to load/extract particles to/from the SoAs
     auto cells = std::array{&cell1, &cell2, &cell3};
@@ -279,152 +302,96 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
       }
     };
 
-    loadParticlesToSoA();
-    // Perform the interaction based on the soa functor type
-    if (auto msg = this->shouldSkipIfNotImplemented([&]() {
-          switch (soaFunctorType) {
-            case TestType::SoAFunctorType::single:
-              functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3);
-              break;
-            case TestType::SoAFunctorType::pair12:
-            case TestType::SoAFunctorType::pair21:
-              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-              break;
-            case TestType::SoAFunctorType::triple:
-              functor->SoAFunctorTriple(cell1._particleSoABuffer, cell2._particleSoABuffer, cell3._particleSoABuffer,
-                                        newton3);
-              break;
-            case TestType::SoAFunctorType::verlet:
-              // Build verlet list
-              std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(3);
-              neighborList[0] = {1, 2};
-              if (not newton3) {
-                neighborList[1] = {0, 2};
-                neighborList[2] = {0, 1};
-              }
-              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 0, neighborList[0], newton3);
-              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 1, neighborList[1], newton3);
-              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 2, neighborList[2], newton3);
+    // Lambda helper to call the corresponding SoA functor and perform the force interactions
+    auto computeFunctorInteractions = [&](auto &c1, auto &c2, auto &c3) {
+      switch (soaFunctorType) {
+        case TestType::SoAFunctorType::single:
+          functor->SoAFunctorSingle(c1._particleSoABuffer, newton3);
+          break;
+        case TestType::SoAFunctorType::pair12:
+        case TestType::SoAFunctorType::pair21:
+          functor->SoAFunctorPair(c1._particleSoABuffer, c2._particleSoABuffer, newton3);
+          break;
+        case TestType::SoAFunctorType::triple:
+          functor->SoAFunctorTriple(c1._particleSoABuffer, c2._particleSoABuffer, c3._particleSoABuffer, newton3);
+          break;
+        case TestType::SoAFunctorType::verlet:
+          // Build verlet list
+          std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(3);
+          neighborList[0] = {1, 2};
+          if (not newton3) {
+            neighborList[1] = {0, 2};
+            neighborList[2] = {0, 1};
           }
-        });
+          functor->SoAFunctorVerlet(c1._particleSoABuffer, 0, neighborList[0], newton3);
+          functor->SoAFunctorVerlet(c1._particleSoABuffer, 1, neighborList[1], newton3);
+          functor->SoAFunctorVerlet(c1._particleSoABuffer, 2, neighborList[2], newton3);
+      }
+    };
+
+    ///// First Iteration /////
+
+    loadParticlesToSoA();
+    // Perform the interaction based on the soa functor type - Skip if not yet implemented
+    if (auto msg = this->shouldSkipIfNotImplemented([&]() { computeFunctorInteractions(cell1, cell2, cell3); });
         msg != "") {
       std::cout << msg << std::endl;
       continue;
     }
     extractParticlesFromSoA();
 
-    // Test the forces on all three particles after the first interaction
-    auto *f1 = &cell1.begin()->getF();
-    const auto expectedForceIter1P1 = mixing ? this->expectedForceMixingP1 : this->expectedForceNonMixingP1;
-    testNonZeroForce(*f1, expectedForceIter1P1, ATMFunctorTest::to_string(soaFunctorType));
+    // Test the forces
+    // Particle 1
+    testNonZeroForce(moleculePtrs[0]->getF(), expectedForceP1, ATMFunctorTest::to_string(soaFunctorType));
 
-    auto *f2 = &(++cell1.begin())->getF();
-    if (soaFunctorType == TestType::SoAFunctorType::pair12 or soaFunctorType == TestType::SoAFunctorType::triple) {
-      f2 = &cell2.begin()->getF();
-    }
+    // Particle 2
     if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or
         soaFunctorType == TestType::SoAFunctorType::pair21 or soaFunctorType == TestType::SoAFunctorType::verlet) {
       // If particle 2 is in the same cell as particle 1, its forces should already be calculated
-      const auto expectedForceIter1P2 = mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2;
-      testNonZeroForce(*f2, expectedForceIter1P2, ATMFunctorTest::to_string(soaFunctorType));
+      testNonZeroForce(moleculePtrs[1]->getF(), expectedForceP2, ATMFunctorTest::to_string(soaFunctorType));
     } else {  // Particle 2 is in a different cell, so the forces are zero when newton3 == false
-      testZeroForce(*f2, ATMFunctorTest::to_string(soaFunctorType));
+      testZeroForce(moleculePtrs[1]->getF(), ATMFunctorTest::to_string(soaFunctorType));
     }
 
-    // force of particle 3
-    auto *f3 = &(++(++cell1.begin()))->getF();
-    if (soaFunctorType == TestType::SoAFunctorType::pair21) {
-      f3 = &cell2.begin()->getF();
-    } else if (soaFunctorType == TestType::SoAFunctorType::pair12) {
-      f3 = &(++cell2.begin())->getF();
-    } else if (soaFunctorType == TestType::SoAFunctorType::triple) {
-      f3 = &cell3.begin()->getF();
-    }
-
+    // Particle 3
     if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or
         soaFunctorType == TestType::SoAFunctorType::verlet) {
-      const auto expectedForceIter1P3 = mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3;
-      testNonZeroForce(*f3, expectedForceIter1P3, ATMFunctorTest::to_string(soaFunctorType));
+      testNonZeroForce(moleculePtrs[2]->getF(), expectedForceP3, ATMFunctorTest::to_string(soaFunctorType));
     } else {
-      testZeroForce(*f3, ATMFunctorTest::to_string(soaFunctorType));
+      testZeroForce(moleculePtrs[2]->getF(), ATMFunctorTest::to_string(soaFunctorType));
     }
 
-    // Second cell interaction for types with multiple cells
+    ///// Second Iteration /////
+
+    // Only done for types with multiple cells
     if (soaFunctorType != TestType::SoAFunctorType::single and soaFunctorType != TestType::SoAFunctorType::verlet) {
       loadParticlesToSoA();
-      switch (soaFunctorType) {
-        case TestType::SoAFunctorType::pair12:
-        case TestType::SoAFunctorType::pair21:
-          functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
-          break;
-        case TestType::SoAFunctorType::triple:
-          functor->SoAFunctorTriple(cell2._particleSoABuffer, cell1._particleSoABuffer, cell3._particleSoABuffer,
-                                    newton3);
-          break;
-        default:
-          break;
-      }
+      computeFunctorInteractions(cell2, cell1, cell3);
       extractParticlesFromSoA();
 
       // Test the forces after the second interaction
       double factor = newton3 ? 2. : 1.;
-
-      f1 = &cell1.begin()->getF();
-      const auto expectedForceIter2P1 =
-          (mixing ? this->expectedForceMixingP1 : this->expectedForceNonMixingP1) * factor;
-      testNonZeroForce(*f1, expectedForceIter2P1, ATMFunctorTest::to_string(soaFunctorType));
-
-      f2 = &(++cell1.begin())->getF();
-      if (soaFunctorType == TestType::SoAFunctorType::pair12 or soaFunctorType == TestType::SoAFunctorType::triple) {
-        f2 = &cell2.begin()->getF();
-      }
-
-      const auto expectedForceIter2P2 =
-          (mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2) * factor;
-      testNonZeroForce(*f2, expectedForceIter2P2, ATMFunctorTest::to_string(soaFunctorType));
-
-      switch (soaFunctorType) {
-        case TestType::SoAFunctorType::pair21:
-          f3 = &cell2.begin()->getF();
-          break;
-        case TestType::SoAFunctorType::pair12:
-          f3 = &(++cell2.begin())->getF();
-          break;
-        case TestType::SoAFunctorType::triple:
-          f3 = &cell3.begin()->getF();
-          break;
-        default:
-          break;
-      }
+      testNonZeroForce(moleculePtrs[0]->getF(), expectedForceP1 * factor, ATMFunctorTest::to_string(soaFunctorType));
+      testNonZeroForce(moleculePtrs[1]->getF(), expectedForceP2 * factor, ATMFunctorTest::to_string(soaFunctorType));
 
       if (newton3 or soaFunctorType != TestType::SoAFunctorType::triple) {
-        const auto expectedForceIter2P3 =
-            (mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3) * factor;
-        testNonZeroForce(*f3, expectedForceIter2P3, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(moleculePtrs[2]->getF(), expectedForceP3 * factor, ATMFunctorTest::to_string(soaFunctorType));
       } else {
-        testZeroForce(*f3, ATMFunctorTest::to_string(soaFunctorType));
+        testZeroForce(moleculePtrs[2]->getF(), ATMFunctorTest::to_string(soaFunctorType));
       }
 
-      // Third interaction for 3 cells
+      ///// Third Iteration /////
+
+      // Only needed for SoAFunctorTriple
       if (soaFunctorType == TestType::SoAFunctorType::triple) {
         loadParticlesToSoA();
-        functor->SoAFunctorTriple(cell3._particleSoABuffer, cell1._particleSoABuffer, cell2._particleSoABuffer,
-                                  newton3);
+        computeFunctorInteractions(cell3, cell1, cell2);
         extractParticlesFromSoA();
 
         factor = newton3 ? 3. : 1.;
-        f3 = &cell3.begin()->getF();
-
-        const auto expectedForceIter3P1 =
-            (mixing ? this->expectedForceMixingP1 : this->expectedForceNonMixingP1) * factor;
-        const auto expectedForceIter3P2 =
-            (mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2) * factor;
-        const auto expectedForceIter3P3 =
-            (mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3) * factor;
-
-        testNonZeroForce(*f1, expectedForceIter3P1, ATMFunctorTest::to_string(soaFunctorType));
-        testNonZeroForce(*f2, expectedForceIter3P2, ATMFunctorTest::to_string(soaFunctorType));
-        testNonZeroForce(*f3, expectedForceIter3P3, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(moleculePtrs[0]->getF(), expectedForceP1 * factor, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(moleculePtrs[1]->getF(), expectedForceP2 * factor, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(moleculePtrs[2]->getF(), expectedForceP3 * factor, ATMFunctorTest::to_string(soaFunctorType));
       }
     }
 
