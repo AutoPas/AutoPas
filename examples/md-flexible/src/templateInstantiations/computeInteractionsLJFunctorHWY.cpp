@@ -1,5 +1,5 @@
 /**
- * @file iteratePairwiseLJFunctorHWY.cpp
+ * @file computeInteractionsLJFunctorHWY.cpp
  *
  */
 #include "autopas/AutoPasImpl.h"
