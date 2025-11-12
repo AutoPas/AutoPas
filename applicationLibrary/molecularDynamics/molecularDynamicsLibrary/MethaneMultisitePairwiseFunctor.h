@@ -207,9 +207,9 @@ class MethaneMultisitePairwiseFunctor
 
     // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), _sitePositions);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), _sitePositions);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), unrotatedSitePositionsB);
 
     for (int i = 0; i < numSitesA; i++) {
       const auto siteTypeI = siteIdsA[i];
@@ -246,23 +246,25 @@ class MethaneMultisitePairwiseFunctor
         const auto b6 = b5 * b;
         const auto b7 = b6 * b;
         const auto b8 = b7 * b;
+        const auto b9 = b8 * b;
 
-        const auto expTerm = alpha * A * std::exp(-alpha * dist) * distInv;
+        const auto expTerm = alpha * A * std::exp(-alpha * dist);
 
         const auto expBR = std::exp(-b * dist);
 
-        const auto tangToenniesSum6 = 3. * b * distInv6 + 2. * b2 * distInv5 + 3. * b3 * distInv4 / 4. +
-                                      b4 * distInv3 / 5. + b5 * distInv2 / 24. + b6 * distInv / 120.;
-        const auto tangToenniesSum8 = 4. * b * distInv8 + 8. * b2 * distInv5 / 3. + b3 * distInv6 +
-                                      4. * b4 * distInv5 / 15. + b5 * distInv4 / 18. + b6 * distInv3 / 105. +
-                                      b7 * distInv2 / 720. + b8 * distInv / 5760.;
+        const auto tangToenniesSum6 = 6. * distInv7 + 6. * b * distInv6 + 3. * b2 * distInv5 + b3 * distInv4 +
+                                      b4 * distInv3 / 4. + b5 * distInv2 / 20. + b6 * distInv / 120. + b7 / 720.;
 
-        const auto tangToenniesTerm6 = b * expBR * C6 * tangToenniesSum6;
-        const auto tangToenniesTerm8 = b * expBR * C8 * tangToenniesSum8;
+        const auto tangToenniesSum8 = 8. * distInv9 + 8. * b * distInv8 + 4. * b2 * distInv7 + 4. * b3 * distInv6 / 3. +
+                                      b4 * distInv5 / 3. + b5 * distInv4 / 15. + b6 * distInv3 / 90. +
+                                      b7 * distInv2 / 630. + b8 * distInv / 5040. + b9 / 40320.;
+
+        const auto tangToenniesTerm6 = C6 * (-expBR * tangToenniesSum6 + 6. * distInv7);
+        const auto tangToenniesTerm8 = C8 * (-expBR * tangToenniesSum8 + 8. * distInv9);
 
         const auto chargeTerm = _charges[siteTypeI] * _charges[siteTypeJ] * distInv2;
 
-        const auto forceFactor = -expTerm + tangToenniesTerm6 + tangToenniesTerm8 - chargeTerm;
+        const auto forceFactor = (-expTerm + tangToenniesTerm6 + tangToenniesTerm8 - chargeTerm) * distInv;
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, forceFactor);
 
         // Add force on site to net force
@@ -282,10 +284,11 @@ class MethaneMultisitePairwiseFunctor
           // Potential energy has an additional factor of 6, which is also handled in endTraversal().
           const auto innerSum6 = distInv6 + b * distInv5 + b2 * distInv4 / 2. + b3 * distInv3 / 6. +
                                  b4 * distInv2 / 24. + b5 * distInv / 120. + b6 / 720.;
-          const auto innerSum8 = innerSum6 * distInv2 + b7 / 5040. * distInv + b8 / 40320.;
-          const auto potentialEnergy = A * std::exp(-alpha * dist) - C6 * (1 - expBR * innerSum6) -
-                                       C8 * (1 - expBR * innerSum8) +
-                                       _charges[siteTypeI] * _charges[siteTypeJ] * distInv;
+          const auto innerSum8 = innerSum6 * distInv2 + b7 * distInv / 5040. + b8 / 40320.;
+          const auto potentialEnergy = A * std::exp(-alpha * dist)
+                                      - C6 * (distInv6 - expBR * innerSum6)
+                                      - C8 * (distInv8 - expBR * innerSum8)
+                                       + _charges[siteTypeI] * _charges[siteTypeJ] * distInv;
           const auto virial = displacement * force;
 
           const auto threadNum = autopas::autopas_get_thread_num();
@@ -453,8 +456,6 @@ class MethaneMultisitePairwiseFunctor
       _potentialEnergySum *= 0.5;
       _virialSum *= 0.5;
 
-      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
-      _potentialEnergySum /= 6.;
       _postProcessed = true;
 
       AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
