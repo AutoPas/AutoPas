@@ -30,11 +30,13 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  */
-template <class Particle_T, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool countFLOPs = false>
+template <class Particle_T, bool useMixing = false, bool hardcodeMethane = true,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
+          bool countFLOPs = false>
 class AxilrodTellerMutoMultisiteFunctor
-    : public autopas::TriwiseFunctor<Particle_T, AxilrodTellerMutoMultisiteFunctor<Particle_T, useMixing, useNewton3,
-                                                                                   calculateGlobals, countFLOPs>> {
+    : public autopas::TriwiseFunctor<Particle_T,
+                                     AxilrodTellerMutoMultisiteFunctor<Particle_T, useMixing, hardcodeMethane,
+                                                                       useNewton3, calculateGlobals, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -58,8 +60,9 @@ class AxilrodTellerMutoMultisiteFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerMutoMultisiteFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle_T, AxilrodTellerMutoMultisiteFunctor<Particle_T, useMixing, useNewton3,
-                                                                              calculateGlobals, countFLOPs>>(cutoff),
+      : autopas::TriwiseFunctor<Particle_T,
+                                AxilrodTellerMutoMultisiteFunctor<Particle_T, useMixing, hardcodeMethane, useNewton3,
+                                                                  calculateGlobals, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -140,25 +143,34 @@ class AxilrodTellerMutoMultisiteFunctor
 
     const auto nu = _nuMethane;
     // get number of sites
-    const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsATM.size();
-    const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsATM.size();
-    const size_t numSitesC = useMixing ? _PPLibrary->getNumSites(particleC.getTypeId()) : _sitePositionsATM.size();
+    const size_t numSitesA =
+        hardcodeMethane ? 4 : (useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsATM.size());
+    const size_t numSitesB =
+        hardcodeMethane ? 4 : (useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsATM.size());
+    const size_t numSitesC =
+        hardcodeMethane ? 4 : (useMixing ? _PPLibrary->getNumSites(particleC.getTypeId()) : _sitePositionsATM.size());
 
     // get siteIds
-    const std::vector<size_t> siteIdsA =
-        useMixing ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : std::vector<unsigned long>();
-    const std::vector<size_t> siteIdsB =
-        useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : std::vector<unsigned long>();
-    const std::vector<size_t> siteIdsC =
-        useMixing ? _PPLibrary->getSiteTypes(particleC.getTypeId()) : std::vector<unsigned long>();
+    const std::vector<size_t> siteIdsA = hardcodeMethane ? std::vector<unsigned long>(4, 0)
+                                         : useMixing     ? _PPLibrary->getSiteTypes(particleA.getTypeId())
+                                                         : std::vector<unsigned long>();
+    const std::vector<size_t> siteIdsB = hardcodeMethane ? std::vector<unsigned long>(4, 0)
+                                         : useMixing     ? _PPLibrary->getSiteTypes(particleB.getTypeId())
+                                                         : std::vector<unsigned long>();
+    const std::vector<size_t> siteIdsC = hardcodeMethane ? std::vector<unsigned long>(4, 0)
+                                         : useMixing     ? _PPLibrary->getSiteTypes(particleC.getTypeId())
+                                                         : std::vector<unsigned long>();
 
     // calculate correctly rotated relative site positions
-    const auto rotatedSitePositionsA =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), _sitePositions);
-    const auto rotatedSitePositionsB =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), _sitePositions);
-    const auto rotatedSitePositionsC =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleC.getQuaternion(), _sitePositions);
+    const auto rotatedSitePositionsA = hardcodeMethane ? _sitePositionsMethane
+                                                       : autopas::utils::quaternion::rotateVectorOfPositions(
+                                                             particleA.getQuaternion(), _sitePositionsATM);
+    const auto rotatedSitePositionsB = hardcodeMethane ? _sitePositionsMethane
+                                                       : autopas::utils::quaternion::rotateVectorOfPositions(
+                                                             particleB.getQuaternion(), _sitePositionsATM);
+    const auto rotatedSitePositionsC = hardcodeMethane ? _sitePositionsMethane
+                                                       : autopas::utils::quaternion::rotateVectorOfPositions(
+                                                             particleC.getQuaternion(), _sitePositionsATM);
 
     for (int i = 0; i < numSitesA; i++) {
       for (int j = 0; j < numSitesB; j++) {
@@ -210,6 +222,13 @@ class AxilrodTellerMutoMultisiteFunctor
 
             forceK = (forceI + forceJ) * (-1.0);
             particleC.addF(forceK);
+          }
+
+          // Add torque applied by force
+          particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[i], forceI));
+          if (newton3) {
+            particleB.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], forceJ));
+            particleC.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], forceK));
           }
 
           if constexpr (calculateGlobals) {
@@ -587,12 +606,16 @@ class AxilrodTellerMutoMultisiteFunctor
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
-  const std::vector<std::array<double, 3>> _sitePositions{
-      std::array{0.66248, 0.66248, 0.66248},  // For Methane! In Angström
-      std::array{0.66248, -0.66248, -0.66248}, std::array{-0.66248, 0.66248, -0.66248},
-      std::array{-0.66248, -0.66248, 0.66248}};
+  const std::vector<std::array<double, 3>> _sitePositionsMethane{
+      std::array{0.3824830063327433, 0.3824830063327433, 0.3824830063327433},  // For Methane! In Angström
+      std::array{0.3824830063327433, -0.3824830063327433, -0.3824830063327433},
+      std::array{-0.3824830063327433, 0.3824830063327433, -0.3824830063327433},
+      std::array{-0.3824830063327433, -0.3824830063327433, 0.3824830063327433}};
 
-  const double _nuMethane = 1.67587863099e6;  // hartree
+  // 1631 in hartree (see https://doi.org/10.1080/00268977800100561)
+  // Divided by 64 because of 4x4x4 site interactions per triplet
+  const double _nuMethane = 1.67587863099e6 / 64.;
+
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
 

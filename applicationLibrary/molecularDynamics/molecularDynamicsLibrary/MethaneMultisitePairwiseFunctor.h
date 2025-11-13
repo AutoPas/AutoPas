@@ -28,18 +28,20 @@ namespace mdLib {
  * (https://doi.org/10.1063/1.2932103).
  *
  * @tparam Particle_T The type of particle.
+ * @tparam useCorrection Adds the isotropic correction term
  * @tparam useNewton3 Switch for the functor to support newton3 on, off, or both. See FunctorN3Nodes for possible
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
- * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam relevantForTuning Whether the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate.
  */
-template <class Particle_T, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool countFLOPs = false, bool relevantForTuning = true>
+template <class Particle_T, bool useCorrection = true,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
+          bool countFLOPs = false, bool relevantForTuning = true>
 class MethaneMultisitePairwiseFunctor
     : public autopas::PairwiseFunctor<
-          Particle_T,
-          MethaneMultisitePairwiseFunctor<Particle_T, useNewton3, calculateGlobals, relevantForTuning, countFLOPs>> {
+          Particle_T, MethaneMultisitePairwiseFunctor<Particle_T, useCorrection, useNewton3, calculateGlobals,
+                                                      relevantForTuning, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -131,8 +133,10 @@ class MethaneMultisitePairwiseFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit MethaneMultisitePairwiseFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle_T, MethaneMultisitePairwiseFunctor<Particle_T, useNewton3, calculateGlobals,
-                                                                             relevantForTuning, countFLOPs>>(cutoff),
+      : autopas::PairwiseFunctor<Particle_T,
+                                 MethaneMultisitePairwiseFunctor<Particle_T, useCorrection, useNewton3,
+                                                                 calculateGlobals, relevantForTuning, countFLOPs>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -152,7 +156,8 @@ class MethaneMultisitePairwiseFunctor
    */
   explicit MethaneMultisitePairwiseFunctor(double cutoff) : MethaneMultisitePairwiseFunctor(cutoff, nullptr) {}
 
-  explicit MethaneMultisitePairwiseFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit MethaneMultisitePairwiseFunctor(double cutoff,
+                                           ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : MethaneMultisitePairwiseFunctor(cutoff, nullptr) {
     _PPLibrary = &particlePropertiesLibrary;
   }
@@ -194,10 +199,8 @@ class MethaneMultisitePairwiseFunctor
     const size_t numSitesB = _PPLibrary ? _PPLibrary->getNumSites(particleB.getTypeId()) : 9;
 
     // get siteIds
-    const auto siteIdsA =
-        _PPLibrary ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : _siteIds;
-    const auto siteIdsB =
-        _PPLibrary ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : _siteIds;
+    const auto siteIdsA = _PPLibrary ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : _siteIds;
+    const auto siteIdsB = _PPLibrary ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : _siteIds;
 
     // get unrotated relative site positions
     const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
@@ -264,7 +267,35 @@ class MethaneMultisitePairwiseFunctor
 
         const auto chargeTerm = _charges[siteTypeI] * _charges[siteTypeJ] * distInv2;
 
-        const auto forceFactor = (-expTerm + tangToenniesTerm6 + tangToenniesTerm8 - chargeTerm) * distInv;
+        auto forceFactor = (-expTerm + tangToenniesTerm6 + tangToenniesTerm8 - chargeTerm) * distInv;
+
+        // Add correction term once for the C-C interaction (as they are located at the molecule centers)
+        if (useCorrection and (i == 0 and j == 0)) {
+          const auto bCorr2 = _bCorr * _bCorr;
+          const auto bCorr3 = bCorr2 * _bCorr;
+          const auto bCorr4 = bCorr3 * _bCorr;
+          const auto bCorr5 = bCorr4 * _bCorr;
+          const auto bCorr6 = bCorr5 * _bCorr;
+          const auto bCorr7 = bCorr6 * _bCorr;
+          const auto bCorr8 = bCorr7 * _bCorr;
+          const auto bCorr9 = bCorr8 * _bCorr;
+          const auto expBRCorr = std::exp(-_bCorr * dist);
+
+          const auto tangToenniesCorrectionSum6 = 6. * distInv7 + 6. * _bCorr * distInv6 + 3. * bCorr2 * distInv5 +
+                                                  bCorr3 * distInv4 + bCorr4 * distInv3 / 4. + bCorr5 * distInv2 / 20. +
+                                                  bCorr6 * distInv / 120. + bCorr7 / 720.;
+
+          const auto tangToenniesCorrectionSum8 = 8. * distInv9 + 8. * _bCorr * distInv8 + 4. * bCorr2 * distInv7 +
+                                                  4. * bCorr3 * distInv6 / 3. + bCorr4 * distInv5 / 3. +
+                                                  bCorr5 * distInv4 / 15. + bCorr6 * distInv3 / 90. +
+                                                  bCorr7 * distInv2 / 630. + bCorr8 * distInv / 5040. + bCorr9 / 40320.;
+
+          const auto tangToenniesTermCorrection6 = _deltaC6 * (-expBRCorr * tangToenniesCorrectionSum6 + 6. * distInv7);
+          const auto tangToenniesTermCorrection8 = _deltaC8 * (-expBRCorr * tangToenniesCorrectionSum8 + 8. * distInv9);
+
+          forceFactor += (tangToenniesTermCorrection6 + tangToenniesTermCorrection8) * distInv;
+        }
+
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, forceFactor);
 
         // Add force on site to net force
@@ -285,10 +316,29 @@ class MethaneMultisitePairwiseFunctor
           const auto innerSum6 = distInv6 + b * distInv5 + b2 * distInv4 / 2. + b3 * distInv3 / 6. +
                                  b4 * distInv2 / 24. + b5 * distInv / 120. + b6 / 720.;
           const auto innerSum8 = innerSum6 * distInv2 + b7 * distInv / 5040. + b8 / 40320.;
-          const auto potentialEnergy = A * std::exp(-alpha * dist)
-                                      - C6 * (distInv6 - expBR * innerSum6)
-                                      - C8 * (distInv8 - expBR * innerSum8)
-                                       + _charges[siteTypeI] * _charges[siteTypeJ] * distInv;
+          auto potentialEnergy = A * std::exp(-alpha * dist) - C6 * (distInv6 - expBR * innerSum6) -
+                                 C8 * (distInv8 - expBR * innerSum8) +
+                                 _charges[siteTypeI] * _charges[siteTypeJ] * distInv;
+          if (useCorrection and (i == 0 and j == 0)) {
+            const auto bCorr2 = _bCorr * _bCorr;
+            const auto bCorr3 = bCorr2 * _bCorr;
+            const auto bCorr4 = bCorr3 * _bCorr;
+            const auto bCorr5 = bCorr4 * _bCorr;
+            const auto bCorr6 = bCorr5 * _bCorr;
+            const auto bCorr7 = bCorr6 * _bCorr;
+            const auto bCorr8 = bCorr7 * _bCorr;
+            const auto expBRCorr = std::exp(-_bCorr * dist);
+
+            const auto innerCorrectionSum6 = distInv6 + _bCorr * distInv5 + bCorr2 * distInv4 / 2. +
+                                             bCorr3 * distInv3 / 6. + bCorr4 * distInv2 / 24. +
+                                             bCorr5 * distInv / 120. + bCorr6 / 720.;
+
+            const auto innerCorrectionSum8 =
+                innerCorrectionSum6 * distInv2 + bCorr7 * distInv / 5040. + bCorr8 / 40320.;
+
+            potentialEnergy -= _deltaC6 * (distInv6 - expBRCorr * innerCorrectionSum6) +
+                               _deltaC8 * (distInv8 - expBRCorr * innerCorrectionSum8);
+          }
           const auto virial = displacement * force;
 
           const auto threadNum = autopas::autopas_get_thread_num();

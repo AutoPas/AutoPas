@@ -140,7 +140,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ATMFunctor =
-    mdLib::AxilrodTellerMutoMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
+    mdLib::AxilrodTellerMutoMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
 using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
@@ -153,8 +153,8 @@ using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::
 #if defined(MD_FLEXIBLE_FUNCTOR_METHANE)
 #if MD_FLEXIBLE_MODE == MULTISITE
 using MethaneFunctor =
-    mdLib::MethaneMultisitePairwiseFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
-                                           mdFlexibleTypeDefs::countFLOPs>;
+    mdLib::MethaneMultisitePairwiseFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
+                                           mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #else
 #error \
     "There exists no pairwise functor for single-site methane molecules! Consider using LJ or multisite mode instead."

@@ -828,7 +828,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::methane: {
 #if defined(MD_FLEXIBLE_FUNCTOR_METHANE)
-      return f(MethaneFunctor{cutoff});
+      return f(MethaneFunctor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for MethaneFunctor. Activate it via `cmake "
