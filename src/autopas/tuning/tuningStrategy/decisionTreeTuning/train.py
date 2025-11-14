@@ -15,13 +15,26 @@ from sklearn.multioutput import MultiOutputClassifier
 import pickle
 import numpy as np
 
+def extract_filename(path_to_file: str) -> str:
+    """
+    Extract the filename from a path.
+
+    E.g. './path/to/file.csv' becomes 'file.csv'.
+
+    Args:
+        path_to_file (str): The path to the file.
+    Returns:
+         str: The filename.
+    """
+    return os.path.basename(path_to_file)
+
 def extract_identifier(filename: str) -> str:
     """
     Extract the rank and timestamp from the filename, to serve as a unique identifier to match Live Info csvs to
     tuning results csvs.
 
-    E.g. './path/to/result/AutoPas_liveInfoLogger_Rank0_2025-05-13_14-11-48.csv' becomes 'Rank0_2025-05-13_14-11-48.csv'
-    './path/to/result/AutoPas_tuningResults_Rank0_pairwise_2025-05-13_14-11-48.csv' becomes 'Rank0_pairwise_2025-05-13_14-11-48.csv'
+    E.g. 'AutoPas_liveInfoLogger_Rank0_2025-05-13_14-11-48.csv' becomes 'Rank0_2025-05-13_14-11-48.csv'
+    'AutoPas_tuningResults_Rank0_pairwise_2025-05-13_14-11-48.csv' becomes 'Rank0_pairwise_2025-05-13_14-11-48.csv'
     (and therefore the 'pairwise' part must then be removed by remove_interaction_type so they match).
 
     Args:
@@ -81,9 +94,11 @@ def load_data_from_directory(results_dir: str) -> tuple:
             tuning_results_file_list_triwise = [f for f in tuning_results_file_list if '_triwise' in f]
 
             # Create dictionaries mapping identifiers to files and use it to get a list of matching file pairs
-            live_info_map = {extract_identifier(f): f for f in live_info_file_list}
-            tuning_results_pairwise_map = {remove_interaction_type(extract_identifier(f)): f for f in tuning_results_file_list_pairwise}
-            tuning_results_triwise_map = {remove_interaction_type(extract_identifier(f)): f for f in tuning_results_file_list_triwise}
+            live_info_map = {extract_identifier(extract_filename(f)): f for f in live_info_file_list}
+            tuning_results_pairwise_map = {remove_interaction_type(extract_identifier(extract_filename(f))):
+                                               f for f in tuning_results_file_list_pairwise}
+            tuning_results_triwise_map = {remove_interaction_type(extract_identifier(extract_filename(f))):
+                                              f for f in tuning_results_file_list_triwise}
 
             common_identifiers_pairwise = set(live_info_map) & set(tuning_results_pairwise_map)
             common_identifiers_triwise = set (live_info_map) & set(tuning_results_triwise_map)
