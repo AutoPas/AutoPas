@@ -326,9 +326,9 @@ class MethaneMultisitePairwiseFunctor
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, forceFactor);
 
         // Add force on site to net force
-        particleA.addF(force);
+        particleA.subF(force);
         if (newton3) {
-          particleB.subF(force);
+          particleB.addF(force);
         }
 
         // Add torque applied by force
