@@ -57,52 +57,6 @@ class MethaneMultisitePairwiseFunctor
    */
   const double _cutoffSquared;
 
-  constexpr std::array<double, 3> makeSitePosition(double x, double y, double z) {
-    // Precomputed value of 1.0 / sqrt(3) for tetrahedral positions.
-    constexpr double invSqrt3 = 0.5773502691896258;
-    constexpr double factor = 1.099 * invSqrt3;
-    return std::array{x * factor, y * factor, z * factor};
-  }
-
-  /**
-   * List of relative unrotated Methane Site Positions.
-   */
-  const std::vector<std::array<double, 3>> _sitePositions{
-      {0., 0., 0.},                        // C atom, site "C"
-      makeSitePosition(0.88, 0.88, 0.88),  // Along C-H bond, site "H"
-      makeSitePosition(0.88, -0.88, -0.88),
-      makeSitePosition(-0.88, 0.88, -0.88),
-      makeSitePosition(-0.88, -0.88, 0.88),
-      makeSitePosition(-0.66, -0.66, -0.66),  // site "E"
-      makeSitePosition(-0.66, 0.66, 0.66),
-      makeSitePosition(0.66, -0.66, 0.66),
-      makeSitePosition(0.66, 0.66, -0.66)};
-
-  // Site IDs: C, H, H, H, H, E, E, E, E
-  const std::vector<size_t> _siteIds{{0, 1, 1, 1, 1, 2, 2, 2, 2}};
-
-  const std::array<double, 6> _paramsA{0.262373610e7,  0.265413949e7,  0.241399203e6,
-                                       -0.271732286e6, -0.749715218e5, 0.123654939e6};
-
-  const std::array<double, 6> _paramsAlpha{0.16878421e1, 0.28827219e1, 0.35917561e1,
-                                           0.16490747e1, 0.20593086e1, 0.21451641e1};
-
-  const std::array<double, 6> _paramsB{0.168275675e1, 0.288261054e1, 0.384703188e1,
-                                       0.155011960e1, 0.266424603e1, 0.304993944e1};
-
-  const std::array<double, 6> _paramsC6{0.112317356e7, -0.139633537e7, 0.294147230e6,
-                                        0.127844394e7, 0.169329268e6,  -0.590727146e6};
-
-  const std::array<double, 6> _paramsC8{-0.120939119e9, 0.385078060e8,  -0.264781786e7,
-                                        0.174762764e7,  -0.810401688e7, 0.679543866e7};
-
-  // Site charges {C, H, E}
-  const std::array<double, 3> _charges{-0.379012e3, 0.94753e2, 0.};
-
-  const double _bCorr = 0.177e1;
-  const double _deltaC6 = 0.45347e5;
-  const double _deltaC8 = 0.432463e6;
-
   /**
    * Sum of potential energy. Only calculated if calculateGlobals is true.
    */
@@ -149,6 +103,91 @@ class MethaneMultisitePairwiseFunctor
       AutoPasLog(DEBUG, "FLOP counting is enabled but is not supported for multi-site functors yet!");
     }
   }
+
+  constexpr std::array<double, 3> makeSitePosition(double x, double y, double z) {
+    // Precomputed value of 1.0 / sqrt(3) for tetrahedral positions.
+    constexpr double invSqrt3 = 0.5773502691896258;
+    constexpr double factor = 1.099 * invSqrt3;
+    return std::array{x * factor, y * factor, z * factor};
+  }
+
+  /**
+   * List of relative unrotated Methane Site Positions.
+   */
+  const std::vector<std::array<double, 3>> _sitePositions{
+      {0., 0., 0.},                        // C atom, site "C"
+      makeSitePosition(0.88, 0.88, 0.88),  // Along C-H bond, site "H"
+      makeSitePosition(0.88, -0.88, -0.88),
+      makeSitePosition(-0.88, 0.88, -0.88),
+      makeSitePosition(-0.88, -0.88, 0.88),
+      makeSitePosition(-0.66, -0.66, -0.66),  // site "E"
+      makeSitePosition(-0.66, 0.66, 0.66),
+      makeSitePosition(0.66, -0.66, 0.66),
+      makeSitePosition(0.66, 0.66, -0.66)};
+
+  // Site IDs: C, H, H, H, H, E, E, E, E
+  const std::vector<size_t> _siteIds{{0, 1, 1, 1, 1, 2, 2, 2, 2}};
+
+  const std::array<double, 6> _paramsA{0.262373610e7,  0.265413949e7,  0.241399203e6,
+                                       -0.271732286e6, -0.749715218e5, 0.123654939e6};
+
+  const std::array<double, 6> _paramsAlpha{0.16878421e1, 0.28827219e1, 0.35917561e1,
+                                           0.16490747e1, 0.20593086e1, 0.21451641e1};
+
+  static constexpr double bCC = 0.168275675e1;
+  static constexpr double bCH = 0.288261054e1;
+  static constexpr double bHH = 0.384703188e1;
+  static constexpr double bCE = 0.155011960e1;
+  static constexpr double bHE = 0.266424603e1;
+  static constexpr double bEE = 0.304993944e1;
+
+  const std::array<double, 6> _paramsC6{0.112317356e7, -0.139633537e7, 0.294147230e6,
+                                        0.127844394e7, 0.169329268e6,  -0.590727146e6};
+
+  const std::array<double, 6> _paramsC8{-0.120939119e9, 0.385078060e8,  -0.264781786e7,
+                                        0.174762764e7,  -0.810401688e7, 0.679543866e7};
+
+  // Site charges {C, H, E}
+  const std::array<double, 3> _charges{-0.379012e3, 0.94753e2, 0.};
+
+  static constexpr double _bCorr = 0.177e1;
+  const double _deltaC6 = 0.45347e5;
+  const double _deltaC8 = 0.432463e6;
+
+  // Compute base^power at compile time
+  static constexpr double bToX(double base, size_t power) {
+    double result = 1.0;
+    for (size_t i = 0; i < power; ++i) {
+      result *= base;
+    }
+    return result;
+  }
+
+  // Generate full table b^0..9 for all 6 b values
+  static constexpr auto generateParameterBPowers() {
+    return std::array<std::array<double, 10>, 6>{
+        {{bToX(bCC, 0), bToX(bCC, 1), bToX(bCC, 2), bToX(bCC, 3), bToX(bCC, 4), bToX(bCC, 5), bToX(bCC, 6),
+          bToX(bCC, 7), bToX(bCC, 8), bToX(bCC, 9)},
+         {bToX(bCH, 0), bToX(bCH, 1), bToX(bCH, 2), bToX(bCH, 3), bToX(bCH, 4), bToX(bCH, 5), bToX(bCH, 6),
+          bToX(bCH, 7), bToX(bCH, 8), bToX(bCH, 9)},
+         {bToX(bHH, 0), bToX(bHH, 1), bToX(bHH, 2), bToX(bHH, 3), bToX(bHH, 4), bToX(bHH, 5), bToX(bHH, 6),
+          bToX(bHH, 7), bToX(bHH, 8), bToX(bHH, 9)},
+         {bToX(bCE, 0), bToX(bCE, 1), bToX(bCE, 2), bToX(bCE, 3), bToX(bCE, 4), bToX(bCE, 5), bToX(bCE, 6),
+          bToX(bCE, 7), bToX(bCE, 8), bToX(bCE, 9)},
+         {bToX(bHE, 0), bToX(bHE, 1), bToX(bHE, 2), bToX(bHE, 3), bToX(bHE, 4), bToX(bHE, 5), bToX(bHE, 6),
+          bToX(bHE, 7), bToX(bHE, 8), bToX(bHE, 9)},
+         {bToX(bEE, 0), bToX(bEE, 1), bToX(bEE, 2), bToX(bEE, 3), bToX(bEE, 4), bToX(bEE, 5), bToX(bEE, 6),
+          bToX(bEE, 7), bToX(bEE, 8), bToX(bEE, 9)}}};
+  }
+
+  static constexpr auto generateParameterBCorrPowers() {
+    return std::array<double, 10>{{bToX(_bCorr, 0), bToX(_bCorr, 1), bToX(_bCorr, 2), bToX(_bCorr, 3), bToX(_bCorr, 4),
+                                   bToX(_bCorr, 5), bToX(_bCorr, 6), bToX(_bCorr, 7), bToX(_bCorr, 8),
+                                   bToX(_bCorr, 9)}};
+  }
+
+  static constexpr auto _paramsB = generateParameterBPowers();
+  static constexpr auto _bCorrPowers = generateParameterBCorrPowers();
 
  public:
   /**
@@ -223,7 +262,7 @@ class MethaneMultisitePairwiseFunctor
                                                         : siteTypeJ * (siteTypeJ + 1) / 2 + siteTypeI;
         const auto alpha = _paramsAlpha[paramIndex];
         const auto A = _paramsA[paramIndex];
-        const auto b = _paramsB[paramIndex];
+        const auto bPows = _paramsB[paramIndex];
         const auto C6 = _paramsC6[paramIndex];
         const auto C8 = _paramsC8[paramIndex];
 
@@ -242,25 +281,18 @@ class MethaneMultisitePairwiseFunctor
         const auto distInv8 = distInv7 * distInv;
         const auto distInv9 = distInv8 * distInv;
 
-        const auto b2 = b * b;
-        const auto b3 = b2 * b;
-        const auto b4 = b3 * b;
-        const auto b5 = b4 * b;
-        const auto b6 = b5 * b;
-        const auto b7 = b6 * b;
-        const auto b8 = b7 * b;
-        const auto b9 = b8 * b;
-
         const auto expTerm = alpha * A * std::exp(-alpha * dist);
 
-        const auto expBR = std::exp(-b * dist);
+        const auto expBR = std::exp(-bPows[1] * dist);
 
-        const auto tangToenniesSum6 = 6. * distInv7 + 6. * b * distInv6 + 3. * b2 * distInv5 + b3 * distInv4 +
-                                      b4 * distInv3 / 4. + b5 * distInv2 / 20. + b6 * distInv / 120. + b7 / 720.;
+        const auto tangToenniesSum6 = 6. * distInv7 + 6. * bPows[1] * distInv6 + 3. * bPows[2] * distInv5 +
+                                      bPows[3] * distInv4 + bPows[4] * distInv3 / 4. + bPows[5] * distInv2 / 20. +
+                                      bPows[6] * distInv / 120. + bPows[7] / 720.;
 
-        const auto tangToenniesSum8 = 8. * distInv9 + 8. * b * distInv8 + 4. * b2 * distInv7 + 4. * b3 * distInv6 / 3. +
-                                      b4 * distInv5 / 3. + b5 * distInv4 / 15. + b6 * distInv3 / 90. +
-                                      b7 * distInv2 / 630. + b8 * distInv / 5040. + b9 / 40320.;
+        const auto tangToenniesSum8 = 8. * distInv9 + 8. * bPows[1] * distInv8 + 4. * bPows[2] * distInv7 +
+                                      4. * bPows[3] * distInv6 / 3. + bPows[4] * distInv5 / 3. +
+                                      bPows[5] * distInv4 / 15. + bPows[6] * distInv3 / 90. +
+                                      bPows[7] * distInv2 / 630. + bPows[8] * distInv / 5040. + bPows[9] / 40320.;
 
         const auto tangToenniesTerm6 = C6 * (-expBR * tangToenniesSum6 + 6. * distInv7);
         const auto tangToenniesTerm8 = C8 * (-expBR * tangToenniesSum8 + 8. * distInv9);
@@ -271,24 +303,19 @@ class MethaneMultisitePairwiseFunctor
 
         // Add correction term once for the C-C interaction (as they are located at the molecule centers)
         if (useCorrection and (i == 0 and j == 0)) {
-          const auto bCorr2 = _bCorr * _bCorr;
-          const auto bCorr3 = bCorr2 * _bCorr;
-          const auto bCorr4 = bCorr3 * _bCorr;
-          const auto bCorr5 = bCorr4 * _bCorr;
-          const auto bCorr6 = bCorr5 * _bCorr;
-          const auto bCorr7 = bCorr6 * _bCorr;
-          const auto bCorr8 = bCorr7 * _bCorr;
-          const auto bCorr9 = bCorr8 * _bCorr;
-          const auto expBRCorr = std::exp(-_bCorr * dist);
+          constexpr auto bCorrPows = _bCorrPowers;
+          const auto expBRCorr = std::exp(-bCorrPows[1] * dist);
 
-          const auto tangToenniesCorrectionSum6 = 6. * distInv7 + 6. * _bCorr * distInv6 + 3. * bCorr2 * distInv5 +
-                                                  bCorr3 * distInv4 + bCorr4 * distInv3 / 4. + bCorr5 * distInv2 / 20. +
-                                                  bCorr6 * distInv / 120. + bCorr7 / 720.;
+          const auto tangToenniesCorrectionSum6 = 6. * distInv7 + 6. * bCorrPows[1] * distInv6 +
+                                                  3. * bCorrPows[2] * distInv5 + bCorrPows[3] * distInv4 +
+                                                  bCorrPows[4] * distInv3 / 4. + bCorrPows[5] * distInv2 / 20. +
+                                                  bCorrPows[6] * distInv / 120. + bCorrPows[7] / 720.;
 
-          const auto tangToenniesCorrectionSum8 = 8. * distInv9 + 8. * _bCorr * distInv8 + 4. * bCorr2 * distInv7 +
-                                                  4. * bCorr3 * distInv6 / 3. + bCorr4 * distInv5 / 3. +
-                                                  bCorr5 * distInv4 / 15. + bCorr6 * distInv3 / 90. +
-                                                  bCorr7 * distInv2 / 630. + bCorr8 * distInv / 5040. + bCorr9 / 40320.;
+          const auto tangToenniesCorrectionSum8 = 8. * distInv9 + 8. * bCorrPows[1] * distInv8 +
+                                                  4. * bCorrPows[2] * distInv7 + 4. * bCorrPows[3] * distInv6 / 3. +
+                                                  bCorrPows[4] * distInv5 / 3. + bCorrPows[5] * distInv4 / 15. +
+                                                  bCorrPows[6] * distInv3 / 90. + bCorrPows[7] * distInv2 / 630. +
+                                                  bCorrPows[8] * distInv / 5040. + bCorrPows[9] / 40320.;
 
           const auto tangToenniesTermCorrection6 = _deltaC6 * (-expBRCorr * tangToenniesCorrectionSum6 + 6. * distInv7);
           const auto tangToenniesTermCorrection8 = _deltaC8 * (-expBRCorr * tangToenniesCorrectionSum8 + 8. * distInv9);
@@ -313,28 +340,22 @@ class MethaneMultisitePairwiseFunctor
         if (calculateGlobals) {
           // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
           // Potential energy has an additional factor of 6, which is also handled in endTraversal().
-          const auto innerSum6 = distInv6 + b * distInv5 + b2 * distInv4 / 2. + b3 * distInv3 / 6. +
-                                 b4 * distInv2 / 24. + b5 * distInv / 120. + b6 / 720.;
-          const auto innerSum8 = innerSum6 * distInv2 + b7 * distInv / 5040. + b8 / 40320.;
+          const auto innerSum6 = distInv6 + bPows[1] * distInv5 + bPows[2] * distInv4 / 2. + bPows[3] * distInv3 / 6. +
+                                 bPows[4] * distInv2 / 24. + bPows[5] * distInv / 120. + bPows[6] / 720.;
+          const auto innerSum8 = innerSum6 * distInv2 + bPows[7] * distInv / 5040. + bPows[8] / 40320.;
           auto potentialEnergy = A * std::exp(-alpha * dist) - C6 * (distInv6 - expBR * innerSum6) -
                                  C8 * (distInv8 - expBR * innerSum8) +
                                  _charges[siteTypeI] * _charges[siteTypeJ] * distInv;
           if (useCorrection and (i == 0 and j == 0)) {
-            const auto bCorr2 = _bCorr * _bCorr;
-            const auto bCorr3 = bCorr2 * _bCorr;
-            const auto bCorr4 = bCorr3 * _bCorr;
-            const auto bCorr5 = bCorr4 * _bCorr;
-            const auto bCorr6 = bCorr5 * _bCorr;
-            const auto bCorr7 = bCorr6 * _bCorr;
-            const auto bCorr8 = bCorr7 * _bCorr;
-            const auto expBRCorr = std::exp(-_bCorr * dist);
+            const auto bCorrPows = _bCorrPowers;
+            const auto expBRCorr = std::exp(-bCorrPows[1] * dist);
 
-            const auto innerCorrectionSum6 = distInv6 + _bCorr * distInv5 + bCorr2 * distInv4 / 2. +
-                                             bCorr3 * distInv3 / 6. + bCorr4 * distInv2 / 24. +
-                                             bCorr5 * distInv / 120. + bCorr6 / 720.;
+            const auto innerCorrectionSum6 = distInv6 + bCorrPows[1] * distInv5 + bCorrPows[2] * distInv4 / 2. +
+                                             bCorrPows[3] * distInv3 / 6. + bCorrPows[4] * distInv2 / 24. +
+                                             bCorrPows[5] * distInv / 120. + bCorrPows[6] / 720.;
 
             const auto innerCorrectionSum8 =
-                innerCorrectionSum6 * distInv2 + bCorr7 * distInv / 5040. + bCorr8 / 40320.;
+                innerCorrectionSum6 * distInv2 + bCorrPows[7] * distInv / 5040. + bCorrPows[8] / 40320.;
 
             potentialEnergy -= _deltaC6 * (distInv6 - expBRCorr * innerCorrectionSum6) +
                                _deltaC8 * (distInv8 - expBRCorr * innerCorrectionSum8);
