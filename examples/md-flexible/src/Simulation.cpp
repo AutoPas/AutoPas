@@ -467,13 +467,20 @@ void Simulation::updateInteractionForces() {
     _timers.forceUpdatePairwise.start();
     _currentIterationIsTuningIteration |= calculatePairwiseForces();
     timeIteration += _timers.forceUpdatePairwise.stop();
+    std::cout << "2B EPot: " << _potentialEnergy2B << "\n";
+    std::cout << "2B Virial: " << _virial2B << "\n";
   }
   // Calculate triwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     _timers.forceUpdateTriwise.start();
     _currentIterationIsTuningIteration |= calculateTriwiseForces();
     timeIteration += _timers.forceUpdateTriwise.stop();
+    std::cout << "3B EPot: " << _potentialEnergy3B << "\n";
+    std::cout << "3B Virial: " << _virial3B << "\n";
   }
+
+
+
 
   // count time spent for tuning
   if (_currentIterationIsTuningIteration) {
@@ -529,13 +536,23 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor<bool>([&](auto &&functor) {
+        auto wasTuning = _autoPasContainer->computeInteractions(&functor);
+        _potentialEnergy2B = functor.getPotentialEnergy();
+        _virial2B = functor.getVirial();
+        return wasTuning;
+      });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+        auto wasTuning = _autoPasContainer->computeInteractions(&functor);
+        _potentialEnergy3B = functor.getPotentialEnergy();
+        _virial3B = functor.getVirial();
+        return wasTuning;
+  });
   return wasTuningIteration;
 }
 

@@ -249,6 +249,11 @@ class Simulation {
    */
   bool _createVtkFiles;
 
+  double _potentialEnergy2B;
+  double _virial2B;
+  double _potentialEnergy3B;
+  double _virial3B;
+
  private:
   /**
    * Load particles from this object's config into this object's AutoPas container.
