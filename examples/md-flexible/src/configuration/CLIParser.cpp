@@ -738,8 +738,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.loadBalancingInterval.value = static_cast<unsigned int>(stoul(strArg));
         break;
       }
-      case decltype(config.computationLoadMetric)::getoptChar: {
-        config.computationLoadMetric.value = ComputationLoadOption::parseOptionExact(strArg);
+      case decltype(config.computationalLoadMetric)::getoptChar: {
+        config.computationalLoadMetric.value = ComputationLoadOption::parseOptionExact(strArg);
         break;
       }
       case decltype(config.computationalLoadMeasurementPeriod)::getoptChar: {

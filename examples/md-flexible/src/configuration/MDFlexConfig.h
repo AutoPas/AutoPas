@@ -821,11 +821,11 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
-   * computationLoadMetric
+   * computationalLoadMetric
    */
-  MDFlexOption<ComputationLoadOption, __LINE__> computationLoadMetric{
-      ComputationLoadOption::completeCycle, "computation-load-metric", true,
-      "Defines which computation load metric will be tracked during the simulation. Possible Values: " +
+  MDFlexOption<ComputationLoadOption, __LINE__> computationalLoadMetric{
+      ComputationLoadOption::completeCycle, "computational-load-metric", true,
+      "Defines which computational load metric will be tracked during the simulation. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(ComputationLoadOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
