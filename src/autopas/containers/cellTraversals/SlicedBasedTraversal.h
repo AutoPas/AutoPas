@@ -73,7 +73,6 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
   virtual void initSliceThickness(unsigned long minSliceThickness) {
     auto numSlices = this->_cellsPerDimension[_dimsSortedByLength[0]] / minSliceThickness;
     _sliceThickness.clear();
-    std::cout << "Number of Slices : " << numSlices << "   Min Thickness : " << minSliceThickness << std::endl;
 
     // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
     if (numSlices < 1) return;
