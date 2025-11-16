@@ -25,11 +25,14 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
+#endif
 #if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATMFunctor *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_HWY)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATMFunctorHWY *);
 #endif
 //! @endcond
 
@@ -857,6 +860,15 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTellerMuto Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption3B::at_HWY: {
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_HWY)
+      return f(ATMFunctorHWY{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for AxilrodTellerMuto Highway Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_ATM_HWY=ON`.");
 #endif
     }
     default: {

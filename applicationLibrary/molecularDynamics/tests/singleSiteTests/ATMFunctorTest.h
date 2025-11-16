@@ -11,6 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctorHWY.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class ATMFunctorTest : public AutoPasTestBase {
@@ -76,6 +77,8 @@ class ATMFunctorTest : public AutoPasTestBase {
 // typedefs to hide clutter
 template <bool mixing, bool globals>
 using ATMFunMol = mdLib::AxilrodTellerMutoFunctor<Molecule, mixing, autopas::FunctorN3Modes::Both, globals>;
+template <bool mixing, bool globals>
+using ATMFunHWYMol = mdLib::AxilrodTellerMutoFunctorHWY<Molecule, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
 struct ATMFunMixNoGlob : public ATMFunMol<true, false> {
@@ -89,4 +92,17 @@ struct ATMFunMixGlob : public ATMFunMol<true, true> {
 };
 struct ATMFunNoMixGlob : public ATMFunMol<false, true> {
   using ATMFunMol<false, true>::AxilrodTellerMutoFunctor;
+};
+
+struct ATMFunHWYMixNoGlob : public ATMFunHWYMol<true, false> {
+  using ATMFunHWYMol<true, false>::AxilrodTellerMutoFunctorHWY;
+};
+struct ATMFunHWYNoMixNoGlob : public ATMFunHWYMol<false, false> {
+  using ATMFunHWYMol<false, false>::AxilrodTellerMutoFunctorHWY;
+};
+struct ATMFunHWYMixGlob : public ATMFunHWYMol<true, true> {
+  using ATMFunHWYMol<true, true>::AxilrodTellerMutoFunctorHWY;
+};
+struct ATMFunHWYNoMixGlob : public ATMFunHWYMol<false, true> {
+  using ATMFunHWYMol<false, true>::AxilrodTellerMutoFunctorHWY;
 };
