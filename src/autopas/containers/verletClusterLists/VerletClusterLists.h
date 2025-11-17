@@ -56,6 +56,15 @@ template <class Particle_T>
 class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public internal::ParticleDeletedObserver {
  public:
   /**
+   * Type of the Particle.
+   */
+  using ParticleType = Particle_T;
+  /**
+   * Type of the ParticleCell which refers to the cluster towers.
+   */
+  using ParticleCellType = internal::ClusterTower<Particle_T>;
+
+  /**
    * Defines a cluster range used in the static cluster-thread-partition.
    */
   struct ClusterRange {
@@ -82,25 +91,20 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius.
-   * @param rebuildFrequency The rebuild Frequency.
    * @param clusterSize Number of particles per cluster.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                     double skin, unsigned int rebuildFrequency, size_t clusterSize,
-                     LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
+                     double skin, size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
       : ParticleContainerInterface<Particle_T>(skin),
         _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
-        _rebuildFrequency{rebuildFrequency},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
     _towerBlock.addTower(_clusterSize);
   }
-
-  CellType getParticleCellTypeEnum() const override { return CellType::ClusterTower; };
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
@@ -143,17 +147,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   void computeInteractions(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "VerletClusterLists::computeInteractions(): Trying to do a pairwise iteration, even though verlet lists are "
-          "not "
-          "valid.");
+          "not valid.");
     }
     auto *traversalInterface = dynamic_cast<VCLTraversalInterface<Particle_T> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
       traversalInterface->setTowers(_towerBlock.getTowersRef());
     } else {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
@@ -179,12 +182,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param p The particle to add.
    */
   void addParticleImpl(const Particle_T &p) override {
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
   void addHaloParticleImpl(const Particle_T &haloParticle) override {
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
@@ -247,7 +250,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       }
     }
     if (deletedSomething) {
-      _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+      _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     }
   }
 
@@ -358,7 +361,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
-      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+      return LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
     // First delete all halo particles.
     this->deleteHaloParticles();
@@ -366,6 +369,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     AUTOPAS_OPENMP(parallel for)
     for (size_t i = 0ul; i < _towerBlock.size(); ++i) {
       _towerBlock[i].deleteDummyParticles();
+    }
+    // Delete dummy particles also from the _particlesToAdd vector
+    AUTOPAS_OPENMP(parallel for)
+    for (size_t i = 0ul; i < _particlesToAdd.size(); ++i) {
+      _particlesToAdd[i].erase(std::remove_if(_particlesToAdd[i].begin(), _particlesToAdd[i].end(),
+                                              [](const auto &p) { return p.isDummy(); }),
+                               _particlesToAdd[i].end());
     }
 
     // next find invalid particles
@@ -382,7 +392,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
         }
       }
     }
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     return invalidParticles;
   }
 
@@ -402,7 +412,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
   [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
@@ -765,7 +775,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
+    // The builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
     // when rebuildTowersAndClusters() was not called explicitly.
     if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
       // clear the lists buffer because clusters will be recreated
@@ -780,7 +790,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
         calculateClusterThreadPartition();
       }
     } else {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }
@@ -949,22 +959,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   void setSkin(double skin) { this->_skin = skin; }
 
-  /**
-   * Get the rebuild Frequency value for the container.
-   * @return rebuildFrequency
-   */
-  [[nodiscard]] unsigned int getRebuildFrequency() { return _rebuildFrequency; }
-
-  /**
-   * Set the rebuild Frequency value for the container.
-   * @param rebuildFrequency
-   */
-  void setRebuildFrequency(unsigned int rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
-
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + this->getVerletSkin(); }
 
   void deleteAllParticles() override {
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_towerBlock.begin(), _towerBlock.end(), [](auto &tower) { tower.clear(); });
   }
@@ -1001,7 +999,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
     _numClusters = _builder->rebuildTowersAndClusters();
 
-    _isValid.store(ValidityState::cellsValidListsInvalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::cellsValidListsInvalid, std::memory_order_relaxed);
     for (auto &tower : _towerBlock) {
       tower.setParticleDeletionObserver(this);
     }
@@ -1156,7 +1154,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   void notifyParticleDeleted() override {
     // this is potentially called from a threaded environment, so we have to make this atomic here!
-    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order_relaxed);
   }
 
  private:
@@ -1294,10 +1292,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   double _cutoff{};
 
-  /**
-   * rebuidFrequency.
-   */
-  unsigned int _rebuildFrequency{};
   /**
    * Enum to specify the validity of this container.
    */

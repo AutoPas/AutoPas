@@ -1,8 +1,9 @@
 
-// Generated from AutoPas/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4
-// by ANTLR 4.9.1
+// Generated from RuleLanguage.g4 by ANTLR 4.13.2
 
 #pragma once
+
+#include <any>
 
 #include "antlr4-runtime.h"
 
@@ -66,15 +67,20 @@ class RuleLanguageParser : public antlr4::Parser {
   };
 
   explicit RuleLanguageParser(antlr4::TokenStream *input);
-  ~RuleLanguageParser();
 
-  virtual std::string getGrammarFileName() const override;
-  virtual const antlr4::atn::ATN &getATN() const override { return _atn; };
-  virtual const std::vector<std::string> &getTokenNames() const override {
-    return _tokenNames;
-  };  // deprecated: use vocabulary instead.
-  virtual const std::vector<std::string> &getRuleNames() const override;
-  virtual antlr4::dfa::Vocabulary &getVocabulary() const override;
+  RuleLanguageParser(antlr4::TokenStream *input, const antlr4::atn::ParserATNSimulatorOptions &options);
+
+  ~RuleLanguageParser() override;
+
+  std::string getGrammarFileName() const override;
+
+  const antlr4::atn::ATN &getATN() const override;
+
+  const std::vector<std::string> &getRuleNames() const override;
+
+  const antlr4::dfa::Vocabulary &getVocabulary() const override;
+
+  antlr4::atn::SerializedATNView getSerializedATN() const override;
 
   class ProgramContext;
   class Unsigned_valContext;
@@ -96,7 +102,7 @@ class RuleLanguageParser : public antlr4::Parser {
     std::vector<StatementContext *> statement();
     StatementContext *statement(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   ProgramContext *program();
@@ -108,7 +114,7 @@ class RuleLanguageParser : public antlr4::Parser {
     antlr4::tree::TerminalNode *Unsigned_val();
     antlr4::tree::TerminalNode *DIGIT();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Unsigned_valContext *unsigned_val();
@@ -126,7 +132,7 @@ class RuleLanguageParser : public antlr4::Parser {
     antlr4::tree::TerminalNode *Double_val();
     antlr4::tree::TerminalNode *Bool_val();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   LiteralContext *literal();
@@ -139,7 +145,7 @@ class RuleLanguageParser : public antlr4::Parser {
     std::vector<LiteralContext *> literal();
     LiteralContext *literal(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Define_listContext *define_list();
@@ -150,7 +156,7 @@ class RuleLanguageParser : public antlr4::Parser {
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *Variable_name();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   VariableContext *variable();
@@ -165,7 +171,7 @@ class RuleLanguageParser : public antlr4::Parser {
     LiteralContext *literal();
     VariableContext *variable();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   ExpressionContext *expression();
@@ -177,7 +183,7 @@ class RuleLanguageParser : public antlr4::Parser {
     antlr4::tree::TerminalNode *Variable_name();
     ExpressionContext *expression();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   DefineContext *define();
@@ -189,7 +195,7 @@ class RuleLanguageParser : public antlr4::Parser {
     antlr4::tree::TerminalNode *Variable_name();
     LiteralContext *literal();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Property_valueContext *property_value();
@@ -203,7 +209,7 @@ class RuleLanguageParser : public antlr4::Parser {
     std::vector<Property_valueContext *> property_value();
     Property_valueContext *property_value(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Configuration_patternContext *configuration_pattern();
@@ -217,7 +223,7 @@ class RuleLanguageParser : public antlr4::Parser {
     std::vector<antlr4::tree::TerminalNode *> Configuration_property();
     antlr4::tree::TerminalNode *Configuration_property(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Configuration_orderContext *configuration_order();
@@ -231,7 +237,7 @@ class RuleLanguageParser : public antlr4::Parser {
     If_statementContext *if_statement();
     Configuration_orderContext *configuration_order();
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   StatementContext *statement();
@@ -244,30 +250,21 @@ class RuleLanguageParser : public antlr4::Parser {
     std::vector<StatementContext *> statement();
     StatementContext *statement(size_t i);
 
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   If_statementContext *if_statement();
 
-  virtual bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
+  bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
+
   bool expressionSempred(ExpressionContext *_localctx, size_t predicateIndex);
 
+  // By default the static state used to implement the parser is lazily initialized during the first
+  // call to the constructor. You can call this function if you wish to initialize the static state
+  // ahead of time.
+  static void initialize();
+
  private:
-  static std::vector<antlr4::dfa::DFA> _decisionToDFA;
-  static antlr4::atn::PredictionContextCache _sharedContextCache;
-  static std::vector<std::string> _ruleNames;
-  static std::vector<std::string> _tokenNames;
-
-  static std::vector<std::string> _literalNames;
-  static std::vector<std::string> _symbolicNames;
-  static antlr4::dfa::Vocabulary _vocabulary;
-  static antlr4::atn::ATN _atn;
-  static std::vector<uint16_t> _serializedATN;
-
-  struct Initializer {
-    Initializer();
-  };
-  static Initializer _init;
 };
 
 }  // namespace AutopasGeneratedRuleSyntax
