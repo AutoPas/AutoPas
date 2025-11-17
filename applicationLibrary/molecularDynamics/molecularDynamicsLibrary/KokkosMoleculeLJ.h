@@ -33,6 +33,16 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
 
   ~KokkosMoleculeLJ() override = default;
 
+  // TODO: change mem space later when storing SoA elsewhere
+  template <class MemSpace, typename... Types>
+  using KokkosSoAArraysTypeHelper = std::tuple<Kokkos::View<Types, MemSpace>...>;
+
+  template <class MemSpace>
+  using KokkosSoAArraysType = KokkosSoAArraysTypeHelper<MemSpace, MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
+                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
+                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>;
+
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
@@ -54,14 +64,6 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
     typeId,
     ownershipState
   };
-
-  template <typename... Types>
-  using SoAArraysTypeHelper = std::tuple<Kokkos::View<Types>...>;
-
-  using SoAArraysType = SoAArraysTypeHelper<KokkosMoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>;
 
   /**
    * Non-const getter for the pointer of this object.

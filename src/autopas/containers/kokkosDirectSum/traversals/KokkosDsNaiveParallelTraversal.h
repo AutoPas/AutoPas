@@ -20,7 +20,7 @@ class KokkosDsNaiveParallelTraversal : public TraversalInterface, public DSKokko
 public:
 
     explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
-        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor} {}
+        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(dataLayout), _functor{functor} {}
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::kokkos_ds_naive_parallel; }
 
@@ -33,13 +33,15 @@ public:
     }
 
     void traverseParticles() final {
-      auto& owned = DSKokkosTraversalInterface<Particle_T>::_ownedParticles;
+      // TODO: be aware of data layout
+      auto& owned = DSKokkosTraversalInterface<Particle_T>::_ownedParticlesAoS;
       const bool newton3 = _useNewton3;
 
       const auto func = _functor;
 
       const int N = owned.size();
 
+      // TODO: think about MD Range policy to allow parallelism for both loops
       Kokkos::parallel_for("traverseParticles", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), [func, newton3, owned, N](int i) {
         for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
           if (newton3 or i != j) {
@@ -47,6 +49,9 @@ public:
           }
         }
       });
+
+      // TODO: consider halo particles
+      // Maybe even execute halo traversal simultaneously on the host with some sort of data storage mechanism
     }
 
     void endTraversal() final {

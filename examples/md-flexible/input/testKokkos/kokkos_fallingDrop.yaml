@@ -39,13 +39,13 @@ Objects:
     0:  
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [18, 10, 5]
+      box-length                 :  [20, 10, 5]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
   Sphere:
     0:
       center                     :  [10, 5, 15]
-      radius                     :  4
+      radius                     :  3
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0

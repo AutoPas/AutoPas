@@ -11,6 +11,7 @@
 
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/KokkosSoA.h"
 
 namespace mdLib {
 
@@ -67,6 +68,11 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
                                        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+  template <class MemSpace>
+  using KokkosSoAArraysType = typename autopas::utils::KokkosSoA<MemSpace, size_t* /*id*/, double* /*x*/, double* /*y*/, double* /*z*/,
+                                       double* /*vx*/, double* /*vy*/, double* /*vz*/, double* /*fx*/, double* /*fy*/,
+                                       double* /*fz*/, double* /*oldFx*/, double* /*oldFy*/, double* /*oldFz*/,
+                                       size_t* /*typeid*/, autopas::OwnershipState* /*ownershipState*/>;
 
   /**
    * Non-const getter for the pointer of this object.
