@@ -82,12 +82,21 @@ TuningStrategyOption DecisionTreeTuning::getOptionType() const { return TuningSt
 std::string DecisionTreeTuning::getPredictionFromPython() {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    utils::Timer pythonPredictionTimer;
+    pythonPredictionTimer.start();
+#endif
     // Convert live info to JSON string
     nlohmann::json liveInfoJson = _currentLiveInfo; // todo make this a reference
     std::string modelPath = _modelFileName;
     // Call the Python function and get the result
     py::object result = _pythonMainFunc(modelPath, liveInfoJson.dump(), _interactionType.to_string());
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    pythonPredictionTimer.stop();
+    AutoPasLog(TRACE, "Python prediction took {} ms.", pythonPredictionTimer.getTotalTime());
+#endif
     return result.cast<std::string>();
+
   } catch (const py::error_already_set &e) {
     utils::ExceptionHandler::exception("Error during Python function call: {}", e.what());
     return {};
