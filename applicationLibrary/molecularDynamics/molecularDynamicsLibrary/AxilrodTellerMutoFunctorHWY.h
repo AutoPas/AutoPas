@@ -324,10 +324,35 @@ class AxilrodTellerMutoFunctorHWY
 
     const SoAFloatPrecision const_nu = _nu;
     const size_t soaSize = soa.size();
+    const size_t soaSizeSquared = soaSize * soaSize;
+
     if constexpr (countFLOPs) {
       numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
     }
 
+    // Precompute distances between particles in the soa
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsXIJ(soaSizeSquared);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsYIJ(soaSizeSquared);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsZIJ(soaSizeSquared);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsSquaredIJ(soaSizeSquared);
+    for (unsigned int i = 0; i < soaSize; ++i) {
+      for (unsigned int j = 0; j < i; ++j) {
+        const SoAFloatPrecision distXIJ = xPtr[j] - xPtr[i];
+        const SoAFloatPrecision distYIJ = yPtr[j] - yPtr[i];
+        const SoAFloatPrecision distZIJ = zPtr[j] - zPtr[i];
+        const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
+        soaDistsXIJ[j + i * soaSize] = soaDistsXIJ[i + j * soaSize] = distXIJ;
+        soaDistsYIJ[j + i * soaSize] = soaDistsXIJ[i + j * soaSize] = distYIJ;
+        soaDistsZIJ[j + i * soaSize] = soaDistsXIJ[i + j * soaSize] = distZIJ;
+        soaDistsSquaredIJ[j + i * soaSize] = soaDistsSquaredIJ[i + j * soaSize] = distSquaredIJ;
+      }
+    }
+
+    if constexpr (countFLOPs) {
+      numDistanceCalculationSum += soaSizeSquared;
+    }
+
+    // We iterate in reverse order over i and j to enable aligned loads in the k-loop.
     for (size_t i = soaSize - 1; i > 1; --i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == autopas::OwnershipState::dummy) {
@@ -351,10 +376,10 @@ class AxilrodTellerMutoFunctorHWY
         const SoAFloatPrecision yj = yPtr[j];
         const SoAFloatPrecision zj = zPtr[j];
 
-        const SoAFloatPrecision distXIJ = xj - xi;
-        const SoAFloatPrecision distYIJ = yj - yi;
-        const SoAFloatPrecision distZIJ = zj - zi;
-        const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
+        const SoAFloatPrecision distXIJ = soaDistsXIJ[j + i * soaSize];
+        const SoAFloatPrecision distYIJ = soaDistsYIJ[j + i * soaSize];
+        const SoAFloatPrecision distZIJ = soaDistsZIJ[j + i * soaSize];
+        const SoAFloatPrecision distSquaredIJ = soaDistsSquaredIJ[j + i * soaSize];
 
         if constexpr (countFLOPs) {
           ++numDistanceCalculationSum;
@@ -367,37 +392,33 @@ class AxilrodTellerMutoFunctorHWY
         VectorDouble fYAccJ = highway::Set(tag_double, 0.);
         VectorDouble fZAccJ = highway::Set(tag_double, 0.);
 
+        // prepare vector registers
+        const auto xiVec = highway::Set(tag_double, xi);
+        const auto yiVec = highway::Set(tag_double, yi);
+        const auto ziVec = highway::Set(tag_double, zi);
+
+        const auto xjVec = highway::Set(tag_double, xj);
+        const auto yjVec = highway::Set(tag_double, yj);
+        const auto zjVec = highway::Set(tag_double, zj);
+
+        const auto distXIJVec = highway::Set(tag_double, distXIJ);
+        const auto distYIJVec = highway::Set(tag_double, distYIJ);
+        const auto distZIJVec = highway::Set(tag_double, distZIJ);
+
         const size_t blockEnd = j & ~(_vecLengthDouble - 1);
 
         for (unsigned int k = 0; k < j; k += _vecLengthDouble) {
           const bool remainder = k >= blockEnd;
           const auto restK = j - k;
 
-          // prepare vector registers
-          const auto xiVec = highway::Set(tag_double, xi);
-          const auto yiVec = highway::Set(tag_double, yi);
-          const auto ziVec = highway::Set(tag_double, zi);
-
-          const auto xjVec = highway::Set(tag_double, xj);
-          const auto yjVec = highway::Set(tag_double, yj);
-          const auto zjVec = highway::Set(tag_double, zj);
-
-          const auto distXIJVec = highway::Set(tag_double, distXIJ);
-          const auto distYIJVec = highway::Set(tag_double, distYIJ);
-          const auto distZIJVec = highway::Set(tag_double, distZIJ);
-
           const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
 
-          VectorDouble xk, yk, zk;
-          if (not remainder) {
-            xk = highway::LoadU(tag_double, &xPtr[k]);
-            yk = highway::LoadU(tag_double, &yPtr[k]);
-            zk = highway::LoadU(tag_double, &zPtr[k]);
-          } else {
-            xk = highway::LoadN(tag_double, &xPtr[k], restK);
-            yk = highway::LoadN(tag_double, &yPtr[k], restK);
-            zk = highway::LoadN(tag_double, &zPtr[k], restK);
-          }
+          const VectorDouble xk =
+              remainder ? highway::LoadN(tag_double, &xPtr[k], restK) : highway::LoadU(tag_double, &xPtr[k]);
+          const VectorDouble yk =
+              remainder ? highway::LoadN(tag_double, &yPtr[k], restK) : highway::LoadU(tag_double, &yPtr[k]);
+          const VectorDouble zk =
+              remainder ? highway::LoadN(tag_double, &zPtr[k], restK) : highway::LoadU(tag_double, &zPtr[k]);
 
           const auto distXJK = xk - xjVec;
           const auto distYJK = yk - yjVec;
@@ -425,7 +446,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto maskOwnershipK =
               highway::Ne(highway::ConvertTo(tag_double, ownershipK),
                           highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::dummy)));
-          // mask for triplets between i and and multiple k
+          // mask for triplets between i and j and multiple k
           const auto maskK = highway::And(highway::And(maskJK, maskKI), maskOwnershipK);
 
           if (highway::AllFalse(tag_double, maskK)) {
@@ -446,7 +467,7 @@ class AxilrodTellerMutoFunctorHWY
           VectorDouble forceIX, forceIY, forceIZ;
           VectorDouble forceJX, forceJY, forceJZ;
           VectorDouble factor, allDotProducts, allDistsSquared;
-          SoAKernelN3_HIW(distXIJVec, distYIJVec, distZIJVec, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI,
+          SoAKernelN3_HWY(distXIJVec, distYIJVec, distZIJVec, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI,
                           distSquaredIJVec, distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX,
                           forceJY, forceJZ, factor, allDotProducts, allDistsSquared, maskK);
 
@@ -463,7 +484,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto forceKY = highway::Neg(forceIY + forceJY);
           const auto forceKZ = highway::Neg(forceIZ + forceJZ);
 
-          // store k
+          // Store force acting on particle k.
           const VectorDouble fx2 =
               remainder ? highway::LoadN(tag_double, &fxPtr[k], restK) : highway::LoadU(tag_double, &fxPtr[k]);
           const VectorDouble fy2 =
@@ -1444,7 +1465,7 @@ class AxilrodTellerMutoFunctorHWY
    * Inline helper to compute force components for particle I.
    * Returns tuple of (forceIX, forceIY, forceIZ, factor, allDotProducts, allDistsSquared)
    */
-  __attribute__((always_inline)) inline auto SoAKernelN3_HIW(
+  __attribute__((always_inline)) inline auto SoAKernelN3_HWY(
       const VectorDouble &distXIJ, const VectorDouble &distYIJ, const VectorDouble &distZIJ,
       const VectorDouble &distXJK, const VectorDouble &distYJK, const VectorDouble &distZJK,
       const VectorDouble &distXKI, const VectorDouble &distYKI, const VectorDouble &distZKI,
