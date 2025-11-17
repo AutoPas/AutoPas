@@ -294,6 +294,12 @@ class AxilrodTellerMutoFunctorHWY
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+    auto triIndex = [&](unsigned int row, unsigned int col) {
+      // requires row > col
+      // offset of start of row = row*(row-1)/2
+      return (row * (row - 1)) / 2 + col;
+    };
+
     if (soa.size() <= 2) return;
 
     const auto threadnum = autopas::autopas_get_thread_num();
@@ -330,26 +336,30 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
     }
 
-    // Precompute distances between particles in the soa
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsXIJ(soaSizeSquared);
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsYIJ(soaSizeSquared);
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsZIJ(soaSizeSquared);
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsSquaredIJ(soaSizeSquared);
-    for (unsigned int i = 0; i < soaSize; ++i) {
+    // Precompute distances between particles in the soa. We use a row-major packed lower‐triangle data structure to
+    // save memory. If a distance i->j is required as j->i it can be negated.
+    const size_t packedSize = (soaSizeSquared - soaSize) / 2;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsXIJ(packedSize);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsYIJ(packedSize);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsZIJ(packedSize);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsSquaredIJ(packedSize);
+    size_t offset = 0;
+    for (unsigned int i = 1; i < soaSize; ++i) {
       for (unsigned int j = 0; j < i; ++j) {
         const SoAFloatPrecision distXIJ = xPtr[j] - xPtr[i];
         const SoAFloatPrecision distYIJ = yPtr[j] - yPtr[i];
         const SoAFloatPrecision distZIJ = zPtr[j] - zPtr[i];
         const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
-        soaDistsXIJ[j + i * soaSize] = soaDistsXIJ[i + j * soaSize] = distXIJ;
-        soaDistsYIJ[j + i * soaSize] = soaDistsXIJ[i + j * soaSize] = distYIJ;
-        soaDistsZIJ[j + i * soaSize] = soaDistsXIJ[i + j * soaSize] = distZIJ;
-        soaDistsSquaredIJ[j + i * soaSize] = soaDistsSquaredIJ[i + j * soaSize] = distSquaredIJ;
+        soaDistsXIJ[offset] = distXIJ;
+        soaDistsYIJ[offset] = distYIJ;
+        soaDistsZIJ[offset] = distZIJ;
+        soaDistsSquaredIJ[offset] = soaDistsSquaredIJ[i + j * soaSize] = distSquaredIJ;
+        ++offset;
       }
     }
 
     if constexpr (countFLOPs) {
-      numDistanceCalculationSum += soaSizeSquared;
+      numDistanceCalculationSum += packedSize;
     }
 
     // We iterate in reverse order over i and j to enable aligned loads in the k-loop.
@@ -376,10 +386,11 @@ class AxilrodTellerMutoFunctorHWY
         const SoAFloatPrecision yj = yPtr[j];
         const SoAFloatPrecision zj = zPtr[j];
 
-        const SoAFloatPrecision distXIJ = soaDistsXIJ[j + i * soaSize];
-        const SoAFloatPrecision distYIJ = soaDistsYIJ[j + i * soaSize];
-        const SoAFloatPrecision distZIJ = soaDistsZIJ[j + i * soaSize];
-        const SoAFloatPrecision distSquaredIJ = soaDistsSquaredIJ[j + i * soaSize];
+        const auto idx = triIndex(i, j);
+        const SoAFloatPrecision distXIJ = soaDistsXIJ[idx];
+        const SoAFloatPrecision distYIJ = soaDistsYIJ[idx];
+        const SoAFloatPrecision distZIJ = soaDistsZIJ[idx];
+        const SoAFloatPrecision distSquaredIJ = soaDistsSquaredIJ[idx];
 
         if constexpr (countFLOPs) {
           ++numDistanceCalculationSum;
@@ -404,6 +415,7 @@ class AxilrodTellerMutoFunctorHWY
         const auto distXIJVec = highway::Set(tag_double, distXIJ);
         const auto distYIJVec = highway::Set(tag_double, distYIJ);
         const auto distZIJVec = highway::Set(tag_double, distZIJ);
+        const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
 
         const size_t blockEnd = j & ~(_vecLengthDouble - 1);
 
@@ -411,24 +423,36 @@ class AxilrodTellerMutoFunctorHWY
           const bool remainder = k >= blockEnd;
           const auto restK = j - k;
 
-          const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
+          const VectorDouble xkVec =
+              remainder ? highway::LoadN(tag_double, &xPtr[k], restK) : highway::Load(tag_double, &xPtr[k]);
+          const VectorDouble ykVec =
+              remainder ? highway::LoadN(tag_double, &yPtr[k], restK) : highway::Load(tag_double, &yPtr[k]);
+          const VectorDouble zkVec =
+              remainder ? highway::LoadN(tag_double, &zPtr[k], restK) : highway::Load(tag_double, &zPtr[k]);
 
-          const VectorDouble xk =
-              remainder ? highway::LoadN(tag_double, &xPtr[k], restK) : highway::LoadU(tag_double, &xPtr[k]);
-          const VectorDouble yk =
-              remainder ? highway::LoadN(tag_double, &yPtr[k], restK) : highway::LoadU(tag_double, &yPtr[k]);
-          const VectorDouble zk =
-              remainder ? highway::LoadN(tag_double, &zPtr[k], restK) : highway::LoadU(tag_double, &zPtr[k]);
+          auto loadPackedRow = [&](unsigned int row, unsigned int kStart, unsigned int restK, bool remainder) {
+            // row > kStart must hold
+            const size_t idx = triIndex(row, kStart);
+            const auto dx = remainder ? highway::LoadN(tag_double, &soaDistsXIJ[idx], restK)
+                                      : highway::LoadU(tag_double, &soaDistsXIJ[idx]);
+            const auto dy = remainder ? highway::LoadN(tag_double, &soaDistsYIJ[idx], restK)
+                                      : highway::LoadU(tag_double, &soaDistsYIJ[idx]);
+            const auto dz = remainder ? highway::LoadN(tag_double, &soaDistsZIJ[idx], restK)
+                                      : highway::LoadU(tag_double, &soaDistsZIJ[idx]);
+            const auto r2 = remainder ? highway::LoadN(tag_double, &soaDistsSquaredIJ[idx], restK)
+                                      : highway::LoadU(tag_double, &soaDistsSquaredIJ[idx]);
+            return std::tuple{dx, dy, dz, r2};  // stored = x[k] - x[row]
+          };
 
-          const auto distXJK = xk - xjVec;
-          const auto distYJK = yk - yjVec;
-          const auto distZJK = zk - zjVec;
-          const auto distSquaredJK = distXJK * distXJK + distYJK * distYJK + distZJK * distZJK;
+          const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec] =
+              loadPackedRow(/*row=*/j, /*kStart=*/k, restK, remainder);
 
-          const auto distXKI = xiVec - xk;
-          const auto distYKI = yiVec - yk;
-          const auto distZKI = ziVec - zk;
-          const auto distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
+          const auto [distXKIVecNeg, distYKIVecNeg, distZKIVecNeg, distSquaredKIVec] =
+              loadPackedRow(/*row=*/i, /*kStart=*/k, restK, remainder);
+
+          const auto distXKIVec = highway::Neg(distXKIVecNeg);
+          const auto distYKIVec = highway::Neg(distYKIVecNeg);
+          const auto distZKIVec = highway::Neg(distZKIVecNeg);
 
           if constexpr (countFLOPs) {
             numDistanceCalculationSum += 2 * _vecLengthDouble;
@@ -440,8 +464,8 @@ class AxilrodTellerMutoFunctorHWY
                                     tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]));
 
           // calculate masks for cutoff between i<->k and j<->k
-          const auto maskJK = highway::Le(distSquaredJK, highway::Set(tag_double, _cutoffSquared));
-          const auto maskKI = highway::Le(distSquaredKI, highway::Set(tag_double, _cutoffSquared));
+          const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
+          const auto maskKI = highway::Le(distSquaredKIVec, highway::Set(tag_double, _cutoffSquared));
           // ownership mask
           const auto maskOwnershipK =
               highway::Ne(highway::ConvertTo(tag_double, ownershipK),
@@ -467,9 +491,9 @@ class AxilrodTellerMutoFunctorHWY
           VectorDouble forceIX, forceIY, forceIZ;
           VectorDouble forceJX, forceJY, forceJZ;
           VectorDouble factor, allDotProducts, allDistsSquared;
-          SoAKernelN3_HWY(distXIJVec, distYIJVec, distZIJVec, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI,
-                          distSquaredIJVec, distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX,
-                          forceJY, forceJZ, factor, allDotProducts, allDistsSquared, maskK);
+          SoAKernelN3_HWY(distXIJVec, distYIJVec, distZIJVec, distXJKVec, distYJKVec, distZJKVec, distXKIVec,
+                          distYKIVec, distZKIVec, distSquaredIJVec, distSquaredJKVec, distSquaredKIVec, nu, forceIX,
+                          forceIY, forceIZ, forceJX, forceJY, forceJZ, factor, allDotProducts, allDistsSquared, maskK);
 
           // reduce forces
           fXAccI += forceIX;
@@ -497,11 +521,11 @@ class AxilrodTellerMutoFunctorHWY
           const VectorDouble fz2New = fz2 + forceKZ;
 
           remainder ? highway::StoreN(fx2New, tag_double, &fxPtr[k], restK)
-                    : highway::StoreU(fx2New, tag_double, &fxPtr[k]);
+                    : highway::Store(fx2New, tag_double, &fxPtr[k]);
           remainder ? highway::StoreN(fy2New, tag_double, &fyPtr[k], restK)
-                    : highway::StoreU(fy2New, tag_double, &fyPtr[k]);
+                    : highway::Store(fy2New, tag_double, &fyPtr[k]);
           remainder ? highway::StoreN(fz2New, tag_double, &fzPtr[k], restK)
-                    : highway::StoreU(fz2New, tag_double, &fzPtr[k]);
+                    : highway::Store(fz2New, tag_double, &fzPtr[k]);
 
           if constexpr (countFLOPs) {
             ++numKernelCallsN3Sum;
