@@ -343,6 +343,7 @@ class AxilrodTellerMutoFunctorHWY
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsYIJ(packedSize);
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsZIJ(packedSize);
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> soaDistsSquaredIJ(packedSize);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> invR5(packedSize);
     size_t offset = 0;
     for (unsigned int i = 1; i < soaSize; ++i) {
       for (unsigned int j = 0; j < i; ++j) {
@@ -353,7 +354,14 @@ class AxilrodTellerMutoFunctorHWY
         soaDistsXIJ[offset] = distXIJ;
         soaDistsYIJ[offset] = distYIJ;
         soaDistsZIJ[offset] = distZIJ;
+
         soaDistsSquaredIJ[offset] = soaDistsSquaredIJ[i + j * soaSize] = distSquaredIJ;
+
+        if (distSquaredIJ <= cutoffSquared) {
+          const double r = std::sqrt(distSquaredIJ);
+          invR5[offset] = 1.0 / (r * r * r * r * r);
+        }
+
         ++offset;
       }
     }
@@ -390,6 +398,7 @@ class AxilrodTellerMutoFunctorHWY
         const SoAFloatPrecision distXIJ = soaDistsXIJ[idx];
         const SoAFloatPrecision distYIJ = soaDistsYIJ[idx];
         const SoAFloatPrecision distZIJ = soaDistsZIJ[idx];
+        const SoAFloatPrecision invR5IJ = invR5[idx];
         const SoAFloatPrecision distSquaredIJ = soaDistsSquaredIJ[idx];
 
         if constexpr (countFLOPs) {
@@ -416,6 +425,7 @@ class AxilrodTellerMutoFunctorHWY
         const auto distYIJVec = highway::Set(tag_double, distYIJ);
         const auto distZIJVec = highway::Set(tag_double, distZIJ);
         const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
+        const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
         const size_t blockEnd = j & ~(_vecLengthDouble - 1);
 
@@ -441,13 +451,15 @@ class AxilrodTellerMutoFunctorHWY
                                       : highway::LoadU(tag_double, &soaDistsZIJ[idx]);
             const auto r2 = remainder ? highway::LoadN(tag_double, &soaDistsSquaredIJ[idx], restK)
                                       : highway::LoadU(tag_double, &soaDistsSquaredIJ[idx]);
-            return std::tuple{dx, dy, dz, r2};  // stored = x[k] - x[row]
+            const auto vInvR5 =
+                remainder ? highway::LoadN(tag_double, &invR5[idx], restK) : highway::LoadU(tag_double, &invR5[idx]);
+            return std::tuple{dx, dy, dz, r2, vInvR5};  // stored = x[k] - x[row]
           };
 
-          const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec] =
+          const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec, invR5JKVec] =
               loadPackedRow(/*row=*/j, /*kStart=*/k, restK, remainder);
 
-          const auto [distXKIVecNeg, distYKIVecNeg, distZKIVecNeg, distSquaredKIVec] =
+          const auto [distXKIVecNeg, distYKIVecNeg, distZKIVecNeg, distSquaredKIVec, invR5KIVec] =
               loadPackedRow(/*row=*/i, /*kStart=*/k, restK, remainder);
 
           const auto distXKIVec = highway::Neg(distXKIVecNeg);
@@ -492,8 +504,9 @@ class AxilrodTellerMutoFunctorHWY
           VectorDouble forceJX, forceJY, forceJZ;
           VectorDouble factor, allDotProducts, allDistsSquared;
           SoAKernelN3_HWY(distXIJVec, distYIJVec, distZIJVec, distXJKVec, distYJKVec, distZJKVec, distXKIVec,
-                          distYKIVec, distZKIVec, distSquaredIJVec, distSquaredJKVec, distSquaredKIVec, nu, forceIX,
-                          forceIY, forceIZ, forceJX, forceJY, forceJZ, factor, allDotProducts, allDistsSquared, maskK);
+                          distYKIVec, distZKIVec, distSquaredIJVec, distSquaredJKVec, distSquaredKIVec, nu, invR5IJVec,
+                          invR5JKVec, invR5KIVec, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
+                          allDotProducts, allDistsSquared, maskK);
 
           // reduce forces
           fXAccI += forceIX;
@@ -1494,20 +1507,26 @@ class AxilrodTellerMutoFunctorHWY
       const VectorDouble &distXJK, const VectorDouble &distYJK, const VectorDouble &distZJK,
       const VectorDouble &distXKI, const VectorDouble &distYKI, const VectorDouble &distZKI,
       const VectorDouble &distSquaredIJ, const VectorDouble &distSquaredJK, const VectorDouble &distSquaredKI,
-      const VectorDouble &nu, VectorDouble &forceIX, VectorDouble &forceIY, VectorDouble &forceIZ,
-      VectorDouble &forceJX, VectorDouble &forceJY, VectorDouble &forceJZ, VectorDouble &factor,
-      VectorDouble &allDotProducts, VectorDouble &allDistsSquared, const MaskDouble &maskK) const {
+      const VectorDouble &nu, const VectorDouble &invR5IJ, const VectorDouble &invR5JK, const VectorDouble &invR5KI,
+      VectorDouble &forceIX, VectorDouble &forceIY, VectorDouble &forceIZ, VectorDouble &forceJX, VectorDouble &forceJY,
+      VectorDouble &forceJZ, VectorDouble &factor, VectorDouble &allDotProducts, VectorDouble &allDistsSquared,
+      const MaskDouble &maskK) const {
     // computes a * b + c * d + e * f
     auto fmaHelper = [](auto a, auto b, auto c, auto d, auto e, auto f) {
       const auto x = highway::MulAdd(c, d, e * f);
       return highway::MulAdd(a, b, x);
     };
 
-    // Calculate prefactor
-    allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-    const VectorDouble allDistsTo5 = allDistsSquared * allDistsSquared * highway::Sqrt(allDistsSquared);
+    // If globals are needed, still compute allDistsSquared (r_ij^2 * r_jk^2 * r_ki^2)
+    if constexpr (calculateGlobals) {
+      allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+    }
 
-    factor = _threeDoubleVec * nu / allDistsTo5;
+    // Use precomputed 1/r^5 for each pair: allDistsTo5 = (1/r_ij^5)*(1/r_jk^5)*(1/r_ki^5)
+    const VectorDouble allDistsTo5 = invR5IJ * invR5JK * invR5KI;
+
+    // factor is three * nu * product(inv r^5)
+    factor = _threeDoubleVec * nu * allDistsTo5;
 
     // Dot products
     const VectorDouble IJDotKI = fmaHelper(distXIJ, distXKI, distYIJ, distYKI, distZIJ, distZKI);
