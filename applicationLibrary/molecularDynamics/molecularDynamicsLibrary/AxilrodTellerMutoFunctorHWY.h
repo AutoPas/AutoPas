@@ -355,11 +355,11 @@ class AxilrodTellerMutoFunctorHWY
         soaDistsYIJ[offset] = distYIJ;
         soaDistsZIJ[offset] = distZIJ;
 
-        soaDistsSquaredIJ[offset] = soaDistsSquaredIJ[i + j * soaSize] = distSquaredIJ;
+        soaDistsSquaredIJ[offset] = distSquaredIJ;
 
         if (distSquaredIJ <= cutoffSquared) {
           const double r = std::sqrt(distSquaredIJ);
-          invR5[offset] = 1.0 / (r * r * r * r * r);
+          invR5[offset] = 1.0 / (distSquaredIJ * distSquaredIJ * r);
         }
 
         ++offset;
