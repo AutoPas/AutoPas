@@ -154,6 +154,7 @@ def load_data_from_directory(results_dir: str) -> tuple:
 
     # Combine all merged DataFrames into one
     if len(merged_dfs_pairwise) > 0:
+        print(f"Merging {len(merged_dfs_pairwise)} CSV files for the pairwise training data")
         final_merged_df_pairwise = pd.concat(merged_dfs_pairwise, ignore_index=True)
     else:
         final_merged_df_pairwise = None
@@ -208,7 +209,7 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_estimators
         RandomForestClassifier: The trained RandomForestClassifier model.
     """
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-    model = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
+    model = RandomForestClassifier(n_estimators=n_estimators, random_state=42, max_features=1.)
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
@@ -261,10 +262,10 @@ def main():
     parser.add_argument('--results-dir', type=str, required=True, help="Directory containing live info and tuning"
                                                                        " results CSV files.")
     parser.add_argument('--features', type=str, nargs='+',
-                        default=['meanParticlesPerCell', 'maxParticlesPerCell', 'relativeParticlesPerCellStdDev',
-                                 'threadCount', 'relativeParticlesPerBlurredBinStdDev', 'skin'],
+                        default=['meanParticlesPerCell', 'medianParticlesPerCell', 'maxParticlesPerCell', 'relativeParticlesPerCellStdDev',
+                                 'threadCount', 'numCells', 'numEmptyCells', 'skin'],
                         help="List of feature columns for training.")
-    parser.add_argument('--test-size', type=float, default=0.2, help="Test set size as a fraction (default: 0.2).")
+    parser.add_argument('--test-size', type=float, default=0.1, help="Test set size as a fraction (default: 0.1).")
     parser.add_argument('--n-estimators', type=int, default=100,
                         help="Number of estimators (trees) in the RandomForest (default: 100).")
     parser.add_argument('--output-file', type=str, default='model.pkl', help="Output file to save models and encoders.")
