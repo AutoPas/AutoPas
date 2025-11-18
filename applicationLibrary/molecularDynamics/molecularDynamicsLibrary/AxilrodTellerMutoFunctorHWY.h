@@ -318,10 +318,11 @@ class AxilrodTellerMutoFunctorHWY
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
-    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
-    SoAFloatPrecision virialSumX = 0.;
-    SoAFloatPrecision virialSumY = 0.;
-    SoAFloatPrecision virialSumZ = 0.;
+    VectorDouble potentialEnergySum =
+        highway::Zero(tag_double);  // Note: This is not the potential energy but some fixed multiple of it.
+    VectorDouble virialSumX = highway::Zero(tag_double);
+    VectorDouble virialSumY = highway::Zero(tag_double);
+    VectorDouble virialSumZ = highway::Zero(tag_double);
 
     size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
@@ -401,9 +402,6 @@ class AxilrodTellerMutoFunctorHWY
         const SoAFloatPrecision invR5IJ = invR5[idx];
         const SoAFloatPrecision distSquaredIJ = soaDistsSquaredIJ[idx];
 
-        if constexpr (countFLOPs) {
-          ++numDistanceCalculationSum;
-        }
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
@@ -465,10 +463,6 @@ class AxilrodTellerMutoFunctorHWY
           const auto distXKIVec = highway::Neg(distXKIVecNeg);
           const auto distYKIVec = highway::Neg(distYKIVecNeg);
           const auto distZKIVec = highway::Neg(distZKIVecNeg);
-
-          if constexpr (countFLOPs) {
-            numDistanceCalculationSum += 2 * _vecLengthDouble;
-          }
 
           const auto mask = highway::FirstN(tag_long, remainder ? restK : _vecLengthDouble);
           const auto ownershipK =
@@ -541,35 +535,66 @@ class AxilrodTellerMutoFunctorHWY
                     : highway::Store(fz2New, tag_double, &fzPtr[k]);
 
           if constexpr (countFLOPs) {
-            ++numKernelCallsN3Sum;
+            numKernelCallsN3Sum += restK;
           }
 
-          // Todo
-          // if constexpr (calculateGlobals) {
-          //   const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-          //   if (ownedStateI == autopas::OwnershipState::owned) {
-          //     potentialEnergySum += potentialEnergy3;
-          //     virialSumX += forceIX * (distXKI - distXIJ);
-          //     virialSumY += forceIY * (distYKI - distYIJ);
-          //     virialSumZ += forceIZ * (distZKI - distZIJ);
-          //   }
-          //   if (ownedStateJ == autopas::OwnershipState::owned) {
-          //     potentialEnergySum += potentialEnergy3;
-          //     virialSumX += forceJX * (distXIJ - distXJK);
-          //     virialSumY += forceJY * (distYIJ - distYJK);
-          //     virialSumZ += forceJZ * (distZIJ - distZJK);
-          //   }
-          //   if (ownedStateK == autopas::OwnershipState::owned) {
-          //     potentialEnergySum += potentialEnergy3;
-          //     virialSumX += forceKX * (distXJK - distXKI);
-          //     virialSumY += forceKY * (distYJK - distYKI);
-          //     virialSumZ += forceKZ * (distZJK - distZKI);
-          //   }
+          if constexpr (calculateGlobals) {
+            const auto potentialEnergy3 = factor * (allDistsSquared - _threeDoubleVec * allDotProducts);
 
-          //   if constexpr (countFLOPs) {
-          //     ++numGlobalCalcsSum;
-          //   }
-          // }
+            // sum potential energy only on owned particles
+            const auto ownedMaskI =
+                highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
+                            highway::Set(tag_double, static_cast<double>(ownedStateI)));
+            const auto ownedMaskJ =
+                highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
+                            highway::Set(tag_double, static_cast<double>(ownedStateJ)));
+            const auto ownedMaskK =
+                highway::Eq(highway::ConvertTo(tag_double, ownershipK),
+                            highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)));
+
+            // potential energy for i,j,k (masked)
+            const auto potentialEnergyI = highway::IfThenElse(ownedMaskI, potentialEnergy3, highway::Zero(tag_double));
+            const auto potentialEnergyJ = highway::IfThenElse(ownedMaskJ, potentialEnergy3, highway::Zero(tag_double));
+            const auto potentialEnergyK = highway::IfThenElse(ownedMaskK, potentialEnergy3, highway::Zero(tag_double));
+
+            potentialEnergySum += potentialEnergyI + potentialEnergyJ + potentialEnergyK;
+
+            // Virial for i
+            const auto virialIX = forceIX * (distXKIVec - distXIJVec);
+            const auto virialIY = forceIY * (distYKIVec - distYIJVec);
+            const auto virialIZ = forceIZ * (distZKIVec - distZIJVec);
+
+            const auto maskedVirialIX = highway::IfThenElse(ownedMaskI, virialIX, highway::Zero(tag_double));
+            const auto maskedVirialIY = highway::IfThenElse(ownedMaskI, virialIY, highway::Zero(tag_double));
+            const auto maskedVirialIZ = highway::IfThenElse(ownedMaskI, virialIZ, highway::Zero(tag_double));
+
+            // Virial for j
+            const auto virialJX = forceJX * (distXIJVec - distXJKVec);
+            const auto virialJY = forceJY * (distYIJVec - distYJKVec);
+            const auto virialJZ = forceJZ * (distZIJVec - distZJKVec);
+
+            const auto maskedVirialJX = highway::IfThenElse(ownedMaskJ, virialJX, highway::Zero(tag_double));
+            const auto maskedVirialJY = highway::IfThenElse(ownedMaskJ, virialJY, highway::Zero(tag_double));
+            const auto maskedVirialJZ = highway::IfThenElse(ownedMaskJ, virialJZ, highway::Zero(tag_double));
+
+            // Virial for k
+            const auto virialKX = forceKX * (distXJKVec - distXKIVec);
+            const auto virialKY = forceKY * (distYJKVec - distYKIVec);
+            const auto virialKZ = forceKZ * (distZJKVec - distZKIVec);
+
+            const auto maskedVirialKX = highway::IfThenElse(ownedMaskK, virialKX, highway::Zero(tag_double));
+            const auto maskedVirialKY = highway::IfThenElse(ownedMaskK, virialKY, highway::Zero(tag_double));
+            const auto maskedVirialKZ = highway::IfThenElse(ownedMaskK, virialKZ, highway::Zero(tag_double));
+
+            // Reduce the virial
+            virialSumX += maskedVirialIX + maskedVirialJX + maskedVirialKX;
+            virialSumY += maskedVirialIY + maskedVirialJY + maskedVirialKY;
+            virialSumZ += maskedVirialIZ + maskedVirialJZ + maskedVirialKZ;
+
+            if constexpr (countFLOPs) {
+              numGlobalCalcsSum += restK;
+            }
+          }
         }
 
         fxPtr[j] += highway::ReduceSum(tag_double, fXAccJ);
@@ -580,19 +605,19 @@ class AxilrodTellerMutoFunctorHWY
       fyPtr[i] += highway::ReduceSum(tag_double, fYAccI);
       fzPtr[i] += highway::ReduceSum(tag_double, fZAccI);
     }
-    // Todo
-    // if constexpr (countFLOPs) {
-    //   _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
-    //   _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
-    //   _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-    //   _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
-    // }
-    // if (calculateGlobals) {
-    //   _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-    //   _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-    //   _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-    //   _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
-    // }
+
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
+    }
+    if (calculateGlobals) {
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += highway::ReduceSum(tag_double, potentialEnergySum);
+      _aosThreadDataGlobals[threadnum].virialSum[0] += highway::ReduceSum(tag_double, virialSumX);
+      _aosThreadDataGlobals[threadnum].virialSum[1] += highway::ReduceSum(tag_double, virialSumY);
+      _aosThreadDataGlobals[threadnum].virialSum[2] += highway::ReduceSum(tag_double, virialSumZ);
+    }
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
