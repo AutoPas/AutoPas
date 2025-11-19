@@ -492,7 +492,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
       const std::array<double, 3> &boxMaxWithSafetyMargin) const {
     // TODO: parallelize at the higher tree levels. Choose tree level to parallelize via log_8(numThreads)
-    const size_t minLevel = 0;
+    //const size_t minLevel = 0;
     //        (iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1
     //            ? 0
     //            : static_cast<size_t>(std::ceil(std::log(static_cast<double>(autopas_get_num_threads())) /
@@ -526,7 +526,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
           currentCellInterfacePtr = currentCellInterfacePtr->getParent();
           currentCellIndex.pop_back();
           // If there are no more cells in the branch that we are responsible for set invalid parameters and return.
-          if (currentCellIndex.size() < minLevel or currentCellIndex.empty()) {
+          if (currentCellIndex.empty()) {
             currentCellIndex.clear();
             return {nullptr, std::numeric_limits<decltype(particleIndex)>::max()};
           }

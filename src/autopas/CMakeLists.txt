@@ -45,7 +45,8 @@ target_link_libraries(
 target_compile_options(
         autopas
         PUBLIC
-        #-Wno-deprecated-gpu-targets
+        -Wno-deprecated-gpu-targets
+        #--expt-relaxed-constexpr
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP

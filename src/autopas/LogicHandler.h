@@ -1980,8 +1980,8 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
   if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", config.container,
-               config.traversal);
+    //AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", config.container,
+    //           config.traversal);
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
