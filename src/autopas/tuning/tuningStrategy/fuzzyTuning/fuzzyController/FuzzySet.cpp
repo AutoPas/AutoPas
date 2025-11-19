@@ -124,15 +124,15 @@ std::string FuzzySet::printBaseMembershipFunction() const {
       std::get<1>(baseMembershipFunction).begin(), std::get<1>(baseMembershipFunction).end(), std::string(""),
       [](const std::string &acc, const double &b) { return acc + std::to_string(b) + ", "; });
 
-  return fmt::format(R"("{}": {}({}))", _linguisticTerm, std::get<0>(baseMembershipFunction),
-                     parameters.substr(0, parameters.size() - 2));
+  return _linguisticTerm; //fmt::format(R"("{}": {}({}))", _linguisticTerm, std::get<0>(baseMembershipFunction),
+                     //parameters.substr(0, parameters.size() - 2));
 }
 
 FuzzySet::operator std::string() const {
   if (std::holds_alternative<BaseMembershipFunction>(_membershipFunction)) {
     // If the fuzzy set is a base set, the membership function is printed in the form "dimension == value".
     const auto [dimensionName, _] = *_crispSet->getDimensions().begin();
-    return fmt::format(R"("{}" == "{}")", dimensionName, _linguisticTerm);
+    return _linguisticTerm; // fmt::format(R"("{}" == "{}")", dimensionName, _linguisticTerm);
   } else {
     // If the fuzzy set is a derived set, just print the linguistic term.
     return _linguisticTerm;
@@ -146,7 +146,7 @@ const std::shared_ptr<CrispSet> &FuzzySet::getCrispSet() const { return _crispSe
 void FuzzySet::setCrispSet(const std::shared_ptr<CrispSet> &crispSet) { _crispSet = crispSet; }
 
 std::shared_ptr<FuzzySet> operator||(const std::shared_ptr<FuzzySet> &lhs, const std::shared_ptr<FuzzySet> &rhs) {
-  const std::string newLinguisticTerm = fmt::format("({} || {})", std::string(*lhs), std::string(*rhs));
+  const std::string newLinguisticTerm = "TODO"; // fmt::format("({} || {})", std::string(*lhs), std::string(*rhs));
   const auto newCrispSet = (*lhs->_crispSet) * (*rhs->_crispSet);
   auto newMembershipFunction = [lhs, rhs](auto data) {
     return std::max((lhs->evaluate_membership(data)), (rhs->evaluate_membership(data)));
@@ -155,7 +155,7 @@ std::shared_ptr<FuzzySet> operator||(const std::shared_ptr<FuzzySet> &lhs, const
 }
 
 std::shared_ptr<FuzzySet> operator&&(const std::shared_ptr<FuzzySet> &lhs, const std::shared_ptr<FuzzySet> &rhs) {
-  const std::string newLinguisticTerm = fmt::format("({} && {})", std::string(*lhs), std::string(*rhs));
+  const std::string newLinguisticTerm = "TODO"; // fmt::format("({} && {})", std::string(*lhs), std::string(*rhs));
   const auto newCrispSet = (*lhs->_crispSet) * (*rhs->_crispSet);
   auto newMembershipFunction = [lhs, rhs](auto data) {
     return std::min((lhs->evaluate_membership(data)), (rhs->evaluate_membership(data)));
@@ -164,7 +164,7 @@ std::shared_ptr<FuzzySet> operator&&(const std::shared_ptr<FuzzySet> &lhs, const
 }
 
 std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &fuzzySet) {
-  const std::string newLinguisticTerm = fmt::format("!({})", std::string(*fuzzySet));
+  const std::string newLinguisticTerm = "TODO"; // fmt::format("!({})", std::string(*fuzzySet));
   const auto newCrispSet = fuzzySet->_crispSet;
   auto newMembershipFunction = [fuzzySet](auto data) { return 1 - (fuzzySet->evaluate_membership(data)); };
   return std::make_shared<FuzzySet>(newLinguisticTerm, std::move(newMembershipFunction), newCrispSet);

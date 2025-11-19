@@ -36,9 +36,16 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
+        Kokkos::kokkos
     PRIVATE
         # harmony are only needed privately when building AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony>
+)
+
+target_compile_options(
+        autopas
+        PUBLIC
+        #-Wno-deprecated-gpu-targets
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
@@ -55,6 +62,7 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
         _USE_MATH_DEFINES
+        #EIGEN_NO_CUDA
 )
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
