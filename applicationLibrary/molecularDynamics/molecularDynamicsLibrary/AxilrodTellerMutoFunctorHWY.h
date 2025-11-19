@@ -302,6 +302,14 @@ class AxilrodTellerMutoFunctorHWY
 
     if (soa.size() <= 2) return;
 
+    const auto alignment = highway::Lanes(tag_double) * sizeof(SoAFloatPrecision);
+    bool alignedPos = soa.template isAligned<Particle_T::AttributeNames::posX>(alignment) and
+                      soa.template isAligned<Particle_T::AttributeNames::posY>(alignment) and
+                      soa.template isAligned<Particle_T::AttributeNames::posZ>(alignment);
+    bool alignedForce = soa.template isAligned<Particle_T::AttributeNames::forceX>(alignment) and
+                        soa.template isAligned<Particle_T::AttributeNames::forceY>(alignment) and
+                        soa.template isAligned<Particle_T::AttributeNames::forceZ>(alignment);
+
     const auto threadnum = autopas::autopas_get_thread_num();
 
     const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -431,12 +439,9 @@ class AxilrodTellerMutoFunctorHWY
           const bool remainder = k >= blockEnd;
           const auto restK = j - k;
 
-          const VectorDouble xkVec =
-              remainder ? highway::LoadN(tag_double, &xPtr[k], restK) : highway::Load(tag_double, &xPtr[k]);
-          const VectorDouble ykVec =
-              remainder ? highway::LoadN(tag_double, &yPtr[k], restK) : highway::Load(tag_double, &yPtr[k]);
-          const VectorDouble zkVec =
-              remainder ? highway::LoadN(tag_double, &zPtr[k], restK) : highway::Load(tag_double, &zPtr[k]);
+          const VectorDouble xkVec = loadPacked(tag_double, &xPtr[k], alignedPos, remainder ? restK : _vecLengthDouble);
+          const VectorDouble ykVec = loadPacked(tag_double, &yPtr[k], alignedPos, remainder ? restK : _vecLengthDouble);
+          const VectorDouble zkVec = loadPacked(tag_double, &zPtr[k], alignedPos, remainder ? restK : _vecLengthDouble);
 
           auto loadPackedRow = [&](unsigned int row, unsigned int kStart, unsigned int restK, bool remainder) {
             // row > kStart must hold
@@ -527,12 +532,9 @@ class AxilrodTellerMutoFunctorHWY
           const VectorDouble fy2New = fy2 + forceKY;
           const VectorDouble fz2New = fz2 + forceKZ;
 
-          remainder ? highway::StoreN(fx2New, tag_double, &fxPtr[k], restK)
-                    : highway::Store(fx2New, tag_double, &fxPtr[k]);
-          remainder ? highway::StoreN(fy2New, tag_double, &fyPtr[k], restK)
-                    : highway::Store(fy2New, tag_double, &fyPtr[k]);
-          remainder ? highway::StoreN(fz2New, tag_double, &fzPtr[k], restK)
-                    : highway::Store(fz2New, tag_double, &fzPtr[k]);
+          storePacked(tag_double, &fxPtr[k], fx2New, alignedForce, remainder ? restK : _vecLengthDouble);
+          storePacked(tag_double, &fyPtr[k], fy2New, alignedForce, remainder ? restK : _vecLengthDouble);
+          storePacked(tag_double, &fzPtr[k], fz2New, alignedForce, remainder ? restK : _vecLengthDouble);
 
           if constexpr (countFLOPs) {
             numKernelCallsN3Sum += restK;
@@ -1593,6 +1595,45 @@ class AxilrodTellerMutoFunctorHWY
     factor = highway::IfThenElseZero(maskK, factor);
     allDotProducts = highway::IfThenElseZero(maskK, allDotProducts);
     allDistsSquared = highway::IfThenElseZero(maskK, allDistsSquared);
+  }
+
+  template <typename T, class Tag>
+  HWY_INLINE auto loadFull(const Tag tag, const T *ptr, bool aligned) {
+    return aligned ? highway::Load(tag, ptr) : highway::LoadU(tag, ptr);
+  }
+
+  template <typename T, class Tag>
+  HWY_INLINE auto loadPartial(const Tag tag, const T *ptr, size_t numberToLoad) {
+    return highway::LoadN(tag, ptr, numberToLoad);
+  }
+
+  template <typename T, class Tag>
+  HWY_INLINE auto loadPacked(const Tag tag, const T *ptr, bool aligned, size_t numberToLoad) {
+    return (numberToLoad == highway::Lanes(tag)) ? loadFull<T, Tag>(tag, ptr, aligned)
+                                                 : loadPartial<T, Tag>(tag, ptr, numberToLoad);
+  }
+
+  template <typename T, class Tag, typename Vec>
+  HWY_INLINE static void storeFull(const Tag tag, T *ptr, const Vec &v, bool aligned) {
+    if (aligned) {
+      highway::Store(v, tag, ptr);
+    } else {
+      highway::StoreU(v, tag, ptr);
+    }
+  }
+
+  template <typename T, class Tag, typename Vec>
+  HWY_INLINE static void storePartial(const Tag tag, T *ptr, const Vec &v, size_t numberToStore) {
+    highway::StoreN(v, tag, ptr, numberToStore);
+  }
+
+  template <typename T, class Tag, typename Vec>
+  HWY_INLINE static void storePacked(const Tag tag, T *ptr, const Vec &v, bool aligned, size_t numberToStore) {
+    if (numberToStore == highway::Lanes(tag)) {
+      storeFull<T, Tag, Vec>(tag, ptr, v, aligned);
+    } else {
+      storePartial<T, Tag, Vec>(tag, ptr, v, numberToStore);
+    }
   }
 
   /**
