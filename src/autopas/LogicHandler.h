@@ -484,6 +484,13 @@ class LogicHandler {
                             [&](auto &container) { container.forEach(lambda, behavior, additionalVectors); });
   }
 
+  template <typename Lambda>
+  void reduce(Lambda lambda, bool &result, IteratorBehavior behavior) {
+    auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
+    withStaticContainerType(_containerSelector.getCurrentContainer(),
+                            [&](auto &container) { container.reduce(lambda, result, behavior, additionalVectors); });
+  }
+
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
@@ -1108,9 +1115,9 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel)
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    iter->resetRAtRebuild();
-  }
+
+  this->forEach([&](auto &particle) { particle.resetRAtRebuild(); },
+                IteratorBehavior::owned | IteratorBehavior::containerOnly);
 #endif
 }
 
@@ -1161,13 +1168,14 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    const auto distance = iter->calculateDisplacementSinceRebuild();
-    const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+  this->reduce(
+      [&](auto &particle, auto &acc) {
+        const auto distance = particle.calculateDisplacementSinceRebuild();
+        const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+        acc |= distanceSquare >= halfSkinSquare;
+      },
+      _neighborListInvalidDoDynamicRebuild, IteratorBehavior::owned | IteratorBehavior::containerOnly);
 
-    _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
-  }
 #endif
 }
 

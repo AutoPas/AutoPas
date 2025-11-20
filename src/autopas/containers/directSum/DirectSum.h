@@ -271,7 +271,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @copydoc LinkedCells::reduce()
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior, typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr  ) {
     if (behavior & IteratorBehavior::owned) {
       getOwnedCell().reduce(reduceLambda, result);
     }
@@ -280,11 +280,19 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
         cellIt->reduce(reduceLambda, result);
       }
     }
+
+    if (additionalVectors != nullptr) {
+      for (auto const &v : *additionalVectors) {
+        for (auto const &p : *v) {
+          reduceLambda(p, result);
+        }
+      }
+    }
     // sanity check
     if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
-  }
+  }\
 
   [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,

@@ -41,6 +41,11 @@ class KokkosSoA {
     std::apply([](auto &view) { view.template modify<Space>(); });
   }
 
+  template<size_t AttributeName>
+  inline constexpr auto get() {
+    return _soaStorage.template get<AttributeName>();
+  }
+
  private:
   SoAStorage<typename KokkosSoAType<SoAArraysType>::Type> _soaStorage;
 };

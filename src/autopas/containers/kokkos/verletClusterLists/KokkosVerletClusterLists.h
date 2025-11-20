@@ -2,6 +2,7 @@
 
 #include "autopas/utils/kokkos/KokkosSoA.h"
 #include "autopas/utils/kokkos/KokkosSoAType.h"
+#include "traversals/KokkosVCLTraversal.h"
 
 namespace autopas {
 
@@ -25,33 +26,39 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {}
 
  protected:
-  void addParticleImpl(const Particle_T &p) override {}
-  void addHaloParticleImpl(const Particle_T &haloParticle) override {}
+  void addParticleImpl(const Particle_T &p) override { particles.push_back(p); }
+  void addHaloParticleImpl(const Particle_T &haloParticle) override { particles.push_back(haloParticle); }
 
  public:
   bool updateHaloParticle(const Particle_T &haloParticle) override {
     // TODO
 
-    autopas::utils::ExceptionHandler::exception("unimplemented");
     return false;
   }
-  void rebuildNeighborLists(autopas::TraversalInterface *traversal) override {}
+  void rebuildNeighborLists(autopas::TraversalInterface *traversal) override {
+    auto trav = dynamic_cast<containers::kokkos::traversal::KokkosTraversalInterface<Particle_T> *>(traversal);
+    trav.rebuild();
+  }
 
-  void deleteHaloParticles() override {}
+  void deleteHaloParticles() override {
+    std::remove_if(particles.begin(), particles.end(), [](auto &particle) {
+      return particle._ownershipState == OwnershipState::dummy || particle._ownershipState == OwnershipState::owned;
+    });
+  }
 
-  void deleteAllParticles() override {}
+  void deleteAllParticles() override { particles.clear(); }
 
   [[nodiscard]] size_t getNumberOfParticles(autopas::IteratorBehavior behavior) const override {
-    // TODO
-
-    autopas::utils::ExceptionHandler::exception("unimplemented");
-    return 0;
+    return std::count_if(particles.begin(), particles.end(),
+                         [&](auto &particle) { return behavior.contains(particle); });
   }
-  [[nodiscard]] size_t size() const override {
-    // return _cell.size();
-  }
+  [[nodiscard]] size_t size() const override { return particles.size(); }
 
-  void computeInteractions(autopas::TraversalInterface *traversal) override {}
+  void computeInteractions(autopas::TraversalInterface *traversal) override {
+    traversal->initTraversal();
+    traversal->traverseParticles();
+    traversal->endTraversal();
+  }
 
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
@@ -59,34 +66,27 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
   [[nodiscard]] double getVerletSkin() const override { return _verletSkin; }
 
-  [[nodiscard]] size_t getStepsSinceLastRebuild() const override { return 0; }
-  void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {}
+  [[nodiscard]] size_t getStepsSinceLastRebuild() const override {
+    // TODO
+    return 0;
+  }
+  void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
+    // TODO
+  }
 
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + this->getVerletSkin(); }
 
-  [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
-    // TODO
-
-    autopas::utils::ExceptionHandler::exception("unimplemented");
-    return {};
-  }
-  [[nodiscard]] autopas::TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    // TODO
-    return {};
-  }
+  [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override { return {}; }
+  [[nodiscard]] autopas::TraversalSelectorInfo getTraversalSelectorInfo() const override { return {}; }
 
   bool deleteParticle(Particle_T &particle) override {
-    // TODO
-
-    autopas::utils::ExceptionHandler::exception("unimplemented");
+    std::remove_if(particles.begin(), particles.end(), [&](auto &p) { return particle == p; });
     return true;
   }
 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    autopas::utils::ExceptionHandler::exception("unimplemented");
-  }
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {}
 
   template <typename Lambda>
   void forEach(Lambda lambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
@@ -98,7 +98,7 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
       typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {};
 
  private:
-  utils::kokkos::KokkosSoA<typename Particle_T::SoAArraysType> _soa;
+  std::vector<Particle_T> particles;
 
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
