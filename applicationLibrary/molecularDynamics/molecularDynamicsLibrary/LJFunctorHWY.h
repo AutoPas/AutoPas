@@ -9,8 +9,6 @@
 
 #include <hwy/highway.h>
 
-#include <algorithm>
-
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/options/VectorizationPatternOption.h"
@@ -22,18 +20,18 @@
 namespace mdLib {
 
 namespace highway = hwy::HWY_NAMESPACE;
-/** Higwhay tag for full double register */
-const highway::ScalableTag<double> tag_double;
+/** Highway tag for full double register */
+constexpr highway::ScalableTag<double> tag_double;
 /** Highway tag for full long register */
-const highway::ScalableTag<int64_t> tag_long;
-/** Nuber of double values in a full register */
-const size_t _vecLengthDouble{highway::Lanes(tag_double)};
+constexpr highway::ScalableTag<int64_t> tag_long;
+/** Number of double values in a full register */
+constexpr size_t _vecLengthDouble{highway::Lanes(tag_double)};
 /** Type for a Double vector register */
 using VectorDouble = decltype(highway::Zero(tag_double));
 /** Type for a Long vector register */
 using VectorLong = decltype(highway::Zero(tag_long));
 /** Highway tag for a half-filled double register */
-const highway::Half<highway::DFromV<VectorDouble>> tag_double_half;
+constexpr highway::Half<highway::DFromV<VectorDouble>> tag_double_half;
 /** Type for a Double Mask */
 using MaskDouble = decltype(highway::FirstN(tag_double, 1));
 /** Type for a Long Mask */
@@ -44,22 +42,22 @@ using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules)
  * This functor uses the SIMD abstraction library Google Highway to provide architecture independent vectorization
- * @tparam Particle The type of particle
+ * @tparam Particle_T The type of particle
  * @tparam applyShift Switch for the lj potential to be truncated shifted
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
- * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam relevantForTuning Whether the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.*/
-template <class Particle, bool applyShift = false, bool useMixing = false,
+template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 
 class LJFunctorHWY
-    : public autopas::PairwiseFunctor<Particle, LJFunctorHWY<Particle, applyShift, useMixing, useNewton3,
-                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
-  using SoAArraysType = typename Particle::SoAArraysType;
+    : public autopas::PairwiseFunctor<Particle_T, LJFunctorHWY<Particle_T, applyShift, useMixing, useNewton3,
+                                                               calculateGlobals, countFLOPs, relevantForTuning>> {
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
  public:
   /**
@@ -74,8 +72,7 @@ class LJFunctorHWY
    * @note param dummy unused, only there to make the signature different from the public constructor
    */
   explicit LJFunctorHWY(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle, LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                        countFLOPs, relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquared{highway::Set(tag_double, cutoff * cutoff)},
         _cutoffSquareAoS{cutoff * cutoff},
         _uPotSum{0.},
@@ -134,58 +131,55 @@ class LJFunctorHWY
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()
    */
-  inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  inline void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto sigmasquare = _sigmaSquareAoS;
+    auto sigmaSquare = _sigmaSquareAoS;
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmasquare = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      sigmaSquare = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    const auto dr = i.getR() - j.getR();
+    const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquareAoS) {
       return;
     }
 
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmasquare * invdr2;
+    const double invdr2 = 1. / dr2;
+    double lj6 = sigmaSquare * invdr2;
     lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
+    const double lj12 = lj6 * lj6;
+    const double lj12m6 = lj12 - lj6;
+    const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    const auto f = dr * fac;
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
     if (calculateGlobals) {
-      auto virial = dr * f;
-      double upot = epsilon24 * lj12m6 + shift6;
+      const auto virial = dr * f;
+      const double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas::autopas_get_thread_num();
-      // for non-newton3 the division is in the post-processing step.
-      if (newton3) {
-        upot *= 0.5;
-        virial *= (double)0.5;
-      }
+
       if (i.isOwned()) {
         _aosThreadData[threadnum].uPotSum += upot;
         _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].uPotSum += upot;
-        _aosThreadData[threadnum].virialSum += virial;
+        // for non-newton3 the division is in the post-processing step.
+        _aosThreadData[threadnum].uPotSum += upot * 0.5;
+        _aosThreadData[threadnum].virialSum += virial * 0.5;
       }
     }
   }
@@ -249,21 +243,21 @@ class LJFunctorHWY
 
  private:
   template <bool reversed, VectorizationPattern vecPattern>
-  inline bool checkFirstLoopCondition(const long i, const long stop) {
+  constexpr bool checkFirstLoopCondition(const long i, const long stop) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      return reversed ? (long)i >= 0 : (i < stop);
+      return reversed ? i >= 0 : (i < stop);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      return reversed ? (long)i >= 1 : (i < (stop - 1));
+      return reversed ? i >= 1 : (i < (stop - 1));
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       if constexpr (reversed) {
-        return (long)i >= _vecLengthDouble / 2;
+        return i >= _vecLengthDouble / 2;
       } else {
         const long criterion = stop - _vecLengthDouble / 2 + 1;
         return i < criterion;
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       if constexpr (reversed) {
-        return (long)i >= _vecLengthDouble;
+        return i >= _vecLengthDouble;
       } else {
         const long criterion = stop - _vecLengthDouble + 1;
         return i < criterion;
@@ -274,7 +268,7 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  inline void decrementFirstLoop(size_t &i) {
+  constexpr void decrementFirstLoop(size_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       --i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -287,7 +281,7 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  inline void incrementFirstLoop(unsigned int &i) {
+  constexpr void incrementFirstLoop(unsigned int &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       ++i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -300,12 +294,12 @@ class LJFunctorHWY
   }
 
   template <bool reversed>
-  inline int obtainFirstLoopRest(const int i, const int stop) {
+  constexpr int obtainFirstLoopRest(const int i, const int stop) {
     return reversed ? (i < 0 ? 0 : i + 1) : stop - i;
   }
 
   template <VectorizationPattern vecPattern>
-  inline bool checkSecondLoopCondition(const size_t i, const size_t j) {
+  constexpr bool checkSecondLoopCondition(const size_t i, const size_t j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return j < (i & ~(_vecLengthDouble - 1));
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -320,7 +314,7 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  inline void incrementSecondLoop(unsigned int &j) {
+  constexpr void incrementSecondLoop(unsigned int &j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       j += _vecLengthDouble;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -333,13 +327,13 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  inline int obtainSecondLoopRest(const size_t i) {
+  constexpr int obtainSecondLoopRest(const size_t i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      return (int)(i & (_vecLengthDouble - 1));
+      return static_cast<int>(i & (_vecLengthDouble - 1));
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      return (int)(i & (_vecLengthDouble / 2 - 1));
+      return static_cast<int>(i & (_vecLengthDouble / 2 - 1));
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      return (int)(i & (1));
+      return static_cast<int>(i & (1));
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       return 0;
     } else {
@@ -514,7 +508,7 @@ class LJFunctorHWY
 
         if constexpr (reversed) {
           if (j >= i - _vecLengthDouble / 2) {
-            const auto mask = overlapMasks[remainder ? rest : _vecLengthDouble / 2];
+            const auto mask = overlapMasks[_vecLengthDouble / 2];
             upperFxExt = highway::IfThenElseZero(mask, upperFxExt);
             upperFyExt = highway::IfThenElseZero(mask, upperFyExt);
             upperFzExt = highway::IfThenElseZero(mask, upperFzExt);
@@ -689,17 +683,17 @@ class LJFunctorHWY
     if (soa.size() == 0) return;
 
     // obtain iterators for the various values
-    const auto *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    auto *const __restrict fxPtr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyPtr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzPtr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     // initialize and declare vector variables
     auto virialSumX = _zeroDouble;
@@ -746,25 +740,25 @@ class LJFunctorHWY
       return;
     }
 
-    const auto *const __restrict x1Ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y1Ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z1Ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict x2Ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y2Ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z2Ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    auto *const __restrict fx1Ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy1Ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz1Ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict fx2Ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy2Ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz2Ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeID1ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict typeID2ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
     VectorDouble virialSumX = _zeroDouble;
     VectorDouble virialSumY = _zeroDouble;
@@ -923,7 +917,7 @@ class LJFunctorHWY
   }
 
   /**
-   * Actual innter kernel of the SoAFunctors
+   * Actual inner kernel of the SoAFunctors
    *
    * @tparam newton3
    * @tparam remainderI
@@ -1070,20 +1064,20 @@ class LJFunctorHWY
   template <bool newton3>
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                    const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
 
-    const auto *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
-    auto *const __restrict fxPtr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyPtr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzPtr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDPtr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -1192,27 +1186,33 @@ class LJFunctorHWY
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
+                                                              Particle_T::AttributeNames::posX,
+                                                              Particle_T::AttributeNames::posY,
+                                                              Particle_T::AttributeNames::posZ,
+                                                              Particle_T::AttributeNames::forceX,
+                                                              Particle_T::AttributeNames::forceY,
+                                                              Particle_T::AttributeNames::forceZ,
+                                                              Particle_T::AttributeNames::typeId,
+                                                              Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 6>{
+        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 3>{
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+    return std::array<typename Particle_T::AttributeNames, 3>{
+        Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
   }
 
   /**
@@ -1268,7 +1268,7 @@ class LJFunctorHWY
    * Get the potential Energy
    * @return the potential Energy
    */
-  double getPotentialEnergy() {
+  double getPotentialEnergy() const {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
@@ -1284,7 +1284,7 @@ class LJFunctorHWY
    * Get the virial
    * @return the virial
    */
-  double getVirial() {
+  double getVirial() const {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
@@ -1342,7 +1342,7 @@ class LJFunctorHWY
     }
 
     std::array<double, 3> virialSum{};
-    double uPotSum{0};
+    double uPotSum{};
 
    private:
     double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
@@ -1364,7 +1364,7 @@ class LJFunctorHWY
   MaskDouble overlapMasks[_vecLengthDouble / 2];
 
   const double _cutoffSquareAoS{0.};
-  double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0.;
+  double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
   double _uPotSum{0.};
   std::array<double, 3> _virialSum;
