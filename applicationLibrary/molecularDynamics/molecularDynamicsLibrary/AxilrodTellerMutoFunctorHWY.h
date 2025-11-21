@@ -603,7 +603,6 @@ class AxilrodTellerMutoFunctorHWY
 
     const SoAFloatPrecision const_nu = _nu;
     const size_t soaSize = soa.size();
-    const size_t soaSizeSquared = soaSize * soaSize;
 
     if constexpr (countFLOPs) {
       numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
@@ -611,20 +610,11 @@ class AxilrodTellerMutoFunctorHWY
 
     // Precompute distances between particles in the soa. We use a row-major packed lower‐triangle data structure to
     // save memory. If a distance i->j is required as j->i it can be negated.
-    TriangleDistanceMatrix intraSoA(soaSize, soaSize);
+    TriangleDistanceMatrix intraSoADists(soaSize, soaSize);
     // soa1 <-> soa1
-    for (size_t i = 1; i < soaSize; ++i) {
-      for (size_t j = 0; j < i; ++j) {
-        const auto dx = xPtr[j] - xPtr[i];
-        const auto dy = yPtr[j] - yPtr[i];
-        const auto dz = zPtr[j] - zPtr[i];
-        const auto dist2 = dx * dx + dy * dy + dz * dz;
-        const double invr5 = (dist2 <= cutoffSquared) ? 1.0 / (dist2 * dist2 * std::sqrt(dist2)) : 0.0;
-        intraSoA.set(i, j, dx, dy, dz, dist2, invr5);
-      }
-    }
+    intraSoADists.fillHighway(xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, soaSize, soaSize, cutoffSquared);
 
-    const size_t packedSize = (soaSizeSquared - soaSize) / 2;
+    const size_t packedSize = (soaSize * soaSize - soaSize) / 2;
     if constexpr (countFLOPs) {
       numDistanceCalculationSum += packedSize;
     }
@@ -645,7 +635,7 @@ class AxilrodTellerMutoFunctorHWY
           continue;
         }
 
-        auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = intraSoA.get(i, j);
+        auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = intraSoADists.get(i, j);
 
         if (distSquaredIJ > cutoffSquared) {
           continue;
@@ -669,9 +659,9 @@ class AxilrodTellerMutoFunctorHWY
         for (; k < blockEnd; k += _vecLengthDouble) {
           handleKLoopBody<TriangleDistanceMatrix, TriangleDistanceMatrix, /*newton3*/ true, /*newton3Kernel*/ true,
                           /*remainder*/ false, alignedSoAView>(
-              i, j, k, const_nu, intraSoA, intraSoA, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec, distYIJVec,
-              distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ, ownedStateI,
-              ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
+              i, j, k, const_nu, intraSoADists, intraSoADists, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec,
+              distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
+              ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
               numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsNoN3Sum);
         }
 
@@ -680,9 +670,9 @@ class AxilrodTellerMutoFunctorHWY
         if (restK > 0) {
           handleKLoopBody<TriangleDistanceMatrix, TriangleDistanceMatrix, /*newton3*/ true, /*newton3Kernel*/ true,
                           /*remainder*/ true, alignedSoAView>(
-              i, j, k, const_nu, intraSoA, intraSoA, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec, distYIJVec,
-              distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ, ownedStateI,
-              ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
+              i, j, k, const_nu, intraSoADists, intraSoADists, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec,
+              distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
+              ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
               numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsNoN3Sum, restK);
         }
 
@@ -760,40 +750,11 @@ class AxilrodTellerMutoFunctorHWY
     SquareDistanceMatrix interSoADists(soa1Size, soa2Size);
 
     // soa1 <-> soa1
-    for (size_t i = 1; i < soa1Size; ++i) {
-      for (size_t j = 0; j < i; ++j) {
-        const auto dx = xptr1[j] - xptr1[i];
-        const auto dy = yptr1[j] - yptr1[i];
-        const auto dz = zptr1[j] - zptr1[i];
-        const auto dist2 = dx * dx + dy * dy + dz * dz;
-        const double invr5 = (dist2 <= cutoffSquared) ? 1.0 / (dist2 * dist2 * std::sqrt(dist2)) : 0.0;
-        intraSoA1Dists.set(i, j, dx, dy, dz, dist2, invr5);
-      }
-    }
-
+    intraSoA1Dists.fillHighway(xptr1, yptr1, zptr1, xptr1, yptr1, zptr1, soa1Size, soa1Size, cutoffSquared);
     // soa2 <-> soa2
-    for (size_t i = 1; i < soa2Size; ++i) {
-      for (size_t j = 0; j < i; ++j) {
-        const auto dx = xptr2[j] - xptr2[i];
-        const auto dy = yptr2[j] - yptr2[i];
-        const auto dz = zptr2[j] - zptr2[i];
-        const auto dist2 = dx * dx + dy * dy + dz * dz;
-        const double invr5 = (dist2 <= cutoffSquared) ? 1.0 / (dist2 * dist2 * std::sqrt(dist2)) : 0.0;
-        intraSoA2Dists.set(i, j, dx, dy, dz, dist2, invr5);
-      }
-    }
-
+    intraSoA2Dists.fillHighway(xptr2, yptr2, zptr2, xptr2, yptr2, zptr2, soa2Size, soa2Size, cutoffSquared);
     // soa1 <-> soa2
-    for (size_t i = 0; i < soa1Size; ++i) {
-      for (size_t j = 0; j < soa2Size; ++j) {
-        const auto dx = xptr2[j] - xptr1[i];
-        const auto dy = yptr2[j] - yptr1[i];
-        const auto dz = zptr2[j] - zptr1[i];
-        const auto dist2 = dx * dx + dy * dy + dz * dz;
-        const double invr5 = (dist2 <= cutoffSquared) ? 1.0 / (dist2 * dist2 * std::sqrt(dist2)) : 0.0;
-        interSoADists.set(i, j, dx, dy, dz, dist2, invr5);
-      }
-    }
+    interSoADists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, soa1Size, soa2Size, cutoffSquared);
 
     if constexpr (countFLOPs) {
       numDistanceCalculationSum += soa1Size * soa2Size;
@@ -1642,19 +1603,19 @@ class AxilrodTellerMutoFunctorHWY
     }
 
     // Lower-triangle index
-    size_t triIndex(size_t i, size_t j) const {
+    HWY_INLINE size_t triIndex(size_t i, size_t j) const {
       static_assert(LowerTriangle, "triIndex only valid for LowerTriangle=true");
       assert(i > j);
       return i * (i - 1) / 2 + j;
     }
 
     // Full-matrix index
-    size_t fullIndex(size_t i, size_t j) const {
+    HWY_INLINE size_t fullIndex(size_t i, size_t j) const {
       static_assert(!LowerTriangle, "fullIndex only valid for LowerTriangle=false");
       return j + i * nCols;
     }
 
-    size_t index(size_t i, size_t j) const {
+    HWY_INLINE size_t index(size_t i, size_t j) const {
       if constexpr (LowerTriangle) {
         return triIndex(i, j);
       } else {
@@ -1662,8 +1623,8 @@ class AxilrodTellerMutoFunctorHWY
       }
     }
 
-    void set(size_t i, size_t j, SoAFloatPrecision dx, SoAFloatPrecision dy, SoAFloatPrecision dz,
-             SoAFloatPrecision dist2, SoAFloatPrecision invr5) {
+    HWY_INLINE void set(size_t i, size_t j, SoAFloatPrecision dx, SoAFloatPrecision dy, SoAFloatPrecision dz,
+                        SoAFloatPrecision dist2, SoAFloatPrecision invr5) {
       const size_t idx = index(i, j);
       x[idx] = dx;
       y[idx] = dy;
@@ -1672,7 +1633,85 @@ class AxilrodTellerMutoFunctorHWY
       invR5[idx] = invr5;
     }
 
-    auto get(size_t i, size_t j) const {
+    HWY_INLINE void fillHighway(const SoAFloatPrecision *xptr1, const SoAFloatPrecision *yptr1,
+                                const SoAFloatPrecision *zptr1, const SoAFloatPrecision *xptr2,
+                                const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2, size_t soa1Size,
+                                size_t soa2Size, SoAFloatPrecision cutoffSquared) {
+      for (size_t i = 0; i < soa1Size; ++i) {
+        const auto xi = xptr1[i];
+        const auto yi = yptr1[i];
+        const auto zi = zptr1[i];
+
+        const auto x1v = highway::Set(tag_double, xi);
+        const auto y1v = highway::Set(tag_double, yi);
+        const auto z1v = highway::Set(tag_double, zi);
+
+        size_t j = 0;
+        size_t rowLength = 0;
+
+        if constexpr (LowerTriangle) {
+          rowLength = i;
+          if (i == 0) continue;
+        } else {
+          rowLength = soa2Size;
+        }
+
+        for (; j + _vecLengthDouble <= rowLength; j += _vecLengthDouble) {
+          const auto x2v = highway::LoadU(tag_double, &xptr2[j]);
+          const auto y2v = highway::LoadU(tag_double, &yptr2[j]);
+          const auto z2v = highway::LoadU(tag_double, &zptr2[j]);
+
+          const auto dx = x2v - x1v;
+          const auto dy = y2v - y1v;
+          const auto dz = z2v - z1v;
+
+          const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
+          const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
+          const auto sqrtR2 = highway::Sqrt(dist2);
+          const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
+          const auto invr5 = highway::IfThenElse(cutoffMask, highway::Div(highway::Set(tag_double, 1.0), r5),
+                                                 highway::Zero(tag_double));
+
+          const size_t idx = index(i, j);
+
+          highway::StoreU(dx, tag_double, &x[idx]);
+          highway::StoreU(dy, tag_double, &y[idx]);
+          highway::StoreU(dz, tag_double, &z[idx]);
+          highway::StoreU(dist2, tag_double, &squared[idx]);
+          highway::StoreU(invr5, tag_double, &this->invR5[idx]);
+        }
+
+        // Remainder
+        if (j < rowLength) {
+          const size_t width = rowLength - j;
+
+          const auto x2v = highway::LoadN(tag_double, &xptr2[j], width);
+          const auto y2v = highway::LoadN(tag_double, &yptr2[j], width);
+          const auto z2v = highway::LoadN(tag_double, &zptr2[j], width);
+
+          const auto dx = x2v - x1v;
+          const auto dy = y2v - y1v;
+          const auto dz = z2v - z1v;
+
+          const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
+          const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
+          const auto sqrtR2 = highway::Sqrt(dist2);
+          const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
+          const auto invr5 = highway::IfThenElse(cutoffMask, highway::Div(highway::Set(tag_double, 1.0), r5),
+                                                 highway::Zero(tag_double));
+
+          const size_t idx = index(i, j);
+
+          highway::StoreN(dx, tag_double, &x[idx], width);
+          highway::StoreN(dy, tag_double, &y[idx], width);
+          highway::StoreN(dz, tag_double, &z[idx], width);
+          highway::StoreN(dist2, tag_double, &squared[idx], width);
+          highway::StoreN(invr5, tag_double, &this->invR5[idx], width);
+        }
+      }
+    }
+
+    HWY_INLINE auto get(size_t i, size_t j) const {
       const size_t idx = index(i, j);
       return std::tuple{x[idx], y[idx], z[idx], squared[idx], invR5[idx]};
     }
