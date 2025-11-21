@@ -1246,6 +1246,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           "supported. "
           "Please use a functor derived from "
           "PairwiseFunctor or TriwiseFunctor.");
+      return InteractionTypeOption::all;
     }
   }();
 
