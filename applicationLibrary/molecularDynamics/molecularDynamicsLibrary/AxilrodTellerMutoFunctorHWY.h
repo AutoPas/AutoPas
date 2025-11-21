@@ -858,10 +858,8 @@ class AxilrodTellerMutoFunctorHWY
           const auto distYKIVec = highway::Neg(distYKIVecNeg);
           const auto distZKIVec = highway::Neg(distZKIVecNeg);
 
-          const auto mask = highway::FirstN(tag_long, remainder ? restK : _vecLengthDouble);
           const auto ownershipK =
-              highway::MaskedLoadOr(highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::dummy)), mask,
-                                    tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr2[k]));
+              loadPacked<false>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr2[k]), restK);
 
           // calculate masks for cutoff between i<->k and j<->k
           const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
@@ -1081,10 +1079,8 @@ class AxilrodTellerMutoFunctorHWY
           const auto distYKIVec = highway::Neg(distYKIVecNeg);
           const auto distZKIVec = highway::Neg(distZKIVecNeg);
 
-          const auto mask = highway::FirstN(tag_long, remainder ? restK : _vecLengthDouble);
           const auto ownershipK =
-              highway::MaskedLoadOr(highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::dummy)), mask,
-                                    tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr2[k]));
+              loadPacked<false>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr2[k]), restK);
 
           // calculate masks for cutoff between i<->k and j<->k
           const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
@@ -1510,10 +1506,7 @@ class AxilrodTellerMutoFunctorHWY
     const auto distYKIVec = highway::Neg(distYKIVecNeg);
     const auto distZKIVec = highway::Neg(distZKIVecNeg);
 
-    const auto mask = highway::FirstN(tag_long, remainder ? restK : _vecLengthDouble);
-    const auto ownershipK =
-        highway::MaskedLoadOr(highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::dummy)), mask,
-                              tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]));
+    const auto ownershipK = loadPacked<false>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]), restK);
 
     // calculate masks for cutoff between i<->k and j<->k
     const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
