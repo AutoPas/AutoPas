@@ -335,10 +335,23 @@ class AxilrodTellerMutoFunctorHWY
                         autopas::SoAView<SoAArraysType> soa3, bool newton3) final {
     if (soa1.size() == 0 || soa2.size() == 0 || soa3.size() == 0) return;
 
+    const bool alignedVectors =
+        isAligned<decltype(soa3), Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
+                  Particle_T::AttributeNames::forceZ>(soa3, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa3), Particle_T::AttributeNames::ownershipState>(soa3, alignmentSoAFloatHwyVector);
+
     if (newton3) {
-      SoAFunctorTripleImpl<true>(soa1, soa2, soa3);
+      if (alignedVectors) {
+        SoAFunctorTripleImpl<true, true>(soa1, soa2, soa3);
+      } else {
+        SoAFunctorTripleImpl<true, false>(soa1, soa2, soa3);
+      }
     } else {
-      SoAFunctorTripleImpl<false>(soa1, soa2, soa3);
+      if (alignedVectors) {
+        SoAFunctorTripleImpl<false, true>(soa1, soa2, soa3);
+      } else {
+        SoAFunctorTripleImpl<false, false>(soa1, soa2, soa3);
+      }
     }
   }
 
@@ -898,7 +911,7 @@ class AxilrodTellerMutoFunctorHWY
     }
   }
 
-  template <bool newton3>
+  template <bool newton3, bool alignedSoAView>
   void SoAFunctorTripleImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                             autopas::SoAView<SoAArraysType> soa3) {
     const auto threadnum = autopas::autopas_get_thread_num();
@@ -932,10 +945,11 @@ class AxilrodTellerMutoFunctorHWY
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
-    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
-    SoAFloatPrecision virialSumX = 0.;
-    SoAFloatPrecision virialSumY = 0.;
-    SoAFloatPrecision virialSumZ = 0.;
+    VectorDouble potentialEnergySum =
+        highway::Zero(tag_double);  // Note: This is not the potential energy but some fixed multiple of it.
+    VectorDouble virialSumX = highway::Zero(tag_double);
+    VectorDouble virialSumY = highway::Zero(tag_double);
+    VectorDouble virialSumZ = highway::Zero(tag_double);
 
     size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
@@ -953,20 +967,20 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
     }
 
-    // Precompute distances between soa2 and soa3
-    std::vector<std::array<SoAFloatPrecision, 4>, autopas::AlignedAllocator<std::array<SoAFloatPrecision, 4>>> jkDists(
-        soa2Size * soa3Size);
-    for (unsigned int j = 0; j < soa2Size; ++j) {
-      for (unsigned int k = 0; k < soa3Size; ++k) {
-        const SoAFloatPrecision distXJK = xptr3[k] - xptr2[j];
-        const SoAFloatPrecision distYJK = yptr3[k] - yptr2[j];
-        const SoAFloatPrecision distZJK = zptr3[k] - zptr2[j];
-        const SoAFloatPrecision distSquaredJK = distXJK * distXJK + distYJK * distYJK + distZJK * distZJK;
-        jkDists[k + j * soa3Size] = std::array<SoAFloatPrecision, 4>{distXJK, distYJK, distZJK, distSquaredJK};
-      }
-    }
+    // Precompute distances
+    SquareDistanceMatrix interSoA1Soa2Dists(soa1Size, soa2Size);
+    SquareDistanceMatrix interSoA1SoA3Dists(soa1Size, soa3Size);
+    SquareDistanceMatrix interSoA2SoA3Dists(soa2Size, soa3Size);
+
+    // soa1 <-> soa2
+    interSoA1Soa2Dists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, soa1Size, soa2Size, cutoffSquared);
+    // soa1 <-> soa3
+    interSoA1SoA3Dists.fillHighway(xptr1, yptr1, zptr1, xptr3, yptr3, zptr3, soa1Size, soa3Size, cutoffSquared);
+    // soa2 <-> soa3
+    interSoA2SoA3Dists.fillHighway(xptr2, yptr2, zptr2, xptr3, yptr3, zptr3, soa2Size, soa3Size, cutoffSquared);
+
     if constexpr (countFLOPs) {
-      numDistanceCalculationSum += soa2Size * soa3Size;
+      numDistanceCalculationSum += soa1Size * soa2Size + soa1Size * soa3Size + soa2Size * soa3Size;
     }
 
     for (unsigned int i = 0; i < soa1Size; ++i) {
@@ -975,13 +989,9 @@ class AxilrodTellerMutoFunctorHWY
         continue;
       }
 
-      const SoAFloatPrecision xi = xptr1[i];
-      const SoAFloatPrecision yi = yptr1[i];
-      const SoAFloatPrecision zi = zptr1[i];
-
-      SoAFloatPrecision fXAccI = 0.;
-      SoAFloatPrecision fYAccI = 0.;
-      SoAFloatPrecision fZAccI = 0.;
+      VectorDouble fXAccI = highway::Set(tag_double, 0.);
+      VectorDouble fYAccI = highway::Set(tag_double, 0.);
+      VectorDouble fZAccI = highway::Set(tag_double, 0.);
 
       for (unsigned int j = 0; j < soa2Size; ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
@@ -989,137 +999,54 @@ class AxilrodTellerMutoFunctorHWY
           continue;
         }
 
-        const SoAFloatPrecision xj = xptr2[j];
-        const SoAFloatPrecision yj = yptr2[j];
-        const SoAFloatPrecision zj = zptr2[j];
+        auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = interSoA1Soa2Dists.get(i, j);
 
-        const SoAFloatPrecision distXIJ = xj - xi;
-        const SoAFloatPrecision distYIJ = yj - yi;
-        const SoAFloatPrecision distZIJ = zj - zi;
-        const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
-
-        if constexpr (countFLOPs) {
-          ++numDistanceCalculationSum;
-        }
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
 
-        for (unsigned int k = 0; k < soa3Size; ++k) {
-          const auto ownedStateK = ownedStatePtr3[k];
-          if (ownedStateK == autopas::OwnershipState::dummy) {
-            continue;
-          }
+        VectorDouble fXAccJ = highway::Set(tag_double, 0.);
+        VectorDouble fYAccJ = highway::Set(tag_double, 0.);
+        VectorDouble fZAccJ = highway::Set(tag_double, 0.);
 
-          SoAFloatPrecision nu = const_nu;
-          if constexpr (useMixing) {
-            nu = _PPLibrary->getMixingNu(typeptr1[i], typeptr2[j], typeptr3[k]);
-          }
+        // prepare vector registers
+        const auto distXIJVec = highway::Set(tag_double, distXIJ);
+        const auto distYIJVec = highway::Set(tag_double, distYIJ);
+        const auto distZIJVec = highway::Set(tag_double, distZIJ);
+        const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
+        const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
-          const auto &[distXJK, distYJK, distZJK, distSquaredJK] = jkDists[j * soa3Size + k];
+        unsigned int blockEnd = (soa3.size() / _vecLengthDouble) * _vecLengthDouble;
 
-          if (distSquaredJK > cutoffSquared) {
-            continue;
-          }
-
-          const SoAFloatPrecision distXKI = xi - xptr3[k];
-          const SoAFloatPrecision distYKI = yi - yptr3[k];
-          const SoAFloatPrecision distZKI = zi - zptr3[k];
-          const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
-
-          if constexpr (countFLOPs) {
-            ++numDistanceCalculationSum;
-          }
-          if (distSquaredKI > cutoffSquared) {
-            continue;
-          }
-
-          if constexpr (not newton3) {
-            SoAFloatPrecision forceIX, forceIY, forceIZ;
-            SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-            SoAKernelNoN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI,
-                          distSquaredIJ, distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, factor,
-                          allDotProducts, allDistsSquared);
-
-            fXAccI += forceIX;
-            fYAccI += forceIY;
-            fZAccI += forceIZ;
-
-            if constexpr (countFLOPs) {
-              ++numKernelCallsNoN3Sum;
-            }
-            if constexpr (calculateGlobals) {
-              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-
-              if (ownedStateI == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * (distXKI - distXIJ);
-                virialSumY += forceIY * (distYKI - distYIJ);
-                virialSumZ += forceIZ * (distZKI - distZIJ);
-              }
-
-              if constexpr (countFLOPs) {
-                ++numGlobalCalcsNoN3Sum;
-              }
-            }
-
-          } else {
-            SoAFloatPrecision forceIX, forceIY, forceIZ;
-            SoAFloatPrecision forceJX, forceJY, forceJZ;
-            SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-            SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI, distSquaredIJ,
-                        distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
-                        allDotProducts, allDistsSquared);
-
-            fXAccI += forceIX;
-            fYAccI += forceIY;
-            fZAccI += forceIZ;
-
-            fxptr2[j] += forceJX;
-            fyptr2[j] += forceJY;
-            fzptr2[j] += forceJZ;
-
-            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
-            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
-            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
-
-            fxptr3[k] += forceKX;
-            fyptr3[k] += forceKY;
-            fzptr3[k] += forceKZ;
-
-            if constexpr (countFLOPs) {
-              ++numKernelCallsN3Sum;
-            }
-            if constexpr (calculateGlobals) {
-              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-              if (ownedStateI == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * (distXKI - distXIJ);
-                virialSumY += forceIY * (distYKI - distYIJ);
-                virialSumZ += forceIZ * (distZKI - distZIJ);
-              }
-              if (ownedStateJ == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceJX * (distXIJ - distXJK);
-                virialSumY += forceJY * (distYIJ - distYJK);
-                virialSumZ += forceJZ * (distZIJ - distZJK);
-              }
-              if (ownedStateK == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceKX * (distXJK - distXKI);
-                virialSumY += forceKY * (distYJK - distYKI);
-                virialSumZ += forceKZ * (distZJK - distZKI);
-              }
-              if constexpr (countFLOPs) {
-                ++numGlobalCalcsN3Sum;
-              }
-            }
-          }
+        unsigned int k = 0;
+        for (; k < blockEnd; k += _vecLengthDouble) {
+          handleKLoopBody<SquareDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ newton3,
+                          /*remainder*/ false, alignedSoAView>(
+              i, j, k, const_nu, interSoA2SoA3Dists, interSoA1SoA3Dists, ownedStatePtr3, typeptr1, typeptr2, typeptr3,
+              distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
+              fZAccJ, ownedStateI, ownedStateJ, fxptr3, fyptr3, fzptr3, virialSumX, virialSumY, virialSumZ,
+              potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
+              numGlobalCalcsNoN3Sum);
         }
+
+        const auto restK = soa3.size() - k;
+
+        if (restK > 0) {
+          handleKLoopBody<SquareDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ newton3,
+                          /*remainder*/ true, alignedSoAView>(
+              i, j, k, const_nu, interSoA2SoA3Dists, interSoA1SoA3Dists, ownedStatePtr3, typeptr1, typeptr2, typeptr3,
+              distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
+              fZAccJ, ownedStateI, ownedStateJ, fxptr3, fyptr3, fzptr3, virialSumX, virialSumY, virialSumZ,
+              potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
+              numGlobalCalcsNoN3Sum, restK);
+        }
+        fxptr2[j] += highway::ReduceSum(tag_double, fXAccJ);
+        fyptr2[j] += highway::ReduceSum(tag_double, fYAccJ);
+        fzptr2[j] += highway::ReduceSum(tag_double, fZAccJ);
       }
-      fxptr1[i] += fXAccI;
-      fyptr1[i] += fYAccI;
-      fzptr1[i] += fZAccI;
+      fxptr1[i] += highway::ReduceSum(tag_double, fXAccI);
+      fyptr1[i] += highway::ReduceSum(tag_double, fYAccI);
+      fzptr1[i] += highway::ReduceSum(tag_double, fZAccI);
     }
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
@@ -1130,10 +1057,11 @@ class AxilrodTellerMutoFunctorHWY
       _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
     if (calculateGlobals) {
-      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += highway::ReduceSum(tag_double, potentialEnergySum);
+
+      _aosThreadDataGlobals[threadnum].virialSum[0] += highway::ReduceSum(tag_double, virialSumX);
+      _aosThreadDataGlobals[threadnum].virialSum[1] += highway::ReduceSum(tag_double, virialSumY);
+      _aosThreadDataGlobals[threadnum].virialSum[2] += highway::ReduceSum(tag_double, virialSumZ);
     }
   }
 
@@ -1364,88 +1292,6 @@ class AxilrodTellerMutoFunctorHWY
         }
       }
     }
-  }
-
-  /**
-   * Inline helper to compute force components for particle I.
-   * Returns tuple of (forceIX, forceIY, forceIZ, factor, allDotProducts, allDistsSquared)
-   */
-  __attribute__((always_inline)) inline void SoAKernelNoN3(
-      const SoAFloatPrecision &distXIJ, const SoAFloatPrecision &distYIJ, const SoAFloatPrecision &distZIJ,
-      const SoAFloatPrecision &distXJK, const SoAFloatPrecision &distYJK, const SoAFloatPrecision &distZJK,
-      const SoAFloatPrecision &distXKI, const SoAFloatPrecision &distYKI, const SoAFloatPrecision &distZKI,
-      const SoAFloatPrecision &distSquaredIJ, const SoAFloatPrecision &distSquaredJK,
-      const SoAFloatPrecision &distSquaredKI, const SoAFloatPrecision &nu, SoAFloatPrecision &forceIX,
-      SoAFloatPrecision &forceIY, SoAFloatPrecision &forceIZ, SoAFloatPrecision &factor,
-      SoAFloatPrecision &allDotProducts, SoAFloatPrecision &allDistsSquared) const {
-    // Calculate prefactor
-    allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-    const SoAFloatPrecision allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-    factor = 3.0 * nu / allDistsTo5;
-
-    // Dot products
-    const SoAFloatPrecision IJDotKI = distXIJ * distXKI + distYIJ * distYKI + distZIJ * distZKI;
-    const SoAFloatPrecision IJDotJK = distXIJ * distXJK + distYIJ * distYJK + distZIJ * distZJK;
-    const SoAFloatPrecision JKDotKI = distXJK * distXKI + distYJK * distYKI + distZJK * distZKI;
-    allDotProducts = IJDotKI * IJDotJK * JKDotKI;
-
-    // Force I components
-    const SoAFloatPrecision factorIDirectionJK = factor * IJDotKI * (IJDotJK - JKDotKI);
-    const SoAFloatPrecision factorIDirectionIJ =
-        factor * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ);
-    const SoAFloatPrecision factorIDirectionKI =
-        factor * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
-
-    forceIX = distXJK * factorIDirectionJK + distXIJ * factorIDirectionIJ + distXKI * factorIDirectionKI;
-    forceIY = distYJK * factorIDirectionJK + distYIJ * factorIDirectionIJ + distYKI * factorIDirectionKI;
-    forceIZ = distZJK * factorIDirectionJK + distZIJ * factorIDirectionIJ + distZKI * factorIDirectionKI;
-  }
-
-  /**
-   * Inline helper to compute force components for particle I.
-   * Returns tuple of (forceIX, forceIY, forceIZ, factor, allDotProducts, allDistsSquared)
-   */
-  __attribute__((always_inline)) inline auto SoAKernelN3(
-      const SoAFloatPrecision &distXIJ, const SoAFloatPrecision &distYIJ, const SoAFloatPrecision &distZIJ,
-      const SoAFloatPrecision &distXJK, const SoAFloatPrecision &distYJK, const SoAFloatPrecision &distZJK,
-      const SoAFloatPrecision &distXKI, const SoAFloatPrecision &distYKI, const SoAFloatPrecision &distZKI,
-      const SoAFloatPrecision &distSquaredIJ, const SoAFloatPrecision &distSquaredJK,
-      const SoAFloatPrecision &distSquaredKI, const SoAFloatPrecision &nu, SoAFloatPrecision &forceIX,
-      SoAFloatPrecision &forceIY, SoAFloatPrecision &forceIZ, SoAFloatPrecision &forceJX, SoAFloatPrecision &forceJY,
-      SoAFloatPrecision &forceJZ, SoAFloatPrecision &factor, SoAFloatPrecision &allDotProducts,
-      SoAFloatPrecision &allDistsSquared) const {
-    // Calculate prefactor
-    allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-    const SoAFloatPrecision allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-    factor = 3.0 * nu / allDistsTo5;
-
-    // Dot products
-    const SoAFloatPrecision IJDotKI = distXIJ * distXKI + distYIJ * distYKI + distZIJ * distZKI;
-    const SoAFloatPrecision IJDotJK = distXIJ * distXJK + distYIJ * distYJK + distZIJ * distZJK;
-    const SoAFloatPrecision JKDotKI = distXJK * distXKI + distYJK * distYKI + distZJK * distZKI;
-    allDotProducts = IJDotKI * IJDotJK * JKDotKI;
-
-    // Force I components
-    const SoAFloatPrecision factorIDirectionJK = factor * IJDotKI * (IJDotJK - JKDotKI);
-    const SoAFloatPrecision factorIDirectionIJ =
-        factor * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ);
-    const SoAFloatPrecision factorIDirectionKI =
-        factor * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
-
-    forceIX = distXJK * factorIDirectionJK + distXIJ * factorIDirectionIJ + distXKI * factorIDirectionKI;
-    forceIY = distYJK * factorIDirectionJK + distYIJ * factorIDirectionIJ + distYKI * factorIDirectionKI;
-    forceIZ = distZJK * factorIDirectionJK + distZIJ * factorIDirectionIJ + distZKI * factorIDirectionKI;
-
-    // Force J components
-    const SoAFloatPrecision factorJDirectionKI = factor * IJDotJK * (JKDotKI - IJDotKI);
-    const SoAFloatPrecision factorJDirectionIJ =
-        factor * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
-    const SoAFloatPrecision factorJDirectionJK =
-        factor * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
-
-    forceJX = distXKI * factorJDirectionKI + distXIJ * factorJDirectionIJ + distXJK * factorJDirectionJK;
-    forceJY = distYKI * factorJDirectionKI + distYIJ * factorJDirectionIJ + distYJK * factorJDirectionJK;
-    forceJZ = distZKI * factorJDirectionKI + distZIJ * factorJDirectionIJ + distZJK * factorJDirectionJK;
   }
 
   /**
