@@ -96,11 +96,11 @@ TEST_F(LogicHandlerTest, testVelocityMethod) {
   _logicHandler->addParticle(p3);
   // test the method with different skin length
   skin = 10.;
-  velocityMethodRFEstimate = _logicHandler->getVelocityRFMethodEstimate(skin, deltaT);
+  velocityMethodRFEstimate = _logicHandler->getVelocityMethodRFEstimate(skin, deltaT);
   // 3 particles in the container --> vmax = (0.3*0.3 + 0.4*0.4)^0.5 = 0.5
   // set vmax according to the maximum velocity of the particles that were added to the container before
   vmax = 0.5;
-  EXPECT_NEAR(velocityMethodEstimate, skin / vmax / deltaT / 2, 10);
+  EXPECT_NEAR(velocityMethodRFEstimate, skin / vmax / deltaT / 2, 10);
 }
 
 /**
