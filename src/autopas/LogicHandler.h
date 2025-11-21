@@ -634,7 +634,7 @@ class LogicHandler {
    * @return estimate of the rebuild frequency
    */
   double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
-  #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     using autopas::utils::ArrayMath::dot;
     // Initialize the maximum velocity
     double maxVelocity = 0;
@@ -646,7 +646,7 @@ class LogicHandler {
     }
     // return the rebuild frequency estimate
     return skin / maxVelocity / deltaT / 2;
-    #endif
+#endif
   }
   /**
    * getter function for _neighborListInvalidDoDynamicRebuild
@@ -1281,7 +1281,8 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   if (autoTuner.inFirstConfigurationLastSample()) {
     // Fetch the needed information for estimating the rebuild frequency using Velocity Method
     // get the estimate from the velocity method
-    double rebuildFrequencyEstimate = getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
+    double rebuildFrequencyEstimate =
+        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
     double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
     // if velocity method estimate exceeds upper-bound, set rebuild frequency as upper-bound
     if (rebuildFrequencyEstimate > userProvidedRF) {
