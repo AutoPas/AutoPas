@@ -679,11 +679,13 @@ class AxilrodTellerMutoFunctorHWY
 
         const auto restK = j - k;
 
-        handleKLoopBody<newton3, /*remainder*/ true, alignedSoAView>(
-            i, j, k, const_nu, intraSoA, intraSoA, ownedStatePtr, typePtr, distXIJVec, distYIJVec, distZIJVec,
-            distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ,
-            fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum, numKernelCallsN3Sum,
-            numGlobalCalcsSum, restK);
+        if (restK > 0) {
+          handleKLoopBody<newton3, /*remainder*/ true, alignedSoAView>(
+              i, j, k, const_nu, intraSoA, intraSoA, ownedStatePtr, typePtr, distXIJVec, distYIJVec, distZIJVec,
+              distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ,
+              fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum, numKernelCallsN3Sum,
+              numGlobalCalcsSum, restK);
+        }
 
         fxPtr[j] += highway::ReduceSum(tag_double, fXAccJ);
         fyPtr[j] += highway::ReduceSum(tag_double, fYAccJ);
@@ -1858,7 +1860,6 @@ class AxilrodTellerMutoFunctorHWY
     // Lower-triangle index
     size_t triIndex(size_t i, size_t j) const {
       assert(lowerTriangle and i > j);
-
       return i * (i - 1) / 2 + j;
     }
 
