@@ -79,28 +79,28 @@ TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
  */
 TEST_F(LogicHandlerTest, testVelocityMethod) {
   initLogicHandler();
-  Molecule p1({0.5, 1., 1.}, {0., 2., 0.}, 0, 0);
+  Molecule p1({0.5, 1., 1.}, {0., 0.2, 0.}, 0, 0);
   _logicHandler->addParticle(p1);
-  double skin = 1.;
+  double skin = 2.;
   double deltaT = 1.;
-  double velocityMethodEstimate = _logicHandler->getVelocityMethodEstimate(skin, deltaT);
-  // only one particle in the container --> vmax = 2
+  double velocityMethodRFEstimate = _logicHandler->getVelocityMethodRFEstimate(skin, deltaT);
+  // only one particle in the container --> vmax = 0.2
   // set vmax according to the maximum velocity of the particles that were added to the container before
-  double vmax = 2.;
-  EXPECT_NEAR(velocityMethodEstimate, skin / vmax / deltaT / 2 + 1, 0.0001);
+  double vmax = 0.2;
+  EXPECT_NEAR(velocityMethodRFEstimate, skin / vmax / deltaT / 2, 5);
 
   // test for multiple particles case
-  Molecule p2({1.5, 1., 1.}, {0., 4., 3.}, 0, 0);
-  Molecule p3({1.5, 2., 2.}, {0., 0., 3.}, 0, 0);
+  Molecule p2({1.5, 1., 1.}, {0., 0.4, 0.3}, 0, 0);
+  Molecule p3({1.5, 2., 2.}, {0., 0., 0.3}, 0, 0);
   _logicHandler->addParticle(p2);
   _logicHandler->addParticle(p3);
   // test the method with different skin length
-  skin = 5.;
-  velocityMethodEstimate = _logicHandler->getVelocityMethodEstimate(skin, deltaT);
-  // 3 particles in the container --> vmax = (3*3 + 4*4)^0.5 = 5
+  skin = 10.;
+  velocityMethodRFEstimate = _logicHandler->getVelocityRFMethodEstimate(skin, deltaT);
+  // 3 particles in the container --> vmax = (0.3*0.3 + 0.4*0.4)^0.5 = 0.5
   // set vmax according to the maximum velocity of the particles that were added to the container before
-  vmax = 5.;
-  EXPECT_NEAR(velocityMethodEstimate, skin / vmax / deltaT / 2 + 1, 0.0001);
+  vmax = 0.5;
+  EXPECT_NEAR(velocityMethodEstimate, skin / vmax / deltaT / 2, 10);
 }
 
 /**

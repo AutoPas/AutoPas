@@ -626,7 +626,6 @@ class LogicHandler {
 #endif
   }
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**
    * Estimates the rebuild frequency based on the current maximum velocity in the container
    * Using the formula rf = skin/deltaT/vmax/2 + 1
@@ -634,19 +633,21 @@ class LogicHandler {
    * @param deltaT double is the time step
    * @return estimate of the rebuild frequency
    */
-  double getVelocityMethodEstimate(double skin, double deltaT) const {
+  double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
+  #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    using autopas::utils::ArrayMath::dot;
     // Initialize the maximum velocity
     double maxVelocity = 0;
     // Iterate the particles to determine maximum velocity
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
-      double tempVelAbs = sqrt(tempVel[0] * tempVel[0] + tempVel[1] * tempVel[1] + tempVel[2] * tempVel[2]);
-      maxVelocity = tempVelAbs > maxVelocity ? tempVelAbs : maxVelocity;
+      double tempVelAbs = sqrt(dot(tempVel, tempVel));
+      maxVelocity = std::max(tempVelAbs, maxVelocity);
     }
-    // return estimate using formula
-    return skin / maxVelocity / deltaT / 2 + 1;
+    // return the rebuild frequency estimate
+    return skin / maxVelocity / deltaT / 2;
+    #endif
   }
-#endif
   /**
    * getter function for _neighborListInvalidDoDynamicRebuild
    * @return bool stored in _neighborListInvalidDoDynamicRebuild
@@ -1279,10 +1280,8 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   // phase set the rebuild frequency estimate for all subsequent iterations
   if (autoTuner.inFirstConfigurationLastSample()) {
     // Fetch the needed information for estimating the rebuild frequency using Velocity Method
-    double skin = _logicHandlerInfo.verletSkin;
-    double deltaT = _logicHandlerInfo.deltaT;
     // get the estimate from the velocity method
-    double rebuildFrequencyEstimate = getVelocityMethodEstimate(skin, deltaT);
+    double rebuildFrequencyEstimate = getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
     double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
     // if velocity method estimate exceeds upper-bound, set rebuild frequency as upper-bound
     if (rebuildFrequencyEstimate > userProvidedRF) {
