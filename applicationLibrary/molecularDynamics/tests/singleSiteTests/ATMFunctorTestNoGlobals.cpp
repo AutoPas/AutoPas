@@ -450,7 +450,29 @@ struct Newton3True : public TypeWrapper<FuncType, true> {};
 template <class FuncType>
 struct Newton3False : public TypeWrapper<FuncType, false> {};
 
-using MyTypes = ::testing::Types<Newton3True<ATMFunMixNoGlob>, Newton3False<ATMFunMixNoGlob>,
-                                 Newton3True<ATMFunNoMixNoGlob>, Newton3False<ATMFunNoMixNoGlob>>;
+using MyTypes =
+    ::testing::Types<Newton3True<ATMFunMixNoGlob>, Newton3False<ATMFunMixNoGlob>, Newton3True<ATMFunNoMixNoGlob>,
+                     Newton3False<ATMFunNoMixNoGlob>, Newton3True<ATMFunHWYMixNoGlob>, Newton3False<ATMFunHWYMixNoGlob>,
+                     Newton3True<ATMFunHWYNoMixNoGlob>, Newton3False<ATMFunHWYNoMixNoGlob>>;
 
-INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestNoGlobals, MyTypes);
+template <typename TypeList>
+struct ATMFunctorTypeNames {
+  template <typename T>
+  static std::string GetName(int) {
+    using F = typename T::FuncType;
+
+    const std::string n3 = T::newton3 ? "Newton3" : "NoNewton3";
+
+    if constexpr (std::is_same_v<F, ATMFunHWYMixNoGlob>) {
+      return "HWY_Mix_" + n3;
+    } else if constexpr (std::is_same_v<F, ATMFunHWYNoMixNoGlob>) {
+      return "HWY_NoMix_" + n3;
+    } else if constexpr (std::is_same_v<F, ATMFunMixNoGlob>) {
+      return "Mix_" + n3;
+    } else if constexpr (std::is_same_v<F, ATMFunNoMixNoGlob>) {
+      return "NoMix_" + n3;
+    }
+  }
+};
+
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestNoGlobals, MyTypes, ATMFunctorTypeNames<MyTypes>);

@@ -769,8 +769,10 @@ class AxilrodTellerMutoFunctorHWY
     // soa1 <-> soa2
     interSoADists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, soa1Size, soa2Size, cutoffSquared);
 
+    const size_t packedSizeSoA1 = (soa1Size * soa1Size - soa1Size) / 2;
+    const size_t packedSizeSoA2 = (soa2Size * soa2Size - soa2Size) / 2;
     if constexpr (countFLOPs) {
-      numDistanceCalculationSum += soa1Size * soa2Size;
+      numDistanceCalculationSum += soa1Size * soa2Size + packedSizeSoA1 + packedSizeSoA2;
     }
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
@@ -1154,8 +1156,9 @@ class AxilrodTellerMutoFunctorHWY
       }
 
       if constexpr (countFLOPs) {
-        ++numKernelCallsNoN3Sum;
+        numKernelCallsNoN3Sum += remainder ? restK : _vecLengthDouble;
       }
+
       if constexpr (calculateGlobals) {
         const auto potentialEnergy3 = factor * (allDistsSquared - _threeDoubleVec * allDotProducts);
 

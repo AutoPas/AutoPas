@@ -307,7 +307,8 @@ TYPED_TEST_P(ATMFunctorTestGlobals, testSoAATMFunctorGlobals) {
   using FuncType = TypeParam;
   using TestType = ATMFunctorTestGlobals<FuncType>;
   for (typename TestType::SoAFunctorType soaFunctorType :
-       {TestType::single, TestType::pair12, TestType::pair21, TestType::triple, /*TestType::verlet*/}) {
+       {TestType::single, TestType::pair12, TestType::pair21, TestType::triple,
+        /*TestType::verlet*/}) {
     for (bool newton3 : {false, true}) {
       for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
                                                   TestType::where_type::inoutout, TestType::where_type::allOutside}) {
@@ -415,11 +416,17 @@ REGISTER_TYPED_TEST_SUITE_P(ATMFunctorTestGlobals, testAoSATMFunctorGlobals, tes
                             testAoSATMFunctorGlobalsOpenMPParallel, testSoAATMFunctorGlobals,
                             testGlobalsWithPeriodicBCs);
 
-using MyTypes = ::testing::Types<ATMFunNoMixGlob
-#ifdef __AVX__
+using MyTypes = ::testing::Types<ATMFunNoMixGlob, ATMFunHWYNoMixGlob>;
 
-// TODO: Add AVX Functor
-#endif
-                                 >;
+struct ATMFunctorTypeNames {
+  template <typename T>
+  static std::string GetName(int) {
+    if constexpr (std::is_same_v<T, ATMFunHWYNoMixGlob>) {
+      return "HWY_NoMix";
+    } else if constexpr (std::is_same_v<T, ATMFunNoMixGlob>) {
+      return "NoMix";
+    }
+  }
+};
 
-INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestGlobals, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestGlobals, MyTypes, ATMFunctorTypeNames);
