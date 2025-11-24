@@ -142,7 +142,6 @@ class AxilrodTellerMutoFunctorHWY
     }
     precomputeBuffer1.resize(numMaxThreads);
     precomputeBuffer2.resize(numMaxThreads);
-    precomputeBuffer3.resize(numMaxThreads);
   }
 
  public:
@@ -761,12 +760,9 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
     }
 
-    TriangleDistanceMatrix intraSoA1Dists(soa1Size, soa1Size, precomputeBuffer1[threadnum]);
-    TriangleDistanceMatrix intraSoA2Dists(soa2Size, soa2Size, precomputeBuffer2[threadnum]);
-    SquareDistanceMatrix interSoADists(soa1Size, soa2Size, precomputeBuffer3[threadnum]);
+    TriangleDistanceMatrix intraSoA2Dists(soa2Size, soa2Size, precomputeBuffer1[threadnum]);
+    SquareDistanceMatrix interSoADists(soa1Size, soa2Size, precomputeBuffer2[threadnum]);
 
-    // soa1 <-> soa1
-    intraSoA1Dists.fillHighway(xptr1, yptr1, zptr1, xptr1, yptr1, zptr1, soa1Size, soa1Size, cutoffSquared);
     // soa2 <-> soa2
     intraSoA2Dists.fillHighway(xptr2, yptr2, zptr2, xptr2, yptr2, zptr2, soa2Size, soa2Size, cutoffSquared);
     // soa1 <-> soa2
@@ -783,6 +779,11 @@ class AxilrodTellerMutoFunctorHWY
       if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
       }
+
+      const SoAFloatPrecision xi = xptr1[i];
+      const SoAFloatPrecision yi = yptr1[i];
+      const SoAFloatPrecision zi = zptr1[i];
+
       VectorDouble fXAccI = highway::Set(tag_double, 0.);
       VectorDouble fYAccI = highway::Set(tag_double, 0.);
       VectorDouble fZAccI = highway::Set(tag_double, 0.);
@@ -847,15 +848,22 @@ class AxilrodTellerMutoFunctorHWY
           continue;
         }
 
-        // we have to mirror i and j because we iterate with i=0... and j=i+1...
-        auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = intraSoA1Dists.get(j, i);
-        distXIJ = -distXIJ;
-        distYIJ = -distYIJ;
-        distZIJ = -distZIJ;
+        const SoAFloatPrecision xj = xptr1[j];
+        const SoAFloatPrecision yj = yptr1[j];
+        const SoAFloatPrecision zj = zptr1[j];
+
+        const SoAFloatPrecision distXIJ = xj - xi;
+        const SoAFloatPrecision distYIJ = yj - yi;
+        const SoAFloatPrecision distZIJ = zj - zi;
+        const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
 
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
+
+        const SoAFloatPrecision distIJ = std::sqrt(distSquaredIJ);
+        const SoAFloatPrecision r5 = distSquaredIJ * distSquaredIJ * distIJ;
+        const SoAFloatPrecision invR5IJ = 1.0 / r5;
 
         VectorDouble fXAccJ = highway::Set(tag_double, 0.);
         VectorDouble fYAccJ = highway::Set(tag_double, 0.);
@@ -972,12 +980,9 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
     }
 
-    SquareDistanceMatrix interSoA1Soa2Dists(soa1Size, soa2Size, precomputeBuffer1[threadnum]);
-    SquareDistanceMatrix interSoA1SoA3Dists(soa1Size, soa3Size, precomputeBuffer2[threadnum]);
-    SquareDistanceMatrix interSoA2SoA3Dists(soa2Size, soa3Size, precomputeBuffer3[threadnum]);
+    SquareDistanceMatrix interSoA1SoA3Dists(soa1Size, soa3Size, precomputeBuffer1[threadnum]);
+    SquareDistanceMatrix interSoA2SoA3Dists(soa2Size, soa3Size, precomputeBuffer2[threadnum]);
 
-    // soa1 <-> soa2
-    interSoA1Soa2Dists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, soa1Size, soa2Size, cutoffSquared);
     // soa1 <-> soa3
     interSoA1SoA3Dists.fillHighway(xptr1, yptr1, zptr1, xptr3, yptr3, zptr3, soa1Size, soa3Size, cutoffSquared);
     // soa2 <-> soa3
@@ -993,6 +998,10 @@ class AxilrodTellerMutoFunctorHWY
         continue;
       }
 
+      const SoAFloatPrecision xi = xptr1[i];
+      const SoAFloatPrecision yi = yptr1[i];
+      const SoAFloatPrecision zi = zptr1[i];
+
       VectorDouble fXAccI = highway::Set(tag_double, 0.);
       VectorDouble fYAccI = highway::Set(tag_double, 0.);
       VectorDouble fZAccI = highway::Set(tag_double, 0.);
@@ -1003,11 +1012,22 @@ class AxilrodTellerMutoFunctorHWY
           continue;
         }
 
-        auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = interSoA1Soa2Dists.get(i, j);
+        const SoAFloatPrecision xj = xptr2[j];
+        const SoAFloatPrecision yj = yptr2[j];
+        const SoAFloatPrecision zj = zptr2[j];
+
+        const SoAFloatPrecision distXIJ = xj - xi;
+        const SoAFloatPrecision distYIJ = yj - yi;
+        const SoAFloatPrecision distZIJ = zj - zi;
+        const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
 
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
+
+        const SoAFloatPrecision distIJ = std::sqrt(distSquaredIJ);
+        const SoAFloatPrecision r5 = distSquaredIJ * distSquaredIJ * distIJ;
+        const SoAFloatPrecision invR5IJ = 1.0 / r5;
 
         VectorDouble fXAccJ = highway::Set(tag_double, 0.);
         VectorDouble fYAccJ = highway::Set(tag_double, 0.);
@@ -1754,6 +1774,5 @@ class AxilrodTellerMutoFunctorHWY
   // precomute buffers
   std::vector<PrecomputeBuffer> precomputeBuffer1;
   std::vector<PrecomputeBuffer> precomputeBuffer2;
-  std::vector<PrecomputeBuffer> precomputeBuffer3;
 };
 }  // namespace mdLib
