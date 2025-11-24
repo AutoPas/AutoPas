@@ -800,6 +800,9 @@ class AxilrodTellerMutoFunctor
         if (ownedStateJ == autopas::OwnershipState::dummy) {
           continue;
         }
+        SoAFloatPrecision fXAccJ = 0.;
+        SoAFloatPrecision fYAccJ = 0.;
+        SoAFloatPrecision fZAccJ = 0.;
 
         const auto &[distXIJ, distYIJ, distZIJ, distSquaredIJ] = soa1Soa2Dists[i * soa2Size + j];
 
@@ -879,9 +882,9 @@ class AxilrodTellerMutoFunctor
             fYAccI += forceIY;
             fZAccI += forceIZ;
 
-            fxptr2[j] += forceJX;
-            fyptr2[j] += forceJY;
-            fzptr2[j] += forceJZ;
+            fXAccJ += forceJX;
+            fYAccJ += forceJY;
+            fZAccJ += forceJZ;
 
             const SoAFloatPrecision forceKX = -(forceIX + forceJX);
             const SoAFloatPrecision forceKY = -(forceIY + forceJY);
@@ -922,6 +925,9 @@ class AxilrodTellerMutoFunctor
             }
           }
         }
+        fxptr2[j] += fXAccJ;
+        fyptr2[j] += fYAccJ;
+        fzptr2[j] += fZAccJ;
       }
 
       // CASE: Particle i and j are both in soa1, k is in soa2
@@ -930,7 +936,6 @@ class AxilrodTellerMutoFunctor
         if (ownedStateJ == autopas::OwnershipState::dummy) {
           continue;
         }
-
         SoAFloatPrecision fXAccJ = 0.;
         SoAFloatPrecision fYAccJ = 0.;
         SoAFloatPrecision fZAccJ = 0.;
@@ -982,9 +987,9 @@ class AxilrodTellerMutoFunctor
           fYAccI += forceIY;
           fZAccI += forceIZ;
 
-          fxptr1[j] += forceJX;
-          fyptr1[j] += forceJY;
-          fzptr1[j] += forceJZ;
+          fXAccJ += forceJX;
+          fYAccJ += forceJY;
+          fZAccJ += forceJZ;
 
           if constexpr (countFLOPs) {
             ++numKernelCallsN3Sum;
