@@ -190,9 +190,9 @@ class LJFunctorHWY
    */
   inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, const bool newton3) final {
     if (newton3) {
-      SoAFunctorSingleImpl<true, VectorizationPattern::p1xVec>(soa);
+      SoAFunctorSingleImpl<true>(soa);
     } else {
-      SoAFunctorSingleImpl<false, VectorizationPattern::p1xVec>(soa);
+      SoAFunctorSingleImpl<false>(soa);
     }
   }
 
@@ -243,7 +243,7 @@ class LJFunctorHWY
 
  private:
   template <bool reversed, VectorizationPattern vecPattern>
-  constexpr bool checkFirstLoopCondition(const long i, const long stop) {
+  constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long stop) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return reversed ? i >= 0 : (i < stop);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -268,7 +268,7 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  constexpr void decrementFirstLoop(size_t &i) {
+  constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       --i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -281,7 +281,7 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  constexpr void incrementFirstLoop(unsigned int &i) {
+  constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       ++i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -294,12 +294,12 @@ class LJFunctorHWY
   }
 
   template <bool reversed>
-  constexpr int obtainFirstLoopRest(const int i, const int stop) {
+  constexpr int obtainFirstLoopRest(std::ptrdiff_t i, const int stop) {
     return reversed ? (i < 0 ? 0 : i + 1) : stop - i;
   }
 
   template <VectorizationPattern vecPattern>
-  constexpr bool checkSecondLoopCondition(const size_t i, const size_t j) {
+  constexpr bool checkSecondLoopCondition(const std::ptrdiff_t i, const size_t j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return j < (i & ~(_vecLengthDouble - 1));
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -314,7 +314,7 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  constexpr void incrementSecondLoop(unsigned int &j) {
+  constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       j += _vecLengthDouble;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -327,7 +327,7 @@ class LJFunctorHWY
   }
 
   template <VectorizationPattern vecPattern>
-  constexpr int obtainSecondLoopRest(const size_t i) {
+  constexpr int obtainSecondLoopRest(const std::ptrdiff_t i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return static_cast<int>(i & (_vecLengthDouble - 1));
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -653,7 +653,7 @@ class LJFunctorHWY
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
 
-    unsigned int j = 0;
+    std::ptrdiff_t j = 0;
     for (; checkSecondLoopCondition<vecPattern>(jStop, j); incrementSecondLoop<vecPattern>(j)) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
@@ -674,11 +674,10 @@ class LJFunctorHWY
 
   /**
    * Templatized version of SoAFunctorSingle
-   * @tparam newton3 Whether to use newton3 (TODO: compare with other functors)
-   * @tparam vecPattern Vectorization Pattern for the interactions of the same list
+   * @tparam newton3 Whether to use newton3
    * @param soa
    */
-  template <bool newton3, VectorizationPattern vecPattern>
+  template <bool newton3>
   inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
     if (soa.size() == 0) return;
 
@@ -701,25 +700,15 @@ class LJFunctorHWY
     auto virialSumZ = _zeroDouble;
     auto uPotSum = _zeroDouble;
 
-    size_t i = soa.size() - 1;
-    for (; checkFirstLoopCondition<true, vecPattern>(i, 0); decrementFirstLoop<vecPattern>(i)) {
+    std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1;
+    for (; checkFirstLoopCondition<true, VectorizationPattern::p1xVec>(i, 0);
+         decrementFirstLoop<VectorizationPattern::p1xVec>(i)) {
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
-      handleILoopBody<true, true, false, vecPattern>(i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr,
-                                                     ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr, typeIDptr,
-                                                     typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
-    }
-
-    if constexpr (vecPattern != VectorizationPattern::p1xVec) {
-      // Rest I can't occur in 1xVec case
-      const int restI = obtainFirstLoopRest<true>(i, -1);
-
-      if (restI > 0) {
-        handleILoopBody<true, true, true, vecPattern>(
-            i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr,
-            fzPtr, typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, i);
-      }
+      handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
+          i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
+          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
     }
 
     if constexpr (calculateGlobals) {
@@ -765,7 +754,7 @@ class LJFunctorHWY
     VectorDouble virialSumZ = _zeroDouble;
     VectorDouble uPotSum = _zeroDouble;
 
-    unsigned int i = 0;
+    std::ptrdiff_t i = 0;
     for (; checkFirstLoopCondition<false, vecPattern>(i, soa1.size()); incrementFirstLoop<vecPattern>(i)) {
       handleILoopBody<false, newton3, false, vecPattern>(
           i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
