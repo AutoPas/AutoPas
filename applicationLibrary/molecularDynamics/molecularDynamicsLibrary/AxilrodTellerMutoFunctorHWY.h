@@ -132,13 +132,17 @@ class AxilrodTellerMutoFunctorHWY
         _virialSum{0., 0., 0.},
         _aosThreadDataGlobals(),
         _postProcessed{false} {
+    const size_t numMaxThreads = autopas::autopas_get_max_threads();
     if constexpr (calculateGlobals) {
-      _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
+      _aosThreadDataGlobals.resize(numMaxThreads);
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
+      _aosThreadDataFLOPs.resize(numMaxThreads);
       AutoPasLog(DEBUG, "Using AxilrodTellerMutoFunctorHWY with countFLOPs is not tested for SoA datalayout.");
     }
+    precomputeBuffer1.resize(numMaxThreads);
+    precomputeBuffer2.resize(numMaxThreads);
+    precomputeBuffer3.resize(numMaxThreads);
   }
 
  public:
@@ -620,10 +624,9 @@ class AxilrodTellerMutoFunctorHWY
     if constexpr (countFLOPs) {
       numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
     }
-
     // Precompute distances between particles in the soa. We use a row-major packed lower‐triangle data structure to
     // save memory. If a distance i->j is required as j->i it can be negated.
-    TriangleDistanceMatrix intraSoADists(soaSize, soaSize);
+    TriangleDistanceMatrix intraSoADists(soaSize, soaSize, precomputeBuffer1[threadnum]);
     // soa1 <-> soa1
     intraSoADists.fillHighway(xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, soaSize, soaSize, cutoffSquared);
 
@@ -758,9 +761,9 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
     }
 
-    TriangleDistanceMatrix intraSoA1Dists(soa1Size, soa1Size);
-    TriangleDistanceMatrix intraSoA2Dists(soa2Size, soa2Size);
-    SquareDistanceMatrix interSoADists(soa1Size, soa2Size);
+    TriangleDistanceMatrix intraSoA1Dists(soa1Size, soa1Size, precomputeBuffer1[threadnum]);
+    TriangleDistanceMatrix intraSoA2Dists(soa2Size, soa2Size, precomputeBuffer2[threadnum]);
+    SquareDistanceMatrix interSoADists(soa1Size, soa2Size, precomputeBuffer3[threadnum]);
 
     // soa1 <-> soa1
     intraSoA1Dists.fillHighway(xptr1, yptr1, zptr1, xptr1, yptr1, zptr1, soa1Size, soa1Size, cutoffSquared);
@@ -969,10 +972,9 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
     }
 
-    // Precompute distances
-    SquareDistanceMatrix interSoA1Soa2Dists(soa1Size, soa2Size);
-    SquareDistanceMatrix interSoA1SoA3Dists(soa1Size, soa3Size);
-    SquareDistanceMatrix interSoA2SoA3Dists(soa2Size, soa3Size);
+    SquareDistanceMatrix interSoA1Soa2Dists(soa1Size, soa2Size, precomputeBuffer1[threadnum]);
+    SquareDistanceMatrix interSoA1SoA3Dists(soa1Size, soa3Size, precomputeBuffer2[threadnum]);
+    SquareDistanceMatrix interSoA2SoA3Dists(soa2Size, soa3Size, precomputeBuffer3[threadnum]);
 
     // soa1 <-> soa2
     interSoA1Soa2Dists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, soa1Size, soa2Size, cutoffSquared);
@@ -1421,21 +1423,57 @@ class AxilrodTellerMutoFunctorHWY
     return (soa.template isAligned<Attributes>(alignment) and ...);
   }
 
-  template <bool LowerTriangle>
-  struct DistanceMatrix {
+  class PrecomputeBuffer {
+   public:
     using Alloc = autopas::AlignedAllocator<SoAFloatPrecision>;
     using Vec = std::vector<SoAFloatPrecision, Alloc>;
 
-    Vec x;
-    Vec y;
-    Vec z;
-    Vec squared;
-    Vec invR5;
+    PrecomputeBuffer() : currentSize{0} {}
 
-    size_t nRows{};
-    size_t nCols{};
+    void resize(size_t size) {
+      if (size > currentSize) {
+        _dx.resize(size);
+        _dy.resize(size);
+        _dz.resize(size);
+        _squared.resize(size);
+        _invR5.resize(size);
+        currentSize = size;
+      }
+    }
 
-    DistanceMatrix(size_t rows, size_t cols) : nRows(rows), nCols(cols) {
+    Vec &dxVec() { return _dx; }
+    Vec &dyVec() { return _dy; }
+    Vec &dzVec() { return _dz; }
+    Vec &squaredVec() { return _squared; }
+    Vec &invR5Vec() { return _invR5; }
+
+    size_t size() const { return currentSize; }
+
+   private:
+    Vec _dx;
+    Vec _dy;
+    Vec _dz;
+    Vec _squared;
+    Vec _invR5;
+
+    size_t currentSize;
+  };
+
+  template <bool LowerTriangle>
+  class DistanceMatrix {
+   public:
+    using Alloc = autopas::AlignedAllocator<SoAFloatPrecision>;
+    using Vec = std::vector<SoAFloatPrecision, Alloc>;
+
+    // Konstruktor
+    DistanceMatrix(size_t rows, size_t cols, PrecomputeBuffer &precomputeBuffer)
+        : _nRows(rows),
+          _nCols(cols),
+          _dx(precomputeBuffer.dxVec()),
+          _dy(precomputeBuffer.dyVec()),
+          _dz(precomputeBuffer.dzVec()),
+          _squared(precomputeBuffer.squaredVec()),
+          _invR5(precomputeBuffer.invR5Vec()) {
       const size_t size = [](size_t r, size_t c) {
         if constexpr (LowerTriangle) {
           return (r * r - r) / 2;
@@ -1444,11 +1482,7 @@ class AxilrodTellerMutoFunctorHWY
         }
       }(rows, cols);
 
-      x.resize(size);
-      y.resize(size);
-      z.resize(size);
-      squared.resize(size);
-      invR5.resize(size);
+      precomputeBuffer.resize(size);
     }
 
     // Lower-triangle index
@@ -1461,7 +1495,7 @@ class AxilrodTellerMutoFunctorHWY
     // Full-matrix index
     HWY_INLINE size_t fullIndex(size_t i, size_t j) const {
       static_assert(!LowerTriangle, "fullIndex only valid for LowerTriangle=false");
-      return j + i * nCols;
+      return j + i * _nCols;
     }
 
     HWY_INLINE size_t index(size_t i, size_t j) const {
@@ -1475,11 +1509,39 @@ class AxilrodTellerMutoFunctorHWY
     HWY_INLINE void set(size_t i, size_t j, SoAFloatPrecision dx, SoAFloatPrecision dy, SoAFloatPrecision dz,
                         SoAFloatPrecision dist2, SoAFloatPrecision invr5) {
       const size_t idx = index(i, j);
-      x[idx] = dx;
-      y[idx] = dy;
-      z[idx] = dz;
-      squared[idx] = dist2;
-      invR5[idx] = invr5;
+      _dx[idx] = dx;
+      _dy[idx] = dy;
+      _dz[idx] = dz;
+      _squared[idx] = dist2;
+      _invR5[idx] = invr5;
+    }
+
+    HWY_INLINE auto get(size_t i, size_t j) const {
+      const size_t idx = index(i, j);
+      return std::tuple{_dx[idx], _dy[idx], _dz[idx], _squared[idx], _invR5[idx]};
+    }
+
+    // Highway-Vector load
+    template <bool remainder>
+    HWY_INLINE auto loadRowVec(size_t i, size_t jStart, size_t width) const {
+      const size_t idx = [&]() {
+        if constexpr (LowerTriangle) {
+          return triIndex(i, jStart);
+        } else {
+          return fullIndex(i, jStart);
+        }
+      }();
+
+      if constexpr (remainder) {
+        return std::tuple{highway::LoadN(tag_double, &_dx[idx], width), highway::LoadN(tag_double, &_dy[idx], width),
+                          highway::LoadN(tag_double, &_dz[idx], width),
+                          highway::LoadN(tag_double, &_squared[idx], width),
+                          highway::LoadN(tag_double, &_invR5[idx], width)};
+      } else {
+        return std::tuple{highway::LoadU(tag_double, &_dx[idx]), highway::LoadU(tag_double, &_dy[idx]),
+                          highway::LoadU(tag_double, &_dz[idx]), highway::LoadU(tag_double, &_squared[idx]),
+                          highway::LoadU(tag_double, &_invR5[idx])};
+      }
     }
 
     HWY_INLINE void fillHighway(const SoAFloatPrecision *xptr1, const SoAFloatPrecision *yptr1,
@@ -1523,11 +1585,11 @@ class AxilrodTellerMutoFunctorHWY
 
           const size_t idx = index(i, j);
 
-          highway::StoreU(dx, tag_double, &x[idx]);
-          highway::StoreU(dy, tag_double, &y[idx]);
-          highway::StoreU(dz, tag_double, &z[idx]);
-          highway::StoreU(dist2, tag_double, &squared[idx]);
-          highway::StoreU(invr5, tag_double, &this->invR5[idx]);
+          highway::StoreU(dx, tag_double, &_dx[idx]);
+          highway::StoreU(dy, tag_double, &_dy[idx]);
+          highway::StoreU(dz, tag_double, &_dz[idx]);
+          highway::StoreU(dist2, tag_double, &_squared[idx]);
+          highway::StoreU(invr5, tag_double, &_invR5[idx]);
         }
 
         // Remainder
@@ -1551,41 +1613,24 @@ class AxilrodTellerMutoFunctorHWY
 
           const size_t idx = index(i, j);
 
-          highway::StoreN(dx, tag_double, &x[idx], width);
-          highway::StoreN(dy, tag_double, &y[idx], width);
-          highway::StoreN(dz, tag_double, &z[idx], width);
-          highway::StoreN(dist2, tag_double, &squared[idx], width);
-          highway::StoreN(invr5, tag_double, &this->invR5[idx], width);
+          highway::StoreN(dx, tag_double, &_dx[idx], width);
+          highway::StoreN(dy, tag_double, &_dy[idx], width);
+          highway::StoreN(dz, tag_double, &_dz[idx], width);
+          highway::StoreN(dist2, tag_double, &_squared[idx], width);
+          highway::StoreN(invr5, tag_double, &_invR5[idx], width);
         }
       }
     }
 
-    HWY_INLINE auto get(size_t i, size_t j) const {
-      const size_t idx = index(i, j);
-      return std::tuple{x[idx], y[idx], z[idx], squared[idx], invR5[idx]};
-    }
+   private:
+    Vec &_dx;
+    Vec &_dy;
+    Vec &_dz;
+    Vec &_squared;
+    Vec &_invR5;
 
-    // Highway-Vector load
-    template <bool remainder>
-    HWY_INLINE auto loadRowVec(size_t i, size_t jStart, size_t width) const {
-      const size_t idx = [&]() {
-        if constexpr (LowerTriangle) {
-          return triIndex(i, jStart);
-        } else {
-          return fullIndex(i, jStart);
-        }
-      }();
-
-      if constexpr (remainder) {
-        return std::tuple{highway::LoadN(tag_double, &x[idx], width), highway::LoadN(tag_double, &y[idx], width),
-                          highway::LoadN(tag_double, &z[idx], width), highway::LoadN(tag_double, &squared[idx], width),
-                          highway::LoadN(tag_double, &invR5[idx], width)};
-      } else {
-        return std::tuple{highway::LoadU(tag_double, &x[idx]), highway::LoadU(tag_double, &y[idx]),
-                          highway::LoadU(tag_double, &z[idx]), highway::LoadU(tag_double, &squared[idx]),
-                          highway::LoadU(tag_double, &invR5[idx])};
-      }
-    }
+    size_t _nRows{};
+    size_t _nCols{};
   };
 
   /**
@@ -1705,5 +1750,10 @@ class AxilrodTellerMutoFunctorHWY
 
   // Alignment for SoAFloatPrecision vector register
   static constexpr std::size_t alignmentSoAFloatHwyVector = highway::Lanes(tag_double) * sizeof(SoAFloatPrecision);
+
+  // precomute buffers
+  std::vector<PrecomputeBuffer> precomputeBuffer1;
+  std::vector<PrecomputeBuffer> precomputeBuffer2;
+  std::vector<PrecomputeBuffer> precomputeBuffer3;
 };
 }  // namespace mdLib
