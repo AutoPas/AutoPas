@@ -46,6 +46,7 @@ class ClusterTower : public FullParticleCell<Particle_T> {
    * Type that holds or refers to the actual particles.
    */
   using StorageType = typename FullParticleCell<Particle_T>::StorageType;
+  using CalcType = typename Particle_T::ParticleCalcType;
 
   /**
    * Dummy constructor.
@@ -155,7 +156,8 @@ class ClusterTower : public FullParticleCell<Particle_T> {
       auto &dummy = lastCluster[_clusterSize - index];
       dummy = lastCluster[0];  // use first Particle in last cluster as dummy particle!
       dummy.setOwnershipState(OwnershipState::dummy);
-      dummy.setR({dummyStartX, 0, dummyDistZ * static_cast<double>(index)});
+      dummy.setR(
+          {static_cast<CalcType>(dummyStartX), 0, static_cast<CalcType>(dummyDistZ) * static_cast<CalcType>(index)});
       dummy.setID(std::numeric_limits<size_t>::max());
     }
   }

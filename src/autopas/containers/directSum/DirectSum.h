@@ -168,7 +168,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     std::vector<ParticleType> invalidParticles{};
     auto &particleVec = getOwnedCell()._particles;
     for (auto iter = particleVec.begin(); iter != particleVec.end();) {
-      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+      if (utils::notInBox(autopas::utils::ArrayUtils::static_cast_copy_array<double>(iter->getR()), this->getBoxMin(),
+                          this->getBoxMax())) {
         invalidParticles.push_back(*iter);
         // swap-delete
         *iter = particleVec.back();

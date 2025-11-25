@@ -145,7 +145,8 @@ class Cluster {
         upperCorner[dim] = std::max(upperCorner[dim], pos[dim]);
       }
     }
-    return {lowerCorner, upperCorner};
+    return {autopas::utils::ArrayUtils::static_cast_copy_array<double>(lowerCorner),
+            autopas::utils::ArrayUtils::static_cast_copy_array<double>(upperCorner)};
   }
 
  private:

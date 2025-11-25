@@ -66,7 +66,7 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
       position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
     };
     auto p = defaultParticle;
-    p.setR(position);
+    p.setR(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(position));
     p.setID(i);
     container.addParticle(p);
   }

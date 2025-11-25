@@ -33,6 +33,7 @@ class AsBuildPairGeneratorFunctor
    * The structure of the SoAs is defined by the particle.
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
+  using CalcType = typename Particle_T::ParticleCalcType;
 
   /**
    * @copydoc Functor::getNeededAttr()
@@ -103,22 +104,22 @@ class AsBuildPairGeneratorFunctor
     if (soa.size() == 0) return;
 
     auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
-    double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
-    double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
-    double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    CalcType *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    CalcType *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    CalcType *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
     size_t numPart = soa.size();
     for (unsigned int i = 0; i < numPart; ++i) {
       for (unsigned int j = i + 1; j < numPart; ++j) {
-        const double drx = xptr[i] - xptr[j];
-        const double dry = yptr[i] - yptr[j];
-        const double drz = zptr[i] - zptr[j];
+        const CalcType drx = xptr[i] - xptr[j];
+        const CalcType dry = yptr[i] - yptr[j];
+        const CalcType drz = zptr[i] - zptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const CalcType drx2 = drx * drx;
+        const CalcType dry2 = dry * dry;
+        const CalcType drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const CalcType dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffskinsquared) {
           _list.addPair(ptrptr[i], ptrptr[j]);
@@ -139,28 +140,28 @@ class AsBuildPairGeneratorFunctor
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
     auto **const __restrict ptrptr1 = soa1.template begin<Particle_T::AttributeNames::ptr>();
-    double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
-    double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
-    double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    CalcType *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    CalcType *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    CalcType *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
 
     auto **const __restrict ptrptr2 = soa2.template begin<Particle_T::AttributeNames::ptr>();
-    double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
-    double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
-    double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    CalcType *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    CalcType *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    CalcType *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
     size_t numPart1 = soa1.size();
     for (unsigned int i = 0; i < numPart1; ++i) {
       size_t numPart2 = soa2.size();
       for (unsigned int j = 0; j < numPart2; ++j) {
-        const double drx = x1ptr[i] - x2ptr[j];
-        const double dry = y1ptr[i] - y2ptr[j];
-        const double drz = z1ptr[i] - z2ptr[j];
+        const CalcType drx = x1ptr[i] - x2ptr[j];
+        const CalcType dry = y1ptr[i] - y2ptr[j];
+        const CalcType drz = z1ptr[i] - z2ptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+        const CalcType drx2 = drx * drx;
+        const CalcType dry2 = dry * dry;
+        const CalcType drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+        const CalcType dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffskinsquared) {
           _list.addPair(ptrptr1[i], ptrptr2[j]);

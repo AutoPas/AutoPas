@@ -53,7 +53,7 @@ class LJMultisiteFunctor
   /**
    * Precision of SoA entries
    */
-  using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename Particle_T::ParticleCalcType;
 
   /**
    * cutoff^2

@@ -10,7 +10,10 @@ namespace mdLib {
 MultisiteMoleculeLJ::MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
                                          std::array<double, 3> angularVel, unsigned long moleculeId,
                                          unsigned long typeId)
-    : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
+    : mdLib::MoleculeLJBase<double, double, unsigned long>(r, v, moleculeId, typeId),
+      _q(q),
+      _angularVel(angularVel),
+      _torque({0., 0., 0.}) {}
 
 const std::array<double, 4> &MultisiteMoleculeLJ::getQuaternion() const { return _q; }
 void MultisiteMoleculeLJ::setQuaternion(const std::array<double, 4> &q) { _q = q; }

@@ -43,7 +43,8 @@ class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleTy
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.size());
     for (auto &p : cell) {
-      _particles.push_back(std::make_pair(utils::ArrayMath::dot(p.getR(), r), &p));
+      _particles.push_back(std::make_pair(
+          utils::ArrayMath::dot(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p.getR()), r), &p));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });

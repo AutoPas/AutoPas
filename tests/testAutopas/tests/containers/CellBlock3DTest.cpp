@@ -168,9 +168,9 @@ TEST_F(CellBlock3DTest, testCellOwnership) {
   std::size_t numCells = _cells_1x1x1.getNumCells();
   for (int i = 0; i < numCells; i++) {
     if (_cells_1x1x1.cellCanContainHaloParticles(i)) {
-      EXPECT_TRUE(toInt64(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::halo));
+      EXPECT_TRUE(toIntType(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::halo));
     } else if (_cells_1x1x1.cellCanContainOwnedParticles(i)) {
-      EXPECT_TRUE(toInt64(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::owned));
+      EXPECT_TRUE(toIntType(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::owned));
     } else {
       EXPECT_TRUE(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() == autopas::OwnershipState::dummy);
     }

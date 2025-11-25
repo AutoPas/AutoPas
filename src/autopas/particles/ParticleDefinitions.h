@@ -13,6 +13,6 @@ namespace autopas {
 /**
  * Particle with all variables in 64 bit precision
  */
-using ParticleBaseFP64 = ParticleBase<double, unsigned long>;
+using ParticleBaseFP64 = ParticleBase<double,double, unsigned long>;
 
 }  // namespace autopas

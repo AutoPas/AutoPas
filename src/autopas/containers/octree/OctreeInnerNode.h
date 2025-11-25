@@ -98,7 +98,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle_T> {
   std::unique_ptr<OctreeNodeInterface<Particle_T>> insert(const Particle_T &p) override {
     // Find a child to insert the particle into.
     for (auto &child : _children) {
-      if (child->isInside(p.getR())) {
+      if (child->isInside(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p.getR()))) {
         auto ret = child->insert(p);
         if (ret) child = std::move(ret);
         break;
@@ -110,7 +110,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle_T> {
 
   bool deleteParticle(Particle_T &particle) override {
     for (auto &child : _children) {
-      if (child->isInside(particle.getR())) {
+      if (child->isInside(autopas::utils::ArrayUtils::static_cast_copy_array<double>(particle.getR()))) {
         return child->deleteParticle(particle);
       }
     }

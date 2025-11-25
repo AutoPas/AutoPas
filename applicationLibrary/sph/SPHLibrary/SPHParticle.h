@@ -15,14 +15,14 @@ namespace sphLib {
 /**
  * Basic SPHParticle class.
  */
-class SPHParticle : public autopas::ParticleBaseFP64 {
+class SPHParticle : public autopas::ParticleBase<double, double, unsigned long> {
  public:
   /**
    * Default constructor of SPHParticle.
    * Will initialize all values to some basic defaults.
    */
   SPHParticle()
-      : autopas::ParticleBaseFP64(),
+      : autopas::ParticleBase<double, double, unsigned long>(),
         _density(0.),
         _pressure(0.),
         _mass(0.),
@@ -43,7 +43,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
    * @param id id of the particle. This id should be unique
    */
   SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id)
-      : autopas::ParticleBaseFP64(r, v, id),
+      : autopas::ParticleBase<double, double, unsigned long>(r, v, id),
         _density(0.),
         _pressure(0.),
         _mass(0.),
@@ -69,7 +69,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
    */
   SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id, double mass,
               double smth, double snds)
-      : autopas::ParticleBaseFP64(r, v, id),
+      : autopas::ParticleBase<double, double, unsigned long>(r, v, id),
         _density(0.),
         _pressure(0.),
         _mass(mass),

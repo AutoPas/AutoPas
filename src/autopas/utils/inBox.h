@@ -22,8 +22,9 @@ namespace autopas::utils {
  * @param high the upper corner of the box (exclusive)
  * @return true if position is inside the box, false otherwise
  */
-template <typename T>
-bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+template <typename P, typename T>
+bool inBox(const std::array<P, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+  static_assert(std::is_floating_point<P>::value, "inBox assumes floating point types");
   static_assert(std::is_floating_point<T>::value, "inBox assumes floating point types");
 
   bool inBox = true;
@@ -46,8 +47,8 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const 
  * @param high the upper corner of the box (exclusive)
  * @return true if position is not inside the box, false otherwise
  */
-template <typename T>
-bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+template <typename P, typename T>
+bool notInBox(const std::array<P, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
   return not(inBox(position, low, high));
 }
 

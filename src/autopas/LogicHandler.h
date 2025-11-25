@@ -309,7 +309,7 @@ class LogicHandler {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
-    if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+    if (utils::notInBox(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p.getR()), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
           "Box Min {}\n"
@@ -1445,19 +1445,21 @@ void LogicHandler<Particle_T>::remainderHelperBufferContainerAoS(
     auto &haloParticleBuffer = haloParticleBuffers[bufferId];
     // 1. particleBuffer with all close particles in container
     for (auto &&p1 : particleBuffer) {
-      const auto pos = p1.getR();
+      const auto pos = autopas::utils::ArrayUtils::static_cast_copy_array<double>(p1.getR());
       const auto min = pos - cutoff;
       const auto max = pos + cutoff;
       container.forEachInRegion(
           [&](auto &p2) {
             if constexpr (newton3) {
-              const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+              const std::lock_guard<std::mutex> lock(
+                  getSpacialLock(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p2.getR())));
               f->AoSFunctor(p1, p2, true);
             } else {
               f->AoSFunctor(p1, p2, false);
               // no need to calculate force enacted on a halo
               if (not p2.isHalo()) {
-                const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                const std::lock_guard<std::mutex> lock(
+                    getSpacialLock(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p2.getR())));
                 f->AoSFunctor(p2, p1, false);
               }
             }
@@ -1467,7 +1469,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferContainerAoS(
 
     // 2. haloParticleBuffer with owned, close particles in container
     for (auto &&p1halo : haloParticleBuffer) {
-      const auto pos = p1halo.getR();
+      const auto pos = autopas::utils::ArrayUtils::static_cast_copy_array<double>(p1halo.getR());
       const auto min = pos - cutoff;
       const auto max = pos + cutoff;
       container.forEachInRegion(
@@ -1475,7 +1477,8 @@ void LogicHandler<Particle_T>::remainderHelperBufferContainerAoS(
             // No need to apply anything to p1halo
             //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
             //   -> newton3 argument needed for correct globals
-            const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+            const std::lock_guard<std::mutex> lock(
+                getSpacialLock(autopas::utils::ArrayUtils::static_cast_copy_array<double>(p2.getR())));
             f->AoSFunctor(p2, p1halo, newton3);
           },
           min, max, IteratorBehavior::owned);

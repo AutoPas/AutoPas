@@ -168,9 +168,9 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   for (auto i = 0ul; i < numParticles; ++i) {
     ParticleType particle;
 
-    particle.setR(positions[i]);
-    particle.setV(velocities[i]);
-    particle.setF(forces[i]);
+    particle.setR(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(positions[i]));
+    particle.setV(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(velocities[i]));
+    particle.setF(autopas::utils::ArrayUtils::static_cast_copy_array<AccuType>(forces[i]));
     particle.setID(ids[i]);
     particle.setTypeId(typeIds[i]);
 

@@ -16,6 +16,11 @@
  * Generator for grids of particles.
  */
 namespace autopasTools::generators::ClosestPackingGenerator {
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+using CalcType = float;
+#else
+using CalcType = double;
+#endif
 /**
  * Fills any container (also AutoPas object) with a hexagonally closest packed particles.
  * Particle properties will be used from the default particle. Particle IDs start from the default particle.
@@ -44,12 +49,12 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
   bool evenLayer = true;
 
   size_t id = defaultParticle.getID();
-  for (double z = boxMin[2]; z < boxMax[2]; z += spacingLayer) {
+  for (CalcType z = boxMin[2]; z < boxMax[2]; z += spacingLayer) {
     double starty = evenLayer ? boxMin[1] : boxMin[1] + yOffset;
     bool evenRow = evenLayer;  // To ensure layers are alternating as for hexagonal close packed.
-    for (double y = starty; y < boxMax[1]; y += spacingRow) {
+    for (CalcType y = starty; y < boxMax[1]; y += spacingRow) {
       double startx = evenRow ? boxMin[0] : boxMin[0] + xOffset;
-      for (double x = startx; x < boxMax[0]; x += spacing) {
+      for (CalcType x = startx; x < boxMax[0]; x += spacing) {
         auto p = defaultParticle;
         p.setR({x, y, z});
         p.setID(id++);

@@ -137,7 +137,7 @@ class Sphere : public Object {
   void generate(std::vector<ParticleType> &particles) const override {
     ParticleType particle = getDummyParticle(particles.size());
     iteratePositions([&](const auto &pos) {
-      particle.setR(pos);
+      particle.setR(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(pos));
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
     });

@@ -1,47 +1,26 @@
 /**
- * @file MoleculeLJ.h
+ * @file MoleculeLJBase.h
  *
- * @date 30/Nov/2024
- * @author huberf
+ * @date 17 Jan 2018
+ * @author tchipevn
  */
 
 #pragma once
 
-#include "MoleculeLJBase.h"
 #include <vector>
 
-#include "autopas/particles/ParticleDefinitions.h"
+#include "autopas/particles/ParticleBase.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace mdLib {
-/**
-  * MoleculeLJ with all variables in 32 bit precision
-  */
-using MoleculeLJFP32 = MoleculeLJBase<float, float, unsigned long>;
-/**
- * MoleculeLJ with mixed precision for calculations and accumulation
- */
-using MoleculeLJMP = MoleculeLJBase<float, double, unsigned long>;
-/**
- * MoleculeLJ with all variables in 64 bit precision
- */
-using MoleculeLJFP64 = MoleculeLJBase<double, double, unsigned long>;
 
-#if AUTOPAS_PRECISION_MODE == SPSP
-using MoleculeLJPrecisionBase = MoleculeLJFP32;
-#elif AUTOPAS_PRECISION_MODE == SPDP
-using MoleculeLJPrecisionBase = MoleculeLJMP;
-#else
-using MoleculeLJPrecisionBase = MoleculeLJFP64;
-#endif
 /**
  * Molecule class for the LJFunctor.
  */
-class MoleculeLJ : public MoleculeLJBase<double, double, unsigned long> {
-public:
-  using ParticleSoAFloatPrecision = double;
-
-  MoleculeLJ() = default;
+template <typename CalcType, typename AccuType, typename idType>
+class MoleculeLJBase : public autopas::ParticleBase<CalcType, AccuType, idType> {
+ public:
+  MoleculeLJBase() = default;
 
   /**
    * Constructor of lennard jones molecule with initialization of typeID.
@@ -50,10 +29,11 @@ public:
    * @param moleculeId Unique Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-             unsigned long typeId = 0);
+  MoleculeLJBase(const std::array<CalcType, 3> &pos, const std::array<CalcType, 3> &v, unsigned long moleculeId,
+                 unsigned long typeId = 0)
+      : autopas::ParticleBase<CalcType, AccuType, idType>(pos, v, moleculeId), _typeId(typeId){};
 
-  ~MoleculeLJ() override = default;
+  ~MoleculeLJBase() override = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -84,11 +64,10 @@ public:
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType = typename autopas::utils::SoAType<
+      MoleculeLJBase *, size_t /*id*/, CalcType /*x*/, CalcType /*y*/, CalcType /*z*/, CalcType /*vx*/, CalcType /*vy*/,
+      CalcType /*vz*/, AccuType /*fx*/, AccuType /*fy*/, AccuType /*fz*/, AccuType /*oldFx*/, AccuType /*oldFy*/,
+      AccuType /*oldFz*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -109,37 +88,37 @@ public:
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
-      return getID();
+      return this->getID();
     } else if constexpr (attribute == AttributeNames::posX) {
-      return getR()[0];
+      return this->getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
-      return getR()[1];
+      return this->getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
-      return getR()[2];
+      return this->getR()[2];
     } else if constexpr (attribute == AttributeNames::velocityX) {
-      return getV()[0];
+      return this->getV()[0];
     } else if constexpr (attribute == AttributeNames::velocityY) {
-      return getV()[1];
+      return this->getV()[1];
     } else if constexpr (attribute == AttributeNames::velocityZ) {
-      return getV()[2];
+      return this->getV()[2];
     } else if constexpr (attribute == AttributeNames::forceX) {
-      return getF()[0];
+      return this->getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
-      return getF()[1];
+      return this->getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
-      return getF()[2];
+      return this->getF()[2];
     } else if constexpr (attribute == AttributeNames::oldForceX) {
-      return getOldF()[0];
+      return this->getOldF()[0];
     } else if constexpr (attribute == AttributeNames::oldForceY) {
-      return getOldF()[1];
+      return this->getOldF()[1];
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      return getOldF()[2];
+      return this->getOldF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
-      return getTypeId();
+      return this->getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MoleculeLJBase::get() unknown attribute {}", attribute);
     }
   }
 
@@ -153,37 +132,37 @@ public:
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
-      setID(value);
+      this->setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
-      _r[0] = value;
+      this->_r[0] = value;
     } else if constexpr (attribute == AttributeNames::posY) {
-      _r[1] = value;
+      this->_r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
-      _r[2] = value;
+      this->_r[2] = value;
     } else if constexpr (attribute == AttributeNames::velocityX) {
-      _v[0] = value;
+      this->_v[0] = value;
     } else if constexpr (attribute == AttributeNames::velocityY) {
-      _v[1] = value;
+      this->_v[1] = value;
     } else if constexpr (attribute == AttributeNames::velocityZ) {
-      _v[2] = value;
+      this->_v[2] = value;
     } else if constexpr (attribute == AttributeNames::forceX) {
-      _f[0] = value;
+      this->_f[0] = value;
     } else if constexpr (attribute == AttributeNames::forceY) {
-      _f[1] = value;
+      this->_f[1] = value;
     } else if constexpr (attribute == AttributeNames::forceZ) {
-      _f[2] = value;
+      this->_f[2] = value;
     } else if constexpr (attribute == AttributeNames::oldForceX) {
-      _oldF[0] = value;
+      this->_oldF[0] = value;
     } else if constexpr (attribute == AttributeNames::oldForceY) {
-      _oldF[1] = value;
+      this->_oldF[1] = value;
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      _oldF[2] = value;
+      this->_oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MoleculeLJBase::set() unknown attribute {}", attribute);
     }
   }
 
@@ -191,35 +170,60 @@ public:
    * Get the old force.
    * @return
    */
-  [[nodiscard]] const std::array<double, 3> &getOldF() const;
+  [[nodiscard]] const std::array<AccuType, 3> &getOldF() const { return _oldF; };
 
   /**
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce);
+  void setOldF(const std::array<AccuType, 3> &oldForce) { _oldF = oldForce; };
 
   /**
    * Get TypeId.
    * @return
    */
-  [[nodiscard]] size_t getTypeId() const;
+  [[nodiscard]] size_t getTypeId() const { return _typeId; };
 
   /**
    * Set the type id of the Molecule.
    * @param typeId
    */
-  void setTypeId(size_t typeId);
+  void setTypeId(size_t typeId) { _typeId = typeId; };
 
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  [[nodiscard]] std::string toString() const override;
+  [[nodiscard]] std::string toString() const override {
+    using autopas::utils::ArrayUtils::operator<<;
+    std::ostringstream text;
+    // clang-format off
+  text << "MoleculeLJBase"
+     << "\nID                 : " << this->_id
+     << "\nPosition           : " << this->_r
+     << "\nVelocity           : " << this->_v
+     << "\nForce              : " << this->_f
+     << "\nOld Force          : " << this->_oldF
+     << "\nType ID            : " << this->_typeId
+     << "\nOwnershipState     : " << this->_ownershipState;
+    // clang-format on
+    return text.str();
+  };
 
-private:
-  std::array<double, 3> _oldF{0., 0., 0.};
-  size_t _typeId{0};
+ protected:
+  /**
+   * Molecule type id. In single-site simulations, this is used as a siteId to look up site attributes in the particle
+   * properties library.
+   *
+   * In multi-site simulations, where a multi-site molecule class inheriting from this class is used, typeId is used as
+   * a molId to look up molecular attributes (including siteIds of the sites).
+   */
+  size_t _typeId = 0;
+
+  /**
+   * Old Force of the particle experiences as 3D vector.
+   */
+  std::array<AccuType, 3> _oldF = {0., 0., 0.};
 };
-}
- // namespace mdLib
+
+}  // namespace mdLib
