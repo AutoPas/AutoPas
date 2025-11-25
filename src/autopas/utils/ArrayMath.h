@@ -55,7 +55,7 @@ template <class T, std::size_t SIZE>
  * @tparam T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with floored elements of new type int.
+ * @return New array with floored elements of new type int
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
