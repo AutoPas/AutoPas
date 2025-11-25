@@ -1846,10 +1846,10 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
     index++;
   }
 
-  // Step 4: Iterate over the binned buffer particles in a 2-colored parallel manner.
-  for (auto color = 0; color < 2; color++) {
+  // Step 4: Iterate over the binned buffer particles in a 3-colored parallel manner.
+  for (auto color = 0; color < 3; color++) {
     AUTOPAS_OPENMP(parallel for)
-    for (auto i = 0 + color; i < binnedBufferParticles.size(); i += 2) {
+    for (auto i = 0 + color; i < binnedBufferParticles.size(); i += 3) {
       for (auto p1Iter = binnedBufferParticles[i].begin(); p1Iter != binnedBufferParticles[i].end(); ++p1Iter) {
         auto &[p1Index, p1Ptr] = *p1Iter;
         for (auto &[p2Ptr, p3Ptr] : bufferParticleNeighborLists[p1Index]) {
