@@ -962,7 +962,8 @@ class LogicHandler {
 
   /**
    * Helper Method for computeRemainderInteractions3B. This method calculates all interactions between one buffer
-   * particle and two particles from the container.
+   * particle and two particles from the container. It first creates neighbor lists for all buffer particles in parallel
+   * and then bins the particles so it can be iterated over them in a 2-color scheme.
    *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
@@ -1636,11 +1637,11 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Vector to collect pointers to all buffer particles
   std::vector<Particle_T *> bufferParticles;
   const auto numOwnedBufferParticles = collectBufferParticles(bufferParticles, particleBuffers, haloParticleBuffers);
-
+  std::cout << "Number of owned buffer particles: " << numOwnedBufferParticles << std::endl;
   // The following part performs the main remainder traversal.
 
   // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   autopas::utils::Timer timerBufferBufferBuffer;
   autopas::utils::Timer timerBufferBufferContainer;
   autopas::utils::Timer timerBufferContainerContainer;
@@ -1650,7 +1651,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Step 1: Triwise interactions of all particles in the buffers (owned and halo)
   remainderHelper3bBufferBufferBufferAoS(bufferParticles, numOwnedBufferParticles, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   timerBufferBufferBuffer.stop();
   timerBufferBufferContainer.start();
 #endif
@@ -1658,7 +1659,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Step 2: Triwise interactions of 2 buffer particles with 1 container particle
   remainderHelper3bBufferBufferContainerAoS(bufferParticles, numOwnedBufferParticles, container, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   timerBufferBufferContainer.stop();
   timerBufferContainerContainer.start();
 #endif
@@ -1666,13 +1667,13 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
   remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
   timerBufferContainerContainer.stop();
 #endif
 
-  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
-  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());
-  AutoPasLog(TRACE, "Timer Buffer <-> Container <-> Container : {}", timerBufferContainerContainer.getTotalTime());
+  AutoPasLog(INFO, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
+  AutoPasLog(INFO, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());
+  AutoPasLog(INFO, "Timer Buffer <-> Container <-> Container : {}", timerBufferContainerContainer.getTotalTime());
 }
 
 template <class Particle_T>
@@ -1774,40 +1775,96 @@ template <bool newton3, class ContainerType, class TriwiseFunctor>
 void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
     const std::vector<Particle_T *> &bufferParticles, const size_t numOwnedBufferParticles, ContainerType &container,
     TriwiseFunctor *f) {
-  // Todo: parallelize without race conditions - https://github.com/AutoPas/AutoPas/issues/904
-  using autopas::utils::ArrayUtils::static_cast_copy_array;
+  using utils::ArrayUtils::static_cast_copy_array;
   using namespace autopas::utils::ArrayMath::literals;
+  if (bufferParticles.empty()) {
+    return;
+  }
 
   const double cutoff = container.getCutoff();
+  const double cutoffSquared = cutoff * cutoff;
 
+  // Step 1: Create a sorted cell view on all buffer particles
+  const auto domainDiagonal = container.getBoxMax() - container.getBoxMin();
+  ReferenceParticleCell<Particle_T> cellView;
+  for (auto pRef : bufferParticles) {
+    cellView.addParticleReference(pRef);
+  }
+  SortedCellView<ReferenceParticleCell<Particle_T>> sortedCellView(cellView, domainDiagonal);
+
+  // Step 2: Create a neighbor list of pairs for each of the buffer particles. Read-only, so it can be parallelized.
+  std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> bufferParticleNeighborLists{};
+  bufferParticleNeighborLists.resize(bufferParticles.size());
+
+  AUTOPAS_OPENMP(parallel for)
   for (auto i = 0; i < bufferParticles.size(); ++i) {
-    Particle_T &p1 = *bufferParticles[i];
-    const auto pos = p1.getR();
-    const auto boxmin = pos - cutoff;
-    const auto boxmax = pos + cutoff;
+    const auto pos1 = bufferParticles[i]->getR();
+    const auto boxMin = pos1 - cutoff;
+    const auto boxMax = pos1 + cutoff;
 
     auto p2Iter = container.getRegionIterator(
-        boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
+        boxMin, boxMax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
     for (; p2Iter.isValid(); ++p2Iter) {
-      Particle_T &p2 = *p2Iter;
-
+      const auto pos2 = p2Iter->getR();
+      const auto p1p2Dist = pos2 - pos1;
+      if (utils::ArrayMath::dot(p1p2Dist, p1p2Dist) > cutoffSquared) {
+        continue;
+      }
       auto p3Iter = p2Iter;
       ++p3Iter;
-
       for (; p3Iter.isValid(); ++p3Iter) {
-        Particle_T &p3 = *p3Iter;
+        const auto pos3 = p3Iter->getR();
+        const auto p2p3Dist = pos3 - pos2;
+        if (utils::ArrayMath::dot(p2p3Dist, p2p3Dist) > cutoffSquared) {
+          continue;
+        }
+        const auto p1p3Dist = pos3 - pos1;
+        if (utils::ArrayMath::dot(p1p3Dist, p1p3Dist) > cutoffSquared) {
+          continue;
+        }
+        // All distances are below the cutoff, so append to the neighbor list.
+        bufferParticleNeighborLists[i].push_back(std::make_pair(&(*p2Iter), &(*p3Iter)));
+      }
+    }
+  }
 
-        if constexpr (newton3) {
-          f->AoSFunctor(p1, p2, p3, true);
-        } else {
-          if (i < numOwnedBufferParticles) {
-            f->AoSFunctor(p1, p2, p3, false);
-          }
-          if (p2.isOwned()) {
-            f->AoSFunctor(p2, p1, p3, false);
-          }
-          if (p3.isOwned()) {
-            f->AoSFunctor(p3, p1, p2, false);
+  // Step 3: Bin buffer particles into slices along the domain diagonal of size cutoff
+  std::vector<std::vector<std::pair<size_t, Particle_T *>>> binnedBufferParticles{
+      std::vector<std::pair<size_t, Particle_T *>>()};
+  double binStart = sortedCellView._particles.front().first;  // Projection of the first particle
+  size_t binIndex = 0;
+  size_t index = 0;
+  for (auto cellIter = sortedCellView._particles.begin(); cellIter != sortedCellView._particles.end(); ++cellIter) {
+    auto &[pProjection, pPtr] = *cellIter;
+
+    if (std::abs(pProjection - binStart) > cutoff) {
+      binStart = pProjection;
+      binIndex++;
+      binnedBufferParticles.push_back(std::vector<std::pair<size_t, Particle_T *>>());
+    }
+    binnedBufferParticles[binIndex].push_back(std::make_pair(index, pPtr));
+    index++;
+  }
+
+  // Step 4: Iterate over the binned buffer particles in a 2-colored parallel manner.
+  for (auto color = 0; color < 2; color++) {
+    AUTOPAS_OPENMP(parallel for)
+    for (auto i = 0 + color; i < binnedBufferParticles.size(); i += 2) {
+      for (auto p1Iter = binnedBufferParticles[i].begin(); p1Iter != binnedBufferParticles[i].end(); ++p1Iter) {
+        auto &[p1Index, p1Ptr] = *p1Iter;
+        for (auto &[p2Ptr, p3Ptr] : bufferParticleNeighborLists[p1Index]) {
+          if constexpr (newton3) {
+            f->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
+          } else {
+            if (i < numOwnedBufferParticles) {
+              f->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, false);
+            }
+            if (p2Ptr->isOwned()) {
+              f->AoSFunctor(*p2Ptr, *p1Ptr, *p3Ptr, false);
+            }
+            if (p3Ptr->isOwned()) {
+              f->AoSFunctor(*p3Ptr, *p1Ptr, *p2Ptr, false);
+            }
           }
         }
       }
