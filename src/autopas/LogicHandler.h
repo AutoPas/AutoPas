@@ -1641,7 +1641,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // The following part performs the main remainder traversal.
 
   // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   autopas::utils::Timer timerBufferBufferBuffer;
   autopas::utils::Timer timerBufferBufferContainer;
   autopas::utils::Timer timerBufferContainerContainer;
@@ -1651,7 +1651,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Step 1: Triwise interactions of all particles in the buffers (owned and halo)
   remainderHelper3bBufferBufferBufferAoS(bufferParticles, numOwnedBufferParticles, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferBufferBuffer.stop();
   timerBufferBufferContainer.start();
 #endif
@@ -1659,7 +1659,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Step 2: Triwise interactions of 2 buffer particles with 1 container particle
   remainderHelper3bBufferBufferContainerAoS(bufferParticles, numOwnedBufferParticles, container, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferBufferContainer.stop();
   timerBufferContainerContainer.start();
 #endif
@@ -1667,13 +1667,13 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
   remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainerContainer.stop();
 #endif
 
-  AutoPasLog(INFO, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
-  AutoPasLog(INFO, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());
-  AutoPasLog(INFO, "Timer Buffer <-> Container <-> Container : {}", timerBufferContainerContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffer <-> Container <-> Container : {}", timerBufferContainerContainer.getTotalTime());
 }
 
 template <class Particle_T>
@@ -1794,11 +1794,12 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
 
   // Step 2: Create a neighbor list of pairs for each of the buffer particles. Read-only, so it can be parallelized.
   std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> bufferParticleNeighborLists{};
-  bufferParticleNeighborLists.resize(bufferParticles.size());
+  bufferParticleNeighborLists.resize(sortedCellView.size());
 
   AUTOPAS_OPENMP(parallel for)
-  for (auto i = 0; i < bufferParticles.size(); ++i) {
-    const auto pos1 = bufferParticles[i]->getR();
+  for (auto i = 0; i < sortedCellView.size(); i++) {
+    auto &[pProjection, p1Ptr] = sortedCellView._particles[i];
+    const auto pos1 = p1Ptr->getR();
     const auto boxMin = pos1 - cutoff;
     const auto boxMax = pos1 + cutoff;
 
@@ -1831,19 +1832,17 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
   // Step 3: Bin buffer particles into slices along the domain diagonal of size cutoff
   std::vector<std::vector<std::pair<size_t, Particle_T *>>> binnedBufferParticles{
       std::vector<std::pair<size_t, Particle_T *>>()};
-  double binStart = sortedCellView._particles.front().first;  // Projection of the first particle
+  double binStart = sortedCellView._particles[0].first;  // Projection of the first particle
   size_t binIndex = 0;
-  size_t index = 0;
-  for (auto cellIter = sortedCellView._particles.begin(); cellIter != sortedCellView._particles.end(); ++cellIter) {
-    auto &[pProjection, pPtr] = *cellIter;
+  for (auto i = 0; i < sortedCellView.size(); ++i) {
+    auto &[pProjection, pPtr] = sortedCellView._particles[i];
 
     if (std::abs(pProjection - binStart) > cutoff) {
       binStart = pProjection;
       binIndex++;
       binnedBufferParticles.push_back(std::vector<std::pair<size_t, Particle_T *>>());
     }
-    binnedBufferParticles[binIndex].push_back(std::make_pair(index, pPtr));
-    index++;
+    binnedBufferParticles[binIndex].push_back(std::make_pair(i, pPtr));
   }
 
   // Step 4: Iterate over the binned buffer particles in a 3-colored parallel manner.
@@ -1856,7 +1855,7 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
           if constexpr (newton3) {
             f->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
           } else {
-            if (i < numOwnedBufferParticles) {
+            if (p1Ptr->isOwned()) {
               f->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, false);
             }
             if (p2Ptr->isOwned()) {
