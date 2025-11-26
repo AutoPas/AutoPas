@@ -103,8 +103,8 @@ jobs:
 
       - name: Install Clang 14
         run: |
-          sudo apt update
-          sudo apt install clang-14
+          apt update
+          apt install clang-14
 
       - name: Build everything
         run: |
