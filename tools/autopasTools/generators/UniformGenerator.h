@@ -8,10 +8,12 @@
 
 #include <array>
 #include <random>
+#include <type_traits>
 
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/ParticleTypeTrait.h"
 
 namespace autopasTools::generators {
 /**
@@ -96,15 +98,19 @@ void UniformGenerator::fillWithParticles(Container &container, const Particle &d
                                          unsigned long numParticles, unsigned int seed) {
   std::mt19937 generator(seed);
 
+  using PositionArray     = std::remove_reference_t<decltype(defaultParticle.getR())>;
+  using PositionValueType = typename PositionArray::value_type;
+
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
-    particle.setR(
-        autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(randomPosition(generator, boxMin, boxMax)));
+    particle.setR(autopas::utils::ArrayUtils::static_cast_copy_array<PositionValueType>(
+      randomPosition(generator, boxMin, boxMax)));
     particle.setID(i);
     particle.setOwnershipState(autopas::OwnershipState::owned);
     container.addParticle(particle);
   }
 }
+
 
 template <class Container, class Particle, class HaloAddFunction>
 void UniformGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
@@ -121,6 +127,9 @@ void UniformGenerator::fillWithHaloParticles(Container &container, const Particl
     haloBoxMax[i] += haloWidth * .99;
   }
 
+  using PositionArray     = std::remove_reference_t<decltype(defaultParticle.getR())>;
+  using PositionValueType = typename PositionArray::value_type;
+
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     auto pos = randomPosition(generator, haloBoxMin, haloBoxMax);
     // we only want to add particles not in the actual box
@@ -128,7 +137,7 @@ void UniformGenerator::fillWithHaloParticles(Container &container, const Particl
       pos = randomPosition(generator, haloBoxMin, haloBoxMax);
     }
     Particle particle(defaultParticle);
-    particle.setR(pos);
+    particle.setR(autopas::utils::ArrayUtils::static_cast_copy_array<PositionValueType>(pos));
     particle.setID(i);
     haloAddFunction(container, particle);
   }
