@@ -975,8 +975,7 @@ class LogicHandler {
    */
   template <bool newton3, class ContainerType, class TriwiseFunctor>
   void remainderHelper3bBufferContainerContainerAoS(const std::vector<Particle_T *> &bufferParticles,
-                                                    size_t numOwnedBufferParticles, ContainerType &container,
-                                                    TriwiseFunctor *f);
+                                                    ContainerType &container, TriwiseFunctor *f);
 
   /**
    * Check that the simulation box is at least of interaction length in each direction.
@@ -1773,31 +1772,29 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferBufferContainerAoS(
 template <class Particle_T>
 template <bool newton3, class ContainerType, class TriwiseFunctor>
 void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
-    const std::vector<Particle_T *> &bufferParticles, const size_t numOwnedBufferParticles, ContainerType &container,
-    TriwiseFunctor *f) {
-  using utils::ArrayUtils::static_cast_copy_array;
+    const std::vector<Particle_T *> &bufferParticles, ContainerType &container, TriwiseFunctor *f) {
   using namespace autopas::utils::ArrayMath::literals;
   if (bufferParticles.empty()) {
     return;
   }
-
+  const size_t numBufferParticles = bufferParticles.size();
   const double cutoff = container.getCutoff();
   const double cutoffSquared = cutoff * cutoff;
 
   // Step 1: Create a sorted cell view on all buffer particles
   const auto domainDiagonal = container.getBoxMax() - container.getBoxMin();
   ReferenceParticleCell<Particle_T> cellView;
+  cellView.reserve(numBufferParticles);
   for (auto pRef : bufferParticles) {
     cellView.addParticleReference(pRef);
   }
   SortedCellView<ReferenceParticleCell<Particle_T>> sortedCellView(cellView, domainDiagonal);
 
   // Step 2: Create a neighbor list of pairs for each of the buffer particles. Read-only, so it can be parallelized.
-  std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> bufferParticleNeighborLists{};
-  bufferParticleNeighborLists.resize(sortedCellView.size());
+  std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> bufferParticleNeighborLists(numBufferParticles);
 
-  AUTOPAS_OPENMP(parallel for)
-  for (auto i = 0; i < sortedCellView.size(); i++) {
+  AUTOPAS_OPENMP(parallel for schedule(static))
+  for (size_t i = 0; i < numBufferParticles; i++) {
     auto &[pProjection, p1Ptr] = sortedCellView._particles[i];
     const auto pos1 = p1Ptr->getR();
     const auto boxMin = pos1 - cutoff;
@@ -1824,33 +1821,30 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
           continue;
         }
         // All distances are below the cutoff, so append to the neighbor list.
-        bufferParticleNeighborLists[i].push_back(std::make_pair(&(*p2Iter), &(*p3Iter)));
+        bufferParticleNeighborLists[i].emplace_back(&(*p2Iter), &(*p3Iter));
       }
     }
   }
 
   // Step 3: Bin buffer particles into slices along the domain diagonal of size cutoff
-  std::vector<std::vector<std::pair<size_t, Particle_T *>>> binnedBufferParticles{
-      std::vector<std::pair<size_t, Particle_T *>>()};
+  std::vector<std::vector<std::pair<size_t, Particle_T *>>> binnedBufferParticles;
+  binnedBufferParticles.emplace_back();
   double binStart = sortedCellView._particles[0].first;  // Projection of the first particle
-  size_t binIndex = 0;
-  for (auto i = 0; i < sortedCellView.size(); ++i) {
+  for (size_t i = 0; i < numBufferParticles; ++i) {
     auto &[pProjection, pPtr] = sortedCellView._particles[i];
 
-    if (std::abs(pProjection - binStart) > cutoff) {
+    if (pProjection - binStart > cutoff) {
       binStart = pProjection;
-      binIndex++;
-      binnedBufferParticles.push_back(std::vector<std::pair<size_t, Particle_T *>>());
+      binnedBufferParticles.emplace_back();
     }
-    binnedBufferParticles[binIndex].push_back(std::make_pair(i, pPtr));
+    binnedBufferParticles.back().emplace_back(i, pPtr);
   }
 
   // Step 4: Iterate over the binned buffer particles in a 3-colored parallel manner.
   for (auto color = 0; color < 3; color++) {
-    AUTOPAS_OPENMP(parallel for)
-    for (auto i = 0 + color; i < binnedBufferParticles.size(); i += 3) {
-      for (auto p1Iter = binnedBufferParticles[i].begin(); p1Iter != binnedBufferParticles[i].end(); ++p1Iter) {
-        auto &[p1Index, p1Ptr] = *p1Iter;
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    for (size_t i = 0 + color; i < binnedBufferParticles.size(); i += 3) {
+      for (auto &[p1Index, p1Ptr] : binnedBufferParticles[i]) {
         for (auto &[p2Ptr, p3Ptr] : bufferParticleNeighborLists[p1Index]) {
           if constexpr (newton3) {
             f->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
