@@ -101,6 +101,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Clang 14
+        run: |
+          sudo apt update
+          sudo apt install clang-14
+
       - name: Build everything
         run: |
           # derive whether or not to compile with MPI options ON.
