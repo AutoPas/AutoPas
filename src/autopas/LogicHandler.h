@@ -1637,7 +1637,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
   // Vector to collect pointers to all buffer particles
   std::vector<Particle_T *> bufferParticles;
   const auto numOwnedBufferParticles = collectBufferParticles(bufferParticles, particleBuffers, haloParticleBuffers);
-  std::cout << "Number of owned buffer particles: " << numOwnedBufferParticles << std::endl;
+
   // The following part performs the main remainder traversal.
 
   // only activate time measurements if it will actually be logged
