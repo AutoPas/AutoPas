@@ -969,7 +969,6 @@ class LogicHandler {
    * @tparam ContainerType Type of the particle container.
    * @tparam TriwiseFunctor Functor type to use for the interactions.
    * @param bufferParticles Vector of Particle pointers containing pointers to all buffer particles (owned and halo).
-   * @param numOwnedBufferParticles Number of owned particles. (First half of the bufferParticles).
    * @param container
    * @param f
    */
