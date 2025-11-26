@@ -925,9 +925,11 @@ class AxilrodTellerMutoFunctor
             }
           }
         }
-        fxptr2[j] += fXAccJ;
-        fyptr2[j] += fYAccJ;
-        fzptr2[j] += fZAccJ;
+        if (newton3) {
+          fxptr2[j] += fXAccJ;
+          fyptr2[j] += fYAccJ;
+          fzptr2[j] += fZAccJ;
+        }
       }
 
       // CASE: Particle i and j are both in soa1, k is in soa2
