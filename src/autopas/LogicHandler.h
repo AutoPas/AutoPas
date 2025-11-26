@@ -1664,7 +1664,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
 #endif
 
   // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
-  remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
+  remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, container, f);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainerContainer.stop();
