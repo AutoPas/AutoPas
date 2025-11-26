@@ -19,32 +19,32 @@ namespace autopas {
 /**
  * This class provides the c04 traversal.
  *
- * The traversal uses the c04 base step performed on every single cell. Since
- * these steps overlap a domain coloring with four colors is applied.
+ * The traversal uses the c04 base step performed on every single cell. Since these steps overlap a domain coloring with
+ * four colors is applied.
  *
- * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam Functor_T The functor that defines the interaction of two or three particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
+template <class ParticleCell_T, class Functor_T>
+class LCC04Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the c04 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param functor The functor that defines the interaction of two or three particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  LCC04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor, double interactionLength,
+  LCC04Traversal(const std::array<unsigned long, 3> &dims, Functor_T *functor, double interactionLength,
                  const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+      : C08BasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                     useNewton3),
         _cellOffsets32Pack(computeOffsets32Pack()),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
-                     dataLayout, useNewton3),
+        _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap, dataLayout,
+                     useNewton3),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
                                          1l)) {}
 
@@ -71,17 +71,17 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  void traverseSingleColor(std::vector<ParticleCell> &cells, int color);
+  void traverseSingleColor(std::vector<ParticleCell_T> &cells, int color);
 
-  void processBasePack32(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
+  void processBasePack32(std::vector<ParticleCell_T> &cells, const std::array<long, 3> &base3DIndex);
 
-  constexpr auto computeOffsets32Pack() const;
+  static constexpr auto computeOffsets32Pack();
 
   [[nodiscard]] constexpr long parity(long x, long y, long z) const { return (x + y + z + 24) % 8; }
 
   std::array<std::array<long, 3>, 32> _cellOffsets32Pack;
 
-  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
 
   std::array<long, 3> _end;
 };
@@ -89,11 +89,11 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
 /**
  * Computes the barriers of the aggregation of cells for each color
  *
- * @tparam ParticleCell
- * @tparam PairwiseFunctor
+ * @tparam ParticleCell_T
+ * @tparam Functor_T
  */
-template <class ParticleCell, class PairwiseFunctor>
-constexpr auto LCC04Traversal<ParticleCell, PairwiseFunctor>::computeOffsets32Pack() const {
+template <class ParticleCell_T, class Functor_T>
+constexpr auto LCC04Traversal<ParticleCell_T, Functor_T>::computeOffsets32Pack() {
   using std::make_pair;
   using utils::ThreeDimensionalMapping::threeToOneD;
 
@@ -135,14 +135,14 @@ constexpr auto LCC04Traversal<ParticleCell, PairwiseFunctor>::computeOffsets32Pa
  * Goes through the cells aggregated by one color and processes the particles in each cell that is part of the
  * aggregation by using the barriers saved in _cellOffset32Pack.
  *
- * @tparam ParticleCell
- * @tparam PairwiseFunctor
+ * @tparam ParticleCell_T
+ * @tparam Functor_T
  * @param cells
  * @param base3DIndex
  */
-template <class ParticleCell, class PairwiseFunctor>
-void LCC04Traversal<ParticleCell, PairwiseFunctor>::processBasePack32(std::vector<ParticleCell> &cells,
-                                                                      const std::array<long, 3> &base3DIndex) {
+template <class ParticleCell_T, class Functor_T>
+void LCC04Traversal<ParticleCell_T, Functor_T>::processBasePack32(std::vector<ParticleCell_T> &cells,
+                                                                  const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index{};
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension);
@@ -166,11 +166,11 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor>::processBasePack32(std::vecto
  *  Go through one color and search for blocks belonging to the specified color.
  *  Uses two cartesian grids that are overlapping gridwise but not blockwise.
  *
- * @tparam ParticleCell
- * @tparam PairwiseFunctor
+ * @tparam ParticleCell_T
+ * @tparam Functor_T
  */
-template <class ParticleCell, class PairwiseFunctor>
-void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+template <class ParticleCell_T, class Functor_T>
+void LCC04Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
   auto &cells = *(this->_cells);
   AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {
@@ -183,8 +183,8 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   }  // close parallel region
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseSingleColor(std::vector<ParticleCell> &cells, int color) {
+template <class ParticleCell_T, class Functor_T>
+void LCC04Traversal<ParticleCell_T, Functor_T>::traverseSingleColor(std::vector<ParticleCell_T> &cells, int color) {
   // we need to traverse one body-centered cubic (BCC) grid, which consists of two cartesian grids
 
   // colors 0 and 2 form one cartesian grid
