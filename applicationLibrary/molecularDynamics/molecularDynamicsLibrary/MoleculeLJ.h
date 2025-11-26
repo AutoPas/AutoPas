@@ -37,7 +37,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int {
+  enum AttributeNames : size_t {
     ptr,
     id,
     posX,
@@ -64,12 +64,12 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+      autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
                                        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
   template <class MemSpace>
-  using KokkosSoAArraysType = typename autopas::utils::KokkosSoA<MemSpace, size_t* /*id*/, double* /*x*/, double* /*y*/, double* /*z*/,
+  using KokkosSoAArraysType = autopas::utils::KokkosSoA<MemSpace, size_t* /*id*/, double* /*x*/, double* /*y*/, double* /*z*/,
                                        double* /*vx*/, double* /*vy*/, double* /*vz*/, double* /*fx*/, double* /*fy*/,
                                        double* /*fz*/, double* /*oldFx*/, double* /*oldFy*/, double* /*oldFz*/,
                                        size_t* /*typeid*/, autopas::OwnershipState* /*ownershipState*/>;

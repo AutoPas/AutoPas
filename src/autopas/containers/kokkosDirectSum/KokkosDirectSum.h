@@ -10,6 +10,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include "autopas/utils/KokkosSoA.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "traversals/KokkosDsNaiveParallelTraversal.h"
 
@@ -23,8 +24,6 @@ template <class Particle_T>
         public:
             KokkosDirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
                 : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin)
-                //_ownedParticles(Kokkos::view_alloc(Kokkos::WithoutInitializing, "owned"), INIT_PARTICLES),
-                //_haloParticles(Kokkos::view_alloc(Kokkos::WithoutInitializing, "halos"), INIT_PARTICLES/4)
                 {}
 
             [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; }
@@ -32,12 +31,13 @@ template <class Particle_T>
             void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
                 
                 if (numParticles > capacityOwned) {
-                    Kokkos::realloc(_ownedParticles, numParticles);
+                  Kokkos::realloc(_ownedParticles, numParticles);
+                  _hostOwnedParticlesSoA.resize(numParticles);
                   capacityOwned = numParticles;
                 }
 
                 if (numParticlesHaloEstimate > capacityHalo) {
-                    Kokkos::realloc(_haloParticles, numParticlesHaloEstimate);
+                  Kokkos::realloc(_haloParticles, numParticlesHaloEstimate);
                   capacityHalo = numParticlesHaloEstimate;
                 }
             }
@@ -98,7 +98,7 @@ template <class Particle_T>
             void computeInteractions(TraversalInterface *traversal) override {
                 prepareTraversal(traversal);
 
-                // TODO: if this is the common structure, why isn't this generalized to some extent?
+                // TODO: if this is the common structure, why isn't this generalized and called in a higher level of the hierarchy?
                 traversal->initTraversal();
                 traversal->traverseParticles();
                 traversal->endTraversal();
@@ -114,7 +114,7 @@ template <class Particle_T>
                 return TraversalSelectorInfo();
             }
 
-            /* TODO: Begin of Code Crime (investigate generalizations of this) */
+            /* TODO: Begin of Code Crime (investigate generalizations of this -> every container does EXACTLY the same) */
             [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
                 IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                 typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
@@ -151,6 +151,11 @@ template <class Particle_T>
             void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                     const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
                 // TODO
+            }
+
+            template <typename Lambda>
+            void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+              // TODO
             }
 
             // TODO: maybe there should also be a forEach
@@ -300,7 +305,9 @@ template <class Particle_T>
 
         /* SoA data structure */
 
-        // TODO: implement
+        Particle_T::template KokkosSoAArraysType<HostSpace> _hostOwnedParticlesSoA {};
+
+        Particle_T::template KokkosSoAArraysType<HostSpace> _hostHaloParticlesSoA {};
 
         /* AoSoA data structure */
 

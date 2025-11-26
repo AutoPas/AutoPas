@@ -30,22 +30,25 @@ public:
 
   virtual void setOwnedToTraverse(Kokkos::View<Particle_T*, HostSpace> &particles) {
 
-    KokkosSoAType<HostSpace> ownedSoA {particles.extent(0)};
+    // TODO: consider chosen data layout
+    const size_t numParticles = particles.extent(0);
+    Kokkos::realloc(_ownedParticlesAoS, numParticles);
 
+    Kokkos::deep_copy(_ownedParticlesAoS, particles);
 
-    // TODO: decide where data conversion should take place, GPU/CPU
-    auto ownedView = Kokkos::create_mirror_view(DeviceSpace{}, particles);
-    Kokkos::deep_copy(ownedView, particles);
-    _ownedParticlesAoS = ownedView;
+    KokkosSoAType<HostSpace> hostOwnedParticlesSoA {};
+    _deviceOwnedParticleSoA.resize(numParticles);
+    hostOwnedParticlesSoA.resize(numParticles);
 
-    _converter.loadDataLayout<Kokkos::View<Particle_T*, HostSpace>, KokkosSoAType<HostSpace>, Particle_T>(particles, ownedSoA, particles.extent(0));
-    _converter.storeDataLayout<KokkosSoAType<HostSpace>, Kokkos::View<Particle_T*, HostSpace>, Particle_T>(ownedSoA, particles, ownedView.extent(0));
+    constexpr size_t tupleSize = hostOwnedParticlesSoA.tupleSize();
+    constexpr auto I = std::make_index_sequence<tupleSize>();
+
+    _converter.loadDataLayout(particles, hostOwnedParticlesSoA, numParticles, I);
+    _deviceOwnedParticleSoA.copyFrom(hostOwnedParticlesSoA, I);
   }
 
   virtual void setHaloToTraverse(const Kokkos::View<Particle_T*, HostSpace> &particles) {
-    auto haloView = Kokkos::create_mirror_view(DeviceSpace{}, particles);
-    Kokkos::deep_copy(haloView, particles);
-    _haloParticlesAoS = haloView;
+    // TODO
   };
 
 protected:
@@ -54,12 +57,12 @@ protected:
   Kokkos::View<Particle_T*, DeviceSpace> _haloParticlesAoS;
 
   template <typename Space>
-  using KokkosSoAType = typename Particle_T::KokkosSoAArraysType<Space>;
+  using KokkosSoAType = Particle_T::template KokkosSoAArraysType<Space>;
 
-  KokkosSoAType<DeviceSpace> _ownedParticleSoA;
+  KokkosSoAType<DeviceSpace> _deviceOwnedParticleSoA;
 
 private:
   DataLayoutOption _dataLayout;
-  utils::KokkosDataLayoutConverter _converter;
+  utils::KokkosDataLayoutConverter<Particle_T> _converter;
 };
 }
