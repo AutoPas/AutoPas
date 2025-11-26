@@ -23,7 +23,7 @@ target_compile_options(
     autopas
     PUBLIC
         # Needed to vectorize sqrt()
-        -fno-math-errno
+        #-fno-math-errno
         # fast math for better vectorization
         $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
         # compiler profiling

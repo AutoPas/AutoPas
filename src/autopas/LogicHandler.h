@@ -1246,6 +1246,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           "supported. "
           "Please use a functor derived from "
           "PairwiseFunctor or TriwiseFunctor.");
+      return InteractionTypeOption::all;
     }
   }();
 
@@ -1838,9 +1839,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
     if (not traversalPtr) {
       // TODO: Can we handle this case gracefully?
-      utils::ExceptionHandler::exception(
-          "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
-          functor.getName());
+      utils::ExceptionHandler::exception("TODO: fmt");
     }
     return {configuration, std::move(traversalPtr), false};
   }

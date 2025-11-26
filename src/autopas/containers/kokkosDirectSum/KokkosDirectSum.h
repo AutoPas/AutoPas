@@ -115,6 +115,7 @@ template <class Particle_T>
             }
 
             /* TODO: Begin of Code Crime (investigate generalizations of this -> every container does EXACTLY the same) */
+            // TODO: begin will need to initiate data transfer and conversion as the container iterator requires an AoS particle
             [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
                 IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                 typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
@@ -242,7 +243,7 @@ template <class Particle_T>
           }
 
           size_t sizeToCheck = (cellIndex == 0) ? numberOfOwned : numberOfHalo;
-          const Kokkos::View<Particle_T*>& viewToCheck = (cellIndex == 0) ? _ownedParticles : _haloParticles;
+          const auto& viewToCheck = (cellIndex == 0) ? _ownedParticles : _haloParticles;
 
           if (particleIndex >= sizeToCheck or
               not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
@@ -256,7 +257,7 @@ template <class Particle_T>
             return {nullptr, 0, 0};
           }
 
-          const Kokkos::View<Particle_T*>& viewToExtract = (cellIndex == 0) ? _ownedParticles : _haloParticles;
+          const auto& viewToExtract = (cellIndex == 0) ? _ownedParticles : _haloParticles;
           const Particle_T * result = &viewToExtract(particleIndex);
 
           return {result, cellIndex, particleIndex};

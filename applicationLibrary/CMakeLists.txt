@@ -31,7 +31,11 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
-target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
+target_link_libraries(molecularDynamicsLibrary
+        PUBLIC
+        autopas
+        PRIVATE
+        Kokkos::kokkos)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
 

@@ -2,7 +2,7 @@ option(spdlog_ForceBundled "Do not look for an installed version, always use bun
 
 if (NOT ${spdlog_ForceBundled})
     # first try: check if we find any installed version
-    set(expectedVersion 1.4.3)
+    set(expectedVersion 1.16.0)
     find_package(spdlog ${expectedVersion} QUIET)
     if (spdlog_FOUND)
         message(STATUS "spdlog - using installed system version ${spdlog_VERSION}")
@@ -12,7 +12,7 @@ if (NOT ${spdlog_ForceBundled})
     else ()
         message(STATUS "spdlog - no system version compatible to version ${expectedVersion} found")
         message(
-            STATUS
+                STATUS
                 "spdlog - if you want to use your version point the cmake variable spdlog_DIR to the directory containing spdlogConfig.cmake in order to pass hints to find_package"
         )
     endif ()
@@ -26,13 +26,13 @@ include(FetchContent)
 
 # Build spdlog and make the cmake targets available
 FetchContent_Declare(
-    spdlog
-    URL
+        spdlog
+        URL
         # spdlog master:
-        # https://github.com/gabime/spdlog/archive/v1.x.zip
+        https://github.com/gabime/spdlog/archive/v1.16.0.zip
         # spdlog commit e86be93 (15.11.2021):
-        ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
-    URL_HASH MD5=77292ebfc86717e1b5914c4d7b69140f
+        #        ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
+        #    URL_HASH MD5=77292ebfc86717e1b5914c4d7b69140f
 )
 
 # Disable stuff we don't need
@@ -42,21 +42,21 @@ option(SPDLOG_INSTALL "" OFF)
 
 # hide options from ccmake
 mark_as_advanced(
-    SPDLOG_BUILD_BENCH
-    SPDLOG_BUILD_EXAMPLE
-    SPDLOG_BUILD_EXAMPLE_HO
-    SPDLOG_BUILD_SHARED
-    SPDLOG_BUILD_TESTS
-    SPDLOG_BUILD_TESTS_HO
-    SPDLOG_CLOCK_COARSE
-    SPDLOG_FMT_EXTERNAL
-    SPDLOG_INSTALL
-    SPDLOG_NO_ATOMIC_LEVELS
-    SPDLOG_NO_EXCEPTIONS
-    SPDLOG_NO_THREAD_ID
-    SPDLOG_NO_TLS
-    SPDLOG_PREVENT_CHILD_FD
-    SPDLOG_SANITIZE_ADDRESS
+        SPDLOG_BUILD_BENCH
+        SPDLOG_BUILD_EXAMPLE
+        SPDLOG_BUILD_EXAMPLE_HO
+        SPDLOG_BUILD_SHARED
+        SPDLOG_BUILD_TESTS
+        SPDLOG_BUILD_TESTS_HO
+        SPDLOG_CLOCK_COARSE
+        SPDLOG_FMT_EXTERNAL
+        SPDLOG_INSTALL
+        SPDLOG_NO_ATOMIC_LEVELS
+        SPDLOG_NO_EXCEPTIONS
+        SPDLOG_NO_THREAD_ID
+        SPDLOG_NO_TLS
+        SPDLOG_PREVENT_CHILD_FD
+        SPDLOG_SANITIZE_ADDRESS
 )
 
 FetchContent_MakeAvailable(spdlog)
