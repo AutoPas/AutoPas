@@ -3,7 +3,7 @@
 ## Requirements
 * CMake 3.14 or newer
 * a CMake generator target (`make` is tested)
-* a C++20 compiler (gcc11, clang13, and ~~icpc 2019~~ are tested)
+* a C++20 compiler (gcc11, clang14, and ~~icpc 2019~~ are tested)
 * OpenMP (comes with GCC, for Clang you need `libomp`)
 
 Optional:
