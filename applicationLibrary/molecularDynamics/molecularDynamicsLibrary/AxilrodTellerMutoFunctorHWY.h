@@ -581,10 +581,8 @@ class AxilrodTellerMutoFunctorHWY
   }
 
  private:
-  template <bool LowerTriangle>
+  template <bool LowerTriangle, bool alignedSoAView>
   struct DistanceMatrix;
-  using TriangleDistanceMatrix = DistanceMatrix<true>;
-  using SquareDistanceMatrix = DistanceMatrix<false>;
 
   template <bool alignedSoAView>
   void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
@@ -625,7 +623,7 @@ class AxilrodTellerMutoFunctorHWY
     }
     // Precompute distances between particles in the soa. We use a row-major packed lower‐triangle data structure to
     // save memory. If a distance i->j is required as j->i it can be negated.
-    TriangleDistanceMatrix intraSoADists(soaSize, soaSize, precomputeBuffer1[threadnum]);
+    DistanceMatrix<true, alignedSoAView> intraSoADists(soaSize, soaSize, precomputeBuffer1[threadnum]);
     // soa1 <-> soa1
     intraSoADists.fillHighway(xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, soaSize, soaSize, cutoffSquared);
 
@@ -672,7 +670,8 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody<TriangleDistanceMatrix, TriangleDistanceMatrix, /*newton3*/ true, /*newton3Kernel*/ true,
+          handleKLoopBody<DistanceMatrix<true, alignedSoAView>, DistanceMatrix<true, alignedSoAView>, /*newton3*/ true,
+                          /*newton3Kernel*/ true,
                           /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, intraSoADists, intraSoADists, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec,
               distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
@@ -683,7 +682,8 @@ class AxilrodTellerMutoFunctorHWY
         const auto restK = j - k;
 
         if (restK > 0) {
-          handleKLoopBody<TriangleDistanceMatrix, TriangleDistanceMatrix, /*newton3*/ true, /*newton3Kernel*/ true,
+          handleKLoopBody<DistanceMatrix<true, alignedSoAView>, DistanceMatrix<true, alignedSoAView>, /*newton3*/ true,
+                          /*newton3Kernel*/ true,
                           /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, intraSoADists, intraSoADists, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec,
               distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
@@ -760,8 +760,8 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
     }
 
-    TriangleDistanceMatrix intraSoA2Dists(soa2Size, soa2Size, precomputeBuffer1[threadnum]);
-    SquareDistanceMatrix interSoADists(soa1Size, soa2Size, precomputeBuffer2[threadnum]);
+    DistanceMatrix<true, alignedSoAView> intraSoA2Dists(soa2Size, soa2Size, precomputeBuffer1[threadnum]);
+    DistanceMatrix<false, alignedSoAView> interSoADists(soa1Size, soa2Size, precomputeBuffer2[threadnum]);
 
     // soa2 <-> soa2
     intraSoA2Dists.fillHighway(xptr2, yptr2, zptr2, xptr2, yptr2, zptr2, soa2Size, soa2Size, cutoffSquared);
@@ -817,7 +817,8 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody<TriangleDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ newton3,
+          handleKLoopBody<DistanceMatrix<true, alignedSoAView>, DistanceMatrix<false, alignedSoAView>,
+                          /*newton3*/ newton3, /*newton3Kernel*/ newton3,
                           /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, intraSoA2Dists, interSoADists, ownedStatePtr2, typeptr1, typeptr2, typeptr2,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
@@ -828,7 +829,8 @@ class AxilrodTellerMutoFunctorHWY
 
         const auto restK = j - k;
         if (restK > 0) {
-          handleKLoopBody<TriangleDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ newton3,
+          handleKLoopBody<DistanceMatrix<true, alignedSoAView>, DistanceMatrix<false, alignedSoAView>,
+                          /*newton3*/ newton3, /*newton3Kernel*/ newton3,
                           /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, intraSoA2Dists, interSoADists, ownedStatePtr2, typeptr1, typeptr2, typeptr2,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
@@ -880,7 +882,8 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody<SquareDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ true,
+          handleKLoopBody<DistanceMatrix<false, alignedSoAView>, DistanceMatrix<false, alignedSoAView>,
+                          /*newton3*/ newton3, /*newton3Kernel*/ true,
                           /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, interSoADists, interSoADists, ownedStatePtr2, typeptr1, typeptr1, typeptr2, distXIJVec,
               distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
@@ -891,7 +894,8 @@ class AxilrodTellerMutoFunctorHWY
         const auto restK = soa2.size() - k;
 
         if (restK > 0) {
-          handleKLoopBody<SquareDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ true,
+          handleKLoopBody<DistanceMatrix<false, alignedSoAView>, DistanceMatrix<false, alignedSoAView>,
+                          /*newton3*/ newton3, /*newton3Kernel*/ true,
                           /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoADists, interSoADists, ownedStatePtr2, typeptr1, typeptr1, typeptr2, distXIJVec,
               distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
@@ -980,8 +984,8 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
     }
 
-    SquareDistanceMatrix interSoA1SoA3Dists(soa1Size, soa3Size, precomputeBuffer1[threadnum]);
-    SquareDistanceMatrix interSoA2SoA3Dists(soa2Size, soa3Size, precomputeBuffer2[threadnum]);
+    DistanceMatrix<false, alignedSoAView> interSoA1SoA3Dists(soa1Size, soa3Size, precomputeBuffer1[threadnum]);
+    DistanceMatrix<false, alignedSoAView> interSoA2SoA3Dists(soa2Size, soa3Size, precomputeBuffer2[threadnum]);
 
     // soa1 <-> soa3
     interSoA1SoA3Dists.fillHighway(xptr1, yptr1, zptr1, xptr3, yptr3, zptr3, soa1Size, soa3Size, cutoffSquared);
@@ -1044,7 +1048,8 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody<SquareDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ newton3,
+          handleKLoopBody<DistanceMatrix<false, alignedSoAView>, DistanceMatrix<false, alignedSoAView>,
+                          /*newton3*/ newton3, /*newton3Kernel*/ newton3,
                           /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3Dists, interSoA1SoA3Dists, ownedStatePtr3, typeptr1, typeptr2, typeptr3,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
@@ -1056,7 +1061,8 @@ class AxilrodTellerMutoFunctorHWY
         const auto restK = soa3.size() - k;
 
         if (restK > 0) {
-          handleKLoopBody<SquareDistanceMatrix, SquareDistanceMatrix, /*newton3*/ newton3, /*newton3Kernel*/ newton3,
+          handleKLoopBody<DistanceMatrix<false, alignedSoAView>, DistanceMatrix<false, alignedSoAView>,
+                          /*newton3*/ newton3, /*newton3Kernel*/ newton3,
                           /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3Dists, interSoA1SoA3Dists, ownedStatePtr3, typeptr1, typeptr2, typeptr3,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
@@ -1110,9 +1116,10 @@ class AxilrodTellerMutoFunctorHWY
       double *const __restrict fzPtr, VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ,
       VectorDouble &potentialEnergySum, size_t &numKernelCallsN3Sum, size_t &numGlobalCalcsN3Sum,
       size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t restK = 0) {
+    // load distXJVecfrom precomputed data
     const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec, invR5JKVec] =
         soaDists1.template loadRowVec<remainder>(j, k, restK);
-
+    // load distKIVec from precomputed data
     const auto [distXKIVecNeg, distYKIVecNeg, distZKIVecNeg, distSquaredKIVec, invR5KIVec] =
         soaDists2.template loadRowVec<remainder>(i, k, restK);
 
@@ -1479,7 +1486,7 @@ class AxilrodTellerMutoFunctorHWY
     size_t currentSize;
   };
 
-  template <bool LowerTriangle>
+  template <bool LowerTriangle, bool alignedSoAView>
   class DistanceMatrix {
    public:
     using Alloc = autopas::AlignedAllocator<SoAFloatPrecision>;
@@ -1494,13 +1501,20 @@ class AxilrodTellerMutoFunctorHWY
           _dz(precomputeBuffer.dzVec()),
           _squared(precomputeBuffer.squaredVec()),
           _invR5(precomputeBuffer.invR5Vec()) {
-      const size_t size = [](size_t r, size_t c) {
+      if constexpr (!LowerTriangle) {
+        // round up to multiple of vector length
+        _nColsPadded = ((_nCols + _vecLengthDouble - 1) / _vecLengthDouble) * _vecLengthDouble;
+      } else {
+        _nColsPadded = _nCols;  // not used for LowerTriangle
+      }
+
+      const size_t size = [&]() {
         if constexpr (LowerTriangle) {
-          return (r * r - r) / 2;
+          return (rows * rows - rows) / 2;
         } else {
-          return r * c;
+          return rows * _nColsPadded;
         }
-      }(rows, cols);
+      }();
 
       precomputeBuffer.resize(size);
     }
@@ -1515,7 +1529,7 @@ class AxilrodTellerMutoFunctorHWY
     // Full-matrix index
     HWY_INLINE size_t fullIndex(size_t i, size_t j) const {
       static_assert(!LowerTriangle, "fullIndex only valid for LowerTriangle=false");
-      return j + i * _nCols;
+      return j + i * _nColsPadded;
     }
 
     HWY_INLINE size_t index(size_t i, size_t j) const {
@@ -1558,9 +1572,15 @@ class AxilrodTellerMutoFunctorHWY
                           highway::LoadN(tag_double, &_squared[idx], width),
                           highway::LoadN(tag_double, &_invR5[idx], width)};
       } else {
-        return std::tuple{highway::LoadU(tag_double, &_dx[idx]), highway::LoadU(tag_double, &_dy[idx]),
-                          highway::LoadU(tag_double, &_dz[idx]), highway::LoadU(tag_double, &_squared[idx]),
-                          highway::LoadU(tag_double, &_invR5[idx])};
+        if constexpr (LowerTriangle) {
+          return std::tuple{highway::LoadU(tag_double, &_dx[idx]), highway::LoadU(tag_double, &_dy[idx]),
+                            highway::LoadU(tag_double, &_dz[idx]), highway::LoadU(tag_double, &_squared[idx]),
+                            highway::LoadU(tag_double, &_invR5[idx])};
+        } else {
+          return std::tuple{highway::Load(tag_double, &_dx[idx]), highway::Load(tag_double, &_dy[idx]),
+                            highway::Load(tag_double, &_dz[idx]), highway::Load(tag_double, &_squared[idx]),
+                            highway::Load(tag_double, &_invR5[idx])};
+        }
       }
     }
 
@@ -1584,13 +1604,13 @@ class AxilrodTellerMutoFunctorHWY
           rowLength = i;
           if (i == 0) continue;
         } else {
-          rowLength = soa2Size;
+          rowLength = _nCols;
         }
 
         for (; j + _vecLengthDouble <= rowLength; j += _vecLengthDouble) {
-          const auto x2v = highway::LoadU(tag_double, &xptr2[j]);
-          const auto y2v = highway::LoadU(tag_double, &yptr2[j]);
-          const auto z2v = highway::LoadU(tag_double, &zptr2[j]);
+          const auto x2v = loadPacked<alignedSoAView, false>(tag_double, &xptr2[j]);
+          const auto y2v = loadPacked<alignedSoAView, false>(tag_double, &yptr2[j]);
+          const auto z2v = loadPacked<alignedSoAView, false>(tag_double, &zptr2[j]);
 
           const auto dx = x2v - x1v;
           const auto dy = y2v - y1v;
@@ -1605,11 +1625,19 @@ class AxilrodTellerMutoFunctorHWY
 
           const size_t idx = index(i, j);
 
-          highway::StoreU(dx, tag_double, &_dx[idx]);
-          highway::StoreU(dy, tag_double, &_dy[idx]);
-          highway::StoreU(dz, tag_double, &_dz[idx]);
-          highway::StoreU(dist2, tag_double, &_squared[idx]);
-          highway::StoreU(invr5, tag_double, &_invR5[idx]);
+          if constexpr (LowerTriangle) {
+            storePacked<false, false>(tag_double, &_dx[idx], dx);
+            storePacked<false, false>(tag_double, &_dy[idx], dy);
+            storePacked<false, false>(tag_double, &_dz[idx], dz);
+            storePacked<false, false>(tag_double, &_squared[idx], dist2);
+            storePacked<false, false>(tag_double, &_invR5[idx], invr5);
+          } else {
+            storePacked<true, false>(tag_double, &_dx[idx], dx);
+            storePacked<true, false>(tag_double, &_dy[idx], dy);
+            storePacked<true, false>(tag_double, &_dz[idx], dz);
+            storePacked<true, false>(tag_double, &_squared[idx], dist2);
+            storePacked<true, false>(tag_double, &_invR5[idx], invr5);
+          }
         }
 
         // Remainder
@@ -1651,6 +1679,7 @@ class AxilrodTellerMutoFunctorHWY
 
     size_t _nRows{};
     size_t _nCols{};
+    size_t _nColsPadded{};
   };
 
   /**
