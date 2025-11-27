@@ -30,4 +30,20 @@ void for_each(T &&tuple, F &&f) {
       tuple);
 }
 
+template <typename TupleT, size_t... Is>
+auto get_tuple_tail_impl(TupleT &&t, std::index_sequence<Is...>) {
+  return std::make_tuple(std::forward<decltype(std::get<Is + 1>(t))>(std::get<Is + 1>(t))...);
+}
+
+template <typename TupleT>
+auto get_tuple_tail(TupleT &&t) {
+  constexpr size_t N = std::tuple_size_v<std::remove_reference_t<TupleT>>;
+
+  if constexpr (N > 0) {
+    return get_tuple_tail_impl(std::forward<TupleT>(t), std::make_index_sequence<N - 1>{});
+  } else {
+    return std::tuple<>();
+  }
+}
+
 }  // namespace autopas::utils::TupleUtils

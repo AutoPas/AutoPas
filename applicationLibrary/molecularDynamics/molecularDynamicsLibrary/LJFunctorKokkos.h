@@ -1,63 +1,13 @@
 #pragma once
 #include "autopas/baseFunctors/KokkosFunctor.h"
-
-namespace array_utils {
-template <class ScalarType, int N>
-struct array_type {
-  std::array<ScalarType, N> the_array;
-
-  KOKKOS_INLINE_FUNCTION
-  array_type() {
-    for (int i = 0; i < N; i++) {
-      the_array[i] = 0;
-    }
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  array_type(const array_type &rhs) {
-    for (int i = 0; i < N; i++) {
-      the_array[i] = rhs.the_array[i];
-    }
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  ScalarType &operator[](int i) { return the_array[i]; }
-
-  KOKKOS_INLINE_FUNCTION
-  const ScalarType &operator[](int i) const { return the_array[i]; }
-
-  KOKKOS_INLINE_FUNCTION
-  array_type &operator+=(const array_type &src) {
-    for (int i = 0; i < N; i++) {
-      the_array[i] += src.the_array[i];
-    }
-    return *this;
-  }
-};
-
-typedef array_type<double, 3> Vector3;
-}  // namespace array_utils
-
-namespace Kokkos {
-template <>
-struct reduction_identity<array_utils::Vector3> {
-  KOKKOS_FORCEINLINE_FUNCTION static array_utils::Vector3 sum() { return {}; }
-};
-
-
-}  // namespace Kokkos
-
-
+#include "autopas/utils/kokkos/ArrayUtils.h"
 
 namespace mdLib {
 
 template <typename Particle_T>
 class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFunctorKokkos<Particle_T>> {
-
-
-  public:
-  template <typename Space>
-  using SoAArraysType = autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>::template SoAArraysType<Space>;
+ public:
+  using SoAArraysType = autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>::SoAArraysType;
 
   explicit LJFunctorKokkos(double cutoff) : autopas::KokkosFunctor<Particle_T, LJFunctorKokkos>(cutoff) {}
 
@@ -66,117 +16,100 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
   bool isRelevantForTuning() { return true; }
   std::string getName() { return "Lennard-Jones Kokkos"; }
 
-  template <typename Space>
-  KOKKOS_FUNCTION static void KokkosSoAFunctor(SoAArraysType<Space> _soa, size_t index) {
-    std::swap(_soa.force, _soa.old_force);
+  KOKKOS_FUNCTION
+  std::array<double, 3> KokkosLJ(const double self_posx, const double self_posy, const double self_posz,
+                                 const double other_posx, const double other_posy, const double other_posz,
+                                 const double cutoff_radius_sq) const {
+    const double sigma_6 = sigma * sigma * sigma * sigma * sigma * sigma;
+    const double sigma_12 = sigma_6 * sigma_6;
 
-    const auto cutoff_sq = _cutoff * _cutoff;
+    std::array<double, 3> force_vector{};
+    const auto dx = self_posx - other_posx;
+    const auto dy = self_posy - other_posy;
+    const auto dz = self_posz - other_posz;
 
-    Kokkos::parallel_for(
-        "clear force", Kokkos::RangePolicy<autopas::utils::kokkos::DeviceSpace>(0, _soa.size()),
-        KOKKOS_LAMBDA(const int64_t i) {
-          _soa.force(i, X_AXIS) = 0;
-          _soa.force(i, Y_AXIS) = 0;
-          _soa.force(i, Z_AXIS) = 0;
-        });
+    const auto r_sq = dx * dx + dy * dy + dz * dz;
 
-    typedef Kokkos::View<double *[3], typename autopas::utils::kokkos::DeviceSpace::scratch_memory_space,
-                         Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-        block;
+    const auto r2_inv = 1.0 / r_sq;
+    const auto r6_inv = r2_inv * r2_inv * r2_inv;  // 1/r^6
+    const auto r12_inv = r6_inv * r6_inv;          // 1/r^12
 
-    auto tp = Kokkos::TeamPolicy<autopas::utils::kokkos::DeviceSpace>(_num_pairs, Kokkos::AUTO)
-                  .set_scratch_size(0, Kokkos::PerTeam(block::shmem_size(BLOCK_SIZE)));
+    const auto force_magnitude_full =
+        r2_inv * ((48.0 * epsilon * sigma_12) * r12_inv - (24.0 * epsilon * sigma_6) * r6_inv);
 
-    Kokkos::parallel_for(
-        "update force", tp,
-        KOKKOS_CLASS_LAMBDA(const typename Kokkos::TeamPolicy<utils::kokkos::DeviceSpace>::member_type &team) {
-          const auto pair_id = team.league_rank();
-          const auto b1 = _pairs.d_view(pair_id, 0);
-          const auto b2 = _pairs.d_view(pair_id, 1);
+    // this avoids branching and ensures all threads
+    // follow the same instruction path on GPU
+    const auto mask = (r_sq <= cutoff_radius_sq);
+    const auto force_magnitude = force_magnitude_full * mask;
 
-          auto b1_start = b1 * BLOCK_SIZE;
-          auto b1_end = Kokkos::min((b1 + 1) * BLOCK_SIZE, _soa.size());
+    force_vector[0] = force_magnitude * dx;
+    force_vector[1] = force_magnitude * dy;
+    force_vector[2] = force_magnitude * dz;
 
-          auto b2_start = b2 * BLOCK_SIZE;
-          auto b2_end = Kokkos::min((b2 + 1) * BLOCK_SIZE, _soa.size());
-          ;
+    return force_vector;
+  }
 
-          block block1(team.team_scratch(0), BLOCK_SIZE);
+  KOKKOS_FUNCTION static void KokkosSoAFunctor(auto &team, SoAArraysType &_soa, auto &block, size_t b1_start,
+                                               size_t b1_end) {
+    for (uint64_t i = b1_start; i < b1_end; ++i) {
+      autopas::utils::kokkos::ArrayUtils::Vector3 accumulated_force;
+      Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(team, b1_start, b1_end),
+          [&](const int64_t j, autopas::utils::kokkos::ArrayUtils::Vector3 &local_sum) {
+            if (i != j) {
+              const auto force = std::array<double, 3>{0.0, 0.0, 0.0};
 
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, b1_start, b1_end), [&](const int64_t j) {
-            block1(j - b1_start, X_AXIS) = _soa.position(j, X_AXIS);
-            block1(j - b1_start, Y_AXIS) = _soa.position(j, Y_AXIS);
-            block1(j - b1_start, Z_AXIS) = _soa.position(j, Z_AXIS);
-          });
-          team.team_barrier();
-          if (b1 == b2) {
-            // TODO optimized loop
-            for (int64_t i = b1_start; i < b1_end; ++i) {
-              auto type1 = _soa.typeId(i);
-              array_utils::Vector3 accumulated_force;
-              Kokkos::parallel_reduce(
-                  Kokkos::TeamThreadRange(team, b1_start, b1_end),
-                  [&](const int64_t j, array_utils::Vector3 &local_sum) {
-                    if (i != j) {
-                      const auto type2 = _soa.typeId(j);
-                      const auto force = f(block1(i - b1_start, X_AXIS), block1(i - b1_start, Y_AXIS),
-                                           block1(i - b1_start, Z_AXIS), block1(j - b1_start, X_AXIS),
-                                           block1(j - b1_start, Y_AXIS), block1(j - b1_start, Z_AXIS), cutoff_sq);
+              KokkosLJ()(block(i - b1_start, 0), block(i - b1_start, 1), block(i - b1_start, 2), block(j - b1_start, 0),
+                         block(j - b1_start, 1), block(j - b1_start, 2), getCutoff() * getCutoff());
 
-                      local_sum[0] += force[0];
-                      local_sum[1] += force[1];
-                      local_sum[2] += force[2];
-                    }
-                  },
-                  Kokkos::Sum<array_utils::Vector3>(accumulated_force)
-
-              );
-
-              Kokkos::single(Kokkos::PerTeam(team), [&]() {
-                Kokkos::atomic_add(&_soa.force(i, X_AXIS), accumulated_force[0]);
-                Kokkos::atomic_add(&_soa.force(i, Y_AXIS), accumulated_force[1]);
-                Kokkos::atomic_add(&_soa.force(i, Z_AXIS), accumulated_force[2]);
-              });
+              local_sum[0] += force[0];
+              local_sum[1] += force[1];
+              local_sum[2] += force[2];
             }
-          } else {
-            for (int64_t i = b1_start; i < b1_end; ++i) {
-              auto mask = _pairs.d_view(pair_id, 2);
-              if (mask & (1L << (i - b1_start))) {
-                auto type1 = _soa.typeId(i);
-                array_utils::Vector3 accumulated_force;
-                Kokkos::parallel_reduce(
-                    Kokkos::TeamThreadRange(team, b2_start, b2_end),
-                    [&](const int64_t j, array_utils::Vector3 &local_sum) {
-                      auto type2 = _soa.typeId(j);
-                      auto pos_x = block1(i - b1_start, X_AXIS);
-                      auto pos_y = block1(i - b1_start, Y_AXIS);
-                      auto pos_z = block1(i - b1_start, Z_AXIS);
+          },
+          Kokkos::Sum<autopas::utils::kokkos::ArrayUtils::Vector3>(accumulated_force));
+      Kokkos::single(Kokkos::PerTeam(team), [&]() {
+        Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceX>().d_view(i), accumulated_force[0]);
+        Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceY>().d_view(i), accumulated_force[1]);
+        Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceZ>().d_view(i), accumulated_force[2]);
+      });
+    }
+  };
 
-                      const auto force = f(pos_x, pos_y, pos_z, _soa.position(j, X_AXIS), _soa.position(j, Y_AXIS),
-                                           _soa.position(j, Z_AXIS), cutoff_sq);
-                      const double Fx = force[0];
-                      const double Fy = force[1];
-                      const double Fz = force[2];
-                      // TODO accumulate locally then update global
-                      Kokkos::atomic_add(&_soa.force(j, X_AXIS), -Fx);
-                      Kokkos::atomic_add(&_soa.force(j, Y_AXIS), -Fy);
-                      Kokkos::atomic_add(&_soa.force(j, Z_AXIS), -Fz);
+  KOKKOS_FUNCTION static void KokkosSoAFunctorPairwise(auto &team, SoAArraysType &_soa, auto &block1, size_t i,
+                                                       size_t b1_start, size_t b2_start, size_t b2_end) {
+    autopas::utils::kokkos::ArrayUtils::Vector3 accumulated_force;
+    Kokkos::parallel_reduce(
+        Kokkos::TeamThreadRange(team, b2_start, b2_end),
+        [&](const int64_t j, autopas::utils::kokkos::ArrayUtils::Vector3 &local_sum) {
+          auto pos_x = block1(i - b1_start, 0);
+          auto pos_y = block1(i - b1_start, 1);
+          auto pos_z = block1(i - b1_start, 2);
 
-                      local_sum[0] += Fx;
-                      local_sum[1] += Fy;
-                      local_sum[2] += Fz;
-                    },
-                    Kokkos::Sum<array_utils::Vector3>(accumulated_force));
+          const auto force =
+              KokkosLJ(pos_x, pos_y, pos_z, _soa.template get<Particle_T::AttributeNames::posX>().d_view(j),
+                       _soa.template get<Particle_T::AttributeNames::posY>().d_view(j),
+                       _soa.template get<Particle_T::AttributeNames::posZ>().d_view(j), getCutoff() * getCutoff());
+          const double Fx = force[0];
+          const double Fy = force[1];
+          const double Fz = force[2];
 
-                Kokkos::single(Kokkos::PerTeam(team), [&]() {
-                  Kokkos::atomic_add(&_soa.force(i, X_AXIS), accumulated_force[0]);
-                  Kokkos::atomic_add(&_soa.force(i, Y_AXIS), accumulated_force[1]);
-                  Kokkos::atomic_add(&_soa.force(i, Z_AXIS), accumulated_force[2]);
-                });
-              }
-            }
-          }
-        });
+          // TODO accumulate locally then update global
+          Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceX>().d_view(j), -Fx);
+          Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceY>().d_view(j), -Fy);
+          Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceZ>().d_view(j), -Fz);
+
+          local_sum[0] += Fx;
+          local_sum[1] += Fy;
+          local_sum[2] += Fz;
+        },
+        Kokkos::Sum<autopas::utils::kokkos::ArrayUtils::Vector3>(accumulated_force));
+
+    Kokkos::single(Kokkos::PerTeam(team), [&]() {
+      Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceX>().d_view(i), accumulated_force[0]);
+      Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceY>().d_view(i), accumulated_force[1]);
+      Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceZ>().d_view(i), accumulated_force[2]);
+    });
   };
 };
 

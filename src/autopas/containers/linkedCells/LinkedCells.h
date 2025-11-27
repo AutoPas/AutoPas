@@ -387,7 +387,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       for (auto &cell : getCells()) {
         cell.reduce(reduceLambda, result);

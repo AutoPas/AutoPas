@@ -33,18 +33,52 @@ class KokkosSoA {
 
   template <typename Space>
   inline constexpr void syncAll() {
-    std::apply([](auto &view) { view.template sync<Space>(); });
+    _soaStorage.apply([](auto &view) { view.template sync<Space>(); });
   }
 
   template <typename Space>
   inline constexpr void markModifiedAll() {
-    std::apply([](auto &view) { view.template modify<Space>(); });
+    _soaStorage.apply([](auto &view) { view.template modify<Space>(); });
   }
 
-  template<size_t AttributeName>
-  inline constexpr auto get() {
+  template <size_t AttributeName>
+  inline constexpr auto &get() const {
     return _soaStorage.template get<AttributeName>();
   }
+
+  template <typename Space, typename PermView>
+  inline void sort(Space space, PermView permutation) {
+    _soaStorage.applyExceptFirst([&](auto &view) {
+      apply_permutation(space, permutation, view.d_view);
+      view.template modify<Space>();
+    });
+  }
+
+  template <typename Space, typename View, typename PermView>
+  void apply_permutation(Space space, PermView permutations, View &view) {
+    auto temp = Kokkos::create_mirror(Kokkos::WithoutInitializing, space, view);
+    auto policy = Kokkos::RangePolicy<Space>(0, size());
+
+    Kokkos::parallel_for(
+        "apply permutation", policy, KOKKOS_LAMBDA(const int index) {
+          // This is a hack to get it working. I have to declare them, because otherwise I can't use constexpr
+          // without constexpr I can't handle the dimensionality
+          // And they are not allowed to be shadowed
+          // View are copied shallow
+          View temp1 = temp;
+          View view1 = view;
+          auto new_index = permutations(index);
+          if constexpr (View::rank == 1) {
+            // Inefficient memory acces, but unavoidable at this point
+            temp1(index) = view1(new_index);
+          } else if constexpr (View::rank == 2) {
+            temp1(index, 0) = view1(new_index, 0);
+            temp1(index, 1) = view1(new_index, 1);
+            temp1(index, 2) = view1(new_index, 2);
+          }
+        });
+    view = temp;
+  };
 
  private:
   SoAStorage<typename KokkosSoAType<SoAArraysType>::Type> _soaStorage;

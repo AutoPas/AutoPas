@@ -450,7 +450,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc LinkedCells::reduce()
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy,
+              typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       // iterate over all particles, so execute directly on particle vector
       _particleList.reduce(reduceLambda, result);

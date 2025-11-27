@@ -474,21 +474,21 @@ class LogicHandler {
   void forEach(Lambda lambda, IteratorBehavior behavior) {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
     withStaticContainerType(_containerSelector.getCurrentContainer(),
-                            [&](auto &container) { container.forEach(lambda, behavior, additionalVectors); });
+                            [&](auto &container) { container.forEach(lambda, behavior, &additionalVectors); });
   }
 
   template <typename Lambda>
   void forEach(Lambda lambda, IteratorBehavior behavior) const {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, false, false>>(behavior);
     withStaticContainerType(_containerSelector.getCurrentContainer(),
-                            [&](auto &container) { container.forEach(lambda, behavior, additionalVectors); });
+                            [&](auto &container) { container.forEach(lambda, behavior, &additionalVectors); });
   }
 
   template <typename Lambda>
   void reduce(Lambda lambda, bool &result, IteratorBehavior behavior) {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
     withStaticContainerType(_containerSelector.getCurrentContainer(),
-                            [&](auto &container) { container.reduce(lambda, result, behavior, additionalVectors); });
+                            [&](auto &container) { container.reduce(lambda, result, behavior, &additionalVectors); });
   }
 
   /**
@@ -1115,7 +1115,6 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel)
-
   this->forEach([&](auto &particle) { particle.resetRAtRebuild(); },
                 IteratorBehavior::owned | IteratorBehavior::containerOnly);
 #endif
@@ -1177,6 +1176,8 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
       _neighborListInvalidDoDynamicRebuild, IteratorBehavior::owned | IteratorBehavior::containerOnly);
 
 #endif
+  // TODO remove this
+  _neighborListInvalidDoDynamicRebuild = true;
 }
 
 template <typename Particle_T>

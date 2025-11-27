@@ -528,7 +528,8 @@ class VerletClusterLists : public IteratorParticleContainer<Particle_T>, public 
    * @copydoc autopas::LinkedCells::reduce()
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+              typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) {
     for (auto &tower : _towerBlock) {
       tower.reduce(reduceLambda, result, behavior);
     }

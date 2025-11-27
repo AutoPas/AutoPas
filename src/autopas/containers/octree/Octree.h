@@ -474,7 +474,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+              typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) {
     if (behavior & IteratorBehavior::owned) this->_cells[OWNED].reduce(reduceLambda, result);
     if (behavior & IteratorBehavior::halo) this->_cells[HALO].reduce(reduceLambda, result);
     if (not(behavior & IteratorBehavior::ownedOrHalo))

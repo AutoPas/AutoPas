@@ -256,7 +256,7 @@ class VerletListsLinkedBase : public IteratorParticleContainer<Particle_T> {
    * @copydoc autopas::LinkedCells::reduce()
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior, typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) {
     return _linkedCells.reduce(reduceLambda, result, behavior);
   }
 

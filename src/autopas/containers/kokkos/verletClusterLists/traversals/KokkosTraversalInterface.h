@@ -5,8 +5,6 @@ template <typename Particle_T>
 class KokkosTraversalInterface {
  public:
   virtual ~KokkosTraversalInterface() = default;
-
- private:
-  virtual void rebuild() = 0;
+  virtual void rebuild(std::vector<Particle_T> &particles) = 0;
 };
 }  // namespace autopas::containers::kokkos::traversal

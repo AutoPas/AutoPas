@@ -33,6 +33,12 @@ class SoAStorage {
     utils::TupleUtils::for_each(soaStorageTuple, func);
   }
 
+  template <typename FunctorT>
+  void applyExceptFirst(FunctorT func) {
+    auto tail = utils::TupleUtils::get_tuple_tail(soaStorageTuple);
+    utils::TupleUtils::for_each(tail, func);
+  }
+
   /**
    * Get the vector at the specific entry of the storage
    * @tparam soaAttribute the attribute for which the vector should be returned

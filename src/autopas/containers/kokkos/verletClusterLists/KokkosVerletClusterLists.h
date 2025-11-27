@@ -1,7 +1,6 @@
 #pragma once
 
-#include "autopas/utils/kokkos/KokkosSoA.h"
-#include "autopas/utils/kokkos/KokkosSoAType.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "traversals/KokkosVCLTraversal.h"
 
 namespace autopas {
@@ -26,8 +25,14 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {}
 
  protected:
-  void addParticleImpl(const Particle_T &p) override { particles.push_back(p); }
-  void addHaloParticleImpl(const Particle_T &haloParticle) override { particles.push_back(haloParticle); }
+  void addParticleImpl(const Particle_T &p) override {
+    std::lock_guard<AutoPasLock> lock(_particlesLock);
+    particles.push_back(p);
+  }
+  void addHaloParticleImpl(const Particle_T &haloParticle) override {
+    std::lock_guard<AutoPasLock> lock(_particlesLock);
+    particles.push_back(haloParticle);
+  }
 
  public:
   bool updateHaloParticle(const Particle_T &haloParticle) override {
@@ -37,16 +42,19 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   }
   void rebuildNeighborLists(autopas::TraversalInterface *traversal) override {
     auto trav = dynamic_cast<containers::kokkos::traversal::KokkosTraversalInterface<Particle_T> *>(traversal);
-    trav.rebuild();
+    trav->rebuild(this->particles);
   }
 
   void deleteHaloParticles() override {
-    std::remove_if(particles.begin(), particles.end(), [](auto &particle) {
-      return particle._ownershipState == OwnershipState::dummy || particle._ownershipState == OwnershipState::owned;
-    });
+    std::lock_guard<AutoPasLock> lock(_particlesLock);
+    std::remove_if(particles.begin(), particles.end(),
+                   [](auto &particle) { return !particle.isDummy() || !particle.isOwned(); });
   }
 
-  void deleteAllParticles() override { particles.clear(); }
+  void deleteAllParticles() override {
+    std::lock_guard<AutoPasLock> lock(_particlesLock);
+    particles.clear();
+  }
 
   [[nodiscard]] size_t getNumberOfParticles(autopas::IteratorBehavior behavior) const override {
     return std::count_if(particles.begin(), particles.end(),
@@ -97,7 +105,13 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
       Lambda lambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {};
 
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior,
+              typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) {}
+
  private:
+
+  AutoPasLock _particlesLock;
   std::vector<Particle_T> particles;
 
   std::array<double, 3> _boxMin;
