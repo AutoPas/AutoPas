@@ -52,7 +52,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -539,10 +539,7 @@ bool Simulation::calculateTriwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForce);
-  }
+  _autoPasContainer->forEach([&](auto &particle) { particle.addF(globalForce); }, autopas::IteratorBehavior::owned);
 }
 
 void Simulation::logSimulationState() {
@@ -580,9 +577,8 @@ void Simulation::updateSimulationPauseState() {
     std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase.\n";
 
     // reset the forces which accumulated during the tuning phase
-    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF(_configuration.globalForce.value);
-    }
+    _autoPasContainer->forEach([&](auto &particle) { particle.setF(_configuration.globalForce.value); },
+                               autopas::IteratorBehavior::owned);
 
     // calculate the forces of the latest iteration again
     updateInteractionForces();
@@ -799,7 +795,8 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::kk_lj: {
-      return f(LJFunctorTypeKokkos{cutoff});
+      return f(
+          LJFunctorTypeKokkos{cutoff, particlePropertiesLibrary.getEpsilon(0), particlePropertiesLibrary.getSigma(0)});
     }
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)

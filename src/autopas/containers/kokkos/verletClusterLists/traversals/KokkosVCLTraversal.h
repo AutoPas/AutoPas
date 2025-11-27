@@ -69,7 +69,7 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
   KokkosVCLTraversal(Functor_T *f, DataLayoutOption dataLayout, bool newton3, double cutoff,
                      std::array<double, 3> cellSize, double skinSize = 0.0)
       : TraversalInterface(dataLayout, newton3),
-        _functor(cutoff),
+        _functor( *f ),
         _cutoff(cutoff),
         _cellSize(cellSize),
         _skinSize(skinSize) {}
@@ -85,7 +85,7 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
     updateBoundingBox();
     updatePairs();
   }
-  void traverseParticles() override { calculateForce(_functor); }
+  void traverseParticles() override { calculateForce(); }
   void endTraversal() override {
     // TODO copy back
   }
@@ -106,10 +106,8 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
 
   constexpr static int BLOCK_SIZE = 32;
 
-  template <typename Functor>
-  void calculateForce(Functor f) {
-    const auto cutoff_sq = _cutoff * _cutoff;
 
+  void calculateForce() {
     Kokkos::parallel_for(
         "clear force", Kokkos::RangePolicy<autopas::utils::kokkos::DeviceSpace>(0, _soa.size()),
         KOKKOS_CLASS_LAMBDA(const int64_t i) {
@@ -140,6 +138,7 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
 
           block block1(team.team_scratch(0), BLOCK_SIZE);
 
+          // TODO Maybe theres a copy for that?
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, b1_start, b1_end), [&](const int64_t j) {
             block1(j - b1_start, X_AXIS) = _soa.template get<Particle_T::AttributeNames::posX>().d_view(j);
             block1(j - b1_start, Y_AXIS) = _soa.template get<Particle_T::AttributeNames::posY>().d_view(j);
@@ -147,12 +146,12 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
           });
           team.team_barrier();
           if (b1 == b2) {
-            f.KokkosSoAFunctor(team, _soa, block1, b1_start, b1_end);
+            _functor.KokkosSoAFunctor(team, _soa, block1, b1_start, b1_end);
           } else {
             for (uint64_t i = b1_start; i < b1_end; ++i) {
               auto mask = _pairs.d_view(pair_id, 2);
               if (mask & (1L << (i - b1_start))) {
-                f.KokkosSoAFunctorPairwise(team, _soa, block1, i, b1_start, b2_start, b2_end);
+                _functor.KokkosSoAFunctorPairwise(team, _soa, block1, i, b1_start, b2_start, b2_end);
               }
             }
           }
