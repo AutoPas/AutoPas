@@ -81,10 +81,11 @@ if (AUTOPAS_FORMATTING_TARGETS)
     include(autopas_format)
 endif ()
 
+
 include(autopas_ccache)
+include(autopas_OpenMP) # Add omp before sanitizers
 include(autopas_clang-sanitizers)
 include(autopas_clang-tidy)
-include(autopas_OpenMP)
 include(autopas_mpi)
 
 include(version.cmake)
