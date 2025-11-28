@@ -5,39 +5,39 @@
  */
 
 #pragma once
-#include "molecularDynamicsLibrary/LJFunctorKokkos.h"
+#include <molecularDynamicsLibrary/LJFunctorKokkos.h>
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
-#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
+#include <molecularDynamicsLibrary/MultisiteMoleculeLJ.h>
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+#include <molecularDynamicsLibrary/LJMultisiteFunctor.h>
 #endif
 
 #else
 
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include <molecularDynamicsLibrary/MoleculeLJ.h>
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-#include "molecularDynamicsLibrary/LJFunctor.h"
+#include <molecularDynamicsLibrary/LJFunctor.h>
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
-#include "molecularDynamicsLibrary/LJFunctorAVX.h"
+#include <molecularDynamicsLibrary/LJFunctorAVX.h>
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
-#include "molecularDynamicsLibrary/LJFunctorSVE.h"
+#include <molecularDynamicsLibrary/LJFunctorSVE.h>
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#include <molecularDynamicsLibrary/AxilrodTellerFunctor.h>
 #endif
 
 #endif
 
-#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include <molecularDynamicsLibrary/ParticlePropertiesLibrary.h>
 
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.

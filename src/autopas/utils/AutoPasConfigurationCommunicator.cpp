@@ -209,12 +209,13 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
-  std::memcpy(&cellSizeFactor, &config[6], sizeof(double));
+  std::memcpy(&cellSizeFactor, &config[7], sizeof(double));
   return {
       static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
       static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
-      static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]),
+      static_cast<DataLayoutOption::Value>(config[3]),      static_cast<DataLayoutOption::Value>(config[4]),
+      static_cast<Newton3Option::Value>(config[5]),
+      static_cast<InteractionTypeOption::Value>(config[6]),
   };
 }
 

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <Kokkos_Core.hpp>
+#include "autopas/utils/KokkosAoS.h"
 #include "autopas/utils/KokkosDataLayoutConverter.h"
 #include "autopas/options/DataLayoutOption.h"
 
@@ -24,44 +25,70 @@ class DSKokkosTraversalInterface {
 
 public:
 
+  template <typename Space>
+  using KokkosSoAType = Particle_T::template KokkosSoAArraysType<Space>;
+
   explicit DSKokkosTraversalInterface(DataLayoutOption dataLayout) : _dataLayout(dataLayout), _converter(_dataLayout) {};
 
   virtual ~DSKokkosTraversalInterface() = default;
 
-  virtual void setOwnedToTraverse(Kokkos::View<Particle_T*, HostSpace> &particles) {
+  void setOwnedAoSToTraverse(utils::KokkosAoS<HostSpace, Particle_T>& inputAoS) {
+    // Target Layout is SoA
+    const size_t numParticles = inputAoS.size();
 
-    // TODO: consider chosen data layout
-    const size_t numParticles = particles.extent(0);
-    Kokkos::realloc(_ownedParticlesAoS, numParticles);
+    // TODO: this should in the end become a mirror view for avoiding data copies where they are not necessary (i.e. HostSpace = DeviceSpace)
+    KokkosSoAType<HostSpace> hostOwnedParticlesSoA {numParticles};
+    _deviceOwnedParticlesSoA.resize(numParticles);
 
-    Kokkos::deep_copy(_ownedParticlesAoS, particles);
-
-    KokkosSoAType<HostSpace> hostOwnedParticlesSoA {};
-    _deviceOwnedParticleSoA.resize(numParticles);
-    hostOwnedParticlesSoA.resize(numParticles);
-
-    constexpr size_t tupleSize = hostOwnedParticlesSoA.tupleSize();
+    constexpr size_t tupleSize = _deviceOwnedParticlesSoA.tupleSize();
     constexpr auto I = std::make_index_sequence<tupleSize>();
 
-    _converter.loadDataLayout(particles, hostOwnedParticlesSoA, numParticles, I);
-    _deviceOwnedParticleSoA.copyFrom(hostOwnedParticlesSoA, I);
+    if (_dataLayout == DataLayoutOption::soa) {
+      _converter.convertToSoA(inputAoS, hostOwnedParticlesSoA, numParticles, I);
+    }
+    else if (_dataLayout == DataLayoutOption::aos) {
+      // No Op as no conversion is required
+    }
+
+    _deviceOwnedParticlesSoA.copyFrom(hostOwnedParticlesSoA, I);
   }
 
-  virtual void setHaloToTraverse(const Kokkos::View<Particle_T*, HostSpace> &particles) {
+  void setOwnedSoAToTraverse(KokkosSoAType<HostSpace>& inputSoA) {
+
+    const size_t numParticles = inputSoA.size();
+
+    utils::KokkosAoS<HostSpace, Particle_T> hostOwnedParticlesAoS {numParticles};
+    Kokkos::realloc(_ownedParticlesAoS, numParticles);
+
+    // Target Layout is SoA
+    if (_dataLayout == DataLayoutOption::soa) {
+      // No Op as no conversion is required
+    }
+    else if (_dataLayout == DataLayoutOption::aos) {
+      constexpr size_t tupleSize = inputSoA.tupleSize();
+      constexpr auto I = std::make_index_sequence<tupleSize>();
+
+      _converter.convertToAoS(inputSoA, hostOwnedParticlesAoS, numParticles, I);
+    }
+
+    Kokkos::deep_copy(_ownedParticlesAoS, hostOwnedParticlesAoS.getView());
+  }
+
+  template <class IncomingParticles_T>
+  void setHaloToTraverse(IncomingParticles_T &particles) {
     // TODO
   };
 
 protected:
 
-  Kokkos::View<Particle_T*, DeviceSpace> _ownedParticlesAoS;
-  Kokkos::View<Particle_T*, DeviceSpace> _haloParticlesAoS;
+  Kokkos::View<Particle_T*, DeviceSpace> _ownedParticlesAoS {0};
+  Kokkos::View<Particle_T*, DeviceSpace> _haloParticlesAoS {0};
 
-  template <typename Space>
-  using KokkosSoAType = Particle_T::template KokkosSoAArraysType<Space>;
-
-  KokkosSoAType<DeviceSpace> _deviceOwnedParticleSoA;
+  KokkosSoAType<DeviceSpace> _deviceOwnedParticlesSoA {0};
+  KokkosSoAType<DeviceSpace> _deviceHaloParticlesSoA {0};
 
 private:
+
   DataLayoutOption _dataLayout;
   utils::KokkosDataLayoutConverter<Particle_T> _converter;
 };

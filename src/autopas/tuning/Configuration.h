@@ -36,12 +36,13 @@ class Configuration {
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, DataLayoutOption _containerLayout, Newton3Option _newton3,
                           InteractionTypeOption _interactionType)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
+        containerDataLayout(_containerLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
         interactionType(_interactionType) {}
@@ -128,6 +129,9 @@ class Configuration {
    * Data Layout option.
    */
   DataLayoutOption dataLayout;
+
+  DataLayoutOption containerDataLayout;
+
   /**
    * Newton 3 option.
    */

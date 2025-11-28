@@ -8,11 +8,10 @@
 #pragma once
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/baseFunctors/PairwiseFunctor.h"
-#include "autopas/utils/AlignedAllocator.h"
-#include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SoA.h"
+#include <autopas/baseFunctors/PairwiseFunctor.h>
+#include <autopas/utils/AlignedAllocator.h>
+#include <autopas/utils/ArrayMath.h>
+#include <autopas/utils/ExceptionHandler.h>
 
 #include <Kokkos_Core.hpp>
 

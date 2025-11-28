@@ -13,7 +13,7 @@
 
 #include "MDFlexConfig.h"
 #include "ParserExitCodes.h"
-#include "autopas/utils/TupleUtils.h"
+#include <autopas/utils/TupleUtils.h>
 
 /**
  * Parser for input from the command line.

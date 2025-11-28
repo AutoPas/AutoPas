@@ -18,7 +18,7 @@ class KokkosDataLayoutConverter {
       : _dataLayout(dataLayout) {}
 
   template <class Input, class Output, std::size_t... I>
-  void loadDataLayout(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...>) {
+  void convertToSoA(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...>) {
 
     // AoS to SoA
     for (size_t i = 0; i < numParticles; ++i) {
@@ -27,7 +27,7 @@ class KokkosDataLayoutConverter {
   }
 
   template <class Input, class Output, std::size_t... I>
-  void storeDataLayout(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...>) {
+  void convertToAoS(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...>) {
 
     // SoA to AoS
     for (size_t i = 0; i < numParticles; ++i) {

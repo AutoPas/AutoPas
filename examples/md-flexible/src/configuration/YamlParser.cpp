@@ -206,6 +206,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.dataLayoutOptions.value.empty()) {
           throw std::runtime_error("Parsed data-layouts-list is empty.");
         }
+      } else if (key == config.containerLayoutOptions.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.containerLayoutOptions.description;
+
+        config.containerLayoutOptions.value =
+            autopas::DataLayoutOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        if (config.containerLayoutOptions.value.empty()) {
+          throw std::runtime_error("Parsed container-layouts-list is empty.");
+        }
       } else if (key == config.dataLayoutOptions3B.name) {
         expected = "YAML-sequence of possible values.";
         description = config.dataLayoutOptions3B.description;

@@ -9,8 +9,8 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/WrapOpenMP.h"
+#include <autopas/utils/ExceptionHandler.h>
+#include <autopas/utils/WrapOpenMP.h>
 
 namespace TimeDiscretization {
 

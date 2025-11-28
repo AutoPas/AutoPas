@@ -8,9 +8,9 @@
 #include <algorithm>
 
 #include "TypeDefinitions.h"
-#include "autopas/AutoPasDecl.h"
-#include "autopas/utils/WrapMPI.h"
-#include "autopas/utils/WrapOpenMP.h"
+#include <autopas/AutoPasDecl.h>
+#include <autopas/utils/WrapMPI.h>
+#include <autopas/utils/WrapOpenMP.h>
 
 // Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -134,6 +134,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // Pairwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
                                            autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedContainerLayouts(_configuration.containerLayoutOptions.value,
+                                              autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value,
                                               autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
@@ -344,6 +346,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                 : autopas::SearchSpaceGenerators::cartesianProduct(
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
+                      _configuration.containerLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
                       autopas::InteractionTypeOption::pairwise)
                       .size();
@@ -354,6 +357,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                 : autopas::SearchSpaceGenerators::cartesianProduct(
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                      _configuration.containerLayoutOptions.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
                       autopas::InteractionTypeOption::triwise)
                       .size();

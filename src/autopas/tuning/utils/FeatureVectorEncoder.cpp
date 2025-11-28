@@ -280,9 +280,10 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
       _containerTraversalEstimatorOptions[discreteValues[static_cast<size_t>(
           DiscreteIndices::containerTraversalEstimator)]];
   auto dataLayout = _dataLayoutOptions[discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)]];
+  auto containerLayout = _dataLayoutOptions[discreteValues[static_cast<size_t>(DiscreteIndices::containerLayout)]];
   auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
 
-  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, _interactionType);
+  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, containerLayout, newton3, _interactionType);
 }

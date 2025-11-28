@@ -46,6 +46,9 @@ struct OptionSpace {
    * Available dataLayout options.
    */
   std::set<DataLayoutOption> dataLayoutOptions;
+
+  std::set<DataLayoutOption> containerLayoutOptions;
+
   /**
    * Available newton3 options.
    */
@@ -72,6 +75,7 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<TraversalOption> &allowedTraversalOptions,
                                          const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                         const std::set<DataLayoutOption> &allowedContainerLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
                                          const InteractionTypeOption &interactionType);

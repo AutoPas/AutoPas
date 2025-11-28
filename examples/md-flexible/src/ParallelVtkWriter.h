@@ -11,8 +11,8 @@
 #include <string>
 #include <unordered_set>
 
-#include "autopas/AutoPas.h"
-#include "autopas/tuning/Configuration.h"
+#include <autopas/AutoPas.h>
+#include <autopas/tuning/Configuration.h>
 #include "src/TypeDefinitions.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 

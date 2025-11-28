@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "autopas/utils/WrapMPI.h"
+#include <autopas/utils/WrapMPI.h>
 #include "src/TypeDefinitions.h"
 
 /**

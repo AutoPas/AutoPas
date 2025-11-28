@@ -27,7 +27,7 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
-#include "autopas/utils/WrapMPI.h"
+#include <autopas/utils/WrapMPI.h>
 #include "autopas/utils/WrapKokkos.h"
 
 namespace autopas {
@@ -279,29 +279,6 @@ class AutoPas {
   ConstIteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
-   * execute code on all particles in parallel as defined by a lambda function
-   * @tparam Lambda (Particle_T &p) -> void
-   * @param forEachLambda code to be executed on all particles
-   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
-   * @note not actually parallel until kokkos integration
-   */
-  template <typename Lambda>
-  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
-  }
-
-  /**
-   * @copydoc forEachParallel()
-   * @note const version
-   */
-  template <typename Lambda>
-  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
-  }
-
-  /**
    * Execute code on all particles as defined by a lambda function.
    * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
@@ -310,6 +287,11 @@ class AutoPas {
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
+  }
+
+  template <typename Lambda>
+  void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEachKokkos(forEachLambda, behavior); });
   }
 
   /**
@@ -901,6 +883,11 @@ class AutoPas {
     return _allowedDataLayouts.at(interactionType);
   }
 
+  const std::set<DataLayoutOption> &getAllowedContainerLayouts(
+    const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedContainerLayouts.at(interactionType);
+  }
+
   /**
    * Set the list of allowed data layouts.
    * For possible data layouts choices see options::DataLayoutOption::Value.
@@ -916,6 +903,17 @@ class AutoPas {
       }
     } else {
       _allowedDataLayouts[interactionType] = allowedDataLayouts;
+    }
+  }
+
+  void setAllowedContainerLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedContainerLayouts[iType] = allowedDataLayouts;
+      }
+    } else {
+      _allowedContainerLayouts[interactionType] = allowedDataLayouts;
     }
   }
 
@@ -1156,6 +1154,10 @@ class AutoPas {
   std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedDataLayouts{
       {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
       {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
+
+  std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedContainerLayouts{
+        {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
+        {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */

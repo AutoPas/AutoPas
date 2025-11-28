@@ -166,7 +166,7 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    * Get the old force.
    * @return
    */
-  KOKKOS_INLINE_FUNCTION const std::array<double, 3> &getOldF() const {
+  const std::array<double, 3> &getOldF() const {
     return _oldF;
   }
 
@@ -174,7 +174,7 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    * Set old force.
    * @param oldForce
    */
-  KOKKOS_INLINE_FUNCTION void setOldF(const std::array<double, 3> &oldForce) {
+  void setOldF(const std::array<double, 3> &oldForce) {
     _oldF = oldForce;
   }
 
@@ -182,7 +182,7 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    * Get TypeId.
    * @return
    */
-  KOKKOS_INLINE_FUNCTION size_t getTypeId() const {
+  size_t getTypeId() const {
     return _typeId;
   }
 
@@ -190,7 +190,7 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    * Set the type id of the Molecule.
    * @param typeId
    */
-  KOKKOS_INLINE_FUNCTION void setTypeId(size_t typeId) {
+  void setTypeId(size_t typeId) {
     _typeId = typeId;
   }
 

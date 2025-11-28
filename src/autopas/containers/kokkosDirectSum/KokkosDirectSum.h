@@ -4,14 +4,15 @@
  * @author Luis Gall
  */
 
-// This file is oriented on the implementation of the CellBasedParticleContainer
+// This file is oriented on the implementation of the CellBasedParticleContainer, just that it does not use any cells to store particles
 
 #pragma once
 
 #include <Kokkos_Core.hpp>
 
-#include "autopas/utils/KokkosSoA.h"
 #include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/utils/KokkosAoS.h"
+#include "autopas/utils/KokkosSoA.h"
 #include "traversals/KokkosDsNaiveParallelTraversal.h"
 
 namespace autopas {
@@ -22,8 +23,8 @@ template <class Particle_T>
     class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
         public:
-            KokkosDirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
-                : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin)
+            KokkosDirectSum(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
+                : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout)
                 {}
 
             [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; }
@@ -31,13 +32,14 @@ template <class Particle_T>
             void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
                 
                 if (numParticles > capacityOwned) {
-                  Kokkos::realloc(_ownedParticles, numParticles);
+                  _ownedParticlesAoS.resize(numParticles);
                   _hostOwnedParticlesSoA.resize(numParticles);
                   capacityOwned = numParticles;
                 }
 
                 if (numParticlesHaloEstimate > capacityHalo) {
-                  Kokkos::realloc(_haloParticles, numParticlesHaloEstimate);
+                  _haloParticles.resize(numParticlesHaloEstimate);
+                  // TODO: SoA
                   capacityHalo = numParticlesHaloEstimate;
                 }
             }
@@ -46,13 +48,20 @@ template <class Particle_T>
             // TODO: provide an additional function for this
 
             void addParticleImpl(const Particle_T &p) override {
+
               std::lock_guard<AutoPasLock> guard (ownedLock);
 
-                if (numberOfOwned < capacityOwned) {
-                    _ownedParticles(numberOfOwned++) = p;
-                } else {
-                    // TODO: resize
-                }
+              if (numberOfOwned >= capacityOwned) {
+                // TODO: resize
+                std::cout << "Problem" << std::endl;
+              }
+
+              if (_dataLayout == DataLayoutOption::soa) {
+                _hostOwnedParticlesSoA.addParticle(numberOfOwned++, p);
+              }
+              else if (_dataLayout == DataLayoutOption::aos) {
+                _ownedParticlesAoS(numberOfOwned++) = p;
+              }
             }
 
             void addHaloParticleImpl(const Particle_T &haloP) override {
@@ -111,7 +120,7 @@ template <class Particle_T>
 
             [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
                 // TODO
-                return TraversalSelectorInfo();
+                return TraversalSelectorInfo{};
             }
 
             /* TODO: Begin of Code Crime (investigate generalizations of this -> every container does EXACTLY the same) */
@@ -156,10 +165,14 @@ template <class Particle_T>
 
             template <typename Lambda>
             void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-              // TODO
+              // TODO: consider behavior
+
             }
 
-            // TODO: maybe there should also be a forEach
+            template <typename Lambda>
+            void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior) {
+              // TODO
+            }
 
             [[nodiscard]] double getCutoff() const final { return 0; }
 
@@ -200,8 +213,14 @@ template <class Particle_T>
         void prepareTraversal(Traversal &traversal) {
             auto* kokkosDsTraversal = dynamic_cast<DSKokkosTraversalInterface<Particle_T> *>(traversal);
             if (kokkosDsTraversal) {
-                kokkosDsTraversal->setOwnedToTraverse(_ownedParticles);
-                kokkosDsTraversal->setHaloToTraverse(_haloParticles);
+              if (_dataLayout == DataLayoutOption::aos) {
+                kokkosDsTraversal->setOwnedAoSToTraverse(_ownedParticlesAoS);
+                //kokkosDsTraversal->setHaloToTraverse(_haloParticles);
+              }
+              else if (_dataLayout == DataLayoutOption::soa) {
+                kokkosDsTraversal->setOwnedSoAToTraverse(_hostOwnedParticlesSoA);
+                //kokkosDsTraversal->setHaloToTraverse(_hostHaloParticlesSoA);
+              }
             }
             else {
                 utils::ExceptionHandler::exception("The selected traversal is not compatible with the KokkosDirectSum container.");
@@ -243,7 +262,7 @@ template <class Particle_T>
           }
 
           size_t sizeToCheck = (cellIndex == 0) ? numberOfOwned : numberOfHalo;
-          const auto& viewToCheck = (cellIndex == 0) ? _ownedParticles : _haloParticles;
+          const auto& viewToCheck = (cellIndex == 0) ? _ownedParticlesAoS : _haloParticles;
 
           if (particleIndex >= sizeToCheck or
               not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
@@ -257,7 +276,7 @@ template <class Particle_T>
             return {nullptr, 0, 0};
           }
 
-          const auto& viewToExtract = (cellIndex == 0) ? _ownedParticles : _haloParticles;
+          const auto& viewToExtract = (cellIndex == 0) ? _ownedParticlesAoS : _haloParticles;
           const Particle_T * result = &viewToExtract(particleIndex);
 
           return {result, cellIndex, particleIndex};
@@ -285,7 +304,7 @@ template <class Particle_T>
               }
             }
           } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-              ((cellIndex == 0) ? _ownedParticles(particleIndex) : _haloParticles(particleIndex)), iteratorBehavior, boxMin, boxMax));
+              ((cellIndex == 0) ? _ownedParticlesAoS(particleIndex) : _haloParticles(particleIndex)), iteratorBehavior, boxMin, boxMax));
 
           // the indices returned at this point should always be valid
           return {cellIndex, particleIndex};
@@ -299,10 +318,12 @@ template <class Particle_T>
 
         mutable AutoPasLock haloLock {};
 
-        /* AoS Data structure */
-        Kokkos::View<Particle_T*, MemSpace> _ownedParticles {};
+        DataLayoutOption _dataLayout {};
 
-        Kokkos::View<Particle_T*, MemSpace> _haloParticles {};
+        /* AoS Data structure */
+        utils::KokkosAoS<MemSpace, Particle_T> _ownedParticlesAoS {};
+
+        utils::KokkosAoS<MemSpace, Particle_T> _haloParticles {};
 
         /* SoA data structure */
 

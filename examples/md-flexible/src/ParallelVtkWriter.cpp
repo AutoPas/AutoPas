@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-#include "autopas/utils/WrapMPI.h"
+#include <autopas/utils/WrapMPI.h>
 
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)

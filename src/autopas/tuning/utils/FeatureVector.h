@@ -48,9 +48,9 @@ class FeatureVector : public Configuration {
    * @param interactionType
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, DataLayoutOption containerLayout, Newton3Option newton3,
                 InteractionTypeOption interactionType)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType) {}
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, containerLayout, newton3, interactionType) {}
 
   /**
    * Construct from Configuration.
