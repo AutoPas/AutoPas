@@ -41,6 +41,22 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
     FetchContent_MakeAvailable(pmt)
 
+    # Disable sanitizers for PMT only as there are issues with Clang 16
+    target_compile_options(pmt PRIVATE
+            -fno-sanitize=all
+            -fno-sanitize=address
+            -fno-sanitize=undefined
+            -fno-sanitize=leak
+            -fno-sanitize=thread
+    )
+    target_link_options(pmt PRIVATE
+            -fno-sanitize=all
+            -fno-sanitize=address
+            -fno-sanitize=undefined
+            -fno-sanitize=leak
+            -fno-sanitize=thread
+    )
+
     # sensors available in pmt that are not currently required in AutoPas
     mark_as_advanced(
             PMT_BUILD_CRAY
