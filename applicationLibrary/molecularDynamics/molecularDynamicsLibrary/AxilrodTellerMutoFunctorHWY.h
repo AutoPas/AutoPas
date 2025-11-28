@@ -299,37 +299,43 @@ class AxilrodTellerMutoFunctorHWY
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() <= 2) return;
 
+    // check if the position, force and ownership SoAs are aligned to enable aligned vector loads
     const bool alignedVectors =
         isAligned<decltype(soa), Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
                   Particle_T::AttributeNames::forceZ>(soa, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa), Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+                  Particle_T::AttributeNames::posZ>(soa, alignmentSoAFloatHwyVector) and
         isAligned<decltype(soa), Particle_T::AttributeNames::ownershipState>(soa, alignmentSoAFloatHwyVector);
 
     if (alignedVectors) {
-      SoAFunctorSingleImpl<true>(soa);
+      SoAFunctorSingleImpl</*alignedSoAView*/ true>(soa);
     } else {
-      SoAFunctorSingleImpl<false>(soa);
+      SoAFunctorSingleImpl</*alignedSoAView*/ false>(soa);
     }
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
+    // check if the position, force and ownership SoAs are aligned to enable aligned vector loads
     const bool alignedVectors =
         isAligned<decltype(soa2), Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
                   Particle_T::AttributeNames::forceZ>(soa2, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa2), Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+                  Particle_T::AttributeNames::posZ>(soa2, alignmentSoAFloatHwyVector) and
         isAligned<decltype(soa2), Particle_T::AttributeNames::ownershipState>(soa2, alignmentSoAFloatHwyVector);
 
     if (newton3) {
       if (alignedVectors) {
-        SoAFunctorPairImpl<true, true>(soa1, soa2);
+        SoAFunctorPairImpl</*newton3*/ true, /*alignedSoAView*/ true>(soa1, soa2);
       } else {
-        SoAFunctorPairImpl<true, false>(soa1, soa2);
+        SoAFunctorPairImpl</*newton3*/ true, /*alignedSoAView*/ false>(soa1, soa2);
       }
     } else {
       if (alignedVectors) {
-        SoAFunctorPairImpl<false, true>(soa1, soa2);
+        SoAFunctorPairImpl</*newton3*/ false, /*alignedSoAView*/ true>(soa1, soa2);
       } else {
-        SoAFunctorPairImpl<false, false>(soa1, soa2);
+        SoAFunctorPairImpl</*newton3*/ false, /*alignedSoAView*/ false>(soa1, soa2);
       }
     }
   }
@@ -338,22 +344,25 @@ class AxilrodTellerMutoFunctorHWY
                         autopas::SoAView<SoAArraysType> soa3, bool newton3) final {
     if (soa1.size() == 0 || soa2.size() == 0 || soa3.size() == 0) return;
 
+    // check if the position, force and ownership SoAs are aligned to enable aligned vector loads
     const bool alignedVectors =
         isAligned<decltype(soa3), Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
                   Particle_T::AttributeNames::forceZ>(soa3, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa3), Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+                  Particle_T::AttributeNames::posZ>(soa3, alignmentSoAFloatHwyVector) and
         isAligned<decltype(soa3), Particle_T::AttributeNames::ownershipState>(soa3, alignmentSoAFloatHwyVector);
 
     if (newton3) {
       if (alignedVectors) {
-        SoAFunctorTripleImpl<true, true>(soa1, soa2, soa3);
+        SoAFunctorTripleImpl</*newton3*/ true, /*alignedSoAView*/ true>(soa1, soa2, soa3);
       } else {
-        SoAFunctorTripleImpl<true, false>(soa1, soa2, soa3);
+        SoAFunctorTripleImpl</*newton3*/ true, /*alignedSoAView*/ false>(soa1, soa2, soa3);
       }
     } else {
       if (alignedVectors) {
-        SoAFunctorTripleImpl<false, true>(soa1, soa2, soa3);
+        SoAFunctorTripleImpl</*newton3*/ false, /*alignedSoAView*/ true>(soa1, soa2, soa3);
       } else {
-        SoAFunctorTripleImpl<false, false>(soa1, soa2, soa3);
+        SoAFunctorTripleImpl</*newton3*/ false, /*alignedSoAView*/ false>(soa1, soa2, soa3);
       }
     }
   }
@@ -603,10 +612,10 @@ class AxilrodTellerMutoFunctorHWY
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
     VectorDouble potentialEnergySum =
-        highway::Zero(tag_double);  // Note: This is not the potential energy but some fixed multiple of it.
-    VectorDouble virialSumX = highway::Zero(tag_double);
-    VectorDouble virialSumY = highway::Zero(tag_double);
-    VectorDouble virialSumZ = highway::Zero(tag_double);
+        _zeroDoubleVec;  // Note: This is not the potential energy but some fixed multiple of it.
+    VectorDouble virialSumX = _zeroDoubleVec;
+    VectorDouble virialSumY = _zeroDoubleVec;
+    VectorDouble virialSumZ = _zeroDoubleVec;
 
     size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
@@ -638,9 +647,9 @@ class AxilrodTellerMutoFunctorHWY
       if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
       }
-      VectorDouble fXAccI = highway::Set(tag_double, 0.);
-      VectorDouble fYAccI = highway::Set(tag_double, 0.);
-      VectorDouble fZAccI = highway::Set(tag_double, 0.);
+      VectorDouble fXAccI = _zeroDoubleVec;
+      VectorDouble fYAccI = _zeroDoubleVec;
+      VectorDouble fZAccI = _zeroDoubleVec;
 
       for (size_t j = i - 1; j > 0; --j) {
         const auto ownedStateJ = ownedStatePtr[j];
@@ -648,17 +657,17 @@ class AxilrodTellerMutoFunctorHWY
           continue;
         }
 
+        // Load precomputed distances for particle i and j.
         auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = intraSoADists.get(i, j);
 
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
 
-        VectorDouble fXAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fYAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fZAccJ = highway::Set(tag_double, 0.);
-
         // prepare vector registers
+        VectorDouble fXAccJ = _zeroDoubleVec;
+        VectorDouble fYAccJ = _zeroDoubleVec;
+        VectorDouble fZAccJ = _zeroDoubleVec;
 
         const auto distXIJVec = highway::Set(tag_double, distXIJ);
         const auto distYIJVec = highway::Set(tag_double, distYIJ);
@@ -690,11 +699,12 @@ class AxilrodTellerMutoFunctorHWY
               ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
               numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsNoN3Sum, restK);
         }
-
+        // Reduce force on particle J.
         fxPtr[j] += highway::ReduceSum(tag_double, fXAccJ);
         fyPtr[j] += highway::ReduceSum(tag_double, fYAccJ);
         fzPtr[j] += highway::ReduceSum(tag_double, fZAccJ);
       }
+      // Reduce force on particle I.
       fxPtr[i] += highway::ReduceSum(tag_double, fXAccI);
       fyPtr[i] += highway::ReduceSum(tag_double, fYAccI);
       fzPtr[i] += highway::ReduceSum(tag_double, fZAccI);
@@ -727,12 +737,12 @@ class AxilrodTellerMutoFunctorHWY
     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    auto *const __restrict fxptr1 = soa1.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fyptr1 = soa1.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fzptr1 = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fxptr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fyptr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fzptr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fxPtr1 = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr1 = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr1 = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fxPtr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
     [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
@@ -740,10 +750,10 @@ class AxilrodTellerMutoFunctorHWY
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
     VectorDouble potentialEnergySum =
-        highway::Zero(tag_double);  // Note: This is not the potential energy but some fixed multiple of it.
-    VectorDouble virialSumX = highway::Zero(tag_double);
-    VectorDouble virialSumY = highway::Zero(tag_double);
-    VectorDouble virialSumZ = highway::Zero(tag_double);
+        _zeroDoubleVec;  // Note: This is not the potential energy but some fixed multiple of it.
+    VectorDouble virialSumX = _zeroDoubleVec;
+    VectorDouble virialSumY = _zeroDoubleVec;
+    VectorDouble virialSumZ = _zeroDoubleVec;
 
     size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
@@ -760,18 +770,18 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
     }
 
+    // Precompute distances between particles in the SoAs. soa2 <-> soa2 is a lower packed triangle matrix, soa1 <->
+    // soa2 is a full matrix.
     DistanceMatrix<true, alignedSoAView> intraSoA2Dists(soa2Size, soa2Size, precomputeBuffer1[threadnum]);
     DistanceMatrix<false, alignedSoAView> interSoADists(soa1Size, soa2Size, precomputeBuffer2[threadnum]);
-
     // soa2 <-> soa2
     intraSoA2Dists.fillHighway(xptr2, yptr2, zptr2, xptr2, yptr2, zptr2, soa2Size, soa2Size, cutoffSquared);
     // soa1 <-> soa2
     interSoADists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, soa1Size, soa2Size, cutoffSquared);
 
-    const size_t packedSizeSoA1 = (soa1Size * soa1Size - soa1Size) / 2;
     const size_t packedSizeSoA2 = (soa2Size * soa2Size - soa2Size) / 2;
     if constexpr (countFLOPs) {
-      numDistanceCalculationSum += soa1Size * soa2Size + packedSizeSoA1 + packedSizeSoA2;
+      numDistanceCalculationSum += soa1Size * soa2Size + packedSizeSoA2;
     }
 
     for (unsigned int i = 0; i < soa1.size(); ++i) {
@@ -784,9 +794,9 @@ class AxilrodTellerMutoFunctorHWY
       const SoAFloatPrecision yi = yptr1[i];
       const SoAFloatPrecision zi = zptr1[i];
 
-      VectorDouble fXAccI = highway::Set(tag_double, 0.);
-      VectorDouble fYAccI = highway::Set(tag_double, 0.);
-      VectorDouble fZAccI = highway::Set(tag_double, 0.);
+      VectorDouble fXAccI = _zeroDoubleVec;
+      VectorDouble fYAccI = _zeroDoubleVec;
+      VectorDouble fZAccI = _zeroDoubleVec;
 
       // CASE: Particle i is in soa1, j and k are both in soa2
       // We iterate in reverse order over j to enable aligned stores in the k-loop.
@@ -796,15 +806,16 @@ class AxilrodTellerMutoFunctorHWY
           continue;
         }
 
+        // Load precomputed distances for particle i and j.
         auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = interSoADists.get(i, j);
 
         if (distSquaredIJ > cutoffSquared) {
           continue;
         }
 
-        VectorDouble fXAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fYAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fZAccJ = highway::Set(tag_double, 0.);
+        VectorDouble fXAccJ = _zeroDoubleVec;
+        VectorDouble fYAccJ = _zeroDoubleVec;
+        VectorDouble fZAccJ = _zeroDoubleVec;
 
         // prepare vector registers
         const auto distXIJVec = highway::Set(tag_double, distXIJ);
@@ -822,7 +833,7 @@ class AxilrodTellerMutoFunctorHWY
                           /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, intraSoA2Dists, interSoADists, ownedStatePtr2, typeptr1, typeptr2, typeptr2,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
-              fZAccJ, ownedStateI, ownedStateJ, fxptr2, fyptr2, fzptr2, virialSumX, virialSumY, virialSumZ,
+              fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY, virialSumZ,
               potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
               numGlobalCalcsNoN3Sum);
         }
@@ -834,13 +845,14 @@ class AxilrodTellerMutoFunctorHWY
                           /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, intraSoA2Dists, interSoADists, ownedStatePtr2, typeptr1, typeptr2, typeptr2,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
-              fZAccJ, ownedStateI, ownedStateJ, fxptr2, fyptr2, fzptr2, virialSumX, virialSumY, virialSumZ,
+              fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY, virialSumZ,
               potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
               numGlobalCalcsNoN3Sum, restK);
         }
-        fxptr2[j] += highway::ReduceSum(tag_double, fXAccJ);
-        fyptr2[j] += highway::ReduceSum(tag_double, fYAccJ);
-        fzptr2[j] += highway::ReduceSum(tag_double, fZAccJ);
+        // Reduce force on particle j.
+        fxPtr2[j] += highway::ReduceSum(tag_double, fXAccJ);
+        fyPtr2[j] += highway::ReduceSum(tag_double, fYAccJ);
+        fzPtr2[j] += highway::ReduceSum(tag_double, fZAccJ);
       }
 
       // CASE: Particle i and j are both in soa1, k is in soa2
@@ -867,9 +879,9 @@ class AxilrodTellerMutoFunctorHWY
         const SoAFloatPrecision r5 = distSquaredIJ * distSquaredIJ * distIJ;
         const SoAFloatPrecision invR5IJ = 1.0 / r5;
 
-        VectorDouble fXAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fYAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fZAccJ = highway::Set(tag_double, 0.);
+        VectorDouble fXAccJ = _zeroDoubleVec;
+        VectorDouble fYAccJ = _zeroDoubleVec;
+        VectorDouble fZAccJ = _zeroDoubleVec;
 
         // prepare vector registers
         const auto distXIJVec = highway::Set(tag_double, distXIJ);
@@ -887,7 +899,7 @@ class AxilrodTellerMutoFunctorHWY
                           /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, interSoADists, interSoADists, ownedStatePtr2, typeptr1, typeptr1, typeptr2, distXIJVec,
               distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
-              ownedStateI, ownedStateJ, fxptr2, fyptr2, fzptr2, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
+              ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
               numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsNoN3Sum);
         }
 
@@ -899,17 +911,18 @@ class AxilrodTellerMutoFunctorHWY
                           /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoADists, interSoADists, ownedStatePtr2, typeptr1, typeptr1, typeptr2, distXIJVec,
               distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
-              ownedStateI, ownedStateJ, fxptr2, fyptr2, fzptr2, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
+              ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
               numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsNoN3Sum, restK);
         }
-
-        fxptr1[j] += highway::ReduceSum(tag_double, fXAccJ);
-        fyptr1[j] += highway::ReduceSum(tag_double, fYAccJ);
-        fzptr1[j] += highway::ReduceSum(tag_double, fZAccJ);
+        // Reduce force on particle j.
+        fxPtr1[j] += highway::ReduceSum(tag_double, fXAccJ);
+        fyPtr1[j] += highway::ReduceSum(tag_double, fYAccJ);
+        fzPtr1[j] += highway::ReduceSum(tag_double, fZAccJ);
       }
-      fxptr1[i] += highway::ReduceSum(tag_double, fXAccI);
-      fyptr1[i] += highway::ReduceSum(tag_double, fYAccI);
-      fzptr1[i] += highway::ReduceSum(tag_double, fZAccI);
+      // Reduce force on particle i.
+      fxPtr1[i] += highway::ReduceSum(tag_double, fXAccI);
+      fyPtr1[i] += highway::ReduceSum(tag_double, fYAccI);
+      fzPtr1[i] += highway::ReduceSum(tag_double, fZAccI);
     }
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
@@ -946,15 +959,15 @@ class AxilrodTellerMutoFunctorHWY
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr3 = soa3.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    auto *const __restrict fxptr1 = soa1.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fyptr1 = soa1.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fzptr1 = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fxptr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fyptr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fzptr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fyptr3 = soa3.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fxptr3 = soa3.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fzptr3 = soa3.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fxPtr1 = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr1 = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr1 = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fxPtr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fyPtr3 = soa3.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fxPtr3 = soa3.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fzPtr3 = soa3.template begin<Particle_T::AttributeNames::forceZ>();
     [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptr3 = soa3.template begin<Particle_T::AttributeNames::typeId>();
@@ -963,10 +976,10 @@ class AxilrodTellerMutoFunctorHWY
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
     VectorDouble potentialEnergySum =
-        highway::Zero(tag_double);  // Note: This is not the potential energy but some fixed multiple of it.
-    VectorDouble virialSumX = highway::Zero(tag_double);
-    VectorDouble virialSumY = highway::Zero(tag_double);
-    VectorDouble virialSumZ = highway::Zero(tag_double);
+        _zeroDoubleVec;  // Note: This is not the potential energy but some fixed multiple of it.
+    VectorDouble virialSumX = _zeroDoubleVec;
+    VectorDouble virialSumY = _zeroDoubleVec;
+    VectorDouble virialSumZ = _zeroDoubleVec;
 
     size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
@@ -984,16 +997,16 @@ class AxilrodTellerMutoFunctorHWY
       numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
     }
 
+    // Precompute distances between particles in the SoAs.
     DistanceMatrix<false, alignedSoAView> interSoA1SoA3Dists(soa1Size, soa3Size, precomputeBuffer1[threadnum]);
     DistanceMatrix<false, alignedSoAView> interSoA2SoA3Dists(soa2Size, soa3Size, precomputeBuffer2[threadnum]);
-
     // soa1 <-> soa3
     interSoA1SoA3Dists.fillHighway(xptr1, yptr1, zptr1, xptr3, yptr3, zptr3, soa1Size, soa3Size, cutoffSquared);
     // soa2 <-> soa3
     interSoA2SoA3Dists.fillHighway(xptr2, yptr2, zptr2, xptr3, yptr3, zptr3, soa2Size, soa3Size, cutoffSquared);
 
     if constexpr (countFLOPs) {
-      numDistanceCalculationSum += soa1Size * soa2Size + soa1Size * soa3Size + soa2Size * soa3Size;
+      numDistanceCalculationSum += soa1Size * soa3Size + soa2Size * soa3Size;
     }
 
     for (unsigned int i = 0; i < soa1Size; ++i) {
@@ -1006,9 +1019,9 @@ class AxilrodTellerMutoFunctorHWY
       const SoAFloatPrecision yi = yptr1[i];
       const SoAFloatPrecision zi = zptr1[i];
 
-      VectorDouble fXAccI = highway::Set(tag_double, 0.);
-      VectorDouble fYAccI = highway::Set(tag_double, 0.);
-      VectorDouble fZAccI = highway::Set(tag_double, 0.);
+      VectorDouble fXAccI = _zeroDoubleVec;
+      VectorDouble fYAccI = _zeroDoubleVec;
+      VectorDouble fZAccI = _zeroDoubleVec;
 
       for (unsigned int j = 0; j < soa2Size; ++j) {
         const auto ownedStateJ = ownedStatePtr2[j];
@@ -1033,9 +1046,9 @@ class AxilrodTellerMutoFunctorHWY
         const SoAFloatPrecision r5 = distSquaredIJ * distSquaredIJ * distIJ;
         const SoAFloatPrecision invR5IJ = 1.0 / r5;
 
-        VectorDouble fXAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fYAccJ = highway::Set(tag_double, 0.);
-        VectorDouble fZAccJ = highway::Set(tag_double, 0.);
+        VectorDouble fXAccJ = _zeroDoubleVec;
+        VectorDouble fYAccJ = _zeroDoubleVec;
+        VectorDouble fZAccJ = _zeroDoubleVec;
 
         // prepare vector registers
         const auto distXIJVec = highway::Set(tag_double, distXIJ);
@@ -1053,7 +1066,7 @@ class AxilrodTellerMutoFunctorHWY
                           /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3Dists, interSoA1SoA3Dists, ownedStatePtr3, typeptr1, typeptr2, typeptr3,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
-              fZAccJ, ownedStateI, ownedStateJ, fxptr3, fyptr3, fzptr3, virialSumX, virialSumY, virialSumZ,
+              fZAccJ, ownedStateI, ownedStateJ, fxPtr3, fyPtr3, fzPtr3, virialSumX, virialSumY, virialSumZ,
               potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
               numGlobalCalcsNoN3Sum);
         }
@@ -1066,17 +1079,19 @@ class AxilrodTellerMutoFunctorHWY
                           /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3Dists, interSoA1SoA3Dists, ownedStatePtr3, typeptr1, typeptr2, typeptr3,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
-              fZAccJ, ownedStateI, ownedStateJ, fxptr3, fyptr3, fzptr3, virialSumX, virialSumY, virialSumZ,
+              fZAccJ, ownedStateI, ownedStateJ, fxPtr3, fyPtr3, fzPtr3, virialSumX, virialSumY, virialSumZ,
               potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
               numGlobalCalcsNoN3Sum, restK);
         }
-        fxptr2[j] += highway::ReduceSum(tag_double, fXAccJ);
-        fyptr2[j] += highway::ReduceSum(tag_double, fYAccJ);
-        fzptr2[j] += highway::ReduceSum(tag_double, fZAccJ);
+        // Reduce force on particle j.
+        fxPtr2[j] += highway::ReduceSum(tag_double, fXAccJ);
+        fyPtr2[j] += highway::ReduceSum(tag_double, fYAccJ);
+        fzPtr2[j] += highway::ReduceSum(tag_double, fZAccJ);
       }
-      fxptr1[i] += highway::ReduceSum(tag_double, fXAccI);
-      fyptr1[i] += highway::ReduceSum(tag_double, fYAccI);
-      fzptr1[i] += highway::ReduceSum(tag_double, fZAccI);
+      // Reduce force on particle i.
+      fxPtr1[i] += highway::ReduceSum(tag_double, fXAccI);
+      fyPtr1[i] += highway::ReduceSum(tag_double, fYAccI);
+      fzPtr1[i] += highway::ReduceSum(tag_double, fZAccI);
     }
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
@@ -1116,7 +1131,7 @@ class AxilrodTellerMutoFunctorHWY
       double *const __restrict fzPtr, VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ,
       VectorDouble &potentialEnergySum, size_t &numKernelCallsN3Sum, size_t &numGlobalCalcsN3Sum,
       size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t restK = 0) {
-    // load distXJVecfrom precomputed data
+    // load distJKVecfrom precomputed data
     const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec, invR5JKVec] =
         soaDists1.template loadRowVec<remainder>(j, k, restK);
     // load distKIVec from precomputed data
@@ -1132,7 +1147,7 @@ class AxilrodTellerMutoFunctorHWY
     const auto ownershipK =
         loadPacked<alignedSoAView, remainder>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]), restK);
 
-    // calculate masks for cutoff between i<->k and j<->k
+    // calculate cutoff-masks between i<->k and j<->k
     const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
     const auto maskKI = highway::Le(distSquaredKIVec, highway::Set(tag_double, _cutoffSquared));
     // ownership mask
@@ -1164,6 +1179,8 @@ class AxilrodTellerMutoFunctorHWY
       nu = highway::Load(tag_double, nus);
     }
 
+    // The call to SoAKernelHWY always requires forceJX, forceJY, forceJZ. In the case of newton3==false these buffers
+    // are not used.
     VectorDouble forceIX, forceIY, forceIZ;
     VectorDouble forceJX, forceJY, forceJZ;
     VectorDouble factor, allDotProducts, allDistsSquared;
@@ -1173,7 +1190,6 @@ class AxilrodTellerMutoFunctorHWY
                                 forceJZ, factor, allDotProducts, allDistsSquared, maskK);
     if constexpr (not newton3) {
       // Compute only force I without Newton3
-
       fXAccI += forceIX;
       fYAccI += forceIY;
       fZAccI += forceIZ;
@@ -1196,15 +1212,15 @@ class AxilrodTellerMutoFunctorHWY
             highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
                         highway::Set(tag_double, static_cast<double>(ownedStateI)));
 
-        potentialEnergySum += highway::IfThenElse(ownedMaskI, potentialEnergy3, highway::Zero(tag_double));
+        potentialEnergySum += highway::IfThenElse(ownedMaskI, potentialEnergy3, _zeroDoubleVec);
         // Virial for i
         const auto virialIX = forceIX * (distXKIVec - distXIJVec);
         const auto virialIY = forceIY * (distYKIVec - distYIJVec);
         const auto virialIZ = forceIZ * (distZKIVec - distZIJVec);
 
-        const auto maskedVirialIX = highway::IfThenElse(ownedMaskI, virialIX, highway::Zero(tag_double));
-        const auto maskedVirialIY = highway::IfThenElse(ownedMaskI, virialIY, highway::Zero(tag_double));
-        const auto maskedVirialIZ = highway::IfThenElse(ownedMaskI, virialIZ, highway::Zero(tag_double));
+        const auto maskedVirialIX = highway::IfThenElse(ownedMaskI, virialIX, _zeroDoubleVec);
+        const auto maskedVirialIY = highway::IfThenElse(ownedMaskI, virialIY, _zeroDoubleVec);
+        const auto maskedVirialIZ = highway::IfThenElse(ownedMaskI, virialIZ, _zeroDoubleVec);
 
         virialSumX += maskedVirialIX;
         virialSumY += maskedVirialIY;
@@ -1215,16 +1231,16 @@ class AxilrodTellerMutoFunctorHWY
               highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
                           highway::Set(tag_double, static_cast<double>(ownedStateJ)));
 
-          potentialEnergySum += highway::IfThenElse(ownedMaskJ, potentialEnergy3, highway::Zero(tag_double));
+          potentialEnergySum += highway::IfThenElse(ownedMaskJ, potentialEnergy3, _zeroDoubleVec);
 
           // Virial for j
           const auto virialJX = forceJX * (distXIJVec - distXJKVec);
           const auto virialJY = forceJY * (distYIJVec - distYJKVec);
           const auto virialJZ = forceJZ * (distZIJVec - distZJKVec);
 
-          const auto maskedVirialJX = highway::IfThenElse(ownedMaskJ, virialJX, highway::Zero(tag_double));
-          const auto maskedVirialJY = highway::IfThenElse(ownedMaskJ, virialJY, highway::Zero(tag_double));
-          const auto maskedVirialJZ = highway::IfThenElse(ownedMaskJ, virialJZ, highway::Zero(tag_double));
+          const auto maskedVirialJX = highway::IfThenElse(ownedMaskJ, virialJX, _zeroDoubleVec);
+          const auto maskedVirialJY = highway::IfThenElse(ownedMaskJ, virialJY, _zeroDoubleVec);
+          const auto maskedVirialJZ = highway::IfThenElse(ownedMaskJ, virialJZ, _zeroDoubleVec);
 
           virialSumX += maskedVirialJX;
           virialSumY += maskedVirialJY;
@@ -1250,17 +1266,17 @@ class AxilrodTellerMutoFunctorHWY
       const auto forceKZ = highway::Neg(forceIZ + forceJZ);
 
       // Store force acting on particle k.
-      const VectorDouble fx2 = loadPacked<alignedSoAView, remainder>(tag_double, &fxPtr[k], restK);
-      const VectorDouble fy2 = loadPacked<alignedSoAView, remainder>(tag_double, &fyPtr[k], restK);
-      const VectorDouble fz2 = loadPacked<alignedSoAView, remainder>(tag_double, &fzPtr[k], restK);
+      const VectorDouble fxK = loadPacked<alignedSoAView, remainder>(tag_double, &fxPtr[k], restK);
+      const VectorDouble fyK = loadPacked<alignedSoAView, remainder>(tag_double, &fyPtr[k], restK);
+      const VectorDouble fzK = loadPacked<alignedSoAView, remainder>(tag_double, &fzPtr[k], restK);
 
-      const VectorDouble fx2New = fx2 + forceKX;
-      const VectorDouble fy2New = fy2 + forceKY;
-      const VectorDouble fz2New = fz2 + forceKZ;
+      const VectorDouble fxKNew = fxK + forceKX;
+      const VectorDouble fyKNew = fyK + forceKY;
+      const VectorDouble fzKNew = fzK + forceKZ;
 
-      storePacked<alignedSoAView, remainder>(tag_double, &fxPtr[k], fx2New, restK);
-      storePacked<alignedSoAView, remainder>(tag_double, &fyPtr[k], fy2New, restK);
-      storePacked<alignedSoAView, remainder>(tag_double, &fzPtr[k], fz2New, restK);
+      storePacked<alignedSoAView, remainder>(tag_double, &fxPtr[k], fxKNew, restK);
+      storePacked<alignedSoAView, remainder>(tag_double, &fyPtr[k], fyKNew, restK);
+      storePacked<alignedSoAView, remainder>(tag_double, &fzPtr[k], fzKNew, restK);
 
       if constexpr (countFLOPs) {
         numKernelCallsN3Sum += remainder ? restK : _vecLengthDouble;
@@ -1281,9 +1297,9 @@ class AxilrodTellerMutoFunctorHWY
                         highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)));
 
         // potential energy for i,j,k (masked)
-        const auto potentialEnergyI = highway::IfThenElse(ownedMaskI, potentialEnergy3, highway::Zero(tag_double));
-        const auto potentialEnergyJ = highway::IfThenElse(ownedMaskJ, potentialEnergy3, highway::Zero(tag_double));
-        const auto potentialEnergyK = highway::IfThenElse(ownedMaskK, potentialEnergy3, highway::Zero(tag_double));
+        const auto potentialEnergyI = highway::IfThenElse(ownedMaskI, potentialEnergy3, _zeroDoubleVec);
+        const auto potentialEnergyJ = highway::IfThenElse(ownedMaskJ, potentialEnergy3, _zeroDoubleVec);
+        const auto potentialEnergyK = highway::IfThenElse(ownedMaskK, potentialEnergy3, _zeroDoubleVec);
 
         potentialEnergySum += potentialEnergyI + potentialEnergyJ + potentialEnergyK;
 
@@ -1292,27 +1308,27 @@ class AxilrodTellerMutoFunctorHWY
         const auto virialIY = forceIY * (distYKIVec - distYIJVec);
         const auto virialIZ = forceIZ * (distZKIVec - distZIJVec);
 
-        const auto maskedVirialIX = highway::IfThenElse(ownedMaskI, virialIX, highway::Zero(tag_double));
-        const auto maskedVirialIY = highway::IfThenElse(ownedMaskI, virialIY, highway::Zero(tag_double));
-        const auto maskedVirialIZ = highway::IfThenElse(ownedMaskI, virialIZ, highway::Zero(tag_double));
+        const auto maskedVirialIX = highway::IfThenElse(ownedMaskI, virialIX, _zeroDoubleVec);
+        const auto maskedVirialIY = highway::IfThenElse(ownedMaskI, virialIY, _zeroDoubleVec);
+        const auto maskedVirialIZ = highway::IfThenElse(ownedMaskI, virialIZ, _zeroDoubleVec);
 
         // Virial for j
         const auto virialJX = forceJX * (distXIJVec - distXJKVec);
         const auto virialJY = forceJY * (distYIJVec - distYJKVec);
         const auto virialJZ = forceJZ * (distZIJVec - distZJKVec);
 
-        const auto maskedVirialJX = highway::IfThenElse(ownedMaskJ, virialJX, highway::Zero(tag_double));
-        const auto maskedVirialJY = highway::IfThenElse(ownedMaskJ, virialJY, highway::Zero(tag_double));
-        const auto maskedVirialJZ = highway::IfThenElse(ownedMaskJ, virialJZ, highway::Zero(tag_double));
+        const auto maskedVirialJX = highway::IfThenElse(ownedMaskJ, virialJX, _zeroDoubleVec);
+        const auto maskedVirialJY = highway::IfThenElse(ownedMaskJ, virialJY, _zeroDoubleVec);
+        const auto maskedVirialJZ = highway::IfThenElse(ownedMaskJ, virialJZ, _zeroDoubleVec);
 
         // Virial for k
         const auto virialKX = forceKX * (distXJKVec - distXKIVec);
         const auto virialKY = forceKY * (distYJKVec - distYKIVec);
         const auto virialKZ = forceKZ * (distZJKVec - distZKIVec);
 
-        const auto maskedVirialKX = highway::IfThenElse(ownedMaskK, virialKX, highway::Zero(tag_double));
-        const auto maskedVirialKY = highway::IfThenElse(ownedMaskK, virialKY, highway::Zero(tag_double));
-        const auto maskedVirialKZ = highway::IfThenElse(ownedMaskK, virialKZ, highway::Zero(tag_double));
+        const auto maskedVirialKX = highway::IfThenElse(ownedMaskK, virialKX, _zeroDoubleVec);
+        const auto maskedVirialKY = highway::IfThenElse(ownedMaskK, virialKY, _zeroDoubleVec);
+        const auto maskedVirialKZ = highway::IfThenElse(ownedMaskK, virialKZ, _zeroDoubleVec);
 
         // Reduce the virial
         virialSumX += maskedVirialIX + maskedVirialJX + maskedVirialKX;
@@ -1393,7 +1409,7 @@ class AxilrodTellerMutoFunctorHWY
       forceJZ = fmaHelper(distZKI, factorJDirectionKI, distZIJ, factorJDirectionIJ, distZJK, factorJDirectionJK);
     }
 
-    // apply mask
+    // apply masks
     forceIX = highway::IfThenElseZero(maskK, forceIX);
     forceIY = highway::IfThenElseZero(maskK, forceIY);
     forceIZ = highway::IfThenElseZero(maskK, forceIZ);
@@ -1450,6 +1466,9 @@ class AxilrodTellerMutoFunctorHWY
     return (soa.template isAligned<Attributes>(alignment) and ...);
   }
 
+  /**
+   * Auxiliary class for storing pre-calculated data. The buffer can only increase in size, but never decrease.
+   */
   class PrecomputeBuffer {
    public:
     using Alloc = autopas::AlignedAllocator<SoAFloatPrecision>;
@@ -1468,6 +1487,7 @@ class AxilrodTellerMutoFunctorHWY
       }
     }
 
+    // Return references on the underlying data.
     Vec &dxVec() { return _dx; }
     Vec &dyVec() { return _dy; }
     Vec &dzVec() { return _dz; }
@@ -1486,6 +1506,15 @@ class AxilrodTellerMutoFunctorHWY
     size_t currentSize;
   };
 
+  /**
+   * Data structure that stores precomputed data. In the case of intra-SoA data, a lower packed triangle matrix can be
+   * used to save memory space. In the case of inter-SoA data, a full matrix is occupied. Both data structures allow
+   * vectorized loads and stores. However, in the case of a lower packed triangle matrix, no aligned vector instructions
+   * are used.
+   *
+   * @tparam LowerTriangle If the matrix should use a lower packed triangle layout
+   * @tparam alignedSoAView if aligned loads can be used
+   */
   template <bool LowerTriangle, bool alignedSoAView>
   class DistanceMatrix {
    public:
@@ -1772,12 +1801,10 @@ class AxilrodTellerMutoFunctorHWY
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
-  const VectorDouble _cutoffSquaredVec{};
 
   // Parameter of the Axilrod-Teller-Muto potential
   // not const because they might be reset through PPL
   double _nu = 0.0;
-  VectorDouble _nuVec{highway::Zero(tag_double)};
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
@@ -1794,13 +1821,15 @@ class AxilrodTellerMutoFunctorHWY
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 
+  // Helper vectors that are often used
   const VectorDouble _threeDoubleVec = highway::Set(tag_double, 3.0);
   const VectorDouble _fiveDoubleVec = highway::Set(tag_double, 5.0);
+  const VectorDouble _zeroDoubleVec = highway::Zero(tag_double);
 
   // Alignment for SoAFloatPrecision vector register
   static constexpr std::size_t alignmentSoAFloatHwyVector = highway::Lanes(tag_double) * sizeof(SoAFloatPrecision);
 
-  // precomute buffers
+  // Precomute buffers for distances and invR5 between particles
   std::vector<PrecomputeBuffer> precomputeBuffer1;
   std::vector<PrecomputeBuffer> precomputeBuffer2;
 };
