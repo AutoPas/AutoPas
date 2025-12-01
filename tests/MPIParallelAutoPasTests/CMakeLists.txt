@@ -23,7 +23,7 @@ target_link_libraries(
     MPI::MPI_CXX
 )
 set(AUTOPAS_TESTS_NUM_MPI_RANKS 3 CACHE STRING "Number of MPI Ranks to run AutoPas tests with.")
-set_property(TARGET runMPITests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS}')
+set_property(TARGET runMPITests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} -launcher fork ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS}')
 
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are
