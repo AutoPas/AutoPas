@@ -93,6 +93,8 @@ jobs:
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
       LSAN_OPTIONS: "verbosity=1:log_threads=1"
+      HYDRA_LAUNCHER_PROXY: fork
+      PMI_NO_FORK: 0
     defaults:
       run:
         # make sure the scripts are executed with bash (needed for [[) and not sh.
@@ -100,6 +102,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Debug MPICH
+        run: |
+          mpiexec --version
+          echo "HYDRA_LAUNCHERS: $HYDRA_LAUNCHERS"
+          mpiexec -n 3 -launcher fork hostname  # test if fork works
+          mpiexec -n 3 hostname  # test default launcher
 
       - name: Build everything
         run: |
