@@ -40,8 +40,9 @@ SearchSpaceGenerators::OptionSpace inferOptionDimensions(const std::set<Configur
 }
 
 std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<Configuration> &searchSpace,
-                                                                TuningStrategyOption tuningStrategyOption,
+                                                                const TuningStrategyOption tuningStrategyOption,
                                                                 const TuningStrategyFactoryInfo &info,
+                                                                const InteractionTypeOption interactionType,
                                                                 const std::string &outputSuffix) {
   std::unique_ptr<TuningStrategyInterface> tuningStrategy = nullptr;
   switch (static_cast<TuningStrategyOption>(tuningStrategyOption)) {
@@ -59,7 +60,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     case TuningStrategyOption::bayesianSearch: {
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<BayesianSearch>(
-          info.interactionType, searchSpaceDimensions.containerOptions,
+          interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
           searchSpaceDimensions.newton3Options, searchSpaceDimensions.vecPatternOptions, info.maxEvidence,
@@ -70,7 +71,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     case TuningStrategyOption::bayesianClusterSearch: {
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
-          info.interactionType, searchSpaceDimensions.containerOptions,
+          interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
           searchSpaceDimensions.newton3Options, searchSpaceDimensions.vecPatternOptions, info.maxEvidence,
@@ -88,7 +89,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       }
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<ActiveHarmony>(
-          info.interactionType, searchSpaceDimensions.containerOptions,
+          interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
           searchSpaceDimensions.newton3Options, searchSpaceDimensions.vecPatternOptions, info.mpiDivideAndConquer,
@@ -125,7 +126,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
                    "problems.");
       }
       tuningStrategy = std::make_unique<MPIParallelizedStrategy>(
-          MPIParallelizedStrategy::createFallBackConfiguration(searchSpace, info.interactionType),
+          MPIParallelizedStrategy::createFallBackConfiguration(searchSpace, interactionType),
           info.autopasMpiCommunicator, info.mpiTuningMaxDifferenceForBucket, info.mpiTuningWeightForMaxDensity);
       break;
     }

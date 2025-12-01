@@ -107,7 +107,7 @@ void AutoPas<Particle_T>::init() {
     tuningStrategies.reserve(_tuningStrategyOptions.size());
     for (const auto &strategy : _tuningStrategyOptions) {
       tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-          searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
+          searchSpace, strategy, _tuningStrategyFactoryInfo, interactionType, _outputSuffix));
     }
     if (_useTuningStrategyLoggerProxy) {
       tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
