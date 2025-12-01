@@ -1789,7 +1789,8 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
   }
   SortedCellView<ReferenceParticleCell<Particle_T>> sortedCellView(cellView, domainDiagonal);
 
-  // Step 2: Create a neighbor list of pairs for each of the buffer particles. Read-only, so it can be parallelized.
+  // Step 2: Create a neighbor list of pairs for each of the buffer particles.
+  // This step accesses all particles in read-only mode and can be fully parallelized.
   std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> bufferParticleNeighborLists(numBufferParticles);
 
   AUTOPAS_OPENMP(parallel for schedule(static))
