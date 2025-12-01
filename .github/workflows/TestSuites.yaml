@@ -96,7 +96,6 @@ jobs:
       # Recent OpenMPI versions require this to run as root (default in CI)
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
-      MPIEXEC_PREFLAGS: "--oversubscribe"
     defaults:
       run:
         # make sure the scripts are executed with bash (needed for [[) and not sh.
