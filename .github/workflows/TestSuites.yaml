@@ -93,9 +93,6 @@ jobs:
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
       LSAN_OPTIONS: "verbosity=1:log_threads=1"
-      # Recent OpenMPI versions require this to run as root (default in CI)
-      OMPI_ALLOW_RUN_AS_ROOT: 1
-      OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
     defaults:
       run:
         # make sure the scripts are executed with bash (needed for [[) and not sh.
