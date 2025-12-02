@@ -90,9 +90,9 @@ add_test(
         --deltaT 0.
         --no-end-config
         --no-progress-bar
-        CONFIGURATIONS checkExamples
         PROPERTIES
             ENVIRONMENT "${LSAN_OPTIONS_STR}"
+        CONFIGURATIONS checkExamples
 )
 
 
@@ -137,9 +137,9 @@ if (HAS_AVX)
             --traversal lc_c04_combined_SoA
             --particles-total 71
             --no-progress-bar
-            CONFIGURATIONS checkExamples
             PROPERTIES
                 ENVIRONMENT "${LSAN_OPTIONS_STR}"
+            CONFIGURATIONS checkExamples
     )
 else ()
   message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
