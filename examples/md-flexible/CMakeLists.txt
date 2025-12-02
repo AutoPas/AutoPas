@@ -90,8 +90,6 @@ add_test(
         --deltaT 0.
         --no-end-config
         --no-progress-bar
-        PROPERTIES
-            ENVIRONMENT "${LSAN_OPTIONS_STR}"
         CONFIGURATIONS checkExamples
 )
 
@@ -137,8 +135,6 @@ if (HAS_AVX)
             --traversal lc_c04_combined_SoA
             --particles-total 71
             --no-progress-bar
-            PROPERTIES
-                ENVIRONMENT "${LSAN_OPTIONS_STR}"
             CONFIGURATIONS checkExamples
     )
 else ()
@@ -166,18 +162,23 @@ add_test(
         --no-end-config
         --no-progress-bar
         CONFIGURATIONS checkExamples
-        PROPERTIES
-            ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )
 
 add_test(
         NAME md-flexMeasurePerf
         COMMAND measurePerf.sh md-flexible -silent
         CONFIGURATIONS checkExamples
-        PROPERTIES
-            ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )
 # cmake-format: on
+message(STATUS "LSAN_OPTIONS_STR: ${LSAN_OPTIONS_STR}!!!!!!!!!!!!!!!!!!!!!")
+
+set_tests_properties(
+        md-flexible.test-static
+        md-flexible.test-sim
+        # list all MPI example tests
+        PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)
