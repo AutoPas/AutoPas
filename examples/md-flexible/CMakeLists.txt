@@ -91,6 +91,8 @@ add_test(
         --no-end-config
         --no-progress-bar
         CONFIGURATIONS checkExamples
+        PROPERTIES
+            ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )
 
 
@@ -136,6 +138,8 @@ if (HAS_AVX)
             --particles-total 71
             --no-progress-bar
             CONFIGURATIONS checkExamples
+            PROPERTIES
+                ENVIRONMENT "${LSAN_OPTIONS_STR}"
     )
 else ()
   message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
@@ -162,12 +166,16 @@ add_test(
         --no-end-config
         --no-progress-bar
         CONFIGURATIONS checkExamples
+        PROPERTIES
+            ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )
 
 add_test(
         NAME md-flexMeasurePerf
         COMMAND measurePerf.sh md-flexible -silent
         CONFIGURATIONS checkExamples
+        PROPERTIES
+            ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )
 # cmake-format: on
 
