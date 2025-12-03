@@ -22,9 +22,9 @@ class ATMFunctorTestNoGlobals : public ATMFunctorTest {
   constexpr static double nu3{0.1};
 
   // These values are obtained from the lammps implementation
-  const std::array<double, 3> expectedForceP1{-188761.250385809, -188761.250385809, -188761.250385809};
-  const std::array<double, 3> expectedForceP2{-95789.2912405596, 94380.6251929043, 284550.541626368};
-  const std::array<double, 3> expectedForceP3{284550.541626368, 94380.6251929043, -95789.2912405596};
+  const std::array<double, 3> expectedForceNonMixingP1{-188761.250385809, -188761.250385809, -188761.250385809};
+  const std::array<double, 3> expectedForceNonMixingP2{-95789.2912405596, 94380.6251929043, 284550.541626368};
+  const std::array<double, 3> expectedForceNonMixingP3{284550.541626368, 94380.6251929043, -95789.2912405596};
 
   const std::array<double, 3> expectedForceMixingP1{-94380.6251929043, -94380.6251929043, -94380.6251929043};
   const std::array<double, 3> expectedForceMixingP2{-47894.6456202798, 47190.3125964521, 142275.270813184};
