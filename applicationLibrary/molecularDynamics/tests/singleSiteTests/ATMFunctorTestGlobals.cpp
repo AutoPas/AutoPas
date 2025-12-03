@@ -21,7 +21,8 @@ void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsNoMixingAoS(where_typ
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
-  // Map `where` to configuration values
+  // Map `where` to configuration values. The tuple consists of a factor for the expected pot. energy and booleans for
+  // the owned status of the 3 particles.
   const std::map<where_type, std::tuple<double, bool, bool, bool>> whereConfig = {
       {allInside, {1., true, true, true}},
       {ininout, {2. / 3., true, true, false}},
@@ -159,12 +160,12 @@ void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestSoAGlobals(where_type where,
 
   functor.endTraversal(newton3);
 
-  double potentialEnergy = functor.getPotentialEnergy();
-  double virial = functor.getVirial();
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
 
-  double expectedEnergy = calculateATMPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
-  auto [virial1, virial2, virial3] = calculateATMVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
-  double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
+  constexpr double expectedEnergy = calculateATMPotential(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const auto [virial1, virial2, virial3] = calculateATMVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
+  const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
 
   EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
       << "SoAFunctorType: " << to_string(soaFunctorType) << ", particles are: " << to_string(where)
@@ -181,7 +182,7 @@ void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestSoAGlobals(where_type where,
  * @param newton3 Whether to use newton 3
  */
 template <class FuncType>
-void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsPeriodicBCs(std::string functorToTest, bool newton3) {
+void ATMFunctorTestGlobals<FuncType>::ATMFunctorTestGlobalsPeriodicBCs(const std::string &functorToTest, bool newton3) {
   using namespace autopas::utils::ArrayMath::literals;
   FuncType functor(5.0);
   functor.setParticleProperties(nu);

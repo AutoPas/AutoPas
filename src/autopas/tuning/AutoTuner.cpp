@@ -362,25 +362,26 @@ size_t AutoTuner::getCurrentNumSamples() const {
 }
 
 long AutoTuner::estimateRuntimeFromSamples() const {
-  bool hasRebuildSamples = !_samplesRebuildingNeighborLists.empty();
-  bool hasNotRebuildSamples = !_samplesNotRebuildingNeighborLists.empty();
+  const bool hasRebuildSamples = not _samplesRebuildingNeighborLists.empty();
+  const bool hasNotRebuildSamples = not _samplesNotRebuildingNeighborLists.empty();
 
-  if (!hasRebuildSamples && !hasNotRebuildSamples) {
+  if (not hasRebuildSamples and not hasNotRebuildSamples) {
     AutoPasLog(DEBUG, "Trying to estimate runtime for current config, but no available samples.");
     return 0l;
   }
 
   // Reduce the values for rebuild and non-rebuild iterations according to the selector strategy.
-  // If there is no data for either variant we have to assume that rebuilding and non-rebuilding iterations take the
+  // If there is no data for one variant, we have to assume that rebuilding and non-rebuilding iterations take the
   // same time. This might neither be a good estimate nor fair but the best we can do.
-  auto reducedValueNotBuilding =
-      hasNotRebuildSamples
-          ? autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy)
-          : autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
+  auto reducedValueNotBuilding = OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
+  auto reducedValueBuilding = OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
 
-  auto reducedValueBuilding =
-      hasRebuildSamples ? autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy)
-                        : reducedValueNotBuilding;
+  if (not hasRebuildSamples) {
+    return reducedValueNotBuilding;
+  }
+  if (not hasNotRebuildSamples) {
+    return reducedValueBuilding;
+  }
 
   // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
   return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;

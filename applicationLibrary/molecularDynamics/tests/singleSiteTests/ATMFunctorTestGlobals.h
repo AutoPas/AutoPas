@@ -26,7 +26,7 @@ class ATMFunctorTestGlobals : public ATMFunctorTest {
 
   void ATMFunctorTestSoAGlobals(where_type where, SoAFunctorType soaFunctorType, bool newton3);
 
-  void ATMFunctorTestGlobalsPeriodicBCs(std::string functorToTest, bool newton3);
+  void ATMFunctorTestGlobalsPeriodicBCs(const std::string &functorToTest, bool newton3);
   constexpr static double cutoff{5.};
   constexpr static double nu{0.7};
 

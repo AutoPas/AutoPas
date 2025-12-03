@@ -154,8 +154,8 @@ void ATMFunctorFlopCounterTest::testFLOPCounterSoA(bool newton3, FunctorFunction
   constexpr std::array p1 = {1.0, 0.2, 0.2};
   constexpr std::array p2 = {1.0, 0.8, 0.2};
   constexpr std::array p3 = {0.2, 0.2, 2.5};
-  const std::vector<Molecule> molVec{Molecule(p0, {0, 0, 0}, 0), Molecule(p1, {0, 0, 0}, 1), Molecule(p2, {0, 0, 0}, 2),
-                                     Molecule(p3, {0, 0, 0}, 3)};
+  const std::vector molVec{Molecule(p0, {0, 0, 0}, 0), Molecule(p1, {0, 0, 0}, 1), Molecule(p2, {0, 0, 0}, 2),
+                           Molecule(p3, {0, 0, 0}, 3)};
 
   size_t expectedNoN3KernelCalls{}, expectedN3KernelCalls{}, expectedN3GlobalsCalcs{}, expectedNoN3GlobalsCalcs{};
   size_t maxNumDistanceCalculations = 12;

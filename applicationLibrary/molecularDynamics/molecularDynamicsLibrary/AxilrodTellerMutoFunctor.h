@@ -134,7 +134,6 @@ class AxilrodTellerMutoFunctor
     }
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
-      AutoPasLog(DEBUG, "Using AxilrodTellerMutoFunctor with countFLOPs is not tested for SoA datalayout.");
     }
   }
 
@@ -369,11 +368,6 @@ class AxilrodTellerMutoFunctor
             continue;
           }
 
-          SoAFloatPrecision nu = const_nu;
-          if constexpr (useMixing) {
-            nu = _PPLibrary->getMixingNu(typeptr[i], typeptr[j], typeptr[k]);
-          }
-
           const SoAFloatPrecision xk = xptr[k];
           const SoAFloatPrecision yk = yptr[k];
           const SoAFloatPrecision zk = zptr[k];
@@ -400,6 +394,11 @@ class AxilrodTellerMutoFunctor
           }
           if (distSquaredKI > cutoffSquared) {
             continue;
+          }
+
+          SoAFloatPrecision nu = const_nu;
+          if constexpr (useMixing) {
+            nu = _PPLibrary->getMixingNu(typeptr[i], typeptr[j], typeptr[k]);
           }
 
           SoAFloatPrecision forceIX, forceIY, forceIZ;
@@ -763,7 +762,7 @@ class AxilrodTellerMutoFunctor
     size_t soa1Size = soa1.size();
     size_t soa2Size = soa2.size();
     if constexpr (countFLOPs) {
-      numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
+      numTripletsCountingSum = soa1Size * soa2Size * (soa1Size + soa2Size - 2) / 2;
     }
 
     // Precompute distances between soa1 and soa2
@@ -801,6 +800,9 @@ class AxilrodTellerMutoFunctor
         if (ownedStateJ == autopas::OwnershipState::dummy) {
           continue;
         }
+        SoAFloatPrecision fXAccJ = 0.;
+        SoAFloatPrecision fYAccJ = 0.;
+        SoAFloatPrecision fZAccJ = 0.;
 
         const auto &[distXIJ, distYIJ, distZIJ, distSquaredIJ] = soa1Soa2Dists[i * soa2Size + j];
 
@@ -880,9 +882,9 @@ class AxilrodTellerMutoFunctor
             fYAccI += forceIY;
             fZAccI += forceIZ;
 
-            fxptr2[j] += forceJX;
-            fyptr2[j] += forceJY;
-            fzptr2[j] += forceJZ;
+            fXAccJ += forceJX;
+            fYAccJ += forceJY;
+            fZAccJ += forceJZ;
 
             const SoAFloatPrecision forceKX = -(forceIX + forceJX);
             const SoAFloatPrecision forceKY = -(forceIY + forceJY);
@@ -923,6 +925,11 @@ class AxilrodTellerMutoFunctor
             }
           }
         }
+        if (newton3) {
+          fxptr2[j] += fXAccJ;
+          fyptr2[j] += fYAccJ;
+          fzptr2[j] += fZAccJ;
+        }
       }
 
       // CASE: Particle i and j are both in soa1, k is in soa2
@@ -931,7 +938,6 @@ class AxilrodTellerMutoFunctor
         if (ownedStateJ == autopas::OwnershipState::dummy) {
           continue;
         }
-
         SoAFloatPrecision fXAccJ = 0.;
         SoAFloatPrecision fYAccJ = 0.;
         SoAFloatPrecision fZAccJ = 0.;
@@ -983,9 +989,9 @@ class AxilrodTellerMutoFunctor
           fYAccI += forceIY;
           fZAccI += forceIZ;
 
-          fxptr1[j] += forceJX;
-          fyptr1[j] += forceJY;
-          fzptr1[j] += forceJZ;
+          fXAccJ += forceJX;
+          fYAccJ += forceJY;
+          fZAccJ += forceJZ;
 
           if constexpr (countFLOPs) {
             ++numKernelCallsN3Sum;
