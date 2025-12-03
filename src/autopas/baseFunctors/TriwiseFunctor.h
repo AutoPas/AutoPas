@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "Functor.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 
