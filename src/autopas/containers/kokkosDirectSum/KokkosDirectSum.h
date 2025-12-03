@@ -24,22 +24,28 @@ template <class Particle_T>
 
         public:
             KokkosDirectSum(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
-                : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout)
-                {}
+                : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout) {
+              if (dataLayout == DataLayoutOption::aos) {
+                _aosUpToDate = true;
+              }
+              else if (dataLayout == DataLayoutOption::soa) {
+                _soaUpToDate = true;
+              }
+            }
 
             [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; }
 
             void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
                 
                 if (numParticles > capacityOwned) {
-                  _ownedParticlesAoS.resize(numParticles);
+                  _hostOwnedParticlesAoS.resize(numParticles);
                   _hostOwnedParticlesSoA.resize(numParticles);
                   capacityOwned = numParticles;
                 }
 
                 if (numParticlesHaloEstimate > capacityHalo) {
-                  _haloParticles.resize(numParticlesHaloEstimate);
-                  // TODO: SoA
+                  _hostHaloParticlesAoS.resize(numParticlesHaloEstimate);
+                  _hostHaloParticlesSoA.resize(numParticlesHaloEstimate);
                   capacityHalo = numParticlesHaloEstimate;
                 }
             }
@@ -60,7 +66,7 @@ template <class Particle_T>
                 _hostOwnedParticlesSoA.addParticle(numberOfOwned++, p);
               }
               else if (_dataLayout == DataLayoutOption::aos) {
-                _ownedParticlesAoS(numberOfOwned++) = p;
+                _hostOwnedParticlesAoS(numberOfOwned++) = p;
               }
             }
 
@@ -69,7 +75,7 @@ template <class Particle_T>
               std::lock_guard<AutoPasLock> guard(haloLock);
 
                 if (numberOfHalo < capacityHalo) {
-                    _haloParticles(numberOfHalo++) = haloP;
+                    _hostHaloParticlesAoS(numberOfHalo++) = haloP;
                 } else {
                     // TODO: resize
                 }
@@ -91,8 +97,8 @@ template <class Particle_T>
             }
 
             size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
-                size_t number = 0;
-
+                size_t number = numberOfOwned;
+                // TODO: implement
                 return number;
             }
 
@@ -111,6 +117,8 @@ template <class Particle_T>
                 traversal->initTraversal();
                 traversal->traverseParticles();
                 traversal->endTraversal();
+
+                finishTraversal(traversal);
             }
 
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
@@ -129,6 +137,7 @@ template <class Particle_T>
                 IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                 typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
                 // Copy from DirectSum.h
+                convertToAoS();
                 return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
             }
 
@@ -137,6 +146,7 @@ template <class Particle_T>
                 typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
                     nullptr) const override {
                 // Copy from DirectSum.h
+                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged
                 return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
             }
 
@@ -144,6 +154,7 @@ template <class Particle_T>
                 const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
                 typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
                 // Copy from DirectSum.h
+                convertToAoS();
                 return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
             }
 
@@ -152,6 +163,7 @@ template <class Particle_T>
                 typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
                     nullptr) const override {
                 // Copy from DirectSum.h
+                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged
                 return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
             }
 
@@ -166,12 +178,28 @@ template <class Particle_T>
             template <typename Lambda>
             void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
               // TODO: consider behavior
-
             }
 
             template <typename Lambda>
             void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior) {
-              // TODO
+
+              const size_t numParticles = getNumberOfParticles(behavior);
+
+              if (_dataLayout == DataLayoutOption::aos) {
+                Kokkos::parallel_for("forEachAoS", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
+                  // TODO: consider behavior
+                  forEachLambda(i, _hostOwnedParticlesAoS);
+                });
+                _soaUpToDate = false;
+              }
+
+              else if (_dataLayout == DataLayoutOption::soa) {
+                Kokkos::parallel_for("forEachSoA", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
+                  // TODO: consider behavior
+                  forEachLambda(i, _hostOwnedParticlesSoA);
+                });
+                _aosUpToDate = false;
+              }
             }
 
             [[nodiscard]] double getCutoff() const final { return 0; }
@@ -213,11 +241,24 @@ template <class Particle_T>
         void prepareTraversal(Traversal &traversal) {
             auto* kokkosDsTraversal = dynamic_cast<DSKokkosTraversalInterface<Particle_T> *>(traversal);
             if (kokkosDsTraversal) {
-              if (_dataLayout == DataLayoutOption::aos) {
-                kokkosDsTraversal->setOwnedAoSToTraverse(_ownedParticlesAoS);
+
+              auto targetLayout = traversal->getDataLayout();
+
+              if (targetLayout == DataLayoutOption::aos) {
+
+                if (_dataLayout != DataLayoutOption::aos) {
+                  convertToAoS();
+                }
+
+                kokkosDsTraversal->setOwnedAoSToTraverse(_hostOwnedParticlesAoS);
                 //kokkosDsTraversal->setHaloToTraverse(_haloParticles);
               }
-              else if (_dataLayout == DataLayoutOption::soa) {
+              else if (targetLayout == DataLayoutOption::soa) {
+
+                if (_dataLayout != DataLayoutOption::soa) {
+                  convertToSoA();
+                }
+
                 kokkosDsTraversal->setOwnedSoAToTraverse(_hostOwnedParticlesSoA);
                 //kokkosDsTraversal->setHaloToTraverse(_hostHaloParticlesSoA);
               }
@@ -225,6 +266,68 @@ template <class Particle_T>
             else {
                 utils::ExceptionHandler::exception("The selected traversal is not compatible with the KokkosDirectSum container.");
             }
+        }
+
+        template <typename Traversal>
+        void finishTraversal(Traversal traversal) {
+          auto* kokkosDsTraversal = dynamic_cast<DSKokkosTraversalInterface<Particle_T> *>(traversal);
+
+          if (kokkosDsTraversal) {
+
+            auto targetLayout = traversal->getDataLayout();
+
+            if (targetLayout == DataLayoutOption::aos) {
+              kokkosDsTraversal->retrieveOwnedAoS(_hostOwnedParticlesAoS);
+              if (_dataLayout != targetLayout) {
+                convertToSoA();
+              }
+              _soaUpToDate = false;
+            }
+            else if (targetLayout == DataLayoutOption::soa) {
+              kokkosDsTraversal->retrieveOwnedSoA(_hostOwnedParticlesSoA);
+              if (_dataLayout != targetLayout) {
+                convertToAoS();
+              }
+              _aosUpToDate = false;
+            }
+          }
+          else {
+            utils::ExceptionHandler::exception("The selected traversal is not compatible with the KokkosDirectSum container.");
+          }
+        }
+
+        void convertToSoA() {
+
+          if (_soaUpToDate) {
+            return;
+          }
+
+          constexpr size_t tupleSize = _hostOwnedParticlesSoA.tupleSize();
+          constexpr auto I = std::make_index_sequence<tupleSize>();
+
+          _hostOwnedParticlesSoA.resize(numberOfOwned);
+          _hostHaloParticlesSoA.resize(numberOfHalo);
+          _converter.convertToSoA(_hostOwnedParticlesAoS, _hostOwnedParticlesSoA, numberOfOwned, I);
+          _converter.convertToSoA(_hostHaloParticlesAoS, _hostHaloParticlesSoA, numberOfHalo, I);
+
+          _soaUpToDate = true;
+        }
+
+        void convertToAoS() {
+
+          if (_aosUpToDate) {
+            return;
+          }
+
+          constexpr size_t tupleSize = _hostOwnedParticlesSoA.tupleSize();
+          constexpr auto I = std::make_index_sequence<tupleSize>();
+
+          _hostOwnedParticlesAoS.resize(numberOfOwned);
+          _hostHaloParticlesAoS.resize(numberOfHalo);
+          _converter.convertToAoS(_hostOwnedParticlesSoA, _hostOwnedParticlesAoS, numberOfOwned, I);
+          _converter.convertToAoS(_hostHaloParticlesSoA, _hostHaloParticlesAoS, numberOfHalo, I);
+
+          _aosUpToDate = true;
         }
 
         // Nearly a clone of DirectSum::getParticleImpl to guarantee that we fulfill all the requirements from getParticle in the ParticleContainerInterface's method description
@@ -262,7 +365,7 @@ template <class Particle_T>
           }
 
           size_t sizeToCheck = (cellIndex == 0) ? numberOfOwned : numberOfHalo;
-          const auto& viewToCheck = (cellIndex == 0) ? _ownedParticlesAoS : _haloParticles;
+          const auto& viewToCheck = (cellIndex == 0) ? _hostOwnedParticlesAoS : _hostHaloParticlesAoS;
 
           if (particleIndex >= sizeToCheck or
               not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
@@ -276,7 +379,7 @@ template <class Particle_T>
             return {nullptr, 0, 0};
           }
 
-          const auto& viewToExtract = (cellIndex == 0) ? _ownedParticlesAoS : _haloParticles;
+          const auto& viewToExtract = (cellIndex == 0) ? _hostOwnedParticlesAoS : _hostHaloParticlesAoS;
           const Particle_T * result = &viewToExtract(particleIndex);
 
           return {result, cellIndex, particleIndex};
@@ -304,7 +407,7 @@ template <class Particle_T>
               }
             }
           } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-              ((cellIndex == 0) ? _ownedParticlesAoS(particleIndex) : _haloParticles(particleIndex)), iteratorBehavior, boxMin, boxMax));
+              ((cellIndex == 0) ? _hostOwnedParticlesAoS(particleIndex) : _hostHaloParticlesAoS(particleIndex)), iteratorBehavior, boxMin, boxMax));
 
           // the indices returned at this point should always be valid
           return {cellIndex, particleIndex};
@@ -320,10 +423,16 @@ template <class Particle_T>
 
         DataLayoutOption _dataLayout {};
 
-        /* AoS Data structure */
-        utils::KokkosAoS<MemSpace, Particle_T> _ownedParticlesAoS {};
+        bool _aosUpToDate = false;
 
-        utils::KokkosAoS<MemSpace, Particle_T> _haloParticles {};
+        bool _soaUpToDate = false;
+
+        utils::KokkosDataLayoutConverter<Particle_T> _converter {};
+
+        /* AoS Data structure */
+        utils::KokkosAoS<MemSpace, Particle_T> _hostOwnedParticlesAoS {};
+
+        utils::KokkosAoS<MemSpace, Particle_T> _hostHaloParticlesAoS {};
 
         /* SoA data structure */
 

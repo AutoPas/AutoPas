@@ -210,6 +210,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
+  template <typename Lambda>
+  void forEachKokkos(Lambda forEachLambda, IteratorBehavior) {
+    // No Op
+  }
+
   /**
    * @copydoc LinkedCells::forEach()
    */

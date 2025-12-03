@@ -11,6 +11,7 @@
 
 #include <autopas/utils/ExceptionHandler.h>
 #include <autopas/utils/WrapOpenMP.h>
+#include <autopas/utils/WrapKokkos.h>
 
 namespace TimeDiscretization {
 
@@ -21,6 +22,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
+  /*
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   AUTOPAS_OPENMP(parallel)
 #else
@@ -32,6 +34,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
 #endif
+
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto v = iter->getV();
@@ -61,6 +64,46 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     }
 #endif
   }
+  */
+    // TODO: flag to decide whether to use this
+  autoPasContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
+    auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
+    auto vX = storage.template get<ParticleType::AttributeNames::velocityX, true>(i);
+    auto vY = storage.template get<ParticleType::AttributeNames::velocityY, true>(i);
+    auto vZ = storage.template get<ParticleType::AttributeNames::velocityZ, true>(i);
+
+    auto fX = storage.template get<ParticleType::AttributeNames::forceX, true>(i);
+    auto fY = storage.template get<ParticleType::AttributeNames::forceY, true>(i);
+    auto fZ = storage.template get<ParticleType::AttributeNames::forceZ, true>(i);
+
+    storage.template set<ParticleType::AttributeNames::oldForceX, true>(fX, i);
+    storage.template set<ParticleType::AttributeNames::oldForceY, true>(fY, i);
+    storage.template set<ParticleType::AttributeNames::oldForceZ, true>(fZ, i);
+
+    storage.template set<ParticleType::AttributeNames::forceX, true>(globalForce[0], i);
+    storage.template set<ParticleType::AttributeNames::forceY, true>(globalForce[1], i);
+    storage.template set<ParticleType::AttributeNames::forceZ, true>(globalForce[2], i);
+
+    vX *= deltaT;
+    vY *= deltaT;
+    vZ *= deltaT;
+
+    fX *= (deltaT * deltaT / (2 * m));
+    fY *= (deltaT * deltaT / (2 * m));
+    fZ *= (deltaT * deltaT / (2 * m));
+
+    const auto displacementX = vX + fX;
+    const auto displacementY = vY + fY;
+    const auto displacementZ = vZ + fZ;
+
+    auto pX = storage.template get<ParticleType::AttributeNames::posX, true>(i);
+    auto pY = storage.template get<ParticleType::AttributeNames::posY, true>(i);
+    auto pZ = storage.template get<ParticleType::AttributeNames::posZ, true>(i);
+    storage.template set<ParticleType::AttributeNames::posX, true>(pX + displacementX, i);
+    storage.template set<ParticleType::AttributeNames::posY, true>(pY + displacementY, i);
+    storage.template set<ParticleType::AttributeNames::posZ, true>(pZ + displacementZ, i);
+
+  }, autopas::IteratorBehavior::owned);
 #ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (throwException) {
     throw std::runtime_error("At least one particle was too fast!");

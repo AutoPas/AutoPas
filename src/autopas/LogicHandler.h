@@ -1272,7 +1272,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
     timerRebuild.start();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    this->updateRebuildPositions();
+     this->updateRebuildPositions();
 #endif
     _currentContainer->rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS

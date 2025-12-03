@@ -28,7 +28,7 @@ namespace autopas::utils {
       Kokkos::realloc(view, numParticles);
     }
 
-    template <size_t attribute>
+    template <size_t attribute, bool>
     auto get(size_t index) {
       return view(index).template get<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
@@ -37,7 +37,7 @@ namespace autopas::utils {
       return view;
     }
 
-    template <size_t attribute, typename Type>
+    template <size_t attribute, bool, typename Type>
     void set(Type value, size_t index) {
       view(index).template set<static_cast<Particle_T::AttributeNames>(attribute)>(value);
     }

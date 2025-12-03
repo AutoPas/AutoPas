@@ -20,7 +20,7 @@ class KokkosDsNaiveParallelTraversal : public TraversalInterface, public DSKokko
 public:
 
     explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
-        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(dataLayout), _functor{functor} {}
+        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor} {}
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::kokkos_ds_naive_parallel; }
 

@@ -413,6 +413,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
+  template <typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
   /**
    * @copydoc LinkedCells::forEach()
    */

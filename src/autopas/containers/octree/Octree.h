@@ -412,6 +412,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
     return i == CellTypes::OWNED;
   }
 
+  template <typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
   /**
    * Execute code on all particles in this container as defined by a lambda function.
    * @tparam Lambda (Particle_T &p) -> void

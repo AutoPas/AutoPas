@@ -464,6 +464,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     }
   }
 
+  template <typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
   /**
    * @copydoc autopas::LinkedCells::forEach()
    */

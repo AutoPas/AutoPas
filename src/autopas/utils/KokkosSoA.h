@@ -40,9 +40,9 @@ namespace autopas::utils {
       addParticleImpl(position, p, I);
     }
 
-    template <size_t attribute>
-    constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type get(size_t index) {
-      return std::get<attribute>(views)(index);
+    template <size_t attribute, bool offset>
+    constexpr std::tuple_element<attribute - (offset ? 1 : 0), std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type get(size_t index) {
+      return std::get<attribute - (offset ? 1 : 0)>(views)(index);
     }
 
     template <size_t attribute>
@@ -50,9 +50,9 @@ namespace autopas::utils {
       return std::get<attribute>(views);
     }
 
-    template <size_t attribute>
-    void set(std::tuple_element<attribute, std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type value, size_t index) {
-      (std::get<attribute>(views))(index) = value;
+    template <size_t attribute, bool offset>
+    void set(std::tuple_element<attribute - (offset ? 1 : 0), std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type value, size_t index) {
+      (std::get<attribute - (offset ? 1 : 0)>(views))(index) = value;
     }
 
     /* Meta Data */
@@ -78,7 +78,7 @@ namespace autopas::utils {
 
     template <class Particle_T, std::size_t... I>
     void addParticleImpl(size_t position, const Particle_T& p, std::index_sequence<I...>) {
-      (set<I>(p.template get<static_cast<Particle_T::AttributeNames>(I+1)>(), position), ...);
+      (set<I, false>(p.template get<static_cast<Particle_T::AttributeNames>(I+1)>(), position), ...);
     }
 
     std::tuple<Kokkos::View<Types, MemSpace>...> views {};

@@ -340,6 +340,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
+  template <typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
   /**
    * Execute code on all particles in this container as defined by a lambda function.
    * @tparam Lambda (ParticleType &p) -> void

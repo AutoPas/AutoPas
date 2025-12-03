@@ -14,15 +14,14 @@ template <class Particle_T>
 class KokkosDataLayoutConverter {
  public:
 
-  explicit KokkosDataLayoutConverter(DataLayoutOption dataLayout)
-      : _dataLayout(dataLayout) {}
+  explicit KokkosDataLayoutConverter() {}
 
   template <class Input, class Output, std::size_t... I>
   void convertToSoA(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...>) {
 
     // AoS to SoA
     for (size_t i = 0; i < numParticles; ++i) {
-      (dstParticles. template set<I>(srcParticles(i).template get<static_cast<Particle_T::AttributeNames>(I+1)>(), i), ...); // I+1 as KokkosSoA does not contain ptr
+      (dstParticles. template set<I, false>(srcParticles(i).template get<static_cast<Particle_T::AttributeNames>(I+1)>(), i), ...); // I+1 as KokkosSoA does not contain ptr
     }
   }
 
@@ -31,13 +30,9 @@ class KokkosDataLayoutConverter {
 
     // SoA to AoS
     for (size_t i = 0; i < numParticles; ++i) {
-      (dstParticles(i). template set<static_cast<Particle_T::AttributeNames>(I+1)>(srcParticles. template get<I>(i)), ...); // I+1 as KokkosSoA does not contain ptr
+      (dstParticles(i). template set<static_cast<Particle_T::AttributeNames>(I+1)>(srcParticles. template get<I, false>(i)), ...); // I+1 as KokkosSoA does not contain ptr
     }
   }
-
- private:
-
-  DataLayoutOption _dataLayout;
 };
 
 }  // namespace autopas::utils

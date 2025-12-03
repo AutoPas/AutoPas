@@ -219,6 +219,11 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
     return _linkedCells.begin(behavior, additionalVectors);
   }
 
+  template <typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
   /**
    * @copydoc autopas::LinkedCells::forEach()
    */
