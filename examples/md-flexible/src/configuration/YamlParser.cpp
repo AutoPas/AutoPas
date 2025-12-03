@@ -230,7 +230,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
-        } else if (strArg.find("highway") != std::string::npos) {
+        } else if (strArg.find("hwy") != std::string::npos or strArg.find("highway") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");

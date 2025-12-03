@@ -304,7 +304,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
-        } else if (strArg.find("highway") != string::npos) {
+        } else if (strArg.find("hwy") != string::npos or strArg.find("highway")) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else {
           cerr << "Unknown functor: " << strArg << endl;

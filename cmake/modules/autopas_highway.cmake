@@ -4,7 +4,7 @@ include(FetchContent)
 
 FetchContent_Declare(
     autopas_highway
-    URL ${AUTOPAS_SOURCE_DIR}/libs/highway-1.2.0.zip
+    URL ${AUTOPAS_SOURCE_DIR}/libs/highway-1.3.0.zip
 )
 
 FetchContent_GetProperties(autopas_highway)
