@@ -16,7 +16,11 @@ namespace autopasTools::generators {
  * Generator for grids of particles.
  */
 namespace GridGenerator {
-
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+using CalcType = float;
+#else
+using CalcType = double;
+#endif
 /**
  * Fills a cell vector with a cuboid mesh of particles.
  *
@@ -73,11 +77,7 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const st
         std::array<unsigned long, 3> cellIndex3D{static_cast<unsigned long>(pos[0] / cellSize[0]),
                                                  static_cast<unsigned long>(pos[1] / cellSize[1]),
                                                  static_cast<unsigned long>(pos[2] / cellSize[2])};
-        using ParticlePosArray = decltype(p.getR());
-        using ParticleCalcType = typename ParticlePosArray::value_type;
-        auto posForParticle =
-        autopas::utils::ArrayUtils::static_cast_copy_array<ParticleCalcType>(pos);
-        p.setR(posForParticle);
+        p.setR(pos);
         p.setID(id++);
         const auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(cellIndex3D, cellsPerDimension);
 
@@ -105,14 +105,9 @@ void GridGenerator::fillWithParticles(
         auto p = defaultParticle;
         const std::array<double, 3> position{x * (spacing[0]) + offset[0], y * (spacing[1]) + offset[1],
                                              z * (spacing[2]) + offset[2]};
-        using ParticlePosArray = decltype(p.getR());
-        using ParticleCalcType = typename ParticlePosArray::value_type;
-        auto posForParticle =
-          autopas::utils::ArrayUtils::static_cast_copy_array<ParticleCalcType>(position);
-        p.setR(posForParticle);
+        p.setR(autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(position));
         p.setID(id++);
         container.addParticle(p);
-
       }
     }
   }
