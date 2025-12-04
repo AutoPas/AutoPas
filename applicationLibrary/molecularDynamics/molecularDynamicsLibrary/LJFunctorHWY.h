@@ -65,13 +65,13 @@ class LJFunctorHWY
    */
   LJFunctorHWY() = delete;
 
- private:
   /**
-   * Internal, actual constructor
+   * Constructor for Functor with mixing enabled/disabled. When using this functor without particlePropertiesLibrary it
+   * is necessary to call setParticleProperties() to set internal constants.
    * @param cutoff
-   * @note param dummy unused, only there to make the signature different from the public constructor
+   * @param particlePropertiesLibrary
    */
-  explicit LJFunctorHWY(double cutoff, void * /*dummy*/)
+  explicit LJFunctorHWY(double cutoff, ParticlePropertiesLibrary<double, size_t> *particlePropertiesLibrary = nullptr)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquared{highway::Set(tag_double, cutoff * cutoff)},
         _cutoffSquareAoS{cutoff * cutoff},
@@ -82,38 +82,21 @@ class LJFunctorHWY
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
+
     if constexpr (countFLOPs) {
       AutoPasLog(DEBUG, "Using LJFunctorHWY with countFLOPs but FLOP counting is not implemented.");
     }
-  }
 
- public:
-  /**
-   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
-   * setParticleProperties() to set internal constants because it does not use a particle properties library.
-   *
-   * @note Only to be used with mixing == false.
-   *
-   * @param cutoff
-   */
-  explicit LJFunctorHWY(double cutoff) : LJFunctorHWY(cutoff, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
-
-  /**
-   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
-   * properties like sigma, epsilon and shift.
-   * @param cutoff
-   * @param particlePropertiesLibrary
-   */
-  explicit LJFunctorHWY(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctorHWY(cutoff, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
+    if constexpr (useMixing) {
+      if (particlePropertiesLibrary == nullptr) {
+        throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
+      }
+      _PPLibrary = std::ref(*particlePropertiesLibrary);
+    } else {
+      if (particlePropertiesLibrary != nullptr) {
+        throw std::runtime_error("Mixing is disabled but a ParticlePropertiesLibrary was provided!");
+      }
+    }
   }
 
   std::string getName() final { return "LJFunctorHWY"; }
@@ -140,10 +123,10 @@ class LJFunctorHWY
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmaSquare = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+      sigmaSquare = _PPLibrary->get().getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      epsilon24 = _PPLibrary->get().getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = _PPLibrary->get().getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
     const auto dr = i.getR() - j.getR();
@@ -242,31 +225,59 @@ class LJFunctorHWY
   }
 
  private:
+  /**
+   * Checks whether the loop over i should be stopped or not. This depends on the respective VectorizationPattern.
+   *
+   * @tparam reversed Whether iterating backwards over i.
+   * @tparam vecPattern
+   * @param i
+   * @param vecEnd
+   * @return whether the loop over i should be stopped or not.
+   */
   template <bool reversed, VectorizationPattern vecPattern>
-  constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long stop) {
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      return reversed ? i >= 0 : (i < stop);
-    } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      return reversed ? i >= 1 : (i < (stop - 1));
-    } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      if constexpr (reversed) {
+  constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long vecEnd) {
+    if constexpr (reversed) {
+      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+        return i >= 0;
+      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+        return i >= 1;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
         return i >= _vecLengthDouble / 2;
-      } else {
-        const long criterion = stop - _vecLengthDouble / 2 + 1;
-        return i < criterion;
-      }
-    } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      if constexpr (reversed) {
+      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
         return i >= _vecLengthDouble;
       } else {
-        const long criterion = stop - _vecLengthDouble + 1;
-        return i < criterion;
+        return false;
       }
     } else {
-      return false;
+      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+        return i < vecEnd;
+      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+        return i < (vecEnd - 1);
+      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+        // Switching to signed long to avoid integer underflows.
+        // Note: The narrowing conversion of _vecLengthDouble shouldn't cause issues as it is not expected to be so
+        // large.
+        const long criterion = vecEnd - _vecLengthDouble / 2 + 1;
+        return i < criterion;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+        // Switching to signed long to avoid integer underflows.
+        // Note: The narrowing conversion of _vecLengthDouble shouldn't cause issues as it is not expected to be so
+        // large.
+        const long criterion = vecEnd - _vecLengthDouble + 1;
+        return i < criterion;
+      } else {
+        return false;
+      }
     }
   }
 
+  /**
+   * Calculates the step size depending on VectorizationPattern, by which i is decremented in the outer loop.
+   * Should only be called when iterating backwards over i.
+   *
+   * @tparam vecPattern
+   * @param i
+   */
   template <VectorizationPattern vecPattern>
   constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -280,6 +291,13 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Calculates the step size depending on VectorizationPattern, by which i is incremented in the outer loop.
+   * Should only be called when iterating forwards over i.
+   *
+   * @tparam vecPattern
+   * @param i
+   */
   template <VectorizationPattern vecPattern>
   constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -293,11 +311,27 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Determines the remainder length that can't be vectorized in the loop over i.
+   *
+   * @tparam reversed
+   * @param i
+   * @param vecEnd
+   * @return the remainder length that can't be vectorized in the loop over i.
+   */
   template <bool reversed>
-  constexpr int obtainFirstLoopRest(std::ptrdiff_t i, const int stop) {
-    return reversed ? (i < 0 ? 0 : i + 1) : stop - i;
+  constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
+    return reversed ? (i < 0 ? 0 : i + 1) : vecEnd - i;
   }
 
+  /**
+   * Checks whether the inner loop over j should be stopped or not. This depends on the respective VectorizationPattern.
+   *
+   * @tparam vecPattern
+   * @param i
+   * @param j
+   * @return  whether the inner loop over j should be stopped or not.
+   */
   template <VectorizationPattern vecPattern>
   constexpr bool checkSecondLoopCondition(const std::ptrdiff_t i, const size_t j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -313,6 +347,13 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Calculates the step size depending on VectorizationPattern, by which j is incremented in the inner loop.
+   * Should only be called when iterating forwards over i.
+   *
+   * @tparam vecPattern
+   * @param j
+   */
   template <VectorizationPattern vecPattern>
   constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -326,14 +367,22 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Determines the remainder length that can't be vectorized in the loop over j.
+   *
+   * @tparam reversed
+   * @param j
+   * @param vecEnd
+   * @return the remainder length that can't be vectorized in the loop over j.
+   */
   template <VectorizationPattern vecPattern>
-  constexpr int obtainSecondLoopRest(const std::ptrdiff_t i) {
+  constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      return static_cast<int>(i & (_vecLengthDouble - 1));
+      return static_cast<int>(j & (_vecLengthDouble - 1));
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      return static_cast<int>(i & (_vecLengthDouble / 2 - 1));
+      return static_cast<int>(j & (_vecLengthDouble / 2 - 1));
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      return static_cast<int>(i & (1));
+      return static_cast<int>(j & (1));
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       return 0;
     } else {
@@ -636,7 +685,7 @@ class LJFunctorHWY
       double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
       double *const __restrict fyPtr2, double *const __restrict fzPtr2, const size_t *const __restrict typeIDptr1,
       const size_t *const __restrict typeIDptr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jStop) {
+      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecEnd) {
     VectorDouble fxAcc = _zeroDouble;
     VectorDouble fyAcc = _zeroDouble;
     VectorDouble fzAcc = _zeroDouble;
@@ -651,14 +700,14 @@ class LJFunctorHWY
                                                      restI);
 
     std::ptrdiff_t j = 0;
-    for (; checkSecondLoopCondition<vecPattern>(jStop, j); incrementSecondLoop<vecPattern>(j)) {
+    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j); incrementSecondLoop<vecPattern>(j)) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
           fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j], fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, restI, 0);
     }
 
-    const int restJ = obtainSecondLoopRest<vecPattern>(jStop);
+    const int restJ = obtainJLoopRemainderLength<vecPattern>(jVecEnd);
     if (restJ > 0) {
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
@@ -760,7 +809,7 @@ class LJFunctorHWY
 
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
-      const int restI = obtainFirstLoopRest<false>(i, soa1.size());
+      const int restI = obtainILoopRemainderLength<false>(i, soa1.size());
       if (restI > 0) {
         handleILoopBody<false, newton3, true, vecPattern>(
             i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
@@ -850,10 +899,10 @@ class LJFunctorHWY
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble); ++j) {
-        epsilons[j] = _PPLibrary->getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + j));
-        sigmas[j] = _PPLibrary->getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + j));
+        epsilons[j] = _PPLibrary->get().getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + j));
+        sigmas[j] = _PPLibrary->get().getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + j));
         if constexpr (applyShift) {
-          shifts[j] = _PPLibrary->getMixingShift6(*typeID1Ptr, *(typeID2Ptr + j));
+          shifts[j] = _PPLibrary->get().getMixingShift6(*typeID1Ptr, *(typeID2Ptr + j));
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -861,11 +910,11 @@ class LJFunctorHWY
         for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble / 2); ++j) {
           const auto index = i * (_vecLengthDouble / 2) + j;
           const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-          epsilons[index] = _PPLibrary->getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _PPLibrary->getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+          epsilons[index] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
+          sigmas[index] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
 
           if constexpr (applyShift) {
-            shifts[index] = _PPLibrary->getMixingShift6(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = _PPLibrary->get().getMixingShift6(*typeID1, *(typeID2Ptr + j));
           }
         }
       }
@@ -875,22 +924,22 @@ class LJFunctorHWY
           const auto index = i + _vecLengthDouble / 2 * j;
           const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
 
-          epsilons[index] = _PPLibrary->getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _PPLibrary->getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+          epsilons[index] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
+          sigmas[index] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
 
           if constexpr (applyShift) {
-            shifts[index] = _PPLibrary->getMixingShift6(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = _PPLibrary->get().getMixingShift6(*typeID1, *(typeID2Ptr + j));
           }
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       for (int i = 0; i < (remainderI ? restI : _vecLengthDouble); ++i) {
         auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-        epsilons[i] = _PPLibrary->getMixing24Epsilon(*typeID1, *typeID2Ptr);
-        sigmas[i] = _PPLibrary->getMixingSigmaSquared(*typeID1, *typeID2Ptr);
+        epsilons[i] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *typeID2Ptr);
+        sigmas[i] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *typeID2Ptr);
 
         if constexpr (applyShift) {
-          shifts[i] = _PPLibrary->getMixingShift6(*typeID1, *typeID2Ptr);
+          shifts[i] = _PPLibrary->get().getMixingShift6(*typeID1, *typeID2Ptr);
         }
       }
     }
@@ -1341,7 +1390,7 @@ class LJFunctorHWY
 
   const double _cutoffSquareAoS{0.};
   double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
-  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
+  std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> _PPLibrary;
   double _uPotSum{0.};
   std::array<double, 3> _virialSum;
   std::vector<AoSThreadData> _aosThreadData{};

@@ -831,7 +831,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_HWY: {
 #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
-      return f(LJFunctorTypeHWY{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeHWY{cutoff, &particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor HWY. Activate it via `cmake "
