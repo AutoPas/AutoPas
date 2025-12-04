@@ -55,18 +55,7 @@ class LJFunctorAVX
    */
   using AccuType = typename Particle_T::ParticleAccuType;
 
-  /** SIMD type used for *calculations*.
-   It must match the precision mode blocks below:
-   - SPSP and SPDP use float AVX intrinsics (__m256)
-   - DPDP uses double AVX intrinsics (__m256d)
-   */
-#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
-  using SIMDCalcType = __m256;
-#else
-  using SIMDCalcType = __m256d;
-#endif
-
-  // SIMD type used for *accumulations*, which depends on AccuType.
+  using SIMDCalcType = typename std::conditional_t<std::is_same<CalcType, float>::value, __m256, __m256d>;
   using SIMDAccuType = typename std::conditional_t<std::is_same<AccuType, float>::value, __m256, __m256d>;
 
   using SoAArraysType = typename Particle_T::SoAArraysType;
