@@ -204,8 +204,6 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   initializeParticlePropertiesLibrary();
 
   initializeObjects();
-
-  // @todo filter vec patterns here to avoid non-HWY functors searching for patterns?
 }
 
 std::string MDFlexConfig::to_string() const {
@@ -317,10 +315,6 @@ std::string MDFlexConfig::to_string() const {
       }
       case FunctorOption::lj12_6_SVE: {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
-        break;
-      }
-      case FunctorOption::lj12_6_Globals: {
-        os << "Lennard-Jones (12-6) with globals" << endl;
         break;
       }
       case FunctorOption::lj12_6_HWY: {

@@ -1,7 +1,7 @@
 /**
  * @file LJFunctorTestHWY.cpp
  * @author Luis Gall
- * @date 04/23/24
+ * @date 23/04/24
  */
 
 #include "LJFunctorTestHWY.h"
@@ -36,7 +36,7 @@ bool LJFunctorTestHWY::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
-    double tolerance = 2e-8;
+    constexpr double tolerance = 2e-8;
     EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
     EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
     EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
@@ -69,8 +69,6 @@ bool LJFunctorTestHWY::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   EXPECT_GT(cell1.size(), 0);
   EXPECT_EQ(cell1.size(), cell2.size());
 
-  bool ret = true;
-
   int counter{0};
 
   for (size_t i = 0; i < cell1.size(); ++i) {
@@ -78,8 +76,6 @@ bool LJFunctorTestHWY::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   }
 
   return counter == 0;
-
-  return ret;
 }
 
 template <bool mixing>
@@ -88,9 +84,9 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   FMCell cell1HWY;
   FMCell cell2HWY;
 
-  size_t numParticles = 23;
+  const size_t numParticles = 23;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary PPL{_cutoff};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -105,7 +101,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     PPL.calculateMixingCoefficients();
   }
 
-  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(
       cell1HWY, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   autopasTools::generators::UniformGenerator::fillWithParticles(
@@ -202,10 +198,10 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   ljFunctorHWY.endTraversal(newton3);
   ljFunctorAVX.endTraversal(newton3);
 
-  double tolerance = 1e-8;
-  // TODO : uncomment before release
-  // EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getUpot(), tolerance) << "global uPot";
-  // EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  const double tolerance = 1e-8;
+
+  EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 template <bool mixing>
@@ -213,7 +209,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
                                                              bool useUnalignedViews, VectorizationPattern pattern) {
   FMCell cellHWY;
 
-  size_t numParticles = 23;
+  const size_t numParticles = 23;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
   if constexpr (mixing) {
@@ -230,7 +226,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     PPL.calculateMixingCoefficients();
   }
 
-  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
@@ -295,15 +291,15 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
   ljFunctorHWY.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
   ljFunctorHWY.SoAExtractor(cellNoHWY, cellNoHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells 1 not equal after extracting.";
+  ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after extracting.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctorAVX.endTraversal(newton3);
 
-  double tolerance = 1e-8;
-  // TODO : uncomment before release
-  // EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getUpot(), tolerance) << "global uPot";
-  // EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  const double tolerance = 1e-8;
+
+  EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 template <bool mixing>
@@ -329,7 +325,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
     PPL.calculateMixingCoefficients();
   }
 
-  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
@@ -362,7 +358,6 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
   // copy cells
   FMCell cellHWY(cellAVX);
   constexpr bool shifting = true;
-  constexpr bool calculateGlobals = true;
   auto ljFunctorAVX = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
@@ -412,9 +407,8 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
   ljFunctorHWY.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  // TODO : uncomment before release
-  // EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getUpot(), tolerance) << "global uPot";
-  // EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 template <bool mixing>
@@ -438,7 +432,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
     PPL.calculateMixingCoefficients();
   }
 
-  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
@@ -499,9 +493,8 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   ljFunctorAVX.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  // TODO : uncomment before release
-  // EXPECT_NEAR(ljFunctorHWY.getUpot(), ljFunctorAVX.getPotentialEnergy(), tolerance) << "global uPot";
-  // EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorAVX.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctorHWY.getPotentialEnergy(), ljFunctorAVX.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorAVX.getVirial(), tolerance) << "global virial";
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {

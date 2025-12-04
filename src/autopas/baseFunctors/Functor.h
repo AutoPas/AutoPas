@@ -169,7 +169,7 @@ class Functor {
   [[nodiscard]] double getCutoff() const { return _cutoff; }
 
   /**
-   * Setter for the vectorization pattern to choose
+   * Setter for the vectorization pattern to be used
    * @param vecPattern
    */
   virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}

@@ -334,12 +334,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      /*
-      case decltype(config.dontMeasureFlops)::getoptChar: {
-        config.dontMeasureFlops.value = false;
-        break;
-      }
-      */
       case decltype(config.generatorOption)::getoptChar: {
         if (strArg.find("grid") != string::npos) {
           config.generatorOption.value = MDFlexConfig::GeneratorOption::grid;

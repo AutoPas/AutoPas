@@ -29,7 +29,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
+      vecPatternOptions, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianClusterSearch bayesClusterSearch(autopas::InteractionTypeOption::pairwise, containerOptions,
                                                     cellSizeFactors, traversalOptions, loadEstimatorOptions,
                                                     dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence);
@@ -86,7 +86,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
+      vecPatternOptions, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
       loadEstimatorOptions, dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence,
@@ -165,7 +165,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
+      vecPatternOptions, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
       loadEstimatorOptions, dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence,
@@ -257,7 +257,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
+      vecPatternOptions, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
       loadEstimatorOptions, dataLayoutOptions, newton3Options, vecPatternOptions, maxEvidence,

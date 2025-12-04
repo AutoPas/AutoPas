@@ -502,8 +502,8 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
                              std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
-                             autopas::InteractionTypeOption::pairwise,
-                             autopas::VectorizationPatternOption::getAllOptions())),
+                             autopas::VectorizationPatternOption::getAllOptions(),
+                             autopas::InteractionTypeOption::pairwise)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////

@@ -1,7 +1,7 @@
 /**
  * @file LJFunctorTestHWY.h
  * @author Luis Gall
- * @date 04/23/24
+ * @date 23/04/24
  */
 
 #pragma once
@@ -19,23 +19,23 @@ using LJFunctorHWYTestingTuple =
 
 class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorHWYTestingTuple> {
  public:
-  LJFunctorTestHWY() : AutoPasTestBase() {}
+  LJFunctorTestHWY() = default;
 
   constexpr static double _maxError = 1e-12;
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
-                                              VectorizationPattern pattern);
+  void testLJFunctorAVXvsLJFunctorHWYTwoCells(const bool newton3, const bool doDeleteSomeParticles,
+                                              const bool useUnalignedViews, const VectorizationPattern pattern);
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
-                                             VectorizationPattern pattern);
+  void testLJFunctorAVXvsLJFunctorHWYOneCell(const bool newton3, const bool doDeleteSomeParticles,
+                                             const bool useUnalignedViews, const VectorizationPattern pattern);
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles);
+  void testLJFunctorAVXvsLJFunctorHWYVerlet(const bool newton3, const bool doDeleteSomeParticles);
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles);
+  void testLJFunctorAVXvsLJFunctorHWYAoS(const bool newton3, const bool doDeleteSomeParticles);
 
   template <class SoAType>
   bool SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2);
