@@ -243,7 +243,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
         if (strArg.find("atm") != std::string::npos or strArg.find("axilrod-teller-muto") != std::string::npos) {
-          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+          if (strArg.find("hwy") != std::string::npos or strArg.find("highway") != std::string::npos) {
+            config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at_HWY;
+          } else {
+            config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+          }
         } else {
           throw std::runtime_error("Unrecognized triwise functor!");
         }

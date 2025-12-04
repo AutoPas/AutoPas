@@ -82,6 +82,19 @@ class SoAView {
    */
   [[nodiscard]] size_t size() const { return _endIndex - _startIndex; }
 
+  /**
+   * Returns whether the memory for the given attribute at the view's begin
+   * is aligned.
+   * @param alignment The alignment to check.
+   * @return whether the memory at the view's begin is aligned.
+   */
+  template <size_t attribute>
+  [[nodiscard]] bool isAligned(std::size_t alignment) const {
+    const auto ptr = begin<attribute>();
+    const auto addr = reinterpret_cast<std::uintptr_t>(ptr);
+    return (addr % alignment) == 0;
+  }
+
  private:
   /**
    * The underlying SoA.

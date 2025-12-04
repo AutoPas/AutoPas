@@ -38,6 +38,10 @@
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_HWY)
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctorHWY.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -154,6 +158,20 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #else
 using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
                                                    mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#endif
+
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_HWY)
+/**
+ * Type of ATMFunctorHWY used in md-flexible.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "The Axilrod Teller functor does not have support for multisite molecules!"
+#else
+using ATMFunctorHWY =
+    mdLib::AxilrodTellerMutoFunctorHWY<ParticleType, true, autopas::FunctorN3Modes::Both,
+                                       mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif

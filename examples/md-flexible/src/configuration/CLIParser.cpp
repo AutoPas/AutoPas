@@ -317,7 +317,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.functorOption3B)::getoptChar: {
         if (strArg.find("at") != string::npos or strArg.find("axi") != string::npos) {
-          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+          if (strArg.find("hwy") != string::npos or strArg.find("highway") != string::npos) {
+            config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at_HWY;
+          } else {
+            config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+          }
         } else {
           cerr << "Unknown triwise functor: " << strArg << endl;
           cerr << "Please use 'Axilrod-Teller-Muto'" << endl;
