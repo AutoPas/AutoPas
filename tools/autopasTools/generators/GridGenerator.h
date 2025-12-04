@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <type_traits>
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ParticleTypeTrait.h"
@@ -74,8 +73,7 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const st
         std::array<unsigned long, 3> cellIndex3D{static_cast<unsigned long>(pos[0] / cellSize[0]),
                                                  static_cast<unsigned long>(pos[1] / cellSize[1]),
                                                  static_cast<unsigned long>(pos[2] / cellSize[2])};
-        using ParticlePosArray =
-          std::remove_cv_t<std::remove_reference_t<decltype(p.getR())>>;
+        using ParticlePosArray = decltype(p.getR());
         using ParticleCalcType = typename ParticlePosArray::value_type;
         auto posForParticle =
         autopas::utils::ArrayUtils::static_cast_copy_array<ParticleCalcType>(pos);
@@ -107,8 +105,7 @@ void GridGenerator::fillWithParticles(
         auto p = defaultParticle;
         const std::array<double, 3> position{x * (spacing[0]) + offset[0], y * (spacing[1]) + offset[1],
                                              z * (spacing[2]) + offset[2]};
-        using ParticlePosArray =
-          std::remove_cv_t<std::remove_reference_t<decltype(p.getR())>>;
+        using ParticlePosArray = decltype(p.getR());
         using ParticleCalcType = typename ParticlePosArray::value_type;
         auto posForParticle =
           autopas::utils::ArrayUtils::static_cast_copy_array<ParticleCalcType>(position);
