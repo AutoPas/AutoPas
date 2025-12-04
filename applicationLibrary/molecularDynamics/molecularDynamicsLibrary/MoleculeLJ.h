@@ -39,11 +39,7 @@ using MoleculeLJPrecisionBase = MoleculeLJFP64;
  */
 class MoleculeLJ : public MoleculeLJBase<double, double, unsigned long> {
 public:
-#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
-  using ParticleSoAFloatPrecision = float;
-#else
   using ParticleSoAFloatPrecision = double;
-#endif
 
   MoleculeLJ() = default;
 
@@ -89,23 +85,10 @@ public:
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-    typename autopas::utils::SoAType<
-        MoleculeLJ *,
-        size_t /*id*/,
-        ParticleSoAFloatPrecision /*x*/,
-        ParticleSoAFloatPrecision /*y*/,
-        ParticleSoAFloatPrecision /*z*/,
-        ParticleSoAFloatPrecision /*vx*/,
-        ParticleSoAFloatPrecision /*vy*/,
-        ParticleSoAFloatPrecision /*vz*/,
-        ParticleSoAFloatPrecision /*fx*/,
-        ParticleSoAFloatPrecision /*fy*/,
-        ParticleSoAFloatPrecision /*fz*/,
-        ParticleSoAFloatPrecision /*oldFx*/,
-        ParticleSoAFloatPrecision /*oldFy*/,
-        ParticleSoAFloatPrecision /*oldFz*/,
-        size_t /*typeid*/,
-        autopas::OwnershipState /*ownershipState*/>::Type;
+      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
+                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
+                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
