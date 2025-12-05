@@ -75,7 +75,7 @@ class LJFunctorHWY
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquared{highway::Set(tag_double, cutoff * cutoff)},
         _cutoffSquareAoS{cutoff * cutoff},
-        _uPotSum{0.},
+        _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData{},
         _postProcessed{false} {
@@ -150,19 +150,19 @@ class LJFunctorHWY
     }
     if (calculateGlobals) {
       const auto virial = dr * f;
-      const double upot = epsilon24 * lj12m6 + shift6;
+      const double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas::autopas_get_thread_num();
 
       if (i.isOwned()) {
-        _aosThreadData[threadnum].uPotSum += upot;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         // for non-newton3 the division is in the post-processing step.
-        _aosThreadData[threadnum].uPotSum += upot * 0.5;
-        _aosThreadData[threadnum].virialSum += virial * 0.5;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadData[threadnum].virialSum += virial;
       }
     }
   }
@@ -665,15 +665,14 @@ class LJFunctorHWY
                              const VectorDouble &virialSumZ, const VectorDouble &uPotSum) {
     const int threadnum = autopas::autopas_get_thread_num();
 
-    double globals[4]{highway::ReduceSum(tag_double, virialSumX), highway::ReduceSum(tag_double, virialSumY),
-                      highway::ReduceSum(tag_double, virialSumZ), highway::ReduceSum(tag_double, uPotSum)};
+    const std::array<double, 4> globals{
+        highway::ReduceSum(tag_double, virialSumX), highway::ReduceSum(tag_double, virialSumY),
+        highway::ReduceSum(tag_double, virialSumZ), highway::ReduceSum(tag_double, uPotSum)};
 
-    const double factor = newton3 ? 0.5 : 1.;
-
-    _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-    _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-    _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-    _aosThreadData[threadnum].uPotSum += globals[3] * factor;
+    _aosThreadData[threadnum].virialSum[0] += globals[0];
+    _aosThreadData[threadnum].virialSum[1] += globals[1];
+    _aosThreadData[threadnum].virialSum[2] += globals[2];
+    _aosThreadData[threadnum].potentialEnergySum += globals[3];
   }
 
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
@@ -1139,8 +1138,9 @@ class LJFunctorHWY
     HWY_ALIGN autopas::OwnershipState ownedStates2Tmp[_vecLengthDouble] = {autopas::OwnershipState::dummy};
 
     size_t j = 0;
+    const size_t vecEnd = (neighborList.size() / _vecLengthDouble) * _vecLengthDouble;
 
-    for (; j < (neighborList.size() & ~(_vecLengthDouble - 1)); j += _vecLengthDouble) {
+    for (; j < vecEnd; j += _vecLengthDouble) {
       // load neighbor particles in consecutive array
       for (long vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
         x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
@@ -1253,7 +1253,7 @@ class LJFunctorHWY
    * Will set the global values to zero to prepare for the next iteration.
    */
   void initTraversal() final {
-    _uPotSum = 0.;
+    _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
@@ -1275,18 +1275,20 @@ class LJFunctorHWY
 
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _uPotSum += _aosThreadData[i].uPotSum;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
         _virialSum += _aosThreadData[i].virialSum;
       }
-      if (not newton3) {
-        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-        // here.
-        _uPotSum *= 0.5;
-        _virialSum *= 0.5;
-      }
-      // we have always calculated 6*upot, so we divide by 6 here!
-      _uPotSum /= 6.;
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
+
+      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
+      _potentialEnergySum /= 6.;
       _postProcessed = true;
+
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
@@ -1303,7 +1305,7 @@ class LJFunctorHWY
     if (not _postProcessed) {
       throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
     }
-    return _uPotSum;
+    return _potentialEnergySum;
   }
 
   /**
@@ -1360,15 +1362,15 @@ class LJFunctorHWY
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, uPotSum{0.} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
 
     void setZero() {
       virialSum = {0., 0., 0.};
-      uPotSum = 0.;
+      potentialEnergySum = 0.;
     }
 
     std::array<double, 3> virialSum{};
-    double uPotSum{};
+    double potentialEnergySum{};
 
    private:
     double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
@@ -1391,7 +1393,7 @@ class LJFunctorHWY
   const double _cutoffSquareAoS{0.};
   double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
   std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> _PPLibrary;
-  double _uPotSum{0.};
+  double _potentialEnergySum{0.};
   std::array<double, 3> _virialSum;
   std::vector<AoSThreadData> _aosThreadData{};
   bool _postProcessed;

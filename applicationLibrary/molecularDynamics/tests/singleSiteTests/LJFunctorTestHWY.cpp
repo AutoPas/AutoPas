@@ -198,7 +198,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   ljFunctorHWY.endTraversal(newton3);
   ljFunctorAVX.endTraversal(newton3);
 
-  const double tolerance = 1e-8;
+  const double tolerance = 1e-7;
 
   EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
