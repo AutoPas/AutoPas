@@ -89,9 +89,14 @@ class DecisionTreeTuning : public TuningStrategyInterface {
 
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   /**
-   * Pybind11 object representing the Python function `main`.
+   * Pybind11 object representing the Python function `load_model_and_encoder`.
    */
-  pybind11::object _pythonMainFunc;
+  pybind11::object _loadModelFunc;
+
+  /**
+   * Pybind11 object representing the Python function `predict`.
+   */
+  pybind11::object _predictFunc;
 #endif
 };
 
