@@ -7,6 +7,7 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/SoA.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -22,6 +23,10 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   LJFunctorTestHWY() = default;
 
   constexpr static double _maxError = 1e-12;
+
+  void SetUp() override;
+
+  void setupPPL();
 
   template <bool mixing>
   void testLJFunctorvsLJFunctorHWYTwoCells(const bool newton3, const bool doDeleteSomeParticles,
@@ -51,4 +56,5 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   constexpr static double _sigma{1.};
   const std::array<double, 3> _lowCorner{0., 0., 0.};
   const std::array<double, 3> _highCorner{6., 6., 6.};
+  ParticlePropertiesLibrary<double, size_t> _PPL{_cutoff};
 };

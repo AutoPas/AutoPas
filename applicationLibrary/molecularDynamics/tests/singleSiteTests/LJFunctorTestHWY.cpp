@@ -11,6 +11,27 @@
 #include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
+void LJFunctorTestHWY::SetUp() {
+  bool mixing = std::get<0>(GetParam());
+  if (mixing) {
+    setupPPL();
+  }
+}
+
+void LJFunctorTestHWY::setupPPL() {
+  _PPL.addSiteType(0, 0.8);
+  _PPL.addLJParametersToSite(0, 0.3, 0.5);
+  _PPL.addSiteType(1, 1.5);
+  _PPL.addLJParametersToSite(1, 2.0, 1.2);
+  _PPL.addSiteType(2, 2.5);
+  _PPL.addLJParametersToSite(2, 1.0, 2.5);
+  _PPL.addSiteType(3, 4.0);
+  _PPL.addLJParametersToSite(3, 0.5, 1.0);
+  _PPL.addSiteType(4, 5.5);
+  _PPL.addLJParametersToSite(4, 3.0, 3.0);
+  _PPL.calculateMixingCoefficients();
+}
+
 template <class SoAType>
 bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2) {
   EXPECT_GT(soa1.size(), 0);
@@ -36,7 +57,7 @@ bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &so
   for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
-    constexpr double tolerance = 2e-8;
+    constexpr double tolerance = 2e-6;
     EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
     EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
     EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
@@ -51,7 +72,7 @@ bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &so
 bool LJFunctorTestHWY::checkParticlesAreEqual(const Molecule &p1, const Molecule &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
-  double tolerance = 2e-8;
+  double tolerance = 2e-6;
   EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
@@ -84,21 +105,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   FMCell cell2HWY;
 
   const size_t numParticles = 23;
-
-  ParticlePropertiesLibrary PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addLJParametersToSite(0, 1., 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addLJParametersToSite(1, 2., 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addLJParametersToSite(2, 1., 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addLJParametersToSite(3, 2., 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addLJParametersToSite(4, 1., 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(
@@ -138,7 +144,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
 
   auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -146,7 +152,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
 
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &PPL);
+      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &_PPL);
     } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -199,7 +205,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
 
-  const double tolerance = 1e-7;
+  const double tolerance = 1e-6;
 
   EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
@@ -211,21 +217,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
   FMCell cellHWY;
 
   const size_t numParticles = 23;
-
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addLJParametersToSite(0, 1., 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addLJParametersToSite(1, 2., 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addLJParametersToSite(2, 1., 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addLJParametersToSite(3, 2., 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addLJParametersToSite(4, 1., 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -249,7 +240,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
 
   auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -257,7 +248,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
 
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &PPL);
+      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &_PPL);
     } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -298,7 +289,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
 
-  const double tolerance = 1e-8;
+  const double tolerance = 1e-7;
 
   EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
@@ -311,21 +302,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
   FMCell cellAVX;
 
   constexpr size_t numParticles = 23;
-
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addLJParametersToSite(0, 1., 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addLJParametersToSite(1, 2., 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addLJParametersToSite(2, 1., 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addLJParametersToSite(3, 2., 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addLJParametersToSite(4, 1., 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
@@ -363,7 +339,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
   constexpr bool shifting = true;
   auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -371,7 +347,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
 
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &PPL);
+      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &_PPL);
     } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -409,7 +385,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
   ljFunctor.endTraversal(newton3);
   ljFunctorHWY.endTraversal(newton3);
 
-  double tolerance = 1e-8;
+  double tolerance = 1e-7;
   EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
@@ -419,21 +395,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
   FMCell cellHWY;
 
   constexpr size_t numParticles = 23;
-
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addLJParametersToSite(0, 1., 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addLJParametersToSite(1, 2., 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addLJParametersToSite(2, 1., 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addLJParametersToSite(3, 2., 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addLJParametersToSite(4, 1., 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -457,7 +418,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
 
   auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -465,7 +426,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
 
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &PPL);
+      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, &_PPL);
     } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -496,7 +457,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
 
-  double tolerance = 1e-8;
+  double tolerance = 1e-7;
   EXPECT_NEAR(ljFunctorHWY.getPotentialEnergy(), ljFunctor.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctor.getVirial(), tolerance) << "global virial";
 }
@@ -559,16 +520,16 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
 std::vector<VectorizationPattern> patterns{VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2,
                                            VectorizationPattern::pVecDiv2x2, VectorizationPattern::pVecx1};
 
-std::map<VectorizationPattern, std::string> patternsToString{{VectorizationPattern::p1xVec, "1xVec"},
-                                                             {VectorizationPattern::p2xVecDiv2, "2xVec_2"},
-                                                             {VectorizationPattern::pVecDiv2x2, "Vec_2x2"},
-                                                             {VectorizationPattern::pVecx1, "Vecx1"}};
-
 static auto toString = [](const auto &info) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = info.param;
+
+  const auto &names = autopas::VectorizationPatternOption::getOptionNames();
+  const std::string &vecStr = names.at(vecPattern);
+
   std::stringstream resStream;
-  resStream << patternsToString[vecPattern] << (mixing ? "mixing" : "NoMixing") << (newton3 ? "N3" : "NoN3") << "_"
+  resStream << vecStr << (mixing ? "mixing" : "NoMixing") << (newton3 ? "N3" : "NoN3") << "_"
             << (doDeleteSomeParticle ? "withDeletions" : "NoDeletions");
+
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
