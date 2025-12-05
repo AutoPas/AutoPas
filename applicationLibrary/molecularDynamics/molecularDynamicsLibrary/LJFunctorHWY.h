@@ -333,18 +333,28 @@ class LJFunctorHWY
    * @return  whether the inner loop over j should be stopped or not.
    */
   template <VectorizationPattern vecPattern>
-  constexpr bool checkSecondLoopCondition(const std::ptrdiff_t i, const size_t j) {
+  constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
+    std::ptrdiff_t limit = 0;
+
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      return j < (i & ~(_vecLengthDouble - 1));
+      // Round i down to the next multiple of _vecLengthDouble
+      limit = i - (i % _vecLengthDouble);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      return j < (i & ~(_vecLengthDouble / 2 - 1));
+      // Round i down to the next multiple of _vecLengthDouble / 2
+      const std::ptrdiff_t block = _vecLengthDouble / 2;
+      limit = i - (i % block);
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      return j < (i & ~(1));
+      // Round i down to the next multiple of 2
+      limit = i - (i % 2);
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      return j < i;
+      // Rounding to a multiple of 1 is a no-op
+      limit = i;
     } else {
+      // Unknown vectorization pattern
       return false;
     }
+
+    return j < static_cast<size_t>(limit);
   }
 
   /**
