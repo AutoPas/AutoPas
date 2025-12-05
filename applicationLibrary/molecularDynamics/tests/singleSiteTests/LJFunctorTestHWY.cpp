@@ -12,44 +12,45 @@
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
 template <class SoAType>
-bool LJFunctorTestHWY::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
+bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2) {
   EXPECT_GT(soa1.size(), 0);
   EXPECT_EQ(soa1.size(), soa2.size());
 
-  unsigned long *const __restrict idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
-  unsigned long *const __restrict idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
+  const unsigned long *const __restrict idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
+  const unsigned long *const __restrict idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
 
-  double *const __restrict xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
-  double *const __restrict yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
-  double *const __restrict zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
-  double *const __restrict xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
-  double *const __restrict yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
-  double *const __restrict zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
+  const double *const __restrict xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
+  const double *const __restrict yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
+  const double *const __restrict zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
+  const double *const __restrict xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
+  const double *const __restrict yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
+  const double *const __restrict zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
 
-  double *const __restrict fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
-  double *const __restrict fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
-  double *const __restrict fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
-  double *const __restrict fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
-  double *const __restrict fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
-  double *const __restrict fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
+  const double *const __restrict fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
+  const double *const __restrict fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
+  const double *const __restrict fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
+  const double *const __restrict fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
+  const double *const __restrict fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
+  const double *const __restrict fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
 
   for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
     constexpr double tolerance = 2e-8;
-    EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
-    EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
-    EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
-    EXPECT_NEAR(fxptr1[i], fxptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
-    EXPECT_NEAR(fyptr1[i], fyptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
-    EXPECT_NEAR(fzptr1[i], fzptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
+    EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fxptr1[i], fxptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fyptr1[i], fyptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fzptr1[i], fzptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
   }
+
   // clang-format off
-    return not ::testing::Test::HasFailure();
+  return not ::testing::Test::HasFailure();
   // clang-format on
 }
 
-bool LJFunctorTestHWY::particleEqual(Molecule &p1, Molecule &p2) {
+bool LJFunctorTestHWY::checkParticlesAreEqual(const Molecule &p1, const Molecule &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
   double tolerance = 2e-8;
@@ -65,14 +66,14 @@ bool LJFunctorTestHWY::particleEqual(Molecule &p1, Molecule &p2) {
   // clang-format on
 }
 
-bool LJFunctorTestHWY::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
+bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCell &cell2) {
   EXPECT_GT(cell1.size(), 0);
   EXPECT_EQ(cell1.size(), cell2.size());
 
   int counter{0};
 
   for (size_t i = 0; i < cell1.size(); ++i) {
-    if (!particleEqual(cell1._particles[i], cell2._particles[i])) ++counter;
+    if (!checkParticlesAreEqual(cell1._particles[i], cell2._particles[i])) ++counter;
   }
 
   return counter == 0;
@@ -160,17 +161,17 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   ljFunctorHWY.initTraversal();
   ljFunctorAVX.initTraversal();
 
-  ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
-  ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
 
   ljFunctorAVX.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorAVX.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
       << "Cells 1 not equal after loading.";
-  ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
       << "Cells 2 not equal after loading.";
 
   if (useUnalignedViews) {
@@ -182,9 +183,9 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     ljFunctorAVX.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
     ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
   }
-  ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
       << "Cells 1 not equal after applying functor.";
-  ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
       << "Cells 2 not equal after applying functor.";
 
   ljFunctorHWY.SoAExtractor(cell1HWY, cell1HWY._particleSoABuffer, 0);
@@ -192,8 +193,8 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   ljFunctorHWY.SoAExtractor(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0);
   ljFunctorHWY.SoAExtractor(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after extracting.";
-  ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after extracting.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctorAVX.endTraversal(newton3);
@@ -267,7 +268,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
-  ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctorHWY.initTraversal();
   ljFunctorAVX.initTraversal();
@@ -275,7 +276,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
   ljFunctorAVX.SoALoader(cellNoHWY, cellNoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(SoAParticlesEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
       << "Cells not equal after loading.";
 
   if (useUnalignedViews) {
@@ -285,13 +286,13 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     ljFunctorAVX.SoAFunctorSingle(cellNoHWY._particleSoABuffer, newton3);
     ljFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer, newton3);
   }
-  ASSERT_TRUE(SoAParticlesEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
   ljFunctorHWY.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
   ljFunctorHWY.SoAExtractor(cellNoHWY, cellNoHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after extracting.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after extracting.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctorAVX.endTraversal(newton3);
@@ -379,7 +380,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
-  ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellHWY)) << "Cells not equal after copy initialization.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctorAVX.initTraversal();
   ljFunctorHWY.initTraversal();
@@ -387,7 +388,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
   ljFunctorHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
       << "Cells not equal after loading.";
 
   for (size_t i = 0; i < numParticles; ++i) {
@@ -395,13 +396,13 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
     ljFunctorAVX.SoAFunctorVerlet(cellAVX._particleSoABuffer, i, neighborLists[i], newton3);
   }
 
-  ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
+  ASSERT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
   ljFunctorAVX.SoAExtractor(cellAVX, cellAVX._particleSoABuffer, 0);
   ljFunctorAVX.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellHWY)) << "Cells not equal after extracting.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after extracting.";
 
   ljFunctorAVX.endTraversal(newton3);
   ljFunctorHWY.endTraversal(newton3);
@@ -472,7 +473,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
-  ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctorHWY.initTraversal();
   ljFunctorAVX.initTraversal();
@@ -487,7 +488,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
     }
   }
 
-  ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after applying AoSfunctor.";
+  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after applying AoSfunctor.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctorAVX.endTraversal(newton3);

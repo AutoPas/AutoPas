@@ -38,11 +38,11 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   void testLJFunctorAVXvsLJFunctorHWYAoS(const bool newton3, const bool doDeleteSomeParticles);
 
   template <class SoAType>
-  bool SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2);
+  bool checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2);
 
-  bool AoSParticlesEqual(FMCell &cell1, FMCell &cell2);
+  bool checkAoSParticlesAreEqual(const FMCell &cell1, const FMCell &cell2);
 
-  bool particleEqual(Molecule &p1, Molecule &p2);
+  bool checkParticlesAreEqual(const Molecule &p1, const Molecule &p2);
 
   constexpr static double _cutoff{6.};
   constexpr static double _skin{2.};

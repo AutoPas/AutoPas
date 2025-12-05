@@ -168,6 +168,16 @@ class SoA {
   }
 
   /**
+   * Returns a const pointer to the given attribute vector.
+   * @tparam attribute ID of the desired attribute.
+   * @return Pointer to the beginning of the attribute vector
+   */
+  template <std::size_t attribute>
+  auto begin() const {
+    return soaStorage.template get<attribute>().data();
+  }
+
+  /**
    * Returns the number of particles.
    *
    * Since not necessarily all arrays are filled the length of the longest array is returned.
