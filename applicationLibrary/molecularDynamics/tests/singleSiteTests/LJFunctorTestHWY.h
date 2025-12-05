@@ -24,18 +24,18 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   constexpr static double _maxError = 1e-12;
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYTwoCells(const bool newton3, const bool doDeleteSomeParticles,
-                                              const bool useUnalignedViews, const VectorizationPattern pattern);
+  void testLJFunctorvsLJFunctorHWYTwoCells(const bool newton3, const bool doDeleteSomeParticles,
+                                           const bool useUnalignedViews, const VectorizationPattern pattern);
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYOneCell(const bool newton3, const bool doDeleteSomeParticles,
-                                             const bool useUnalignedViews, const VectorizationPattern pattern);
+  void testLJFunctorvsLJFunctorHWYOneCell(const bool newton3, const bool doDeleteSomeParticles,
+                                          const bool useUnalignedViews, const VectorizationPattern pattern);
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYVerlet(const bool newton3, const bool doDeleteSomeParticles);
+  void testLJFunctorvsLJFunctorHWYVerlet(const bool newton3, const bool doDeleteSomeParticles);
 
   template <bool mixing>
-  void testLJFunctorAVXvsLJFunctorHWYAoS(const bool newton3, const bool doDeleteSomeParticles);
+  void testLJFunctorvsLJFunctorHWYAoS(const bool newton3, const bool doDeleteSomeParticles);
 
   template <class SoAType>
   bool checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2);

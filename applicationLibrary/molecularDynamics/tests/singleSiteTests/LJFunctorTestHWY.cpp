@@ -9,7 +9,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopasTools/generators/UniformGenerator.h"
-#include "molecularDynamicsLibrary/LJFunctorAVX.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 
 template <class SoAType>
 bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2) {
@@ -78,8 +78,8 @@ bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCe
 }
 
 template <bool mixing>
-void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                              bool useUnalignedViews, VectorizationPattern pattern) {
+void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles,
+                                                           bool useUnalignedViews, VectorizationPattern pattern) {
   FMCell cell1HWY;
   FMCell cell2HWY;
 
@@ -108,6 +108,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
 
   for (auto &particle : cell1HWY) {
     if (doDeleteSomeParticles) {
+      // pick some random particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
@@ -119,6 +120,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
 
   for (auto &particle : cell2HWY) {
     if (doDeleteSomeParticles) {
+      // pick some random particles to be marked as deleted
       if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 17) autopas::internal::markParticleAsDeleted(particle);
@@ -134,11 +136,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
 
   constexpr bool shifting = true;
 
-  auto ljFunctorAVX = [&]() {
+  auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -152,18 +154,18 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   ljFunctorHWY.setVecPattern(pattern);
 
   if constexpr (not mixing) {
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctor.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
   ljFunctorHWY.initTraversal();
-  ljFunctorAVX.initTraversal();
+  ljFunctor.initTraversal();
 
   ASSERT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorAVX.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctorAVX.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
@@ -173,12 +175,12 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
       << "Cells 2 not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorAVX.SoAFunctorPair(cell1NoHWY._particleSoABuffer.constructView(1, cell1NoHWY.size()),
-                                cell2NoHWY._particleSoABuffer.constructView(1, cell2NoHWY.size()), newton3);
+    ljFunctor.SoAFunctorPair(cell1NoHWY._particleSoABuffer.constructView(1, cell1NoHWY.size()),
+                             cell2NoHWY._particleSoABuffer.constructView(1, cell2NoHWY.size()), newton3);
     ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer.constructView(1, cell1HWY.size()),
                                 cell2HWY._particleSoABuffer.constructView(1, cell2HWY.size()), newton3);
   } else {
-    ljFunctorAVX.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
+    ljFunctor.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
     ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
   }
   ASSERT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
@@ -195,17 +197,17 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
   ASSERT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
 
   ljFunctorHWY.endTraversal(newton3);
-  ljFunctorAVX.endTraversal(newton3);
+  ljFunctor.endTraversal(newton3);
 
   const double tolerance = 1e-7;
 
-  EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 template <bool mixing>
-void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles,
-                                                             bool useUnalignedViews, VectorizationPattern pattern) {
+void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles,
+                                                          bool useUnalignedViews, VectorizationPattern pattern) {
   FMCell cellHWY;
 
   const size_t numParticles = 23;
@@ -231,6 +233,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
 
   for (auto &particle : cellHWY) {
     if (doDeleteSomeParticles) {
+      // pick some random particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
@@ -244,11 +247,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
   FMCell cellNoHWY(cellHWY);
   constexpr bool shifting = true;
 
-  auto ljFunctorAVX = [&]() {
+  auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -262,26 +265,26 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
   ljFunctorHWY.setVecPattern(pattern);
 
   if constexpr (not mixing) {
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctor.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
   ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctorHWY.initTraversal();
-  ljFunctorAVX.initTraversal();
+  ljFunctor.initTraversal();
 
-  ljFunctorAVX.SoALoader(cellNoHWY, cellNoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cellNoHWY, cellNoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
       << "Cells not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorAVX.SoAFunctorSingle(cellNoHWY._particleSoABuffer.constructView(1, cellNoHWY.size()), newton3);
+    ljFunctor.SoAFunctorSingle(cellNoHWY._particleSoABuffer.constructView(1, cellNoHWY.size()), newton3);
     ljFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer.constructView(1, cellHWY.size()), newton3);
   } else {
-    ljFunctorAVX.SoAFunctorSingle(cellNoHWY._particleSoABuffer, newton3);
+    ljFunctor.SoAFunctorSingle(cellNoHWY._particleSoABuffer, newton3);
     ljFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer, newton3);
   }
   ASSERT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
@@ -293,16 +296,16 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
   ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after extracting.";
 
   ljFunctorHWY.endTraversal(newton3);
-  ljFunctorAVX.endTraversal(newton3);
+  ljFunctor.endTraversal(newton3);
 
   const double tolerance = 1e-8;
 
-  EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 template <bool mixing>
-void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles) {
+void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles) {
   using namespace autopas::utils::ArrayMath::literals;
 
   FMCell cellAVX;
@@ -330,6 +333,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
+      // pick some random particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
@@ -357,11 +361,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
   // copy cells
   FMCell cellHWY(cellAVX);
   constexpr bool shifting = true;
-  auto ljFunctorAVX = [&]() {
+  auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -374,44 +378,44 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
   }();
 
   if constexpr (not mixing) {
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctor.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
   ASSERT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after copy initialization.";
 
-  ljFunctorAVX.initTraversal();
+  ljFunctor.initTraversal();
   ljFunctorHWY.initTraversal();
 
   ljFunctorHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
       << "Cells not equal after loading.";
 
   for (size_t i = 0; i < numParticles; ++i) {
     ljFunctorHWY.SoAFunctorVerlet(cellHWY._particleSoABuffer, i, neighborLists[i], newton3);
-    ljFunctorAVX.SoAFunctorVerlet(cellAVX._particleSoABuffer, i, neighborLists[i], newton3);
+    ljFunctor.SoAFunctorVerlet(cellAVX._particleSoABuffer, i, neighborLists[i], newton3);
   }
 
   ASSERT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
-  ljFunctorAVX.SoAExtractor(cellAVX, cellAVX._particleSoABuffer, 0);
-  ljFunctorAVX.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
+  ljFunctor.SoAExtractor(cellAVX, cellAVX._particleSoABuffer, 0);
+  ljFunctor.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
 
   ASSERT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after extracting.";
 
-  ljFunctorAVX.endTraversal(newton3);
+  ljFunctor.endTraversal(newton3);
   ljFunctorHWY.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 template <bool mixing>
-void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
+void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellHWY;
 
   constexpr size_t numParticles = 23;
@@ -437,6 +441,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
 
   for (auto &particle : cellHWY) {
     if (doDeleteSomeParticles) {
+      // pick some random particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
@@ -450,11 +455,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   FMCell cellNoHWY(cellHWY);
   constexpr bool shifting = true;
 
-  auto ljFunctorAVX = [&]() {
+  auto ljFunctor = [&]() {
     if constexpr (mixing) {
-      return mdLib::LJFunctorAVX<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
     } else {
-      return mdLib::LJFunctorAVX<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
   }();
 
@@ -467,21 +472,21 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   }();
 
   if constexpr (not mixing) {
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctor.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
   ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctorHWY.initTraversal();
-  ljFunctorAVX.initTraversal();
+  ljFunctor.initTraversal();
 
   for (size_t i = 0; i < numParticles; ++i) {
     for (size_t j = newton3 ? i + 1 : 0; j < numParticles; ++j) {
       if (i == j) {
         continue;
       }
-      ljFunctorAVX.AoSFunctor(cellNoHWY[i], cellNoHWY[j], newton3);
+      ljFunctor.AoSFunctor(cellNoHWY[i], cellNoHWY[j], newton3);
       ljFunctorHWY.AoSFunctor(cellHWY[i], cellHWY[j], newton3);
     }
   }
@@ -489,19 +494,19 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
   ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after applying AoSfunctor.";
 
   ljFunctorHWY.endTraversal(newton3);
-  ljFunctorAVX.endTraversal(newton3);
+  ljFunctor.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorHWY.getPotentialEnergy(), ljFunctorAVX.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorAVX.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctorHWY.getPotentialEnergy(), ljFunctor.getPotentialEnergy(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctor.getVirial(), tolerance) << "global virial";
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
   if (mixing) {
-    testLJFunctorAVXvsLJFunctorHWYAoS<true>(newton3, doDeleteSomeParticle);
+    testLJFunctorvsLJFunctorHWYAoS<true>(newton3, doDeleteSomeParticle);
   } else {
-    testLJFunctorAVXvsLJFunctorHWYAoS<false>(newton3, doDeleteSomeParticle);
+    testLJFunctorvsLJFunctorHWYAoS<false>(newton3, doDeleteSomeParticle);
   }
 }
 
@@ -509,45 +514,45 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
   // different vectorization patterns are currently not supported for Verlet Functor
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
   if (mixing) {
-    testLJFunctorAVXvsLJFunctorHWYVerlet<true>(newton3, doDeleteSomeParticle);
+    testLJFunctorvsLJFunctorHWYVerlet<true>(newton3, doDeleteSomeParticle);
   } else {
-    testLJFunctorAVXvsLJFunctorHWYVerlet<false>(newton3, doDeleteSomeParticle);
+    testLJFunctorvsLJFunctorHWYVerlet<false>(newton3, doDeleteSomeParticle);
   }
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorAVXvsLJFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, false, vecPattern);
+    testLJFunctorvsLJFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, false, vecPattern);
   } else {
-    testLJFunctorAVXvsLJFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, false, vecPattern);
+    testLJFunctorvsLJFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, false, vecPattern);
   }
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorAVXvsLJFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, true, vecPattern);
+    testLJFunctorvsLJFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, true, vecPattern);
   } else {
-    testLJFunctorAVXvsLJFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, true, vecPattern);
+    testLJFunctorvsLJFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, true, vecPattern);
   }
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorAVXvsLJFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, false, vecPattern);
+    testLJFunctorvsLJFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, false, vecPattern);
   } else {
-    testLJFunctorAVXvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, false, vecPattern);
+    testLJFunctorvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, false, vecPattern);
   }
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorAVXvsLJFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, true, vecPattern);
+    testLJFunctorvsLJFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, true, vecPattern);
   } else {
-    testLJFunctorAVXvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, true, vecPattern);
+    testLJFunctorvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, true, vecPattern);
   }
 }
 
