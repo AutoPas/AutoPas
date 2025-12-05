@@ -154,6 +154,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::octree; }
 
+  bool allowsKokkos() const override { return false; }
+
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     // TODO create a balanced tree and reserve space in the leaves.
   }
@@ -414,6 +416,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
 
   template <typename Lambda>
   void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
+  template<typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
     // No Op
   }
 

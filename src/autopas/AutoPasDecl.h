@@ -294,6 +294,8 @@ class AutoPas {
     withStaticContainerType(getContainer(), [&](auto &container) { container.forEachKokkos(forEachLambda, behavior); });
   }
 
+  bool containerAllowsKokkos() const { return getContainer().allowsKokkos(); }
+
   /**
    * @copydoc forEach()
    * @note const version

@@ -35,6 +35,8 @@ template <class Particle_T>
 
             [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; }
 
+            bool allowsKokkos() const override { return true; }
+
             void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
                 
                 if (numParticles > capacityOwned) {
@@ -188,6 +190,7 @@ template <class Particle_T>
               const size_t numParticles = getNumberOfParticles(behavior);
 
               if (_dataLayout == DataLayoutOption::aos) {
+                convertToAoS();
                 Kokkos::parallel_for("forEachAoS", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
                   // TODO: consider behavior
                   forEachLambda(i, _hostOwnedParticlesAoS);
@@ -196,11 +199,33 @@ template <class Particle_T>
               }
 
               else if (_dataLayout == DataLayoutOption::soa) {
+                convertToSoA();
                 Kokkos::parallel_for("forEachSoA", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
                   // TODO: consider behavior
                   forEachLambda(i, _hostOwnedParticlesSoA);
                 });
                 _aosUpToDate = false;
+              }
+            }
+
+            template<typename Result, typename Reduction, typename Lambda>
+            void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior) {
+              const size_t numParticles = getNumberOfParticles(behavior);
+
+              if (_dataLayout == DataLayoutOption::aos) {
+                convertToAoS();
+                Kokkos::parallel_reduce("reduceAoS", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult) {
+                  // TODO: consider behavior
+                  reduceLambda(i, _hostOwnedParticlesAoS, localResult);
+                }, Reduction(result));
+              }
+
+              else if (_dataLayout == DataLayoutOption::soa) {
+                convertToSoA();
+                Kokkos::parallel_reduce("reduceSoA", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult) {
+                  // TODO: consider behavior
+                  reduceLambda(i, _hostOwnedParticlesSoA, localResult);
+                }, Reduction(result));
               }
             }
 

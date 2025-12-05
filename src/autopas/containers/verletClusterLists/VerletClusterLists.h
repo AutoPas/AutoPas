@@ -108,6 +108,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
+  bool allowsKokkos() const override { return false; }
+
   /**
    * Generates the load estimation function depending on _loadEstimator.
    * @return load estimator function object.
@@ -466,6 +468,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   template <typename Lambda>
   void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
+  template<typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
     // No Op
   }
 

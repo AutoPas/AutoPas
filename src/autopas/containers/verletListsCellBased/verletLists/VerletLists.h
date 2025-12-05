@@ -75,6 +75,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
+  bool allowsKokkos() const override { return false; }
+
   void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);

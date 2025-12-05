@@ -1119,12 +1119,27 @@ class LogicHandler {
 template <typename Particle_T>
 void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
-  // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel)
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    iter->resetRAtRebuild();
+  if (!getContainer().allowsKokkos()) {
+    // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
+    // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+    // require a rebuild of neighbor lists.
+    AUTOPAS_OPENMP(parallel)
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      iter->resetRAtRebuild();
+    }
+  }
+  else {
+    withStaticContainerType(getContainer(), [&] (auto& actualContainer) {
+      actualContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
+      const auto pX = storage.template get<Particle_T::AttributeNames::posX, true>(i);
+      const auto pY = storage.template get<Particle_T::AttributeNames::posY, true>(i);
+      const auto pZ = storage.template get<Particle_T::AttributeNames::posZ, true>(i);
+
+      storage.template set<Particle_T::AttributeNames::rebuildX, true>(pX, i);
+      storage.template set<Particle_T::AttributeNames::rebuildY, true>(pY, i);
+      storage.template set<Particle_T::AttributeNames::rebuildZ, true>(pZ, i);
+    }, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+    });
   }
 #endif
 }
@@ -1170,19 +1185,50 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
 template <typename Particle_T>
 void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+
+
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    const auto distance = iter->calculateDisplacementSinceRebuild();
-    const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
-    _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+  if (!getContainer().allowsKokkos()) {
+    AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      const auto distance = iter->calculateDisplacementSinceRebuild();
+      const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+
+      _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+    }
   }
+  else {
+    bool test = _neighborListInvalidDoDynamicRebuild;
+    withStaticContainerType(getContainer(), [&test, halfSkinSquare](auto& actualContainer) {
+      actualContainer.template reduceKokkos<bool, Kokkos::LOr<bool>>(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage, bool& local) {
+
+        const auto pX = storage.template get<Particle_T::AttributeNames::posX, true>(i);
+        const auto pY = storage.template get<Particle_T::AttributeNames::posY, true>(i);
+        const auto pZ = storage.template get<Particle_T::AttributeNames::posZ, true>(i);
+
+        const auto rebuildX = storage.template get<Particle_T::AttributeNames::rebuildX, true>(i);
+        const auto rebuildY = storage.template get<Particle_T::AttributeNames::rebuildY, true>(i);
+        const auto rebuildZ = storage.template get<Particle_T::AttributeNames::rebuildZ, true>(i);
+
+        const auto dX = rebuildX - pX;
+        const auto dY = rebuildY - pY;
+        const auto dZ = rebuildZ - pZ;
+
+        const auto dSquared = dX * dX + dY * dY + dZ * dZ;
+
+        local |= dSquared >= halfSkinSquare;
+
+      }, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+    });
+    _neighborListInvalidDoDynamicRebuild = test;
+  }
+
 #endif
 }
 

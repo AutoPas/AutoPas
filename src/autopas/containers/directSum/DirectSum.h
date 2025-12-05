@@ -81,6 +81,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
+  bool allowsKokkos() const override { return false; }
+
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     this->getOwnedCell().reserve(numParticles);
     for (auto cellIt = ++this->_cells.begin(); cellIt != this->_cells.end(); cellIt++) {
@@ -211,7 +213,12 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   }
 
   template <typename Lambda>
-  void forEachKokkos(Lambda forEachLambda, IteratorBehavior) {
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
+  template<typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
     // No Op
   }
 

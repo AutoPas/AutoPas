@@ -23,50 +23,52 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
 
+  bool kokkosForEach = autoPasContainer.containerAllowsKokkos();
+
+  if (!kokkosForEach) {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  AUTOPAS_OPENMP(parallel)
+    AUTOPAS_OPENMP(parallel)
+  #else
+    const auto maxAllowedDistanceMoved =
+        autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency() / 2.;
+    const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
+
+    bool throwException = false;
+
+    AUTOPAS_OPENMP(parallel reduction(|| : throwException))
+  #endif
+
+    for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+      auto v = iter->getV();
+      auto f = iter->getF();
+      iter->setOldF(f);
+      iter->setF(globalForce);
+      v *= deltaT;
+      f *= (deltaT * deltaT / (2 * m));
+      const auto displacement = v + f;
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+      iter->addR(displacement);
 #else
-  const auto maxAllowedDistanceMoved =
-      autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency() / 2.;
-  const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
-
-  bool throwException = false;
-
-  AUTOPAS_OPENMP(parallel reduction(|| : throwException))
+      // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
+      if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
+          maxAllowedDistanceMovedSquared > 0) {
+        const auto distanceMoved = std::sqrt(dot(displacement, displacement));
+        // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
+        // the whole rebuild frequency is farther than the skin we lose interactions.
+        AUTOPAS_OPENMP(critical)
+        std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << distanceMoved << " > "
+                  << autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency()
+                  << "/2 = " << maxAllowedDistanceMoved << "\n"
+                  << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
+        if (fastParticlesThrow) {
+          throwException = true;
+        }
+          }
 #endif
-
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    auto v = iter->getV();
-    auto f = iter->getF();
-    iter->setOldF(f);
-    iter->setF(globalForce);
-    v *= deltaT;
-    f *= (deltaT * deltaT / (2 * m));
-    const auto displacement = v + f;
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    iter->addR(displacement);
-#else
-    // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
-    if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
-        maxAllowedDistanceMovedSquared > 0) {
-      const auto distanceMoved = std::sqrt(dot(displacement, displacement));
-      // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
-      // the whole rebuild frequency is farther than the skin we lose interactions.
-      AUTOPAS_OPENMP(critical)
-      std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << distanceMoved << " > "
-                << autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency()
-                << "/2 = " << maxAllowedDistanceMoved << "\n"
-                << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
-      if (fastParticlesThrow) {
-        throwException = true;
-      }
     }
-#endif
-  }
-  /*
-    // TODO: flag to decide whether to use this
-  autoPasContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
+  } else {
+   autoPasContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
     auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
     auto vX = storage.template get<ParticleType::AttributeNames::velocityX, true>(i);
     auto vY = storage.template get<ParticleType::AttributeNames::velocityY, true>(i);
@@ -96,15 +98,15 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     const auto displacementY = vY + fY;
     const auto displacementZ = vZ + fZ;
 
-    auto pX = storage.template get<ParticleType::AttributeNames::posX, true>(i);
-    auto pY = storage.template get<ParticleType::AttributeNames::posY, true>(i);
-    auto pZ = storage.template get<ParticleType::AttributeNames::posZ, true>(i);
+    const auto pX = storage.template get<ParticleType::AttributeNames::posX, true>(i);
+    const auto pY = storage.template get<ParticleType::AttributeNames::posY, true>(i);
+    const auto pZ = storage.template get<ParticleType::AttributeNames::posZ, true>(i);
     storage.template set<ParticleType::AttributeNames::posX, true>(pX + displacementX, i);
     storage.template set<ParticleType::AttributeNames::posY, true>(pY + displacementY, i);
     storage.template set<ParticleType::AttributeNames::posZ, true>(pZ + displacementZ, i);
 
   }, autopas::IteratorBehavior::owned);
-*/
+  }
 #ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (throwException) {
     throw std::runtime_error("At least one particle was too fast!");
@@ -198,13 +200,41 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   // helper declarations for operations with vector
   using namespace autopas::utils::ArrayMath::literals;
 
-  AUTOPAS_OPENMP(parallel)
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    const auto force = iter->getF();
-    const auto oldForce = iter->getOldF();
-    const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
-    iter->addV(changeInVel);
+  bool kokkosForEach = autoPasContainer.containerAllowsKokkos();
+
+  if (!kokkosForEach) {
+    AUTOPAS_OPENMP(parallel)
+    for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+      const auto force = iter->getF();
+      const auto oldForce = iter->getOldF();
+      const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
+      iter->addV(changeInVel);
+    }
+  }
+  else {
+    autoPasContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
+      const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
+      auto vX = storage.template get<ParticleType::AttributeNames::velocityX, true>(i);
+      auto vY = storage.template get<ParticleType::AttributeNames::velocityY, true>(i);
+      auto vZ = storage.template get<ParticleType::AttributeNames::velocityZ, true>(i);
+
+      const auto fX = storage.template get<ParticleType::AttributeNames::forceX, true>(i);
+      const auto fY = storage.template get<ParticleType::AttributeNames::forceY, true>(i);
+      const auto fZ = storage.template get<ParticleType::AttributeNames::forceZ, true>(i);
+
+      const auto oldFx = storage.template get<ParticleType::AttributeNames::oldForceX, true>(i);
+      const auto oldFy = storage.template get<ParticleType::AttributeNames::oldForceY, true>(i);
+      const auto oldFz = storage.template get<ParticleType::AttributeNames::oldForceZ, true>(i);
+
+      const auto vUpdateX = (fX + oldFx) * (deltaT / (2 * mass));
+      const auto vUpdateY = (fY + oldFy) * (deltaT / (2 * mass));
+      const auto vUpdateZ = (fZ + oldFz) * (deltaT / (2 * mass));
+
+      storage.template set<ParticleType::AttributeNames::velocityX, true>(vX + vUpdateX, i);
+      storage.template set<ParticleType::AttributeNames::velocityY, true>(vY + vUpdateY, i);
+      storage.template set<ParticleType::AttributeNames::velocityZ, true>(vZ + vUpdateZ, i);
+    }, autopas::IteratorBehavior::owned);
   }
 }
 

@@ -78,6 +78,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 
+  virtual bool allowsKokkos() const = 0;
+
   /**
    * @copydoc AutoPas::reserve()
    * @param numParticlesHaloEstimate Estimate for the number of halo particles.

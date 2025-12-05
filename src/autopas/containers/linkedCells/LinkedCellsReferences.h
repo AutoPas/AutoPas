@@ -70,6 +70,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCellsReferences; }
 
+  bool allowsKokkos() const override { return false; }
+
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _cellBlock.reserve(numParticles + numParticlesHaloEstimate);
   }
@@ -415,6 +417,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   template <typename Lambda>
   void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
+  template<typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
     // No Op
   }
 

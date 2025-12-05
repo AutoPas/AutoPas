@@ -56,6 +56,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
+  bool allowsKokkos() const override { return false; }
+
   /**
    * Generates the load estimation function depending on _loadEstimator.
    * @return load estimator function object.

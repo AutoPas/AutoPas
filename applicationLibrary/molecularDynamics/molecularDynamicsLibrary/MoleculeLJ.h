@@ -43,6 +43,9 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     posX,
     posY,
     posZ,
+    rebuildX,
+    rebuildY,
+    rebuildZ,
     velocityX,
     velocityY,
     velocityZ,
@@ -65,11 +68,13 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    */
   using SoAArraysType =
       autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+                                       double /*rebuildX*/, double /*rebuildY*/, double /*rebuildZ*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
                                        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
   template <class MemSpace>
   using KokkosSoAArraysType = autopas::utils::KokkosSoA<MemSpace, size_t* /*id*/, double* /*x*/, double* /*y*/, double* /*z*/,
+                                       double* /*rebuildX*/, double* /*rebuildY*/, double* /*rebuildZ*/,
                                        double* /*vx*/, double* /*vy*/, double* /*vz*/, double* /*fx*/, double* /*fy*/,
                                        double* /*fz*/, double* /*oldFx*/, double* /*oldFy*/, double* /*oldFz*/,
                                        size_t* /*typeid*/, autopas::OwnershipState* /*ownershipState*/>;
@@ -100,6 +105,12 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       return getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
       return getR()[2];
+    } else if constexpr (attribute == AttributeNames::rebuildX) {
+      return getRAtRebuild()[0];
+    } else if constexpr (attribute == AttributeNames::rebuildY) {
+      return getRAtRebuild()[1];
+    } else if constexpr (attribute == AttributeNames::rebuildZ) {
+      return getRAtRebuild()[2];
     } else if constexpr (attribute == AttributeNames::velocityX) {
       return getV()[0];
     } else if constexpr (attribute == AttributeNames::velocityY) {
@@ -144,6 +155,12 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       _r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
       _r[2] = value;
+    } else if constexpr (attribute == AttributeNames::rebuildX) {
+      _rAtRebuild[0] = value;
+    } else if constexpr (attribute == AttributeNames::rebuildY) {
+      _rAtRebuild[1] = value;
+    } else if constexpr (attribute == AttributeNames::rebuildZ) {
+      _rAtRebuild[2] = value;
     } else if constexpr (attribute == AttributeNames::velocityX) {
       _v[0] = value;
     } else if constexpr (attribute == AttributeNames::velocityY) {
