@@ -372,7 +372,6 @@ class LJFunctorHWY
    *
    * @tparam reversed
    * @param j
-   * @param vecEnd
    * @return the remainder length that can't be vectorized in the loop over j.
    */
   template <VectorizationPattern vecPattern>
