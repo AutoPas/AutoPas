@@ -45,9 +45,7 @@ bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &so
     EXPECT_NEAR(fzptr1[i], fzptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
   }
 
-  // clang-format off
-  return not ::testing::Test::HasFailure();
-  // clang-format on
+  return not HasFailure();
 }
 
 bool LJFunctorTestHWY::checkParticlesAreEqual(const Molecule &p1, const Molecule &p2) {
@@ -61,22 +59,22 @@ bool LJFunctorTestHWY::checkParticlesAreEqual(const Molecule &p1, const Molecule
   EXPECT_NEAR(p1.getF()[1], p2.getF()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getF()[2], p2.getF()[2], tolerance) << "for particle pair " << p1.getID();
 
-  // clang-format off
-    return not ::testing::Test::HasFailure();
-  // clang-format on
+  return not HasFailure();
 }
 
 bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCell &cell2) {
   EXPECT_GT(cell1.size(), 0);
   EXPECT_EQ(cell1.size(), cell2.size());
 
-  int counter{0};
+  bool anyNotEqual = false;
 
   for (size_t i = 0; i < cell1.size(); ++i) {
-    if (!checkParticlesAreEqual(cell1._particles[i], cell2._particles[i])) ++counter;
+    if (!checkParticlesAreEqual(cell1._particles[i], cell2._particles[i])) {
+      anyNotEqual = true;
+    }
   }
 
-  return counter == 0;
+  return !anyNotEqual;
 }
 
 template <bool mixing>
