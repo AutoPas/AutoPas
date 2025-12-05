@@ -46,7 +46,7 @@ public:
   }
 
   void retrieveOwnedAoS(utils::KokkosAoS<HostSpace, Particle_T>& outputAoS) {
-    Kokkos::deep_copy(_ownedParticlesAoS, outputAoS.getView());
+    Kokkos::deep_copy(outputAoS.getView(), _ownedParticlesAoS);
   }
 
   void retrieveOwnedSoA(KokkosSoAType<HostSpace>& outputSoA) {

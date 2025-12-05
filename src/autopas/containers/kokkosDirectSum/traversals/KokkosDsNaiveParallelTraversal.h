@@ -38,7 +38,7 @@ public:
       const bool newton3 = _useNewton3;
 
       const auto func = _functor;
-      const int N = owned.size();
+      int N = owned.size();
 
       // TODO: think about MD Range policy to allow parallelism for both loops
       Kokkos::parallel_for("traverseParticles", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i) {

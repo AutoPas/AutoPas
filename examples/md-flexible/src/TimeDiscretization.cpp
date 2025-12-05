@@ -22,7 +22,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
-  /*
+
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   AUTOPAS_OPENMP(parallel)
 #else
@@ -64,7 +64,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     }
 #endif
   }
-  */
+  /*
     // TODO: flag to decide whether to use this
   autoPasContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
     auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
@@ -104,6 +104,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     storage.template set<ParticleType::AttributeNames::posZ, true>(pZ + displacementZ, i);
 
   }, autopas::IteratorBehavior::owned);
+*/
 #ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (throwException) {
     throw std::runtime_error("At least one particle was too fast!");

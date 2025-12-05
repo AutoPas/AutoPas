@@ -138,6 +138,7 @@ template <class Particle_T>
                 typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
                 // Copy from DirectSum.h
                 convertToAoS();
+                _soaUpToDate = false;
                 return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
             }
 
@@ -155,6 +156,7 @@ template <class Particle_T>
                 typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
                 // Copy from DirectSum.h
                 convertToAoS();
+                _soaUpToDate = false;
                 return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
             }
 
@@ -277,18 +279,20 @@ template <class Particle_T>
             auto targetLayout = traversal->getDataLayout();
 
             if (targetLayout == DataLayoutOption::aos) {
+              _soaUpToDate = false;
               kokkosDsTraversal->retrieveOwnedAoS(_hostOwnedParticlesAoS);
+              _aosUpToDate = true;
               if (_dataLayout != targetLayout) {
                 convertToSoA();
               }
-              _soaUpToDate = false;
             }
             else if (targetLayout == DataLayoutOption::soa) {
+              _aosUpToDate = false;
               kokkosDsTraversal->retrieveOwnedSoA(_hostOwnedParticlesSoA);
+              _soaUpToDate = true;
               if (_dataLayout != targetLayout) {
                 convertToAoS();
               }
-              _aosUpToDate = false;
             }
           }
           else {
