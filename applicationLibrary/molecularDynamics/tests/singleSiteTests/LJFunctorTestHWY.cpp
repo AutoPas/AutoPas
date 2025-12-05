@@ -161,17 +161,17 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   ljFunctorHWY.initTraversal();
   ljFunctor.initTraversal();
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
 
   ljFunctor.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctor.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
       << "Cells 1 not equal after loading.";
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
       << "Cells 2 not equal after loading.";
 
   if (useUnalignedViews) {
@@ -183,9 +183,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
     ljFunctor.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
     ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
   }
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
       << "Cells 1 not equal after applying functor.";
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
       << "Cells 2 not equal after applying functor.";
 
   ljFunctorHWY.SoAExtractor(cell1HWY, cell1HWY._particleSoABuffer, 0);
@@ -193,8 +193,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   ljFunctorHWY.SoAExtractor(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0);
   ljFunctorHWY.SoAExtractor(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after extracting.";
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after extracting.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
@@ -269,7 +269,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctorHWY.initTraversal();
   ljFunctor.initTraversal();
@@ -277,7 +277,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
   ljFunctor.SoALoader(cellNoHWY, cellNoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctorHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
       << "Cells not equal after loading.";
 
   if (useUnalignedViews) {
@@ -287,13 +287,13 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
     ljFunctor.SoAFunctorSingle(cellNoHWY._particleSoABuffer, newton3);
     ljFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer, newton3);
   }
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
   ljFunctorHWY.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
   ljFunctorHWY.SoAExtractor(cellNoHWY, cellNoHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after extracting.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after extracting.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
@@ -382,7 +382,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after copy initialization.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctor.initTraversal();
   ljFunctorHWY.initTraversal();
@@ -390,7 +390,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
   ljFunctorHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   ljFunctor.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
       << "Cells not equal after loading.";
 
   for (size_t i = 0; i < numParticles; ++i) {
@@ -398,13 +398,13 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
     ljFunctor.SoAFunctorVerlet(cellAVX._particleSoABuffer, i, neighborLists[i], newton3);
   }
 
-  ASSERT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cellAVX._particleSoABuffer, cellHWY._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
   ljFunctor.SoAExtractor(cellAVX, cellAVX._particleSoABuffer, 0);
   ljFunctor.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after extracting.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cellAVX, cellHWY)) << "Cells not equal after extracting.";
 
   ljFunctor.endTraversal(newton3);
   ljFunctorHWY.endTraversal(newton3);
@@ -476,7 +476,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   }
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 
   ljFunctorHWY.initTraversal();
   ljFunctor.initTraversal();
@@ -491,7 +491,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
     }
   }
 
-  ASSERT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after applying AoSfunctor.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cellHWY, cellNoHWY)) << "Cells not equal after applying AoSfunctor.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
