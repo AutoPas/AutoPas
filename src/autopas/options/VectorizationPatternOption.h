@@ -15,6 +15,13 @@ inline namespace options {
 
 /**
  * Class representing the choices of possible vectorization patterns for the Pairwise Functors
+ *
+ * Vectorization patterns refer to the specific strategies used to load and
+ * arrange particle data into SIMD registers. Different patterns can lead to different
+ * SIMD efficiency due to variation in memory access behavior and data locality.
+ *
+ * For details and benchmarking results, see:
+ * https://doi.org/10.48550/arXiv.2512.03565
  */
 class VectorizationPatternOption : public Option<VectorizationPatternOption> {
  public:
