@@ -19,6 +19,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+#include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
 
 namespace autopas {
 /**
@@ -52,6 +53,8 @@ decltype(auto) withStaticContainerType(ParticleContainerInterface<Particle_T> &c
       return function(dynamic_cast<VarVerletLists<Particle_T, VerletNeighborListAsBuild<Particle_T>> &>(container));
     case ContainerOption::octree:
       return function(dynamic_cast<Octree<Particle_T> &>(container));
+    case ContainerOption::pseudoVerletLists:
+      return function(dynamic_cast<PseudoVerletLists<Particle_T> &>(container));
   }
   utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                      container.getContainerType());

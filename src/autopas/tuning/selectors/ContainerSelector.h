@@ -102,6 +102,11 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
           std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
       break;
     }
+    case ContainerOption::pseudoVerletLists: {
+      container = std::make_unique<PseudoVerletLists<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
+                                                            sortingThreshold, loadEstimator);
+      break;
+    }
     default: {
       utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          containerChoice.to_string());
