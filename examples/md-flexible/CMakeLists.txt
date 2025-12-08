@@ -101,7 +101,7 @@ add_test(
 
 # The AVX example should only be tested if AVX is available.
 set(HAS_AVX true)
-if (NOT AUTOPAS_USE_VECTORIZATION)
+if (NOT AUTOPAS_USE_AUTOVEC)
     # If no vectorization is used, don't enable the example.
     message(STATUS "No vectorization used, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
