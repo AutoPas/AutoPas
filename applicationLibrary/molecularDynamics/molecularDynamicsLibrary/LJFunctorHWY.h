@@ -404,24 +404,24 @@ class LJFunctorHWY
                              const double *const __restrict zPtr,
                              const autopas::OwnershipState *const __restrict ownedStatePtr, VectorDouble &x1,
                              VectorDouble &y1, VectorDouble &z1, MaskDouble &ownedMaskI, const size_t restI) {
-    VectorDouble ownedStateIDouble = _zeroDouble;
+    VectorLong ownedStateILong = _zeroLong;
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       const auto owned = static_cast<int64_t>(ownedStatePtr[i]);
-      ownedStateIDouble = highway::Set(tag_double, static_cast<double>(owned));
+      ownedStateILong = highway::Set(tag_long, owned);
 
       x1 = highway::Set(tag_double, xPtr[i]);
       y1 = highway::Set(tag_double, yPtr[i]);
       z1 = highway::Set(tag_double, zPtr[i]);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const auto ownedFirst = static_cast<int64_t>(ownedStatePtr[i]);
-      ownedStateIDouble = highway::Set(tag_double, static_cast<double>(ownedFirst));
+      ownedStateILong = highway::Set(tag_long, ownedFirst);
 
       x1 = highway::Set(tag_double, xPtr[i]);
       y1 = highway::Set(tag_double, yPtr[i]);
       z1 = highway::Set(tag_double, zPtr[i]);
 
-      VectorDouble tmpOwnedI = _zeroDouble;
+      VectorLong tmpOwnedI = _zeroLong;
       VectorDouble tmpX1 = _zeroDouble;
       VectorDouble tmpY1 = _zeroDouble;
       VectorDouble tmpZ1 = _zeroDouble;
@@ -429,13 +429,13 @@ class LJFunctorHWY
       if constexpr (not remainder) {
         const auto index = reversed ? i - 1 : i + 1;
         const auto ownedSecond = static_cast<int64_t>(ownedStatePtr[index]);
-        tmpOwnedI = highway::Set(tag_double, static_cast<double>(ownedSecond));
+        tmpOwnedI = highway::Set(tag_long, ownedSecond);
         tmpX1 = highway::Set(tag_double, xPtr[index]);
         tmpY1 = highway::Set(tag_double, yPtr[index]);
         tmpZ1 = highway::Set(tag_double, zPtr[index]);
       }
 
-      ownedStateIDouble = highway::ConcatLowerLower(tag_double, tmpOwnedI, ownedStateIDouble);
+      ownedStateILong = highway::ConcatLowerLower(tag_long, tmpOwnedI, ownedStateILong);
       x1 = highway::ConcatLowerLower(tag_double, tmpX1, x1);
       y1 = highway::ConcatLowerLower(tag_double, tmpY1, y1);
       z1 = highway::ConcatLowerLower(tag_double, tmpZ1, z1);
@@ -443,15 +443,13 @@ class LJFunctorHWY
       const int index = reversed ? (remainder ? 0 : i - _vecLengthDouble / 2 + 1) : i;
       const int lanes = remainder ? restI : _vecLengthDouble / 2;
 
-      const VectorLong ownedJ =
-          highway::LoadN(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[index]), lanes);
-      ownedStateIDouble = highway::ConvertTo(tag_double, ownedJ);
+      ownedStateILong = highway::LoadN(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[index]), lanes);
 
       x1 = highway::LoadN(tag_double, &xPtr[index], lanes);
       y1 = highway::LoadN(tag_double, &yPtr[index], lanes);
       z1 = highway::LoadN(tag_double, &zPtr[index], lanes);
 
-      ownedStateIDouble = highway::ConcatLowerLower(tag_double, ownedStateIDouble, ownedStateIDouble);
+      ownedStateILong = highway::ConcatLowerLower(tag_long, ownedStateILong, ownedStateILong);
       x1 = highway::ConcatLowerLower(tag_double, x1, x1);
       y1 = highway::ConcatLowerLower(tag_double, y1, y1);
       z1 = highway::ConcatLowerLower(tag_double, z1, z1);
@@ -463,21 +461,20 @@ class LJFunctorHWY
         y1 = highway::LoadN(tag_double, &yPtr[index], restI);
         z1 = highway::LoadN(tag_double, &zPtr[index], restI);
 
-        const VectorLong ownedStateI =
-            highway::LoadN(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[index]), restI);
-        ownedStateIDouble = highway::ConvertTo(tag_double, ownedStateI);
+        ownedStateILong = highway::LoadN(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[index]), restI);
       } else {
         x1 = highway::LoadU(tag_double, &xPtr[index]);
         y1 = highway::LoadU(tag_double, &yPtr[index]);
         z1 = highway::LoadU(tag_double, &zPtr[index]);
 
-        const VectorLong ownedStateI =
-            highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[index]));
-        ownedStateIDouble = highway::ConvertTo(tag_double, ownedStateI);
+        ownedStateILong = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[index]));
       }
     }
 
-    ownedMaskI = highway::Ne(ownedStateIDouble, _zeroDouble);
+    MaskLong ownedMaskILong = highway::Ne(ownedStateILong, _zeroLong);
+
+    // conert to a double mask since we perform logical operations with other double masks in the kernel
+    ownedMaskI = highway::RebindMask(tag_double, ownedMaskILong);
   }
 
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
@@ -833,7 +830,7 @@ class LJFunctorHWY
   template <bool remainder, VectorizationPattern vecPattern>
   inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
-                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, VectorDouble &ownedStateJDouble,
+                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, VectorLong &ownedStateJLong,
                              const unsigned int rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       if constexpr (remainder) {
@@ -841,15 +838,13 @@ class LJFunctorHWY
         y2 = highway::LoadN(tag_double, &y2Ptr[j], rest);
         z2 = highway::LoadN(tag_double, &z2Ptr[j], rest);
 
-        const VectorLong ownedStateJ = highway::LoadN(tag_long, &ownedStatePtr2[j], rest);
-        ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
+        ownedStateJLong = highway::LoadN(tag_long, &ownedStatePtr2[j], rest);
       } else {
         x2 = highway::LoadU(tag_double, &x2Ptr[j]);
         y2 = highway::LoadU(tag_double, &y2Ptr[j]);
         z2 = highway::LoadU(tag_double, &z2Ptr[j]);
 
-        const VectorLong ownedStateJ = highway::LoadU(tag_long, &ownedStatePtr2[j]);
-        ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
+        ownedStateJLong = highway::LoadU(tag_long, &ownedStatePtr2[j]);
       }
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const int lanes = remainder ? rest : _vecLengthDouble / 2;
@@ -860,8 +855,7 @@ class LJFunctorHWY
       z2 = highway::LoadN(tag_double, &z2Ptr[j], lanes);
 
       // "broadcast" lower half to upper half
-      ownedStateJ = highway::ConcatLowerLower(tag_long, ownedStateJ, ownedStateJ);
-      ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
+      ownedStateJLong = highway::ConcatLowerLower(tag_long, ownedStateJ, ownedStateJ);
       x2 = highway::ConcatLowerLower(tag_double, x2, x2);
       y2 = highway::ConcatLowerLower(tag_double, y2, y2);
       z2 = highway::ConcatLowerLower(tag_double, z2, z2);
@@ -872,7 +866,7 @@ class LJFunctorHWY
       z2 = highway::Set(tag_double, z2Ptr[j]);
 
       if constexpr (remainder) {
-        ownedStateJ = highway::ConcatLowerLower(tag_long, _zeroLong, ownedStateJ);
+        ownedStateJLong = highway::ConcatLowerLower(tag_long, _zeroLong, ownedStateJ);
         x2 = highway::ConcatLowerLower(tag_double, _zeroDouble, x2);
         y2 = highway::ConcatLowerLower(tag_double, _zeroDouble, y2);
         z2 = highway::ConcatLowerLower(tag_double, _zeroDouble, z2);
@@ -882,18 +876,16 @@ class LJFunctorHWY
         const auto tmpY2 = highway::Set(tag_double, y2Ptr[j + 1]);
         const auto tmpZ2 = highway::Set(tag_double, z2Ptr[j + 1]);
 
-        ownedStateJ = highway::ConcatLowerLower(tag_long, tmpOwnedJ, ownedStateJ);
+        ownedStateJLong = highway::ConcatLowerLower(tag_long, tmpOwnedJ, ownedStateJ);
         x2 = highway::ConcatLowerLower(tag_double, tmpX2, x2);
         y2 = highway::ConcatLowerLower(tag_double, tmpY2, y2);
         z2 = highway::ConcatLowerLower(tag_double, tmpZ2, z2);
       }
-      ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      VectorLong ownedStateJ = highway::Set(tag_long, static_cast<int64_t>(ownedStatePtr2[j]));
+      ownedStateJLong = highway::Set(tag_long, ownedStatePtr2[j]);
       x2 = highway::Set(tag_double, x2Ptr[j]);
       y2 = highway::Set(tag_double, y2Ptr[j]);
       z2 = highway::Set(tag_double, z2Ptr[j]);
-      ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
     }
   }
 
@@ -1014,10 +1006,9 @@ class LJFunctorHWY
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
-    VectorDouble ownedStateJDouble;
+    VectorLong ownedStateJLong;
 
-    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJDouble,
-                                           restJ);
+    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJLong, restJ);
 
     // distance calculations
     const auto drX = x1 - x2;
@@ -1031,7 +1022,8 @@ class LJFunctorHWY
     const auto dr2 = drX2 + drY2 + drZ2;
 
     const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
-    const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
+    const auto dummyMask =
+        highway::And(ownedMaskI, highway::Ne(highway::ConvertTo(tag_double, ownedStateJLong), _ownedStateDummy));
     const auto cutoffDummyMask = highway::And(cutoffMask, dummyMask);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
