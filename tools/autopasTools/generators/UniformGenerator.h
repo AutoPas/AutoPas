@@ -18,11 +18,7 @@ namespace autopasTools::generators {
  * Generator class for uniform distributions
  */
 namespace UniformGenerator {
-#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
-using CalcType = float;
-#else
-using CalcType = double;
-#endif
+
 /**
  * Generate a random position within a given box.
  * @param generator Random engine
@@ -98,8 +94,8 @@ void UniformGenerator::fillWithParticles(Container &container, const Particle &d
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
-    particle.setR(
-        autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(randomPosition(generator, boxMin, boxMax)));
+    auto pos = randomPosition(generator, boxMin, boxMax);  // std::array<double,3>
+    particle.setR(pos);
     particle.setID(i);
     particle.setOwnershipState(autopas::OwnershipState::owned);
     container.addParticle(particle);

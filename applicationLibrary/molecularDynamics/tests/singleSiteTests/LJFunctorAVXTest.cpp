@@ -14,6 +14,13 @@
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+using FunctorCalcType = float;
+#else
+using FunctorCalcType = double;
+#endif
+
+
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
   EXPECT_GT(soa1.size(), 0);
@@ -89,7 +96,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
 
   size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{static_cast<FunctorCalcType>(_cutoff)};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -211,7 +218,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 
   size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{static_cast<FunctorCalcType>(_cutoff)};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -308,7 +315,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
 
   constexpr size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{static_cast<FunctorCalcType>(_cutoff)};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);
@@ -418,7 +425,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
 
   constexpr size_t numParticles = 7;
 
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  ParticlePropertiesLibrary<double, size_t> PPL{static_cast<FunctorCalcType>(_cutoff)};
   if constexpr (mixing) {
     PPL.addSiteType(0, 1.);
     PPL.addLJParametersToSite(0, 1., 1.);

@@ -12,6 +12,7 @@
 #endif
 
 #include <array>
+#include <type_traits>
 
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
@@ -45,18 +46,26 @@ template <class Particle_T, bool applyShift = false, bool useMixing = false,
 class LJFunctorAVX
     : public autopas::PairwiseFunctor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3,
                                                              calculateGlobals, countFLOPs, relevantForTuning>> {
-  /**
-   * FloatType used for calculations
-   */
-  using CalcType = typename Particle_T::ParticleCalcType;
+  using Particle = Particle_T;
 
-  /**
-   * FloatType used for accumulations or more relevant calculations
-   */
-  using AccuType = typename Particle_T::ParticleAccuType;
+#if AUTOPAS_PRECISION_MODE == SPSP
+  using CalcType = float;
+  using AccuType = float;
+  using SIMDCalcType = __m256;
+  using SIMDAccuType = __m256;
 
-  using SIMDCalcType = typename std::conditional_t<std::is_same<CalcType, float>::value, __m256, __m256d>;
-  using SIMDAccuType = typename std::conditional_t<std::is_same<AccuType, float>::value, __m256, __m256d>;
+#elif AUTOPAS_PRECISION_MODE == SPDP
+  using CalcType = float;
+  using AccuType = double;
+  using SIMDCalcType = __m256;
+  using SIMDAccuType = __m256d;
+
+#else
+  using CalcType = double;
+  using AccuType = double;
+  using SIMDCalcType = __m256d;
+  using SIMDAccuType = __m256d;
+#endif
 
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
@@ -120,7 +129,7 @@ class LJFunctorAVX
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctorAVX(CalcType cutoff, ParticlePropertiesLibrary<CalcType, size_t> &particlePropertiesLibrary)
+  explicit LJFunctorAVX(CalcType cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctorAVX(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -158,8 +167,12 @@ class LJFunctorAVX
       }
     }
 
-    std::array<CalcType, 3> dr = i.getR() - j.getR();
+    // erst in double rechnen (getR() ist double), dann auf CalcType (float/double) casten
+    auto drDouble = i.getR() - j.getR();  // std::array<double, 3>
+    std::array<CalcType, 3> dr =
+        autopas::utils::ArrayUtils::static_cast_copy_array<CalcType>(drDouble);
     CalcType dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+
 
     if (dr2 > _cutoffSquaredAoS) {
       return;
@@ -242,6 +255,29 @@ class LJFunctorAVX
 
     const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
+// For SPSP/SPDP we compute in CalcType (float) but positions in the SoA are doubles.
+// Create converted CalcType arrays so SoAKernel always works with CalcType*.
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+    std::vector<CalcType, autopas::AlignedAllocator<CalcType>> xCalc(soa.size());
+    std::vector<CalcType, autopas::AlignedAllocator<CalcType>> yCalc(soa.size());
+    std::vector<CalcType, autopas::AlignedAllocator<CalcType>> zCalc(soa.size());
+
+    for (size_t idx = 0; idx < soa.size(); ++idx) {
+      xCalc[idx] = static_cast<CalcType>(xptr[idx]);
+      yCalc[idx] = static_cast<CalcType>(yptr[idx]);
+      zCalc[idx] = static_cast<CalcType>(zptr[idx]);
+    }
+
+    const CalcType *const __restrict xCalcPtr = xCalc.data();
+    const CalcType *const __restrict yCalcPtr = yCalc.data();
+    const CalcType *const __restrict zCalcPtr = zCalc.data();
+#else
+    // In DPDP we already use double everywhere.
+    const CalcType *const __restrict xCalcPtr = xptr;
+    const CalcType *const __restrict yCalcPtr = yptr;
+    const CalcType *const __restrict zCalcPtr = zptr;
+#endif
+
 #if AUTOPAS_PRECISION_MODE == SPSP
     __m256 virialSumX = _mm256_setzero_ps();
     __m256 virialSumY = _mm256_setzero_ps();
@@ -270,9 +306,10 @@ class LJFunctorAVX
       // _mm256_set1_epi32 broadcasts a 32-bit integer, we use this instruction to have 8 values!
       __m256i ownedStateI = _mm256_set1_epi32(static_cast<int32_t>(ownedStatePtr[i]));
 
-      const __m256 x1 = _mm256_broadcast_ss(&xptr[i]);
-      const __m256 y1 = _mm256_broadcast_ss(&yptr[i]);
-      const __m256 z1 = _mm256_broadcast_ss(&zptr[i]);
+      const __m256 x1 = _mm256_set1_ps(static_cast<float>(xptr[i]));
+      const __m256 y1 = _mm256_set1_ps(static_cast<float>(yptr[i]));
+      const __m256 z1 = _mm256_set1_ps(static_cast<float>(zptr[i]));
+
 #else
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
@@ -302,7 +339,7 @@ class LJFunctorAVX
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr), x1, y1,
-                               z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc,
+                               z1, xCalcPtr, yCalcPtr, zCalcPtr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc,
                                fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
@@ -310,7 +347,7 @@ class LJFunctorAVX
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr), x1, y1,
-                              z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc,
+                              z1, xCalcPtr, yCalcPtr, zCalcPtr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc,
                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
@@ -421,6 +458,28 @@ class LJFunctorAVX
     const auto *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
+#if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
+    // Convert positions of soa2 to CalcType for SPSP/SPDP.
+    std::vector<CalcType, autopas::AlignedAllocator<CalcType>> x2Calc(soa2.size());
+    std::vector<CalcType, autopas::AlignedAllocator<CalcType>> y2Calc(soa2.size());
+    std::vector<CalcType, autopas::AlignedAllocator<CalcType>> z2Calc(soa2.size());
+
+    for (size_t idx = 0; idx < soa2.size(); ++idx) {
+      x2Calc[idx] = static_cast<CalcType>(x2ptr[idx]);
+      y2Calc[idx] = static_cast<CalcType>(y2ptr[idx]);
+      z2Calc[idx] = static_cast<CalcType>(z2ptr[idx]);
+    }
+
+    const CalcType *const __restrict x2CalcPtr = x2Calc.data();
+    const CalcType *const __restrict y2CalcPtr = y2Calc.data();
+    const CalcType *const __restrict z2CalcPtr = z2Calc.data();
+#else
+    const CalcType *const __restrict x2CalcPtr = x2ptr;
+    const CalcType *const __restrict y2CalcPtr = y2ptr;
+    const CalcType *const __restrict z2CalcPtr = z2ptr;
+#endif
+
+
     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
@@ -459,9 +518,9 @@ class LJFunctorAVX
       // _mm256_set1_epi32 broadcasts a 32-bit integer, we use this instruction to have 8 values!
       __m256i ownedStateI = _mm256_set1_epi32(static_cast<int32_t>(ownedStatePtr1[i]));
 
-      const __m256 x1 = _mm256_broadcast_ss(&x1ptr[i]);
-      const __m256 y1 = _mm256_broadcast_ss(&y1ptr[i]);
-      const __m256 z1 = _mm256_broadcast_ss(&z1ptr[i]);
+      const __m256 x1 = _mm256_set1_ps(static_cast<float>(x1ptr[i]));
+      const __m256 y1 = _mm256_set1_ps(static_cast<float>(y1ptr[i]));
+      const __m256 z1 = _mm256_set1_ps(static_cast<float>(z1ptr[i]));
 #else
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
@@ -488,13 +547,13 @@ class LJFunctorAVX
       unsigned int j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr2), x1,
-                                  y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j],
+                                  y1, z1, x2CalcPtr, y2CalcPtr, z2CalcPtr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j],
                                   fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const autopas::OwnershipType *>(ownedStatePtr2), x1,
-                                 y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j],
+                                 y1, z1, x2CalcPtr, y2CalcPtr, z2CalcPtr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j],
                                  fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
 #if AUTOPAS_PRECISION_MODE == SPSP
@@ -1074,9 +1133,10 @@ class LJFunctorAVX
 
 #if AUTOPAS_PRECISION_MODE == SPSP || AUTOPAS_PRECISION_MODE == SPDP
     // broadcast particle 1
-    const __m256 x1 = _mm256_broadcast_ss(&xptr[indexFirst]);
-    const __m256 y1 = _mm256_broadcast_ss(&yptr[indexFirst]);
-    const __m256 z1 = _mm256_broadcast_ss(&zptr[indexFirst]);
+    const __m256 x1 = _mm256_set1_ps(static_cast<float>(xptr[indexFirst]));
+    const __m256 y1 = _mm256_set1_ps(static_cast<float>(yptr[indexFirst]));
+    const __m256 z1 = _mm256_set1_ps(static_cast<float>(zptr[indexFirst]));
+
 
     // ownedStatePtr contains int32_t, so we broadcast these to make an __m256i.
     // _mm256_set1_epi32 broadcasts a 32-bit integer, we use this instruction to have 8 values!
@@ -1429,7 +1489,10 @@ class LJFunctorAVX
     _sigmaSquared = _mm256_set1_ps(sigmaSquared);
     if constexpr (applyShift) {
       _shift6 = _mm256_set1_ps(
-          ParticlePropertiesLibrary<CalcType, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared[0]));
+          static_cast<CalcType>(ParticlePropertiesLibrary<double, size_t>::calcShift6(
+              static_cast<double>(epsilon24),
+              static_cast<double>(sigmaSquared),
+              static_cast<double>(_cutoffSquared[0]))));
     } else {
       _shift6 = _mm256_setzero_ps();
     }
@@ -1438,7 +1501,10 @@ class LJFunctorAVX
     _sigmaSquared = _mm256_set1_pd(sigmaSquared);
     if constexpr (applyShift) {
       _shift6 = _mm256_set1_pd(
-          ParticlePropertiesLibrary<CalcType, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared[0]));
+          ParticlePropertiesLibrary<double, size_t>::calcShift6(
+              static_cast<double>(epsilon24),
+              static_cast<double>(sigmaSquared),
+              static_cast<double>(_cutoffSquared[0])));
     } else {
       _shift6 = _mm256_setzero_pd();
     }
@@ -1448,11 +1514,15 @@ class LJFunctorAVX
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<CalcType, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
+      _shift6AoS = static_cast<CalcType>(ParticlePropertiesLibrary<double, size_t>::calcShift6(
+          static_cast<double>(epsilon24),
+          static_cast<double>(sigmaSquared),
+          static_cast<double>(_cutoffSquaredAoS)));
     } else {
       _shift6AoS = 0.;
     }
   }
+
 
  private:
 #ifdef __AVX__
@@ -1555,7 +1625,7 @@ class LJFunctorAVX
   const CalcType _cutoffSquaredAoS = 0;
   CalcType _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
 
-  ParticlePropertiesLibrary<CalcType, size_t> *_PPLibrary = nullptr;
+  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   AccuType _potentialEnergySum;
