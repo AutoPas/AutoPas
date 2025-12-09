@@ -6,6 +6,10 @@
 
 #include "LCC08CellHandlerUtilityTest.h"
 
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+
 using testing::ContainerEq;
 using testing::DoubleNear;
 using testing::Eq;

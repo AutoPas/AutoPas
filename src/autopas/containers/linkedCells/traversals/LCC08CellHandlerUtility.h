@@ -69,7 +69,7 @@ using OffsetTripletVector = std::vector<OffsetTriplet>;
  * Compile Time Modes for the function autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
  * @note In case of a new mode, this also requires the explicit instantiation of the new template
- * in LCC08CellHandlerUtility.cpp and a modification to {@link OffsetPairType @endlink}
+ * in LCC08CellHandlerUtility.cpp and a modification to @ref OffsetPairType
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
