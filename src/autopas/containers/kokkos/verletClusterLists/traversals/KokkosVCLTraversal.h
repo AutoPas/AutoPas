@@ -5,7 +5,6 @@
 #include "KokkosTraversalInterface.h"
 #include "Kokkos_Sort.hpp"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/utils/kokkos/ArrayUtils.h"
 #include "autopas/utils/kokkos/KokkosSoA.h"
 
 constexpr auto normalize(const double coord, const double cell_size) -> int64_t {
@@ -66,19 +65,19 @@ namespace autopas::containers::kokkos::traversal {
 template <class Particle_T, typename Functor_T>
 class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTraversalInterface<Particle_T> {
  public:
-  KokkosVCLTraversal(Functor_T *f, DataLayoutOption dataLayout, bool newton3, double cutoff,
-                     std::array<double, 3> cellSize, double skinSize = 0.0)
+  KokkosVCLTraversal(Functor_T *f, DataLayoutOption dataLayout, bool newton3, double interactionLength,
+                     std::array<double, 3> cellSize)
       : TraversalInterface(dataLayout, newton3),
-        _functor( *f ),
-        _cutoff(cutoff),
+        _functor(*f),
         _cellSize(cellSize),
-        _skinSize(skinSize) {}
+        _interactionLength(interactionLength) {}
 
   ~KokkosVCLTraversal() override = default;
 
   [[nodiscard]] autopas::TraversalOption getTraversalType() const override { return autopas::TraversalOption::kk_vcl; }
 
   [[nodiscard]] bool isApplicable() const override { return true; }
+
   void initTraversal() override {
     // TODO make dynamic
     clusterParticles();
@@ -86,12 +85,36 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
     updatePairs();
   }
   void traverseParticles() override { calculateForce(); }
+
   void endTraversal() override {
-    // TODO copy back
+    _soa.template markModifiedAll<utils::kokkos::DeviceSpace>();
+    _soa.template syncAll<utils::kokkos::HostSpace>();
+    for (auto i = 0; i < _soa.size(); ++i) {
+      _functor.store_particle(_soa, i);
+    }
   }
 
   void rebuild(std::vector<Particle_T> &particles) override {
-    // TODO add particles
+    _soa.resize(particles.size());
+
+    _num_blocks = (_soa.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
+
+    Kokkos::resize(_bounding_box, _num_blocks, 3, 2);
+    Kokkos::resize(_block_pairs_count, _num_blocks);
+    Kokkos::resize(_block_pairs_start_index, _num_blocks);
+    Kokkos::resize(_spatial_index, _soa.size(), 3);
+    Kokkos::resize(_permutations, _soa.size());
+    Kokkos::fence();
+
+    auto s = _soa.size();
+    for (size_t i = 0; i < particles.size(); ++i) {
+      auto &particle = particles[i];
+      _functor.load_particle(_soa, particle, i);
+    }
+    _soa.template markModifiedAll<utils::kokkos::HostSpace>();
+    Kokkos::fence();
+    _soa.template syncAll<utils::kokkos::DeviceSpace>();
+    space.fence();
     clusterParticles();
     updateBoundingBox();
     updatePairs();
@@ -106,15 +129,16 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
 
   constexpr static int BLOCK_SIZE = 32;
 
-
   void calculateForce() {
-    Kokkos::parallel_for(
-        "clear force", Kokkos::RangePolicy<autopas::utils::kokkos::DeviceSpace>(0, _soa.size()),
-        KOKKOS_CLASS_LAMBDA(const int64_t i) {
-          _soa.template get<Particle_T::AttributeNames::forceX>().d_view(i) = 0;
-          _soa.template get<Particle_T::AttributeNames::forceY>().d_view(i) = 0;
-          _soa.template get<Particle_T::AttributeNames::forceZ>().d_view(i) = 0;
-        });
+    // Kokkos::parallel_for(
+    //     "clear force", Kokkos::RangePolicy<autopas::utils::kokkos::DeviceSpace>(0, _soa.size()),
+    //     KOKKOS_CLASS_LAMBDA(const int64_t i) {
+    //       _soa.template get<Particle_T::AttributeNames::forceX>().d_view(i) = 0;
+    //       _soa.template get<Particle_T::AttributeNames::forceY>().d_view(i) = 0;
+    //       _soa.template get<Particle_T::AttributeNames::forceZ>().d_view(i) = 0;
+    //     });
+    //
+    // space.fence();
 
     typedef Kokkos::View<double *[3], typename autopas::utils::kokkos::DeviceSpace::scratch_memory_space,
                          Kokkos::MemoryTraits<Kokkos::Unmanaged>>
@@ -127,8 +151,8 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
         "update force", tp,
         KOKKOS_CLASS_LAMBDA(const typename Kokkos::TeamPolicy<utils::kokkos::DeviceSpace>::member_type &team) {
           const size_t pair_id = team.league_rank();
-          const size_t b1 = _pairs.d_view(pair_id, 0);
-          const size_t b2 = _pairs.d_view(pair_id, 1);
+          const size_t b1 = _pairs(pair_id, 0);
+          const size_t b2 = _pairs(pair_id, 1);
 
           auto b1_start = b1 * BLOCK_SIZE;
           auto b1_end = Kokkos::min((b1 + 1) * BLOCK_SIZE, _soa.size());
@@ -137,25 +161,25 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
           auto b2_end = Kokkos::min((b2 + 1) * BLOCK_SIZE, _soa.size());
 
           block block1(team.team_scratch(0), BLOCK_SIZE);
-
-          // TODO Maybe theres a copy for that?
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, b1_start, b1_end), [&](const int64_t j) {
             block1(j - b1_start, X_AXIS) = _soa.template get<Particle_T::AttributeNames::posX>().d_view(j);
             block1(j - b1_start, Y_AXIS) = _soa.template get<Particle_T::AttributeNames::posY>().d_view(j);
             block1(j - b1_start, Z_AXIS) = _soa.template get<Particle_T::AttributeNames::posZ>().d_view(j);
           });
+
           team.team_barrier();
           if (b1 == b2) {
             _functor.KokkosSoAFunctor(team, _soa, block1, b1_start, b1_end);
           } else {
             for (uint64_t i = b1_start; i < b1_end; ++i) {
-              auto mask = _pairs.d_view(pair_id, 2);
+              auto mask = _pairs(pair_id, 2);
               if (mask & (1L << (i - b1_start))) {
                 _functor.KokkosSoAFunctorPairwise(team, _soa, block1, i, b1_start, b2_start, b2_end);
               }
             }
           }
         });
+    space.fence();
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -186,14 +210,14 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
               Kokkos::TeamThreadRange(team, start, end),
               [&](const int64_t b2, uint64_t &inner_sum) {
                 // TODO Don't calculate if b1 ==b2
-                auto distance = bbox_distance_sq(
-                    _bounding_box.d_view(b1, X_AXIS, AXIS_MIN), _bounding_box.d_view(b1, X_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b1, Y_AXIS, AXIS_MIN), _bounding_box.d_view(b1, Y_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b1, Z_AXIS, AXIS_MIN), _bounding_box.d_view(b1, Z_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b2, X_AXIS, AXIS_MIN), _bounding_box.d_view(b2, X_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b2, Y_AXIS, AXIS_MIN), _bounding_box.d_view(b2, Y_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b2, Z_AXIS, AXIS_MIN), _bounding_box.d_view(b2, Z_AXIS, AXIS_MAX));
-                if (distance <= _cutoff * _cutoff) {
+                auto distance =
+                    bbox_distance_sq(_bounding_box(b1, X_AXIS, AXIS_MIN), _bounding_box(b1, X_AXIS, AXIS_MAX),
+                                     _bounding_box(b1, Y_AXIS, AXIS_MIN), _bounding_box(b1, Y_AXIS, AXIS_MAX),
+                                     _bounding_box(b1, Z_AXIS, AXIS_MIN), _bounding_box(b1, Z_AXIS, AXIS_MAX),
+                                     _bounding_box(b2, X_AXIS, AXIS_MIN), _bounding_box(b2, X_AXIS, AXIS_MAX),
+                                     _bounding_box(b2, Y_AXIS, AXIS_MIN), _bounding_box(b2, Y_AXIS, AXIS_MAX),
+                                     _bounding_box(b2, Z_AXIS, AXIS_MIN), _bounding_box(b2, Z_AXIS, AXIS_MAX));
+                if (distance <= _interactionLength * _interactionLength) {
                   auto b1_start = b1 * BLOCK_SIZE;
                   auto b1_end = Kokkos::min((b1 + 1) * BLOCK_SIZE, _soa.size());
                   uint64_t mask = 0l;
@@ -201,18 +225,17 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
                     auto pos_x = _soa.template get<Particle_T::AttributeNames::posX>().d_view(i);
                     auto pos_y = _soa.template get<Particle_T::AttributeNames::posY>().d_view(i);
                     auto pos_z = _soa.template get<Particle_T::AttributeNames::posZ>().d_view(i);
-                    auto dist = bbox_distance_sq(
-                        pos_x, pos_x, pos_y, pos_y, pos_z, pos_z, _bounding_box.d_view(b2, X_AXIS, AXIS_MIN),
-                        _bounding_box.d_view(b2, X_AXIS, AXIS_MAX), _bounding_box.d_view(b2, Y_AXIS, AXIS_MIN),
-                        _bounding_box.d_view(b2, Y_AXIS, AXIS_MAX), _bounding_box.d_view(b2, Z_AXIS, AXIS_MIN),
-                        _bounding_box.d_view(b2, Z_AXIS, AXIS_MAX));
-                    if (dist <= _cutoff * _cutoff) {
+                    auto dist =
+                        bbox_distance_sq(pos_x, pos_x, pos_y, pos_y, pos_z, pos_z, _bounding_box(b2, X_AXIS, AXIS_MIN),
+                                         _bounding_box(b2, X_AXIS, AXIS_MAX), _bounding_box(b2, Y_AXIS, AXIS_MIN),
+                                         _bounding_box(b2, Y_AXIS, AXIS_MAX), _bounding_box(b2, Z_AXIS, AXIS_MIN),
+                                         _bounding_box(b2, Z_AXIS, AXIS_MAX));
+                    if (dist <= _interactionLength * _interactionLength) {
+                      // TODO filter halo to halo interactions
                       mask |= 1L << (i - b1_start);
                     }
                   }
-                  int64_t signed_mask = 0L;
-                  std::memcpy(&signed_mask, &mask, sizeof(uint64_t));
-                  if (signed_mask > 0L) {
+                  if (mask > 0L) {
                     inner_sum += 1;
                   }
                 }
@@ -221,73 +244,69 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
 
           Kokkos::single(Kokkos::PerTeam(team), [&]() {
             local_sum += sum;
-            _block_pairs_count.d_view(b1) = sum;
+            _block_pairs_count(b1) = sum;
           });
         },
         Kokkos::Sum<uint64_t>(_num_pairs));
-
-    if (_pairs.extent(0) < _num_pairs) {
-      printf("resizing to  %lu\n", _num_pairs);
-      Kokkos::resize(_pairs, _num_pairs, 3);
-    }
-
+    space.fence();
+    Kokkos::resize(_pairs, _num_pairs, 3);
+    space.fence();
     Kokkos::parallel_scan(
         "calculate_start_indices", Kokkos::RangePolicy<utils::kokkos::DeviceSpace>(0, _num_blocks),
         KOKKOS_CLASS_LAMBDA(const int64_t b1, uint64_t &update, const bool final) {
           if (final) {
-            _block_pairs_start_index.d_view(b1) = update;
+            _block_pairs_start_index(b1) = update;
           }
-          const uint64_t block_count = _block_pairs_count.d_view(b1);
+          const uint64_t block_count = _block_pairs_count(b1);
           update += block_count;
         });
+    space.fence();
     Kokkos::parallel_for(
         "write_interacting_pairs", Kokkos::TeamPolicy<typename utils::kokkos::DeviceSpace>(_num_blocks, Kokkos::AUTO),
         KOKKOS_CLASS_LAMBDA(const typename Kokkos::TeamPolicy<typename utils::kokkos::DeviceSpace>::member_type &team) {
           size_t b1 = team.league_rank();
-          uint64_t current_index = _block_pairs_start_index.d_view(b1);
+          uint64_t current_index = _block_pairs_start_index(b1);
 
-          Kokkos::parallel_scan(
-              Kokkos::TeamThreadRange(team, b1, _num_blocks), [&](const int64_t b2, int64_t &num, bool final) {
-                auto distance = bbox_distance_sq(
-                    _bounding_box.d_view(b1, X_AXIS, AXIS_MIN), _bounding_box.d_view(b1, X_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b1, Y_AXIS, AXIS_MIN), _bounding_box.d_view(b1, Y_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b1, Z_AXIS, AXIS_MIN), _bounding_box.d_view(b1, Z_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b2, X_AXIS, AXIS_MIN), _bounding_box.d_view(b2, X_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b2, Y_AXIS, AXIS_MIN), _bounding_box.d_view(b2, Y_AXIS, AXIS_MAX),
-                    _bounding_box.d_view(b2, Z_AXIS, AXIS_MIN), _bounding_box.d_view(b2, Z_AXIS, AXIS_MAX));
-                if (distance <= _cutoff * _cutoff) {
-                  size_t b1_start = b1 * BLOCK_SIZE;
-                  size_t b1_end = Kokkos::min((b1 + 1) * BLOCK_SIZE, _soa.size());
-                  uint64_t mask = 0l;
+          Kokkos::parallel_scan(Kokkos::TeamThreadRange(team, b1, _num_blocks), [&](const int64_t b2, int64_t &num,
+                                                                                    bool final) {
+            auto distance = bbox_distance_sq(_bounding_box(b1, X_AXIS, AXIS_MIN), _bounding_box(b1, X_AXIS, AXIS_MAX),
+                                             _bounding_box(b1, Y_AXIS, AXIS_MIN), _bounding_box(b1, Y_AXIS, AXIS_MAX),
+                                             _bounding_box(b1, Z_AXIS, AXIS_MIN), _bounding_box(b1, Z_AXIS, AXIS_MAX),
+                                             _bounding_box(b2, X_AXIS, AXIS_MIN), _bounding_box(b2, X_AXIS, AXIS_MAX),
+                                             _bounding_box(b2, Y_AXIS, AXIS_MIN), _bounding_box(b2, Y_AXIS, AXIS_MAX),
+                                             _bounding_box(b2, Z_AXIS, AXIS_MIN), _bounding_box(b2, Z_AXIS, AXIS_MAX));
+            if (distance <= _interactionLength * _interactionLength) {
+              size_t b1_start = b1 * BLOCK_SIZE;
+              size_t b1_end = Kokkos::min((b1 + 1) * BLOCK_SIZE, _soa.size());
+              uint64_t mask = 0l;
 
-                  for (uint64_t i = b1_start; i < b1_end; ++i) {
-                    auto pos_x = _soa.template get<Particle_T::AttributeNames::posX>().d_view(i);
-                    auto pos_y = _soa.template get<Particle_T::AttributeNames::posY>().d_view(i);
-                    auto pos_z = _soa.template get<Particle_T::AttributeNames::posZ>().d_view(i);
-                    auto dist = bbox_distance_sq(
-                        pos_x, pos_x, pos_y, pos_y, pos_z, pos_z, _bounding_box.d_view(b2, X_AXIS, AXIS_MIN),
-                        _bounding_box.d_view(b2, X_AXIS, AXIS_MAX), _bounding_box.d_view(b2, Y_AXIS, AXIS_MIN),
-                        _bounding_box.d_view(b2, Y_AXIS, AXIS_MAX), _bounding_box.d_view(b2, Z_AXIS, AXIS_MIN),
-                        _bounding_box.d_view(b2, Z_AXIS, AXIS_MAX));
-                    if (dist <= _cutoff * _cutoff) {
-                      mask |= 1L << (i - b1_start);
-                    }
-                  }
-                  int64_t signed_mask = 0L;
-                  std::memcpy(&signed_mask, &mask, sizeof(uint64_t));
-
-                  if (signed_mask > 0L) {
-                    if (final) {
-                      _pairs.d_view(current_index + num, 0) = b1;
-                      _pairs.d_view(current_index + num, 1) = b2;
-                      _pairs.d_view(current_index + num, 2) = signed_mask;
-                    }
-                    num += 1;
-                  }
+              for (uint64_t i = b1_start; i < b1_end; ++i) {
+                auto pos_x = _soa.template get<Particle_T::AttributeNames::posX>().d_view(i);
+                auto pos_y = _soa.template get<Particle_T::AttributeNames::posY>().d_view(i);
+                auto pos_z = _soa.template get<Particle_T::AttributeNames::posZ>().d_view(i);
+                auto dist = bbox_distance_sq(pos_x, pos_x, pos_y, pos_y, pos_z, pos_z,
+                                             _bounding_box(b2, X_AXIS, AXIS_MIN), _bounding_box(b2, X_AXIS, AXIS_MAX),
+                                             _bounding_box(b2, Y_AXIS, AXIS_MIN), _bounding_box(b2, Y_AXIS, AXIS_MAX),
+                                             _bounding_box(b2, Z_AXIS, AXIS_MIN), _bounding_box(b2, Z_AXIS, AXIS_MAX));
+                if (dist <= _interactionLength * _interactionLength) {
+                  // TODO filter halo to halo
+                  mask |= 1L << (i - b1_start);
                 }
-              });
+              }
+
+              if (mask > 0L) {
+                if (final) {
+                  _pairs(current_index + num, 0) = b1;
+                  _pairs(current_index + num, 1) = b2;
+                  _pairs(current_index + num, 2) = static_cast<int64_t>(mask);
+                }
+                num += 1;
+              }
+            }
+          });
           team.team_barrier();
         });
+    space.fence();
   }
 
   template <size_t axis>
@@ -311,66 +330,62 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
           const size_t start = block_id * BLOCK_SIZE;
           const size_t end = Kokkos::min(start + BLOCK_SIZE, _soa.size());
 
-          Kokkos::MinMax<double>::value_type minmax_x;
-          Kokkos::MinMax<double>::value_type minmax_y;
-          Kokkos::MinMax<double>::value_type minmax_z;
+          Kokkos::MinMax<double>::value_type minmax_x = Kokkos::MinMax<double>::value_type();
+          Kokkos::MinMax<double>::value_type minmax_y = Kokkos::MinMax<double>::value_type();
+          Kokkos::MinMax<double>::value_type minmax_z = Kokkos::MinMax<double>::value_type();
 
           min_max_reduction<Particle_T::AttributeNames::posX>(team, start, end, minmax_x);
           min_max_reduction<Particle_T::AttributeNames::posY>(team, start, end, minmax_y);
           min_max_reduction<Particle_T::AttributeNames::posZ>(team, start, end, minmax_z);
 
           Kokkos::single(Kokkos::PerTeam(team), [&]() {
-            _bounding_box.d_view(block_id, X_AXIS, AXIS_MIN) = minmax_x.min_val - _skinSize;
-            _bounding_box.d_view(block_id, X_AXIS, AXIS_MAX) = minmax_x.max_val + _skinSize;
-            _bounding_box.d_view(block_id, Y_AXIS, AXIS_MIN) = minmax_y.min_val - _skinSize;
-            _bounding_box.d_view(block_id, Z_AXIS, AXIS_MIN) = minmax_z.min_val - _skinSize;
-            _bounding_box.d_view(block_id, Z_AXIS, AXIS_MAX) = minmax_z.max_val + _skinSize;
+            _bounding_box(block_id, X_AXIS, AXIS_MIN) = minmax_x.min_val;
+            _bounding_box(block_id, X_AXIS, AXIS_MAX) = minmax_x.max_val;
+            _bounding_box(block_id, Y_AXIS, AXIS_MIN) = minmax_y.min_val;
+            _bounding_box(block_id, Y_AXIS, AXIS_MAX) = minmax_y.max_val;
+            _bounding_box(block_id, Z_AXIS, AXIS_MIN) = minmax_z.min_val;
+            _bounding_box(block_id, Z_AXIS, AXIS_MAX) = minmax_z.max_val;
           });
         });
-
-    _bounding_box.modify_device();
+    space.fence();
   }
 
   void clusterParticles() {
     Kokkos::parallel_for(
         "generate indices", Kokkos::RangePolicy(0, _soa.size()), KOKKOS_CLASS_LAMBDA(const int64_t &i) {
           std::array<int64_t, 3> index = {0, 0, 0};
-
-          // auto cell_size = optimize_cell_size(_cutoff);
-
           index[0] = normalize(_soa.template get<Particle_T::AttributeNames::posX>().d_view(i), _cellSize[0]);
           index[1] = normalize(_soa.template get<Particle_T::AttributeNames::posY>().d_view(i), _cellSize[1]);
           index[2] = normalize(_soa.template get<Particle_T::AttributeNames::posZ>().d_view(i), _cellSize[2]);
 
           auto index_code = hilbert_index_3d(index[0], index[1], index[2]);
-          _spatial_index.d_view(i) = index_code;
+          _spatial_index(i) = index_code;
         });
+    space.fence();
 
     auto policy = Kokkos::RangePolicy(0, _spatial_index.extent(0));
     Kokkos::parallel_for(
-        "initialize permutation index", policy, KOKKOS_CLASS_LAMBDA(const int64_t i) { _permutations.d_view(i) = i; });
+        "initialize permutation index", policy, KOKKOS_CLASS_LAMBDA(const int64_t i) { _permutations(i) = i; });
+    space.fence();
 
-    Kokkos::Experimental::sort_by_key(space, _spatial_index.d_view, _permutations.d_view);
-
-    _soa.sort(space, _permutations.d_view);
-
-    _rebuild_position.modify_device();
-    _spatial_index.modify_device();
-    _permutations.modify_device();
+    Kokkos::Experimental::sort_by_key(space, _spatial_index, _permutations);
+    space.fence();
+    _soa.sort(space, _permutations);
+    space.fence();
   }
 
   Functor_T _functor;
-  double _cutoff;
   std::array<double, 3> _cellSize;
-  double _skinSize;
+  double _interactionLength;
 
   utils::kokkos::DeviceSpace space;
 
   template <typename scalar>
-  using view_type = Kokkos::DualView<scalar, Kokkos::LayoutLeft, utils::kokkos::DeviceSpace>;
+  using view_type = Kokkos::View<scalar, Kokkos::LayoutLeft, utils::kokkos::DeviceSpace>;
 
   utils::kokkos::KokkosSoA<typename Particle_T::SoAArraysType> _soa;
 
+  // BLOCK sized
   view_type<double *[3][2]> _bounding_box;
   // BLOCK sized
   view_type<uint64_t *> _block_pairs_count;
@@ -382,16 +397,10 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
   // PARTICLE sized
   view_type<uint64_t *> _spatial_index;
   // PARTICLE sized
-  view_type<double *[3]> _rebuild_position;
-  // PARTICLE sized
-  view_type<double *> _displacement;
-  // PARTICLE sized
   view_type<int64_t *> _permutations;
-  // Spans from 0.0, to value in each dimension
-  view_type<double[3]> _boundaries;
 
   uint64_t _num_blocks;
-  uint64_t _num_pairs;
+  uint64_t _num_pairs = 0;
 };
 
 }  // namespace autopas::containers::kokkos::traversal

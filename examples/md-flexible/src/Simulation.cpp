@@ -539,7 +539,9 @@ bool Simulation::calculateTriwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  _autoPasContainer->forEach([&](auto &particle) { particle.addF(globalForce); }, autopas::IteratorBehavior::owned);
+  _autoPasContainer->forEach([&](auto &particle) {
+    particle.addF(globalForce);
+  }, autopas::IteratorBehavior::owned);
 }
 
 void Simulation::logSimulationState() {

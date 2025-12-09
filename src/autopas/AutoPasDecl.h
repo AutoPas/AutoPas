@@ -262,7 +262,6 @@ class AutoPas {
   template <class Functor>
   bool computeInteractions(Functor *f);
 
-
   /**
    * Execute code on all particles as defined by a lambda function.
    * @tparam Lambda (Particle_T &p) -> void

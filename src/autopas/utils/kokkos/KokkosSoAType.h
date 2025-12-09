@@ -13,7 +13,7 @@ struct KokkosSoAType {};
 
 template <typename Particle_T, typename... soatypes>
 struct KokkosSoAType<autopas::utils::SoAType<Particle_T *, soatypes...>> {
-  using Type = std::tuple<std::vector<Particle_T *>, Kokkos::DualView<soatypes *, Kokkos::LayoutLeft, DeviceSpace>...>;
+  using Type = std::tuple<Kokkos::DualView<uintptr_t * , Kokkos::LayoutLeft, DeviceSpace>, Kokkos::DualView<soatypes *, Kokkos::LayoutLeft, DeviceSpace>...>;
 };
 
 }  // namespace autopas::utils::kokkos

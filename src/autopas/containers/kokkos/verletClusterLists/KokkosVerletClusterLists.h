@@ -85,7 +85,15 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + this->getVerletSkin(); }
 
   [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override { return {}; }
-  [[nodiscard]] autopas::TraversalSelectorInfo getTraversalSelectorInfo() const override { return {}; }
+  [[nodiscard]] autopas::TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    std::array<double, 3> cellSize = {0, 0, 0};
+    for (int axis = 0; axis < 3; ++axis) {
+      cellSize[axis] = (_boxMax[axis] - _boxMin[axis]) / (1 << 21);
+    }
+    return TraversalSelectorInfo(
+        // dummy value
+        {1, 1, 1}, this->_cutoff + this->_verletSkin, cellSize, 0);
+  }
 
   bool deleteParticle(Particle_T &particle) override {
     std::remove_if(particles.begin(), particles.end(), [&](auto &p) { return particle == p; });
@@ -94,23 +102,80 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {}
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    for (auto &particle : particles) {
+      if (behavior.contains(particle)) {
+        if (utils::inBox(particle.getR(), lowerCorner, higherCorner)) {
+          forEachLambda(particle);
+        }
+      }
+    }
+
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
+  }
 
   template <typename Lambda>
   void forEach(Lambda lambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-               typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) {};
+               typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) {
+    for (auto &particle : particles) {
+      if (behavior.contains(particle)) {
+        lambda(particle);
+      }
+    }
+    if (additionalVectors != nullptr) {
+      for (auto &vector : *additionalVectors) {
+        for (auto &particle : *vector) {
+          if (behavior.contains(particle)) {
+            lambda(particle);
+          }
+        }
+      }
+    }
+  };
 
   template <typename Lambda>
   void forEach(
       Lambda lambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {};
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+    for (const auto &particle : particles) {
+      if (behavior.contains(particle)) {
+        lambda(particle);
+      }
+    }
+    if (additionalVectors != nullptr) {
+      for (const auto &vector : *additionalVectors) {
+        for (auto &particle : *vector) {
+          if (behavior.contains(particle)) {
+            lambda(particle);
+          }
+        }
+      }
+    }
+  };
 
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior,
-              typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) {}
+              typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) {
+    for (auto &particle : particles) {
+      if (behavior.contains(particle)) {
+        reduceLambda(particle, result);
+      }
+    }
+
+    if (additionalVectors != nullptr) {
+      for (const auto &vector : *additionalVectors) {
+        for (auto &particle : *vector) {
+          if (behavior.contains(particle)) {
+            reduceLambda(particle, result);
+          }
+        }
+      }
+    }
+  }
 
  private:
-
   AutoPasLock _particlesLock;
   std::vector<Particle_T> particles;
 

@@ -265,9 +265,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
                                           _receivedParticlesBuffer, leftNeighbor, rightNeighbor);
       // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
-      AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \
-                                       std::remove_reference_t<decltype(emigrants)> :                     \
-                                           omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+      AUTOPAS_OPENMP(declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(
+          omp_out.end(), omp_in.begin(), omp_in.end())))
       // make sure each buffer gets filled equally while not inducing scheduling overhead
       AUTOPAS_OPENMP(parallel for reduction(vecMergeParticle : emigrants) \
                                   schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / autopas::autopas_get_max_threads())))
@@ -312,10 +311,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     auto reflect = [&](bool isUpper) {
       const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
 
-      for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
-           p.isValid(); ++p) {
+      auto lambda = [&](auto &p) {
         // Check that particle is within 6th root of 2 * sigma
-        const auto position = p->getR();
+        const auto position = p.getR();
         const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
 
         // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
@@ -361,7 +359,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 #if MD_FLEXIBLE_MODE == MULTISITE
                                      particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
-                                     particlePropertiesLib.getSigma(p->getTypeId());
+                                     particlePropertiesLib.getSigma(p.getTypeId());
 #endif
 
         if (reflectMoleculeFlag) {
@@ -409,7 +407,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             }
           }
 #else
-          const auto siteType = p->getTypeId();
+          const auto siteType = p.getTypeId();
           const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
             const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
             auto returnedPosition = position;
@@ -419,7 +417,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
           const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF(force);
+          p.addF(force);
 #endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -433,7 +431,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           }
 #endif
         }
-      }
+      };
+
+      autoPasContainer.forEachInRegion(lambda, reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
     };
 
     // apply if we are at a global boundary on lower end of the dimension
@@ -495,17 +495,18 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
   haloParticlesBuffer.reserve(
       static_cast<size_t>(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1));
   // Collect the halo particles for the neighbor
-  for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
-       particleIter.isValid(); ++particleIter) {
-    haloParticlesBuffer.push_back(*particleIter);
+  autoPasContainer.forEachInRegion(
+      [&](auto &p) {
+        haloParticlesBuffer.push_back(p);
 
-    // if the particle is outside the global box move it to the other side (periodic boundary)
-    if (atGlobalBoundary) {
-      auto position = particleIter->getR();
-      position[direction] = position[direction] + wrapAroundDistance;
-      haloParticlesBuffer.back().setR(position);
-    }
-  }
+        // if the particle is outside the global box move it to the other side (periodic boundary)
+        if (atGlobalBoundary) {
+          auto position = p.getR();
+          position[direction] = position[direction] + wrapAroundDistance;
+          haloParticlesBuffer.back().setR(position);
+        }
+      },
+      boxMin, boxMax, autopas::IteratorBehavior::owned);
 }
 
 void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(

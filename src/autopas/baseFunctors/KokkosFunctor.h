@@ -33,6 +33,14 @@ class KokkosFunctor : public PairwiseFunctor<Particle_T, CRTP_T> {
                                                 size_t b2_end) const {
     utils::ExceptionHandler::exception("{}::KokkosSoAFunctor: not implemented", this->getName());
   }
+
+  KOKKOS_FUNCTION void load_particle(auto& soa, Particle_T &particle, size_t index) const {
+    utils::ExceptionHandler::exception("{}::KokkosSoAFunctor: not implemented", this->getName());
+  }
+
+  KOKKOS_FUNCTION void store_particle(auto &soa, size_t index) const {
+    utils::ExceptionHandler::exception("{}::KokkosSoAFunctor: not implemented", this->getName());
+  }
 };
 
 }  // namespace autopas

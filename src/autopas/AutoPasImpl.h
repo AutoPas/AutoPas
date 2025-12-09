@@ -307,28 +307,28 @@ bool AutoPas<Particle_T>::deleteParticle(Particle_T &particle) {
   return refStillValid;
 }
 
-template <class Particle_T>
-typename AutoPas<Particle_T>::IteratorT AutoPas<Particle_T>::begin(IteratorBehavior behavior) {
-  return _logicHandler->begin(behavior);
-}
-
-template <class Particle_T>
-typename AutoPas<Particle_T>::ConstIteratorT AutoPas<Particle_T>::begin(IteratorBehavior behavior) const {
-  return std::as_const(*_logicHandler).begin(behavior);
-}
-
-template <class Particle_T>
-typename AutoPas<Particle_T>::RegionIteratorT AutoPas<Particle_T>::getRegionIterator(
-    const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-  return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
-}
-
-template <class Particle_T>
-typename AutoPas<Particle_T>::RegionConstIteratorT AutoPas<Particle_T>::getRegionIterator(
-    const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-    IteratorBehavior behavior) const {
-  return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
-}
+// template <class Particle_T>
+// typename AutoPas<Particle_T>::IteratorT AutoPas<Particle_T>::begin(IteratorBehavior behavior) {
+//   return _logicHandler->begin(behavior);
+// }
+//
+// template <class Particle_T>
+// typename AutoPas<Particle_T>::ConstIteratorT AutoPas<Particle_T>::begin(IteratorBehavior behavior) const {
+//   return std::as_const(*_logicHandler).begin(behavior);
+// }
+//
+// template <class Particle_T>
+// typename AutoPas<Particle_T>::RegionIteratorT AutoPas<Particle_T>::getRegionIterator(
+//     const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+//   return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
+// }
+//
+// template <class Particle_T>
+// typename AutoPas<Particle_T>::RegionConstIteratorT AutoPas<Particle_T>::getRegionIterator(
+//     const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+//     IteratorBehavior behavior) const {
+//   return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
+// }
 
 template <class Particle_T>
 unsigned long AutoPas<Particle_T>::getContainerType() const {

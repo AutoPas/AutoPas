@@ -130,7 +130,8 @@ class IteratorBehavior : public Option<IteratorBehavior> {
    */
   template <typename ParticleType>
   bool contains(ParticleType &particle) {
-    switch (this->_value) {
+    // Mask out other irrelevant flags
+    switch (this->_value & ownedOrHaloOrDummy) {
       case options::IteratorBehavior::ownedOrHaloOrDummy:
         return true;
       case options::IteratorBehavior::ownedOrHalo:

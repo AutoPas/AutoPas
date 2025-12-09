@@ -9,36 +9,53 @@ namespace autopas::utils::kokkos {
 template <class SoAArraysType>
 class KokkosSoA {
  public:
-  KokkosSoA() = default;
+  KokkosSoA() {
+    _soaStorage.apply([](auto &view) { view = typename std::decay_t<decltype(view)>("Label", 0); });
+  };
   KokkosSoA(const KokkosSoA &soa) = default;
 
   void resize(size_t newSize) {
-    _soaStorage.apply([newSize](auto view) { Kokkos::resize(view, newSize); });
+    Kokkos::fence();
+    _soaStorage.apply([newSize](auto &view) { view.resize(newSize); });
+    syncAll<DeviceSpace>();
+    Kokkos::fence();
+    syncAll<HostSpace>();
+    Kokkos::fence();
   }
-  [[nodiscard]] constexpr size_t size() const { return _soaStorage.template get<0>().size(); }
+  [[nodiscard]] constexpr size_t size() const { return _soaStorage.template get<0>().extent(0); }
 
   void clear() {
-    _soaStorage.apply([](auto &view) { Kokkos::resize(view, 0); });
+    _soaStorage.apply([](auto &view) { view.resize(0); });
   }
   template <size_t AttributeName, typename Space>
   inline constexpr void markModified() {
     auto &view = _soaStorage.template get<AttributeName>();
     view.template modify<Space>();
+    Kokkos::fence();
   }
   template <size_t AttributeName, typename Space>
   inline constexpr void sync() {
     auto &view = _soaStorage.template get<AttributeName>();
     view.template sync<Space>();
+    Kokkos::fence();
   }
 
   template <typename Space>
   inline constexpr void syncAll() {
-    _soaStorage.apply([](auto &view) { view.template sync<Space>(); });
+    _soaStorage.apply([](auto &view) {
+      Kokkos::fence();
+      view.template sync<Space>();
+      Kokkos::fence();
+    });
   }
 
   template <typename Space>
   inline constexpr void markModifiedAll() {
-    _soaStorage.apply([](auto &view) { view.template modify<Space>(); });
+    _soaStorage.apply([](auto &view) {
+      Kokkos::fence();
+      view.template modify<Space>();
+      Kokkos::fence();
+    });
   }
 
   template <size_t AttributeName>
@@ -48,7 +65,7 @@ class KokkosSoA {
 
   template <typename Space, typename PermView>
   inline void sort(Space space, PermView permutation) {
-    _soaStorage.applyExceptFirst([&](auto &view) {
+    _soaStorage.apply([&](auto &view) {
       apply_permutation(space, permutation, view.d_view);
       view.template modify<Space>();
     });
@@ -69,7 +86,7 @@ class KokkosSoA {
           View view1 = view;
           auto new_index = permutations(index);
           if constexpr (View::rank == 1) {
-            // Inefficient memory acces, but unavoidable at this point
+            // uncoalesced memory access, but unavoidable at this point
             temp1(index) = view1(new_index);
           } else if constexpr (View::rank == 2) {
             temp1(index, 0) = view1(new_index, 0);

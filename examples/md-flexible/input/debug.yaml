@@ -1,0 +1,31 @@
+container: [ KokkosVerletClusterLists ]
+traversal: [ kk_vcl ]
+functor: Lennard-Jones Kokkos
+data-layout: [ SoA ]
+Sites:
+  0:
+    epsilon: 1.
+    sigma: 1.
+    mass: 1.
+
+boundary-type: [ reflective,reflective,reflective ]
+box-min: [ 0, 0, 0 ]
+box-max: [ 21, 21, 21 ]
+
+Objects:
+  CubeGrid:
+    0:
+      particle-type-id: 0
+      particles-per-dimension: [ 4,4,4 ]
+      particle-spacing: 1.1
+      velocity: [ 0.,0.,0. ]
+      bottomLeftCorner: [ 5.,5.,5. ]
+
+deltaT: 0.0005
+iterations: 1000
+
+vtk-filename: debug
+vtk-write-frequency: 1
+vtk-output-folder: vtkOutputFolder
+no-end-config: true
+log-level: info

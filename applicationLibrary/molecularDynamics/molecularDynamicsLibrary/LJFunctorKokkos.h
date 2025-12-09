@@ -59,10 +59,8 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
           Kokkos::TeamThreadRange(team, b1_start, b1_end),
           [&](const int64_t j, autopas::utils::kokkos::ArrayUtils::Vector3 &local_sum) {
             if (i != j) {
-              const auto force = std::array<double, 3>{0.0, 0.0, 0.0};
-
-              KokkosLJ(block(i - b1_start, 0), block(i - b1_start, 1), block(i - b1_start, 2), block(j - b1_start, 0),
-                       block(j - b1_start, 1), block(j - b1_start, 2));
+              auto force = KokkosLJ(block(i - b1_start, 0), block(i - b1_start, 1), block(i - b1_start, 2),
+                                    block(j - b1_start, 0), block(j - b1_start, 1), block(j - b1_start, 2));
 
               local_sum[0] += force[0];
               local_sum[1] += force[1];
@@ -70,6 +68,7 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
             }
           },
           Kokkos::Sum<autopas::utils::kokkos::ArrayUtils::Vector3>(accumulated_force));
+
       Kokkos::single(Kokkos::PerTeam(team), [&]() {
         Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceX>().d_view(i), accumulated_force[0]);
         Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceY>().d_view(i), accumulated_force[1]);
@@ -96,7 +95,6 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
           const double Fy = force[1];
           const double Fz = force[2];
 
-          // TODO accumulate locally then update global
           Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceX>().d_view(j), -Fx);
           Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceY>().d_view(j), -Fy);
           Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceZ>().d_view(j), -Fz);
@@ -113,6 +111,38 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
       Kokkos::atomic_add(&_soa.template get<Particle_T::AttributeNames::forceZ>().d_view(i), accumulated_force[2]);
     });
   };
+
+  void load_particle(auto &soa, Particle_T &particle, size_t index) const {
+    Particle_T *p = &particle;
+    soa.template get<Particle_T::AttributeNames::ptr>().h_view(index) = reinterpret_cast<uintptr_t>(p);
+
+
+    // Load forces (global force is applied before and needs to be kept)
+    soa.template get<Particle_T::AttributeNames::posX>().h_view(index) =
+        particle.template get<Particle_T::AttributeNames::forceX>();
+    soa.template get<Particle_T::AttributeNames::posY>().h_view(index) =
+        particle.template get<Particle_T::AttributeNames::forceY>();
+    soa.template get<Particle_T::AttributeNames::posZ>().h_view(index) =
+        particle.template get<Particle_T::AttributeNames::forceZ>();
+
+    soa.template get<Particle_T::AttributeNames::posX>().h_view(index) =
+        particle.template get<Particle_T::AttributeNames::posX>();
+    soa.template get<Particle_T::AttributeNames::posY>().h_view(index) =
+        particle.template get<Particle_T::AttributeNames::posY>();
+    soa.template get<Particle_T::AttributeNames::posZ>().h_view(index) =
+        particle.template get<Particle_T::AttributeNames::posZ>();
+  }
+
+  void store_particle(auto &soa, size_t index) const {
+    auto particle = reinterpret_cast<Particle_T *>(soa.template get<Particle_T::AttributeNames::ptr>().h_view(index));
+
+    particle->template set<Particle_T::AttributeNames::forceX>(
+        soa.template get<Particle_T::AttributeNames::forceX>().h_view(index));
+    particle->template set<Particle_T::AttributeNames::forceY>(
+        soa.template get<Particle_T::AttributeNames::forceY>().h_view(index));
+    particle->template set<Particle_T::AttributeNames::forceZ>(
+        soa.template get<Particle_T::AttributeNames::forceZ>().h_view(index));
+  }
 
  private:
   const double _cutoff_sq, _epsilon, _sigma;
