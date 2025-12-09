@@ -8,9 +8,7 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
@@ -44,13 +42,13 @@ class LCC08CellHandler {
   explicit LCC08CellHandler(Functor_T *functor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
-      : _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
+      : _overlap(overlap),
+        _dataLayout(dataLayout),
+        _useNewton3(useNewton3),
+        _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _interactionLength(interactionLength),
-        _cellLength(cellLength),
-        _overlap(overlap),
-        _dataLayout(dataLayout),
-        _useNewton3(useNewton3) {
+        _cellLength(cellLength) {
     if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
       _cellOffsets =
           LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::sorting>(
@@ -90,7 +88,9 @@ class LCC08CellHandler {
   void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  protected:
-  // CellOffset needs to store interaction pairs or triplets depending on the Functor type.
+  /**
+   * CellOffset needs to store interaction pairs or triplets depending on the Functor type.
+   */
   using CellOffsetType =
       std::conditional_t<decltype(utils::isPairwiseFunctor<Functor_T>())::value,
                          LCC08CellHandlerUtility::OffsetPairSorting, LCC08CellHandlerUtility::OffsetTripletSorting>;
@@ -182,13 +182,11 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellTriwise(
     ParticleCell_T &cell2 = cells[index2];
     ParticleCell_T &cell3 = cells[index3];
 
-    if (index1 == index2 && index1 == index3 && index2 == index3) {
+    if (index1 == index2 and index1 == index3 and index2 == index3) {
       this->_cellFunctor.processCell(cell1);
-    } else if (index1 == index2 && index1 != index3) {
+    } else if (index1 == index2 and index1 != index3) {
       this->_cellFunctor.processCellPair(cell1, cell3);
-    } else if (index1 != index2 && index1 == index3) {
-      this->_cellFunctor.processCellPair(cell1, cell2);
-    } else if (index1 != index2 && index2 == index3) {
+    } else if (index1 != index2 and (index1 == index3 or index2 == index3)) {
       this->_cellFunctor.processCellPair(cell1, cell2);
     } else {
       this->_cellFunctor.processCellTriple(cell1, cell2, cell3);
