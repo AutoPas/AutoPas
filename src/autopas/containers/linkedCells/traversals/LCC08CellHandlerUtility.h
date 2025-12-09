@@ -12,12 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/Math.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
-
 namespace autopas::LCC08CellHandlerUtility {
 
 /**
@@ -74,8 +68,8 @@ using OffsetTripletVector = std::vector<OffsetTriplet>;
 /**
  * Compile Time Modes for the function autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
- * @note In case of a new mode, this also requires the explciit instantation of the new template
- * in LCC08CellHandlerUtility.cpp and a modificaqtion to {@link OffsetPairType}
+ * @note In case of a new mode, this also requires the explicit instantiation of the new template
+ * in LCC08CellHandlerUtility.cpp and a modification to {@link OffsetPairType @endlink}
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
@@ -87,8 +81,8 @@ enum class C08OffsetMode {
 };
 
 /**
- * Template Magic Parameter Alias, which links the types {@link OffsetPairSorting}, {@link OffsetPair} and {@link
- * OffsetPairVector}
+ * Template Magic Parameter Alias, which links the types @ref OffsetPairSorting, @ref OffsetPair and @ref
+ * OffsetPairVector
  */
 template <C08OffsetMode Mode>
 using OffsetPairType = std::vector<
@@ -96,8 +90,8 @@ using OffsetPairType = std::vector<
                        std::conditional_t<Mode == C08OffsetMode::c04NoSorting, OffsetPairVector, OffsetPair>>>;
 
 /**
- * Template Magic Parameter Alias, which links the types {@link OffsetTripletSorting}, {@link OffsetTriplet} and {@link
- * OffsetTripletVector}
+ * Template Magic Parameter Alias, which links the types @ref OffsetTripletSorting, @ref OffsetTriplet and @ref
+ * OffsetTripletVector
  */
 template <C08OffsetMode Mode>
 using OffsetTripletType = std::vector<
@@ -121,7 +115,7 @@ enum class C08CellDirection : int {
 };
 
 /**
- * Array containing all four enum values of {@link C08CellDirection}.
+ * Array containing all four enum values of @ref C08CellDirection.
  */
 constexpr inline std::array<C08CellDirection, 4> ALL_DIRECTIONS{
     {C08CellDirection::frontLeft, C08CellDirection::backLeft, C08CellDirection::frontRight,
@@ -132,14 +126,14 @@ constexpr inline std::array<C08CellDirection, 4> ALL_DIRECTIONS{
  * @todo c++20: make this an std::string
  */
 constexpr inline char ENUM_EXTENSION_EXCEPTION[]{
-    "Enum C08CellDirection was extended, but its assciated switch-case statements was not!"};
+    "Enum C08CellDirection was extended, but its associated switch-case statements was not!"};
 
 /**
  * Helper function for autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08.
  * This function basically translates a direction, like backLeft to the corresponding vector pointing
- * towards this cell relativly starting from the base cell. We treat frontLeft as base cell
+ * towards this cell relatively starting from the base cell. We treat frontLeft as base cell
  * So, e.g. frontLeft --> (0, 0) since we are good
- * Alternativley, e.g. backLeft --> (0, 1) pointing in positive y direction
+ * Alternatively, e.g. backLeft --> (0, 1) pointing in positive y direction
  *
  * The values might need to be scaled given the overlap (so e.g. pointing over multiple cells into a direction)
  * @param direction one of the four directions
@@ -152,7 +146,7 @@ constexpr std::pair<int, int> toMaskXY(const C08CellDirection &direction);
  * overlap needs to be included into the pairwise cell offsets. This function basically masks certain cell combinations,
  * which do not need to be included given their relative position/ or given that another pair already includes
  * the interaction.
- * @param direction the direction from base cell to inetracting cell
+ * @param direction the direction from base cell to interacting cell
  * @param overlap the overlap (calculated from interactionLength divided by cellLength)
  * @param x the x offset of the base cell
  * @param y the y offset of the base cell
@@ -164,7 +158,7 @@ constexpr bool includeCellPair(const C08CellDirection &direction, const std::arr
 
 /**
  * Computes the sorting direction between two cells from center of cell1 to center of cell2 using the 3D indices
- * of the cells while incoperating the cellLength (required in case of less regular cuboid cells)
+ * of the cells while incorporating the cellLength (required in case of less regular cuboid cells)
  * @param offset1Vector the cartesianOffset of cell1
  * @param offset2Vector the cartesianOffset of cell2
  * @param cellLength the cell length in all three dimensions
@@ -177,15 +171,15 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
 }  // namespace internal
 
 /**
- * Computes the cell pair offsets for the C08 base step and the normalized vector between pair of cell-centers,
+ * Computes the cell pair offsets for the C08 base step and the normalized vector between the pair of cell-centers,
  * which is later used for early stopping the evaluation of the pairwise cell interactions due to being out-of-reach.
- * @tparam Mode Determines the concret return type (see {@link C08OffsetMode}
+ * @tparam Mode Determines the concrete return type (see @ref C08OffsetMode)
  * @param cellsPerDimension the number of cells per dimension
  * @param cellLength the length of a cell in CellBlock3D.
  * @param interactionLength the interaction length consisting of cutoff + skin
  * @return depending on template parameters a
  *  - vector containing cell offset pairs
- *  - vector containg cell offsets + sorting/ vector between cell centers triplets
+ *  - vector containing cell offsets + sorting/ vector between cell centers triplets
  *  - vector of vector containing cell offsets (pre-sorted after X dimension)
  */
 template <C08OffsetMode Mode>
@@ -195,7 +189,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
 /**
  * Computes the cell triplet offsets for the C08 base step.
  * If the Mode is `sorting`, a normalized vector connecting the base cell and the second cell is additionally returned.
- * @tparam Mode Determines the concrete return type (see {@link C08OffsetMode}
+ * @tparam Mode Determines the concrete return type (see @ref C08OffsetMode)
  * @param cellsPerDimension the number of cells per dimension
  * @param cellLength the length of a cell in CellBlock3D.
  * @param interactionLength the interaction length consisting of cutoff + skin

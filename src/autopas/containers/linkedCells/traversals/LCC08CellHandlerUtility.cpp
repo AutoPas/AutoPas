@@ -6,6 +6,14 @@
 
 #include "LCC08CellHandlerUtility.h"
 
+#include <algorithm>
+
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Math.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+
 namespace autopas::LCC08CellHandlerUtility {
 
 namespace internal {
@@ -45,7 +53,7 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
   using namespace autopas::utils::ArrayMath::literals;
   // In case the sorting direction is 0, 0, 0 ==> fix to 1, 1, 1
   std::array<double, 3> sortDir = offset1Vector - offset2Vector;
-  if (std::all_of(sortDir.begin(), sortDir.end(), [](const auto &val) { return val == 0; })) {
+  if (std::ranges::all_of(sortDir, [](const auto &val) { return val == 0; })) {
     sortDir = {1., 1., 1.};
   }
 
@@ -57,7 +65,8 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
 
 template <C08OffsetMode Mode>
 OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
-                                                   const std::array<double, 3> &cellLength, double interactionLength) {
+                                                   const std::array<double, 3> &cellLength,
+                                                   const double interactionLength) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace internal;
   using utils::ArrayMath::ceilAndCast;
@@ -72,7 +81,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   const std::array<int, 3> &cellsPerDimIntegral = static_cast_copy_array<int>(cellsPerDimension);
 
   // Small constants used multiple times in the code below
-  // Note, Legacy: With ov1 --> No support for assymetric overlaps!
+  // Note, Legacy: With ov1 --> No support for asymmetric overlaps!
   const int ov1 = overlap[0] + 1;
   const double interactionLengthSquare{interactionLength * interactionLength};
 
@@ -81,11 +90,11 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
     resultOffsetsC08.resize(ov1);
   }
 
-  // Iteration to build the cell pairs required for the C08 base step, x, y, z reprent the spatial dimension
+  // Iteration to build the cell pairs required for the C08 base step, x, y, z represent the spatial dimension
   for (int x = 0; x <= overlap[0]; ++x) {
     for (int y = 0; y <= overlap[1]; ++y) {
       // Calculate the first partaking cell's offset relative to base cell. The first offset never has a z component
-      // These vertical interactions (along the z-axis) are all incoperated by the second cell's index
+      // These vertical interactions (along the z-axis) are all incorporated by the second cell's index
       const int offset1 = threeToOneD(x, y, 0, cellsPerDimIntegral);
       for (int z = 0; z <= overlap[2]; ++z) {
         // The z component is always calculated in the same way and does not depend on the direction
@@ -115,8 +124,8 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
             if (utils::ArrayMath::dot(distVec, distVec) <= interactionLengthSquare) {
               // Calculate the sorting direction if sorting is enabled
               if constexpr (Mode == C08OffsetMode::sorting) {
-                // These are respectivley the 3D coordinates of the offsets of cell1 and cell2, as double elements
-                // The cellLength is utuilized to modfiy the direction of the sortingVector in case the cells
+                // These are respectively the 3D coordinates of the offsets of cell1 and cell2, as double elements
+                // The cellLength is utilized to modify the direction of the sortingVector in case the cells
                 // are less squarish, but more lengthy
                 const auto sortDir = computeSortingDirection(
                     {
@@ -133,7 +142,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
                 // Append the cell pairs & their sorting direction
                 resultOffsetsC08.emplace_back(offset2, offset1, sortDir);
               } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
-                // The c04NoSorting requires a vector of vector of pairs where the first vector is resolved in x-axis
+                // The c04NoSorting requires a vector of vectors of pairs where the first vector is resolved in x-axis
                 resultOffsetsC08[x].emplace_back(offset2, offset1);
               } else {
                 // Like c08CellPairsSorting, but without sorting
@@ -151,29 +160,26 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
 template <C08OffsetMode Mode>
 OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                                      const std::array<double, 3> &cellLength,
-                                                     double interactionLength) {
+                                                     const double interactionLength) {
   using namespace utils::ArrayMath::literals;
   using namespace internal;
   using utils::ArrayMath::ceilAndCast;
 
+  const double interactionLengthSquared = interactionLength * interactionLength;
+
   // Output of the function: Vector of triwise cell indices & projection axis
   OffsetTripletType<Mode> resultOffsetsC08{};
 
-  // Helper function to get minimal distance between two cells
-  auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    return std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * cellLength[0],
-                                 std::max(0l, (std::abs(y1 - y2) - 1l)) * cellLength[1],
-                                 std::max(0l, (std::abs(z1 - z2) - 1l)) * cellLength[2]};
-  };
-
-  auto is_valid_distance = [&](long x1, long y1, long z1, long x2, long y2, long z2, auto interactionlengthsq) {
-    auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
-    return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
+  // Helper function to determine if two cells are more than interactionLength apart
+  auto cellDistIsGreaterThanCutoff = [&](const long x1, const long y1, const long z1, const long x2, const long y2,
+                                         const long z2) {
+    const std::array cellDistance = {std::max(0.0, static_cast<double>(std::abs(x1 - x2) - 1)) * cellLength[0],
+                                     std::max(0.0, static_cast<double>(std::abs(y1 - y2) - 1)) * cellLength[1],
+                                     std::max(0.0, static_cast<double>(std::abs(z1 - z2) - 1)) * cellLength[2]};
+    return utils::ArrayMath::dot(cellDistance, cellDistance) > interactionLengthSquared;
   };
 
   const std::array<int, 3> overlap{ceilAndCast(interactionLength / cellLength)};
-
-  const auto interactionLengthSquare(interactionLength * interactionLength);
 
   if constexpr (Mode == C08OffsetMode::sorting) {
     resultOffsetsC08.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
@@ -193,23 +199,17 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
           for (long y2 = 0; y2 <= static_cast<long>(overlap[1]); ++y2) {
             for (long z2 = 0; z2 <= static_cast<long>(overlap[2]); ++z2) {
               // check distance between cell 1 and cell 2
-              const auto dist12 = cellDistance(x1, y1, z1, x2, y2, z2);
-              const double dist12Square = utils::ArrayMath::dot(dist12, dist12);
-              if (dist12Square >= interactionLengthSquare) continue;
+              if (cellDistIsGreaterThanCutoff(x1, y1, z1, x2, y2, z2)) continue;
 
               // offsets for the third cell
               for (long x3 = 0; x3 <= static_cast<long>(overlap[0]); ++x3) {
                 for (long y3 = 0; y3 <= static_cast<long>(overlap[1]); ++y3) {
                   for (long z3 = 0; z3 <= static_cast<long>(overlap[2]); ++z3) {
                     // check distance between cell 1 and cell 3
-                    const auto dist13 = cellDistance(x1, y1, z1, x3, y3, z3);
-                    const double dist13Square = utils::ArrayMath::dot(dist13, dist13);
-                    if (dist13Square >= interactionLengthSquare) continue;
+                    if (cellDistIsGreaterThanCutoff(x1, y1, z1, x3, y3, z3)) continue;
 
                     // check distance between cell 2 and cell 3
-                    const auto dist23 = cellDistance(x2, y2, z2, x3, y3, z3);
-                    const double dist23Squared = utils::ArrayMath::dot(dist23, dist23);
-                    if (dist23Squared >= interactionLengthSquare) continue;
+                    if (cellDistIsGreaterThanCutoff(x2, y2, z2, x3, y3, z3)) continue;
                     const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
                         x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
 
@@ -224,8 +224,9 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
                     if ((x1 == 0 or x2 == 0 or x3 == 0) and (y1 == 0 or y2 == 0 or y3 == 0) and
                         (z1 == 0 or z2 == 0 or z3 == 0)) {
                       if constexpr (Mode == C08OffsetMode::sorting) {
-                        const std::array<double, 3> sortDirection = {
-                            (x1 + x2) * cellLength[0], (y1 + y2) * cellLength[1], (z1 + z2) * cellLength[2]};
+                        const std::array sortDirection = {static_cast<double>(x1 + x2) * cellLength[0],
+                                                          static_cast<double>(y1 + y2) * cellLength[1],
+                                                          static_cast<double>(z1 + z2) * cellLength[2]};
                         resultOffsetsC08.emplace_back(offset1, offset2, offset3,
                                                       utils::ArrayMath::normalize(sortDirection));
                       } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
@@ -249,7 +250,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
 template <C08OffsetMode Mode>
 OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<unsigned long, 3> &cellsPerDimension,
                                                               const std::array<double, 3> &cellLength,
-                                                              double interactionLength) {
+                                                              const double interactionLength) {
   using namespace utils::ArrayMath::literals;
   using namespace internal;
   using utils::ArrayMath::ceilAndCast;
@@ -257,29 +258,33 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   // Output of the function: Vector of triwise cell indices & projection axis
   OffsetTripletType<Mode> resultOffsetsC08{};
 
+  const double interactionLengthSquared = interactionLength * interactionLength;
   const std::array<int, 3> overlap{ceilAndCast(interactionLength / cellLength)};
 
   long ovX = static_cast<long>(overlap[0]) + 1l;
   long ovY = static_cast<long>(overlap[1]) + 1l;
   long ovZ = static_cast<long>(overlap[2]) + 1l;
 
-  const auto interactionLengthSquare(interactionLength * interactionLength);
   const auto cellLength1 = cellLength[0];
   const auto cellLength2 = cellLength[1];
   const auto cellLength3 = cellLength[2];
   std::vector<std::vector<std::vector<long>>> cells(ovX, std::vector<std::vector<long>>(ovY, std::vector<long>(ovZ)));
-  auto is_valid_distance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    auto dist = std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * cellLength1,
-                                      std::max(0l, (std::abs(y1 - y2) - 1l)) * cellLength2,
-                                      std::max(0l, (std::abs(z1 - z2) - 1l)) * cellLength3};
-    return utils::ArrayMath::dot(dist, dist) <= interactionLengthSquare;
+
+  // Helper function to determine if two cells are more than interactionLength apart
+  auto cellDistIsGreaterThanCutoff = [&](const long x1, const long y1, const long z1, const long x2, const long y2,
+                                         const long z2) {
+    const std::array cellDistance = {std::max(0.0, static_cast<double>(std::abs(x1 - x2) - 1)) * cellLength[0],
+                                     std::max(0.0, static_cast<double>(std::abs(y1 - y2) - 1)) * cellLength[1],
+                                     std::max(0.0, static_cast<double>(std::abs(z1 - z2) - 1)) * cellLength[2]};
+    return utils::ArrayMath::dot(cellDistance, cellDistance) > interactionLengthSquared;
   };
 
   auto emplaceOffset = [&](long x1, long y1, long z1, long x2, long y2, long z2, long x3, long y3, long z3) {
-    if (is_valid_distance(x2, y2, z2, x3, y3, z3)) {
-      if (is_valid_distance(x1, y1, z1, x3, y3, z3)) {
-        std::array<double, 3> sortingDirection = {(x1 + x2) * cellLength1, (y1 + y2) * cellLength2,
-                                                  (z1 + z2) * cellLength3};
+    if (not cellDistIsGreaterThanCutoff(x2, y2, z2, x3, y3, z3)) {
+      if (not cellDistIsGreaterThanCutoff(x1, y1, z1, x3, y3, z3)) {
+        std::array sortingDirection = {static_cast<double>(x1 + x2) * cellLength1,
+                                       static_cast<double>(y1 + y2) * cellLength2,
+                                       static_cast<double>(z1 + z2) * cellLength3};
         resultOffsetsC08.emplace_back(cells[x1][y1][z1], cells[x2][y2][z2], cells[x3][y3][z3],
                                       utils::ArrayMath::normalize(sortingDirection));
       }
@@ -299,7 +304,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   for (long x = 0; x < ovX; ++x) {
     for (long y = 0; y < ovY; ++y) {
       for (long z = 0; z < ovZ; ++z) {
-        if (!is_valid_distance(0, 0, 0, x, y, z)) {
+        if (cellDistIsGreaterThanCutoff(0, 0, 0, x, y, z)) {
           continue;
         }
         for (long z2 = z + 1; z2 < ovZ; ++z2) {
@@ -325,7 +330,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
     for (long y = 1; y < ovY; ++y) {
       for (long x2 = 1; x2 < ovX; ++x2) {
         for (long z = 1; z < ovZ; ++z) {
-          if (!is_valid_distance(x, y, 0, x2, 0, z)) {
+          if (cellDistIsGreaterThanCutoff(x, y, 0, x2, 0, z)) {
             continue;
           }
           for (long y2 = 1; y2 < ovY; ++y2) {
@@ -349,7 +354,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   // edge x, edge y
   for (long x = 1; x < ovX; ++x) {
     for (long y = 1; y < ovY; ++y) {
-      if (!is_valid_distance(x, 0, 0, 0, y, 0)) {
+      if (cellDistIsGreaterThanCutoff(x, 0, 0, 0, y, 0)) {
         continue;
       }
       // 2 edges (same cell on one edge counted twice)
@@ -394,7 +399,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   // edge x, edge z
   for (long x = 1; x < ovX; ++x) {
     for (long z = 1; z < ovZ; ++z) {
-      if (!is_valid_distance(x, 0, 0, 0, 0, z)) {
+      if (cellDistIsGreaterThanCutoff(x, 0, 0, 0, 0, z)) {
         continue;
       }
       // 2 edges (same cell on one edge counted twice)
@@ -439,7 +444,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   // edge y, edge z
   for (long y = 1; y < ovY; ++y) {
     for (long z = 1; z < ovZ; ++z) {
-      if (!is_valid_distance(0, y, 0, 0, 0, z)) {
+      if (cellDistIsGreaterThanCutoff(0, y, 0, 0, 0, z)) {
         continue;
       }
       // 2 edges (same cell on one edge counted twice)
@@ -485,7 +490,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   for (long x = 1; x < ovX; ++x) {
     for (long y = 1; y < ovY; ++y) {
       for (long z = 1; z < ovZ; ++z) {
-        if (!is_valid_distance(x, 0, 0, 0, y, z)) {
+        if (cellDistIsGreaterThanCutoff(x, 0, 0, 0, y, z)) {
           continue;
         }
         // 1 edge, 1 plane (same cell on one edge counted twice)
@@ -528,7 +533,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   for (long y = 1; y < ovY; ++y) {
     for (long x = 1; x < ovX; ++x) {
       for (long z = 1; z < ovZ; ++z) {
-        if (!is_valid_distance(0, y, 0, x, 0, z)) {
+        if (cellDistIsGreaterThanCutoff(0, y, 0, x, 0, z)) {
           continue;
         }
         // 1 edge, 1 plane (same cell on one edge counted twice)
@@ -571,7 +576,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
   for (long z = 1; z < ovZ; ++z) {
     for (long x = 1; x < ovX; ++x) {
       for (long y = 1; y < ovY; ++y) {
-        if (!is_valid_distance(0, 0, z, x, y, 0)) {
+        if (cellDistIsGreaterThanCutoff(0, 0, z, x, y, 0)) {
           continue;
         }
         // 1 edge, 1 plane (same cell on one edge counted twice)
@@ -614,7 +619,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<u
 }
 
 /*
- * Explicit Template Instantation - Required since the definition of computePairwiseCellOffsetsC08(..)
+ * Explicit Template Instantiation - Required since the definition of computePairwiseCellOffsetsC08(..)
  * is not in header file. However, the Mode variable is finite, and all instances can be created before
  * being used by explicit template instantiation
  */
@@ -624,12 +629,12 @@ template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<C08OffsetM
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C08 cell paris without sorting */
+/** Template Specialization to return C08 cell pairs without sorting */
 template std::vector<OffsetPair> computePairwiseCellOffsetsC08<C08OffsetMode::noSorting>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C04 cell paris, i.e. C08 resolved on x axis */
+/** Template Specialization to return C04 cell pairs, i.e. C08 resolved on x-axis */
 template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<C08OffsetMode::c04NoSorting>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
@@ -638,12 +643,12 @@ template std::vector<OffsetTripletSorting> computeTriwiseCellOffsetsC08<C08Offse
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C08 cell paris without sorting */
+/** Template Specialization to return C08 cell triplets without sorting */
 template std::vector<OffsetTriplet> computeTriwiseCellOffsetsC08<C08OffsetMode::noSorting>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C04 cell paris, i.e. C08 resolved on x axis */
+/** Template Specialization to return C04 cell triplets, i.e. C08 resolved on x-axis */
 template std::vector<OffsetTripletVector> computeTriwiseCellOffsetsC08<C08OffsetMode::c04NoSorting>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
