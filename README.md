@@ -8,9 +8,23 @@ in the context of the [**TaLPas**](https://gauss-allianz.de/de/project/title/TaL
 The documentation can be found at our website:
  <https://autopas.github.io/doxygen_documentation/git-master/>
 
+
 Alternatively, you can build the documentation on your own:
 * Requirements: [Doxygen](http://www.doxygen.nl/)
 * `make doc_doxygen`
+
+
+## GPU build
+
+```bash 
+module load llvm
+module load cuda
+```
+
+cmake options
+```bash 
+-DAUTOPAS_ENABLE_KOKKOS:BOOL=ON -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS:BOOL=OFF -DAUTOPAS_USE_VECTORIZATION:BOOL=OFF -DMD_FLEXIBLE_FUNCTOR_SVE:BOOL=OFF -DMD_FLEXIBLE_FUNCTOR_AVX:BOOL=OFF -DAUTOPAS_ENABLE_DYNAMIC_CONTAINERS:BOOL=ON -DAUTOPAS_BUILD_TESTS:BOOL=OFF
+```
 
 ## Examples
 As AutoPas is only a library, it is not able to run simulations by itself.
