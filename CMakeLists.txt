@@ -82,9 +82,9 @@ if (AUTOPAS_FORMATTING_TARGETS)
 endif ()
 
 include(autopas_ccache)
+include(autopas_OpenMP)
 include(autopas_clang-sanitizers)
 include(autopas_clang-tidy)
-include(autopas_OpenMP)
 include(autopas_mpi)
 
 include(version.cmake)
