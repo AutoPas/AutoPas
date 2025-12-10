@@ -176,7 +176,8 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
     const std::array cellDistance = {std::max(0.0, static_cast<double>(std::abs(x1 - x2) - 1)) * cellLength[0],
                                      std::max(0.0, static_cast<double>(std::abs(y1 - y2) - 1)) * cellLength[1],
                                      std::max(0.0, static_cast<double>(std::abs(z1 - z2) - 1)) * cellLength[2]};
-    return utils::ArrayMath::dot(cellDistance, cellDistance) > interactionLengthSquared;
+    // Using >= because if cellLength == interactionLength, interacting particles are in neighboring cells only
+    return utils::ArrayMath::dot(cellDistance, cellDistance) >= interactionLengthSquared;
   };
 
   const std::array<int, 3> overlap{ceilAndCast(interactionLength / cellLength)};
