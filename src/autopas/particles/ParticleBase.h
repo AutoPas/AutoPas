@@ -188,12 +188,12 @@ class ParticleBase {
    * Get the last rebuild position of the particle
    * @return current rebuild position
    */
-  [[nodiscard]] const std::array<double, 3> &getRAtRebuild() const { return _rAtRebuild; }
+  [[nodiscard]] const std::array<CalcType, 3> &getRAtRebuild() const { return _rAtRebuild; }
   /**
    * Set the rebuild position of the particle
    * @param r rebuild position to be set
    */
-  void setRAtRebuild(const std::array<double, 3> &r) { _rAtRebuild = r; }
+  void setRAtRebuild(const std::array<CalcType, 3> &r) { _rAtRebuild = r; }
 
   /**
    * Update the rebuild position of the particle to current position
@@ -205,7 +205,7 @@ class ParticleBase {
    * This is used to check if neighbor lists are still valid inside the logic handler
    * @return displacement vector of particle since rebuild
    */
-  const std::array<double, 3> calculateDisplacementSinceRebuild() const {
+  const std::array<CalcType, 3> calculateDisplacementSinceRebuild() const {
     return utils::ArrayMath::sub(_rAtRebuild, _r);
   }
 #endif

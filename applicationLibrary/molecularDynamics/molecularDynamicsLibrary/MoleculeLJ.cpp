@@ -9,10 +9,22 @@
 namespace mdLib {
 MoleculeLJ::MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
                        unsigned long typeId)
-    : MoleculeLJBase<double, double, unsigned long>(pos, v, moleculeId), _typeId(typeId) {}
+    : MoleculeLJPrecisionBase(), _typeId(typeId) {
+  std::array<MoleculeLJ::AoSCalcType, 3> posCast{};
+  std::array<MoleculeLJ::AoSCalcType, 3> vCast{};
 
-const std::array<double, 3> &MoleculeLJ::getOldF() const { return _oldF; }
-void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
+  for (std::size_t d = 0; d < 3; ++d) {
+    posCast[d] = static_cast<MoleculeLJ::AoSCalcType>(pos[d]);
+    vCast[d] = static_cast<MoleculeLJ::AoSCalcType>(v[d]);
+  }
+
+  this->setR(posCast);
+  this->setV(vCast);
+  this->setID(moleculeId);
+}
+
+const std::array<MoleculeLJ::ParticleSoAFloatPrecision, 3> &MoleculeLJ::getOldF() const { return _oldF; }
+void MoleculeLJ::setOldF(const std::array<MoleculeLJ::ParticleSoAFloatPrecision, 3> &oldForce) { _oldF = oldForce; }
 
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }

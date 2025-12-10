@@ -67,12 +67,21 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const st
     for (unsigned long y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned long x = 0; x < particlesPerDim[0]; ++x) {
         auto p = defaultParticle;
-        std::array<double, 3> pos{static_cast<double>(x) * spacing[0] + offset[0],
-                                  static_cast<double>(y) * spacing[1] + offset[1],
-                                  static_cast<double>(z) * spacing[2] + offset[2]};
-        std::array<unsigned long, 3> cellIndex3D{static_cast<unsigned long>(pos[0] / cellSize[0]),
-                                                 static_cast<unsigned long>(pos[1] / cellSize[1]),
-                                                 static_cast<unsigned long>(pos[2] / cellSize[2])};
+
+        std::array<double, 3> posDouble{static_cast<double>(x) * spacing[0] + offset[0],
+                                        static_cast<double>(y) * spacing[1] + offset[1],
+                                        static_cast<double>(z) * spacing[2] + offset[2]};
+
+        using ParticleCalcType = typename ParticleCell::ParticleType::ParticleCalcType;
+        std::array<ParticleCalcType, 3> pos{};
+        for (std::size_t d = 0; d < 3; ++d) {
+          pos[d] = static_cast<ParticleCalcType>(posDouble[d]);
+        }
+
+        std::array<unsigned long, 3> cellIndex3D{static_cast<unsigned long>(posDouble[0] / cellSize[0]),
+                                                 static_cast<unsigned long>(posDouble[1] / cellSize[1]),
+                                                 static_cast<unsigned long>(posDouble[2] / cellSize[2])};
+
         p.setR(pos);
         p.setID(id++);
         const auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(cellIndex3D, cellsPerDimension);
@@ -99,8 +108,16 @@ void GridGenerator::fillWithParticles(
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
         auto p = defaultParticle;
-        const std::array<double, 3> position{x * (spacing[0]) + offset[0], y * (spacing[1]) + offset[1],
-                                             z * (spacing[2]) + offset[2]};
+        const std::array<double, 3> positionDouble{x * (spacing[0]) + offset[0], y * (spacing[1]) + offset[1],
+                                                   z * (spacing[2]) + offset[2]};
+
+        using ParticleCalcType =
+            typename autopas::utils::ParticleTypeTrait<Container>::value::ParticleCalcType;
+        std::array<ParticleCalcType, 3> position{};
+        for (std::size_t d = 0; d < 3; ++d) {
+          position[d] = static_cast<ParticleCalcType>(positionDouble[d]);
+        }
+
         p.setR(position);
         p.setID(id++);
         container.addParticle(p);

@@ -94,8 +94,15 @@ void UniformGenerator::fillWithParticles(Container &container, const Particle &d
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
-    auto pos = randomPosition(generator, boxMin, boxMax);  // std::array<double,3>
-    particle.setR(pos);
+    auto pos = randomPosition(generator, boxMin, boxMax);  // std::array<double, 3>
+
+    using ParticleCalcType = typename Particle::ParticleCalcType;
+    std::array<ParticleCalcType, 3> posCast{};
+    for (std::size_t d = 0; d < 3; ++d) {
+      posCast[d] = static_cast<ParticleCalcType>(pos[d]);
+    }
+
+    particle.setR(posCast);
     particle.setID(i);
     particle.setOwnershipState(autopas::OwnershipState::owned);
     container.addParticle(particle);
@@ -123,8 +130,15 @@ void UniformGenerator::fillWithHaloParticles(Container &container, const Particl
     while (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) {
       pos = randomPosition(generator, haloBoxMin, haloBoxMax);
     }
+
+    using ParticleCalcType = typename Particle::ParticleCalcType;
+    std::array<ParticleCalcType, 3> posCast{};
+    for (std::size_t d = 0; d < 3; ++d) {
+      posCast[d] = static_cast<ParticleCalcType>(pos[d]);
+    }
+
     Particle particle(defaultParticle);
-    particle.setR(pos);
+    particle.setR(posCast);
     particle.setID(i);
     haloAddFunction(container, particle);
   }

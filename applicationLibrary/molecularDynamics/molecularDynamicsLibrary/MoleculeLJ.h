@@ -34,12 +34,24 @@ using MoleculeLJPrecisionBase = MoleculeLJMP;
 #else
 using MoleculeLJPrecisionBase = MoleculeLJFP64;
 #endif
+
 /**
  * Molecule class for the LJFunctor.
  */
-class MoleculeLJ : public MoleculeLJBase<double, double, unsigned long> {
-public:
-  using ParticleSoAFloatPrecision = double;
+class MoleculeLJ : public MoleculeLJPrecisionBase {
+  public:
+  #if AUTOPAS_PRECISION_MODE == SPSP
+    using ParticleSoAFloatPrecision = float;
+  #else
+    using ParticleSoAFloatPrecision = double;
+  #endif
+
+  #if AUTOPAS_PRECISION_MODE == DPDP
+    using AoSCalcType = double;
+  #else
+    using AoSCalcType = float;
+  #endif
+
 
   MoleculeLJ() = default;
 
@@ -84,11 +96,16 @@ public:
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
+
   using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+    typename autopas::utils::SoAType<
+        MoleculeLJ*, size_t /*id*/,
+        double /*x*/, double /*y*/, double /*z*/,
+        ParticleSoAFloatPrecision /*vx*/, ParticleSoAFloatPrecision /*vy*/, ParticleSoAFloatPrecision /*vz*/,
+        ParticleSoAFloatPrecision /*fx*/, ParticleSoAFloatPrecision /*fy*/, ParticleSoAFloatPrecision /*fz*/,
+        ParticleSoAFloatPrecision /*oldFx*/, ParticleSoAFloatPrecision /*oldFy*/, ParticleSoAFloatPrecision /*oldFz*/,
+        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+
 
   /**
    * Non-const getter for the pointer of this object.
@@ -191,13 +208,13 @@ public:
    * Get the old force.
    * @return
    */
-  [[nodiscard]] const std::array<double, 3> &getOldF() const;
+  [[nodiscard]] const std::array<ParticleSoAFloatPrecision, 3> &getOldF() const;
 
   /**
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce);
+  void setOldF(const std::array<ParticleSoAFloatPrecision, 3> &oldForce);
 
   /**
    * Get TypeId.
@@ -218,7 +235,7 @@ public:
   [[nodiscard]] std::string toString() const override;
 
 private:
-  std::array<double, 3> _oldF{0., 0., 0.};
+  std::array<ParticleSoAFloatPrecision, 3> _oldF{0., 0., 0.};
   size_t _typeId{0};
 };
 }

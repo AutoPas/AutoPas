@@ -222,15 +222,21 @@ class LiveInfo {
       if (particleIter->isOwned()) {
         numOwnedParticlesCount++;
         const auto particlePos = particleIter->getR();
-        if (utils::inBox(particlePos, boxMin, boxMax)) {
-          cellBinStruct.countParticle(particlePos);
-          particleDependentBinStruct.countParticle(particlePos);
-          blurredBinStruct.countParticle(particlePos);
+        std::array<double, 3> particlePosDouble{};
+        for (std::size_t d = 0; d < 3; ++d) {
+          particlePosDouble[d] = static_cast<double>(particlePos[d]);
+        }
+
+        if (utils::inBox(particlePosDouble, boxMin, boxMax)) {
+          cellBinStruct.countParticle(particlePosDouble);
+          particleDependentBinStruct.countParticle(particlePosDouble);
+          blurredBinStruct.countParticle(particlePosDouble);
         }
       } else if (particleIter->isHalo()) {
         numHaloParticlesCount++;
       }
     }
+
 
     // Sanity Check
     if (numOwnedParticlesCount != numOwnedParticles) {

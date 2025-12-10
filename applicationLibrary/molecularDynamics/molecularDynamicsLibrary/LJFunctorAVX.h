@@ -129,7 +129,7 @@ class LJFunctorAVX
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctorAVX(CalcType cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctorAVX(CalcType cutoff, ParticlePropertiesLibrary<CalcType, size_t> &particlePropertiesLibrary)
       : LJFunctorAVX(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -1625,7 +1625,7 @@ class LJFunctorAVX
   const CalcType _cutoffSquaredAoS = 0;
   CalcType _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
 
-  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
+  ParticlePropertiesLibrary<CalcType, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   AccuType _potentialEnergySum;
