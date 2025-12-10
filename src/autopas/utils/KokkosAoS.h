@@ -29,6 +29,7 @@ namespace autopas::utils {
     }
 
     template <size_t attribute, bool>
+    KOKKOS_INLINE_FUNCTION
     auto get(size_t index) {
       return view(index).template get<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
@@ -38,6 +39,7 @@ namespace autopas::utils {
     }
 
     template <size_t attribute, bool, typename Type>
+    KOKKOS_INLINE_FUNCTION
     void set(Type value, size_t index) {
       view(index).template set<static_cast<Particle_T::AttributeNames>(attribute)>(value);
     }

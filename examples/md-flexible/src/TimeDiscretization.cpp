@@ -13,6 +13,8 @@
 #include <autopas/utils/WrapOpenMP.h>
 #include <autopas/utils/WrapKokkos.h>
 
+#include <autopas/utils/KokkosStorage.h>
+
 namespace TimeDiscretization {
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
@@ -68,7 +70,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #endif
     }
   } else {
-   autoPasContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
+   autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<Kokkos::HostSpace, ParticleType>& storage) {
     auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
     auto vX = storage.template get<ParticleType::AttributeNames::velocityX, true>(i);
     auto vY = storage.template get<ParticleType::AttributeNames::velocityY, true>(i);
@@ -213,7 +215,8 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     }
   }
   else {
-    autoPasContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
+
+    autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<Kokkos::HostSpace, ParticleType>& storage) {
       const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
       auto vX = storage.template get<ParticleType::AttributeNames::velocityX, true>(i);
       auto vY = storage.template get<ParticleType::AttributeNames::velocityY, true>(i);
@@ -235,6 +238,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
       storage.template set<ParticleType::AttributeNames::velocityY, true>(vY + vUpdateY, i);
       storage.template set<ParticleType::AttributeNames::velocityZ, true>(vZ + vUpdateZ, i);
     }, autopas::IteratorBehavior::owned);
+
   }
 }
 

@@ -13,6 +13,7 @@
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/KokkosAoS.h"
 #include "autopas/utils/KokkosSoA.h"
+#include "autopas/utils/KokkosStorage.h"
 #include "traversals/KokkosDsNaiveParallelTraversal.h"
 
 namespace autopas {
@@ -185,48 +186,40 @@ template <class Particle_T>
             }
 
             template <typename Lambda>
-            void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior) {
+            void forEachKokkos(Lambda& forEachLambda, IteratorBehavior behavior) {
 
               const size_t numParticles = getNumberOfParticles(behavior);
 
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS();
-                Kokkos::parallel_for("forEachAoS", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
-                  // TODO: consider behavior
-                  forEachLambda(i, _hostOwnedParticlesAoS);
-                });
                 _soaUpToDate = false;
               }
-
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                Kokkos::parallel_for("forEachSoA", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
-                  // TODO: consider behavior
-                  forEachLambda(i, _hostOwnedParticlesSoA);
-                });
                 _aosUpToDate = false;
               }
+
+              Kokkos::parallel_for("forEach", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
+                  // TODO: consider behavior
+                  forEachLambda(i, _testParticles);
+                });
             }
 
             template<typename Result, typename Reduction, typename Lambda>
             void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior) {
-              const size_t numParticles = getNumberOfParticles(behavior);
+              size_t numParticles = getNumberOfParticles(behavior);
 
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS();
-                Kokkos::parallel_reduce("reduceAoS", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult) {
-                  // TODO: consider behavior
-                  reduceLambda(i, _hostOwnedParticlesAoS, localResult);
-                }, Reduction(result));
               }
-
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                Kokkos::parallel_reduce("reduceSoA", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult) {
-                  // TODO: consider behavior
-                  reduceLambda(i, _hostOwnedParticlesSoA, localResult);
-                }, Reduction(result));
               }
+
+              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult) {
+                  // TODO: consider behavior
+                  reduceLambda(i, _testParticles, localResult);
+                }, Reduction(result));
             }
 
             [[nodiscard]] double getCutoff() const final { return 0; }
@@ -457,6 +450,8 @@ template <class Particle_T>
         bool _soaUpToDate = false;
 
         utils::KokkosDataLayoutConverter<Particle_T> _converter {};
+
+        utils::KokkosStorage<MemSpace, Particle_T> _testParticles {};
 
         /* AoS Data structure */
         utils::KokkosAoS<MemSpace, Particle_T> _hostOwnedParticlesAoS {};

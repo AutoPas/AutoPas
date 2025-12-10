@@ -34,6 +34,7 @@ endif()
 target_link_libraries(molecularDynamicsLibrary
         PUBLIC
         autopas
+        PRIVATE
         Kokkos::kokkos)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)

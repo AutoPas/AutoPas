@@ -34,6 +34,8 @@
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
+#include "autopas/utils/KokkosStorage.h"
+
 namespace autopas {
 
 /**
@@ -1129,8 +1131,9 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
     }
   }
   else {
+    /*
     withStaticContainerType(getContainer(), [&] (auto& actualContainer) {
-      actualContainer.forEachKokkos(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage) {
+      actualContainer.forEachKokkos(KOKKOS_LAMBDA(int i, auto& storage) {
       const auto pX = storage.template get<Particle_T::AttributeNames::posX, true>(i);
       const auto pY = storage.template get<Particle_T::AttributeNames::posY, true>(i);
       const auto pZ = storage.template get<Particle_T::AttributeNames::posZ, true>(i);
@@ -1140,6 +1143,7 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
       storage.template set<Particle_T::AttributeNames::rebuildZ, true>(pZ, i);
     }, IteratorBehavior::owned | IteratorBehavior::containerOnly);
     });
+    */
   }
 #endif
 }
@@ -1204,9 +1208,10 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
     }
   }
   else {
+
     bool test = _neighborListInvalidDoDynamicRebuild;
-    withStaticContainerType(getContainer(), [&test, halfSkinSquare](auto& actualContainer) {
-      actualContainer.template reduceKokkos<bool, Kokkos::LOr<bool>>(KOKKOS_LAMBDA<class ParticleStorage>(int i, ParticleStorage& storage, bool& local) {
+
+    auto lambda = KOKKOS_LAMBDA(int i, utils::KokkosStorage<Kokkos::HostSpace, Particle_T>& storage, bool& local) {
 
         const auto pX = storage.template get<Particle_T::AttributeNames::posX, true>(i);
         const auto pY = storage.template get<Particle_T::AttributeNames::posY, true>(i);
@@ -1223,10 +1228,13 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
         const auto dSquared = dX * dX + dY * dY + dZ * dZ;
 
         local |= dSquared >= halfSkinSquare;
+      };
 
-      }, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+    withStaticContainerType(getContainer(), [&lambda, &test](auto& actualContainer) {
+      actualContainer.template reduceKokkos<bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
     });
     _neighborListInvalidDoDynamicRebuild = test;
+
   }
 
 #endif
