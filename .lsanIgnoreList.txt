@@ -1,3 +1,4 @@
 # Leak Sanitizer ignore list
-# mpich is leaky so ignore everything that comes from it
-leak:libmpich
+# mpich is leaky so ignore problematic parts of it
+leak:libmpi.so*
+leak:MPIDIU_avt_init
