@@ -961,9 +961,11 @@ class LogicHandler {
                                                  TriwiseFunctor *f);
 
   /**
-   * Helper Method for computeRemainderInteractions3B. This method calculates all interactions between one buffer
-   * particle and two particles from the container. It first creates neighbor lists for all buffer particles in parallel
-   * and then bins the particles so it can be iterated over them in a 2-color scheme.
+   * Helper Method for computeRemainderInteractions3B. This method calculates all interactions between the buffer
+   * particles and any two particles from the container. It first identifies all particle pairs from the container which
+   * would form valid triplets with the buffer particles. This is done in a per-particle parallel manner. In a second
+   * step the buffer particles are distributed into bins by slicing the domain along the diagonal. The forces are
+   * computed in a parallel manner by using a tri-colored approach on these slices to avoid race conditions.
    *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
@@ -1789,11 +1791,21 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
   }
   SortedCellView<ReferenceParticleCell<Particle_T>> sortedCellView(cellView, domainDiagonal);
 
-  // Step 2: Create a neighbor list of pairs for each of the buffer particles. Read-only, so it can be parallelized.
+  // Step 2: Find all valid particle pairs from the container for each of the buffer particles. This can be done in
+  // parallel since all particles are accessed in read-only manner. The data structure is a vector, which holds a list
+  // of all valid container particle pairs for each buffer particle.
   std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> bufferParticleNeighborLists(numBufferParticles);
+
+  // Estimate the number of pairs per buffer particle to reserve memory
+  const double searchVolume = 8. * cutoff * cutoff * cutoff;
+  const double domainVolume = utils::ArrayMath::prod(container.getBoxMax() - container.getBoxMin());
+  const double numParticlesPerSearchVolume =
+      container.getNumberOfParticles(IteratorBehavior::owned) * (searchVolume / domainVolume);
+  const auto estimatedPairsPerParticle = static_cast<size_t>(numParticlesPerSearchVolume * numParticlesPerSearchVolume);
 
   AUTOPAS_OPENMP(parallel for schedule(static))
   for (size_t i = 0; i < numBufferParticles; i++) {
+    bufferParticleNeighborLists[i].reserve(estimatedPairsPerParticle);
     auto &[pProjection, p1Ptr] = sortedCellView._particles[i];
     const auto pos1 = p1Ptr->getR();
     const auto boxMin = pos1 - cutoff;
@@ -1826,12 +1838,16 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
   }
 
   // Step 3: Bin buffer particles into slices along the domain diagonal of size cutoff
+  // Every "bin" contains pointers to the respective buffer particles alongside their index in the sortedCellView to
+  // simplify mapping back later.
   std::vector<std::vector<std::pair<size_t, Particle_T *>>> binnedBufferParticles;
-  binnedBufferParticles.emplace_back();
+  const auto estimatedSizePerBin = numBufferParticles / (utils::ArrayMath::L2Norm(domainDiagonal) / cutoff);
+  binnedBufferParticles.emplace_back(estimatedSizePerBin);
   double binStart = sortedCellView._particles[0].first;  // Projection of the first particle
   for (size_t i = 0; i < numBufferParticles; ++i) {
     auto &[pProjection, pPtr] = sortedCellView._particles[i];
 
+    // The slice thickness is at least the cutoff. The next slice starts with the position of the next particle.
     if (pProjection - binStart > cutoff) {
       binStart = pProjection;
       binnedBufferParticles.emplace_back();
@@ -1839,7 +1855,7 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
     binnedBufferParticles.back().emplace_back(i, pPtr);
   }
 
-  // Step 4: Iterate over the binned buffer particles in a 3-colored parallel manner.
+  // Step 4: Iterate over the binned buffer particles in a 3-colored parallel manner to avoid race conditions.
   for (auto color = 0; color < 3; color++) {
     AUTOPAS_OPENMP(parallel for schedule(dynamic))
     for (size_t i = 0 + color; i < binnedBufferParticles.size(); i += 3) {
