@@ -278,17 +278,21 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputeTriwiseCellOffsetsC08Test_1x1x1) {
 std::vector<std::tuple<long, long, long>> LCC08CellHandlerUtilityTest::generateC18Triplets(long overlap,
                                                                                            double interactionLength) {
   using namespace autopas::utils::ArrayMath::literals;
-  double interactionLengthSquared = interactionLength * interactionLength;
+  const double interactionLengthSquared = interactionLength * interactionLength;
 
   // Output vector
   std::vector<std::tuple<long, long, long>> validCellTriplets;
   validCellTriplets.emplace_back(0, 0, 0);
 
-  // Helper function to get the minimal distance between two cells
-  auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    return std::array<double, 3>{static_cast<double>(std::max(0l, (std::abs(x1 - x2) - 1l))) * CELL_LENGTH[0],
-                                 static_cast<double>(std::max(0l, (std::abs(y1 - y2) - 1l))) * CELL_LENGTH[1],
-                                 static_cast<double>(std::max(0l, (std::abs(z1 - z2) - 1l))) * CELL_LENGTH[2]};
+  // Helper function to determine if two cells are more than interactionLength apart
+  auto cellDistIsGreaterThanCutoff = [&](const long x1, const long y1, const long z1, const long x2, const long y2,
+                                         const long z2) {
+    const std::array cellDistance = {std::max(0.0, static_cast<double>(std::abs(x1 - x2) - 1)) * CELL_LENGTH[0],
+                                     std::max(0.0, static_cast<double>(std::abs(y1 - y2) - 1)) * CELL_LENGTH[1],
+                                     std::max(0.0, static_cast<double>(std::abs(z1 - z2) - 1)) * CELL_LENGTH[2]};
+    // Using >= instead of > because if cellLength == interactionLength, interacting particles are in neighboring cells
+    // only
+    return autopas::utils::ArrayMath::dot(cellDistance, cellDistance) >= interactionLengthSquared;
   };
 
   for (long i1 = -overlap; i1 <= overlap; ++i1) {
@@ -297,10 +301,7 @@ std::vector<std::tuple<long, long, long>> LCC08CellHandlerUtilityTest::generateC
         auto cell1Index = autopas::utils::ThreeDimensionalMapping::threeToOneD(
             i1, j1, k1, autopas::utils::ArrayUtils::static_cast_copy_array<long>(CELLS_PER_DIMENSION));
         if (cell1Index < 0) continue;
-        auto cell1Distance = cellDistance(0, 0, 0, i1, j1, k1);
-        auto cell1DistanceSquared = autopas::utils::ArrayMath::dot(cell1Distance, cell1Distance);
-        // Using >= instead of > because if cellLength == interactionLength, particles are in neighboring cells only
-        if (cell1DistanceSquared >= interactionLengthSquared) continue;
+        if (cellDistIsGreaterThanCutoff(0, 0, 0, i1, j1, k1)) continue;
 
         for (long i2 = -overlap; i2 <= overlap; ++i2) {
           for (long j2 = -overlap; j2 <= overlap; ++j2) {
@@ -309,14 +310,8 @@ std::vector<std::tuple<long, long, long>> LCC08CellHandlerUtilityTest::generateC
                   i2, j2, k2, autopas::utils::ArrayUtils::static_cast_copy_array<long>(CELLS_PER_DIMENSION));
               // ">=" because only base and cell1 should be the same, a.k.a. (0, 0, 1) but not (0, 1, 1)
               if (cell2Index <= cell1Index) continue;
-
-              auto cell2Distance = cellDistance(0, 0, 0, i2, j2, k2);
-              auto cell2DistanceSquared = autopas::utils::ArrayMath::dot(cell2Distance, cell2Distance);
-              if (cell2DistanceSquared >= interactionLengthSquared) continue;
-
-              auto cell12Distance = cellDistance(i1, j1, k1, i2, j2, k2);
-              auto cell12DistanceSquared = autopas::utils::ArrayMath::dot(cell12Distance, cell12Distance);
-              if (cell12DistanceSquared >= interactionLengthSquared) continue;
+              if (cellDistIsGreaterThanCutoff(0, 0, 0, i2, j2, k2)) continue;
+              if (cellDistIsGreaterThanCutoff(i1, j1, k1, i2, j2, k2)) continue;
 
               validCellTriplets.emplace_back(0l, cell1Index, cell2Index);
             }
@@ -335,10 +330,10 @@ std::vector<std::tuple<long, long, long>> LCC08CellHandlerUtilityTest::generateC
  * base cell. This test shifts them back and then compares them to the C18 triplets.
  */
 TEST_F(LCC08CellHandlerUtilityTest, CompareCellTripletsWithC18ForMultipleOverlaps) {
-  long maxOverlap = 4;
+  constexpr long maxOverlap = 4;
 
   for (auto overlap = 1; overlap <= maxOverlap; ++overlap) {
-    auto interactionLength = static_cast<double>(overlap);
+    const auto interactionLength = static_cast<double>(overlap);
 
     auto expectedC18Triplets = generateC18Triplets(overlap, interactionLength);
 
@@ -352,10 +347,10 @@ TEST_F(LCC08CellHandlerUtilityTest, CompareCellTripletsWithC18ForMultipleOverlap
     auto sortedAndTransformedC08Triplets = sortOffsetTriplets<C08OffsetMode::noSorting>(actualC08Triplets);
 
     // Ensure the correct number of interaction triplets
-    ASSERT_EQ(sortedAndTransformedC08Triplets.size(), expectedC18Triplets.size()) << "for an overlap of " << overlap;
+    EXPECT_EQ(sortedAndTransformedC08Triplets.size(), expectedC18Triplets.size()) << "for an overlap of " << overlap;
 
     // Check if the "shifted back" C08 triplets match the expected triplets
-    ASSERT_THAT(sortedAndTransformedC08Triplets, Pointwise(Eq(), expectedC18Triplets))
+    EXPECT_THAT(sortedAndTransformedC08Triplets, Pointwise(Eq(), expectedC18Triplets))
         << "for an overlap of " << overlap;
   }
 }
