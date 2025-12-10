@@ -337,7 +337,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
   }
 
   std::vector<LCC08CellHandlerUtility::OffsetPairVector> cellPairOffsets =
-      LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::c04CellPairs>(
+      LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::c04NoSorting>(
           cellsPerDimension, this->_cellLength, this->_interactionLength);
 
   // Create intervals
