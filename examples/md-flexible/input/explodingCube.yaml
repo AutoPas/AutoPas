@@ -2,14 +2,14 @@ container                        :  [VerletClusterLists]
 data-layout                      :  [SoA]
 newton3                          :  [disabled, enabled]
 verlet-rebuild-frequency         :  1
-verlet-skin-radius-per-timestep  :  2
+verlet-skin-radius               :  0.2
 verlet-cluster-size              :  8
 selector-strategy                :  Fastest-Mean-Value
 # tuning-strategies                :  [predictive-tuning]
 tuning-interval                  :  2000
 tuning-samples                   :  4
 functor                          :  lj-hwy
-vectorizationPattern             :  [1xVectorLength]
+vectorization-pattern            :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
 box-max                          :  [70, 70, 70]

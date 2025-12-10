@@ -330,6 +330,8 @@ std::string MDFlexConfig::to_string() const {
     printOption(newton3Options, -indentWidth);
   }
 
+  printOption(vecPatternOptions);
+
   // TODO c++20: use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;

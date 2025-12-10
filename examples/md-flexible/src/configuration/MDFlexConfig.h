@@ -293,7 +293,7 @@ class MDFlexConfig {
    * vectorizationPattern
    */
   MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
-      autopas::VectorizationPatternOption::getMostOptions(), "vectorizationPattern", true,
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorization-pattern", true,
       "Vectorization Pattern for HWY Functor."};
   /**
    * cellSizeFactors

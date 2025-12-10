@@ -12,7 +12,7 @@ newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS, SoA]
 
 # General options
-vectorizationPattern                 :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
+vectorization-pattern                :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
 verlet-rebuild-frequency             :  20
 verlet-skin-radius                   :  0.2
 verlet-cluster-size                  :  4
