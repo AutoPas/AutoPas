@@ -71,14 +71,17 @@ class LJFunctorHWY
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctorHWY(double cutoff, ParticlePropertiesLibrary<double, size_t> *particlePropertiesLibrary = nullptr)
+  explicit LJFunctorHWY(double cutoff, std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
+                                           particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquared{highway::Set(tag_double, cutoff * cutoff)},
         _cutoffSquareAoS{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData{},
-        _postProcessed{false} {
+        _postProcessed{false},
+        _PPLibrary{particlePropertiesLibrary}  // simpel übernommen
+  {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -88,12 +91,11 @@ class LJFunctorHWY
     }
 
     if constexpr (useMixing) {
-      if (particlePropertiesLibrary == nullptr) {
+      if (!_PPLibrary.has_value()) {
         throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
       }
-      _PPLibrary = std::ref(*particlePropertiesLibrary);
     } else {
-      if (particlePropertiesLibrary != nullptr) {
+      if (_PPLibrary.has_value()) {
         throw std::runtime_error("Mixing is disabled but a ParticlePropertiesLibrary was provided!");
       }
     }
