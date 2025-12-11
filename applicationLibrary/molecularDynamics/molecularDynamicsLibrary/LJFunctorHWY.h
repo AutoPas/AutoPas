@@ -1389,30 +1389,50 @@ class LJFunctorHWY
   };
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  // helper variables for the LJ-calculation
+  // helper variables for the LJ-calculation used in the kernel.
+  // vector register of doubles containing only zeros.
   const VectorDouble _zeroDouble{highway::Zero(tag_double)};
+  // vector register of long integers containing only zeros.
   const VectorLong _zeroLong{highway::Zero(tag_long)};
+  // vector register of doubles containing only ones.
   const VectorDouble _oneDouble{highway::Set(tag_double, 1.)};
+  // vector register of long integers containing only ones.
   const VectorLong _oneLong{highway::Set(tag_long, 1)};
+  // vector register of doubles containing dummy ownership state.
   const VectorDouble _ownedStateDummy{highway::Zero(tag_double)};
+  // vector register to hold the squared cutoff in all lanes.
   const VectorDouble _cutoffSquared{};
+  // vector register to hold the _hift6 values.
   VectorDouble _shift6{highway::Zero(tag_double)};
+  // vector register to hold the epsilon24 values.
   VectorDouble _epsilon24{highway::Zero(tag_double)};
+  // vector register to hold the sigmaSquared values.
   VectorDouble _sigmaSquared{highway::Zero(tag_double)};
 
+  // Masks for the newton3 reduction.
   MaskDouble overlapMasks[_vecLengthDouble / 2];
 
+  // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
+  // epsilon, sigma and shift6 used in the AoS functor.
   double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
+
+  // optional to hold a reference to the ParticlePropertiesLibrary. If a ParticlePropertiesLibrary is not used the
+  // optional is empty.
   std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> _PPLibrary;
+
+  // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};
   std::array<double, 3> _virialSum;
   std::vector<AoSThreadData> _aosThreadData{};
-  bool _postProcessed;
-  bool _masksInitialized{false};
 
+  // flag to indicate wether post processing has been performed.
+  bool _postProcessed;
+
+  // The Vectorization Pattern currently used in the SoA functor.
   VectorizationPattern _vecPattern;
 
+  // Vectorization Pattern that the functor can handle.
   static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {
       VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2, VectorizationPattern::pVecDiv2x2,
       VectorizationPattern::pVecx1};
