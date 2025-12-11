@@ -80,8 +80,7 @@ class LJFunctorHWY
         _virialSum{0., 0., 0.},
         _aosThreadData{},
         _postProcessed{false},
-        _PPLibrary{particlePropertiesLibrary}  // simpel übernommen
-  {
+        _PPLibrary{particlePropertiesLibrary} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
