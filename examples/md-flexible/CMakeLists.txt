@@ -137,6 +137,7 @@ if (HAS_AVX)
             md-flexible
             --no-end-config
             --functor "${TEST_FUNCTOR}"
+            --vectorization-pattern 1xVectorLength
             --deltaT 0
             --particle-generator uniform
             --log-level debug
@@ -159,6 +160,7 @@ add_test(
         --traversal all
         --cutoff 1.5
         --functor "${TEST_FUNCTOR}"
+        --vectorization-pattern 1xVectorLength
         --tuning-phases 1
         --particle-generator grid
         --particles-per-dimension 10
@@ -174,7 +176,7 @@ add_test(
 
 add_test(
         NAME md-flexMeasurePerf
-        COMMAND measurePerf.sh md-flexible -silent
+        COMMAND measurePerf.sh md-flexible --vectorization-pattern 1xVectorLength -silent
         CONFIGURATIONS checkExamples
 )
 # cmake-format: on
