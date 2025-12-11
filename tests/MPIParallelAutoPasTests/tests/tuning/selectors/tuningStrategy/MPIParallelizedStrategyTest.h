@@ -55,4 +55,9 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
       autopas::TraversalOption::lc_c04,         autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa,           autopas::Newton3Option::disabled,
       autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec};
+  autopas::Configuration lc_c01_soa_p2xVecDiv2{
+      autopas::ContainerOption::linkedCells,    1.,
+      autopas::TraversalOption::lc_c01,         autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::soa,           autopas::Newton3Option::disabled,
+      autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p2xVecDiv2};
 };
