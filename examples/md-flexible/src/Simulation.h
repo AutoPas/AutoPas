@@ -18,6 +18,7 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+#include "GlobalVariableLogger.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
@@ -91,6 +92,11 @@ class Simulation {
    * Pointer to the output stream.
    */
   std::ostream *_outputStream;
+
+  /**
+ * Logger for FLOP count and hit rate.
+ */
+  GlobalVariableLogger _globalLogger;
 
   /**
    * Number of completed iterations. Aka. number of current iteration.
