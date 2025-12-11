@@ -33,6 +33,7 @@
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "src/options/ComputationLoadOption.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -818,6 +819,22 @@ class MDFlexConfig {
       "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
       "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * computationalLoadMetric
+   */
+  MDFlexOption<ComputationLoadOption, __LINE__> computationalLoadMetric{
+      ComputationLoadOption::completeCycle, "computational-load-metric", true,
+      "Defines which computational load metric will be tracked during the simulation. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(ComputationLoadOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * computationalLoadMeasurementPeriod
+   */
+  MDFlexOption<size_t, __LINE__> computationalLoadMeasurementPeriod{
+      100, "computational-load-measurement-period", true, "Defines "
+      "from how many iterations before load balancing is applied is the computation load metric measured."};
+
 
   /**
    * Whether to use the tuning logger or not.
