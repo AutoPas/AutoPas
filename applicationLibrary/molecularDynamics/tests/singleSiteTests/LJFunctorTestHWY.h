@@ -79,7 +79,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   void testLJFunctorvsLJFunctorHWYVerlet(const bool newton3, const bool doDeleteSomeParticles);
 
   /**
-   * Create two cells and compare AoSFunctor.
+   * Create two cells and compare the HWY AoSFunctor to the Autovec functor.
    *
    * @tparam mixing
    * @param newton3
