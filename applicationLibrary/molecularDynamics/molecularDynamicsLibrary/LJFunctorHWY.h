@@ -111,6 +111,13 @@ class LJFunctorHWY
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
+  /**
+   * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
+   * Thi functor can handle p1xVec, p2xVecDiv2, pVecDiv2x2, pVecx1
+   *
+   * @param vecPattern
+   * @return whether the functor is capable of using the specified Vectorization Pattern
+   */
   bool isVecPatternAllowed(const VectorizationPattern vecPattern) override final {
     return std::find(_vecPatternsAllowed.begin(), _vecPatternsAllowed.end(), vecPattern) != _vecPatternsAllowed.end();
   }
