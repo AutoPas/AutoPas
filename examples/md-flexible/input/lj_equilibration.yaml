@@ -1,0 +1,74 @@
+# LJ equilibration run for DPDP / SPDP / SPSP precision study
+
+# ---------------------- AutoPas core settings ----------------------
+container                            : [LinkedCells]
+
+# Pairwise Lennard-Jones functor (AVX version, canonical name from AllOptions.yaml)
+functor                              : Lennard-Jones (12-6) avx
+traversal                            : [lc_c01]
+newton3                              : [enabled, disabled]
+data-layout                          : [AoS, SoA]
+
+# ---------------------- Tuning & Mechanics -------------------------
+verlet-rebuild-frequency             : 20
+verlet-skin-radius                   : 0.2
+
+selector-strategy                    : Fastest-Absolute-Value
+tuning-metric                        : time
+tuning-strategies                    : []          # no extra tuning logic
+tuning-interval                      : 1000000000  # effectively never retune
+tuning-samples                       : 3
+use-LOESS-smoothening                : false
+tuning-max-evidence                  : 10
+
+cutoff                               : 2.5
+
+# Make the domain larger and with "weird" non-integer bounds to avoid
+# particles landing exactly on box-max in single precision.
+box-min                              : [-4.321, -4.321, -4.321]
+box-max                              : [14.789, 14.789, 14.789]
+
+cell-size                            : [1]
+deltaT                               : 0.002
+iterations                           : 200000
+boundary-type                        : [periodic, periodic, periodic]
+subdivide-dimension                  : [true, true, true]
+fastParticlesThrow                   : false
+
+# ---------------------- LJ parameters (site 0) ---------------------
+Sites:
+  0:
+    epsilon                          : 1.0
+    sigma                            : 1.0
+    mass                             : 1.0
+
+# ---------------------- Initial configuration ----------------------
+# Place the cube well inside the domain (margin > 4 in every direction):
+# domain: [-4.321, 14.789]^3
+# cube:   [0, 8]^3
+Objects:
+  CubeClosestPacked:
+    0:
+      box-length                     : [8, 8, 8]
+      bottomLeftCorner               : [0, 0, 0]
+      particle-spacing               : 1.35
+      velocity                       : [0, 0, 0]
+      particle-type-id               : 0
+
+# ---------------------- Thermostat (Equilibration) -----------------
+thermostat:
+  initialTemperature                 : 1.0
+  targetTemperature                  : 1.0
+  deltaTemperature                   : 0.1
+  thermostatInterval                 : 25
+  addBrownianMotion                  : true
+
+# ---------------------- Output ----------------------
+log-level                            : info
+no-end-config                        : true
+no-progress-bar                      : false
+
+vtk-filename                         : PrecisionEquil
+vtk-output-folder                    : PrecisionEquilOutput
+vtk-write-frequency                  : 1000000000  # effectively disabled
+#log-file                            : lj_equilibration.log
