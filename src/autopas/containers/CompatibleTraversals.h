@@ -136,6 +136,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all traversal options applicable for the PseudoVerletLists container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allPsVLCompatibleTraversals() {
+  static const auto s = filterAllOptions("psvl_", InteractionTypeOption::pairwise);
+  return s;
+}
+
+/**
  * Provides a set of all traversals that only support Newton3 mode disabled.
  * @return
  */
@@ -212,6 +221,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::octree: {
           return allOTCompatibleTraversals();
+        }
+        case ContainerOption::pseudoVerletLists: {
+          return allPsVLCompatibleTraversals();
         }
       }
     }

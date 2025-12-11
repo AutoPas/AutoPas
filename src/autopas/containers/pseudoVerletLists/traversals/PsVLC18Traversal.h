@@ -6,9 +6,10 @@
 
 #pragma once
 
+#include "PsVLTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/CellFunctorPsVL.h"
 #include "autopas/containers/cellTraversals/C18BasedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -28,10 +29,10 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
+class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public PsVLTraversalInterface<typename ParticleCell::ParticleType> {
  public:
   /**
-   * Constructor of the lc_c18 traversal.
+   * Constructor of the psvl_c18 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
@@ -44,12 +45,11 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   explicit PsVLC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength,
-                          const std::vector<std::vector<SortedCellView<typename ParticleCell::ParticleType>>> &orientationLists,
                           DataLayoutOption dataLayout, bool useNewton3)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     dataLayout, useNewton3) {
+                     dataLayout, useNewton3, this->_orientationLists) {
     computeOffsets();
   }
 
@@ -65,18 +65,13 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c18; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c18; }
 
   /**
    * C18 traversal is always usable.
    * @return
    */
   [[nodiscard]] bool isApplicable() const override { return true; }
-
-  /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
-   */
-  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  private:
   /**
@@ -87,8 +82,8 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<ParticleCell, PairwiseFunctor,
-                        /*bidirectional*/ true>
+  internal::CellFunctorPsVL<ParticleCell, PairwiseFunctor,
+                            /*bidirectional*/ true>
       _cellFunctor;
 
   /**
@@ -195,9 +190,9 @@ void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(std::vecto
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
-      this->_cellFunctor.processCell(baseCell);
+      this->_cellFunctor.processCell(baseCell, baseIndex);
     } else {
-      this->_cellFunctor.processCellPair(baseCell, otherCell, r);
+      this->_cellFunctor.processCellPair(baseCell, baseIndex, otherCell, otherIndex, r);
     }
   }
 }

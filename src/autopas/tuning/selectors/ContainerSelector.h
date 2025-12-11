@@ -17,6 +17,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
+#include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 
@@ -104,7 +105,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     }
     case ContainerOption::pseudoVerletLists: {
       container = std::make_unique<PseudoVerletLists<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
-                                                            sortingThreshold, loadEstimator);
+                                                                  loadEstimator);
       break;
     }
     default: {

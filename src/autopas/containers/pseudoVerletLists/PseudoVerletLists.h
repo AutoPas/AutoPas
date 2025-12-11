@@ -1,6 +1,5 @@
 /**
  * @file PseudoVerletLists.h
- *
  * @date 04 Dec 2025
  * @author Lars Doll
  */
@@ -9,13 +8,15 @@
 #include <vector>
 
 #include "autopas/cells/SortedCellView.h"
-#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "traversals/PsVLTraversalInterface.h"
 
 namespace autopas {
 
 template <class Particle_T>
-class PseudoVerletLists : public LinkedCells<Particle_T> {
+class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   public:
   /**
    * Type of the Particle.
@@ -29,28 +30,55 @@ class PseudoVerletLists : public LinkedCells<Particle_T> {
 
   /**
  * Constructor of the PseudoVerletLists class
+ * The orientation lists are build using sortedCellView.
  * @param boxMin
  * @param boxMax
  * @param cutoff
  * @param skin
  * @param cellSizeFactor cell size factor relative to cutoff
- * @param sortingThreshold number of particles in two cells from which sorting should be performed
  * @param loadEstimator the load estimation algorithm for balanced traversals.
- * By default all applicable traversals are allowed.
  */
   PseudoVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                    const double skin, const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
+                    const double skin, const double cellSizeFactor = 1.0,
                     LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : LinkedCells<Particle_T>(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor), sortingThreshold, loadEstimator) {
-    if (cellSizeFactor < 1.0) {
-      AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
-    }
-    _orientationList();
+     : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor),
+    _loadEstimator(loadEstimator){
+
     for (size_t i = 0; i < _directions.size(); ++i) {
       _directions[i] = utils::ArrayMath::normalize(_rawDirections[i]);
     }
   }
 
+  /**
+  * @copydoc ParticleContainerInterface::getContainerType()
+  */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pseudoVerletLists; }
+
+  void computeInteractions(TraversalInterface *traversal) override {
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *pseudoVerletTraversalInterface = dynamic_cast<PsVLTraversalInterface<ParticleCellType> *>(traversal);
+    if (pseudoVerletTraversalInterface) {
+      pseudoVerletTraversalInterface->setCellsAndNeighborLists(this->_orientationList);
+    } else {
+      utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
+    }
+
+    traversal->initTraversal();
+    traversal->traverseParticles();
+    traversal->endTraversal();
+  }
+
+  /**
+  * get the actual orientation lists
+  * @return the orientationLists
+  */
+  std::vector<std::vector<SortedCellView<ParticleCellType>>> &getOrientationLists() {return _orientationList;}
+
+  /**
+  * Rebuilds the orientationLists.
+  * @note This function will be called in computeInteractions()!
+  * @param traversal
+  */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     auto numCells = this->_cells.size();
     _orientationList.clear();
@@ -58,21 +86,31 @@ class PseudoVerletLists : public LinkedCells<Particle_T> {
 
     for (size_t i = 0; i < numCells; ++i) {
       for (auto & _direction : _directions) {
-        _orientationList[i].emplace_back(SortedCellView{_linkedCells.getCells()[i], _direction});
+        _orientationList[i].emplace_back(SortedCellView{this->_linkedCells.getCells()[i], _direction});
       }
     }
   }
 
-  protected:
 
+  protected:
+  /**
+   * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the neighboring cell.
+   */
   std::vector<std::vector<SortedCellView<ParticleCellType>>> _orientationList;
 
-  LinkedCells<Particle_T> _linkedCells;
-
+  /**
+  * load estimation algorithm for balanced traversals.
+  */
   LoadEstimatorOption _loadEstimator;
 
+  /**
+   * Stores the normalized directions to the neighboring cells
+   */
   std::array<std::array<double, 3>,13> _directions{};
 
+  /**
+  * Stores the directions to the neighboring cells
+  */
   static constexpr std::array<std::array<double,3>, 13> _rawDirections = {{
     {{-1,  1, 0}},
     {{ 0,  1, 0}},

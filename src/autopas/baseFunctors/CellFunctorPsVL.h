@@ -15,7 +15,7 @@ namespace autopas::internal {
 /**
  * A cell functor. This functor is built from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
- * two cells of particles.
+ * two cells of particles using the PseudoVerletList algorithm.
  * @tparam ParticleCell
  * @tparam ParticleFunctor the functor which
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
@@ -25,14 +25,12 @@ template <class ParticleCell, class ParticleFunctor, bool bidirectional = true>
 class CellFunctorPsVL {
  public:
   /**
-   * The constructor of CellFunctor.
+   * The constructor of CellFunctorPsVL.
    * @param f The ParticleFunctor which should be used for the interaction.
-   * @param sortingCutoff This parameter indicates the maximal distance the sorted particles are to interact. This
-   * parameter is only relevant for optimization (sorting). This parameter normally should be the cutoff, for building
-   * verlet lists, this should be cutoff+skin.
+   * @param sortingCutoff This parameter indicates the maximal distance the sorted particles are to interact. This parameter normally should be the cutoff + skin.
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
-   * @param orientationLists
+   * @param orientationLists Stores the sorted Cell Views for each Cell
    */
   explicit CellFunctorPsVL(ParticleFunctor *f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3,
     const std::vector<std::vector<SortedCellView<typename ParticleCell::ParticleType>>> &orientationLists)
@@ -86,9 +84,9 @@ class CellFunctorPsVL {
    * - if _useNewton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing
    * newton3=false.
    * @param cell
-   * @param cell1Index
+   * @param cellIndex
    */
-  void processCellAoS(ParticleCell &cell, unsigned long cell1Index);
+  void processCellAoS(ParticleCell &cell, unsigned long cellIndex);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
