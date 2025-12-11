@@ -1995,10 +1995,11 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   }
 
   // Check if the VectorizationPattern is supported by the functor
-  // if (vecPattern != VectorizationPatternOption::p1xVec) {
-  //   // @todo if not HWY Functor, this should return false
-  //   // Consequently, we need some sort of access to the functor
-  // }
+  if (not functor.isVecPatternAllowed(config.vecPattern)) {
+    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the Vectorization Pattern {}!",
+               config.vecPattern);
+    return {nullptr, /*rejectIndefinitely*/ true};
+  }
 
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),

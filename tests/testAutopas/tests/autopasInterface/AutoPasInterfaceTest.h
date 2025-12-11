@@ -16,6 +16,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ArrayMath.h"
 

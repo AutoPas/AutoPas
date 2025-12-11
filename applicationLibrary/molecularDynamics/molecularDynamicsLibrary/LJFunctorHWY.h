@@ -111,6 +111,10 @@ class LJFunctorHWY
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
+  bool isVecPatternAllowed(const VectorizationPattern vecPattern) override final {
+    return std::find(_vecPatternsAllowed.begin(), _vecPatternsAllowed.end(), vecPattern) != _vecPatternsAllowed.end();
+  }
+
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()
    */
@@ -1401,5 +1405,9 @@ class LJFunctorHWY
   bool _masksInitialized{false};
 
   VectorizationPattern _vecPattern;
+
+  static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {
+      VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2, VectorizationPattern::pVecDiv2x2,
+      VectorizationPattern::pVecx1};
 };
 }  // namespace mdLib

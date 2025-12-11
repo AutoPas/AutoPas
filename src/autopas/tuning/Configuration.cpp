@@ -88,10 +88,6 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
-  if (vecPattern != VectorizationPatternOption::p1xVec) {
-    // @todo if not HWY Functor, this should return false
-    // Consequently, we need some sort of access to the functor
-  }
 
   return true;
 }

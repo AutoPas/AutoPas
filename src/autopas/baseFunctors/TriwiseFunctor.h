@@ -118,6 +118,17 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
                                 const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
+
+  /**
+   * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
+   *
+   * Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as default.
+   * @param vecPattern
+   * @return whether the functor is capable of using the specified Vectorization Pattern
+   */
+  bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) override {
+    return vecPattern == VectorizationPatternOption::p1xVec;
+  }
 };
 
 }  // namespace autopas
