@@ -391,7 +391,7 @@ class LJFunctorHWY
   /**
    * Determines the remainder length that can't be vectorized in the loop over j.
    *
-   * @tparam reversed
+   * @tparam vecPattern
    * @param j
    * @return the remainder length that can't be vectorized in the loop over j.
    */
@@ -410,6 +410,24 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Depending on the vectorization pattern, this function fills the registers for the loop over i. This includes the
+   * positions and the ownership state.
+   *
+   * @tparam remainder
+   * @tparam reversed
+   * @tparam vecPattern
+   * @param i Current loop index for i
+   * @param xPtr pointer to the x coordinate of the particle at position i
+   * @param yPtr pointer to the y coordinate of the particle at position i
+   * @param zPtr pointer to the z coordinate of the particle at position i
+   * @param ownedStatePtr pointer to the ownership state of the particle at position i
+   * @param x1 The register to be filled for x coordinates
+   * @param y1 The register to be filled for y coordinates
+   * @param z1 The register to be filled for z coordinates
+   * @param ownedMaskI The mask to be filled for the ownership state
+   * @param restI Used in the case of the remainder loop
+   */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
   inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
                              const double *const __restrict zPtr,
@@ -530,13 +548,13 @@ class LJFunctorHWY
 
       const int lanes = remainder ? rest : _vecLengthDouble / 2;
 
-      VectorDouble fx2 = highway::LoadN(tag_double, &fx2Ptr[j], lanes);
-      VectorDouble fy2 = highway::LoadN(tag_double, &fy2Ptr[j], lanes);
-      VectorDouble fz2 = highway::LoadN(tag_double, &fz2Ptr[j], lanes);
+      const VectorDouble fx2 = highway::LoadN(tag_double, &fx2Ptr[j], lanes);
+      const VectorDouble fy2 = highway::LoadN(tag_double, &fy2Ptr[j], lanes);
+      const VectorDouble fz2 = highway::LoadN(tag_double, &fz2Ptr[j], lanes);
 
-      auto newFx = fx2 - fxCombinedExt;
-      auto newFy = fy2 - fyCombinedExt;
-      auto newFz = fz2 - fzCombinedExt;
+      const auto newFx = fx2 - fxCombinedExt;
+      const auto newFy = fy2 - fyCombinedExt;
+      const auto newFz = fz2 - fzCombinedExt;
 
       highway::StoreN(newFx, tag_double, &fx2Ptr[j], lanes);
       highway::StoreN(newFy, tag_double, &fy2Ptr[j], lanes);
@@ -838,6 +856,23 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Depending on the vectorization pattern, this function fills the registers for the loop over j. This includes the
+   * positions and the ownership state.
+   *
+   * @tparam remainder
+   * @tparam vecPattern
+   * @param j Current loop index for j
+   * @param x2Ptr pointer to the x coordinate of the particle at position j
+   * @param y2Ptr pointer to the y coordinate of the particle at position j
+   * @param z2Ptr pointer to the z coordinate of the particle at position j
+   * @param ownedStatePtr2 pointer to the ownership state of the particle at position j
+   * @param x2 The register to be filled for x coordinates
+   * @param y2 The register to be filled for y coordinates
+   * @param z2 The register to be filled for z coordinates
+   * @param ownedStateJLong The register to be filled for the ownership state
+   * @param rest Used in the case of the remainder loop
+   */
   template <bool remainder, VectorizationPattern vecPattern>
   inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
@@ -1032,10 +1067,9 @@ class LJFunctorHWY
 
     const auto dr2 = drX2 + drY2 + drZ2;
 
-    const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
     const auto dummyMask =
-        highway::And(ownedMaskI, highway::Ne(highway::ConvertTo(tag_double, ownedStateJLong), _ownedStateDummy));
-    const auto cutoffDummyMask = highway::And(cutoffMask, dummyMask);
+        highway::And(ownedMaskI, highway::MaskFromVec(highway::ConvertTo(tag_double, ownedStateJLong)));
+    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
