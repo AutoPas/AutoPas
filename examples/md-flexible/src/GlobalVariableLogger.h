@@ -44,7 +44,7 @@ public:
    * @param hitRate percentage of distance calculations that result in force contributions.
    * std::numeric_limits<double>::quiet_NaN() is interpreted as invalid.
    */
-  void logGlobals(size_t iteration);
+  void logGlobals(const size_t iteration, const double virial, const double potentialEnergy);
 
 private:
   std::string _loggerName;

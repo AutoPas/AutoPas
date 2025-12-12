@@ -103,6 +103,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   const auto outputSuffix =
       "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
 
+  _globalLogger = std::make_unique<GlobalVariableLogger>(outputSuffix);
+
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
   } else {
@@ -297,7 +299,10 @@ void Simulation::run() {
       updateThermostat();
     }
     _timers.computationalLoad.stop();
-
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    //const auto potentialEnergy = applyWithChosenFunctor<double>([&](auto &&functor) { return functor.getPotentialEnergy(); });
+    _globalLogger->logGlobals(_iteration, 0., 0.);
+#endif
     if (not _simulationIsPaused) {
       ++_iteration;
     }

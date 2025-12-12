@@ -96,7 +96,7 @@ class Simulation {
   /**
  * Logger for FLOP count and hit rate.
  */
-  GlobalVariableLogger _globalLogger;
+  std::unique_ptr<GlobalVariableLogger> _globalLogger;
 
   /**
    * Number of completed iterations. Aka. number of current iteration.

@@ -23,9 +23,9 @@ GlobalVariableLogger::GlobalVariableLogger(const std::string &outputSuffix) : _l
   // print csv header
   headerLogger->info(
       "Date,"
-      "Iteration,"//
-      //"Number FLOPs,"
-      //"Hit Rate"
+      "Iteration,"
+      "Virial Sum,"
+      "Potential Energy"
       );
   spdlog::drop(headerLoggerName);
   // End of workaround
@@ -43,8 +43,8 @@ GlobalVariableLogger::~GlobalVariableLogger() {
 #endif
 }
 
-void GlobalVariableLogger::logGlobals(size_t iteration) {
+void GlobalVariableLogger::logGlobals(const size_t iteration, const double virial, const double potentialEnergy) {
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
-  spdlog::get(_loggerName)->info("{}", iteration);
+  spdlog::get(_loggerName)->info("{},{},{}", iteration, virial, potentialEnergy);
 #endif
 }
