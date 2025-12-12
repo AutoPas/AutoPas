@@ -33,6 +33,7 @@
 #include "autopas/utils/logging/LiveInfoLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
+#include "utils/RegressionPredictor.h"
 
 namespace autopas {
 
@@ -160,10 +161,23 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    bool doDataStructureUpdate;
+#if defined(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS) && !defined(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN)
     this->checkNeighborListsInvalidDoDynamicRebuild();
+    doDataStructureUpdate = not neighborListsAreValid();
 #endif
-    bool doDataStructureUpdate = not neighborListsAreValid();
+
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+    doDataStructureUpdate = not neighborListsAreValidBuf();
+    if (not doDataStructureUpdate) {
+      this->addFastParticlesToParticleBuffer();
+      /*size_t numParticlesBuffer = getNumberOfParticlesBuffer();
+      if (numParticlesBuffer > 0) {
+        _doDynamicRebuild = this->decideToRebuildOnFastParticleBufferFullness(numParticlesBuffer);
+      }*/
+    }
+    doDataStructureUpdate = not neighborListsAreValidBuf();
+#endif
 
     if (_functorCalls > 0) {
       // Bump iteration counters for all autotuners
@@ -551,6 +565,14 @@ class LogicHandler {
    */
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
+  [[nodiscard]] unsigned long getNumberOfParticlesBuffer() const {
+    size_t particleBufferSize = 0;
+    for (auto &th : _particleBuffer) {
+      particleBufferSize += th.size();
+    }
+    return particleBufferSize;
+  }
+
   /**
    * Check if other autotuners for any other interaction types are still in a tuning phase.
    * @param interactionType
@@ -631,6 +653,24 @@ class LogicHandler {
   }
 
   /**
+   * Adds particle to particle buffer if it has moved more than skin/2.
+   */
+  void addFastParticlesToParticleBuffer();
+
+  /**
+   * If the estimated amount of remainderTime_ns is higher than the estimated rebuildNeighborLists_ns.
+   * updates bool: _doDynamicRebuild
+   */
+  bool decideToRebuildOnFastParticleBufferFullness(size_t numParticlesBuffer);
+
+  /**
+   * Checks if the auto tuner tests a NEW configuration.
+   * updates bool: _doTuningRebuild
+   * @return _doTuningRebuild
+   */
+  bool isTuningInNeedOfRebuild();
+
+  /**
    * getter function for _neighborListInvalidDoDynamicRebuild
    * @return bool stored in _neighborListInvalidDoDynamicRebuild
    */
@@ -657,6 +697,16 @@ class LogicHandler {
    * @return True iff the neighbor lists will not be rebuild.
    */
   bool neighborListsAreValid();
+
+  /**
+   * Checks if in the next iteration the neighbor lists have to be rebuilt.
+   *
+   * This can be the case either because of the dynamic rebuild criteria or because the
+   * auto tuner tests a new configuration.
+   *
+   * @return True iff the neighbor lists will not be rebuild.
+   */
+  bool neighborListsAreValidBuf();
 
  private:
   /**
@@ -1066,6 +1116,14 @@ class LogicHandler {
   size_t _numParticlesFast{0};
 
   /**
+   * For estimation
+   */
+  struct rebuildEstimator {
+    utils::Mean _rebuildNeighborEstimate{};
+    utils::LinearRegression1Predictor _remainderTraversalEstimate{};
+  } _rebuildEstimator{};
+
+  /**
    * The iteration number at the end of last tuning phase.
    */
   unsigned int _iterationAtEndOfLastTuningPhase{0};
@@ -1112,6 +1170,17 @@ class LogicHandler {
    * neighborListInvalidDoDynamicRebuild - true if a particle has moved more than skin/2
    */
   bool _neighborListInvalidDoDynamicRebuild{false};
+
+  /**
+   * Tells if dynamic rebuild is necessary currently
+   * neighborListInvalidDoDynamicRebuild - true if a particle has moved more than skin/2
+   */
+  bool _doDynamicRebuild{false};
+
+  /**
+   *
+   */
+  bool _doTuningRebuild{false};
 
   /**
    * updating position at rebuild for every particle
@@ -1178,6 +1247,82 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
   }
 
   return _neighborListsAreValid.load(std::memory_order_relaxed);
+}
+
+template <typename Particle_T>
+bool LogicHandler<Particle_T>::neighborListsAreValidBuf() {
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+  if (isTuningInNeedOfRebuild() or _doDynamicRebuild) {
+    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+  }
+#endif
+  return _neighborListsAreValid.load(std::memory_order_relaxed);
+}
+
+template <typename Particle_T>
+bool LogicHandler<Particle_T>::isTuningInNeedOfRebuild() {
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+  // Implement rebuild indicator as function, so it is only evaluated when needed.
+  const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
+    return _interactionTypes.contains(interactionOption) and
+           _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
+  };
+  if (needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
+    _doTuningRebuild = true;
+  }
+#endif
+  return _doTuningRebuild;
+}
+
+template <typename Particle_T>
+void LogicHandler<Particle_T>::addFastParticlesToParticleBuffer() {
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+  const auto skin = getContainer().getVerletSkin();
+  // (skin/2)^2
+  const auto halfSkinSquare = skin * skin * 0.25;
+  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
+  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // require a rebuild of neighbor lists.
+  AUTOPAS_OPENMP(parallel reduction(+ : _numParticlesFast))
+  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+    const auto distance = iter->calculateDisplacementSinceRebuild();
+    const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+    if (distanceSquare >= halfSkinSquare) {
+      Particle_T &particle = *iter;
+      Particle_T particleCopy = particle;
+
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      internal::markParticleAsDeleted(particle);
+
+      _numParticlesFast++;
+    }
+  }
+#endif
+}
+
+template <typename Particle_T>
+bool LogicHandler<Particle_T>::decideToRebuildOnFastParticleBufferFullness(size_t numParticlesBuffer) {
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+  const utils::RegressionObject::Result rebuildNeighborEstimate = _rebuildEstimator._rebuildNeighborEstimate.predict();
+  const utils::RegressionObject::Result remainderTraversalEstimate =
+      _rebuildEstimator._remainderTraversalEstimate.predict(numParticlesBuffer);
+  /*const utils::RegressionObject::Result remainderTraversalEstimate_zero =
+      _rebuildEstimator._remainderTraversalEstimate.predict(0);*/
+  if (rebuildNeighborEstimate._isOk && remainderTraversalEstimate._isOk) {
+    long rebuildRun = rebuildNeighborEstimate._value;
+    /*if (remainderTraversalEstimate_zero._isOk) {
+      rebuildRun += remainderTraversalEstimate_zero._value;
+    }*/
+    if (rebuildRun <= remainderTraversalEstimate._value) {
+      _doDynamicRebuild = true;
+    }
+  } else if (rebuildNeighborEstimate._returnCode == utils::RegressionObject::ReturnCode::OVERFLOW ||
+             remainderTraversalEstimate._returnCode == utils::RegressionObject::ReturnCode::OVERFLOW ||
+             rebuildNeighborEstimate._returnCode == utils::RegressionObject::ReturnCode::NOT_ENOUGH_POINTS) {
+    _doDynamicRebuild = true;
+  }
+#endif
+  return _doDynamicRebuild;
 }
 
 template <typename Particle_T>
@@ -1296,8 +1441,16 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerTotal.start();
   functor.initTraversal();
 
+  size_t numParticlesBuffer = getNumberOfParticlesBuffer();
+  bool doRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+  if (not doRebuild && numParticlesBuffer > 0) {
+    _doDynamicRebuild = this->decideToRebuildOnFastParticleBufferFullness(numParticlesBuffer);
+  }
+#endif
+
   // if lists are not valid -> rebuild;
-  if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+  if (doRebuild) {
     timerRebuild.start();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
@@ -1311,6 +1464,18 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     }
 #endif
     timerRebuild.stop();
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+    if (not _doTuningRebuild) {
+      if (_rebuildEstimator._rebuildNeighborEstimate.addNewPoint(timerRebuild.getTotalTime()) ==
+          utils::RegressionObject::ReturnCode::OVERFLOW) {
+        _rebuildEstimator._rebuildNeighborEstimate.reset();
+      }
+    }
+    _numParticlesFast = 0;
+    _rebuildEstimator._remainderTraversalEstimate.reset();
+    _doTuningRebuild = false;
+    _doDynamicRebuild = false;
+#endif
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
 
@@ -1318,17 +1483,19 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
 
-  _particleBufferSize = 0;
-  for (auto &th : _particleBuffer) {
-    _particleBufferSize += th.size();
-  }
-
   timerComputeRemainder.start();
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
   const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
   computeRemainderInteractions(functor, newton3, dataLayout);
   timerComputeRemainder.stop();
 
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN
+  if (_rebuildEstimator._remainderTraversalEstimate.addNewPoint(
+          numParticlesBuffer, timerComputeRemainder.getTotalTime()) == utils::RegressionObject::ReturnCode::OVERFLOW) {
+    _rebuildEstimator._remainderTraversalEstimate.reset();
+    _doDynamicRebuild = true;
+  }
+#endif
   functor.endTraversal(newton3);
 
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
@@ -1345,7 +1512,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyJoules : nanD,
           energyMeasurementsPossible ? energyDeltaT : nanD,
           energyMeasurementsPossible ? energyTotal : nanL,
-          _particleBufferSize,
+          numParticlesBuffer,
           getNumberOfParticlesOwned(),
           getNumberOfParticlesHalo(),
           _numParticlesFast};
