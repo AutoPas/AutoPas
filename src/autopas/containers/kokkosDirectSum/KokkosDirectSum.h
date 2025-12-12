@@ -193,7 +193,7 @@ template <class Particle_T>
                 _aosUpToDate = false;
               }
 
-              Kokkos::parallel_for("forEach", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i) {
+              Kokkos::parallel_for("forEach", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
                   // TODO: consider behavior
                   forEachLambda(i, _ownedParticles);
                 });
@@ -210,9 +210,10 @@ template <class Particle_T>
                 convertToSoA();
               }
 
-              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult) {
+              auto& owned = _ownedParticles;
+              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   // TODO: consider behavior
-                  reduceLambda(i, _ownedParticles, localResult);
+                  reduceLambda(i, owned, localResult);
                 }, Reduction(result));
             }
 
@@ -258,24 +259,12 @@ template <class Particle_T>
 
               auto targetLayout = traversal->getDataLayout();
 
-              if (targetLayout == DataLayoutOption::aos) {
-
-                if (_dataLayout != DataLayoutOption::aos) {
-                  convertToAoS();
-                }
-
-                kokkosDsTraversal->setOwnedAoSToTraverse(_ownedParticles.getAoS());
-                //kokkosDsTraversal->setHaloToTraverse(_haloParticles);
+              if (targetLayout != _dataLayout) {
+                convertTo(targetLayout);
               }
-              else if (targetLayout == DataLayoutOption::soa) {
 
-                if (_dataLayout != DataLayoutOption::soa) {
-                  convertToSoA();
-                }
-
-                kokkosDsTraversal->setOwnedSoAToTraverse(_ownedParticles.getSoA());
-                //kokkosDsTraversal->setHaloToTraverse(_hostHaloParticlesSoA);
-              }
+              kokkosDsTraversal->setOwnedToTraverse(_ownedParticles);
+              kokkosDsTraversal->setHaloToTraverse(_haloParticles);
             }
             else {
                 utils::ExceptionHandler::exception("The selected traversal is not compatible with the KokkosDirectSum container.");
@@ -290,9 +279,10 @@ template <class Particle_T>
 
             auto targetLayout = traversal->getDataLayout();
 
+            kokkosDsTraversal->retrieveOwned(_ownedParticles);
+
             if (targetLayout == DataLayoutOption::aos) {
               _soaUpToDate = false;
-              kokkosDsTraversal->retrieveOwnedAoS(_ownedParticles.getAoS());
               _aosUpToDate = true;
               if (_dataLayout != targetLayout) {
                 convertToSoA();
@@ -300,7 +290,6 @@ template <class Particle_T>
             }
             else if (targetLayout == DataLayoutOption::soa) {
               _aosUpToDate = false;
-              kokkosDsTraversal->retrieveOwnedSoA(_ownedParticles.getSoA());
               _soaUpToDate = true;
               if (_dataLayout != targetLayout) {
                 convertToAoS();
@@ -309,6 +298,15 @@ template <class Particle_T>
           }
           else {
             utils::ExceptionHandler::exception("The selected traversal is not compatible with the KokkosDirectSum container.");
+          }
+        }
+
+        void convertTo(DataLayoutOption layout) {
+          if (layout == DataLayoutOption::soa) {
+            convertToSoA();
+          }
+          else if (layout == DataLayoutOption::aos) {
+            convertToAoS();
           }
         }
 

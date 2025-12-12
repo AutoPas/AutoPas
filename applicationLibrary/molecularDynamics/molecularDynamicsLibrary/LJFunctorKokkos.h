@@ -108,15 +108,12 @@ class LJFunctorKokkos
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+  void AoSFunctorKokkos(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
-    // TODO: change Particle to be a struct of data with no functions to call, easier for Kokkos
-    /*
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    */
 
     auto sigmaSquared = _sigmaSquared;
     auto epsilon24 = _epsilon24;
@@ -145,23 +142,16 @@ class LJFunctorKokkos
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
-
   }
 
-  /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
-   * This functor will always use a newton3 like traversal of the soa.
-   */
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-
+  // TODO: correct memory space
+  void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) final {
+    // No Op unless overridden
   }
 
-  /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
-   */
-  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                      const bool newton3) final {
-    // TODO
+  // TODO: correct memory space
+  void SoAFunctorSingleKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa, bool newton3) final {
+    // No Op unless overridden
   }
 
  private:
@@ -174,7 +164,7 @@ class LJFunctorKokkos
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    // TODO
+    // no op
   }
 
  public:

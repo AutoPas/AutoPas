@@ -12,6 +12,7 @@
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/KokkosStorage.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
@@ -57,6 +58,10 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
     utils::ExceptionHandler::exception("{}::AoSFunctor: not implemented", this->getName());
   }
 
+  virtual void AoSFunctorKokkos(Particle_T &i, Particle_T &j, bool newton3) {
+    // TODO: implement
+  }
+
   /**
    * PairwiseFunctor for structure of arrays (SoA)
    *
@@ -69,6 +74,11 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
+  }
+
+  // TODO: correct memory space
+  virtual void SoAFunctorSingleKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa, bool newton3) {
+    // No Op unless overridden
   }
 
   /**
@@ -101,6 +111,11 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
+  }
+
+  // TODO: correct memory space
+  virtual void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) {
+    // No Op unless overridden
   }
 };
 

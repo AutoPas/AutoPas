@@ -46,6 +46,12 @@ namespace autopas::utils {
       return std::get<attribute - (offset ? 1 : 0)>(views)(index);
     }
 
+    template <size_t attribute, bool offset>
+    KOKKOS_INLINE_FUNCTION
+    constexpr const std::tuple_element<attribute - (offset ? 1 : 0), std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type get(size_t index) const {
+      return std::get<attribute - (offset ? 1 : 0)>(views)(index);
+    }
+
     template <size_t attribute>
         constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types, MemSpace>...>>::type& getView() {
       return std::get<attribute>(views);

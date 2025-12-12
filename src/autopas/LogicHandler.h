@@ -1211,7 +1211,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     bool test = _neighborListInvalidDoDynamicRebuild;
 
-    auto lambda = KOKKOS_LAMBDA(int i, utils::KokkosStorage<Kokkos::HostSpace, Particle_T>& storage, bool& local) {
+    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Kokkos::HostSpace, Particle_T>& storage, bool& local) {
 
         const auto pX = storage.template get<Particle_T::AttributeNames::posX, true>(i);
         const auto pY = storage.template get<Particle_T::AttributeNames::posY, true>(i);

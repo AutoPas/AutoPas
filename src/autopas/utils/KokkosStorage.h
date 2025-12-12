@@ -81,6 +81,23 @@ namespace autopas::utils {
 
     template <size_t attribute, bool offset>
     KOKKOS_INLINE_FUNCTION
+    constexpr const auto get(size_t index) const {
+      switch (_layout) {
+        case DataLayoutOption::aos: {
+          return storageAoS.template get<attribute, offset>(index);
+        }
+        case DataLayoutOption::soa: {
+          return storageSoA.template get<attribute, offset>(index);
+        }
+        default: {
+          // Should never happen, just to avoid compiler warnings
+          return storageAoS.template get<attribute, offset>(index);
+        }
+      }
+    }
+
+    template <size_t attribute, bool offset>
+    KOKKOS_INLINE_FUNCTION
     void set(auto value, size_t index) {
       switch (_layout) {
         case DataLayoutOption::aos: {
@@ -112,6 +129,10 @@ namespace autopas::utils {
 
     const Particle_T::template KokkosSoAArraysType<MemSpace>& getSoA() const {
       return storageSoA;
+    }
+
+    constexpr static size_t tupleSize() {
+      return Particle_T::template KokkosSoAArraysType<MemSpace>::tupleSize();
     }
 
   private:

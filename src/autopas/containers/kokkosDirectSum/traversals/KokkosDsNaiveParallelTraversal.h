@@ -34,23 +34,31 @@ public:
 
     void traverseParticles() final {
       // TODO: be aware of data layout
-      auto& owned = DSKokkosTraversalInterface<Particle_T>::_ownedParticlesAoS;
       const bool newton3 = _useNewton3;
-
       const auto func = _functor;
-      int N = owned.size();
 
-      // TODO: think about MD Range policy to allow parallelism for both loops
-      Kokkos::parallel_for("traverseParticles", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i) {
-        for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
-          if (newton3 or i != j) {
-            func->AoSFunctor(owned(i), owned(j), newton3);
+      // TODO: this should only be executed on the CPU
+      if (_dataLayout == DataLayoutOption::aos) {
+        utils::KokkosAoS<DeviceSpace, Particle_T>& ownedAoS = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS();
+        int N = ownedAoS.size();
+        Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
+          for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
+            if (newton3 or i != j) {
+              func->AoSFunctorKokkos(
+                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS()(i),
+                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS()(j),
+                newton3);
+            }
           }
-        }
-      });
+        });
 
-      // TODO: consider halo particles
-      // Maybe even execute halo traversal simultaneously on the host with some sort of data storage mechanism
+        // TODO: consider halo particles
+        // Maybe even execute halo traversal simultaneously on the host with some sort of result merge mechanism in the end
+      }
+      else if (_dataLayout == DataLayoutOption::soa) {
+
+        // TODO: implement
+      }
     }
 
     void endTraversal() final {
