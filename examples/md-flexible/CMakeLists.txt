@@ -176,7 +176,7 @@ add_test(
 
 add_test(
         NAME md-flexMeasurePerf
-        COMMAND measurePerf.sh md-flexible --vectorization-pattern 1xVectorLength -silent
+        COMMAND measurePerf.sh md-flexible -silent
         CONFIGURATIONS checkExamples
 )
 # cmake-format: on
