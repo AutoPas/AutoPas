@@ -37,10 +37,13 @@ public:
       const bool newton3 = _useNewton3;
       const auto func = _functor;
 
+      size_t N = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.size();
+
       // TODO: this should only be executed on the CPU
       if (_dataLayout == DataLayoutOption::aos) {
-        utils::KokkosAoS<DeviceSpace, Particle_T>& ownedAoS = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS();
-        int N = ownedAoS.size();
+#ifdef KOKKOS_ENABLE_CUDA
+        return; // TODO: log error / exception
+#else
         Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
             if (newton3 or i != j) {
@@ -54,9 +57,13 @@ public:
 
         // TODO: consider halo particles
         // Maybe even execute halo traversal simultaneously on the host with some sort of result merge mechanism in the end
+#endif
       }
       else if (_dataLayout == DataLayoutOption::soa) {
-
+        auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
+        Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i) {
+          func->SoAFunctorSingleKokkos(ownedSoA, newton3);
+        });
         // TODO: implement
       }
     }

@@ -93,7 +93,13 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 
 #endif
 
-using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#ifdef KOKKOS_ENABLE_CUDA
+using MemSpace = Kokkos::Cuda;
+#else
+using MemSpace = Kokkos::HostSpace
+#endif
+
+using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<MemSpace, ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**

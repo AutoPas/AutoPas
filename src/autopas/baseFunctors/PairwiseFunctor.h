@@ -28,7 +28,7 @@ class VerletListHelpers;
  * @tparam Particle_T the type of Particle
  * @tparam CRTP_T the actual type of the functor
  */
-template <class Particle_T, class CRTP_T>
+template <class Particle_T, class CRTP_T, class MemSpace = Kokkos::HostSpace>
 class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
  public:
   /**
@@ -77,7 +77,8 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   // TODO: correct memory space
-  virtual void SoAFunctorSingleKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa, bool newton3) {
+  KOKKOS_INLINE_FUNCTION
+  virtual void SoAFunctorSingleKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa, bool newton3) {
     // No Op unless overridden
   }
 
@@ -114,7 +115,8 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   // TODO: correct memory space
-  virtual void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) {
+  KOKKOS_INLINE_FUNCTION
+  virtual void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) {
     // No Op unless overridden
   }
 };

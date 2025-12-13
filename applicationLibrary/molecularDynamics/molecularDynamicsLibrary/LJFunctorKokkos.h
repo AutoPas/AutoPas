@@ -30,12 +30,13 @@ namespace mdLib {
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle_T, bool applyShift = false, bool useMixing = false,
+
+template <class MemSpace, class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorKokkos
-    : public autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T, applyShift, useMixing, useNewton3,
-                                                            calculateGlobals, countFLOPs, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<MemSpace, Particle_T, applyShift, useMixing, useNewton3,
+                                                            calculateGlobals, countFLOPs, relevantForTuning>, MemSpace> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -59,8 +60,8 @@ class LJFunctorKokkos
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctorKokkos(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                       countFLOPs, relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<MemSpace, Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                       countFLOPs, relevantForTuning>, MemSpace>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -145,12 +146,14 @@ class LJFunctorKokkos
   }
 
   // TODO: correct memory space
-  void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) final {
+  KOKKOS_INLINE_FUNCTION
+  void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) final {
     // No Op unless overridden
   }
 
   // TODO: correct memory space
-  void SoAFunctorSingleKokkos(Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa, bool newton3) final {
+  KOKKOS_INLINE_FUNCTION
+  void SoAFunctorSingleKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa, bool newton3) final {
     // No Op unless overridden
   }
 

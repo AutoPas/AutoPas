@@ -135,6 +135,17 @@ namespace autopas::utils {
       return Particle_T::template KokkosSoAArraysType<MemSpace>::tupleSize();
     }
 
+    size_t size() const {
+      switch (_layout) {
+        case DataLayoutOption::aos: {
+          return storageAoS.size();
+        }
+        case DataLayoutOption::soa: {
+          return storageSoA.size();
+        }
+      }
+    }
+
   private:
     KokkosDataLayoutConverter<Particle_T> _converter {};
 
