@@ -143,6 +143,9 @@ namespace autopas::utils {
         case DataLayoutOption::soa: {
           return storageSoA.size();
         }
+        default: {
+          return 0;
+        }
       }
     }
 

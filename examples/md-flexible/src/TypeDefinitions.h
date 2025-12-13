@@ -94,7 +94,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 #endif
 
 #ifdef KOKKOS_ENABLE_CUDA
-using MemSpace = Kokkos::Cuda;
+using MemSpace = Kokkos::CudaSpace;
 #else
 using MemSpace = Kokkos::HostSpace
 #endif
