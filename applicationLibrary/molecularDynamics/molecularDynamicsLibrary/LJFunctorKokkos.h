@@ -147,7 +147,7 @@ class LJFunctorKokkos
 
   // TODO: correct memory space
   KOKKOS_INLINE_FUNCTION
-  void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) final {
+  void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa1, Particle_T::template KokkosSoAArraysType<MemSpace>& soa2, bool newton3) final {
     // No Op unless overridden
   }
 
@@ -165,29 +165,8 @@ class LJFunctorKokkos
    * @param soa1
    * @param soa2
    */
-  template <bool newton3>
-  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    // no op
-  }
 
  public:
-  // clang-format off
-  /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-   * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors!
-   */
-  // clang-format on
-  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
-    if (soa.size() == 0 or neighborList.empty()) return;
-    if (newton3) {
-      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
-    } else {
-      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
-    }
-  }
 
   /**
    * Sets the particle properties constants for this functor.

@@ -116,7 +116,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
 
   // TODO: correct memory space
   KOKKOS_INLINE_FUNCTION
-  virtual void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa1, Particle_T::template KokkosSoAArraysType<Kokkos::HostSpace>& soa2, bool newton3) {
+  virtual void SoAFunctorPairKokkos(Particle_T::template KokkosSoAArraysType<MemSpace>& soa1, Particle_T::template KokkosSoAArraysType<MemSpace>& soa2, bool newton3) {
     // No Op unless overridden
   }
 };

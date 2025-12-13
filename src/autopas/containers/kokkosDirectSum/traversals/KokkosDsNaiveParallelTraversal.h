@@ -60,9 +60,10 @@ public:
 #endif
       }
       else if (_dataLayout == DataLayoutOption::soa) {
-        auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
         Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i) {
-          func->SoAFunctorSingleKokkos(ownedSoA, newton3);
+          func->SoAFunctorSingleKokkos(
+            DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA(),
+            newton3);
         });
         // TODO: implement
       }
