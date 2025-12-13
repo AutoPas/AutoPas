@@ -1069,7 +1069,7 @@ class LJFunctorHWY
     const auto dr2 = drX2 + drY2 + drZ2;
 
     const auto dummyMask =
-        highway::And(ownedMaskI, highway::MaskFromVec(highway::ConvertTo(tag_double, ownedStateJLong)));
+        highway::And(ownedMaskI, highway::Ne(highway::ConvertTo(tag_double, ownedStateJLong), _ownedStateDummy));
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
