@@ -557,48 +557,22 @@ class LJFunctorHWY
       highway::StoreN(newFy, tag_double_half, &fy2Ptr[j], lanes);
       highway::StoreN(newFz, tag_double_half, &fz2Ptr[j], lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      const auto lowerFx = highway::LowerHalf(fx);
-      const auto lowerFy = highway::LowerHalf(fy);
-      const auto lowerFz = highway::LowerHalf(fz);
+      const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
+      const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
+      const auto lowerFz = highway::LowerHalf(tag_double_half, fz);
 
-      auto lowerFxExt = highway::ZeroExtendVector(tag_double, lowerFx);
-      auto lowerFyExt = highway::ZeroExtendVector(tag_double, lowerFy);
-      auto lowerFzExt = highway::ZeroExtendVector(tag_double, lowerFz);
-
-      if constexpr (reversed) {
-        if (j > i - _vecLengthDouble / 2) {
-          const auto mask = _overlapMasks[remainder ? rest : _vecLengthDouble / 2];
-          lowerFxExt = highway::IfThenElseZero(mask, lowerFxExt);
-          lowerFyExt = highway::IfThenElseZero(mask, lowerFyExt);
-          lowerFzExt = highway::IfThenElseZero(mask, lowerFzExt);
-        }
-      }
-
-      fx2Ptr[j] -= highway::ReduceSum(tag_double, lowerFxExt);
-      fy2Ptr[j] -= highway::ReduceSum(tag_double, lowerFyExt);
-      fz2Ptr[j] -= highway::ReduceSum(tag_double, lowerFzExt);
+      fx2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFx);
+      fy2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFy);
+      fz2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFz);
 
       if constexpr (not remainder) {
         const auto upperFx = highway::UpperHalf(tag_double_half, fx);
         const auto upperFy = highway::UpperHalf(tag_double_half, fy);
         const auto upperFz = highway::UpperHalf(tag_double_half, fz);
 
-        auto upperFxExt = highway::ZeroExtendVector(tag_double, upperFx);
-        auto upperFyExt = highway::ZeroExtendVector(tag_double, upperFy);
-        auto upperFzExt = highway::ZeroExtendVector(tag_double, upperFz);
-
-        if constexpr (reversed) {
-          if (j >= i - _vecLengthDouble / 2) {
-            const auto mask = _overlapMasks[_vecLengthDouble / 2];
-            upperFxExt = highway::IfThenElseZero(mask, upperFxExt);
-            upperFyExt = highway::IfThenElseZero(mask, upperFyExt);
-            upperFzExt = highway::IfThenElseZero(mask, upperFzExt);
-          }
-        }
-
-        fx2Ptr[j + 1] -= highway::ReduceSum(tag_double, upperFxExt);
-        fy2Ptr[j + 1] -= highway::ReduceSum(tag_double, upperFyExt);
-        fz2Ptr[j + 1] -= highway::ReduceSum(tag_double, upperFzExt);
+        fx2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFx);
+        fy2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFy);
+        fz2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFz);
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       fx2Ptr[j] -= highway::ReduceSum(tag_double, fx);
@@ -635,9 +609,9 @@ class LJFunctorHWY
         fzPtr[index] += highway::ReduceSum(tag_double_half, upperFzAcc);
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      const auto lowerFxAcc = highway::LowerHalf(fxAcc);
-      const auto lowerFyAcc = highway::LowerHalf(fyAcc);
-      const auto lowerFzAcc = highway::LowerHalf(fzAcc);
+      const auto lowerFxAcc = highway::LowerHalf(tag_double_half, fxAcc);
+      const auto lowerFyAcc = highway::LowerHalf(tag_double_half, fyAcc);
+      const auto lowerFzAcc = highway::LowerHalf(tag_double_half, fzAcc);
 
       const auto upperFxAcc = highway::UpperHalf(tag_double_half, fxAcc);
       const auto upperFyAcc = highway::UpperHalf(tag_double_half, fyAcc);
@@ -647,25 +621,21 @@ class LJFunctorHWY
       const auto fyAccCombined = lowerFyAcc + upperFyAcc;
       const auto fzAccCombined = lowerFzAcc + upperFzAcc;
 
-      const auto fxAccExt = highway::ZeroExtendVector(tag_double, fxAccCombined);
-      const auto fyAccExt = highway::ZeroExtendVector(tag_double, fyAccCombined);
-      const auto fzAccExt = highway::ZeroExtendVector(tag_double, fzAccCombined);
-
       const int index = reversed ? (remainder ? 0 : i - _vecLengthDouble / 2 + 1) : i;
 
       const int lanes = remainder ? restI : _vecLengthDouble / 2;
 
-      const VectorDouble oldFx = highway::LoadN(tag_double, &fxPtr[index], lanes);
-      const VectorDouble oldFy = highway::LoadN(tag_double, &fyPtr[index], lanes);
-      const VectorDouble oldFz = highway::LoadN(tag_double, &fzPtr[index], lanes);
+      const auto oldFx = highway::LoadN(tag_double_half, &fxPtr[index], lanes);
+      const auto oldFy = highway::LoadN(tag_double_half, &fyPtr[index], lanes);
+      const auto oldFz = highway::LoadN(tag_double_half, &fzPtr[index], lanes);
 
-      const auto newFx = oldFx + fxAccExt;
-      const auto newFy = oldFy + fyAccExt;
-      const auto newFz = oldFz + fzAccExt;
+      const auto newFx = oldFx + fxAccCombined;
+      const auto newFy = oldFy + fyAccCombined;
+      const auto newFz = oldFz + fzAccCombined;
 
-      highway::StoreN(newFx, tag_double, &fxPtr[index], lanes);
-      highway::StoreN(newFy, tag_double, &fyPtr[index], lanes);
-      highway::StoreN(newFz, tag_double, &fzPtr[index], lanes);
+      highway::StoreN(newFx, tag_double_half, &fxPtr[index], lanes);
+      highway::StoreN(newFy, tag_double_half, &fyPtr[index], lanes);
+      highway::StoreN(newFz, tag_double_half, &fzPtr[index], lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       const VectorDouble oldFx =
           remainder ? highway::LoadN(tag_double, &fxPtr[i], restI) : highway::LoadU(tag_double, &fxPtr[i]);
