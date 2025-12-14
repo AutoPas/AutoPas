@@ -25,16 +25,16 @@ void LJFunctorTestHWY::SetUp() {
  * Called from SetUp to initialize the particle properties library with common values.
  */
 void LJFunctorTestHWY::setupPPL() {
-  _PPL.addSiteType(0, 0.8);
-  _PPL.addLJParametersToSite(0, 0.3, 0.5);
+  _PPL.addSiteType(0, 1.0);
+  _PPL.addLJParametersToSite(0, 1.0, 1.4);
   _PPL.addSiteType(1, 1.5);
-  _PPL.addLJParametersToSite(1, 2.0, 1.2);
-  _PPL.addSiteType(2, 2.5);
-  _PPL.addLJParametersToSite(2, 1.0, 2.5);
-  _PPL.addSiteType(3, 4.0);
-  _PPL.addLJParametersToSite(3, 0.5, 1.0);
-  _PPL.addSiteType(4, 5.5);
-  _PPL.addLJParametersToSite(4, 3.0, 3.0);
+  _PPL.addLJParametersToSite(1, 1.1, 1.3);
+  _PPL.addSiteType(2, 2.);
+  _PPL.addLJParametersToSite(2, 1.2, 1.2);
+  _PPL.addSiteType(3, 2.5);
+  _PPL.addLJParametersToSite(3, 1.3, 1.1);
+  _PPL.addSiteType(4, 3.);
+  _PPL.addLJParametersToSite(4, 1.5, 1.0);
   _PPL.calculateMixingCoefficients();
 }
 
@@ -71,13 +71,12 @@ bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &so
   for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
-    constexpr double tolerance = 2e-6;
-    EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fxptr1[i], fxptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fyptr1[i], fyptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fzptr1[i], fzptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(xptr1[i], xptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(yptr1[i], yptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(zptr1[i], zptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fxptr1[i], fxptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fyptr1[i], fyptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fzptr1[i], fzptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
   }
 
   return not HasFailure();
@@ -93,13 +92,12 @@ bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &so
 bool LJFunctorTestHWY::checkParticlesAreEqual(const Molecule &p1, const Molecule &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
-  double tolerance = 2e-6;
-  EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[0], p2.getF()[0], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[1], p2.getF()[1], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[2], p2.getF()[2], tolerance) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[0], p2.getR()[0], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[1], p2.getR()[1], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[2], p2.getR()[2], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[0], p2.getF()[0], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[1], p2.getF()[1], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[2], p2.getF()[2], _maxError) << "for particle pair " << p1.getID();
 
   return not HasFailure();
 }
@@ -248,10 +246,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
 
-  const double tolerance = 1e-6;
-
-  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
 }
 
 /**
@@ -346,10 +342,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
 
-  const double tolerance = 1e-7;
-
-  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
 }
 
 /**
@@ -450,9 +444,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
   ljFunctor.endTraversal(newton3);
   ljFunctorHWY.endTraversal(newton3);
 
-  double tolerance = 1e-7;
-  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
 }
 
 /**
@@ -530,9 +523,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
 
-  double tolerance = 1e-7;
-  EXPECT_NEAR(ljFunctorHWY.getPotentialEnergy(), ljFunctor.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctor.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(ljFunctorHWY.getPotentialEnergy(), ljFunctor.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctor.getVirial(), _maxError) << "global virial";
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {

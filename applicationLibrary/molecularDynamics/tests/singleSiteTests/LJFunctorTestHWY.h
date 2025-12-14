@@ -22,7 +22,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
  public:
   LJFunctorTestHWY() = default;
 
-  constexpr static double _maxError = 1e-12;
+  constexpr static double _maxError = 1e-8;
 
   /**
    * Is called before each test case
@@ -125,7 +125,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   constexpr static double _epsilon{1.};
   constexpr static double _sigma{1.};
   const std::array<double, 3> _lowCorner{0., 0., 0.};
-  const std::array<double, 3> _highCorner{6., 6., 6.};
+  const std::array<double, 3> _highCorner{8., 8., 8.};
 
   // Global PPL for all tests.
   ParticlePropertiesLibrary<double, size_t> _PPL{_cutoff};

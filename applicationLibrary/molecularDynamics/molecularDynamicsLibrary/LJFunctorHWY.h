@@ -1402,9 +1402,6 @@ class LJFunctorHWY
   // vector register to hold the sigmaSquared values.
   VectorDouble _sigmaSquared{highway::Zero(tag_double)};
 
-  // Masks for the newton3 reduction.
-  MaskDouble _overlapMasks[_vecLengthDouble / 2];
-
   // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
   // epsilon, sigma and shift6 used in the AoS functor.
