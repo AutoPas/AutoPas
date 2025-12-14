@@ -117,21 +117,22 @@ class AxilrodTellerMutoFunctorHWY
    */
   AxilrodTellerMutoFunctorHWY() = delete;
 
- private:
   /**
-   * Internal, actual constructor.
+   * Constructor for Functor with mixing enabled/disabled. When using this functor without particlePropertiesLibrary it
+   * is necessary to call setParticleProperties() to set internal constants.
    * @param cutoff
-   * @note param dummy is unused, only there to make the signature different from the public constructor.
+   * @param particlePropertiesLibrary
    */
-  explicit AxilrodTellerMutoFunctorHWY(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<
-            Particle_T, AxilrodTellerMutoFunctorHWY<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
-            cutoff),
+  explicit AxilrodTellerMutoFunctorHWY(double cutoff,
+                                       std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
+                                           particlePropertiesLibrary = std::nullopt)
+      : autopas::TriwiseFunctor<Particle_T, AxilrodTellerMutoFunctorHWY>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadDataGlobals(),
-        _postProcessed{false} {
+        _postProcessed{false},
+        _PPLibrary{particlePropertiesLibrary} {
     const size_t numMaxThreads = autopas::autopas_get_max_threads();
     if constexpr (calculateGlobals) {
       _aosThreadDataGlobals.resize(numMaxThreads);
@@ -140,38 +141,19 @@ class AxilrodTellerMutoFunctorHWY
       _aosThreadDataFLOPs.resize(numMaxThreads);
       AutoPasLog(DEBUG, "Using AxilrodTellerMutoFunctorHWY with countFLOPs is not tested for SoA datalayout.");
     }
+
+    if constexpr (useMixing) {
+      if (not _PPLibrary.has_value()) {
+        throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
+      }
+    } else {
+      if (_PPLibrary.has_value()) {
+        throw std::runtime_error("Mixing is disabled but a ParticlePropertiesLibrary was provided!");
+      }
+    }
+
     precomputeBuffer1.resize(numMaxThreads);
     precomputeBuffer2.resize(numMaxThreads);
-  }
-
- public:
-  /**
-   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
-   * setParticleProperties() to set internal constants because it does not use a particle properties library.
-   *
-   * @note Only to be used with mixing == false.
-   *
-   * @param cutoff
-   */
-  explicit AxilrodTellerMutoFunctorHWY(double cutoff) : AxilrodTellerMutoFunctorHWY(cutoff, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
-
-  /**
-   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
-   * properties like nu.
-   * @param cutoff
-   * @param particlePropertiesLibrary
-   */
-  explicit AxilrodTellerMutoFunctorHWY(double cutoff,
-                                       ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : AxilrodTellerMutoFunctorHWY(cutoff, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
   }
 
   std::string getName() final { return "AxilrodTellerMutoFunctorAutoVec"; }
@@ -202,7 +184,7 @@ class AxilrodTellerMutoFunctorHWY
 
     auto nu = _nu;
     if constexpr (useMixing) {
-      nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
+      nu = _PPLibrary->get().getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
     }
 
     const auto displacementIJ = j.getR() - i.getR();
@@ -1168,11 +1150,11 @@ class AxilrodTellerMutoFunctorHWY
 
       if constexpr (remainder) {
         for (size_t n = 0; n < restK; ++n) {
-          nus[n] = _PPLibrary->getMixingNu(typePtrI[i], typePtrJ[j], typePtrK[k + n]);
+          nus[n] = _PPLibrary->get().getMixingNu(typePtrI[i], typePtrJ[j], typePtrK[k + n]);
         }
       } else {
         for (size_t n = 0; n < _vecLengthDouble; ++n) {
-          nus[n] = _PPLibrary->getMixingNu(typePtrI[i], typePtrJ[j], typePtrK[k + n]);
+          nus[n] = _PPLibrary->get().getMixingNu(typePtrI[i], typePtrJ[j], typePtrK[k + n]);
         }
       }
 
@@ -1806,7 +1788,9 @@ class AxilrodTellerMutoFunctorHWY
   // not const because they might be reset through PPL
   double _nu = 0.0;
 
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+  // optional to hold a reference to the ParticlePropertiesLibrary. If a ParticlePropertiesLibrary is not used the
+  // optional is empty.
+  std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> _PPLibrary;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
