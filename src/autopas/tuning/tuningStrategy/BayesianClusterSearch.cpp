@@ -20,10 +20,10 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
     unsigned long seed)
     : _interactionType(interactionType),
       _containerOptionsSet(allowedContainerOptions),
+      _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
-      _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
       _encoder(),
       _invalidConfigs(),
       _rng(seed),

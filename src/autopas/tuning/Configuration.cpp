@@ -88,10 +88,6 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
-  if (vecPattern != VectorizationPatternOption::p1xVec) {
-    // @todo if not HWY Functor, this should return false
-    // Consequently, we need some sort of access to the functor
-  }
 
   return true;
 }
@@ -122,7 +118,7 @@ bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Config
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
                   lhs.interactionType, lhs.vecPattern) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal,
                                                                   rhs.loadEstimator, rhs.dataLayout, rhs.newton3,
-                                                                  rhs.interactionType, lhs.vecPattern);
+                                                                  rhs.interactionType, rhs.vecPattern);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {

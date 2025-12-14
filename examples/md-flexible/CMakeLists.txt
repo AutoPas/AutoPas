@@ -17,8 +17,8 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
-option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_HWY "Compile Highway Functor, which uses the best available SIMD instruction set supported by google highway." ON)
 option(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC "Compile auto vectorized Axilrod-Teller-Muto Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_ATM_HWY "Compile auto vectorized Axilrod-Teller-Muto Functor." OFF)
@@ -106,7 +106,7 @@ add_test(
 
 # The AVX example should only be tested if AVX is available.
 set(HAS_AVX true)
-if (NOT AUTOPAS_USE_VECTORIZATION)
+if (NOT AUTOPAS_USE_AUTOVEC)
     # If no vectorization is used, don't enable the example.
     message(STATUS "No vectorization used, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
@@ -142,6 +142,7 @@ if (HAS_AVX)
             md-flexible
             --no-end-config
             --functor "${TEST_FUNCTOR}"
+            --vectorization-pattern 1xVectorLength
             --deltaT 0
             --particle-generator uniform
             --log-level debug
@@ -149,6 +150,11 @@ if (HAS_AVX)
             --particles-total 71
             --no-progress-bar
             CONFIGURATIONS checkExamples
+    )
+    set_tests_properties(
+            md-flexible-avx.test-unaligned
+            PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
     )
 else ()
   message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
@@ -164,6 +170,7 @@ add_test(
         --traversal all
         --cutoff 1.5
         --functor "${TEST_FUNCTOR}"
+        --vectorization-pattern 1xVectorLength
         --tuning-phases 1
         --particle-generator grid
         --particles-per-dimension 10
@@ -183,6 +190,15 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 # cmake-format: on
+
+set_tests_properties(
+        md-flexible.test-static
+        md-flexible.test-sim
+        md-flexMeasurePerf
+        # This adds lsanignoreList.txt to ignore MPI internal leaks
+        PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)

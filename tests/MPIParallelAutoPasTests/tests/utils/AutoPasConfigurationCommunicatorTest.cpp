@@ -260,9 +260,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
   size_t size = getSearchSpaceSize(threeContainers, twoCellSizes, threeTraversals, twoLoadEstimators, oneDataLayout,
                                    oneNewton3, InteractionTypeOption::pairwise, threeVecPatterns);
 
-  // There are 36*3 (Vec Patterns) configurations in the Cartesian product, but only 6*3 (Vec Patterns) of them are
-  // valid.
-  EXPECT_EQ(size, 6 * 3);
+  // There are 108 configurations in the Cartesian product, but only 18 of them are valid.
+  EXPECT_EQ(size, 18);
 }
 
 // Example search space without valid configurations.

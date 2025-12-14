@@ -37,6 +37,9 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
+  autoPas.setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                                autopas::InteractionTypeOption::pairwise);
+
   // init autopas
   autoPas.init();
 }
@@ -57,6 +60,8 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
     aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
+    aP->setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                              autopas::InteractionTypeOption::pairwise);
     // init autopas
     aP->init();
   }
@@ -502,8 +507,8 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
                              std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
-                             autopas::InteractionTypeOption::pairwise,
-                             autopas::VectorizationPatternOption::getAllOptions())),
+                             autopas::VectorizationPatternOption::getAllOptions(),
+                             autopas::InteractionTypeOption::pairwise)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////

@@ -205,7 +205,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_HWY };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
 
   /**
    * Choice of the Triwise functor
@@ -293,7 +293,7 @@ class MDFlexConfig {
    * vectorizationPattern
    */
   MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
-      autopas::VectorizationPatternOption::getMostOptions(), "vectorizationPattern", true,
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorization-pattern", true,
       "Vectorization Pattern for HWY Functor."};
   /**
    * cellSizeFactors
@@ -522,8 +522,7 @@ class MDFlexConfig {
   MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
                                                       FunctorOption::none, "functor", true,
                                                       "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals "
-                                                      "lennard-jones-highway)"};
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-highway)"};
   /**
    * functorOption3B
    */

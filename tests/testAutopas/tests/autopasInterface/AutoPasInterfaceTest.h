@@ -16,6 +16,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ArrayMath.h"
 
@@ -30,6 +31,7 @@ class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParam
       str += conf.traversal.to_string() + "_";
       str += conf.loadEstimator.to_string() + "_";
       str += conf.dataLayout.to_string() + "_";
+      str += conf.vecPattern.to_string() + "_";
       str += "N3" + conf.newton3.to_string() + "_";
       str += std::string{"cellSizeFactor"} + std::to_string(conf.cellSizeFactor);
       std::replace(str.begin(), str.end(), '-', '_');

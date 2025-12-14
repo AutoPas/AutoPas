@@ -102,6 +102,17 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
   }
+
+  /**
+   * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
+   *
+   * Note: All pairwise functors should support p1xVec by default.
+   * @param vecPattern
+   * @return whether the functor is capable of using the specified Vectorization Pattern
+   */
+  bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) override {
+    return vecPattern == VectorizationPatternOption::p1xVec;
+  }
 };
 
 }  // namespace autopas

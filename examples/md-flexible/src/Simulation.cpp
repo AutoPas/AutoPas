@@ -91,9 +91,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+      _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
+  _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
@@ -146,7 +148,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
-                                           autopas::VectorizationPatternOption::p1xVec);
+                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
@@ -214,6 +216,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 void Simulation::finalize() {
   _timers.total.stop();
+  _totalEnergySensor.endMeasurement();
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
   logSimulationState();
@@ -354,7 +357,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::pairwise, _configuration.vecPatternOptions.value)
+                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::pairwise)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -364,7 +367,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::triwise, _configuration.vecPatternOptions.value)
+                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::triwise)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
@@ -618,6 +621,11 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  double totalEnergy = _totalEnergySensor.getJoules();
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &totalEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+#endif
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const long wallClockTime = _timers.total.getTotalTime();
@@ -673,6 +681,9 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << "\n";
+#endif
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+    std::cout << "Total Energy Consumed (in Joules)    : " << totalEnergy << "\n";
 #endif
   }
 }
@@ -834,7 +845,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_HWY: {
 #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
-      return f(LJFunctorTypeHWY{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeHWY{cutoff, std::ref(particlePropertiesLibrary)});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor HWY. Activate it via `cmake "
