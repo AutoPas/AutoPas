@@ -13,14 +13,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
-  # Check that everything is formatted correctly. This does not apply any changes!
-  StyleCheck:
+  PreChecks:
+    name: Style and Custom Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Run the style check
-      - uses: DoozyX/clang-format-lint-action@v0.18.2
+
+      # Check that everything is formatted correctly. This does not apply any changes!
+      - name: Clang-Format Check
+        uses: DoozyX/clang-format-lint-action@v0.18.2
         with:
           source: 'src tests examples applicationLibrary tools'
           # exclude: 'none'
@@ -28,14 +29,9 @@ jobs:
           clangFormatVersion: 14
           style: file
 
-  # Make sure contribution guidelines are followed. This does not apply any changes!
-  CustomChecks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Checks
-        # this exits immediately when any command returns != 0
+      # Make sure contribution guidelines are followed. This does not apply any changes!
+      - name: Custom Project Checks
+        shell: bash
         run: |
           # enable recursive globbing syntax
           shopt -s globstar
@@ -131,18 +127,48 @@ jobs:
           entrypoint.sh cmake --build . --parallel 8
       - name: Run tests ${{ matrix.part }}/2
         run: |
+          # Determine split factor
+          # Default: split tests into 2 parts
+          # Special case: clang | Debug -> split into 3 parts
+          SplitFactor=2
+          if [[ "${{ matrix.config[1] }}" = 'clang' ]] && [[ "${{ matrix.config[4] }}" = 'Debug' ]]; 
+          then
+            SplitFactor=3
+          fi
+
+          echo "Using SplitFactor=${SplitFactor} for this job"
+
           # If single-site & No MPI, run every other AutoPas and example tests
           if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
           then
             cd build
+
             # Start with test 0 or 1 and do every second test
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${SplitFactor} -j 2
+
+            # If clang|Debug: part 2 also runs slice 3
+            if [[ "${SplitFactor}" = "3" ]] && [[ "${{ matrix.part }}" = "2" ]];
+            then
+              ctest --output-on-failure -I 3,,3 -j 2
+            fi
+
             cd applicationLibrary
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${SplitFactor} -j 2
+
+            if [[ "${SplitFactor}" = "3" ]] && [[ "${{ matrix.part }}" = "2" ]];
+            then
+              ctest --output-on-failure -I 3,,3 -j 2
+            fi
+
             cd ../examples
-            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,2 -j 2
+            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,${SplitFactor} -j 2
+
+            if [[ "${SplitFactor}" = "3" ]] && [[ "${{ matrix.part }}" = "2" ]];
+            then
+              ctest --output-on-failure --build-config checkExamples -I 3,,3 -j 2
+            fi
           fi
-          
+
           # If single-site & MPI, run MPI tests for AutoPas and example tests
           if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" = 'mpicc' ]]
           then
@@ -154,7 +180,7 @@ jobs:
             # exclude examples that do not support MPI 
             ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))'
           fi
-          
+
           # If multi-site run every md-flexible test and multi site tests
           if [[ "${{ matrix.md-flex-mode }}" = 'multisite' ]]
           then
