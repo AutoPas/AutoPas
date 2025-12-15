@@ -35,6 +35,7 @@ public:
   void setOwnedToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
 
     auto storageLayout = input.getLayout();
+    _ownedParticles.setLayout(storageLayout);
     size_t N = input.size();
 
     if (storageLayout == DataLayoutOption::aos) {
@@ -53,6 +54,7 @@ public:
   void setHaloToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
 
     auto storageLayout = input.getLayout();
+    _haloParticles.setLayout(storageLayout);
     size_t N = input.size();
 
     if (storageLayout == DataLayoutOption::aos) {
