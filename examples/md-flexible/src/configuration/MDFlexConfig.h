@@ -205,12 +205,12 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY, kr };
 
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at };
+  enum class FunctorOption3B { none, at, kr };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -519,17 +519,18 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
-                                                      FunctorOption::none, "functor", true,
-                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-highway)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+      // Default is a dummy option
+      FunctorOption::none, "functor", true,
+      "Pairwise force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-highway, krypton)"};
   /**
    * functorOption3B
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
       FunctorOption3B::none, "functor-3b", true,
-      "Triwise force functor to use. Possible Values: (axilrod-teller-muto)"};
+      "Triwise force functor to use. Possible Values: (axilrod-teller-muto, krypton)"};
   /**
    * iterations
    */

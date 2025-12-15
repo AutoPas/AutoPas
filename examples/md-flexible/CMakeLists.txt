@@ -21,6 +21,7 @@ option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Fun
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_HWY "Compile Highway Functor, which uses the best available SIMD instruction set supported by google highway." ON)
 option(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC "Compile auto vectorized Axilrod-Teller-Muto Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_KRYPTON "Compile auto vectorized Krypton Functors." OFF)
 option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
 
 target_compile_definitions(
@@ -30,8 +31,9 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC>
-        $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HWY}>:MD_FLEXIBLE_FUNCTOR_HWY>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_KRYPTON}>:MD_FLEXIBLE_FUNCTOR_KRYPTON>
+        $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
