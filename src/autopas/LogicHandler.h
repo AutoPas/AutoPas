@@ -1211,15 +1211,16 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     bool test = _neighborListInvalidDoDynamicRebuild;
 
+    // TODO: sth else than HostSpace
     auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Kokkos::HostSpace, Particle_T>& storage, bool& local) {
 
-        const auto pX = storage.template get<Particle_T::AttributeNames::posX, true>(i);
-        const auto pY = storage.template get<Particle_T::AttributeNames::posY, true>(i);
-        const auto pZ = storage.template get<Particle_T::AttributeNames::posZ, true>(i);
+        const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true>(i);
+        const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true>(i);
+        const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
-        const auto rebuildX = storage.template get<Particle_T::AttributeNames::rebuildX, true>(i);
-        const auto rebuildY = storage.template get<Particle_T::AttributeNames::rebuildY, true>(i);
-        const auto rebuildZ = storage.template get<Particle_T::AttributeNames::rebuildZ, true>(i);
+        const auto rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, true>(i);
+        const auto rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, true>(i);
+        const auto rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, true>(i);
 
         const auto dX = rebuildX - pX;
         const auto dY = rebuildY - pY;

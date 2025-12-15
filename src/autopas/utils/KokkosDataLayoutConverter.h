@@ -20,8 +20,9 @@ class KokkosDataLayoutConverter {
   void convertToSoA(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...>) {
 
     // AoS to SoA
+
     for (size_t i = 0; i < numParticles; ++i) {
-      (dstParticles. template set<I, false>(srcParticles(i).template get<static_cast<Particle_T::AttributeNames>(I+1)>(), i), ...); // I+1 as KokkosSoA does not contain ptr
+      ((dstParticles. template operator()<I, false>(i) = srcParticles.getParticle(i).template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...); // I+1 as KokkosSoA does not contain ptr
     }
   }
 
@@ -30,7 +31,7 @@ class KokkosDataLayoutConverter {
 
     // SoA to AoS
     for (size_t i = 0; i < numParticles; ++i) {
-      (dstParticles(i). template set<static_cast<Particle_T::AttributeNames>(I+1)>(srcParticles. template get<I, false>(i)), ...); // I+1 as KokkosSoA does not contain ptr
+      (dstParticles.getParticle(i). template set<static_cast<Particle_T::AttributeNames>(I+1)>(srcParticles. template operator()<I, false>(i)), ...); // I+1 as KokkosSoA does not contain ptr
     }
   }
 };

@@ -373,7 +373,7 @@ template <class Particle_T>
 
           if (particleIndex >= sizeToCheck or
               not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-            viewToCheck(particleIndex), iteratorBehavior, boxMin, boxMax)) {
+            viewToCheck.getParticle(particleIndex), iteratorBehavior, boxMin, boxMax)) {
 
             std::tie(cellIndex, particleIndex) =
             advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
@@ -384,7 +384,7 @@ template <class Particle_T>
           }
 
           const auto& viewToExtract = (cellIndex == 0) ? _ownedParticles.getAoS() : _haloParticles.getAoS();
-          const Particle_T * result = &viewToExtract(particleIndex);
+          const Particle_T * result = &viewToExtract.getParticle(particleIndex);
 
           return {result, cellIndex, particleIndex};
         }
@@ -411,7 +411,7 @@ template <class Particle_T>
               }
             }
           } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-              ((cellIndex == 0) ? _ownedParticles.getAoS()(particleIndex) : _haloParticles.getAoS()(particleIndex)), iteratorBehavior, boxMin, boxMax));
+              ((cellIndex == 0) ? _ownedParticles.getAoS().getParticle(particleIndex) : _haloParticles.getAoS().getParticle(particleIndex)), iteratorBehavior, boxMin, boxMax));
 
           // the indices returned at this point should always be valid
           return {cellIndex, particleIndex};

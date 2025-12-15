@@ -36,7 +36,7 @@ namespace autopas::utils {
     void addParticle(size_t index, const Particle_T &p) {
       switch (_layout) {
         case DataLayoutOption::aos: {
-          storageAoS(index) = p;
+          storageAoS.getParticle(index) = p;
           break;
         }
         case DataLayoutOption::soa: {
@@ -62,26 +62,27 @@ namespace autopas::utils {
       _converter.convertToAoS(storageSoA, storageAoS, size, I);
     }
 
-    template <size_t attribute, bool offset>
+    template <size_t attribute, bool offset, bool host = false>
     KOKKOS_INLINE_FUNCTION
-    constexpr auto get(size_t index) {
+    constexpr auto& operator() (int i) const {
       switch (_layout) {
         case DataLayoutOption::aos: {
-          return storageAoS.template get<attribute, offset>(index);
+          return storageAoS.template operator()<attribute, offset, host>(i);
         }
         case DataLayoutOption::soa: {
-          return storageSoA.template get<attribute, offset>(index);
+          return storageSoA.template operator()<attribute, offset, host>(i);
         }
         default: {
-          // Should never happen, just to avoid compiler warnings
-          return storageAoS.template get<attribute, offset>(index);
+          // THIS SHOULD NEVER HAPPEN, TODO: log an error
+          return storageAoS.template operator()<attribute, offset, host>(i);
         }
       }
     }
 
+    /*
     template <size_t attribute, bool offset>
     KOKKOS_INLINE_FUNCTION
-    constexpr const auto get(size_t index) const {
+    constexpr auto get(size_t index) {
       switch (_layout) {
         case DataLayoutOption::aos: {
           return storageAoS.template get<attribute, offset>(index);
@@ -110,6 +111,7 @@ namespace autopas::utils {
         }
       }
     }
+    */
 
     void setLayout(DataLayoutOption newLayout) {
       _layout = newLayout;

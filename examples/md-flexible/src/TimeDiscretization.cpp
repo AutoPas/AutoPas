@@ -70,23 +70,25 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #endif
     }
   } else {
+    // TODO: sth else than HostSpace
    autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<Kokkos::HostSpace, ParticleType>& storage) {
-    auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
-    auto vX = storage.template get<ParticleType::AttributeNames::velocityX, true>(i);
-    auto vY = storage.template get<ParticleType::AttributeNames::velocityY, true>(i);
-    auto vZ = storage.template get<ParticleType::AttributeNames::velocityZ, true>(i);
+    //auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
+    double m = 1.;
+    auto vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true>(i);
+    auto vY = storage.template operator()<ParticleType::AttributeNames::velocityY, true>(i);
+    auto vZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true>(i);
 
-    auto fX = storage.template get<ParticleType::AttributeNames::forceX, true>(i);
-    auto fY = storage.template get<ParticleType::AttributeNames::forceY, true>(i);
-    auto fZ = storage.template get<ParticleType::AttributeNames::forceZ, true>(i);
+    auto fX = storage.template operator()<ParticleType::AttributeNames::forceX, true>(i);
+    auto fY = storage.template operator()<ParticleType::AttributeNames::forceY, true>(i);
+    auto fZ = storage.template operator()<ParticleType::AttributeNames::forceZ, true>(i);
 
-    storage.template set<ParticleType::AttributeNames::oldForceX, true>(fX, i);
-    storage.template set<ParticleType::AttributeNames::oldForceY, true>(fY, i);
-    storage.template set<ParticleType::AttributeNames::oldForceZ, true>(fZ, i);
+    storage.template operator()<ParticleType::AttributeNames::oldForceX, true>(i) = fX;
+    storage.template operator()<ParticleType::AttributeNames::oldForceY, true>(i) = fY;
+    storage.template operator()<ParticleType::AttributeNames::oldForceZ, true>(i) = fZ;
 
-    storage.template set<ParticleType::AttributeNames::forceX, true>(globalForce[0], i);
-    storage.template set<ParticleType::AttributeNames::forceY, true>(globalForce[1], i);
-    storage.template set<ParticleType::AttributeNames::forceZ, true>(globalForce[2], i);
+    storage.template operator()<ParticleType::AttributeNames::forceX, true>(i) = globalForce[0];
+    storage.template operator()<ParticleType::AttributeNames::forceY, true>(i) = globalForce[1];
+    storage.template operator()<ParticleType::AttributeNames::forceZ, true>(i) = globalForce[2];
 
     vX *= deltaT;
     vY *= deltaT;
@@ -100,12 +102,12 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     const auto displacementY = vY + fY;
     const auto displacementZ = vZ + fZ;
 
-    const auto pX = storage.template get<ParticleType::AttributeNames::posX, true>(i);
-    const auto pY = storage.template get<ParticleType::AttributeNames::posY, true>(i);
-    const auto pZ = storage.template get<ParticleType::AttributeNames::posZ, true>(i);
-    storage.template set<ParticleType::AttributeNames::posX, true>(pX + displacementX, i);
-    storage.template set<ParticleType::AttributeNames::posY, true>(pY + displacementY, i);
-    storage.template set<ParticleType::AttributeNames::posZ, true>(pZ + displacementZ, i);
+    const auto pX = storage.template operator()<ParticleType::AttributeNames::posX, true>(i);
+    const auto pY = storage.template operator()<ParticleType::AttributeNames::posY, true>(i);
+    const auto pZ = storage.template operator()<ParticleType::AttributeNames::posZ, true>(i);
+    storage.template operator()<ParticleType::AttributeNames::posX, true>(i) = pX + displacementX;
+    storage.template operator()<ParticleType::AttributeNames::posY, true>(i) = pY + displacementY;
+    storage.template operator()<ParticleType::AttributeNames::posZ, true>(i) = pZ + displacementZ;
 
   }, autopas::IteratorBehavior::owned);
   }
@@ -216,27 +218,29 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   }
   else {
 
+    // TODO: sth else than HostSpace
     autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<Kokkos::HostSpace, ParticleType>& storage) {
-      const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
-      auto vX = storage.template get<ParticleType::AttributeNames::velocityX, true>(i);
-      auto vY = storage.template get<ParticleType::AttributeNames::velocityY, true>(i);
-      auto vZ = storage.template get<ParticleType::AttributeNames::velocityZ, true>(i);
+      //const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
+        double mass = 1.;
+        auto vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true>(i);
+      auto vY = storage.template operator()<ParticleType::AttributeNames::velocityY, true>(i);
+      auto vZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true>(i);
 
-      const auto fX = storage.template get<ParticleType::AttributeNames::forceX, true>(i);
-      const auto fY = storage.template get<ParticleType::AttributeNames::forceY, true>(i);
-      const auto fZ = storage.template get<ParticleType::AttributeNames::forceZ, true>(i);
+      const auto fX = storage.template operator()<ParticleType::AttributeNames::forceX, true>(i);
+      const auto fY = storage.template operator()<ParticleType::AttributeNames::forceY, true>(i);
+      const auto fZ = storage.template operator()<ParticleType::AttributeNames::forceZ, true>(i);
 
-      const auto oldFx = storage.template get<ParticleType::AttributeNames::oldForceX, true>(i);
-      const auto oldFy = storage.template get<ParticleType::AttributeNames::oldForceY, true>(i);
-      const auto oldFz = storage.template get<ParticleType::AttributeNames::oldForceZ, true>(i);
+      const auto oldFx = storage.template operator()<ParticleType::AttributeNames::oldForceX, true>(i);
+      const auto oldFy = storage.template operator()<ParticleType::AttributeNames::oldForceY, true>(i);
+      const auto oldFz = storage.template operator()<ParticleType::AttributeNames::oldForceZ, true>(i);
 
       const auto vUpdateX = (fX + oldFx) * (deltaT / (2 * mass));
       const auto vUpdateY = (fY + oldFy) * (deltaT / (2 * mass));
       const auto vUpdateZ = (fZ + oldFz) * (deltaT / (2 * mass));
 
-      storage.template set<ParticleType::AttributeNames::velocityX, true>(vX + vUpdateX, i);
-      storage.template set<ParticleType::AttributeNames::velocityY, true>(vY + vUpdateY, i);
-      storage.template set<ParticleType::AttributeNames::velocityZ, true>(vZ + vUpdateZ, i);
+      storage.template operator()<ParticleType::AttributeNames::velocityX, true>(i) = vX + vUpdateX;
+      storage.template operator()<ParticleType::AttributeNames::velocityY, true>(i) = vY + vUpdateY;
+      storage.template operator()<ParticleType::AttributeNames::velocityZ, true>(i) = vZ + vUpdateZ;
     }, autopas::IteratorBehavior::owned);
 
   }

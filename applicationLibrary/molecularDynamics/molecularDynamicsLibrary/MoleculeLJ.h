@@ -84,6 +84,13 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @tparam attribute Attribute name.
    * @return this.
    */
+
+  template <AttributeNames attribute>
+  constexpr auto& operator() () {
+    auto value = get<attribute>();
+    return value;
+  }
+
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     return this;

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <Kokkos_Core.hpp>
+#include "Kokkos_DualView.hpp"
 
 namespace autopas::utils {
 
@@ -15,6 +16,7 @@ namespace autopas::utils {
 
   public:
 
+    // TODO: guarantee that MemSpace is not Cuda Space
     explicit KokkosAoS()
       : KokkosAoS(0) {}
 
@@ -26,6 +28,16 @@ namespace autopas::utils {
     /* Get/Set/Allocation */
     void resize(size_t numParticles) {
       Kokkos::realloc(view, numParticles);
+    }
+
+    template <size_t attribute, bool, bool host = true>
+    constexpr auto& operator() (int i) const {
+      if constexpr (host) {
+        return view.view_host()(i).template operator()<static_cast<Particle_T::AttributeNames>(attribute)>();
+      }
+      else {
+        return view.view_device()(i).template operator()<static_cast<Particle_T::AttributeNames>(attribute)>();
+      }
     }
 
     template <size_t attribute, bool>
@@ -52,17 +64,19 @@ namespace autopas::utils {
       return view.extent(0);
     }
 
-    Particle_T& operator() (size_t index) {
-      return view(index);
+    // TODO: guarantee that device is up to date
+    Particle_T& getParticle (size_t index) {
+      return view.view_device()(index);
     }
 
-    const Particle_T& operator() (size_t index) const {
-      return view(index);
+    // TODO: guarantee that device is up to date
+    const Particle_T& getParticle (size_t index) const {
+      return view.view_device()(index);
     }
 
   private:
 
-    Kokkos::View<Particle_T*, MemSpace> view;
+    Kokkos::DualView<Particle_T*, MemSpace> view;
   };
 
 }

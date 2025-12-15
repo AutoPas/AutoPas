@@ -5,9 +5,9 @@
  */
 
 #pragma once
-#include <tuple>
-
 #include <Kokkos_Core.hpp>
+#include <Kokkos_DualView.hpp>
+#include <tuple>
 
 namespace autopas::utils {
 
@@ -34,10 +34,17 @@ namespace autopas::utils {
       resizeImpl(numParticles, I);
     }
 
-    template <size_t attribute>
+    template <size_t attribute, bool offset, bool host = false>
     KOKKOS_INLINE_FUNCTION
     auto& operator() (int i) const {
-      return std::get<attribute>(views)(i);
+      if constexpr (host) {
+        auto& value = std::get<attribute - (offset ? 1 : 0)>(views).view_host()(i);
+        return value;
+      }
+      else {
+        auto& value = std::get<attribute - (offset ? 1 : 0)>(views).view_device()(i);
+        return value;
+      }
     }
 
     template <class Particle_T>
@@ -48,27 +55,9 @@ namespace autopas::utils {
       addParticleImpl(position, p, I);
     }
 
-    template <size_t attribute, bool offset>
-    KOKKOS_INLINE_FUNCTION
-    constexpr std::tuple_element<attribute - (offset ? 1 : 0), std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type get(size_t index) {
-      return std::get<attribute - (offset ? 1 : 0)>(views)(index);
-    }
-
-    template <size_t attribute, bool offset>
-    KOKKOS_INLINE_FUNCTION
-    constexpr const std::tuple_element<attribute - (offset ? 1 : 0), std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type get(size_t index) const {
-      return std::get<attribute - (offset ? 1 : 0)>(views)(index);
-    }
-
     template <size_t attribute>
     constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types, MemSpace>...>>::type& getView() {
       return std::get<attribute>(views);
-    }
-
-    template <size_t attribute, bool offset>
-    KOKKOS_INLINE_FUNCTION
-    void set(std::tuple_element<attribute - (offset ? 1 : 0), std::tuple<Kokkos::View<Types, MemSpace>...>>::type::value_type value, size_t index) {
-      (std::get<attribute - (offset ? 1 : 0)>(views))(index) = value;
     }
 
     /* Meta Data */
@@ -81,9 +70,16 @@ namespace autopas::utils {
     }
 
     /* Data copies */
+    /*
     template <class SrcSoA, std::size_t ... I>
     void copyFrom(SrcSoA src, std::index_sequence<I...>) {
       (Kokkos::deep_copy(std::get<I>(views), src.template getView<I>()), ...);
+    }
+    */
+
+    template <typename TargetSpace, std::size_t... I>
+    void sync(std::index_sequence<I...>) {
+      (std::get<I>(views).template sync<TargetSpace>(), ...);
     }
 
   private:
@@ -94,10 +90,10 @@ namespace autopas::utils {
 
     template <class Particle_T, std::size_t... I>
     void addParticleImpl(size_t position, const Particle_T& p, std::index_sequence<I...>) {
-      (set<I, false>(p.template get<static_cast<Particle_T::AttributeNames>(I+1)>(), position), ...);
+      ((operator()<I, false>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
     }
 
-    std::tuple<Kokkos::View<Types, MemSpace>...> views {};
+    std::tuple<Kokkos::DualView<Types, MemSpace>...> views {};
   };
 
 }

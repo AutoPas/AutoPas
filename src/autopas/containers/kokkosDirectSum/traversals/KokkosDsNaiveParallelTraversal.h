@@ -63,7 +63,7 @@ public:
         auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
         //typename Particle_T::template KokkosSoAArraysType<DeviceSpace> resultSoA {N, "test"};
         Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
-          ownedSoA.template operator() <Particle_T::AttributeNames::forceX>(i) = 10.;
+          ownedSoA.template operator() <Particle_T::AttributeNames::forceX, true, false>(i) = 10.;
         });
         // TODO: consider halo particles
       }
