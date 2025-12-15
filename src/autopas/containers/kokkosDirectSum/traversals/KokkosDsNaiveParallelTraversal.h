@@ -60,12 +60,12 @@ public:
 #endif
       }
       else if (_dataLayout == DataLayoutOption::soa) {
-        Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i) {
-          func->SoAFunctorSingleKokkos(
-            DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA(),
-            newton3);
+        auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
+        typename Particle_T::template KokkosSoAArraysType<DeviceSpace> resultSoA {N, "test"};
+        Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
+          resultSoA.template operator() <Particle_T::AttributeNames::forceX>(i) = 10.;
         });
-        // TODO: implement
+        // TODO: consider halo particles
       }
     }
 

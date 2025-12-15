@@ -19,10 +19,12 @@ namespace autopas::utils {
     explicit KokkosSoA()
       : KokkosSoA(0) {}
 
-    explicit KokkosSoA(size_t numParticles)
-    {
-      resize(numParticles);
+    explicit KokkosSoA(size_t N) {
+      resize(N);
     }
+
+    KOKKOS_FUNCTION
+    KokkosSoA(size_t N, const std::string& label) : views{Kokkos::View<Types, MemSpace>(label, N)...} {}
 
     /* Get/Set/Allocation */
     void resize(size_t numParticles) {
@@ -30,6 +32,12 @@ namespace autopas::utils {
       constexpr auto I = std::make_index_sequence<tupleSize>{};
 
       resizeImpl(numParticles, I);
+    }
+
+    template <size_t attribute>
+    KOKKOS_INLINE_FUNCTION
+    auto& operator() (int i) const {
+      return std::get<attribute>(views)(i);
     }
 
     template <class Particle_T>
@@ -53,7 +61,7 @@ namespace autopas::utils {
     }
 
     template <size_t attribute>
-        constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types, MemSpace>...>>::type& getView() {
+    constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types, MemSpace>...>>::type& getView() {
       return std::get<attribute>(views);
     }
 
