@@ -312,16 +312,12 @@ class AxilrodTellerMutoFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
-    size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numGlobalCalcsSum = 0;
 
     const SoAFloatPrecision const_nu = _nu;
     const size_t soaSize = soa.size();
-    if constexpr (countFLOPs) {
-      numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
-    }
 
     for (unsigned int i = 0; i < soaSize - 2; ++i) {
       const auto ownedStateI = ownedStatePtr[i];
@@ -463,7 +459,8 @@ class AxilrodTellerMutoFunctor
       fzptr[i] += fZAccI;
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      const size_t numTriplets = countFLOPs ? soaSize * (soaSize - 1) * (soaSize - 2) / 6 : 0;
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTriplets;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
       _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
@@ -750,7 +747,6 @@ class AxilrodTellerMutoFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
-    size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
@@ -761,9 +757,6 @@ class AxilrodTellerMutoFunctor
 
     size_t soa1Size = soa1.size();
     size_t soa2Size = soa2.size();
-    if constexpr (countFLOPs) {
-      numTripletsCountingSum = soa1Size * soa2Size * (soa1Size + soa2Size - 2) / 2;
-    }
 
     // Precompute distances between soa1 and soa2
     std::vector<std::array<SoAFloatPrecision, 4>, autopas::AlignedAllocator<std::array<SoAFloatPrecision, 4>>>
@@ -1043,7 +1036,8 @@ class AxilrodTellerMutoFunctor
       fzptr1[i] += fZAccI;
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      const size_t numTriplets = soa1Size * soa2Size * (soa1Size + soa2Size - 2) / 2;
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTriplets;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
@@ -1097,7 +1091,6 @@ class AxilrodTellerMutoFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
-    size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
@@ -1109,9 +1102,6 @@ class AxilrodTellerMutoFunctor
     const auto soa1Size = soa1.size();
     const auto soa2Size = soa2.size();
     const auto soa3Size = soa3.size();
-    if constexpr (countFLOPs) {
-      numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
-    }
 
     // Precompute distances between soa2 and soa3
     std::vector<std::array<SoAFloatPrecision, 4>, autopas::AlignedAllocator<std::array<SoAFloatPrecision, 4>>> jkDists(
@@ -1282,7 +1272,8 @@ class AxilrodTellerMutoFunctor
       fzptr1[i] += fZAccI;
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      const size_t numTriplets = soa1Size * soa2Size * soa3Size;
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTriplets;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
