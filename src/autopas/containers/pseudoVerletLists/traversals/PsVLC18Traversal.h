@@ -49,7 +49,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     dataLayout, useNewton3, this->_orientationLists) {
+                     dataLayout, useNewton3) {
     computeOffsets();
   }
 
@@ -79,6 +79,8 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   void computeOffsets();
 
+  void setOrientationLists(std::vector<std::vector<SortedCellView<typename ParticleCell::ParticleType>>> &lists) override;
+
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
@@ -106,6 +108,13 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   unsigned long getIndex(const unsigned long pos, const unsigned int dim) const;
 };
+
+template <class ParticleCell, class PairwiseFunctor>
+void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::setOrientationLists(
+    std::vector<std::vector<SortedCellView<typename ParticleCell::ParticleType>>> &lists) {
+  PsVLTraversalInterface<typename ParticleCell::ParticleType>::setOrientationLists(lists);
+  _cellFunctor.setOrientationLists(lists);
+}
 
 template <class ParticleCell, class PairwiseFunctor>
 inline void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {

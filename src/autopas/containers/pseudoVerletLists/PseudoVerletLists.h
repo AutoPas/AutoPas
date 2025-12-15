@@ -36,13 +36,10 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
  * @param cutoff
  * @param skin
  * @param cellSizeFactor cell size factor relative to cutoff
- * @param loadEstimator the load estimation algorithm for balanced traversals.
  */
   PseudoVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                    const double skin, const double cellSizeFactor = 1.0,
-                    LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-     : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor),
-    _loadEstimator(loadEstimator){
+                    const double skin, const double cellSizeFactor = 1.0)
+     : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor){
 
     for (size_t i = 0; i < _directions.size(); ++i) {
       _directions[i] = utils::ArrayMath::normalize(_rawDirections[i]);
@@ -58,9 +55,9 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *pseudoVerletTraversalInterface = dynamic_cast<PsVLTraversalInterface<ParticleCellType> *>(traversal);
     if (pseudoVerletTraversalInterface) {
-      pseudoVerletTraversalInterface->setCellsAndNeighborLists(this->_orientationList);
+      pseudoVerletTraversalInterface->setOrientationLists(this->_orientationList);
     } else {
-      utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
+      utils::ExceptionHandler::exception("trying to use a traversal of wrong type in PseudoVerletLists::computeInteractions");
     }
 
     traversal->initTraversal();
@@ -99,11 +96,6 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   std::vector<std::vector<SortedCellView<ParticleCellType>>> _orientationList;
 
   /**
-  * load estimation algorithm for balanced traversals.
-  */
-  LoadEstimatorOption _loadEstimator;
-
-  /**
    * Stores the normalized directions to the neighboring cells
    */
   std::array<std::array<double, 3>,13> _directions{};
@@ -112,19 +104,19 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   * Stores the directions to the neighboring cells
   */
   static constexpr std::array<std::array<double,3>, 13> _rawDirections = {{
-    {{-1,  1, 0}},
-    {{ 0,  1, 0}},
-    {{ 1,  1, 0}},
-    {{ 1,  0, 0}},
-    {{-1,  1, 1}},
-    {{ 0,  1, 1}},
-    {{ 1,  1, 1}},
-    {{-1,  0, 1}},
-    {{ 0,  0, 1}},
-    {{ 1,  0, 1}},
+    {{1,  0, 0}},
+    {{ -1, 1, 0}},
+    {{ 0, 1, 0}},
+    {{ 1, 1, 0}},
     {{-1, -1, 1}},
     {{ 0, -1, 1}},
     {{ 1, -1, 1}},
+    {{-1, 0, 1}},
+    {{0, 0, 1}},
+    {{ 1, 0, 1}},
+    {{-1, 1, 1}},
+    {{ 0, 1, 1}},
+    {{ 1, 1, 1}},
 }};
 };
 

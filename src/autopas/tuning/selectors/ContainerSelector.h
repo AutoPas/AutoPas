@@ -104,8 +104,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       break;
     }
     case ContainerOption::pseudoVerletLists: {
-      container = std::make_unique<PseudoVerletLists<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
-                                                                  loadEstimator);
+      container = std::make_unique<PseudoVerletLists<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor);
       break;
     }
     default: {
