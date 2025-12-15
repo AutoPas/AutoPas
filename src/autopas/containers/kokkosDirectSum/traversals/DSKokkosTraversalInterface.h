@@ -34,7 +34,7 @@ public:
 
   void setOwnedToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
     // TODO: resize/allocate only the requested data layout
-    size_t N = input.getAoS().size();
+    size_t N = input.size();
 
     _ownedParticles.getAoS().resize(N);
     _ownedParticles.getSoA().resize(N);
@@ -49,7 +49,7 @@ public:
 
   void setHaloToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
     // TODO: resize/allocate only the requested data layout
-    size_t N = input.getAoS().size();
+    size_t N = input.size();
 
     _haloParticles.getAoS().resize(N);
     _haloParticles.getSoA().resize(N);
