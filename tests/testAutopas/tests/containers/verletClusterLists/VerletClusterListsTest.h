@@ -11,6 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLC08Traversal.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/UniformGenerator.h"

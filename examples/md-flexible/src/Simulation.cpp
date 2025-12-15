@@ -40,6 +40,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
+double totalVirial = 0;
 
 namespace {
 /**
@@ -523,11 +524,68 @@ long Simulation::accumulateTime(const long &time) {
 
   return reducedTime;
 }
-
+/*
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
+}*/
+
+bool Simulation::calculatePairwiseForces() {
+
+  double localVirial = 0.0;
+
+  const auto wasTuningIteration =
+      applyWithChosenFunctor<bool>([&](auto &&functor) {
+
+        bool result = _autoPasContainer->computeInteractions(&functor);
+
+        localVirial = functor.getVirial();
+
+        return result;
+      });
+
+  /*    
+    const std::array<double, 3> lowerCorner = {
+    _autoPasContainer->getBoxMin()[0],
+    _autoPasContainer->getBoxMin()[1],
+    _autoPasContainer->getBoxMin()[2]
+};
+
+const std::array<double, 3> upperCorner = {
+    _autoPasContainer->getBoxMax()[0],
+    _autoPasContainer->getBoxMax()[1],
+    _autoPasContainer->getBoxMax()[2]
+};*/
+
+  // Sum across MPI ranks
+  double globalVirial = localVirial;
+#ifdef AUTOPAS_BUILD_MPI
+  autopas::AutoPas_MPI_Allreduce(&localVirial, &globalVirial, 1,
+                                 AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+#endif
+
+
+  // Print from rank 0 only
+if (_domainDecomposition->getDomainIndex() == 0) {
+      totalVirial+=globalVirial;
+  /*for (auto it = _autoPasContainer->getRegionIterator(
+           lowerCorner, upperCorner,
+           autopas::IteratorBehavior::owned);
+       it.isValid(); ++it) {
+
+    const auto &p = *it;
+
+    AutoPasLog(INFO,
+               "ID {} pos=({},{},{}) F=({},{},{})",
+               p.getID(),
+               p.getR()[0], p.getR()[1], p.getR()[2],
+               p.getF()[0], p.getF()[1], p.getF()[2]);
+  }*/
+
+  return wasTuningIteration;
+}
 }
 
 bool Simulation::calculateTriwiseForces() {
@@ -656,6 +714,9 @@ void Simulation::logMeasurements() {
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
+              << "\n";
+    std::cout << "Average Virial                     : " << totalVirial << " / " << _iteration << " = "
+              << (static_cast<double>(totalVirial) / static_cast<double>(_iteration) ) 
               << "\n";
 
     auto mfups =
