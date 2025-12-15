@@ -42,6 +42,8 @@ public:
       Kokkos::deep_copy(_ownedParticles.getAoS().getView(), input.getAoS().getView());
     }
     else if (storageLayout == DataLayoutOption::soa) {
+      _ownedParticles.getSoA().resize(N);
+
       constexpr size_t tupleSize = input.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
       _ownedParticles.getSoA().copyFrom(input.getSoA(), I);
@@ -58,6 +60,8 @@ public:
       Kokkos::deep_copy(_haloParticles.getAoS().getView(), input.getAoS().getView());
     }
     else if (storageLayout == DataLayoutOption::soa) {
+      _haloParticles.getSoA().resize(N);
+
       constexpr size_t tupleSize = input.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
       _haloParticles.getSoA().copyFrom(input.getSoA(), I);
