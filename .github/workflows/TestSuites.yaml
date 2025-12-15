@@ -58,6 +58,7 @@ jobs:
       fail-fast: false
       matrix:
         part: [ 1, 2 ] # Split tests into two parts, to be run by separate runners
+        split: [ 2 ] # default test splitting
         md-flex-mode: [ singlesite, multisite ]
         config: [
           # 0                     1      2        3                  4        5        6     7      8     9
@@ -81,6 +82,7 @@ jobs:
           - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
             md-flex-mode: singlesite
             part: 3
+            split: 3
           # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
           # so we only add tests for part 1
           - config: [ autopas-build-archer, clang, clang++,  Ninja            , Release, ON, OFF, ON , OFF, OFF]
@@ -89,7 +91,7 @@ jobs:
           - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON, ON , OFF, OFF, OFF]
             md-flex-mode: multisite
             part: 1
-    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }})
+    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}\${{ matrix.split }})
     container: autopas/${{ matrix.config[0] }}
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
