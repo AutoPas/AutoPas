@@ -29,25 +29,25 @@ namespace mdLib {
  *
  * @note  All calculations assume units to be in Angström and Kelvin.
  *
- * @tparam Particle The type of particle.
+ * @tparam Particle_T The type of particle.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  */
-template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class Particle_T, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool countFLOPs = false>
 class KryptonExtendedATMFunctor
-    : public autopas::TriwiseFunctor<Particle,
-                                     KryptonExtendedATMFunctor<Particle, useNewton3, calculateGlobals, countFLOPs>> {
+    : public autopas::TriwiseFunctor<Particle_T,
+                                     KryptonExtendedATMFunctor<Particle_T, useNewton3, calculateGlobals, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
  public:
   /**
@@ -60,8 +60,9 @@ class KryptonExtendedATMFunctor
    * @param cutoff
    */
   explicit KryptonExtendedATMFunctor(double cutoff)
-      : autopas::TriwiseFunctor<Particle,
-                                KryptonExtendedATMFunctor<Particle, useNewton3, calculateGlobals, countFLOPs>>(cutoff),
+      : autopas::TriwiseFunctor<Particle_T,
+                                KryptonExtendedATMFunctor<Particle_T, useNewton3, calculateGlobals, countFLOPs>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -87,7 +88,7 @@ class KryptonExtendedATMFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) override {
+  void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
@@ -249,31 +250,258 @@ class KryptonExtendedATMFunctor
     }
   }
 
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+    if (soa.size() <= 2) return;
+
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle_T::AttributeNames::typeId>();
+
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    size_t numTripletsCountingSum = 0;
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numGlobalCalcsSum = 0;
+
+    const SoAFloatPrecision const_nu = _nu;
+    const SoAFloatPrecision const_alpha = _alpha;
+
+    const size_t soaSize = soa.size();
+    if constexpr (countFLOPs) {
+      numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
+    }
+
+    for (unsigned int i = 0; i < soaSize - 2; ++i) {
+      const auto ownedStateI = ownedStatePtr[i];
+      if (ownedStateI == autopas::OwnershipState::dummy) {
+        continue;
+      }
+      SoAFloatPrecision fXAccI = 0.;
+      SoAFloatPrecision fYAccI = 0.;
+      SoAFloatPrecision fZAccI = 0.;
+
+      const SoAFloatPrecision xi = xptr[i];
+      const SoAFloatPrecision yi = yptr[i];
+      const SoAFloatPrecision zi = zptr[i];
+
+      for (unsigned int j = i + 1; j < soaSize - 1; ++j) {
+        const auto ownedStateJ = ownedStatePtr[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision xj = xptr[j];
+        const SoAFloatPrecision yj = yptr[j];
+        const SoAFloatPrecision zj = zptr[j];
+
+        const SoAFloatPrecision displacementXIJ = xj - xi;
+        const SoAFloatPrecision displacementYIJ = yj - yi;
+        const SoAFloatPrecision displacementZIJ = zj - zi;
+        const SoAFloatPrecision distSquaredIJ =
+            displacementXIJ * displacementXIJ + displacementYIJ * displacementYIJ + displacementZIJ * displacementZIJ;
+
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
+        if (distSquaredIJ > cutoffSquared) {
+          continue;
+        }
+
+        const SoAFloatPrecision distIJ = std::sqrt(distSquaredIJ);
+
+        SoAFloatPrecision fXAccJ = 0.;
+        SoAFloatPrecision fYAccJ = 0.;
+        SoAFloatPrecision fZAccJ = 0.;
+
+        for (unsigned int k = j + 1; k < soaSize; ++k) {
+          const auto ownedStateK = ownedStatePtr[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
+
+          const SoAFloatPrecision xk = xptr[k];
+          const SoAFloatPrecision yk = yptr[k];
+          const SoAFloatPrecision zk = zptr[k];
+
+          const SoAFloatPrecision displacementXJK = xk - xj;
+          const SoAFloatPrecision displacementYJK = yk - yj;
+          const SoAFloatPrecision displacementZJK = zk - zj;
+          const SoAFloatPrecision distSquaredJK =
+              displacementXJK * displacementXJK + displacementYJK * displacementYJK + displacementZJK * displacementZJK;
+
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredJK > cutoffSquared) {
+            continue;
+          }
+
+          const SoAFloatPrecision displacementXKI = xi - xk;
+          const SoAFloatPrecision displacementYKI = yi - yk;
+          const SoAFloatPrecision displacementZKI = zi - zk;
+          const SoAFloatPrecision distSquaredKI =
+              displacementXKI * displacementXKI + displacementYKI * displacementYKI + displacementZKI * displacementZKI;
+
+          const SoAFloatPrecision distJK = std::sqrt(distSquaredIJ);
+          const SoAFloatPrecision distKI = std::sqrt(distSquaredKI);
+
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredKI > cutoffSquared) {
+            continue;
+          }
+
+          SoAFloatPrecision forceIX, forceIY, forceIZ;
+          SoAFloatPrecision forceJX, forceJY, forceJZ;
+          SoAFloatPrecision allDistsTripled, cosines, expTerm, sum;
+          SoAKernelN3(distIJ, distJK, distKI, displacementXIJ, displacementYIJ, displacementZIJ, displacementXJK,
+                      displacementYJK, displacementZJK, displacementXKI, displacementYKI, displacementZKI,
+                      distSquaredIJ, distSquaredJK, distSquaredKI, const_nu, const_alpha, forceIX, forceIY, forceIZ,
+                      forceJX, forceJY, forceJZ, allDistsTripled, cosines, expTerm, sum);
+
+          fXAccI += forceIX;
+          fYAccI += forceIY;
+          fZAccI += forceIZ;
+
+          fXAccJ += forceJX;
+          fYAccJ += forceJY;
+          fZAccJ += forceJZ;
+
+          const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+          const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+          const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+
+          fxptr[k] += forceKX;
+          fyptr[k] += forceKY;
+          fzptr[k] += forceKZ;
+
+          if constexpr (countFLOPs) {
+            ++numKernelCallsN3Sum;
+          }
+
+          if constexpr (calculateGlobals) {
+            // Add 3 * potential energy to every owned particle of the interaction.
+            // Division to the correct value is handled in endTraversal().
+            const double potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+
+            // Virial is calculated as f_i * r_i
+            // see Thompson et al.: https://doi.org/10.1063/1.3245303
+
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy;
+              virialSumX += forceIX * xi;
+              virialSumY += forceIY * yi;
+              virialSumZ += forceIZ * zi;
+            }
+            if (ownedStateJ == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy;
+              virialSumX += forceJX * xj;
+              virialSumY += forceJY * yj;
+              virialSumZ += forceJZ * zj;
+            }
+            if (ownedStateK == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy;
+              virialSumX += forceKX * xk;
+              virialSumY += forceKY * yk;
+              virialSumZ += forceKZ * zk;
+            }
+
+            if constexpr (countFLOPs) {
+              ++numGlobalCalcsSum;
+            }
+          }
+        }
+        fxptr[j] += fXAccJ;
+        fyptr[j] += fYAccJ;
+        fzptr[j] += fZAccJ;
+      }
+      fxptr[i] += fXAccI;
+      fyptr[i] += fYAccI;
+      fzptr[i] += fZAccI;
+    }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
+    }
+    if (calculateGlobals) {
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+    }
+  }
+
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
+    if (soa1.size() == 0 || soa2.size() == 0) return;
+
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1, soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1, soa2);
+    }
+  }
+
+  void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                        autopas::SoAView<SoAArraysType> soa3, bool newton3) final {
+    if (soa1.size() == 0 || soa2.size() == 0 || soa3.size() == 0) return;
+
+    if (newton3) {
+      SoAFunctorTripleImpl<true>(soa1, soa2, soa3);
+    } else {
+      SoAFunctorTripleImpl<false>(soa1, soa2, soa3);
+    }
+  }
+
   /**
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
+                                                              Particle_T::AttributeNames::posX,
+                                                              Particle_T::AttributeNames::posY,
+                                                              Particle_T::AttributeNames::posZ,
+                                                              Particle_T::AttributeNames::forceX,
+                                                              Particle_T::AttributeNames::forceY,
+                                                              Particle_T::AttributeNames::forceZ,
+                                                              Particle_T::AttributeNames::typeId,
+                                                              Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 6>{
+        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 3>{
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+    return std::array<typename Particle_T::AttributeNames, 3>{
+        Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
   }
 
   /**
@@ -412,6 +640,800 @@ class KryptonExtendedATMFunctor
   }
 
  private:
+  template <bool newton3>
+  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    const auto *const __restrict xptr1 = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr1 = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr1 = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict xptr2 = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr2 = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr2 = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    auto *const __restrict fxptr1 = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr1 = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzptr1 = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fxptr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzptr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
+
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    size_t numTripletsCountingSum = 0;
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
+
+    const SoAFloatPrecision const_nu = _nu;
+    const SoAFloatPrecision const_alpha = _alpha;
+
+    size_t soa1Size = soa1.size();
+    size_t soa2Size = soa2.size();
+    if constexpr (countFLOPs) {
+      numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
+    }
+
+    for (unsigned int i = 0; i < soa1.size(); ++i) {
+      const auto ownedStateI = ownedStatePtr1[i];
+      if (ownedStateI == autopas::OwnershipState::dummy) {
+        continue;
+      }
+      SoAFloatPrecision fXAccI = 0.;
+      SoAFloatPrecision fYAccI = 0.;
+      SoAFloatPrecision fZAccI = 0.;
+
+      const SoAFloatPrecision xi = xptr1[i];
+      const SoAFloatPrecision yi = yptr1[i];
+      const SoAFloatPrecision zi = zptr1[i];
+
+      // CASE: Particle i is in soa1, j and k are both in soa2
+      for (unsigned int j = 0; j < soa2.size(); ++j) {
+        const auto ownedStateJ = ownedStatePtr2[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision xj = xptr2[j];
+        const SoAFloatPrecision yj = yptr2[j];
+        const SoAFloatPrecision zj = zptr2[j];
+
+        const SoAFloatPrecision displacementXIJ = xj - xi;
+        const SoAFloatPrecision displacementYIJ = yj - yi;
+        const SoAFloatPrecision displacementZIJ = zj - zi;
+        const SoAFloatPrecision distSquaredIJ =
+            displacementXIJ * displacementXIJ + displacementYIJ * displacementYIJ + displacementZIJ * displacementZIJ;
+
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
+
+        if (distSquaredIJ > cutoffSquared) {
+          continue;
+        }
+
+        for (unsigned int k = j + 1; k < soa2.size(); ++k) {
+          const auto ownedStateK = ownedStatePtr2[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
+
+          const SoAFloatPrecision xk = xptr2[k];
+          const SoAFloatPrecision yk = yptr2[k];
+          const SoAFloatPrecision zk = zptr2[k];
+
+          const SoAFloatPrecision displacementXJK = xk - xj;
+          const SoAFloatPrecision displacementYJK = yk - yj;
+          const SoAFloatPrecision displacementZJK = zk - zj;
+          const SoAFloatPrecision distSquaredJK =
+              displacementXJK * displacementXJK + displacementYJK * displacementYJK + displacementZJK * displacementZJK;
+
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+
+          // Due to low 3-body hitrate, mostly better than masking
+          if (distSquaredJK > cutoffSquared) {
+            continue;
+          }
+
+          const SoAFloatPrecision displacementXKI = xi - xk;
+          const SoAFloatPrecision displacementYKI = yi - yk;
+          const SoAFloatPrecision displacementZKI = zi - zk;
+          const SoAFloatPrecision distSquaredKI =
+              displacementXKI * displacementXKI + displacementYKI * displacementYKI + displacementZKI * displacementZKI;
+
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredKI > cutoffSquared) {
+            continue;
+          }
+
+          const SoAFloatPrecision distIJ = std::sqrt(distSquaredIJ);
+          const SoAFloatPrecision distJK = std::sqrt(distSquaredJK);
+          const SoAFloatPrecision distKI = std::sqrt(distSquaredKI);
+
+          if constexpr (not newton3) {
+            // Compute only force I without Newton3
+            SoAFloatPrecision forceIX, forceIY, forceIZ;
+            SoAFloatPrecision allDistsTripled, cosines, expTerm, sum;
+            SoAKernelNoN3(distIJ, distJK, distKI, displacementXIJ, displacementYIJ, displacementZIJ, displacementXJK,
+                          displacementYJK, displacementZJK, displacementXKI, displacementYKI, displacementZKI,
+                          distSquaredIJ, distSquaredJK, distSquaredKI, const_nu, const_alpha, forceIX, forceIY, forceIZ,
+                          allDistsTripled, cosines, expTerm, sum);
+
+            fXAccI += forceIX;
+            fYAccI += forceIY;
+            fZAccI += forceIZ;
+
+            if constexpr (countFLOPs) {
+              ++numKernelCallsNoN3Sum;
+            }
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy3 = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+
+              if (ownedStateI == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceIX * xi;
+                virialSumY += forceIY * yi;
+                virialSumZ += forceIZ * zi;
+              }
+              if constexpr (countFLOPs) {
+                ++numGlobalCalcsNoN3Sum;
+              }
+            }
+          } else {
+            // Compute all forces with Newton3
+            SoAFloatPrecision forceIX, forceIY, forceIZ;
+            SoAFloatPrecision forceJX, forceJY, forceJZ;
+            SoAFloatPrecision allDistsTripled, cosines, expTerm, sum;
+            SoAKernelN3(distIJ, distJK, distKI, displacementXIJ, displacementYIJ, displacementZIJ, displacementXJK,
+                        displacementYJK, displacementZJK, displacementXKI, displacementYKI, displacementZKI,
+                        distSquaredIJ, distSquaredJK, distSquaredKI, const_nu, const_alpha, forceIX, forceIY, forceIZ,
+                        forceJX, forceJY, forceJZ, allDistsTripled, cosines, expTerm, sum);
+
+            fXAccI += forceIX;
+            fYAccI += forceIY;
+            fZAccI += forceIZ;
+
+            fxptr2[j] += forceJX;
+            fyptr2[j] += forceJY;
+            fzptr2[j] += forceJZ;
+
+            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+
+            fxptr2[k] += forceKX;
+            fyptr2[k] += forceKY;
+            fzptr2[k] += forceKZ;
+
+            if constexpr (countFLOPs) {
+              ++numKernelCallsN3Sum;
+            }
+
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy3 = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+
+              if (ownedStateI == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceIX * xi;
+                virialSumY += forceIY * yi;
+                virialSumZ += forceIZ * zi;
+              }
+              if (ownedStateJ == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceJX * xj;
+                virialSumY += forceJY * yj;
+                virialSumZ += forceJZ * zj;
+              }
+              if (ownedStateK == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceKX * xk;
+                virialSumY += forceKY * yk;
+                virialSumZ += forceKZ * zk;
+              }
+              if constexpr (countFLOPs) {
+                ++numGlobalCalcsN3Sum;
+              }
+            }
+          }
+        }
+      }
+
+      // CASE: Particle i and j are both in soa1, k is in soa2
+      for (unsigned int j = i + 1; j < soa1.size(); ++j) {
+        const auto ownedStateJ = ownedStatePtr1[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        SoAFloatPrecision fXAccJ = 0.;
+        SoAFloatPrecision fYAccJ = 0.;
+        SoAFloatPrecision fZAccJ = 0.;
+
+        const SoAFloatPrecision xj = xptr1[j];
+        const SoAFloatPrecision yj = yptr1[j];
+        const SoAFloatPrecision zj = zptr1[j];
+
+        const SoAFloatPrecision displacementXIJ = xj - xi;
+        const SoAFloatPrecision displacementYIJ = yj - yi;
+        const SoAFloatPrecision displacementZIJ = zj - zi;
+        const SoAFloatPrecision distSquaredIJ =
+            displacementXIJ * displacementXIJ + displacementYIJ * displacementYIJ + displacementZIJ * displacementZIJ;
+
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
+        if (distSquaredIJ > cutoffSquared) {
+          continue;
+        }
+
+        for (unsigned int k = 0; k < soa2.size(); ++k) {
+          const auto ownedStateK = ownedStatePtr2[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
+
+          const SoAFloatPrecision xk = xptr2[k];
+          const SoAFloatPrecision yk = yptr2[k];
+          const SoAFloatPrecision zk = zptr2[k];
+
+          const SoAFloatPrecision displacementXJK = xk - xj;
+          const SoAFloatPrecision displacementYJK = yk - yj;
+          const SoAFloatPrecision displacementZJK = zk - zj;
+          const SoAFloatPrecision distSquaredJK =
+              displacementXJK * displacementXJK + displacementYJK * displacementYJK + displacementZJK * displacementZJK;
+
+          // Due to low 3-body hitrate, mostly better than masking
+          if (distSquaredJK > cutoffSquared) {
+            continue;
+          }
+
+          const SoAFloatPrecision displacementXKI = xi - xk;
+          const SoAFloatPrecision displacementYKI = yi - yk;
+          const SoAFloatPrecision displacementZKI = zi - zk;
+          const SoAFloatPrecision distSquaredKI =
+              displacementXKI * displacementXKI + displacementYKI * displacementYKI + displacementZKI * displacementZKI;
+
+          if (distSquaredKI > cutoffSquared) {
+            continue;
+          }
+
+          const SoAFloatPrecision distIJ = std::sqrt(distSquaredIJ);
+          const SoAFloatPrecision distJK = std::sqrt(distSquaredIJ);
+          const SoAFloatPrecision distKI = std::sqrt(distSquaredKI);
+
+          SoAFloatPrecision forceIX, forceIY, forceIZ;
+          SoAFloatPrecision forceJX, forceJY, forceJZ;
+          SoAFloatPrecision allDistsTripled, cosines, expTerm, sum;
+          SoAKernelN3(distIJ, distJK, distKI, displacementXIJ, displacementYIJ, displacementZIJ, displacementXJK,
+                      displacementYJK, displacementZJK, displacementXKI, displacementYKI, displacementZKI,
+                      distSquaredIJ, distSquaredJK, distSquaredKI, const_nu, const_alpha, forceIX, forceIY, forceIZ,
+                      forceJX, forceJY, forceJZ, allDistsTripled, cosines, expTerm, sum);
+
+          fXAccI += forceIX;
+          fYAccI += forceIY;
+          fZAccI += forceIZ;
+
+          fXAccJ += forceJX;
+          fYAccJ += forceJY;
+          fZAccJ += forceJZ;
+
+          if constexpr (countFLOPs) {
+            ++numKernelCallsN3Sum;
+          }
+          if constexpr (newton3) {
+            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+            fxptr2[k] += forceKX;
+            fyptr2[k] += forceKY;
+            fzptr2[k] += forceKZ;
+
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy3 = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+              if (ownedStateK == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy3;
+                virialSumX += forceKX * xk;
+                virialSumY += forceKY * yk;
+                virialSumZ += forceKZ * zk;
+              }
+            }
+          }
+
+          if constexpr (calculateGlobals) {
+            const SoAFloatPrecision potentialEnergy3 = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * xi;
+              virialSumY += forceIY * yi;
+              virialSumZ += forceIZ * zi;
+            }
+            if (ownedStateJ == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceJX * xj;
+              virialSumY += forceJY * yj;
+              virialSumZ += forceJZ * zj;
+            }
+            if constexpr (countFLOPs) {
+              ++numGlobalCalcsN3Sum;
+            }
+          }
+        }
+        fxptr1[j] += fXAccJ;
+        fyptr1[j] += fYAccJ;
+        fzptr1[j] += fZAccJ;
+      }
+      fxptr1[i] += fXAccI;
+      fyptr1[i] += fYAccI;
+      fzptr1[i] += fZAccI;
+    }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+    }
+    if (calculateGlobals) {
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+    }
+  }
+
+  template <bool newton3>
+  void SoAFunctorTripleImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                            autopas::SoAView<SoAArraysType> soa3) {
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    const auto *const __restrict xptr1 = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr1 = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr1 = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict xptr2 = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr2 = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr2 = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict xptr3 = soa3.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr3 = soa3.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr3 = soa3.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr3 = soa3.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    auto *const __restrict fxptr1 = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr1 = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzptr1 = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fxptr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzptr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fyptr3 = soa3.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fxptr3 = soa3.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fzptr3 = soa3.template begin<Particle_T::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr3 = soa3.template begin<Particle_T::AttributeNames::typeId>();
+
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    size_t numTripletsCountingSum = 0;
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
+
+    const SoAFloatPrecision const_nu = _nu;
+    const SoAFloatPrecision const_alpha = _alpha;
+
+    const auto soa1Size = soa1.size();
+    const auto soa2Size = soa2.size();
+    const auto soa3Size = soa3.size();
+    if constexpr (countFLOPs) {
+      numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
+    }
+
+    for (unsigned int i = 0; i < soa1Size; ++i) {
+      const auto ownedStateI = ownedStatePtr1[i];
+      if (ownedStateI == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      const SoAFloatPrecision xi = xptr1[i];
+      const SoAFloatPrecision yi = yptr1[i];
+      const SoAFloatPrecision zi = zptr1[i];
+
+      SoAFloatPrecision fXAccI = 0.;
+      SoAFloatPrecision fYAccI = 0.;
+      SoAFloatPrecision fZAccI = 0.;
+
+      for (unsigned int j = 0; j < soa2Size; ++j) {
+        const auto ownedStateJ = ownedStatePtr2[j];
+        if (ownedStateJ == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision xj = xptr2[j];
+        const SoAFloatPrecision yj = yptr2[j];
+        const SoAFloatPrecision zj = zptr2[j];
+
+        const SoAFloatPrecision displacementXIJ = xj - xi;
+        const SoAFloatPrecision displacementYIJ = yj - yi;
+        const SoAFloatPrecision displacementZIJ = zj - zi;
+        const SoAFloatPrecision distSquaredIJ =
+            displacementXIJ * displacementXIJ + displacementYIJ * displacementYIJ + displacementZIJ * displacementZIJ;
+
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
+        if (distSquaredIJ > cutoffSquared) {
+          continue;
+        }
+
+        SoAFloatPrecision fXAccJ = 0.;
+        SoAFloatPrecision fYAccJ = 0.;
+        SoAFloatPrecision fZAccJ = 0.;
+
+        for (unsigned int k = 0; k < soa3Size; ++k) {
+          const auto ownedStateK = ownedStatePtr3[k];
+          if (ownedStateK == autopas::OwnershipState::dummy) {
+            continue;
+          }
+
+          const SoAFloatPrecision xk = xptr3[k];
+          const SoAFloatPrecision yk = yptr3[k];
+          const SoAFloatPrecision zk = zptr3[k];
+
+          const SoAFloatPrecision displacementXJK = xk - xj;
+          const SoAFloatPrecision displacementYJK = yk - yj;
+          const SoAFloatPrecision displacementZJK = zk - zj;
+          const SoAFloatPrecision distSquaredJK =
+              displacementXJK * displacementXJK + displacementYJK * displacementYJK + displacementZJK * displacementZJK;
+
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredJK > cutoffSquared) {
+            continue;
+          }
+
+          const SoAFloatPrecision displacementXKI = xi - xk;
+          const SoAFloatPrecision displacementYKI = yi - yk;
+          const SoAFloatPrecision displacementZKI = zi - zk;
+          const SoAFloatPrecision distSquaredKI =
+              displacementXKI * displacementXKI + displacementYKI * displacementYKI + displacementZKI * displacementZKI;
+
+          const SoAFloatPrecision distIJ = std::sqrt(distSquaredIJ);
+          const SoAFloatPrecision distJK = std::sqrt(distSquaredJK);
+          const SoAFloatPrecision distKI = std::sqrt(distSquaredKI);
+
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredKI > cutoffSquared) {
+            continue;
+          }
+
+          if constexpr (not newton3) {
+            SoAFloatPrecision forceIX, forceIY, forceIZ;
+            SoAFloatPrecision allDistsTripled, cosines, expTerm, sum;
+            SoAKernelNoN3(distIJ, distJK, distKI, displacementXIJ, displacementYIJ, displacementZIJ, displacementXJK,
+                          displacementYJK, displacementZJK, displacementXKI, displacementYKI, displacementZKI,
+                          distSquaredIJ, distSquaredJK, distSquaredKI, const_nu, const_alpha, forceIX, forceIY, forceIZ,
+                          allDistsTripled, cosines, expTerm, sum);
+
+            fXAccI += forceIX;
+            fYAccI += forceIY;
+            fZAccI += forceIZ;
+
+            if constexpr (countFLOPs) {
+              ++numKernelCallsNoN3Sum;
+            }
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+
+              if (ownedStateI == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy;
+                virialSumX += forceIX * xi;
+                virialSumY += forceIY * yi;
+                virialSumZ += forceIZ * zi;
+              }
+
+              if constexpr (countFLOPs) {
+                ++numGlobalCalcsNoN3Sum;
+              }
+            }
+
+          } else {
+            SoAFloatPrecision forceIX, forceIY, forceIZ;
+            SoAFloatPrecision forceJX, forceJY, forceJZ;
+            SoAFloatPrecision allDistsTripled, cosines, expTerm, sum;
+            SoAKernelN3(distIJ, distJK, distKI, displacementXIJ, displacementYIJ, displacementZIJ, displacementXJK,
+                        displacementYJK, displacementZJK, displacementXKI, displacementYKI, displacementZKI,
+                        distSquaredIJ, distSquaredJK, distSquaredKI, const_nu, const_alpha, forceIX, forceIY, forceIZ,
+                        forceJX, forceJY, forceJZ, allDistsTripled, cosines, expTerm, sum);
+
+            fXAccI += forceIX;
+            fYAccI += forceIY;
+            fZAccI += forceIZ;
+
+            fXAccJ += forceJX;
+            fYAccJ += forceJY;
+            fZAccJ += forceJZ;
+
+            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+
+            fxptr3[k] += forceKX;
+            fyptr3[k] += forceKY;
+            fzptr3[k] += forceKZ;
+
+            if constexpr (countFLOPs) {
+              ++numKernelCallsN3Sum;
+            }
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
+              if (ownedStateI == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy;
+                virialSumX += forceIX * xi;
+                virialSumY += forceIY * yi;
+                virialSumZ += forceIZ * zi;
+              }
+              if (ownedStateJ == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy;
+                virialSumX += forceJX * xj;
+                virialSumY += forceJY * yj;
+                virialSumZ += forceJZ * zj;
+              }
+              if (ownedStateK == autopas::OwnershipState::owned) {
+                potentialEnergySum += potentialEnergy;
+                virialSumX += forceKX * xk;
+                virialSumY += forceKY * yk;
+                virialSumZ += forceKZ * zk;
+              }
+              if constexpr (countFLOPs) {
+                ++numGlobalCalcsN3Sum;
+              }
+            }
+          }
+        }
+        fxptr2[j] += fXAccI;
+        fyptr2[j] += fYAccI;
+        fzptr2[j] += fZAccI;
+      }
+      fxptr1[i] += fXAccI;
+      fyptr1[i] += fYAccI;
+      fzptr1[i] += fZAccI;
+    }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+    }
+    if (calculateGlobals) {
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+    }
+  }
+
+  /**
+   * Inline helper to compute force components for particle I.
+   * Returns tuple of (forceIX, forceIY, forceIZ, factor, allDotProducts, allDistsSquared)
+   */
+  __attribute__((always_inline)) inline auto SoAKernelNoN3(
+      const SoAFloatPrecision &distIJ, const SoAFloatPrecision &distJK, const SoAFloatPrecision &distKI,
+      const SoAFloatPrecision &displacementXIJ, const SoAFloatPrecision &displacementYIJ,
+      const SoAFloatPrecision &displacementZIJ, const SoAFloatPrecision &displacementXJK,
+      const SoAFloatPrecision &displacementYJK, const SoAFloatPrecision &displacementZJK,
+      const SoAFloatPrecision &displacementXKI, const SoAFloatPrecision &displacementYKI,
+      const SoAFloatPrecision &displacementZKI, const SoAFloatPrecision &distSquaredIJ,
+      const SoAFloatPrecision &distSquaredJK, const SoAFloatPrecision &distSquaredKI, const SoAFloatPrecision &nu,
+      const SoAFloatPrecision &alpha, SoAFloatPrecision &forceIX, SoAFloatPrecision &forceIY,
+      SoAFloatPrecision &forceIZ, SoAFloatPrecision &allDistsTripled, SoAFloatPrecision &cosines,
+      SoAFloatPrecision &expTerm, SoAFloatPrecision &sum) const {
+    // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
+    const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
+    const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
+    const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
+
+    const double numerator = numKI * numJK * numIJ;
+
+    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+    const double allDists = distIJ * distJK * distKI;
+    allDistsTripled = allDistsSquared * allDists;
+
+    // Gradient factors of 1. / (rrr)^3
+    const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
+    const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
+
+    // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
+    cosines = (3. / 8.) * numerator / allDistsSquared;
+    const double cosinesGradientIJ =
+        (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+    const double cosinesGradientKI =
+        (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+
+    // Gradient factors corresponding to the normal ATM term
+    const auto fullATMGradientIJ =
+        nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
+    const auto fullATMGradientKI =
+        nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
+
+    expTerm = std::exp(-alpha * (distIJ + distJK + distKI));
+
+    // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
+    std::array<double, 6> sumFactors{};
+    sum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      sumFactors[n] = _constantsA[n] * std::pow((distIJ * distJK * distKI), 2. * n / 3.);
+      sum += sumFactors[n];
+    }
+
+    // Gradient factor of the sum in ij-direction
+    double ijSum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) - alpha);
+    }
+
+    // Gradient factor of the sum in ki-direction
+    double kiSum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      kiSum += sumFactors[n] * (2. * n / (3. * distKI) - alpha);
+    }
+
+    // Total gradient factors for the exponential term times the cosines term
+    const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
+    const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
+
+    // Assembling the forces
+    const auto forceIDirectionXIJ = displacementXIJ * (fullATMGradientIJ + fullExpGradientIJ);
+    const auto forceIDirectionYIJ = displacementYIJ * (fullATMGradientIJ + fullExpGradientIJ);
+    const auto forceIDirectionZIJ = displacementZIJ * (fullATMGradientIJ + fullExpGradientIJ);
+    const auto forceIDirectionXKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionYKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionZKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+
+    forceIX = (forceIDirectionXIJ + forceIDirectionXKI) * (-1.0);
+    forceIY = (forceIDirectionYIJ + forceIDirectionYKI) * (-1.0);
+    forceIZ = (forceIDirectionZIJ + forceIDirectionZKI) * (-1.0);
+  }
+
+  /**
+   * Inline helper to compute force components for particle I.
+   * Returns tuple of (forceIX, forceIY, forceIZ, factor, allDotProducts, allDistsSquared)
+   */
+  __attribute__((always_inline)) inline auto SoAKernelN3(
+      const SoAFloatPrecision &distIJ, const SoAFloatPrecision &distJK, const SoAFloatPrecision &distKI,
+      const SoAFloatPrecision &displacementXIJ, const SoAFloatPrecision &displacementYIJ,
+      const SoAFloatPrecision &displacementZIJ, const SoAFloatPrecision &displacementXJK,
+      const SoAFloatPrecision &displacementYJK, const SoAFloatPrecision &displacementZJK,
+      const SoAFloatPrecision &displacementXKI, const SoAFloatPrecision &displacementYKI,
+      const SoAFloatPrecision &displacementZKI, const SoAFloatPrecision &distSquaredIJ,
+      const SoAFloatPrecision &distSquaredJK, const SoAFloatPrecision &distSquaredKI, const SoAFloatPrecision &nu,
+      const SoAFloatPrecision &alpha, SoAFloatPrecision &forceIX, SoAFloatPrecision &forceIY,
+      SoAFloatPrecision &forceIZ, SoAFloatPrecision &forceJX, SoAFloatPrecision &forceJY, SoAFloatPrecision &forceJZ,
+
+      SoAFloatPrecision &allDistsTripled, SoAFloatPrecision &cosines, SoAFloatPrecision &expTerm,
+      SoAFloatPrecision &sum) const {
+    // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
+    const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
+    const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
+    const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
+
+    const double numerator = numKI * numJK * numIJ;
+
+    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+    const double allDists = distIJ * distJK * distKI;
+    allDistsTripled = allDistsSquared * allDists;
+
+    // Gradient factors of 1. / (rrr)^3
+    const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
+    const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
+
+    // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
+    cosines = (3. / 8.) * numerator / allDistsSquared;
+    const double cosinesGradientIJ =
+        (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+    const double cosinesGradientKI =
+        (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+
+    // Gradient factors corresponding to the normal ATM term
+    const auto fullATMGradientIJ =
+        nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
+    const auto fullATMGradientKI =
+        nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
+
+    expTerm = std::exp(-alpha * (distIJ + distJK + distKI));
+
+    // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
+    std::array<double, 6> sumFactors{};
+    sum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      sumFactors[n] = _constantsA[n] * std::pow((distIJ * distJK * distKI), 2. * n / 3.);
+      sum += sumFactors[n];
+    }
+
+    // Gradient factor of the sum in ij-direction
+    double ijSum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) - alpha);
+    }
+
+    // Gradient factor of the sum in ki-direction
+    double kiSum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      kiSum += sumFactors[n] * (2. * n / (3. * distKI) - alpha);
+    }
+
+    // Total gradient factors for the exponential term times the cosines term
+    const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
+    const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
+
+    // Assembling the forces
+    const auto forceIDirectionXIJ = displacementXIJ * (fullATMGradientIJ + fullExpGradientIJ);
+    const auto forceIDirectionYIJ = displacementYIJ * (fullATMGradientIJ + fullExpGradientIJ);
+    const auto forceIDirectionZIJ = displacementZIJ * (fullATMGradientIJ + fullExpGradientIJ);
+    const auto forceIDirectionXKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionYKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionZKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+
+    forceIX = (forceIDirectionXIJ + forceIDirectionXKI) * (-1.0);
+    forceIY = (forceIDirectionYIJ + forceIDirectionYKI) * (-1.0);
+    forceIZ = (forceIDirectionZIJ + forceIDirectionZKI) * (-1.0);
+
+    // Calculate all components for jk-direction
+    const double allDistsTriplesGradientJK = 3. / (allDistsTripled * distSquaredJK);
+    const double cosinesGradientJK =
+        (3. / 4.) * ((numerator / distSquaredJK + numKI * numIJ - numJK * numIJ - numJK * numKI) / allDistsSquared);
+    const auto fullATMGradientJK =
+        _nu * ((1. + cosines) * allDistsTriplesGradientJK + cosinesGradientJK / allDistsTripled);
+
+    double jkSum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      jkSum += sumFactors[n] * (2. * n / (3. * distJK) - _alpha);
+    }
+    const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
+
+    // Assembling the forces
+    const auto forceJDirectionXIJ = displacementXIJ * (-fullATMGradientIJ - fullExpGradientIJ);
+    const auto forceJDirectionYIJ = displacementYIJ * (-fullATMGradientIJ - fullExpGradientIJ);
+    const auto forceJDirectionZIJ = displacementZIJ * (-fullATMGradientIJ - fullExpGradientIJ);
+    const auto forceJDirectionXJK = displacementXJK * (fullATMGradientJK + fullExpGradientJK);
+    const auto forceJDirectionYJK = displacementYJK * (fullATMGradientJK + fullExpGradientJK);
+    const auto forceJDirectionZJK = displacementZJK * (fullATMGradientJK + fullExpGradientJK);
+
+    forceJX = (forceJDirectionXIJ + forceJDirectionXJK) * (-1.0);
+    forceJY = (forceJDirectionYIJ + forceJDirectionYJK) * (-1.0);
+    forceJZ = (forceJDirectionZIJ + forceJDirectionZJK) * (-1.0);
+  }
+
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
@@ -500,8 +1522,6 @@ class KryptonExtendedATMFunctor
   const double _alpha = 1.378382;  // A^-1
   // Units: {K, K*A^-2, K*A^-4, K*A^-6, K*A^-8, K*A^-10}
   const std::array<double, 6> _constantsA = {-0.3081304e8, -0.3519442e8, 0.4928052e7, -0.2182411e6, 0.343088e4, 0.0};
-
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;

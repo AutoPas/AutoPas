@@ -3,7 +3,7 @@ container                            :  [LinkedCells]
 functor-3b                           :  krypton
 traversal-3b                         :  [lc_c01]
 newton3-3b                           :  [disabled]
-data-layout-3b                       :  [AoS]
+data-layout-3b                       :  [SoA]
 
 # Uncomment to combine pairwise and 3-body interaction
 functor                              :  krypton
