@@ -115,6 +115,10 @@ namespace autopas::utils {
       _layout = newLayout;
     }
 
+    DataLayoutOption getLayout() const {
+      return _layout;
+    }
+
     KokkosAoS<MemSpace, Particle_T>& getAoS() {
       return storageAoS;
     }

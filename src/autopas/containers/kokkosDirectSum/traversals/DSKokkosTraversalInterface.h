@@ -33,33 +33,35 @@ public:
   virtual ~DSKokkosTraversalInterface() = default;
 
   void setOwnedToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
-    // TODO: resize/allocate only the requested data layout
+
+    auto storageLayout = input.getLayout();
     size_t N = input.size();
 
-    _ownedParticles.getAoS().resize(N);
-    _ownedParticles.getSoA().resize(N);
-
-    // TODO: think about how to guarantee that no AoS is executed on the GPU
-    Kokkos::deep_copy(_ownedParticles.getAoS().getView(), input.getAoS().getView());
-
-    constexpr size_t tupleSize = input.tupleSize();
-    constexpr auto I = std::make_index_sequence<tupleSize>();
-    _ownedParticles.getSoA().copyFrom(input.getSoA(), I);
+    if (storageLayout == DataLayoutOption::aos) {
+      _ownedParticles.getAoS().resize(N);
+      Kokkos::deep_copy(_ownedParticles.getAoS().getView(), input.getAoS().getView());
+    }
+    else if (storageLayout == DataLayoutOption::soa) {
+      constexpr size_t tupleSize = input.tupleSize();
+      constexpr auto I = std::make_index_sequence<tupleSize>();
+      _ownedParticles.getSoA().copyFrom(input.getSoA(), I);
+    }
   }
 
   void setHaloToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
-    // TODO: resize/allocate only the requested data layout
+
+    auto storageLayout = input.getLayout();
     size_t N = input.size();
 
-    _haloParticles.getAoS().resize(N);
-    _haloParticles.getSoA().resize(N);
-
-    // TODO: think about how to guarantee that no AoS is executed on the GPU
-    Kokkos::deep_copy(_haloParticles.getAoS().getView(), input.getAoS().getView());
-
-    constexpr size_t tupleSize = input.tupleSize();
-    constexpr auto I = std::make_index_sequence<tupleSize>();
-    _haloParticles.getSoA().copyFrom(input.getSoA(), I);
+    if (storageLayout == DataLayoutOption::aos) {
+      _haloParticles.getAoS().resize(N);
+      Kokkos::deep_copy(_haloParticles.getAoS().getView(), input.getAoS().getView());
+    }
+    else if (storageLayout == DataLayoutOption::soa) {
+      constexpr size_t tupleSize = input.tupleSize();
+      constexpr auto I = std::make_index_sequence<tupleSize>();
+      _haloParticles.getSoA().copyFrom(input.getSoA(), I);
+    }
   }
 
   void retrieveOwned(utils::KokkosStorage<HostSpace, Particle_T>& output) {
