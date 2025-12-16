@@ -1,6 +1,6 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells] # DirectSum
-functor-3b                           :  axilrod-teller-muto
+functor-3b                           : axilrod-teller-muto highway  # remove "highway" to use auto-vectorized functor
 traversal-3b                         :  [lc_c01] # ds_sequential
 newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS, SoA]
@@ -18,6 +18,8 @@ tuning-strategies                    :  []
 tuning-interval                      :  2000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
+
+vectorization-pattern                :  [1xVectorLength]
 
 cutoff                               :  2.5
 cell-size                            :  [1]
