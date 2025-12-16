@@ -23,25 +23,25 @@ namespace mdLib {
  * (2016) https://doi.org/10.1063/1.4943959. The parameters are given in Kelvin (K) and Angström (A).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
- * @tparam Particle The type of particle.
+ * @tparam Particle_T The type of particle.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class Particle_T, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class KryptonPairFunctor
-    : public autopas::PairwiseFunctor<Particle,
-                                      KryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle_T,
+                                      KryptonPairFunctor<Particle_T, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   /**
    * Precision of SoA entries.
    */
-  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
  public:
   /**
@@ -54,8 +54,9 @@ class KryptonPairFunctor
    * @param cutoff
    */
   explicit KryptonPairFunctor(double cutoff)
-      : autopas::PairwiseFunctor<Particle,
-                                 KryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle_T,
+                                 KryptonPairFunctor<Particle_T, useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -78,7 +79,7 @@ class KryptonPairFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
@@ -222,27 +223,33 @@ class KryptonPairFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
+                                                              Particle_T::AttributeNames::posX,
+                                                              Particle_T::AttributeNames::posY,
+                                                              Particle_T::AttributeNames::posZ,
+                                                              Particle_T::AttributeNames::forceX,
+                                                              Particle_T::AttributeNames::forceY,
+                                                              Particle_T::AttributeNames::forceZ,
+                                                              Particle_T::AttributeNames::typeId,
+                                                              Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 6>{
+        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 3>{
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+    return std::array<typename Particle_T::AttributeNames, 3>{
+        Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
   }
 
   /**
