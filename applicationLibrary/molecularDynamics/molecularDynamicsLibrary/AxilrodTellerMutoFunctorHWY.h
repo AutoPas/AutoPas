@@ -599,28 +599,25 @@ class AxilrodTellerMutoFunctorHWY
     VectorDouble virialSumY = _zeroDoubleVec;
     VectorDouble virialSumZ = _zeroDoubleVec;
 
-    size_t numTripletsCountingSum = 0;
+    const size_t soaSize = soa.size();
+    const size_t numTriplets =
+        countFLOPs ? soaSize * (soaSize - 1) * (soaSize - 2) / 6 : 0;  // Only needed if counting FLOPs
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
     size_t numGlobalCalcsN3Sum = 0;
     size_t numGlobalCalcsNoN3Sum = 0;
-
     const SoAFloatPrecision const_nu = _nu;
-    const size_t soaSize = soa.size();
 
-    if constexpr (countFLOPs) {
-      numTripletsCountingSum = soaSize * (soaSize - 1) * (soaSize - 2) / 6;
-    }
     // Precompute distances between particles in the soa. We use a row-major packed lower‐triangle data structure to
-    // save memory. If a distance i->j is required as j->i it can be negated.
-    DistanceMatrix<true, alignedSoAView> intraSoADists(soaSize, soaSize, precomputeBuffer1[threadnum]);
+    // save memory. Only distances in the form of i->j are stored, but not j->i. If j->i is required, it can be
+    // calculated by negating i->j.
+    DistanceMatrix<true, alignedSoAView> intraSoAPairDists(soaSize, soaSize, precomputeBuffer1[threadnum]);
     // soa1 <-> soa1
-    intraSoADists.fillHighway(xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, soaSize, soaSize, cutoffSquared);
+    intraSoAPairDists.fillHighway(xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, cutoffSquared);
 
-    const size_t packedSize = (soaSize * soaSize - soaSize) / 2;
     if constexpr (countFLOPs) {
-      numDistanceCalculationSum += packedSize;
+      numDistanceCalculationSum += (soaSize * soaSize - soaSize) / 2;
     }
 
     // We iterate in reverse order over i and j to enable aligned loads in the k-loop.
@@ -640,7 +637,7 @@ class AxilrodTellerMutoFunctorHWY
         }
 
         // Load precomputed distances for particle i and j.
-        auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = intraSoADists.get(i, j);
+        auto [distXIJ, distYIJ, distZIJ, distSquaredIJ, invR5IJ] = intraSoAPairDists.get(i, j);
 
         if (distSquaredIJ > cutoffSquared) {
           continue;
@@ -664,10 +661,11 @@ class AxilrodTellerMutoFunctorHWY
           handleKLoopBody<DistanceMatrix<true, alignedSoAView>, DistanceMatrix<true, alignedSoAView>, /*newton3*/ true,
                           /*newton3Kernel*/ true,
                           /*remainder*/ false, alignedSoAView>(
-              i, j, k, const_nu, intraSoADists, intraSoADists, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec,
-              distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
-              ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
-              numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsNoN3Sum);
+              i, j, k, const_nu, intraSoAPairDists, intraSoAPairDists, ownedStatePtr, typePtr, typePtr, typePtr,
+              distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
+              fZAccJ, ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ,
+              potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
+              numGlobalCalcsNoN3Sum);
         }
 
         const auto restK = j - k;
@@ -676,10 +674,11 @@ class AxilrodTellerMutoFunctorHWY
           handleKLoopBody<DistanceMatrix<true, alignedSoAView>, DistanceMatrix<true, alignedSoAView>, /*newton3*/ true,
                           /*newton3Kernel*/ true,
                           /*remainder*/ true, alignedSoAView>(
-              i, j, k, const_nu, intraSoADists, intraSoADists, ownedStatePtr, typePtr, typePtr, typePtr, distXIJVec,
-              distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ, fZAccJ,
-              ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
-              numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsNoN3Sum, restK);
+              i, j, k, const_nu, intraSoAPairDists, intraSoAPairDists, ownedStatePtr, typePtr, typePtr, typePtr,
+              distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
+              fZAccJ, ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ,
+              potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
+              numGlobalCalcsNoN3Sum, restK);
         }
         // Reduce force on particle J.
         fxPtr[j] += highway::ReduceSum(tag_double, fXAccJ);
@@ -693,7 +692,7 @@ class AxilrodTellerMutoFunctorHWY
     }
 
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTriplets;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
       _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;  // Always N3 in Single SoAFunctor
@@ -737,29 +736,25 @@ class AxilrodTellerMutoFunctorHWY
     VectorDouble virialSumY = _zeroDoubleVec;
     VectorDouble virialSumZ = _zeroDoubleVec;
 
-    size_t numTripletsCountingSum = 0;
+    size_t soa1Size = soa1.size();
+    size_t soa2Size = soa2.size();
+    const size_t numTriplets = countFLOPs ? (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2 : 0;
+
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
     size_t numGlobalCalcsN3Sum = 0;
     size_t numGlobalCalcsNoN3Sum = 0;
-
     const SoAFloatPrecision const_nu = _nu;
-
-    size_t soa1Size = soa1.size();
-    size_t soa2Size = soa2.size();
-    if constexpr (countFLOPs) {
-      numTripletsCountingSum = (soa1Size * soa2Size * (soa1Size + soa2Size - 2)) / 2.;
-    }
 
     // Precompute distances between particles in the SoAs. soa2 <-> soa2 is a lower packed triangle matrix, soa1 <->
     // soa2 is a full matrix.
     DistanceMatrix<true, alignedSoAView> intraSoA2Dists(soa2Size, soa2Size, precomputeBuffer1[threadnum]);
     DistanceMatrix<false, alignedSoAView> interSoADists(soa1Size, soa2Size, precomputeBuffer2[threadnum]);
     // soa2 <-> soa2
-    intraSoA2Dists.fillHighway(xptr2, yptr2, zptr2, xptr2, yptr2, zptr2, soa2Size, soa2Size, cutoffSquared);
+    intraSoA2Dists.fillHighway(xptr2, yptr2, zptr2, xptr2, yptr2, zptr2, cutoffSquared);
     // soa1 <-> soa2
-    interSoADists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, soa1Size, soa2Size, cutoffSquared);
+    interSoADists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, cutoffSquared);
 
     const size_t packedSizeSoA2 = (soa2Size * soa2Size - soa2Size) / 2;
     if constexpr (countFLOPs) {
@@ -907,7 +902,7 @@ class AxilrodTellerMutoFunctorHWY
       fzPtr1[i] += highway::ReduceSum(tag_double, fZAccI);
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTriplets;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
@@ -963,29 +958,25 @@ class AxilrodTellerMutoFunctorHWY
     VectorDouble virialSumY = _zeroDoubleVec;
     VectorDouble virialSumZ = _zeroDoubleVec;
 
-    size_t numTripletsCountingSum = 0;
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
     size_t numGlobalCalcsN3Sum = 0;
     size_t numGlobalCalcsNoN3Sum = 0;
-
     const SoAFloatPrecision const_nu = _nu;
-
     const auto soa1Size = soa1.size();
     const auto soa2Size = soa2.size();
     const auto soa3Size = soa3.size();
-    if constexpr (countFLOPs) {
-      numTripletsCountingSum = soa1Size * soa2Size * soa3Size;
-    }
+
+    const size_t numTriplets = countFLOPs ? soa1Size * soa2Size * soa3Size : 0;
 
     // Precompute distances between particles in the SoAs.
     DistanceMatrix<false, alignedSoAView> interSoA1SoA3Dists(soa1Size, soa3Size, precomputeBuffer1[threadnum]);
     DistanceMatrix<false, alignedSoAView> interSoA2SoA3Dists(soa2Size, soa3Size, precomputeBuffer2[threadnum]);
     // soa1 <-> soa3
-    interSoA1SoA3Dists.fillHighway(xptr1, yptr1, zptr1, xptr3, yptr3, zptr3, soa1Size, soa3Size, cutoffSquared);
+    interSoA1SoA3Dists.fillHighway(xptr1, yptr1, zptr1, xptr3, yptr3, zptr3, cutoffSquared);
     // soa2 <-> soa3
-    interSoA2SoA3Dists.fillHighway(xptr2, yptr2, zptr2, xptr3, yptr3, zptr3, soa2Size, soa3Size, cutoffSquared);
+    interSoA2SoA3Dists.fillHighway(xptr2, yptr2, zptr2, xptr3, yptr3, zptr3, cutoffSquared);
 
     if constexpr (countFLOPs) {
       numDistanceCalculationSum += soa1Size * soa3Size + soa2Size * soa3Size;
@@ -1076,7 +1067,7 @@ class AxilrodTellerMutoFunctorHWY
       fzPtr1[i] += highway::ReduceSum(tag_double, fZAccI);
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTripletsCountingSum;
+      _aosThreadDataFLOPs[threadnum].numTripletsCount += numTriplets;
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
@@ -1125,18 +1116,21 @@ class AxilrodTellerMutoFunctorHWY
     const auto distZKIVec = highway::Neg(distZKIVecNeg);
 
     // Since autopas::OwnershipState::dummy == 0, we can use LoadN (called from loadPacked) in the remainder-case, as it
-    // sets the remainding lanes to 0
+    // sets the remaining lanes to 0
     const auto ownershipK =
         loadPacked<alignedSoAView, remainder>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]), restK);
 
     // calculate cutoff-masks between i<->k and j<->k
     const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
     const auto maskKI = highway::Le(distSquaredKIVec, highway::Set(tag_double, _cutoffSquared));
-    // ownership mask
+    // We check all lanes to see if they have dummy ownership state. In the kernel, only interactions with owned or halo
+    // particles are calculated. We have to cast to a double mask because in the next step we perform a logical
+    // operation with maskJK and maskKI (double masks). Google Highway only allows logical operations with masks of the
+    // same type.
     const auto maskOwnershipK =
         highway::Ne(highway::ConvertTo(tag_double, ownershipK),
                     highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::dummy)));
-    // mask for triplets between i and j and multiple k
+    // Mask for triplets between i and j and multiple k
     const auto maskK = highway::And(highway::And(maskJK, maskKI), maskOwnershipK);
 
     if (HWY_UNLIKELY(highway::AllFalse(tag_double, maskK))) {
@@ -1350,11 +1344,11 @@ class AxilrodTellerMutoFunctorHWY
       allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
     }
 
-    // Use precomputed 1/r^5 for each pair: allDistsTo5 = (1/r_ij^5)*(1/r_jk^5)*(1/r_ki^5)
-    const VectorDouble allDistsTo5 = invR5IJ * invR5JK * invR5KI;
+    // Use precomputed 1/r^5 for each pair: allInvDistsTo5 = (1/r_ij^5)*(1/r_jk^5)*(1/r_ki^5)
+    const VectorDouble allInvDistsTo5 = invR5IJ * invR5JK * invR5KI;
 
     // factor is three * nu * product(inv r^5)
-    factor = _threeDoubleVec * nu * allDistsTo5;
+    factor = _threeDoubleVec * nu * allInvDistsTo5;
 
     // Dot products
     const VectorDouble IJDotKI = fmaHelper(distXIJ, distXKI, distYIJ, distYKI, distZIJ, distZKI);
@@ -1498,13 +1492,24 @@ class AxilrodTellerMutoFunctorHWY
    * @tparam alignedSoAView if aligned loads can be used
    */
   template <bool LowerTriangle, bool alignedSoAView>
-  class DistanceMatrix {
+  struct DistanceMatrix {
    public:
     using Alloc = autopas::AlignedAllocator<SoAFloatPrecision>;
     using Vec = std::vector<SoAFloatPrecision, Alloc>;
 
-    // Konstruktor
-    DistanceMatrix(size_t rows, size_t cols, PrecomputeBuffer &precomputeBuffer)
+    /**
+     * Deleted default constructor
+     */
+    DistanceMatrix() = delete;
+
+    /**
+     * Constructor for Distance Matrix
+     *
+     * @param rows
+     * @param cols
+     * @param precomputeBuffer
+     */
+    DistanceMatrix(const size_t rows, const size_t cols, PrecomputeBuffer &precomputeBuffer)
         : _nRows(rows),
           _nCols(cols),
           _dx(precomputeBuffer.dxVec()),
@@ -1531,19 +1536,19 @@ class AxilrodTellerMutoFunctorHWY
     }
 
     // Lower-triangle index
-    HWY_INLINE size_t triIndex(size_t i, size_t j) const {
+    HWY_INLINE const size_t triIndex(const size_t i, const size_t j) const {
       static_assert(LowerTriangle, "triIndex only valid for LowerTriangle=true");
       assert(i > j);
       return i * (i - 1) / 2 + j;
     }
 
     // Full-matrix index
-    HWY_INLINE size_t fullIndex(size_t i, size_t j) const {
+    HWY_INLINE const size_t fullIndex(const size_t i, const size_t j) const {
       static_assert(!LowerTriangle, "fullIndex only valid for LowerTriangle=false");
       return j + i * _nColsPadded;
     }
 
-    HWY_INLINE size_t index(size_t i, size_t j) const {
+    HWY_INLINE const size_t index(const size_t i, const size_t j) const {
       if constexpr (LowerTriangle) {
         return triIndex(i, j);
       } else {
@@ -1551,8 +1556,8 @@ class AxilrodTellerMutoFunctorHWY
       }
     }
 
-    HWY_INLINE void set(size_t i, size_t j, SoAFloatPrecision dx, SoAFloatPrecision dy, SoAFloatPrecision dz,
-                        SoAFloatPrecision dist2, SoAFloatPrecision invr5) {
+    HWY_INLINE void set(const size_t i, const size_t j, const SoAFloatPrecision dx, const SoAFloatPrecision dy,
+                        const SoAFloatPrecision dz, const SoAFloatPrecision dist2, const SoAFloatPrecision invr5) {
       const size_t idx = index(i, j);
       _dx[idx] = dx;
       _dy[idx] = dy;
@@ -1561,14 +1566,14 @@ class AxilrodTellerMutoFunctorHWY
       _invR5[idx] = invr5;
     }
 
-    HWY_INLINE auto get(size_t i, size_t j) const {
+    HWY_INLINE auto get(const size_t i, const size_t j) const {
       const size_t idx = index(i, j);
       return std::tuple{_dx[idx], _dy[idx], _dz[idx], _squared[idx], _invR5[idx]};
     }
 
     // Highway-Vector load
     template <bool remainder>
-    HWY_INLINE auto loadRowVec(size_t i, size_t jStart, size_t width) const {
+    HWY_INLINE auto loadRowVec(const size_t i, const size_t jStart, const size_t width) const {
       const size_t idx = [&]() {
         if constexpr (LowerTriangle) {
           return triIndex(i, jStart);
@@ -1597,9 +1602,9 @@ class AxilrodTellerMutoFunctorHWY
 
     HWY_INLINE void fillHighway(const SoAFloatPrecision *xptr1, const SoAFloatPrecision *yptr1,
                                 const SoAFloatPrecision *zptr1, const SoAFloatPrecision *xptr2,
-                                const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2, size_t soa1Size,
-                                size_t soa2Size, SoAFloatPrecision cutoffSquared) {
-      for (size_t i = 0; i < soa1Size; ++i) {
+                                const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2,
+                                const SoAFloatPrecision cutoffSquared) {
+      for (size_t i = 0; i < _nRows; ++i) {
         const auto xi = xptr1[i];
         const auto yi = yptr1[i];
         const auto zi = zptr1[i];
@@ -1631,8 +1636,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
           const auto sqrtR2 = highway::Sqrt(dist2);
           const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
-          const auto invr5 = highway::IfThenElse(cutoffMask, highway::Div(highway::Set(tag_double, 1.0), r5),
-                                                 highway::Zero(tag_double));
+          const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
 
           const size_t idx = index(i, j);
 
@@ -1667,8 +1671,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
           const auto sqrtR2 = highway::Sqrt(dist2);
           const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
-          const auto invr5 = highway::IfThenElse(cutoffMask, highway::Div(highway::Set(tag_double, 1.0), r5),
-                                                 highway::Zero(tag_double));
+          const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
 
           const size_t idx = index(i, j);
 
@@ -1813,7 +1816,8 @@ class AxilrodTellerMutoFunctorHWY
   // Alignment for SoAFloatPrecision vector register
   static constexpr std::size_t alignmentSoAFloatHwyVector = highway::Lanes(tag_double) * sizeof(SoAFloatPrecision);
 
-  // Precomute buffers for distances and invR5 between particles
+  // Precomute buffers for distances and invR5 between particles. They are class members to avoid excessive memory
+  // allocation and deallocation.
   std::vector<PrecomputeBuffer> precomputeBuffer1;
   std::vector<PrecomputeBuffer> precomputeBuffer2;
 };
