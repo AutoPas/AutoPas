@@ -23,9 +23,19 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
   constexpr static double _maxError = 1e-12;
 
   /**
-   * Checks equality of SoALoader, SoAFunctorTriple and SoAExtractor.
-   * Expects that particles are loaded and extracted in the same order.
-   * In all comparisons first is HWY, second non-HWY
+   * Is called before each test case
+   */
+  void SetUp() override;
+
+  /**
+   * Called from SetUp to initialize the particle properties library with common values.
+   */
+  void setupPPL();
+
+  /**
+   * Checks that the application of SoALoader, SoAFunctorTriple and SoAExtractor are equal for the HWY & non-HWY
+   * functors. Expects that particles are loaded and extracted in the same order.
+   * In all comparisons first is HWY, second non-HWY.
    *
    * Checks SoAFunctorTriple(soa1, soa2, soa3, newton3)
    *
@@ -38,9 +48,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
   void testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
-   * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
+   * Checks that the application of SoALoader, SoAFunctorPair and SoAExtractor are equal for the HWY & non-HWY functors.
    * Expects that particles are loaded and extracted in the same order.
-   * In all comparisons first is HWY, second non-HWY
+   * In all comparisons first is HWY, second non-HWY.
    *
    * Checks SoAFunctorPair(soa1, soa2, newton3)
    *
@@ -53,9 +63,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
   void testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
-   * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
-   * Expects that particles are loaded and extracted in the same order.
-   * In all comparisons first is HWY, second non-HWY
+   * Checks that the application of SoALoader, SoAFunctorSingle and SoAExtractor are equal for the HWY & non-HWY
+   * functors. Expects that particles are loaded and extracted in the same order. In all comparisons first is HWY,
+   * second non-HWY.
    *
    * Checks SoAFunctorSingle(soa, newton3)
    *
@@ -84,7 +94,7 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @return
    */
   template <class SoAType>
-  bool SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2);
+  bool SoAParticlesEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2);
 
   /**
    * Check that two non empty AoSs' (=Cells) particles are equal.
@@ -92,7 +102,7 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param cell2
    * @return
    */
-  bool AoSParticlesEqual(FMCell &cell1, FMCell &cell2);
+  bool AoSParticlesEqual(const FMCell &cell1, const FMCell &cell2);
 
   /**
    * Check that two particles are equal.
@@ -100,7 +110,7 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param p2
    * @return
    */
-  bool particleEqual(Molecule &p1, Molecule &p2);
+  bool particleEqual(const Molecule &p1, const Molecule &p2);
 
   constexpr static double _cutoff{6.};
   constexpr static double _skin{2.};
@@ -111,4 +121,7 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
 
   const std::array<double, 3> _lowCorner{0., 0., 0.};
   const std::array<double, 3> _highCorner{6., 6., 6.};
+
+  // Global PPL for all tests.
+  ParticlePropertiesLibrary<double, size_t> _PPL{_cutoff};
 };

@@ -12,67 +12,91 @@
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctorHWY.h"
 
+/**
+ * Is called before each test case
+ */
+void ATMFunctorHWYTest::SetUp() {
+  bool mixing = std::get<0>(GetParam());
+  if (mixing) {
+    setupPPL();
+  }
+}
+
+/**
+ * Called from SetUp to initialize the particle properties library with common values.
+ */
+void ATMFunctorHWYTest::setupPPL() {
+  _PPL.addSiteType(0, 1.);
+  _PPL.addATMParametersToSite(0, 0.6);
+  _PPL.addSiteType(1, 1.5);
+  _PPL.addATMParametersToSite(1, 0.8);
+  _PPL.addSiteType(2, 2.);
+  _PPL.addATMParametersToSite(2, 1.0);
+  _PPL.addSiteType(3, 2.5);
+  _PPL.addATMParametersToSite(3, 1.2);
+  _PPL.addSiteType(4, 3.);
+  _PPL.addATMParametersToSite(4, 1.4);
+  _PPL.calculateMixingCoefficients();
+}
+
 template <class SoAType>
-bool ATMFunctorHWYTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
+bool ATMFunctorHWYTest::SoAParticlesEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2) {
   EXPECT_GT(soa1.size(), 0);
   EXPECT_EQ(soa1.size(), soa2.size());
 
-  unsigned long *const __restrict idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
-  unsigned long *const __restrict idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
+  const unsigned long *const __restrict idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
+  const unsigned long *const __restrict idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
 
-  double *const __restrict xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
-  double *const __restrict yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
-  double *const __restrict zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
-  double *const __restrict xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
-  double *const __restrict yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
-  double *const __restrict zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
+  const double *const __restrict xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
+  const double *const __restrict yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
+  const double *const __restrict zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
+  const double *const __restrict xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
+  const double *const __restrict yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
+  const double *const __restrict zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
 
-  double *const __restrict fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
-  double *const __restrict fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
-  double *const __restrict fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
-  double *const __restrict fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
-  double *const __restrict fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
-  double *const __restrict fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
+  const double *const __restrict fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
+  const double *const __restrict fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
+  const double *const __restrict fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
+  const double *const __restrict fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
+  const double *const __restrict fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
+  const double *const __restrict fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
 
-  for (size_t i = 0; i < soa1.size(); ++i) {
+  for (size_t i = 0; i < std::min(soa1.size(), soa2.size()); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
-    double tolerance = 2e-8;
-    EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fxptr1[i], fxptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fyptr1[i], fyptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fzptr1[i], fzptr2[i], tolerance) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(xptr1[i], xptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(yptr1[i], yptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(zptr1[i], zptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fxptr1[i], fxptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fyptr1[i], fyptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+    EXPECT_NEAR(fzptr1[i], fzptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
   }
   // clang-format off
   return not ::testing::Test::HasFailure();
   // clang-format on
 }
 
-bool ATMFunctorHWYTest::particleEqual(Molecule &p1, Molecule &p2) {
+bool ATMFunctorHWYTest::particleEqual(const Molecule &p1, const Molecule &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
-  double tolerance = 2e-8;
-
-  EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[0], p2.getF()[0], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[1], p2.getF()[1], tolerance) << "for particle pair " << p1.getID();
-  EXPECT_NEAR(p1.getF()[2], p2.getF()[2], tolerance) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[0], p2.getR()[0], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[1], p2.getR()[1], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getR()[2], p2.getR()[2], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[0], p2.getF()[0], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[1], p2.getF()[1], _maxError) << "for particle pair " << p1.getID();
+  EXPECT_NEAR(p1.getF()[2], p2.getF()[2], _maxError) << "for particle pair " << p1.getID();
 
   // clang-format off
   return not ::testing::Test::HasFailure();
   // clang-format on
 }
 
-bool ATMFunctorHWYTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
+bool ATMFunctorHWYTest::AoSParticlesEqual(const FMCell &cell1, const FMCell &cell2) {
   EXPECT_GT(cell1.size(), 0);
   EXPECT_EQ(cell1.size(), cell2.size());
 
   bool ret = true;
-  for (size_t i = 0; i < cell1.size(); ++i) {
+  for (size_t i = 0; i < std::min(cell1.size(), cell2.size()); ++i) {
     ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
   }
 
@@ -87,21 +111,6 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
   FMCell cell3HWY;
 
   size_t numParticles = 7;
-
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addATMParametersToSite(0, 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addATMParametersToSite(1, 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addATMParametersToSite(2, 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addATMParametersToSite(3, 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addATMParametersToSite(4, 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(
@@ -153,7 +162,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
 
   auto atmFunctorNoHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -161,7 +170,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
 
   auto atmFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -227,9 +236,8 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
   atmFunctorHWY.endTraversal(newton3);
   atmFunctorNoHWY.endTraversal(newton3);
 
-  double tolerance = 1e-8;
-  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), _maxError) << "global virial";
 }
 
 template <bool mixing>
@@ -239,21 +247,6 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
   FMCell cell2HWY;
 
   size_t numParticles = 7;
-
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addATMParametersToSite(0, 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addATMParametersToSite(1, 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addATMParametersToSite(2, 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addATMParametersToSite(3, 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addATMParametersToSite(4, 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(
@@ -289,7 +282,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
 
   auto atmFunctorNoHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -297,7 +290,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
 
   auto atmFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -349,9 +342,8 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
   atmFunctorHWY.endTraversal(newton3);
   atmFunctorNoHWY.endTraversal(newton3);
 
-  double tolerance = 1e-8;
-  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), _maxError) << "global virial";
 }
 
 template <bool mixing>
@@ -360,21 +352,6 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool 
   FMCell cellHWY;
 
   size_t numParticles = 7;
-
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addATMParametersToSite(0, 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addATMParametersToSite(1, 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addATMParametersToSite(2, 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addATMParametersToSite(3, 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addATMParametersToSite(4, 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -396,7 +373,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool 
 
   auto atmFunctorNoHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -404,7 +381,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool 
 
   auto atmFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -444,9 +421,8 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool 
   atmFunctorHWY.endTraversal(newton3);
   atmFunctorNoHWY.endTraversal(newton3);
 
-  double tolerance = 1e-8;
-  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), _maxError) << "global virial";
 }
 
 template <bool mixing>
@@ -454,21 +430,6 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYAoS(bool newton3, bool doDe
   FMCell cellHWY;
 
   constexpr size_t numParticles = 7;
-
-  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  if constexpr (mixing) {
-    PPL.addSiteType(0, 1.);
-    PPL.addATMParametersToSite(0, 1.);
-    PPL.addSiteType(1, 1.5);
-    PPL.addATMParametersToSite(1, 1.);
-    PPL.addSiteType(2, 2.);
-    PPL.addATMParametersToSite(2, 1.);
-    PPL.addSiteType(3, 2.5);
-    PPL.addATMParametersToSite(3, 1.);
-    PPL.addSiteType(4, 3.);
-    PPL.addATMParametersToSite(4, 1.);
-    PPL.calculateMixingCoefficients();
-  }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -490,7 +451,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYAoS(bool newton3, bool doDe
 
   auto atmFunctorNoHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctor<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctor<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -498,7 +459,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYAoS(bool newton3, bool doDe
 
   auto atmFunctorHWY = [&]() {
     if constexpr (mixing) {
-      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, PPL);
+      return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
     } else {
       return mdLib::AxilrodTellerMutoFunctorHWY<Molecule, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -531,9 +492,8 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYAoS(bool newton3, bool doDe
   atmFunctorHWY.endTraversal(newton3);
   atmFunctorNoHWY.endTraversal(newton3);
 
-  double tolerance = 1e-8;
-  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), tolerance) << "global uPot";
-  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), tolerance) << "global virial";
+  EXPECT_NEAR(atmFunctorHWY.getPotentialEnergy(), atmFunctorNoHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(atmFunctorHWY.getVirial(), atmFunctorNoHWY.getVirial(), _maxError) << "global virial";
 }
 
 TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYAoS) {
