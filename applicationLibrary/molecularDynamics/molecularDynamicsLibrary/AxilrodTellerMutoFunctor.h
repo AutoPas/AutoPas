@@ -319,6 +319,20 @@ class AxilrodTellerMutoFunctor
     const SoAFloatPrecision const_nu = _nu;
     const size_t soaSize = soa.size();
 
+    // Store pairwise distances in a flattened triangular matrix as a look-up table.
+    std::vector<std::array<SoAFloatPrecision, 4>, autopas::AlignedAllocator<std::array<SoAFloatPrecision, 4>>> soaDists(
+        soaSize * (soaSize - 1) / 2);
+    for (unsigned int i = 0; i < soaSize; ++i) {
+      const size_t baseIndex = i * soaSize - (i * (i + 1) / 2) - i - 1;
+      for (unsigned int j = i + 1; j < soaSize; ++j) {
+        const SoAFloatPrecision distXIJ = xptr[j] - xptr[i];
+        const SoAFloatPrecision distYIJ = yptr[j] - yptr[i];
+        const SoAFloatPrecision distZIJ = zptr[j] - zptr[i];
+        const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
+        soaDists[baseIndex + j] = std::array<SoAFloatPrecision, 4>{distXIJ, distYIJ, distZIJ, distSquaredIJ};
+      }
+    }
+
     for (unsigned int i = 0; i < soaSize - 2; ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == autopas::OwnershipState::dummy) {
@@ -328,24 +342,15 @@ class AxilrodTellerMutoFunctor
       SoAFloatPrecision fYAccI = 0.;
       SoAFloatPrecision fZAccI = 0.;
 
-      const SoAFloatPrecision xi = xptr[i];
-      const SoAFloatPrecision yi = yptr[i];
-      const SoAFloatPrecision zi = zptr[i];
-
       for (unsigned int j = i + 1; j < soaSize - 1; ++j) {
         const auto ownedStateJ = ownedStatePtr[j];
         if (ownedStateJ == autopas::OwnershipState::dummy) {
           continue;
         }
 
-        const SoAFloatPrecision xj = xptr[j];
-        const SoAFloatPrecision yj = yptr[j];
-        const SoAFloatPrecision zj = zptr[j];
-
-        const SoAFloatPrecision distXIJ = xj - xi;
-        const SoAFloatPrecision distYIJ = yj - yi;
-        const SoAFloatPrecision distZIJ = zj - zi;
-        const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
+        // Get distance from the look-up table
+        const size_t baseIndexI = i * soaSize - (i * (i + 1) / 2) - i - 1;
+        const auto &[distXIJ, distYIJ, distZIJ, distSquaredIJ] = soaDists[baseIndexI + j];
 
         if constexpr (countFLOPs) {
           ++numDistanceCalculationSum;
@@ -364,31 +369,22 @@ class AxilrodTellerMutoFunctor
             continue;
           }
 
-          const SoAFloatPrecision xk = xptr[k];
-          const SoAFloatPrecision yk = yptr[k];
-          const SoAFloatPrecision zk = zptr[k];
+          const auto &[distXIK, distYIK, distZIK, distSquaredIK] = soaDists[baseIndexI + k];
 
-          const SoAFloatPrecision distXJK = xk - xj;
-          const SoAFloatPrecision distYJK = yk - yj;
-          const SoAFloatPrecision distZJK = zk - zj;
-          const SoAFloatPrecision distSquaredJK = distXJK * distXJK + distYJK * distYJK + distZJK * distZJK;
+          if constexpr (countFLOPs) {
+            ++numDistanceCalculationSum;
+          }
+          if (distSquaredIK > cutoffSquared) {
+            continue;
+          }
+
+          const size_t baseIndexJ = j * soaSize - (j * (j + 1) / 2) - j - 1;
+          const auto &[distXJK, distYJK, distZJK, distSquaredJK] = soaDists[baseIndexJ + k];
 
           if constexpr (countFLOPs) {
             ++numDistanceCalculationSum;
           }
           if (distSquaredJK > cutoffSquared) {
-            continue;
-          }
-
-          const SoAFloatPrecision distXKI = xi - xk;
-          const SoAFloatPrecision distYKI = yi - yk;
-          const SoAFloatPrecision distZKI = zi - zk;
-          const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
-
-          if constexpr (countFLOPs) {
-            ++numDistanceCalculationSum;
-          }
-          if (distSquaredKI > cutoffSquared) {
             continue;
           }
 
@@ -400,8 +396,8 @@ class AxilrodTellerMutoFunctor
           SoAFloatPrecision forceIX, forceIY, forceIZ;
           SoAFloatPrecision forceJX, forceJY, forceJZ;
           SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-          SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI, distSquaredIJ,
-                      distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
+          SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, -distXIK, -distYIK, -distZIK, distSquaredIJ,
+                      distSquaredJK, distSquaredIK, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
                       allDotProducts, allDistsSquared);
 
           fXAccI += forceIX;
@@ -428,9 +424,9 @@ class AxilrodTellerMutoFunctor
             const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
             if (ownedStateI == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
-              virialSumX += forceIX * (distXKI - distXIJ);
-              virialSumY += forceIY * (distYKI - distYIJ);
-              virialSumZ += forceIZ * (distZKI - distZIJ);
+              virialSumX += forceIX * (-distXIK - distXIJ);
+              virialSumY += forceIY * (-distYIK - distYIJ);
+              virialSumZ += forceIZ * (-distZIK - distZIJ);
             }
             if (ownedStateJ == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
@@ -440,9 +436,9 @@ class AxilrodTellerMutoFunctor
             }
             if (ownedStateK == autopas::OwnershipState::owned) {
               potentialEnergySum += potentialEnergy3;
-              virialSumX += forceKX * (distXJK - distXKI);
-              virialSumY += forceKY * (distYJK - distYKI);
-              virialSumZ += forceKZ * (distZJK - distZKI);
+              virialSumX += forceKX * (distXJK + distXIK);
+              virialSumY += forceKY * (distYJK + distYIK);
+              virialSumZ += forceKZ * (distZJK + distZIK);
             }
 
             if constexpr (countFLOPs) {
