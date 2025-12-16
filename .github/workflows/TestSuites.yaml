@@ -63,7 +63,6 @@ jobs:
         config: [
           # 0                     1      2        3                  4        5        6     7      8     9
           # container           , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX,  HWY
-          [ autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ,  ON ,  ON],
           [ autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON ,  ON],
           [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON ,  ON],
           [ autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON ,  ON],
@@ -79,6 +78,14 @@ jobs:
 
         include:
           # Extra matrix entry: third split ONLY for clang|Debug
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
+            md-flex-mode: singlesite
+            part: 1
+            split: 3
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
+            md-flex-mode: singlesite
+            part: 2
+            split: 3
           - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
             md-flex-mode: singlesite
             part: 3
