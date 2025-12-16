@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [ 1, 2 ] # Split tests into two parts, to be run by separate runners
+        part: [ 1, 2, 3 ] # Split tests into two parts, to be run by separate runners. The splitting into 3 parts is only used for the clang|Debug|singlesite run
         split: [ 2 ] # default test splitting
         md-flex-mode: [ singlesite, multisite ]
         config: [
@@ -71,27 +71,46 @@ jobs:
           [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON ,  ON],
         ]
         exclude:
+          # exclude parts 3 for all except clang|Debug|singlesite
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Release, OFF, ON , OFF, ON , ON ]
+            part: 3
+          - config: [ autopas-build-archer, clang, clang++, Ninja             , Release, ON , OFF, ON , ON , ON ]
+            part: 3
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Release, ON , ON , OFF, ON , ON ]
+            part: 3
+          - config: [ autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'" , Release, ON , OFF, OFF, ON , ON ]
+            part: 3
+          - config: [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'" , Release, ON , ON , OFF, ON , ON ]
+            part: 3
           # Exclude multisite tests (to later be re-added for some configurations)
           - md-flex-mode: multisite
           # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
-          - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON, ON , OFF, ON , ON]
+          - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON , ON , OFF, ON , ON]
             part: 2
 
         include:
           # Extra matrix entry: third split ONLY for clang|Debug
-          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON , ON , OFF, ON , ON ]
+            md-flex-mode: singlesite
+            part: 1
+            split: 3
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON , ON , OFF, ON , ON ]
+            md-flex-mode: singlesite
+            part: 2
+            split: 3
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON , ON , OFF, ON , ON ]
             md-flex-mode: singlesite
             part: 3
             split: 3
           # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
           # so we only add tests for part 1
-          - config: [ autopas-build-archer, clang, clang++,  Ninja            , Release, ON, OFF, ON , OFF, OFF]
+          - config: [ autopas-build-archer, clang, clang++,  Ninja            , Release, ON , OFF, ON , OFF, OFF]
             md-flex-mode: multisite
             part: 1
-          - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON, ON , OFF, OFF, OFF]
+          - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON , ON , OFF, OFF, OFF]
             md-flex-mode: multisite
             part: 1
-    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}\${{ matrix.split }})
+    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/${{ matrix.split }})
     container: autopas/${{ matrix.config[0] }}
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
@@ -132,7 +151,7 @@ jobs:
             -DAUTOPAS_ENABLE_DYNAMIC_CONTAINERS=ON \
             ..
           entrypoint.sh cmake --build . --parallel 8
-      - name: Run tests ${{ matrix.part }}/2
+      - name: Run tests ${{ matrix.part }}/${{ matrix.split }}
         run: |
           # Determine split factor
           # Default: split tests into 2 parts
