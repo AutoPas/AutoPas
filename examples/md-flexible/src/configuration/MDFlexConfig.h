@@ -457,6 +457,31 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
       15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+
+  /**
+   * criterion
+   */
+  MDFlexOption<unsigned int, __LINE__> criterion{
+      0, "criterion", true, "0 for sum, 1 for distance between yE - yL and 2 for rebuild < 2.5*remainder"};
+
+  /**
+   * maxRebuild
+   */
+  MDFlexOption<unsigned int, __LINE__> maxRebuild{10000, "max-rebuild", true,
+                                                  "Maximum amount of points considered for rebuild estimate"};
+
+  /**
+   * minRemainder
+   */
+  MDFlexOption<unsigned int, __LINE__> minRemainder{2, "min-remainder", true,
+                                                    "Minimum amount of points considered for remainder estimate"};
+
+  /**
+   * maxRemainder
+   */
+  MDFlexOption<unsigned int, __LINE__> maxRemainder{100, "max-remainder", true,
+                                                    "Minimum amount of points considered for remainder estimate"};
+
   /**
    * fastParticlesThrow
    */

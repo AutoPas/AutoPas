@@ -32,10 +32,14 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "rebuildNeighborLists[ns],"
       "computeInteractionsTotal[ns],"
       "tuning[ns],"
-      "particleBufferSize,"
+      "numParticlesBuffer,"
       "numParticlesOwned,"
       "numParticlesHalo,"
-      "numParticlesFast,";
+      "numParticlesFast,"
+      "estimateNumParticlesBuffer,"
+      "estimateRemainderTraversal[ns],"
+      "estimateRebuildNeighborLists[ns],"
+      "doDynamicRebuild,";
   if (energyMeasurements) {
     csvHeader.append(
         ",energyWatts[W],"
@@ -64,19 +68,24 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             const IterationMeasurements &measurements) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyWatts, energyJoules, energyDeltaT, energyTotal, particleBufferSize, numParticlesOwned,
-               numParticlesHalo, numParticlesFast] = measurements;
+               energyWatts, energyJoules, energyDeltaT, energyTotal, numParticlesBuffer, numParticlesOwned,
+               numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer, estimateRemainderTraversalTime,
+               estimateRebuildNeighborTime, doDynamicRebuild] = measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
                inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
-               timeRemainderTraversal, timeRebuild, timeTotal, timeTuning, particleBufferSize, numParticlesOwned,
-               numParticlesHalo, numParticlesFast, energyWatts, energyJoules, energyDeltaT);
+               timeRemainderTraversal, timeRebuild, timeTotal, timeTuning, numParticlesBuffer, numParticlesOwned,
+               numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer, estimateRemainderTraversalTime,
+               estimateRebuildNeighborTime, doDynamicRebuild ? "true" : "false", energyWatts, energyJoules,
+               energyDeltaT);
   } else {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, particleBufferSize, numParticlesOwned, numParticlesHalo, numParticlesFast);
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
+               inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
+               timeRemainderTraversal, timeRebuild, timeTotal, timeTuning, numParticlesBuffer, numParticlesOwned,
+               numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer, estimateRemainderTraversalTime,
+               estimateRebuildNeighborTime, doDynamicRebuild ? "true" : "false");
   }
 #endif
 }

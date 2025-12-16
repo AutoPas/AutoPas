@@ -226,6 +226,13 @@ std::vector<Particle_T> AutoPas<Particle_T>::updateContainer() {
 }
 
 template <class Particle_T>
+void AutoPas<Particle_T>::initializeRebuildEstimator(const unsigned criteria,
+                                                     const unsigned maxRebuild, const unsigned minRemainder,
+                                                     const unsigned maxRemainder) {
+  _logicHandler->initializeRebuildEstimator(criteria, maxRebuild, minRemainder, maxRemainder);
+}
+
+template <class Particle_T>
 std::vector<Particle_T> AutoPas<Particle_T>::resizeBox(const std::array<double, 3> &boxMin,
                                                        const std::array<double, 3> &boxMax) {
   if (_allowedCellSizeFactors->isInterval()) {

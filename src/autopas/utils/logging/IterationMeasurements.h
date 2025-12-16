@@ -57,9 +57,9 @@ struct IterationMeasurements {
   long energyTotal{};
 
   /**
-   * Size of particle buffer at the end of updateContainer()
+   * Number of particles in the buffer during remainder Traversal
    */
-  size_t particleBufferSize{};
+  size_t numParticlesBuffer{};
 
   /**
    * Number of owned particles per iteration
@@ -75,5 +75,25 @@ struct IterationMeasurements {
    * Number of fast particles per iteration
    */
   size_t numParticlesFast{};
+
+  /**
+   * Estimate of particles in the buffer used for predicting estimateRemainderTraversalTime
+   */
+  size_t estimateNumParticlesBuffer{};
+
+  /**
+   * Linear regression estimate of remainderTraversalTime given estimated amount of particles in the buffer
+   */
+  double estimateRemainderTraversalTime{};
+
+  /**
+   * Mean of rebuildNeighborTime in the current iteration excluding tuning rebuilds
+   */
+  double estimateRebuildNeighborTime{};
+
+  /**
+   * True if dynamic rebuild would be initiated in the current iteration otherwise false
+   */
+  bool doDynamicRebuild{false};
 };
 }  // namespace autopas
