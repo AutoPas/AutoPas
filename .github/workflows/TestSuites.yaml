@@ -78,26 +78,28 @@ jobs:
 
         include:
           # Extra matrix entry: third split ONLY for clang|Debug
-          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON, ON , OFF, ON , ON ]
             md-flex-mode: singlesite
             part: 1
             split: 3
-          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON, ON , OFF, ON , ON ]
             md-flex-mode: singlesite
             part: 2
             split: 3
-          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug,   ON, ON , OFF, ON , ON ]
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON, ON , OFF, ON , ON ]
             md-flex-mode: singlesite
             part: 3
             split: 3
           # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
           # so we only add tests for part 1
-          - config: [ autopas-build-archer, clang, clang++,  Ninja            , Release, ON, OFF, ON , OFF, OFF]
+          - config: [ autopas-build-archer, clang, clang++, Ninja             , Release, ON, OFF, ON , OFF, OFF]
             md-flex-mode: multisite
             part: 1
+            split: 1
           - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON, ON , OFF, OFF, OFF]
             md-flex-mode: multisite
             part: 1
+            split: 1
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/${{ matrix.split }})
     container: autopas/${{ matrix.config[0] }}
     env:
