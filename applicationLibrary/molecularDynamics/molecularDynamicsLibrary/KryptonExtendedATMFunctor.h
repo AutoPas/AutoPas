@@ -88,7 +88,7 @@ class KryptonExtendedATMFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) override {
+  void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
@@ -358,7 +358,7 @@ class KryptonExtendedATMFunctor
           const SoAFloatPrecision distSquaredKI =
               displacementXKI * displacementXKI + displacementYKI * displacementYKI + displacementZKI * displacementZKI;
 
-          const SoAFloatPrecision distJK = std::sqrt(distSquaredIJ);
+          const SoAFloatPrecision distJK = std::sqrt(distSquaredJK);
           const SoAFloatPrecision distKI = std::sqrt(distSquaredKI);
 
           if constexpr (countFLOPs) {
@@ -914,7 +914,7 @@ class KryptonExtendedATMFunctor
           }
 
           const SoAFloatPrecision distIJ = std::sqrt(distSquaredIJ);
-          const SoAFloatPrecision distJK = std::sqrt(distSquaredIJ);
+          const SoAFloatPrecision distJK = std::sqrt(distSquaredJK);
           const SoAFloatPrecision distKI = std::sqrt(distSquaredKI);
 
           SoAFloatPrecision forceIX, forceIY, forceIZ;
@@ -1022,8 +1022,8 @@ class KryptonExtendedATMFunctor
     auto *const __restrict fxptr2 = soa2.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fyptr2 = soa2.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr2 = soa2.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fyptr3 = soa3.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fxptr3 = soa3.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr3 = soa3.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr3 = soa3.template begin<Particle_T::AttributeNames::forceZ>();
     [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
@@ -1219,9 +1219,9 @@ class KryptonExtendedATMFunctor
             }
           }
         }
-        fxptr2[j] += fXAccI;
-        fyptr2[j] += fYAccI;
-        fzptr2[j] += fZAccI;
+        fxptr2[j] += fXAccJ;
+        fyptr2[j] += fYAccJ;
+        fzptr2[j] += fZAccJ;
       }
       fxptr1[i] += fXAccI;
       fyptr1[i] += fYAccI;
@@ -1317,8 +1317,8 @@ class KryptonExtendedATMFunctor
     const auto forceIDirectionYIJ = displacementYIJ * (fullATMGradientIJ + fullExpGradientIJ);
     const auto forceIDirectionZIJ = displacementZIJ * (fullATMGradientIJ + fullExpGradientIJ);
     const auto forceIDirectionXKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
-    const auto forceIDirectionYKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
-    const auto forceIDirectionZKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionYKI = displacementYKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionZKI = displacementZKI * (fullATMGradientKI + fullExpGradientKI);
 
     forceIX = (forceIDirectionXIJ + forceIDirectionXKI) * (-1.0);
     forceIY = (forceIDirectionYIJ + forceIDirectionYKI) * (-1.0);
@@ -1401,8 +1401,8 @@ class KryptonExtendedATMFunctor
     const auto forceIDirectionYIJ = displacementYIJ * (fullATMGradientIJ + fullExpGradientIJ);
     const auto forceIDirectionZIJ = displacementZIJ * (fullATMGradientIJ + fullExpGradientIJ);
     const auto forceIDirectionXKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
-    const auto forceIDirectionYKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
-    const auto forceIDirectionZKI = displacementXKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionYKI = displacementYKI * (fullATMGradientKI + fullExpGradientKI);
+    const auto forceIDirectionZKI = displacementZKI * (fullATMGradientKI + fullExpGradientKI);
 
     forceIX = (forceIDirectionXIJ + forceIDirectionXKI) * (-1.0);
     forceIY = (forceIDirectionYIJ + forceIDirectionYKI) * (-1.0);
