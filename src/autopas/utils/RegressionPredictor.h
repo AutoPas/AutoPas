@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <cstddef>
+#include <boost/math/statistics/linear_regression.hpp>
 
-#include "Math.h"
+#include "autopas/utils/Math.h"
 
 //#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER
 namespace autopas::utils {
@@ -19,8 +19,16 @@ namespace autopas::utils {
  */
 class RegressionObject {
  public:
-  RegressionObject(const size_t _minN, const size_t _maxN) : _minN(_minN), _maxN(_maxN) {}
-  enum class ReturnCode { OK, NOT_ENOUGH_POINTS, EXCEEDED_MAX_POINTS, OVERFLOW, DIVIDE_BY_ZERO, OUTLIER };
+  RegressionObject(const size_t minN, const size_t maxN) : _minN(minN), _maxN(maxN) {}
+  enum class ReturnCode {
+    OK,
+    NOT_ENOUGH_POINTS,
+    EXCEEDED_MAX_POINTS,
+    OVERFLOW,
+    DIVIDE_BY_ZERO,
+    UNKNOWN_ERROR,
+    REGRESSION_OBJECT
+  };
   struct Result {
     double _value;
     ReturnCode _returnCode;
@@ -29,12 +37,21 @@ class RegressionObject {
   void reset();
   ReturnCode addNewPoint();
   Result predict();
+
   [[nodiscard]] bool hasEnoughPoints() const { return _n >= _minN; }
   [[nodiscard]] bool exceedsMaximumPoints() const { return _n >= _maxN; }
   [[nodiscard]] bool isWithinPointsLimits() const { return _n <= _maxN && _n >= _minN; }
+  [[nodiscard]] size_t getN() const { return _n; }
+  [[nodiscard]] long getSumY() const { return _sumY; }
+  void setMinMax(const size_t minN, const size_t maxN) {
+    _minN = minN;
+    _maxN = maxN;
+  }
+  void setMaxN(const size_t maxN) { _maxN = maxN; }
 
  protected:
   size_t _n = 0;
+  long _sumY = 0;
   size_t _minN = 0;
   size_t _maxN = 0;
 };
@@ -43,9 +60,14 @@ class Mean : public RegressionObject {
  public:
   Mean() : RegressionObject(1, 10000) {}
 
-  Mean(const size_t _minN, const size_t _maxN) : RegressionObject(_minN, _maxN) {}
+  explicit Mean(const size_t maxN) : RegressionObject(1, maxN) {}
 
-  void reset() { _sumY = 0.0; }
+  Mean(const size_t minN, const size_t maxN) : RegressionObject(minN, maxN) {}
+
+  void reset() {
+    _sumY = 0;
+    _n = 0;
+  }
 
   ReturnCode addNewPoint(long const y) {
     if (exceedsMaximumPoints()) {
@@ -73,15 +95,14 @@ class Mean : public RegressionObject {
   }
 
  private:
-  long _sumY = 0.0;
   double _lastMean = 0.0;
 };
 
 class LinearRegression1Predictor : public RegressionObject {
  public:
-  LinearRegression1Predictor() : RegressionObject(4, 600) {}
+  LinearRegression1Predictor() : RegressionObject(4, 15000) {}
 
-  LinearRegression1Predictor(const size_t _minN, const size_t _maxN) : RegressionObject(_minN, _maxN) {}
+  LinearRegression1Predictor(const size_t minN, const size_t maxN) : RegressionObject(minN, maxN) {}
 
   void reset() {
     _sumX = 0.0;
@@ -91,9 +112,6 @@ class LinearRegression1Predictor : public RegressionObject {
     _n = 0;
   }
   ReturnCode addNewPoint(const long x, const long y) {
-    if (x == 0) {
-      return _zero.addNewPoint(y);
-    }
     if (exceedsMaximumPoints()) {
       return ReturnCode::EXCEEDED_MAX_POINTS;
     }
@@ -131,10 +149,8 @@ class LinearRegression1Predictor : public RegressionObject {
     _n++;
     return ReturnCode::OK;
   }
+
   Result predict(const long x) {
-    if (x == 0) {
-      return _zero.predict();
-    }
     if (!hasEnoughPoints()) {
       return Result{0, ReturnCode::NOT_ENOUGH_POINTS, false};
     }
@@ -187,13 +203,78 @@ class LinearRegression1Predictor : public RegressionObject {
   }
 
  private:
-  Mean _zero = Mean();
   long _sumX = 0;
-  long _sumY = 0;
   long _sumXX = 0;
   long _sumXY = 0;
   double _last_ß0 = 0.0;
   double _last_ß1 = 0.0;
+};
+
+class LinearRegression1PredictorBoost : public RegressionObject {
+ public:
+  LinearRegression1PredictorBoost() : RegressionObject(2, 100) {
+    _y.reserve(_maxN);
+    _x.reserve(_maxN);
+  }
+
+  LinearRegression1PredictorBoost(const size_t minN, const size_t maxN) : RegressionObject(minN, maxN) {
+    _y.reserve(_maxN);
+    _x.reserve(_maxN);
+  }
+
+  [[nodiscard]] bool hasEnoughPoints() const { return _numDifferentX >= _minN; }
+  [[nodiscard]] bool exceedsMaximumPoints() const { return _numDifferentX >= _maxN; }
+  [[nodiscard]] bool isWithinPointsLimits() const { return _numDifferentX <= _maxN && _numDifferentX >= _minN; }
+
+  void reset() {
+    _numDifferentX = 0;
+    _currentMaxX = LONG_MIN;
+    _sumY = 0;
+    _n = 0;
+    _x.clear();
+    _y.clear();
+  }
+  ReturnCode addNewPoint(const long x, const long y) {
+    _sumY = Math::safeAdd(_sumY, y);
+    if (_sumY == std::numeric_limits<long>::max() || _sumY == std::numeric_limits<long>::min()) {
+      return ReturnCode::OVERFLOW;
+    }
+
+    if (_currentMaxX < x) {
+      _numDifferentX++;
+      _currentMaxX = x;
+      if (this->exceedsMaximumPoints()) {
+        _x.erase(_x.begin());
+        _y.erase(_y.begin());
+      }
+    }
+
+    _x.push_back(x);
+    _y.push_back(y);
+
+    _n++;
+    return ReturnCode::OK;
+  }
+
+  Result predict(const long x) {
+    if (not this->hasEnoughPoints()) {
+      return Result{0, ReturnCode::NOT_ENOUGH_POINTS, false};
+    }
+    std::pair<double, double> ßs;
+    try {
+      ßs = boost::math::statistics::simple_ordinary_least_squares(_x, _y);
+    } catch (...) {
+      return Result{0, ReturnCode::UNKNOWN_ERROR, false};
+    }
+    const double prediction = ßs.first + ßs.second * static_cast<double>(x);
+    return Result{prediction, ReturnCode::OK, true};
+  }
+
+ private:
+  size_t _numDifferentX = 0;
+  long _currentMaxX = LONG_MIN;
+  std::vector<long> _x;
+  std::vector<long> _y;
 };
 
 }  // namespace autopas::utils

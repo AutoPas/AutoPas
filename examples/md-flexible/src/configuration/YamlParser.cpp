@@ -166,6 +166,26 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.loadBalancingInterval.value < 0) {
           throw std::runtime_error("Load balancing interval must be a positive integer.");
         }
+      } else if (key == config.criterion.name) {
+        expected = "Unsigned Integer";
+        description = config.criterion.description;
+
+        config.criterion.value = node[key].as<int>();
+      } else if (key == config.maxRebuild.name) {
+        expected = "Unsigned Integer";
+        description = config.maxRebuild.description;
+
+        config.maxRebuild.value = node[key].as<int>();
+      } else if (key == config.minRemainder.name) {
+        expected = "Unsigned Integer";
+        description = config.minRemainder.description;
+
+        config.minRemainder.value = node[key].as<int>();
+      } else if (key == config.maxRemainder.name) {
+        expected = "Unsigned Integer";
+        description = config.maxRemainder.description;
+
+        config.maxRemainder.value = node[key].as<int>();
       } else if (key == config.selectorStrategy.name) {
         expected = "Exactly one selector strategy out of the possible values.";
         description = config.selectorStrategy.description;
@@ -637,8 +657,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.addATParametersToSite(siteID, nu);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
-        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
-        // update)
+        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the
+        // quaternion update)
         expected = "See AllOptions.yaml for examples.";
         description = "";
 

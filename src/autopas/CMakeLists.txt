@@ -14,7 +14,8 @@ file(
 
 option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
 option(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER  "Enables fast particle buffers in all containers, thereby disabling the dynamic rebuild." OFF)
-option(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN  "Rebuild depending on amount of particles in the buffer." OFF)
+option(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN  "Rebuild depending on amount of particles in the buffer with linear regression estimate for remainder." OFF)
+option(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN_SELF  "Rebuild depending on amount of particles in the buffer with linear regression (self implemented) estimate for remainder." OFF)
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
@@ -37,6 +38,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
+        $<$<BOOL:${AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN}>:Boost::boost>
         Eigen3
     PRIVATE
         # harmony are only needed privately when building AutoPas.
@@ -57,7 +59,8 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
         $<$<BOOL:${AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER}>:AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER>
-        $<$<BOOL:${AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN}>:AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_SELF_LIN>
+        $<$<BOOL:${AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN_SELF}>:AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN_SELF>
+        $<$<BOOL:${AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN}>:AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN>
         _USE_MATH_DEFINES
 )
 

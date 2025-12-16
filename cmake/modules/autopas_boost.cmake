@@ -1,0 +1,6 @@
+if (AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN OR AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER)
+    message(STATUS "Fast particle buffer with linear regression estimator: enabling Boost")
+    find_package(Boost REQUIRED)
+else ()
+    message(STATUS "Boost disabled.")
+endif ()

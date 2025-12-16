@@ -130,6 +130,7 @@ class AutoPas {
    * @return A vector of invalid particles that do no longer belong in the current container.
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer();
+  void initializeRebuildEstimator(unsigned criteria, unsigned maxRebuild, unsigned minRemainder, unsigned maxRemainder);
 
   /**
    * Reserve memory for a given number of particles in the container and logic layers.
