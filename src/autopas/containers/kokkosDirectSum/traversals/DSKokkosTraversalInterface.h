@@ -33,10 +33,6 @@ public:
     }
     else if (storageLayout == DataLayoutOption::soa) {
       _ownedParticles.getSoA() = input.getSoA();
-
-      // constexpr size_t tupleSize = input.tupleSize();
-      // constexpr auto I = std::make_index_sequence<tupleSize>();
-      // _ownedParticles.getSoA().copyFrom(input.getSoA(), I);
     }
   }
 
@@ -50,6 +46,7 @@ public:
       // Kokkos::deep_copy(_haloParticles.getAoS().getView(), input.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
+      // TODO: sync from host to device if required
       // _haloParticles.getSoA().resize(N);
       // constexpr size_t tupleSize = input.tupleSize();
       // constexpr auto I = std::make_index_sequence<tupleSize>();
