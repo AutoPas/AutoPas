@@ -156,7 +156,7 @@ class AxilrodTellerMutoFunctorHWY
     precomputeBuffer2.resize(numMaxThreads);
   }
 
-  std::string getName() final { return "AxilrodTellerMutoFunctorAutoVec"; }
+  std::string getName() final { return "AxilrodTellerMutoFunctorHWY"; }
 
   bool isRelevantForTuning() final { return true; }
 
@@ -756,8 +756,8 @@ class AxilrodTellerMutoFunctorHWY
     // soa1 <-> soa2
     interSoADists.fillHighway(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2, cutoffSquared);
 
-    const size_t packedSizeSoA2 = (soa2Size * soa2Size - soa2Size) / 2;
     if constexpr (countFLOPs) {
+      const size_t packedSizeSoA2 = (soa2Size * soa2Size - soa2Size) / 2;
       numDistanceCalculationSum += soa1Size * soa2Size + packedSizeSoA2;
     }
 
