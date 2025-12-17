@@ -14,7 +14,7 @@
 
 namespace autopas::utils {
 
-  template <class MemSpace, class Particle_T>
+  template <class Particle_T>
   class KokkosStorage {
 
   public:
@@ -36,7 +36,7 @@ namespace autopas::utils {
     void addParticle(size_t index, const Particle_T &p) {
       switch (_layout) {
         case DataLayoutOption::aos: {
-          storageAoS.getParticle(index) = p;
+          storageAoS.addParticle(index, p);
           break;
         }
         case DataLayoutOption::soa: {
@@ -67,14 +67,14 @@ namespace autopas::utils {
     constexpr auto& operator() (int i) const {
       switch (_layout) {
         case DataLayoutOption::aos: {
-          return storageAoS.template operator()<attribute, offset, host>(i);
+          return storageAoS.template operator()<attribute, offset>(i);
         }
         case DataLayoutOption::soa: {
           return storageSoA.template operator()<attribute, offset, host>(i);
         }
         default: {
           // THIS SHOULD NEVER HAPPEN, TODO: log an error
-          return storageAoS.template operator()<attribute, offset, host>(i);
+          return storageAoS.template operator()<attribute, offset>(i);
         }
       }
     }
@@ -121,24 +121,24 @@ namespace autopas::utils {
       return _layout;
     }
 
-    KokkosAoS<MemSpace, Particle_T>& getAoS() {
+    KokkosAoS<Particle_T>& getAoS() {
       return storageAoS;
     }
 
-    const KokkosAoS<MemSpace, Particle_T>& getAoS() const {
+    const KokkosAoS<Particle_T>& getAoS() const {
       return storageAoS;
     }
 
-    Particle_T::template KokkosSoAArraysType<MemSpace>& getSoA() {
+    Particle_T::KokkosSoAArraysType& getSoA() {
       return storageSoA;
     }
 
-    const Particle_T::template KokkosSoAArraysType<MemSpace>& getSoA() const {
+    const Particle_T::KokkosSoAArraysType& getSoA() const {
       return storageSoA;
     }
 
     constexpr static size_t tupleSize() {
-      return Particle_T::template KokkosSoAArraysType<MemSpace>::tupleSize();
+      return Particle_T::KokkosSoAArraysType::tupleSize();
     }
 
     size_t size() const {
@@ -160,8 +160,8 @@ namespace autopas::utils {
 
     DataLayoutOption _layout {DataLayoutOption::aos};
 
-    KokkosAoS<MemSpace, Particle_T> storageAoS {};
-    Particle_T::template KokkosSoAArraysType<MemSpace> storageSoA {};
+    KokkosAoS<Particle_T> storageAoS {};
+    Particle_T::KokkosSoAArraysType storageSoA {};
   };
 
 }

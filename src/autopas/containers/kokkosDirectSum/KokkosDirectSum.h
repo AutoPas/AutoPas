@@ -431,9 +431,9 @@ template <class Particle_T>
 
         bool _soaUpToDate = false;
 
-        utils::KokkosStorage<MemSpace, Particle_T> _ownedParticles {};
+        utils::KokkosStorage<Particle_T> _ownedParticles {};
 
-        utils::KokkosStorage<MemSpace, Particle_T> _haloParticles {};
+        utils::KokkosStorage<Particle_T> _haloParticles {};
 
         /* AoS Data structure */
         //utils::KokkosAoS<MemSpace, Particle_T> _hostOwnedParticlesAoS {};

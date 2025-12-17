@@ -11,7 +11,7 @@
 
 namespace autopas::utils {
 
-  template <class MemSpace, class Particle_T>
+  template <class Particle_T>
   class KokkosAoS {
 
   public:
@@ -30,14 +30,13 @@ namespace autopas::utils {
       Kokkos::realloc(view, numParticles);
     }
 
-    template <size_t attribute, bool, bool host = true>
+    void addParticle(size_t index, const Particle_T& p) {
+      view(index) = p;
+    }
+
+    template <size_t attribute, bool>
     constexpr auto& operator() (int i) const {
-      if constexpr (host) {
-        return view.view_host()(i).template operator()<static_cast<Particle_T::AttributeNames>(attribute)>();
-      }
-      else {
-        return view.view_device()(i).template operator()<static_cast<Particle_T::AttributeNames>(attribute)>();
-      }
+      return view(i).template operator()<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
 
     template <size_t attribute, bool>
@@ -64,19 +63,17 @@ namespace autopas::utils {
       return view.extent(0);
     }
 
-    // TODO: guarantee that device is up to date
     Particle_T& getParticle (size_t index) {
-      return view.view_device()(index);
+      return view(index);
     }
 
-    // TODO: guarantee that device is up to date
     const Particle_T& getParticle (size_t index) const {
-      return view.view_device()(index);
+      return view(index);
     }
 
   private:
 
-    Kokkos::DualView<Particle_T*, MemSpace> view;
+    Kokkos::View<Particle_T*, Kokkos::HostSpace> view;
   };
 
 }

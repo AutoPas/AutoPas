@@ -72,8 +72,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
                                        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
-  template <class MemSpace>
-  using KokkosSoAArraysType = autopas::utils::KokkosSoA<MemSpace, size_t* /*id*/, double* /*x*/, double* /*y*/, double* /*z*/,
+
+  using KokkosSoAArraysType = autopas::utils::KokkosSoA<size_t* /*id*/, double* /*x*/, double* /*y*/, double* /*z*/,
                                        double* /*rebuildX*/, double* /*rebuildY*/, double* /*rebuildZ*/,
                                        double* /*vx*/, double* /*vy*/, double* /*vz*/, double* /*fx*/, double* /*fy*/,
                                        double* /*fz*/, double* /*oldFx*/, double* /*oldFy*/, double* /*oldFz*/,

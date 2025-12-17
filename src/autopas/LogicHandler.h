@@ -1212,7 +1212,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
     bool test = _neighborListInvalidDoDynamicRebuild;
 
     // TODO: sth else than HostSpace
-    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Kokkos::HostSpace, Particle_T>& storage, bool& local) {
+    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, bool& local) {
 
         const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true>(i);
         const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true>(i);

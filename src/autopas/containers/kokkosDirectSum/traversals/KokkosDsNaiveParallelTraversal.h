@@ -12,6 +12,14 @@
 
 #include <Kokkos_Core.hpp>
 
+#ifdef KOKKOS_ENABLE_CUDA
+using DeviceSpace = Kokkos::CudaSpace;
+#else
+using DeviceSpace = Kokkos::HostSpace;
+#endif
+
+using HostSpace = Kokkos::HostSpace;
+
 namespace autopas {
 
 template <class Functor, class Particle_T>
@@ -44,7 +52,7 @@ public:
 #ifdef KOKKOS_ENABLE_CUDA
         return; // TODO: log error / exception
 #else
-        Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
+        Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
             if (newton3 or i != j) {
               func->AoSFunctorKokkos(
@@ -65,6 +73,12 @@ public:
         Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           ownedSoA.template operator() <Particle_T::AttributeNames::forceX, true, false>(i) = 10.;
         });
+        constexpr auto tupleSize = ownedSoA.tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
+        // TODO: only modify and sync changed attributes (Functor will have to return which attributes he did change)
+        ownedSoA.template markModified<DeviceSpace>(I);
+        ownedSoA.template sync<Kokkos::HostSpace>(I);
+
         // TODO: consider halo particles
       }
     }

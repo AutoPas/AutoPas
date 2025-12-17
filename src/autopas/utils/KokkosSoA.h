@@ -11,7 +11,7 @@
 
 namespace autopas::utils {
 
-  template <class MemSpace, typename ... Types>
+  template <typename ... Types>
   class KokkosSoA {
 
   public:
@@ -24,7 +24,7 @@ namespace autopas::utils {
     }
 
     KOKKOS_FUNCTION
-    KokkosSoA(size_t N, const std::string& label) : views{Kokkos::View<Types, MemSpace>(label, N)...} {}
+    KokkosSoA(size_t N, const std::string& label) : views{Kokkos::DualView<Types>(label, N)...} {}
 
     /* Get/Set/Allocation */
     void resize(size_t numParticles) {
@@ -56,7 +56,7 @@ namespace autopas::utils {
     }
 
     template <size_t attribute>
-    constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types, MemSpace>...>>::type& getView() {
+    constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types>...>>::type& getView() {
       return std::get<attribute>(views);
     }
 
@@ -78,8 +78,17 @@ namespace autopas::utils {
     */
 
     template <typename TargetSpace, std::size_t... I>
+    void markModified(std::index_sequence<I...>) {
+      (std::get<I>(views).template modify<TargetSpace>(), ...);
+    }
+
+    template <typename TargetSpace, std::size_t... I>
     void sync(std::index_sequence<I...>) {
       (std::get<I>(views).template sync<TargetSpace>(), ...);
+    }
+
+    void operator= (KokkosSoA<Types...> &other) {
+      views = other.views;
     }
 
   private:
@@ -93,7 +102,11 @@ namespace autopas::utils {
       ((operator()<I, false>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
     }
 
-    std::tuple<Kokkos::DualView<Types, MemSpace>...> views {};
+#ifdef KOKKOS_ENABLE_CUDA
+    std::tuple<Kokkos::DualView<Types, Kokkos::Cuda>...> views {};
+#else
+    std::tuple<Kokkos::DualView<Types, Kokkos::HostSpace::device_type>...> views {};
+#endif
   };
 
 }

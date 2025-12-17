@@ -11,96 +11,85 @@
 #include "autopas/utils/KokkosDataLayoutConverter.h"
 #include "autopas/options/DataLayoutOption.h"
 
-#ifdef KOKKOS_ENABLE_CUDA
-  using DeviceSpace = Kokkos::CudaSpace;
-#else
-using DeviceSpace = Kokkos::HostSpace;
-#endif
-
-using HostSpace = Kokkos::HostSpace;
-
 namespace autopas {
 template <class Particle_T>
 class DSKokkosTraversalInterface {
 
 public:
 
-  template <typename Space>
-  using KokkosSoAType = Particle_T::template KokkosSoAArraysType<Space>;
-
   explicit DSKokkosTraversalInterface() {};
 
   virtual ~DSKokkosTraversalInterface() = default;
 
-  void setOwnedToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
+  void setOwnedToTraverse(utils::KokkosStorage<Particle_T>& input) {
 
     auto storageLayout = input.getLayout();
     _ownedParticles.setLayout(storageLayout);
     size_t N = input.size();
 
     if (storageLayout == DataLayoutOption::aos) {
-      _ownedParticles.getAoS().resize(N);
+      _ownedParticles.getAoS() = input.getAoS();
       // Kokkos::deep_copy(_ownedParticles.getAoS().getView(), input.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
-      _ownedParticles.getSoA().resize(N);
+      _ownedParticles.getSoA() = input.getSoA();
 
-      constexpr size_t tupleSize = input.tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
-      // _ownedParticles.getSoA().copyFrom(input.getSoA(), I); TODO: sync particles
+      // constexpr size_t tupleSize = input.tupleSize();
+      // constexpr auto I = std::make_index_sequence<tupleSize>();
+      // _ownedParticles.getSoA().copyFrom(input.getSoA(), I);
     }
   }
 
-  void setHaloToTraverse(utils::KokkosStorage<HostSpace, Particle_T>& input) {
+  void setHaloToTraverse(utils::KokkosStorage<Particle_T>& input) {
 
     auto storageLayout = input.getLayout();
     _haloParticles.setLayout(storageLayout);
-    size_t N = input.size();
 
     if (storageLayout == DataLayoutOption::aos) {
-      _haloParticles.getAoS().resize(N);
+      // _haloParticles.getAoS().resize(N);
       // Kokkos::deep_copy(_haloParticles.getAoS().getView(), input.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
-      _haloParticles.getSoA().resize(N);
-
-      constexpr size_t tupleSize = input.tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
+      // _haloParticles.getSoA().resize(N);
+      // constexpr size_t tupleSize = input.tupleSize();
+      // constexpr auto I = std::make_index_sequence<tupleSize>();
       // _haloParticles.getSoA().copyFrom(input.getSoA(), I); TODO: sync particles
     }
   }
 
-  void retrieveOwned(utils::KokkosStorage<HostSpace, Particle_T>& output) {
+  void retrieveOwned(utils::KokkosStorage<Particle_T>& output) {
     auto storageLayout = _ownedParticles.getLayout();
-    size_t N = _ownedParticles.size();
 
     if (storageLayout == DataLayoutOption::aos) {
+      output.getAoS() = _ownedParticles.getAoS();
       // Kokkos::deep_copy(output.getAoS().getView(), _ownedParticles.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
-      constexpr size_t tupleSize = output.tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
+      output.getSoA() = _ownedParticles.getSoA();
+      // constexpr size_t tupleSize = output.tupleSize();
+      // constexpr auto I = std::make_index_sequence<tupleSize>();
       // output.getSoA().copyFrom(_ownedParticles.getSoA(), I); TODO: sync particles
     }
   }
 
-  void retrieveHalo(utils::KokkosStorage<HostSpace, Particle_T>& output) {
+  void retrieveHalo(utils::KokkosStorage<Particle_T>& output) {
     auto storageLayout = _haloParticles.getLayout();
-    size_t N = _haloParticles.size();
 
     if (storageLayout == DataLayoutOption::aos) {
+      output.getAoS() = _haloParticles.getAoS();
       // Kokkos::deep_copy(output.getAoS().getView(), _haloParticles.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
-      constexpr size_t tupleSize = output.tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
+      output.getSoA() = _haloParticles.getSoA();
+      // constexpr size_t tupleSize = output.tupleSize();
+      // constexpr auto I = std::make_index_sequence<tupleSize>();
       // output.getSoA().copyFrom(_haloParticles.getSoA(), I); TODO: sync particles
     }
   }
 
 protected:
 
-  utils::KokkosStorage<DeviceSpace, Particle_T> _ownedParticles;
-  utils::KokkosStorage<DeviceSpace, Particle_T> _haloParticles;
+  utils::KokkosStorage<Particle_T> _ownedParticles;
+  utils::KokkosStorage<Particle_T> _haloParticles;
 };
 }

@@ -71,7 +71,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     }
   } else {
     // TODO: sth else than HostSpace
-   autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<Kokkos::HostSpace, ParticleType>& storage) {
+   autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<ParticleType>& storage) {
     //auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
     double m = 1.;
     auto vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true>(i);
@@ -219,7 +219,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   else {
 
     // TODO: sth else than HostSpace
-    autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<Kokkos::HostSpace, ParticleType>& storage) {
+    autoPasContainer.forEachKokkos(KOKKOS_LAMBDA(int i, autopas::utils::KokkosStorage<ParticleType>& storage) {
       //const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
         double mass = 1.;
         auto vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true>(i);
