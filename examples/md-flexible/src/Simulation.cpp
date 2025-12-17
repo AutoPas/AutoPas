@@ -300,8 +300,9 @@ void Simulation::run() {
     }
     _timers.computationalLoad.stop();
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
-    //const auto potentialEnergy = applyWithChosenFunctor<double>([&](auto &&functor) { return functor.getPotentialEnergy(); });
-    _globalLogger->logGlobals(_iteration, 0., 0.);
+    _globalLogger->logGlobals(_iteration, _totalPotentialEnergy, _totalVirialSum);
+    _totalPotentialEnergy = 0.;
+    _totalVirialSum = 0.;
 #endif
     if (not _simulationIsPaused) {
       ++_iteration;
@@ -530,14 +531,30 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    auto var = _autoPasContainer->computeInteractions(&functor);
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+    return var;
+#else
+    return _autoPasContainer->computeInteractions(&functor);
+#endif
+  });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    auto var = _autoPasContainer->computeInteractions(&functor);
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+    return var;
+#else
+    return _autoPasContainer->computeInteractions(&functor);
+#endif
+  });
   return wasTuningIteration;
 }
 

@@ -6,10 +6,11 @@
 
 #include <string>
 
-#include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/logging/Logger.h"
 
-GlobalVariableLogger::GlobalVariableLogger(const std::string &outputSuffix) : _loggerName("GlobalsLogger" + outputSuffix) {
+GlobalVariableLogger::GlobalVariableLogger(const std::string &outputSuffix)
+    : _loggerName("GlobalsLogger" + outputSuffix) {
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
   const auto outputFileName("MD_Flexible_Globals_" + outputSuffix + fillerAfterSuffix +
@@ -22,11 +23,10 @@ GlobalVariableLogger::GlobalVariableLogger(const std::string &outputSuffix) : _l
   headerLogger->set_pattern("%v");
   // print csv header
   headerLogger->info(
-      "Date,"
-      "Iteration,"
-      "Virial Sum,"
-      "Potential Energy"
-      );
+      "Date, "
+      "Iteration, "
+      "Virial Sum, "
+      "Potential Energy ");
   spdlog::drop(headerLoggerName);
   // End of workaround
 

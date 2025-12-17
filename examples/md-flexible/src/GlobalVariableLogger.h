@@ -16,14 +16,15 @@
  *
  * It uses an asynchronous spd logger to write a csv file named "MD_FLEXIBLE_GLOBAL_<dateStamp>.csv".
  *
- * By default logging the data is disabled. It can be enabled by setting the cmake variable MD_FLEXIBLE_CALC_GLOBALS to ON.
+ * By default logging the global data is disabled. It can be enabled by setting the cmake variable
+ * MD_FLEXIBLE_CALC_GLOBALS to ON.
  *
- * When enabled and used with a functor where calculating globals is not implemented (in which case the functor will return
- * the default nonsensical values), "Not Implemented" is outputted instead.
+ * When enabled and used with a functor where calculating globals is not implemented (in which case the functor will
+ * return the default nonsensical values), "Not Implemented" is outputted instead.
  *
  */
 class GlobalVariableLogger {
-public:
+ public:
   /**
    * Constructor initializes the logger and sets the output file name.
    * @param outputSuffix Suffix for all output files produced by this class.
@@ -40,12 +41,12 @@ public:
    * the functor has not implemented the relevant function.
    *
    * @param iteration
-   * @param numFLOPs number of FLOPs. std::numeric_limits<size_t>::max() is interpreted as invalid.
-   * @param hitRate percentage of distance calculations that result in force contributions.
-   * std::numeric_limits<double>::quiet_NaN() is interpreted as invalid.
+   * @param virial This includes the virial sum contribution from both 2B and 3B interactions at the current timestep.
+   * @param potentialEnergy This includes the potential energy contribution from both 2B and 3B interactions at the
+   * current timestep.
    */
   void logGlobals(const size_t iteration, const double virial, const double potentialEnergy);
 
-private:
+ private:
   std::string _loggerName;
 };

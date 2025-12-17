@@ -11,6 +11,7 @@
 #include <string>
 #include <tuple>
 
+#include "GlobalVariableLogger.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
@@ -18,7 +19,6 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
-#include "GlobalVariableLogger.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
@@ -94,8 +94,18 @@ class Simulation {
   std::ostream *_outputStream;
 
   /**
- * Logger for FLOP count and hit rate.
- */
+   * Variable to store total potential energy for the current iteration from both 2B and 3B interactions.
+   */
+  double _totalPotentialEnergy;
+
+  /**
+   * Variable to store total virial sum for the current iteration from both 2B and 3B interactions.
+   */
+  double _totalVirialSum;
+
+  /**
+   * Logger for FLOP count and hit rate.
+   */
   std::unique_ptr<GlobalVariableLogger> _globalLogger;
 
   /**
