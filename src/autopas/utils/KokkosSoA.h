@@ -80,14 +80,14 @@ namespace autopas::utils {
     }
     */
 
-    template <typename TargetSpace, std::size_t... I>
+    template <class TargetSpace, std::size_t... I>
     void markModified(std::index_sequence<I...>) {
-      (std::get<I>(views).template modify<TargetSpace>(), ...);
+      (std::get<I>(views).template modify<typename TargetSpace::device_type>(), ...);
     }
 
-    template <typename TargetSpace, std::size_t... I>
+    template <class TargetSpace, std::size_t... I>
     void sync(std::index_sequence<I...>) {
-      (std::get<I>(views).template sync<TargetSpace>(), ...);
+      (std::get<I>(views).template sync<typename TargetSpace::device_type>(), ...);
     }
 
     void operator= (KokkosSoA<Types...> &other) {

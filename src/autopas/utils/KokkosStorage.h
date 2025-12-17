@@ -83,7 +83,7 @@ namespace autopas::utils {
       }
     }
 
-    template <typename MemSpace>
+    template <class MemSpace>
     void sync() {
       constexpr auto tupleSize = storageSoA.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
@@ -91,7 +91,7 @@ namespace autopas::utils {
       storageSoA.template sync<MemSpace>(I);
     }
 
-    template <typename MemSpace>
+    template <class MemSpace>
     void markModified() {
       constexpr auto tupleSize = storageSoA.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
