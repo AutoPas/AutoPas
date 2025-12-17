@@ -96,12 +96,12 @@ class Simulation {
   /**
    * Variable to store total potential energy for the current iteration from both 2B and 3B interactions.
    */
-  double _totalPotentialEnergy;
+  double _totalPotentialEnergy{};
 
   /**
    * Variable to store total virial sum for the current iteration from both 2B and 3B interactions.
    */
-  double _totalVirialSum;
+  double _totalVirialSum{};
 
   /**
    * Logger for FLOP count and hit rate.

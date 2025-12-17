@@ -103,7 +103,9 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   const auto outputSuffix =
       "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
 
-  _globalLogger = std::make_unique<GlobalVariableLogger>(outputSuffix);
+  if (rank == 0) {
+    _globalLogger = std::make_unique<GlobalVariableLogger>(outputSuffix);
+  }
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
@@ -300,7 +302,15 @@ void Simulation::run() {
     }
     _timers.computationalLoad.stop();
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
-    _globalLogger->logGlobals(_iteration, _totalPotentialEnergy, _totalVirialSum);
+    // Summing the potential energy over all MPI ranks
+    double potentialEnergyOverMPIRanks{}, virialSumOverMPIRanks{};
+    autopas::AutoPas_MPI_Reduce(&_totalPotentialEnergy, &potentialEnergyOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE,
+                                AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+    autopas::AutoPas_MPI_Reduce(&_totalVirialSum, &virialSumOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, 0,
+                                AUTOPAS_MPI_COMM_WORLD);
+    if (_domainDecomposition->getDomainIndex() == 0) {
+      _globalLogger->logGlobals(_iteration, potentialEnergyOverMPIRanks, virialSumOverMPIRanks);
+    }
     _totalPotentialEnergy = 0.;
     _totalVirialSum = 0.;
 #endif
