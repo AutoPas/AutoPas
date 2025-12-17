@@ -190,7 +190,9 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
+                _ownedParticles.template sync<DeviceSpace>();
                 _aosUpToDate = false;
+                _ownedParticles.template markModified<DeviceSpace>();
               }
 
               Kokkos::parallel_for("forEach", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
@@ -208,6 +210,7 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
+                _ownedParticles.template sync<DeviceSpace>();
               }
 
               auto& owned = _ownedParticles;
@@ -422,6 +425,8 @@ template <class Particle_T>
 #else
   using DeviceSpace = Kokkos::HostSpace;
 #endif
+
+  using HostSpace = Kokkos::HostSpace;
 
         mutable AutoPasLock ownedLock {};
 

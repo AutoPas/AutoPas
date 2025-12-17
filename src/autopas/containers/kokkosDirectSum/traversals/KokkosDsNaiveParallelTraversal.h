@@ -68,10 +68,8 @@ public:
         Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           ownedSoA.template operator() <Particle_T::AttributeNames::forceX, true, false>(i) = 10.;
         });
-        // TODO: only modify and sync changed attributes (Functor will have to return which attributes he did change)
+        // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
         ownedSoA.template markModified<DeviceSpace>(I);
-        ownedSoA.template sync<Kokkos::HostSpace>(I); // TODO: sync maybe later, only when host particles are really accessed
-
         // TODO: consider halo particles
       }
     }

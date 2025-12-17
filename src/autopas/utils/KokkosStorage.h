@@ -53,11 +53,14 @@ namespace autopas::utils {
 
       storageSoA.resize(size);
       _converter.convertToSoA(storageAoS, storageSoA, size, I);
+      storageSoA.template markModified<Kokkos::HostSpace>(I);
     }
 
     void convertToAoS(size_t size) {
       constexpr size_t tupleSize = storageSoA.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
+
+      storageSoA.template sync<Kokkos::HostSpace>(I);
 
       storageAoS.resize(size);
       _converter.convertToAoS(storageSoA, storageAoS, size, I);
@@ -80,39 +83,21 @@ namespace autopas::utils {
       }
     }
 
-    /*
-    template <size_t attribute, bool offset>
-    KOKKOS_INLINE_FUNCTION
-    constexpr auto get(size_t index) {
-      switch (_layout) {
-        case DataLayoutOption::aos: {
-          return storageAoS.template get<attribute, offset>(index);
-        }
-        case DataLayoutOption::soa: {
-          return storageSoA.template get<attribute, offset>(index);
-        }
-        default: {
-          // Should never happen, just to avoid compiler warnings
-          return storageAoS.template get<attribute, offset>(index);
-        }
-      }
+    template <typename MemSpace>
+    void sync() {
+      constexpr auto tupleSize = storageSoA.tupleSize();
+      constexpr auto I = std::make_index_sequence<tupleSize>();
+
+      storageSoA.template sync<MemSpace>(I);
     }
 
-    template <size_t attribute, bool offset>
-    KOKKOS_INLINE_FUNCTION
-    void set(auto value, size_t index) {
-      switch (_layout) {
-        case DataLayoutOption::aos: {
-          storageAoS.template set<attribute, offset>(value, index);
-          break;
-        }
-        case DataLayoutOption::soa: {
-          storageSoA.template set<attribute, offset>(value, index);
-          break;
-        }
-      }
+    template <typename MemSpace>
+    void markModified() {
+      constexpr auto tupleSize = storageSoA.tupleSize();
+      constexpr auto I = std::make_index_sequence<tupleSize>();
+
+      storageSoA.template markModified<MemSpace>(I);
     }
-    */
 
     void setLayout(DataLayoutOption newLayout) {
       _layout = newLayout;
