@@ -190,9 +190,9 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                _ownedParticles.template sync<DeviceSpace>();
+                _ownedParticles.template sync<DeviceSpace::execution_space>();
                 _aosUpToDate = false;
-                _ownedParticles.template markModified<DeviceSpace>();
+                _ownedParticles.template markModified<DeviceSpace::execution_space>();
               }
 
               Kokkos::parallel_for("forEach", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
@@ -210,7 +210,7 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                _ownedParticles.template sync<DeviceSpace>();
+                _ownedParticles.template sync<DeviceSpace::execution_space>();
               }
 
               auto& owned = _ownedParticles;

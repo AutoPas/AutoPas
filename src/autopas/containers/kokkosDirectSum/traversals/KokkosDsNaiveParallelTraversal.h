@@ -63,13 +63,13 @@ public:
         auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
         constexpr auto tupleSize = ownedSoA.tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
-        ownedSoA.template sync<DeviceSpace>(I);
+        ownedSoA.template sync<DeviceSpace::execution_space>(I);
 
         Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           ownedSoA.template operator() <Particle_T::AttributeNames::forceX, true, false>(i) = 10.;
         });
         // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
-        ownedSoA.template markModified<DeviceSpace>(I);
+        ownedSoA.template markModified<DeviceSpace::execution_space>(I);
         // TODO: consider halo particles
       }
     }
