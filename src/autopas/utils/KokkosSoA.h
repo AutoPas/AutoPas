@@ -97,7 +97,7 @@ namespace autopas::utils {
   private:
     template <std::size_t... I>
     void resizeImpl(size_t numParticles, std::index_sequence<I...>) {
-      (std::get<I>(views).realloc(numParticles), ...);
+      (std::get<I>(views).resize(numParticles), ...);
     }
 
     template <class Particle_T, std::size_t... I>
