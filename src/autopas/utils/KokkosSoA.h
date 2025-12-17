@@ -28,6 +28,9 @@ namespace autopas::utils {
 
     /* Get/Set/Allocation */
     void resize(size_t numParticles) {
+      if (numParticles == 0) {
+        return;
+      }
       constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
       constexpr auto I = std::make_index_sequence<tupleSize>{};
 

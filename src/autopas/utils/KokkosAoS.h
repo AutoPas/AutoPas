@@ -27,6 +27,9 @@ namespace autopas::utils {
 
     /* Get/Set/Allocation */
     void resize(size_t numParticles) {
+      if (numParticles == 0) {
+        return;
+      }
       Kokkos::realloc(view, numParticles);
     }
 
