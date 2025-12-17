@@ -87,6 +87,13 @@ namespace autopas::utils {
 
     template <typename Target, std::size_t... I>
     void sync(std::index_sequence<I...>) {
+
+      bool modified = false;
+      ((modified |= std::get<I>(views).template needs_sync<Target>()), ...);
+      if (!modified) {
+        return;
+      }
+
       (std::get<I>(views).template sync<Target>(), ...);
     }
 
