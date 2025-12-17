@@ -330,6 +330,11 @@ class AutoPas {
     withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
+  template <typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda forEachLambda, Result& result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    withStaticContainerType(getContainer(), [&](auto &container) { container.template reduceKokkos<Result, Reduction>(forEachLambda, result, behavior); });
+  }
+
   /**
    * Reduce properties of particles as defined by a lambda function.
    * @tparam Lambda (Particle_T p, A &initialValue) -> void
