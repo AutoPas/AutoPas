@@ -43,6 +43,7 @@ namespace autopas::utils {
         case DataLayoutOption::soa: {
           sync<Kokkos::HostSpace::execution_space>();
           storageSoA.addParticle(index, p);
+          markModified<Kokkos::HostSpace::execution_space>();
           break;
         }
       }

@@ -103,7 +103,6 @@ namespace autopas::utils {
     template <class Particle_T, std::size_t... I>
     void addParticleImpl(size_t position, const Particle_T& p, std::index_sequence<I...>) {
       ((operator()<I, false, true>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
-      (std::get<I>(views).template modify<Kokkos::HostSpace>(), ...);
     }
 
 #ifdef KOKKOS_ENABLE_CUDA
