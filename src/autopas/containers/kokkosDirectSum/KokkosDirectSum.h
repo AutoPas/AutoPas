@@ -192,13 +192,16 @@ template <class Particle_T>
                 convertToSoA();
                 _ownedParticles.template sync<DeviceSpace::execution_space>();
                 _aosUpToDate = false;
-                _ownedParticles.template markModified<DeviceSpace::execution_space>();
               }
 
-              Kokkos::parallel_for("forEach", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
+              Kokkos::parallel_for("forEachKokkos", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
                   // TODO: consider behavior
                   forEachLambda(i, _ownedParticles);
                 });
+
+              if (_dataLayout == DataLayoutOption::soa) {
+                _ownedParticles.template markModified<DeviceSpace::execution_space>();
+              }
             }
 
             template<typename Result, typename Reduction, typename Lambda>
