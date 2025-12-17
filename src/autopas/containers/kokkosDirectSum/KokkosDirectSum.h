@@ -423,8 +423,6 @@ template <class Particle_T>
   using DeviceSpace = Kokkos::HostSpace;
 #endif
 
-  using HostSpace = Kokkos::HostSpace;
-
         mutable AutoPasLock ownedLock {};
 
         mutable AutoPasLock haloLock {};

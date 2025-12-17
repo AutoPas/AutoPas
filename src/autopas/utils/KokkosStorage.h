@@ -21,6 +21,10 @@ namespace autopas::utils {
     KokkosStorage() {}
 
     void resize(size_t numParticles) {
+      if (numParticles == 0) {
+        return;
+      }
+
       switch (_layout) {
         case DataLayoutOption::aos: {
           storageAoS.resize(numParticles);
