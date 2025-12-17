@@ -12,14 +12,6 @@
 
 #include <Kokkos_Core.hpp>
 
-#ifdef KOKKOS_ENABLE_CUDA
-using DeviceSpace = Kokkos::CudaSpace;
-#else
-using DeviceSpace = Kokkos::HostSpace;
-#endif
-
-using HostSpace = Kokkos::HostSpace;
-
 namespace autopas {
 
 template <class Functor, class Particle_T>
@@ -88,6 +80,15 @@ public:
     }
 
 private:
+
+
+#ifdef KOKKOS_ENABLE_CUDA
+  using DeviceSpace = Kokkos::CudaSpace;
+#else
+  using DeviceSpace = Kokkos::HostSpace;
+#endif
+
+  using HostSpace = Kokkos::HostSpace;
 
   Functor *_functor;
 

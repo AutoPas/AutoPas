@@ -193,7 +193,7 @@ template <class Particle_T>
                 _aosUpToDate = false;
               }
 
-              Kokkos::parallel_for("forEach", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
+              Kokkos::parallel_for("forEach", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
                   // TODO: consider behavior
                   forEachLambda(i, _ownedParticles);
                 });
@@ -211,7 +211,7 @@ template <class Particle_T>
               }
 
               auto& owned = _ownedParticles;
-              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult)  {
+              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   // TODO: consider behavior
                   reduceLambda(i, owned, localResult);
                 }, Reduction(result));
@@ -417,9 +417,13 @@ template <class Particle_T>
           return {cellIndex, particleIndex};
         }
 
-        //TODO: maybe think about a threshold above which particles are stored no longer on the GPU
-        // However, for now, initialize and store particles on the host and offload them
-        using MemSpace = Kokkos::HostSpace;
+#ifdef KOKKOS_ENABLE_CUDA
+  using DeviceSpace = Kokkos::CudaSpace;
+#else
+  using DeviceSpace = Kokkos::HostSpace;
+#endif
+
+  using HostSpace = Kokkos::HostSpace;
 
         mutable AutoPasLock ownedLock {};
 
