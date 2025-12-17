@@ -89,7 +89,7 @@ namespace autopas::utils {
     void sync(std::index_sequence<I...>) {
 
       bool modified = false;
-      ((modified |= std::get<I>(views).template needs_sync<Target>()), ...);
+      ((modified |= std::get<I>(views).template need_sync<Target>()), ...);
       if (!modified) {
         return;
       }
