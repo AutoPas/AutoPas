@@ -15,7 +15,7 @@ namespace autopas {
  *
  * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
-template <class ParticleCellType>
+template <class ParticleCell>
 class PsVLTraversalInterface {
 public:
   /**
@@ -24,7 +24,7 @@ public:
   virtual ~PsVLTraversalInterface() = default;
 
 
-  virtual void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCellType>>> &orientationLists){
+  virtual void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationLists){
     _orientationLists = &orientationLists;
   }
 
@@ -32,7 +32,7 @@ protected:
 /**
  * Orientation Lists
  */
-std::vector<std::vector<SortedCellView<ParticleCellType>>> *_orientationLists = nullptr;
+std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationLists = nullptr;
 };
 
 }  // namespace autopas

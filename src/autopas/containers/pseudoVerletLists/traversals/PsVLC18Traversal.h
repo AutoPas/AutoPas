@@ -29,7 +29,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public PsVLTraversalInterface<typename ParticleCell::ParticleType> {
+class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public PsVLTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the psvl_c18 traversal.
@@ -58,12 +58,11 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
   /**
    * Computes all interactions between the base
    * cell and adjacent cells with greater a ID.
-   * @param cells vector of all cells.
    * @param x X-index of base cell.
    * @param y Y-index of base cell.
    * @param z Z-index of base cell.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  void processBaseCell(unsigned long x, unsigned long y, unsigned long z);
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c18; }
 
@@ -73,13 +72,15 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   [[nodiscard]] bool isApplicable() const override { return true; }
 
+  void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) override;
+
+  void setSortingThreshold(size_t sortingThreshold) override { }
+
  private:
   /**
    * Computes pairs used in processBaseCell()
    */
   void computeOffsets();
-
-  void setOrientationLists(std::vector<std::vector<SortedCellView<typename ParticleCell::ParticleType>>> &lists) override;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -111,8 +112,8 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
 
 template <class ParticleCell, class PairwiseFunctor>
 void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::setOrientationLists(
-    std::vector<std::vector<SortedCellView<typename ParticleCell::ParticleType>>> &lists) {
-  PsVLTraversalInterface<typename ParticleCell::ParticleType>::setOrientationLists(lists);
+  std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) {
+  PsVLTraversalInterface<ParticleCell>::setOrientationLists(lists);
   _cellFunctor.setOrientationLists(lists);
 }
 
@@ -185,32 +186,29 @@ unsigned long PsVLC18Traversal<ParticleCell, PairwiseFunctor>::getIndex(const un
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells, unsigned long x,
+void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long x,
                                                                     unsigned long y, unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   const unsigned long xArray = getIndex(x, 0);
   const unsigned long yArray = getIndex(y, 1);
 
-  ParticleCell &baseCell = cells[baseIndex];
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
   for (auto const &[offset, r] : offsets) {
     unsigned long otherIndex = baseIndex + offset;
-    ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
-      this->_cellFunctor.processCell(baseCell, baseIndex);
+      this->_cellFunctor.processCell(baseIndex);
     } else {
-      this->_cellFunctor.processCellPair(baseCell, baseIndex, otherCell, otherIndex, r);
+      this->_cellFunctor.processCellPair(baseIndex, otherIndex, r);
     }
   }
 }
 
 template <class ParticleCell, class PairwiseFunctor>
 inline void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
-  auto &cells = *(this->_cells);
   this->template c18Traversal</*allCells*/ false>(
-      [&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
+      [&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(x, y, z); });
 }
 
 }  // namespace autopas

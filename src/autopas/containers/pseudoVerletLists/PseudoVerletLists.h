@@ -77,7 +77,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   * @param traversal
   */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    auto numCells = this->_cells.size();
+    auto numCells = this->_linkedCells.getCells().size();
     _orientationList.clear();
     _orientationList.resize(numCells);
 
@@ -87,7 +87,6 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
       }
     }
   }
-
 
   protected:
   /**

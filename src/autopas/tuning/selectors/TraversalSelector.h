@@ -345,9 +345,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
       break;
     }
     case TraversalOption::psvl_c18: {
-      using ParticleType = typename ParticleCell_T::ParticleType;
-      traversal = std::make_unique<PsVLC18Traversal<ParticleType, PairwiseFunctor_T>>(traversalInfo.cellsPerDim,
-          &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
+      traversal = std::make_unique<PsVLC18Traversal<ParticleCell_T, PairwiseFunctor_T>>(traversalInfo.cellsPerDim,
+          &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength, dataLayout, useNewton3);
       break;
     }
     default: {
