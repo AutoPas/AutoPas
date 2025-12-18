@@ -1291,13 +1291,15 @@ class AxilrodTellerMutoFunctor
           }
         }
       }
-      fxptr2[j] += fXAccJ;
-      fyptr2[j] += fYAccJ;
-      fzptr2[j] += fZAccJ;
+      if constexpr (newton3) {
+        fxptr2[j] += fXAccJ;
+        fyptr2[j] += fYAccJ;
+        fzptr2[j] += fZAccJ;
 
-      fxptr3[k] += fXAccK;
-      fyptr3[k] += fYAccK;
-      fzptr3[k] += fZAccK;
+        fxptr3[k] += fXAccK;
+        fyptr3[k] += fYAccK;
+        fzptr3[k] += fZAccK;
+      }
     }
     if constexpr (countFLOPs) {
       const size_t numTriplets = soa1Size * soa2Size * soa3Size;
