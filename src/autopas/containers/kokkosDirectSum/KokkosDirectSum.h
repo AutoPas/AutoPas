@@ -194,9 +194,10 @@ template <class Particle_T>
                 _aosUpToDate = false;
               }
 
+              auto& owned = _ownedParticles;
               Kokkos::parallel_for("forEachKokkos", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
                   // TODO: consider behavior
-                  forEachLambda(i, _ownedParticles);
+                  forEachLambda(i, owned);
                 });
 
               if (_dataLayout == DataLayoutOption::soa) {
