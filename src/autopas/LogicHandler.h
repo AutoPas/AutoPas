@@ -1285,41 +1285,6 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   functor.endTraversal(newton3);
 
-#if MD_FLEXIBLE_CALC_GLOBALS
-  {
-    // Local potential energy accumulated by this functor on this rank.
-    const double potentialEnergyLocal = functor.getPotentialEnergy();
-
-    // Reduce across all ranks to obtain the global potential energy.
-    double potentialEnergyGlobal = 0.0;
-    autopas::AutoPas_MPI_Allreduce(&potentialEnergyLocal, &potentialEnergyGlobal, 1, AUTOPAS_MPI_DOUBLE,
-                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-
-    // Static state so we only open the file once per rank.
-    static std::ofstream peFile;
-    static bool peFileInitialized = false;
-    static int peRank = 0;
-
-    if (not peFileInitialized) {
-      autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &peRank);
-      const std::string filename = "potentialEnergy_rank" + std::to_string(peRank) + ".csv";
-      peFile.open(filename);
-      if (peFile.is_open()) {
-        peFile << "#iteration,potentialEnergy\n";
-      } else {
-        std::cerr << "Warning: Could not open " << filename
-                  << " for writing potential energy.\n";
-      }
-      peFileInitialized = true;
-    }
-
-    if (peFile.is_open()) {
-      // _iteration is the LogicHandler iteration counter.
-      peFile << _iteration << "," << potentialEnergyGlobal << "\n";
-    }
-  }
-#endif
-
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
