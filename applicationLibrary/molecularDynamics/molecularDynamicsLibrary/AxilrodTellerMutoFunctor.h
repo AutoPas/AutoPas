@@ -1099,46 +1099,73 @@ class AxilrodTellerMutoFunctor
     const auto soa2Size = soa2.size();
     const auto soa3Size = soa3.size();
 
-    // Precompute distances between soa2 and soa3
-    std::vector<std::array<SoAFloatPrecision, 4>, autopas::AlignedAllocator<std::array<SoAFloatPrecision, 4>>> jkDists(
-        soa2Size * soa3Size);
-    for (unsigned int j = 0; j < soa2Size; ++j) {
-      for (unsigned int k = 0; k < soa3Size; ++k) {
+    // Precompute j-k distances and store all valid pairs.
+    // j-k pairs are expected to be most likely outside the cutoff, as soa1 usually corresponds to the 'center' cell
+
+    // Store only valid j-k pairs
+    struct JKPair {
+      uint32_t j, k;
+      SoAFloatPrecision distXJK, distYJK, distZJK, distSquaredJK;
+    };
+
+    std::vector<JKPair, autopas::AlignedAllocator<JKPair>> validJKPairs;
+    validJKPairs.reserve(soa2Size * soa3Size / 4);  // Heuristic estimate
+
+    for (uint32_t j = 0; j < soa2Size; ++j) {
+      if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      for (uint32_t k = 0; k < soa3Size; ++k) {
+        if (ownedStatePtr3[k] == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
         const SoAFloatPrecision distXJK = xptr3[k] - xptr2[j];
         const SoAFloatPrecision distYJK = yptr3[k] - yptr2[j];
         const SoAFloatPrecision distZJK = zptr3[k] - zptr2[j];
         const SoAFloatPrecision distSquaredJK = distXJK * distXJK + distYJK * distYJK + distZJK * distZJK;
-        jkDists[k + j * soa3Size] = std::array<SoAFloatPrecision, 4>{distXJK, distYJK, distZJK, distSquaredJK};
+
+        // Only store if within cutoff
+        if (distSquaredJK <= cutoffSquared) {
+          validJKPairs.push_back({j, k, distXJK, distYJK, distZJK, distSquaredJK});
+        }
       }
     }
+
     if constexpr (countFLOPs) {
       numDistanceCalculationSum += soa2Size * soa3Size;
     }
 
-    for (unsigned int i = 0; i < soa1Size; ++i) {
-      const auto ownedStateI = ownedStatePtr1[i];
-      if (ownedStateI == autopas::OwnershipState::dummy) {
-        continue;
-      }
+    // Loop over all valid j-k pairs
+    for (const auto &jkPair : validJKPairs) {
+      const auto &j = jkPair.j;
+      const auto &k = jkPair.k;
 
-      const SoAFloatPrecision xi = xptr1[i];
-      const SoAFloatPrecision yi = yptr1[i];
-      const SoAFloatPrecision zi = zptr1[i];
+      // Using accumulators for the outer loop
+      SoAFloatPrecision fXAccJ = 0.;
+      SoAFloatPrecision fYAccJ = 0.;
+      SoAFloatPrecision fZAccJ = 0.;
 
-      SoAFloatPrecision fXAccI = 0.;
-      SoAFloatPrecision fYAccI = 0.;
-      SoAFloatPrecision fZAccI = 0.;
+      SoAFloatPrecision fXAccK = 0.;
+      SoAFloatPrecision fYAccK = 0.;
+      SoAFloatPrecision fZAccK = 0.;
 
-      for (unsigned int j = 0; j < soa2Size; ++j) {
-        const auto ownedStateJ = ownedStatePtr2[j];
-        if (ownedStateJ == autopas::OwnershipState::dummy) {
+      for (unsigned int i = 0; i < soa1Size; ++i) {
+        const auto ownedStateI = ownedStatePtr1[i];
+        if (ownedStateI == autopas::OwnershipState::dummy) {
           continue;
         }
+
+        const SoAFloatPrecision xi = xptr1[i];
+        const SoAFloatPrecision yi = yptr1[i];
+        const SoAFloatPrecision zi = zptr1[i];
 
         const SoAFloatPrecision xj = xptr2[j];
         const SoAFloatPrecision yj = yptr2[j];
         const SoAFloatPrecision zj = zptr2[j];
 
+        // Check i-j distance
         const SoAFloatPrecision distXIJ = xj - xi;
         const SoAFloatPrecision distYIJ = yj - yi;
         const SoAFloatPrecision distZIJ = zj - zi;
@@ -1151,121 +1178,121 @@ class AxilrodTellerMutoFunctor
           continue;
         }
 
-        for (unsigned int k = 0; k < soa3Size; ++k) {
-          const auto ownedStateK = ownedStatePtr3[k];
-          if (ownedStateK == autopas::OwnershipState::dummy) {
-            continue;
-          }
+        // Check k-i distance
+        const SoAFloatPrecision distXKI = xi - xptr3[k];
+        const SoAFloatPrecision distYKI = yi - yptr3[k];
+        const SoAFloatPrecision distZKI = zi - zptr3[k];
+        const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
 
-          SoAFloatPrecision nu = const_nu;
-          if constexpr (useMixing) {
-            nu = _PPLibrary->getMixingNu(typeptr1[i], typeptr2[j], typeptr3[k]);
-          }
+        if constexpr (countFLOPs) {
+          ++numDistanceCalculationSum;
+        }
+        if (distSquaredKI > cutoffSquared) {
+          continue;
+        }
 
-          const auto &[distXJK, distYJK, distZJK, distSquaredJK] = jkDists[j * soa3Size + k];
+        SoAFloatPrecision nu = const_nu;
+        if constexpr (useMixing) {
+          nu = _PPLibrary->getMixingNu(typeptr1[i], typeptr2[j], typeptr3[k]);
+        }
 
-          if (distSquaredJK > cutoffSquared) {
-            continue;
-          }
+        const auto &distXJK = jkPair.distXJK;
+        const auto &distYJK = jkPair.distYJK;
+        const auto &distZJK = jkPair.distZJK;
+        const auto &distSquaredJK = jkPair.distSquaredJK;
 
-          const SoAFloatPrecision distXKI = xi - xptr3[k];
-          const SoAFloatPrecision distYKI = yi - yptr3[k];
-          const SoAFloatPrecision distZKI = zi - zptr3[k];
-          const SoAFloatPrecision distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
+        const auto ownedStateJ = ownedStatePtr2[j];
+        const auto ownedStateK = ownedStatePtr3[k];
+
+        if constexpr (not newton3) {
+          SoAFloatPrecision forceIX, forceIY, forceIZ;
+          SoAFloatPrecision factor, allDotProducts, allDistsSquared;
+          SoAKernelNoN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI, distSquaredIJ,
+                        distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, factor, allDotProducts,
+                        allDistsSquared);
+
+          fxptr1[i] += forceIX;
+          fyptr1[i] += forceIY;
+          fzptr1[i] += forceIZ;
 
           if constexpr (countFLOPs) {
-            ++numDistanceCalculationSum;
+            ++numKernelCallsNoN3Sum;
           }
-          if (distSquaredKI > cutoffSquared) {
-            continue;
-          }
+          if constexpr (calculateGlobals) {
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
-          if constexpr (not newton3) {
-            SoAFloatPrecision forceIX, forceIY, forceIZ;
-            SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-            SoAKernelNoN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI,
-                          distSquaredIJ, distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, factor,
-                          allDotProducts, allDistsSquared);
-
-            fXAccI += forceIX;
-            fYAccI += forceIY;
-            fZAccI += forceIZ;
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * (distXKI - distXIJ);
+              virialSumY += forceIY * (distYKI - distYIJ);
+              virialSumZ += forceIZ * (distZKI - distZIJ);
+            }
 
             if constexpr (countFLOPs) {
-              ++numKernelCallsNoN3Sum;
+              ++numGlobalCalcsNoN3Sum;
             }
-            if constexpr (calculateGlobals) {
-              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+          }
 
-              if (ownedStateI == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * (distXKI - distXIJ);
-                virialSumY += forceIY * (distYKI - distYIJ);
-                virialSumZ += forceIZ * (distZKI - distZIJ);
-              }
+        } else {
+          SoAFloatPrecision forceIX, forceIY, forceIZ;
+          SoAFloatPrecision forceJX, forceJY, forceJZ;
+          SoAFloatPrecision factor, allDotProducts, allDistsSquared;
+          SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI, distSquaredIJ,
+                      distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
+                      allDotProducts, allDistsSquared);
 
-              if constexpr (countFLOPs) {
-                ++numGlobalCalcsNoN3Sum;
-              }
+          fxptr1[i] += forceIX;
+          fyptr1[i] += forceIY;
+          fzptr1[i] += forceIZ;
+
+          fXAccJ += forceJX;
+          fYAccJ += forceJY;
+          fZAccJ += forceJZ;
+
+          const SoAFloatPrecision forceKX = -(forceIX + forceJX);
+          const SoAFloatPrecision forceKY = -(forceIY + forceJY);
+          const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
+
+          fXAccK += forceKX;
+          fYAccK += forceKY;
+          fZAccK += forceKZ;
+
+          if constexpr (countFLOPs) {
+            ++numKernelCallsN3Sum;
+          }
+          if constexpr (calculateGlobals) {
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+            if (ownedStateI == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceIX * (distXKI - distXIJ);
+              virialSumY += forceIY * (distYKI - distYIJ);
+              virialSumZ += forceIZ * (distZKI - distZIJ);
             }
-
-          } else {
-            SoAFloatPrecision forceIX, forceIY, forceIZ;
-            SoAFloatPrecision forceJX, forceJY, forceJZ;
-            SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-            SoAKernelN3(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distXKI, distYKI, distZKI, distSquaredIJ,
-                        distSquaredJK, distSquaredKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ, factor,
-                        allDotProducts, allDistsSquared);
-
-            fXAccI += forceIX;
-            fYAccI += forceIY;
-            fZAccI += forceIZ;
-
-            fxptr2[j] += forceJX;
-            fyptr2[j] += forceJY;
-            fzptr2[j] += forceJZ;
-
-            const SoAFloatPrecision forceKX = -(forceIX + forceJX);
-            const SoAFloatPrecision forceKY = -(forceIY + forceJY);
-            const SoAFloatPrecision forceKZ = -(forceIZ + forceJZ);
-
-            fxptr3[k] += forceKX;
-            fyptr3[k] += forceKY;
-            fzptr3[k] += forceKZ;
-
+            if (ownedStateJ == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceJX * (distXIJ - distXJK);
+              virialSumY += forceJY * (distYIJ - distYJK);
+              virialSumZ += forceJZ * (distZIJ - distZJK);
+            }
+            if (ownedStateK == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += forceKX * (distXJK - distXKI);
+              virialSumY += forceKY * (distYJK - distYKI);
+              virialSumZ += forceKZ * (distZJK - distZKI);
+            }
             if constexpr (countFLOPs) {
-              ++numKernelCallsN3Sum;
-            }
-            if constexpr (calculateGlobals) {
-              const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-              if (ownedStateI == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * (distXKI - distXIJ);
-                virialSumY += forceIY * (distYKI - distYIJ);
-                virialSumZ += forceIZ * (distZKI - distZIJ);
-              }
-              if (ownedStateJ == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceJX * (distXIJ - distXJK);
-                virialSumY += forceJY * (distYIJ - distYJK);
-                virialSumZ += forceJZ * (distZIJ - distZJK);
-              }
-              if (ownedStateK == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceKX * (distXJK - distXKI);
-                virialSumY += forceKY * (distYJK - distYKI);
-                virialSumZ += forceKZ * (distZJK - distZKI);
-              }
-              if constexpr (countFLOPs) {
-                ++numGlobalCalcsN3Sum;
-              }
+              ++numGlobalCalcsN3Sum;
             }
           }
         }
       }
-      fxptr1[i] += fXAccI;
-      fyptr1[i] += fYAccI;
-      fzptr1[i] += fZAccI;
+      fxptr2[j] += fXAccJ;
+      fyptr2[j] += fYAccJ;
+      fzptr2[j] += fZAccJ;
+
+      fxptr3[k] += fXAccK;
+      fyptr3[k] += fYAccK;
+      fzptr3[k] += fZAccK;
     }
     if constexpr (countFLOPs) {
       const size_t numTriplets = soa1Size * soa2Size * soa3Size;
