@@ -1108,8 +1108,13 @@ class AxilrodTellerMutoFunctor
       SoAFloatPrecision distXJK, distYJK, distZJK, distSquaredJK;
     };
 
-    std::vector<JKPair, autopas::AlignedAllocator<JKPair>> validJKPairs;
-    validJKPairs.reserve(soa2Size * soa3Size / 4);  // Heuristic estimate
+    // tread_local to keep memory for the whole traversal
+    thread_local std::vector<JKPair, autopas::AlignedAllocator<JKPair>> validJKPairs;
+    validJKPairs.clear();
+    const size_t jkSizeEstimate = soa2Size * soa3Size / 4;  // Heuristic estimate
+    if (validJKPairs.capacity() < jkSizeEstimate) {
+      validJKPairs.reserve(jkSizeEstimate);
+    }
 
     for (uint32_t j = 0; j < soa2Size; ++j) {
       if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) {
