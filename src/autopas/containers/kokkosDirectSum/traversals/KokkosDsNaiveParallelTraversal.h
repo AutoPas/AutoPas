@@ -66,7 +66,7 @@ public:
         ownedSoA.template sync<DeviceSpace::execution_space>(I);
 
         Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
-          ownedSoA.template operator() <Particle_T::AttributeNames::forceX, true, false>(i) = 10.;
+          func->SoAFunctorSingleKokkos(i, ownedSoA, newton3);
         });
         // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
         ownedSoA.template markModified<DeviceSpace::execution_space>(I);
