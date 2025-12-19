@@ -39,7 +39,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    *
    * Checks SoAFunctorTriple(soa1, soa2, soa3, newton3)
    *
-   * @tparam mixing
+   * @tparam mixing If mixing=true, instead of the fixed parameter _nu=1, different nu parameters are used for the test
+   * particles, which are stored in the ParticlePropertiesLibrary (see setupPPL()). When calculating the forces, the
+   * precalculated mixing coefficients from the ParticlePropertiesLibrary are used.
    * @param newton3
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
@@ -54,7 +56,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    *
    * Checks SoAFunctorPair(soa1, soa2, newton3)
    *
-   * @tparam mixing
+   * @tparam mixing If mixing=true, instead of the fixed parameter _nu=1, different nu parameters are used for the test
+   * particles, which are stored in the ParticlePropertiesLibrary (see setupPPL()). When calculating the forces, the
+   * precalculated mixing coefficients from the ParticlePropertiesLibrary are used.
    * @param newton3
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
@@ -69,7 +73,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    *
    * Checks SoAFunctorSingle(soa, newton3)
    *
-   * @tparam mixing
+   * @tparam mixing If mixing=true, instead of the fixed parameter _nu=1, different nu parameters are used for the test
+   * particles, which are stored in the ParticlePropertiesLibrary (see setupPPL()). When calculating the forces, the
+   * precalculated mixing coefficients from the ParticlePropertiesLibrary are used.
    * @param newton3
    * @param doDeleteSomeParticles
    * @param useUnalignedViews
@@ -79,7 +85,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
 
   /**
    * Create two cells and compare AoSFunctor
-   * @tparam mixing
+   * @tparam mixing If mixing=true, instead of the fixed parameter _nu=1, different nu parameters are used for the test
+   * particles, which are stored in the ParticlePropertiesLibrary (see setupPPL()). When calculating the forces, the
+   * precalculated mixing coefficients from the ParticlePropertiesLibrary are used.
    * @param newton3
    * @param doDeleteSomeParticles
    */
