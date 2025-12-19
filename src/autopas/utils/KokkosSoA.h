@@ -64,6 +64,7 @@ namespace autopas::utils {
     }
 
     /* Meta Data */
+    KOKKOS_INLINE_FUNCTION
     size_t size() const {
       return std::get<0>(views).extent(0);
     }

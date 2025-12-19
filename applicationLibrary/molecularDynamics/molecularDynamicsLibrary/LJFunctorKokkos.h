@@ -153,7 +153,7 @@ class LJFunctorKokkos
 
   // TODO: correct memory space
   KOKKOS_INLINE_FUNCTION
-  void SoAFunctorSingleKokkos(int i, const Particle_T::KokkosSoAArraysType& soa, bool newton3) final {
+  void SoAFunctorSingleKokkos(int i, const Particle_T::KokkosSoAArraysType& soa, size_t N, bool newton3) final {
     // No Op unless overridden
   }
 

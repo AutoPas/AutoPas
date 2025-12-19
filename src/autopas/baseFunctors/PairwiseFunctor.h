@@ -76,9 +76,8 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
     utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
   }
 
-  // TODO: correct memory space
   KOKKOS_INLINE_FUNCTION
-  virtual void SoAFunctorSingleKokkos(int i, const Particle_T::KokkosSoAArraysType& soa, bool newton3) {
+  virtual void SoAFunctorSingleKokkos(int i, const Particle_T::KokkosSoAArraysType& soa, size_t N, bool newton3) {
     // No Op unless overridden
   }
 
@@ -114,7 +113,6 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
     utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
   }
 
-  // TODO: correct memory space
   KOKKOS_INLINE_FUNCTION
   virtual void SoAFunctorPairKokkos(Particle_T::KokkosSoAArraysType& soa1, Particle_T::KokkosSoAArraysType& soa2, bool newton3) {
     // No Op unless overridden
