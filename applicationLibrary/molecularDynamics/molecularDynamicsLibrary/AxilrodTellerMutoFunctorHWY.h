@@ -1528,12 +1528,11 @@ class AxilrodTellerMutoFunctorHWY
       if constexpr (not LowerTriangle) {
         // round up to multiple of vector length
         _nColsPadded = ((_nCols + _vecLengthDouble - 1) / _vecLengthDouble) * _vecLengthDouble;
-      } else {
-        _nColsPadded = _nCols;  // not used for LowerTriangle
       }
 
       const size_t size = [&]() {
         if constexpr (LowerTriangle) {
+          assert(rows == cols and "LowerTriangle requires a square matrix");
           return (rows * rows - rows) / 2;
         } else {
           return rows * _nColsPadded;
@@ -1561,9 +1560,9 @@ class AxilrodTellerMutoFunctorHWY
     template <bool LowerTriangle>
     HWY_INLINE const size_t index(const size_t i, const size_t j) const {
       if constexpr (LowerTriangle) {
-        return triIndex<LowerTriangle>(i, j);
+        return triIndex<true>(i, j);
       } else {
-        return fullIndex<LowerTriangle>(i, j);
+        return fullIndex<false>(i, j);
       }
     }
 
@@ -1589,9 +1588,9 @@ class AxilrodTellerMutoFunctorHWY
     HWY_INLINE auto loadRowVec(const size_t i, const size_t jStart, const size_t width) const {
       const size_t idx = [&]() {
         if constexpr (LowerTriangle) {
-          return triIndex<LowerTriangle>(i, jStart);
+          return triIndex<true>(i, jStart);
         } else {
-          return fullIndex<LowerTriangle>(i, jStart);
+          return fullIndex<false>(i, jStart);
         }
       }();
 
@@ -1634,7 +1633,7 @@ class AxilrodTellerMutoFunctorHWY
           rowLength = i;
           if (i == 0) continue;
         } else {
-          rowLength = _nCols;
+          rowLength = _nColsPadded;
         }
 
         for (; j + _vecLengthDouble <= rowLength; j += _vecLengthDouble) {
@@ -1670,30 +1669,32 @@ class AxilrodTellerMutoFunctorHWY
         }
 
         // Remainder
-        if (j < rowLength) {
-          const size_t width = rowLength - j;
+        if constexpr (LowerTriangle) {
+          if (j < rowLength) {
+            const size_t width = rowLength - j;
 
-          const auto x2v = highway::LoadN(tag_double, &xptr2[j], width);
-          const auto y2v = highway::LoadN(tag_double, &yptr2[j], width);
-          const auto z2v = highway::LoadN(tag_double, &zptr2[j], width);
+            const auto x2v = highway::LoadN(tag_double, &xptr2[j], width);
+            const auto y2v = highway::LoadN(tag_double, &yptr2[j], width);
+            const auto z2v = highway::LoadN(tag_double, &zptr2[j], width);
 
-          const auto dx = x2v - x1v;
-          const auto dy = y2v - y1v;
-          const auto dz = z2v - z1v;
+            const auto dx = x2v - x1v;
+            const auto dy = y2v - y1v;
+            const auto dz = z2v - z1v;
 
-          const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
-          const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
-          const auto sqrtR2 = highway::Sqrt(dist2);
-          const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
-          const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
+            const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
+            const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
+            const auto sqrtR2 = highway::Sqrt(dist2);
+            const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
+            const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
 
-          const size_t idx = index<LowerTriangle>(i, j);
+            const size_t idx = index<LowerTriangle>(i, j);
 
-          highway::StoreN(dx, tag_double, &_dx[idx], width);
-          highway::StoreN(dy, tag_double, &_dy[idx], width);
-          highway::StoreN(dz, tag_double, &_dz[idx], width);
-          highway::StoreN(dist2, tag_double, &_squared[idx], width);
-          highway::StoreN(invr5, tag_double, &_invR5[idx], width);
+            highway::StoreN(dx, tag_double, &_dx[idx], width);
+            highway::StoreN(dy, tag_double, &_dy[idx], width);
+            highway::StoreN(dz, tag_double, &_dz[idx], width);
+            highway::StoreN(dist2, tag_double, &_squared[idx], width);
+            highway::StoreN(invr5, tag_double, &_invR5[idx], width);
+          }
         }
       }
     }
