@@ -6,7 +6,7 @@ verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
-traversal                        :  [ psvl_c18 ] # Please see AllOptions.yaml for a comprehensive list of traversals
+traversal                        :  [ psvl_c08 ] # Please see AllOptions.yaml for a comprehensive list of traversals
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3

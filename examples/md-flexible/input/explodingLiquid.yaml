@@ -17,7 +17,7 @@ box-min                          :  [0, 0, 0]
 box-max                          :  [15, 60, 15]
 cell-size                        :  [1]
 deltaT                           :  0.00182367
-iterations                       :  12000
+iterations                       :  120000
 energy-sensor                    :  rapl
 boundary-type                    :  [periodic, periodic, periodic]
 Sites:

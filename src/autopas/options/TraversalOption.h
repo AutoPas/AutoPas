@@ -202,6 +202,8 @@ class TraversalOption : public Option<TraversalOption> {
      *
      */
     psvl_c18,
+
+    psvl_c08,
   };
 
   /**
@@ -340,6 +342,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         //Pseudo Verlet Lists Traversals:
         {TraversalOption::psvl_c18, "psvl_c18"},
+        {TraversalOption::psvl_c08, "psvl_c08"},
     };
   };
 

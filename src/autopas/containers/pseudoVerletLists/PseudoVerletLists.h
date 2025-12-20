@@ -88,6 +88,8 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
     }
   }
 
+  std::vector<ParticleCellType> getCells() { return this->_linkedCells.getCells(); }
+
   protected:
   /**
    * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the neighboring cell.
