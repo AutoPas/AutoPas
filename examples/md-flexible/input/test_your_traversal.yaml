@@ -60,6 +60,5 @@ vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  debug
-log-file                            : testVCL08.log
 no-end-config                        :  false
 no-progress-bar                      :  false

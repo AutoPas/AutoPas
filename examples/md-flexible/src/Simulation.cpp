@@ -104,6 +104,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   const auto outputSuffix =
       "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
 
+   if (rank == 0) {
+    _globalLogger = std::make_unique<GlobalVariableLogger>(outputSuffix);
+  }
+
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
   } else {
@@ -298,6 +302,21 @@ void Simulation::run() {
       updateThermostat();
     }
     _timers.computationalLoad.stop();
+
+
+    #ifdef MD_FLEXIBLE_CALC_GLOBALS
+    // Summing the potential energy over all MPI ranks
+    double potentialEnergyOverMPIRanks{}, virialSumOverMPIRanks{};
+    autopas::AutoPas_MPI_Reduce(&_totalPotentialEnergy, &potentialEnergyOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE,
+                                AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+    autopas::AutoPas_MPI_Reduce(&_totalVirialSum, &virialSumOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, 0,
+                                AUTOPAS_MPI_COMM_WORLD);
+    if (_domainDecomposition->getDomainIndex() == 0) {
+      _globalLogger->logGlobals(_iteration, potentialEnergyOverMPIRanks, virialSumOverMPIRanks);
+    }
+    _totalPotentialEnergy = 0.;
+    _totalVirialSum = 0.;
+    #endif
 
     if (not _simulationIsPaused) {
       ++_iteration;
@@ -524,40 +543,26 @@ long Simulation::accumulateTime(const long &time) {
 
   return reducedTime;
 }
-/*
-bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
-  return wasTuningIteration;
-}*/
+
 
 bool Simulation::calculatePairwiseForces() {
 
   double localVirial = 0.0;
 
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) {
-
-        bool result = _autoPasContainer->computeInteractions(&functor);
-
-        localVirial = functor.getVirial();
-
-        return result;
-      });
-
-  /*    
-    const std::array<double, 3> lowerCorner = {
-    _autoPasContainer->getBoxMin()[0],
-    _autoPasContainer->getBoxMin()[1],
-    _autoPasContainer->getBoxMin()[2]
-};
-
-const std::array<double, 3> upperCorner = {
-    _autoPasContainer->getBoxMax()[0],
-    _autoPasContainer->getBoxMax()[1],
-    _autoPasContainer->getBoxMax()[2]
-};*/
-
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    auto var = _autoPasContainer->computeInteractions(&functor);
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+    return var;
+#else
+    return _autoPasContainer->computeInteractions(&functor);
+#endif
+  });
+  
+ return wasTuningIteration;
+}
+ /*
   // Sum across MPI ranks
   double globalVirial = localVirial;
 #ifdef AUTOPAS_BUILD_MPI
@@ -566,31 +571,31 @@ const std::array<double, 3> upperCorner = {
                                  AUTOPAS_MPI_COMM_WORLD);
 #endif
 
-
+  auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
+     
   // Print from rank 0 only
 if (_domainDecomposition->getDomainIndex() == 0) {
+  if(_iteration == maxIterationsEstimate-1){
       totalVirial+=globalVirial;
-  /*for (auto it = _autoPasContainer->getRegionIterator(
-           lowerCorner, upperCorner,
-           autopas::IteratorBehavior::owned);
-       it.isValid(); ++it) {
-
-    const auto &p = *it;
-
-    AutoPasLog(INFO,
-               "ID {} pos=({},{},{}) F=({},{},{})",
-               p.getID(),
-               p.getR()[0], p.getR()[1], p.getR()[2],
-               p.getF()[0], p.getF()[1], p.getF()[2]);
-  }*/
-
+  }
   return wasTuningIteration;
 }
 }
-
+*/
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  //const auto wasTuningIteration =
+      //applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+    const auto wasTuningIteration = applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    auto var = _autoPasContainer->computeInteractions(&functor);
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+    return var;
+#else
+    return _autoPasContainer->computeInteractions(&functor);
+#endif
+  });
+  
   return wasTuningIteration;
 }
 
@@ -715,8 +720,7 @@ void Simulation::logMeasurements() {
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
               << "\n";
-    std::cout << "Average Virial                     : " << totalVirial << " / " << _iteration << " = "
-              << (static_cast<double>(totalVirial) / static_cast<double>(_iteration) ) 
+    std::cout << "Virial                             : " << totalVirial 
               << "\n";
 
     auto mfups =
