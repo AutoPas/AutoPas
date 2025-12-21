@@ -48,8 +48,8 @@ public:
           for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
             if (newton3 or i != j) {
               func->AoSFunctorKokkos(
-                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS()(i),
-                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS()(j),
+                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(i),
+                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(j),
                 newton3);
             }
           }

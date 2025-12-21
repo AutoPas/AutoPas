@@ -85,6 +85,10 @@ namespace autopas::utils {
       }
     }
 
+    Particle_T& getParticle(int i) const {
+      return storageAoS.getParticle(i);
+    }
+
     template <typename Target>
     void sync() {
       constexpr auto tupleSize = storageSoA.tupleSize();
