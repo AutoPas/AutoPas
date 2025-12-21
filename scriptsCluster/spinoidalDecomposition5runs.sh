@@ -7,6 +7,8 @@
 #SBATCH --export=NONE
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny
+#SBATCH --qos=cm4_tiny
+#SBATCH --mem=1G
 #SBATCH --ntasks=1
 #SBATCH --time=08:00:00
 
