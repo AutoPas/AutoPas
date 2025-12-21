@@ -5,8 +5,8 @@
 #SBATCH -e ./%x.%j.%N.err
 #SBATCH --get-user-env
 #SBATCH --export=NONE
-#SBATCH --clusters=serial
-#SBATCH --partition=serial_std
+#SBATCH --clusters=cm4
+#SBATCH --partition=cm4_tiny
 #SBATCH --ntasks=1
 #SBATCH --time=08:00:00
 
