@@ -3,9 +3,8 @@
 #SBATCH -o ./%x.%j.%N.out
 #SBATCH -D ../build
 #SBATCH --get-user-env
-#SBATCH --clusters=cm4
-#SBATCH --partition=cm4_tiny
-#SBATCH --qos=cm4_tiny
+#SBATCH --clusters=serial
+#SBATCH --partition=serial_std
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=112
 #SBATCH --export=NONE
