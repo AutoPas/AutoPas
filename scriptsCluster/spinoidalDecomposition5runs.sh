@@ -1,11 +1,13 @@
 #!/bin/bash
-#SBATCH -J virialSpinoidalDecomposition_equilibration
+#SBATCH -J virialSpin
 #SBATCH -o ./%x.%j.%N.out
 #SBATCH -D ../build
 #SBATCH --get-user-env
+#SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=112
+#SBATCH --export=NONE
 #SBATCH --time=08:00:00
 
 module load slurm_setup
