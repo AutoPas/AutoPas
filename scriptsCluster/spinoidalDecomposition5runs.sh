@@ -3,8 +3,8 @@
 #SBATCH -o ./%x.%j.%N.out
 #SBATCH -D ../build
 #SBATCH --get-user-env
-#SBATCH --clusters=inter
-#SBATCH --partition=cm4_inter
+#SBATCH --clusters=cm4
+#SBATCH --partition=cm4_tiny
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=112
 #SBATCH --export=NONE
