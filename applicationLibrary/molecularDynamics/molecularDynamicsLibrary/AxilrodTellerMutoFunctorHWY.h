@@ -1528,6 +1528,8 @@ class AxilrodTellerMutoFunctorHWY
       if constexpr (not LowerTriangle) {
         // round up to multiple of vector length
         _nColsPadded = ((_nCols + _vecLengthDouble - 1) / _vecLengthDouble) * _vecLengthDouble;
+      } else {
+        _nColsPadded = _nCols;
       }
 
       const size_t size = [&]() {
@@ -1653,19 +1655,11 @@ class AxilrodTellerMutoFunctorHWY
 
           const size_t idx = index<LowerTriangle>(i, j);
 
-          if constexpr (LowerTriangle) {
-            storePacked<false, false>(tag_double, &_dx[idx], dx);
-            storePacked<false, false>(tag_double, &_dy[idx], dy);
-            storePacked<false, false>(tag_double, &_dz[idx], dz);
-            storePacked<false, false>(tag_double, &_squared[idx], dist2);
-            storePacked<false, false>(tag_double, &_invR5[idx], invr5);
-          } else {
-            storePacked<true, false>(tag_double, &_dx[idx], dx);
-            storePacked<true, false>(tag_double, &_dy[idx], dy);
-            storePacked<true, false>(tag_double, &_dz[idx], dz);
-            storePacked<true, false>(tag_double, &_squared[idx], dist2);
-            storePacked<true, false>(tag_double, &_invR5[idx], invr5);
-          }
+          storePacked<not LowerTriangle, false>(tag_double, &_dx[idx], dx);
+          storePacked<not LowerTriangle, false>(tag_double, &_dy[idx], dy);
+          storePacked<not LowerTriangle, false>(tag_double, &_dz[idx], dz);
+          storePacked<not LowerTriangle, false>(tag_double, &_squared[idx], dist2);
+          storePacked<not LowerTriangle, false>(tag_double, &_invR5[idx], invr5);
         }
 
         // Remainder
