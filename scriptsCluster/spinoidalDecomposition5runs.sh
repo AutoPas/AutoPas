@@ -4,7 +4,7 @@
 #SBATCH -D ../build
 #SBATCH --get-user-env
 #SBATCH --clusters=cm4
-#SBATCH --partition=cm4_inter
+#SBATCH --partition=cm4_std
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=112
 #SBATCH --export=NONE
