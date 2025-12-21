@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH -J virialSpin
-#SBATCH -o ./%x.%j.%N.out
 #SBATCH -D ../build
+#SBATCH -o ./%x.%j.%N.out
+#SBATCH -e ./%x.%j.%N.err
 #SBATCH --get-user-env
-#SBATCH --clusters=cm4
-#SBATCH --partition=cm4_tiny
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=112
 #SBATCH --export=NONE
+#SBATCH --clusters=serial
+#SBATCH --partition=serial_std
+#SBATCH --ntasks=1
 #SBATCH --time=08:00:00
 
 module load slurm_setup
