@@ -10,6 +10,8 @@
 #include "autopas/particles/ParticleDefinitions.h"
 #include "testingHelpers/commonTypedefs.h"
 
+
+
 TEST_F(PseudoVerletListsTest, OrientationListsHaveCorrectSize) {
   const double cutoff = 1.0;
   const double skin = 0.2;
@@ -18,22 +20,20 @@ TEST_F(PseudoVerletListsTest, OrientationListsHaveCorrectSize) {
   autopas::PseudoVerletLists<ParticleFP64> container(
       {0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
 
-  // add at least one particle so cells exist
   ParticleFP64 p({1., 1., 1.}, {0., 0., 0.}, 0);
   container.addParticle(p);
 
-  // rebuild neighbor (orientation) lists
   container.rebuildNeighborLists(nullptr);
 
   const auto &orientationLists = container.getOrientationLists();
 
-  // one orientation list per cell
+  // checks if there are as many orientationLists as Cells
   ASSERT_EQ(orientationLists.size(), container.getCells().size());
 
-  // each cell must have exactly 13 SortedCellViews
+  // checks if there are 13 directions for each cell
   for (size_t cellId = 0; cellId < orientationLists.size(); ++cellId) {
     EXPECT_EQ(orientationLists[cellId].size(), 13)
-        << "Wrong number of orientation lists in cell " << cellId;
+        << "Wrong number of directions in cell " << cellId;
   }
 }
 
@@ -91,17 +91,15 @@ TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
   autopas::PseudoVerletLists<ParticleFP64> container(
       {0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
 
-  // füge ein Partikel hinzu
   ParticleFP64 p({1.5, 1.0, 1.0}, {0., 0., 0.}, 0);
   container.addParticle(p);
 
-  // Orientation Lists rebuilden
-  container.rebuildNeighborLists(nullptr);  // Traversal wird hier nicht verwendet
+  container.rebuildNeighborLists(nullptr);
 
   const auto &orientationLists = container.getOrientationLists();
   const auto &cells = container.getCells();
 
-  // finde die Zelle, in der das Partikel ist
+  // find the cell with the particle
   size_t particleCellId = 0;
   for (size_t i = 0; i < cells.size(); ++i) {
     for (auto &part : cells[i]) {
@@ -112,7 +110,7 @@ TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
     }
   }
 
-  // prüfe nur die SortedCellViews dieser Zelle
+  // check if the particle is in all sortedCellViews of the cell
   const auto &cellViews = orientationLists[particleCellId];
   bool particleFound = false;
   for (const auto &view : cellViews) {
@@ -125,15 +123,15 @@ TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
     if (particleFound) break;
   }
 
-  EXPECT_TRUE(particleFound) << "Das Partikel sollte in den SortedCellViews seiner eigenen Zelle erscheinen!";
+  EXPECT_TRUE(particleFound) << "The Particle should exist in all SortedCellViews";
 
-  // optional: prüfe, dass es in keiner anderen Zelle erscheint
+  // check that the particle is in no other cell
   for (size_t i = 0; i < orientationLists.size(); ++i) {
     if (i == particleCellId) continue;
     for (const auto &view : orientationLists[i]) {
       for (const auto &projPair : view._particles) {
         EXPECT_NE(projPair.second->getID(), p.getID())
-            << "Partikel taucht fälschlicherweise in einer SortedCellView einer anderen Zelle auf!";
+            << "Particle exists in SortedCellViews of different cells";
       }
     }
   }
