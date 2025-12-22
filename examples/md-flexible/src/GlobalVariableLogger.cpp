@@ -1,5 +1,5 @@
 /**
- * @file GlobalVariableLogger.h
+ * @file GlobalVariableLogger.cpp
  * @author Manish Mishra
  * @date 12.11.2025
  */
