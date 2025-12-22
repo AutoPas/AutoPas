@@ -1528,8 +1528,6 @@ class AxilrodTellerMutoFunctorHWY
       if constexpr (not LowerTriangle) {
         // round up to multiple of vector length
         _nColsPadded = ((_nCols + _vecLengthDouble - 1) / _vecLengthDouble) * _vecLengthDouble;
-      } else {
-        _nColsPadded = _nCols;
       }
 
       const size_t size = [&]() {
@@ -1663,7 +1661,7 @@ class AxilrodTellerMutoFunctorHWY
         }
 
         // Remainder
-        if constexpr (LowerTriangle) {
+        if constexpr (LowerTriangle or (not alignedSoAView)) {
           if (j < rowLength) {
             const size_t width = rowLength - j;
 
