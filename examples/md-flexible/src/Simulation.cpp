@@ -545,28 +545,24 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
-    auto var = _autoPasContainer->computeInteractions(&functor);
     _totalPotentialEnergy += functor.getPotentialEnergy();
     _totalVirialSum += functor.getVirial();
-    return var;
-#else
-    return _autoPasContainer->computeInteractions(&functor);
 #endif
+    return isTuningIteration;
   });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
   const auto wasTuningIteration = applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
-    auto var = _autoPasContainer->computeInteractions(&functor);
     _totalPotentialEnergy += functor.getPotentialEnergy();
     _totalVirialSum += functor.getVirial();
-    return var;
-#else
-    return _autoPasContainer->computeInteractions(&functor);
 #endif
+    return isTuningIteration;
   });
   return wasTuningIteration;
 }

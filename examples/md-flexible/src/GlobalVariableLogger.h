@@ -1,6 +1,8 @@
-//
-// Created by manish on 12/11/25.
-//
+/**
+ * @file GlobalVariableLogger.h
+ * @author Manish Mishra
+ * @date 12.11.2025
+ */
 
 #pragma once
 
