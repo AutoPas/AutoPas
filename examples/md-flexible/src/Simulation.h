@@ -235,6 +235,11 @@ class Simulation {
   };
 
   /**
+   * Sensor for energy measurement
+   */
+  autopas::utils::EnergySensor _totalEnergySensor;
+
+  /**
    * The timers used during the simulation.
    */
   struct Timers _timers;

@@ -84,9 +84,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+      _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
+  _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
@@ -206,6 +208,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 void Simulation::finalize() {
   _timers.total.stop();
+  _totalEnergySensor.endMeasurement();
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
   logSimulationState();
@@ -610,6 +613,11 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  double totalEnergy = _totalEnergySensor.getJoules();
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &totalEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+#endif
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const long wallClockTime = _timers.total.getTotalTime();
@@ -665,6 +673,9 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << "\n";
+#endif
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+    std::cout << "Total Energy Consumed (in Joules)    : " << totalEnergy << "\n";
 #endif
   }
 }
