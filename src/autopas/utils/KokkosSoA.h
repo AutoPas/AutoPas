@@ -39,14 +39,12 @@ namespace autopas::utils {
 
     template <size_t attribute, bool offset, bool host = false>
     KOKKOS_INLINE_FUNCTION
-    auto& operator() (int i) const {
+    constexpr auto& operator() (int i) const {
       if constexpr (host) {
-        auto& value = std::get<attribute - (offset ? 1 : 0)>(views).view_host()(i);
-        return value;
+        return std::get<attribute - (offset ? 1 : 0)>(views).view_host()(i);
       }
       else {
-        auto& value = std::get<attribute - (offset ? 1 : 0)>(views).view_device()(i);
-        return value;
+        return std::get<attribute - (offset ? 1 : 0)>(views).view_device()(i);
       }
     }
 

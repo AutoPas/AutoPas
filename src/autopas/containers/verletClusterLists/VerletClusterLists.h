@@ -466,12 +466,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     }
   }
 
-  template <typename Lambda>
+  template <class ExecSpace, typename Lambda>
   void forEachKokkos(Lambda, IteratorBehavior) {
     // No Op
   }
 
-  template<typename Result, typename Reduction, typename Lambda>
+  template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
   void reduceKokkos(Lambda, Result&, IteratorBehavior) {
     // No Op
   }

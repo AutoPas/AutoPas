@@ -179,7 +179,7 @@ template <class Particle_T>
               // TODO: consider behavior
             }
 
-            template <typename Lambda>
+            template <class ExecSpace, typename Lambda>
             void forEachKokkos(Lambda& forEachLambda, IteratorBehavior behavior) {
 
               const size_t numParticles = getNumberOfParticles(behavior);
@@ -190,22 +190,23 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                _ownedParticles.template sync<DeviceSpace::execution_space>();
+                _ownedParticles.template sync<ExecSpace>();
                 _aosUpToDate = false;
               }
 
               auto& owned = _ownedParticles;
-              Kokkos::parallel_for("forEachKokkos", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i)  {
+              // TODO: make sure that no AoS runs on Cuda
+              Kokkos::parallel_for("forEachKokkos", Kokkos::RangePolicy<ExecSpace>(0, numParticles), KOKKOS_LAMBDA(int i)  {
                   // TODO: consider behavior
                   forEachLambda(i, owned);
                 });
 
               if (_dataLayout == DataLayoutOption::soa) {
-                _ownedParticles.template markModified<DeviceSpace::execution_space>();
+                _ownedParticles.template markModified<ExecSpace>();
               }
             }
 
-            template<typename Result, typename Reduction, typename Lambda>
+            template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
             void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior) {
               size_t numParticles = getNumberOfParticles(behavior);
 
@@ -214,11 +215,11 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                _ownedParticles.template sync<DeviceSpace::execution_space>();
+                _ownedParticles.template sync<ExecSpace>();
               }
 
               auto& owned = _ownedParticles;
-              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult)  {
+              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<ExecSpace>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   // TODO: consider behavior
                   reduceLambda(i, owned, localResult);
                 }, Reduction(result));

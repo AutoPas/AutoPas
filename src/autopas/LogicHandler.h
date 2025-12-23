@@ -1232,7 +1232,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
       };
 
     withStaticContainerType(getContainer(), [&lambda, &test](auto& actualContainer) {
-      actualContainer.template reduceKokkos<bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+      actualContainer.template reduceKokkos<Kokkos::HostSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
     });
     _neighborListInvalidDoDynamicRebuild = test;
 

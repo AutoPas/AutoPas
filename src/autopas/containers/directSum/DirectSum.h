@@ -212,12 +212,12 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
-  template <typename Lambda>
+  template <class ExecSpace, typename Lambda>
   void forEachKokkos(Lambda, IteratorBehavior) {
     // No Op
   }
 
-  template<typename Result, typename Reduction, typename Lambda>
+  template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
   void reduceKokkos(Lambda, Result&, IteratorBehavior) {
     // No Op
   }

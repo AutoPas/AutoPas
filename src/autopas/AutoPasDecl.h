@@ -289,9 +289,9 @@ class AutoPas {
     withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
-  template <typename Lambda>
+  template <class ExecSpace, typename Lambda>
   void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto &container) { container.forEachKokkos(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachKokkos<ExecSpace>(forEachLambda, behavior); });
   }
 
   bool containerAllowsKokkos() const { return getContainer().allowsKokkos(); }
@@ -330,9 +330,9 @@ class AutoPas {
     withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
-  template <typename Result, typename Reduction, typename Lambda>
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
   void reduceKokkos(Lambda forEachLambda, Result& result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto &container) { container.template reduceKokkos<Result, Reduction>(forEachLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior); });
   }
 
   /**
