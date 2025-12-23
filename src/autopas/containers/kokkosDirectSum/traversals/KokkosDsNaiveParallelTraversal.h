@@ -60,14 +60,16 @@ public:
 #endif
       }
       else if (_dataLayout == DataLayoutOption::soa) {
-        auto& owned = DSKokkosTraversalInterface<Particle_T>::_ownedParticles;
-        owned.template sync<DeviceSpace::execution_space>();
+        auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
+        constexpr auto tupleSize = ownedSoA.tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
+        ownedSoA.template sync<DeviceSpace::execution_space>(I);
 
         Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
-          func->SoAFunctorSingleKokkos(i, owned.getSoA(), N, newton3);
+          func->SoAFunctorSingleKokkos(i, ownedSoA, N, newton3);
         });
         // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
-        owned.template markModified<DeviceSpace::execution_space>();
+        ownedSoA.template markModified<DeviceSpace::execution_space>(I);
         // TODO: consider halo particles
       }
     }
