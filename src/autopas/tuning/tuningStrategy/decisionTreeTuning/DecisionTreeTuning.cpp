@@ -36,11 +36,9 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
 
     // Import the Python module and retrieve the 'load_model_and_encoder' and 'predict' functions
     py::module predictModule = py::module::import("predict");
-    _loadModelFunc = predictModule.attr("load_model_and_encoder");
-    _predictFunc = predictModule.attr("predict");
 
-    // Load the model
-    _loadModelFunc(_modelFileName, _interactionType.to_string());
+    // Initialize the python object.
+    _decisionTreeTuningPyObj(_modelFileName, _interactionType.to_string());
 
   } catch (const py::error_already_set &e) {
     utils::ExceptionHandler::exception("Failed to initialize Python environment: {}", e.what());
@@ -94,7 +92,7 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
     // Convert live info to JSON string
     const nlohmann::json liveInfoJson = _currentLiveInfo; // todo make this a reference
     // Call the Python function and get the result
-    const py::object result = _predictFunc(liveInfoJson.dump());
+    const py::object result = _decisionTreeTuningPyObj.attr("predict")(liveInfoJson.dump());
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     pythonPredictionTimer.stop();
     AutoPasLog(TRACE, "Python prediction took {} ms.", pythonPredictionTimer.getTotalTime());
