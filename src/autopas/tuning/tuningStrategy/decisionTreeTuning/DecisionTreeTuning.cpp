@@ -38,7 +38,7 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
     py::module predictModule = py::module::import("predict");
 
     // Initialize the python object.
-    _decisionTreeTuningPyObj(_modelFileName, _interactionType.to_string());
+    _decisionTreeTuningPyObj = predictModule.attr("DecisionTreeTuning")(_modelFileName, _interactionType.to_string());
 
   } catch (const py::error_already_set &e) {
     utils::ExceptionHandler::exception("Failed to initialize Python environment: {}", e.what());
