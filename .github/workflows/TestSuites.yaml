@@ -147,13 +147,13 @@ jobs:
           if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
           then
             cd build
-            ctest --output-on-failure -I ${{ matrix.part }},,${matrix.split} -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${{ matrix.split }} -j 2
 
             cd applicationLibrary
-            ctest --output-on-failure -I ${{ matrix.part }},,${matrix.split} -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${{ matrix.split }} -j 2
 
             cd ../examples
-            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,${matrix.split} -j 2
+            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,${{ matrix.split }} -j 2
           fi
 
           # If single-site & MPI, run MPI tests for AutoPas and example tests
