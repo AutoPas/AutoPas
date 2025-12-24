@@ -505,7 +505,7 @@ class LJFunctorHWY
 
     MaskLong ownedMaskILong = highway::Ne(ownedStateILong, _zeroLong);
 
-    // conert to a double mask since we perform logical operations with other double masks in the kernel
+    // conert to a double mask since we perform logical operations with other double masks in the kernel.
     ownedMaskI = highway::RebindMask(tag_double, ownedMaskILong);
   }
 
@@ -831,14 +831,16 @@ class LJFunctorHWY
    * @param x2 The register to be filled for x coordinates.
    * @param y2 The register to be filled for y coordinates.
    * @param z2 The register to be filled for z coordinates.
-   * @param ownedStateJLong The register to be filled for the ownership state.
+   * @param ownedMaskJ The register to be filled for the ownership state.
    * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
   inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
-                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, VectorLong &ownedStateJLong,
+                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
                              const unsigned int rest) {
+    VectorLong ownedStateJLong = _zeroLong;
+
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       if constexpr (remainder) {
         x2 = highway::LoadN(tag_double, &x2Ptr[j], rest);
@@ -894,6 +896,11 @@ class LJFunctorHWY
       y2 = highway::Set(tag_double, y2Ptr[j]);
       z2 = highway::Set(tag_double, z2Ptr[j]);
     }
+
+    MaskLong ownedMaskJLong = highway::Ne(ownedStateJLong, _zeroLong);
+
+    // conert to a double mask since we perform logical operations with other double masks in the kernel.
+    ownedMaskJ = highway::RebindMask(tag_double, ownedMaskJLong);
   }
 
   template <bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
@@ -1013,9 +1020,9 @@ class LJFunctorHWY
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
-    VectorLong ownedStateJLong;
+    MaskDouble ownedMaskJ;
 
-    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJLong, restJ);
+    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedMaskJ, restJ);
 
     // distance calculations
     const auto drX = x1 - x2;
@@ -1028,8 +1035,7 @@ class LJFunctorHWY
 
     const auto dr2 = drX2 + drY2 + drZ2;
 
-    const auto dummyMask =
-        highway::And(ownedMaskI, highway::Ne(highway::ConvertTo(tag_double, ownedStateJLong), _ownedStateDummy));
+    const auto dummyMask = highway::And(ownedMaskI, ownedMaskJ);
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
