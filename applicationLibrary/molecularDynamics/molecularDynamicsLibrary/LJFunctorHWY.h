@@ -90,7 +90,7 @@ class LJFunctorHWY
     }
 
     if constexpr (useMixing) {
-      if (!_PPLibrary.has_value()) {
+      if (not _PPLibrary.has_value()) {
         throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
       }
     } else {
@@ -238,13 +238,13 @@ class LJFunctorHWY
 
  private:
   /**
-   * Checks whether the loop over i should be stopped or not. This depends on the respective VectorizationPattern.
+   * Checks whether the loop over i should be continued. This depends on the respective VectorizationPattern.
    *
    * @tparam reversed Whether iterating backwards over i.
    * @tparam vecPattern
    * @param i
    * @param vecEnd
-   * @return whether the loop over i should be stopped or not.
+   * @return true if the loop over i should be continued, else false.
    */
   template <bool reversed, VectorizationPattern vecPattern>
   constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long vecEnd) {
@@ -284,8 +284,8 @@ class LJFunctorHWY
   }
 
   /**
-   * Calculates the step size depending on VectorizationPattern, by which i is decremented in the outer loop.
-   * Should only be called when iterating backwards over i.
+   * Calculates the step size by which i is decremented in the outer loop, depending on VectorizationPattern. Should
+   * only be called when iterating backwards over i.
    *
    * @tparam vecPattern
    * @param i
@@ -304,7 +304,7 @@ class LJFunctorHWY
   }
 
   /**
-   * Calculates the step size depending on VectorizationPattern, by which i is incremented in the outer loop.
+   * Calculates the step size by which i is incremented in the outer loop, depending on VectorizationPattern.
    * Should only be called when iterating forwards over i.
    *
    * @tparam vecPattern
@@ -324,12 +324,13 @@ class LJFunctorHWY
   }
 
   /**
-   * Determines the remainder length that can't be vectorized in the loop over i.
+   * Determines the number of registers filled in the case of a final, only partially filled, kernel call in the loop
+   * over i.
    *
    * @tparam reversed
    * @param i
    * @param vecEnd
-   * @return the remainder length that can't be vectorized in the loop over i.
+   * @return the number of registers filled.
    */
   template <bool reversed>
   constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
@@ -337,12 +338,12 @@ class LJFunctorHWY
   }
 
   /**
-   * Checks whether the inner loop over j should be stopped or not. This depends on the respective VectorizationPattern.
+   * Checks whether the inner loop over j should be continued. This depends on the respective VectorizationPattern.
    *
    * @tparam vecPattern
    * @param i
    * @param j
-   * @return  whether the inner loop over j should be stopped or not.
+   * @return  true if the inner loop over j should be continued, else false.
    */
   template <VectorizationPattern vecPattern>
   constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
@@ -370,7 +371,7 @@ class LJFunctorHWY
   }
 
   /**
-   * Calculates the step size depending on VectorizationPattern, by which j is incremented in the inner loop.
+   * Calculates the step size by which j is incremented in the inner loop, depending on VectorizationPattern.
    * Should only be called when iterating forwards over i.
    *
    * @tparam vecPattern
@@ -390,11 +391,12 @@ class LJFunctorHWY
   }
 
   /**
-   * Determines the remainder length that can't be vectorized in the loop over j.
+   * Determines the number of registers filled in the case of a final, only partially filled, kernel call in the loop
+   * over j.
    *
    * @tparam vecPattern
    * @param j
-   * @return the remainder length that can't be vectorized in the loop over j.
+   * @return the number of registers filled.
    */
   template <VectorizationPattern vecPattern>
   constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
@@ -418,16 +420,16 @@ class LJFunctorHWY
    * @tparam remainder
    * @tparam reversed
    * @tparam vecPattern
-   * @param i Current loop index for i
-   * @param xPtr pointer to the x coordinate of the particle at position i
-   * @param yPtr pointer to the y coordinate of the particle at position i
-   * @param zPtr pointer to the z coordinate of the particle at position i
-   * @param ownedStatePtr pointer to the ownership state of the particle at position i
-   * @param x1 The register to be filled for x coordinates
-   * @param y1 The register to be filled for y coordinates
-   * @param z1 The register to be filled for z coordinates
-   * @param ownedMaskI The mask to be filled for the ownership state
-   * @param restI Used in the case of the remainder loop
+   * @param i Current loop index for i.
+   * @param xPtr pointer to the x coordinate of the particle at position i.
+   * @param yPtr pointer to the y coordinate of the particle at position i.
+   * @param zPtr pointer to the z coordinate of the particle at position i.
+   * @param ownedStatePtr pointer to the ownership state of the particle at position i.
+   * @param x1 The register to be filled for x coordinates.
+   * @param y1 The register to be filled for y coordinates.
+   * @param z1 The register to be filled for z coordinates.
+   * @param ownedMaskI The mask to be filled for the ownership state.
+   * @param restI The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
   inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
@@ -821,16 +823,16 @@ class LJFunctorHWY
    *
    * @tparam remainder
    * @tparam vecPattern
-   * @param j Current loop index for j
-   * @param x2Ptr pointer to the x coordinate of the particle at position j
-   * @param y2Ptr pointer to the y coordinate of the particle at position j
-   * @param z2Ptr pointer to the z coordinate of the particle at position j
-   * @param ownedStatePtr2 pointer to the ownership state of the particle at position j
-   * @param x2 The register to be filled for x coordinates
-   * @param y2 The register to be filled for y coordinates
-   * @param z2 The register to be filled for z coordinates
-   * @param ownedStateJLong The register to be filled for the ownership state
-   * @param rest Used in the case of the remainder loop
+   * @param j Current loop index for j.
+   * @param x2Ptr pointer to the x coordinate of the particle at position j.
+   * @param y2Ptr pointer to the y coordinate of the particle at position j.
+   * @param z2Ptr pointer to the z coordinate of the particle at position j.
+   * @param ownedStatePtr2 pointer to the ownership state of the particle at position j.
+   * @param x2 The register to be filled for x coordinates.
+   * @param y2 The register to be filled for y coordinates.
+   * @param z2 The register to be filled for z coordinates.
+   * @param ownedStateJLong The register to be filled for the ownership state.
+   * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
   inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,

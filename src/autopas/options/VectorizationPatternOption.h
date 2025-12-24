@@ -43,7 +43,7 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
      * Interact two particles from the first list with half the vector length from the second list
      *
      * ---------------------------------
-     * | i | i | i |i+1|i+1|i+1|i+1|i+1|
+     * | i | i | i | i |i+1|i+1|i+1|i+1|
      * ---------------------------------
      * | j |j+1|j+2|j+3| j |j+1|j+2|j+3|
      *  --------------------------------
@@ -55,7 +55,7 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
      * ---------------------------------
      * | i |i+1|i+2|i+3| i |i+1|i+2|i+3|
      * ---------------------------------
-     * | j | j | j |j+1|j+1|j+1|j+1|j+1|
+     * | j | j | j | j |j+1|j+1|j+1|j+1|
      *  --------------------------------
      */
     pVecDiv2x2,
