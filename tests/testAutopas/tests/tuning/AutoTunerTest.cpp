@@ -87,46 +87,49 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
   //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
   //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics, 4 vecPattern)
-  //                        = 32 lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16 lc_c01
-  //                        (AoS <=> SoA, noNewton3, 4 vecPattern)                             = 8 lc_c01_combined_SoA
-  //                        (SoA, noNewton3, 4 vecPattern)                                     = 4 lc_c04 (AoS <=> SoA,
-  //                        newton3 <=> noNewton3, 4 vecPattern)                 = 16 lc_c04_combined_SoA         (SoA,
-  //                        newton3 <=> noNewton3, 4 vecPattern)                         = 8 lc_c04_HCP (AoS <=> SoA,
-  //                        newton3 <=> noNewton3, 4 vecPattern)                 = 16
+  //                                                    = 32
+  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  //                        lc_c01                      (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
+  //                        lc_c01_combined_SoA         (SoA, noNewton3, 4 vecPattern)                     = 4
+  //                        lc_c04 (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                      = 16
+  //                        lc_c04_combined_SoA         (SoA,newton3 <=> noNewton3, 4 vecPattern)          = 8
+  //                        lc_c04_HCP (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                  = 16
   configsPerContainer[autopas::ContainerOption::linkedCells] = 148;
   // same as linked Cells but load estimator stuff is currently missing
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
       configsPerContainer[autopas::ContainerOption::linkedCells] - 16;
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3, 4 vecPattern) = 8
-  configsPerContainer[autopas::ContainerOption::verletLists] = 8;
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics, 4 vecPattern)
-  //                        = 48 vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16 vlc_c01
-  //                        (AoS <=> SoA, noNewton3, 4 vecPattern)                             = 8 vlc_c08 (AoS <=> SoA,
-  //                        newton3 <=> noNewton3, 4 vecPattern)                 = 16
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 120;
-  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3, 4 vecPattern) = 8
+  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3, 1 vecPattern) = 2
+  configsPerContainer[autopas::ContainerOption::verletLists] = 2;
+  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics, 1 vecPattern)
+  //                                                    = 12
+  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlc_c01                     (AoS <=> SoA, noNewton3, 1 vecPattern)             = 2
+  //                        vlc_c08 (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern)                     = 4
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = 30;
+  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3, 4 vecPattern) = 8 vcl_sliced (AoS <=>
-  //                        SoA, newton3 <=> noNewton3, 4 vecPattern)                 = 16 vcl_sliced_c02 (AoS <=> SoA,
-  //                        newton3 <=> noNewton3, 4 vecPattern)                 = 16 vcl_sliced_balanced         (AoS
-  //                        <=> SoA, newton3 <=> noNewton3, 2 heuristics, 4 vecPattern)   = 32
+  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
+  //                        vcl_sliced (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                  = 16
+  //                        vcl_sliced_c02 (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)              = 16
+  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics, 4 vecPattern)
+  //                                                    = 32
   configsPerContainer[autopas::ContainerOption::verletClusterLists] = 96;
-  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 16;
+  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16 vlp_c18
-  //                        (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                 = 16 vlp_c01 (AoS <=>
-  //                        SoA, noNewton3, 4 vecPattern)                             = 8 vlp_c08 (AoS <=> SoA, newton3
-  //                        <=> noNewton3, 4 vecPattern)                 = 16
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 88;
+  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_c01                     (AoS <=> SoA, noNewton3, 1 vecPattern)             = 2
+  //                        vlp_c08 (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern)                     = 4
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
 
-  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3, 4 vecPattern) = 8
-  //                        ot_c18                      (AoS <=> SoA, newton3, 4 vecPattern) = 8
+  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
+  //                        ot_c18                      (AoS <=> SoA, newton3, 4 vecPattern)               = 8
   configsPerContainer[autopas::ContainerOption::octree] = 16;
 
   // check that there is an entry for every container.
