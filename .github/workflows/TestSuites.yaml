@@ -143,35 +143,17 @@ jobs:
           entrypoint.sh cmake --build . --parallel 8
       - name: Run tests ${{ matrix.part }}/${{ matrix.split }}
         run: |
-          # Determine split factor
-          # Default: split tests into 2 parts
-          # Special case: clang | Debug -> split into 3 parts
-          SplitFactor=2
-          if [[ "${{ matrix.config[1] }}" = 'clang' ]] && [[ "${{ matrix.config[4] }}" = 'Debug' ]] && [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]]; 
-          then
-            SplitFactor=3
-          fi
-
-          # Skip invalid matrix entries
-          if (( ${{ matrix.part }} > SplitFactor )); 
-          then
-            echo "Skipping part ${{ matrix.part }} (SplitFactor=${SplitFactor})"
-            exit 0
-          fi
-
-          echo "Using SplitFactor=${SplitFactor} for this job"
-
           # If single-site & No MPI, run every other AutoPas and example tests
           if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
           then
             cd build
-            ctest --output-on-failure -I ${{ matrix.part }},,${SplitFactor} -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${matrix.split} -j 2
 
             cd applicationLibrary
-            ctest --output-on-failure -I ${{ matrix.part }},,${SplitFactor} -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${matrix.split} -j 2
 
             cd ../examples
-            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,${SplitFactor} -j 2
+            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,${matrix.split} -j 2
           fi
 
           # If single-site & MPI, run MPI tests for AutoPas and example tests
