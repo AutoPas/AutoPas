@@ -5,7 +5,12 @@ file(
         "src/*.h"
 )
 
-add_executable(md-flexible ${MDFlex_SRC})
+add_executable(md-flexible ${MDFlex_SRC}
+        src/GlobalVariableLogger.h
+        src/GlobalVariableLogger.h
+        src/GlobalVariableLogger.h
+        src/GlobalVariableLogger.cpp
+        src/GlobalVariableLogger.cpp)
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
