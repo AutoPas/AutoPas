@@ -1633,7 +1633,7 @@ class AxilrodTellerMutoFunctorHWY
           rowLength = i;
           if (i == 0) continue;
         } else {
-          rowLength = _nColsPadded;
+          rowLength = _nCols;
         }
 
         for (; j + _vecLengthDouble <= rowLength; j += _vecLengthDouble) {
@@ -1661,32 +1661,30 @@ class AxilrodTellerMutoFunctorHWY
         }
 
         // Remainder
-        if constexpr (LowerTriangle or (not alignedSoAView)) {
-          if (j < rowLength) {
-            const size_t width = rowLength - j;
+        if (j < rowLength) {
+          const size_t width = rowLength - j;
 
-            const auto x2v = highway::LoadN(tag_double, &xptr2[j], width);
-            const auto y2v = highway::LoadN(tag_double, &yptr2[j], width);
-            const auto z2v = highway::LoadN(tag_double, &zptr2[j], width);
+          const auto x2v = highway::LoadN(tag_double, &xptr2[j], width);
+          const auto y2v = highway::LoadN(tag_double, &yptr2[j], width);
+          const auto z2v = highway::LoadN(tag_double, &zptr2[j], width);
 
-            const auto dx = x2v - x1v;
-            const auto dy = y2v - y1v;
-            const auto dz = z2v - z1v;
+          const auto dx = x2v - x1v;
+          const auto dy = y2v - y1v;
+          const auto dz = z2v - z1v;
 
-            const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
-            const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
-            const auto sqrtR2 = highway::Sqrt(dist2);
-            const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
-            const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
+          const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
+          const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
+          const auto sqrtR2 = highway::Sqrt(dist2);
+          const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
+          const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
 
-            const size_t idx = index<LowerTriangle>(i, j);
+          const size_t idx = index<LowerTriangle>(i, j);
 
-            highway::StoreN(dx, tag_double, &_dx[idx], width);
-            highway::StoreN(dy, tag_double, &_dy[idx], width);
-            highway::StoreN(dz, tag_double, &_dz[idx], width);
-            highway::StoreN(dist2, tag_double, &_squared[idx], width);
-            highway::StoreN(invr5, tag_double, &_invR5[idx], width);
-          }
+          highway::StoreN(dx, tag_double, &_dx[idx], width);
+          highway::StoreN(dy, tag_double, &_dy[idx], width);
+          highway::StoreN(dz, tag_double, &_dz[idx], width);
+          highway::StoreN(dist2, tag_double, &_squared[idx], width);
+          highway::StoreN(invr5, tag_double, &_invR5[idx], width);
         }
       }
     }
