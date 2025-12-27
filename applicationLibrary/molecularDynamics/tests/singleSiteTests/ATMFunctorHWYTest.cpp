@@ -41,39 +41,58 @@ void ATMFunctorHWYTest::setupPPL() {
 
 template <class SoAType>
 bool ATMFunctorHWYTest::SoAParticlesEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2) {
-  EXPECT_GT(soa1.size(), 0);
-  EXPECT_EQ(soa1.size(), soa2.size());
+  bool ok = true;
 
-  const unsigned long *const __restrict idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
-  const unsigned long *const __restrict idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
-
-  const double *const __restrict xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
-  const double *const __restrict yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
-  const double *const __restrict zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
-  const double *const __restrict xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
-  const double *const __restrict yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
-  const double *const __restrict zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
-
-  const double *const __restrict fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
-  const double *const __restrict fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
-  const double *const __restrict fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
-  const double *const __restrict fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
-  const double *const __restrict fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
-  const double *const __restrict fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
-
-  for (size_t i = 0; i < std::min(soa1.size(), soa2.size()); ++i) {
-    EXPECT_EQ(idptr1[i], idptr2[i]);
-
-    EXPECT_NEAR(xptr1[i], xptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(yptr1[i], yptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(zptr1[i], zptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fxptr1[i], fxptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fyptr1[i], fyptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
-    EXPECT_NEAR(fzptr1[i], fzptr2[i], _maxError) << "for particle pair " << idptr1[i] << " and i=" << i;
+  if (!(soa1.size() > 0)) {
+    EXPECT_GT(soa1.size(), 0);
+    ok = false;
   }
-  // clang-format off
-  return not ::testing::Test::HasFailure();
-  // clang-format on
+
+  if (soa1.size() != soa2.size()) {
+    EXPECT_EQ(soa1.size(), soa2.size());
+    ok = false;
+  }
+
+  const auto *idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
+  const auto *idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
+
+  const auto *xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
+  const auto *yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
+  const auto *zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
+  const auto *xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
+  const auto *yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
+  const auto *zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
+
+  const auto *fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
+  const auto *fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
+  const auto *fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
+  const auto *fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
+  const auto *fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
+  const auto *fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
+
+  const size_t n = std::min(soa1.size(), soa2.size());
+  for (size_t i = 0; i < n; ++i) {
+    if (idptr1[i] != idptr2[i]) {
+      EXPECT_EQ(idptr1[i], idptr2[i]);
+      ok = false;
+    }
+
+    auto near = [&](double a, double b, const char *msg) {
+      if (std::abs(a - b) > _maxError) {
+        EXPECT_NEAR(a, b, _maxError) << msg << " (i=" << i << ", id=" << idptr1[i] << ")";
+        ok = false;
+      }
+    };
+
+    near(xptr1[i], xptr2[i], "posX");
+    near(yptr1[i], yptr2[i], "posY");
+    near(zptr1[i], zptr2[i], "posZ");
+    near(fxptr1[i], fxptr2[i], "forceX");
+    near(fyptr1[i], fyptr2[i], "forceY");
+    near(fzptr1[i], fzptr2[i], "forceZ");
+  }
+
+  return ok;
 }
 
 bool ATMFunctorHWYTest::particleEqual(const Molecule &p1, const Molecule &p2) {
@@ -184,9 +203,8 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
   atmFunctorHWY.initTraversal();
   atmFunctorNoHWY.initTraversal();
 
-  ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
-  ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
-  ASSERT_TRUE(AoSParticlesEqual(cell3HWY, cell3NoHWY)) << "Cells 3 not equal after copy initialization.";
+  assertTripletEqual(cell1HWY, cell1NoHWY, cell2HWY, cell2NoHWY, cell3HWY, cell3NoHWY, AoSParticlesEqual,
+                     "after copy initialization.");
 
   atmFunctorNoHWY.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   atmFunctorNoHWY.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
@@ -195,12 +213,10 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
   atmFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   atmFunctorHWY.SoALoader(cell3HWY, cell3HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
-      << "Cells 1 not equal after loading.";
-  ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
-      << "Cells 2 not equal after loading.";
-  ASSERT_TRUE(SoAParticlesEqual(cell3HWY._particleSoABuffer, cell3NoHWY._particleSoABuffer))
-      << "Cells 3 not equal after loading.";
+  assertTripletEqual(
+      cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer, cell2HWY._particleSoABuffer,
+      cell2NoHWY._particleSoABuffer, cell3HWY._particleSoABuffer, cell3NoHWY._particleSoABuffer,
+      [](const auto &a, const auto &b) { return ATMFunctorHWYTest::SoAParticlesEqual(a, b); }, "after loading.");
 
   if (useUnalignedViews) {
     atmFunctorNoHWY.SoAFunctorTriple(cell1NoHWY._particleSoABuffer.constructView(1, cell1NoHWY.size()),
@@ -215,12 +231,12 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
     atmFunctorHWY.SoAFunctorTriple(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer,
                                    cell3HWY._particleSoABuffer, newton3);
   }
-  ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
-      << "Cells 1 not equal after applying functor.";
-  ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
-      << "Cells 2 not equal after applying functor.";
-  ASSERT_TRUE(SoAParticlesEqual(cell3HWY._particleSoABuffer, cell3NoHWY._particleSoABuffer))
-      << "Cells 3 not equal after applying functor.";
+
+  assertTripletEqual(
+      cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer, cell2HWY._particleSoABuffer,
+      cell2NoHWY._particleSoABuffer, cell3HWY._particleSoABuffer, cell3NoHWY._particleSoABuffer,
+      [](const auto &a, const auto &b) { return ATMFunctorHWYTest::SoAParticlesEqual(a, b); },
+      "after applying functor.");
 
   atmFunctorHWY.SoAExtractor(cell1HWY, cell1HWY._particleSoABuffer, 0);
   atmFunctorHWY.SoAExtractor(cell2HWY, cell2HWY._particleSoABuffer, 0);
@@ -229,9 +245,8 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
   atmFunctorHWY.SoAExtractor(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0);
   atmFunctorHWY.SoAExtractor(cell3NoHWY, cell3NoHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after extracting.";
-  ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
-  ASSERT_TRUE(AoSParticlesEqual(cell3HWY, cell3NoHWY)) << "Cells 3 not equal after extracting.";
+  assertTripletEqual(cell1HWY, cell1NoHWY, cell2HWY, cell2NoHWY, cell3HWY, cell3NoHWY, AoSParticlesEqual,
+                     "after extracting.");
 
   atmFunctorHWY.endTraversal(newton3);
   atmFunctorNoHWY.endTraversal(newton3);
@@ -304,18 +319,17 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
   atmFunctorHWY.initTraversal();
   atmFunctorNoHWY.initTraversal();
 
-  ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
-  ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
+  assertPairEqual(cell1HWY, cell1NoHWY, cell2HWY, cell2NoHWY, AoSParticlesEqual, "after copy initialization.");
 
   atmFunctorNoHWY.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   atmFunctorNoHWY.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   atmFunctorHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
   atmFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
-  ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
-      << "Cells 1 not equal after loading.";
-  ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
-      << "Cells 2 not equal after loading.";
+  assertPairEqual(
+      cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer, cell2HWY._particleSoABuffer,
+      cell2NoHWY._particleSoABuffer,
+      [](const auto &a, const auto &b) { return ATMFunctorHWYTest::SoAParticlesEqual(a, b); }, "after loading.");
 
   if (useUnalignedViews) {
     atmFunctorNoHWY.SoAFunctorPair(cell1NoHWY._particleSoABuffer.constructView(1, cell1NoHWY.size()),
@@ -326,18 +340,19 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
     atmFunctorNoHWY.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
     atmFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
   }
-  ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
-      << "Cells 1 not equal after applying functor.";
-  ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
-      << "Cells 2 not equal after applying functor.";
+
+  assertPairEqual(
+      cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer, cell2HWY._particleSoABuffer,
+      cell2NoHWY._particleSoABuffer,
+      [](const auto &a, const auto &b) { return ATMFunctorHWYTest::SoAParticlesEqual(a, b); },
+      "after applying functor.");
 
   atmFunctorHWY.SoAExtractor(cell1HWY, cell1HWY._particleSoABuffer, 0);
   atmFunctorHWY.SoAExtractor(cell2HWY, cell2HWY._particleSoABuffer, 0);
   atmFunctorHWY.SoAExtractor(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0);
   atmFunctorHWY.SoAExtractor(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0);
 
-  ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after extracting.";
-  ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
+  assertPairEqual(cell1HWY, cell1NoHWY, cell2HWY, cell2NoHWY, AoSParticlesEqual, "after extracting.");
 
   atmFunctorHWY.endTraversal(newton3);
   atmFunctorNoHWY.endTraversal(newton3);

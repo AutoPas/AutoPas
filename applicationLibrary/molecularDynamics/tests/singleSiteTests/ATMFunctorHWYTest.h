@@ -102,7 +102,7 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @return
    */
   template <class SoAType>
-  bool SoAParticlesEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2);
+  static bool SoAParticlesEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2);
 
   /**
    * Check that two non empty AoSs' (=Cells) particles are equal.
@@ -110,7 +110,7 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param cell2
    * @return
    */
-  bool AoSParticlesEqual(const FMCell &cell1, const FMCell &cell2);
+  static bool AoSParticlesEqual(const FMCell &cell1, const FMCell &cell2);
 
   /**
    * Check that two particles are equal.
@@ -118,7 +118,36 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * @param p2
    * @return
    */
-  bool particleEqual(const Molecule &p1, const Molecule &p2);
+  static bool particleEqual(const Molecule &p1, const Molecule &p2);
+
+  template <class T, class EqualFunc>
+  void assertPairEqual(const T &a1, const T &b1, const T &a2, const T &b2, EqualFunc equal, const std::string &phase) {
+    SCOPED_TRACE(phase);
+
+    const bool cell1OK = equal(a1, b1);
+    const bool cell2OK = equal(a2, b2);
+
+    EXPECT_TRUE(cell1OK) << "Cell 1 not equal";
+    EXPECT_TRUE(cell2OK) << "Cell 2 not equal";
+
+    ASSERT_TRUE(cell1OK && cell2OK) << "Pair mismatch";
+  }
+
+  template <class T, class EqualFunc>
+  void assertTripletEqual(const T &a1, const T &b1, const T &a2, const T &b2, const T &a3, const T &b3, EqualFunc equal,
+                          const std::string &phase) {
+    SCOPED_TRACE(phase);
+
+    const bool cell1OK = equal(a1, b1);
+    const bool cell2OK = equal(a2, b2);
+    const bool cell3OK = equal(a3, b3);
+
+    EXPECT_TRUE(cell1OK) << "Cell 1 not equal";
+    EXPECT_TRUE(cell2OK) << "Cell 2 not equal";
+    EXPECT_TRUE(cell3OK) << "Cell 3 not equal";
+
+    ASSERT_TRUE(cell1OK && cell2OK && cell3OK) << "Triplet mismatch";
+  }
 
   constexpr static double _cutoff{6.};
   constexpr static double _skin{2.};
