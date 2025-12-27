@@ -15,7 +15,6 @@
 
 module load slurm_setup
 module load gcc/15.2.0
-module load xerces-c/3.2.1
 
 echo "Running normal..."
     ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/SpinodalDecomposition_equilibration.yaml 
