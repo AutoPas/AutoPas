@@ -1,10 +1,7 @@
 #!/bin/bash
 #SBATCH -J virialSpin
-#SBATCH -D ../build
-#SBATCH -o ./%x.%j.%N.out
-#SBATCH -e ./%x.%j.%N.err
-#SBATCH --get-user-env
-#SBATCH --export=NONE
+#SBATCH -o %x.%j.%N.out
+#SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny
 #SBATCH --qos=cm4_tiny
@@ -12,23 +9,36 @@
 #SBATCH --cpus-per-task=18
 #SBATCH --mem=200G
 #SBATCH --time=08:00:00
+set -euo pipefail
 
 module load slurm_setup
 module load gcc/15.2.0
 
-echo "Running normal..."
-    ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/SpinodalDecomposition_equilibration.yaml 
+PROJECT_DIR="$SLURM_SUBMIT_DIR"
+BIN="$PROJECT_DIR/build/examples/md-flexible/md-flexible"
+YAML="$PROJECT_DIR/examples/md-flexible/SpinodalDecomposition_equilibration.yaml"
 
-echo "Running normal..."
-    ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/SpinodalDecomposition_equilibration.yaml
+RUNBASE="$PROJECT_DIR/runs/virialSpin_$SLURM_JOB_ID"
+mkdir -p "$RUNBASE"
 
-echo "Running normal..."
-    ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/SpinodalDecomposition_equilibration.yaml
+echo "Running in $RUNBASE"
 
-echo "Running perf profiling..."
-    perf record -g ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/SpinodalDecomposition_equilibration.yaml
+for i in 1 2 3; do
+    RUNDIR="$RUNBASE/run_$i"
+    mkdir -p "$RUNDIR"
+    cd "$RUNDIR"
 
-echo "Running gprof profiling..."
+    echo "Normal run $i"
+    "$BIN" --yaml-filename "$YAML"
+done
 
-    gprof ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/SpinodalDecomposition_equilibration.yaml ./gmon.out > profile_report_gprof.txt
-    echo "gprof profiling completed. Output saved to profile_report_gprof.txt."
+
+# ---------- gprof ----------
+#RUNDIR="$RUNBASE/gprof"
+#mkdir -p "$RUNDIR"
+#cd "$RUNDIR"
+
+#"$BIN" --yaml-filename "$YAML"
+
+#gprof "$BIN" gmon.out > profile_report_gprof.txt
+#echo "gprof profiling completed."
