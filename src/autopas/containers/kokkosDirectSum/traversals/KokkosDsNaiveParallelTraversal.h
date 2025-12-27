@@ -65,9 +65,8 @@ public:
         constexpr auto I = std::make_index_sequence<tupleSize>();
         ownedSoA.template sync<DeviceSpace::execution_space>(I);
 
-        Kokkos::parallel_for("traverseParticlesSoA", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
-          func->SoAFunctorSingleKokkos(i, ownedSoA, N, newton3);
-        });
+        func->SoAFunctorPairKokkos(ownedSoA, ownedSoA, newton3);
+
         // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
         ownedSoA.template markModified<DeviceSpace::execution_space>(I);
         // TODO: consider halo particles
