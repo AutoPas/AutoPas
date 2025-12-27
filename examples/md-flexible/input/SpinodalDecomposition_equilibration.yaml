@@ -16,7 +16,7 @@ deltaT                           :  0.00182367
 iterations                       :  10000 #100000
 cell-size                        :  [1]
 boundary-type                    :  [periodic, periodic, periodic]
-#energy-sensor                    :  rapl
+energy-sensor                    :  likwid
 Sites:
   0:
     epsilon                      :  1.
