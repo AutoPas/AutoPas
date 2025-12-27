@@ -660,7 +660,7 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ true, /*LowerPackedTriangleDM2*/ true, /*newton3*/ true,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ true, /*newton3*/ true,
                           /*newton3Kernel*/ true, /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, intraSoAPairDists, intraSoAPairDists, ownedStatePtr, typePtr, typePtr, typePtr,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
@@ -672,7 +672,7 @@ class AxilrodTellerMutoFunctorHWY
         const auto restK = j - k;
 
         if (restK > 0) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ true, /*LowerPackedTriangleDM2*/ true, /*newton3*/ true,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ true, /*newton3*/ true,
                           /*newton3Kernel*/ true, /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, intraSoAPairDists, intraSoAPairDists, ownedStatePtr, typePtr, typePtr, typePtr,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
@@ -811,7 +811,7 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ true, /*LowerPackedTriangleDM2*/ false, /*newton3*/ newton3,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ newton3, /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, intraSoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr2,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
@@ -822,7 +822,7 @@ class AxilrodTellerMutoFunctorHWY
 
         const auto restK = j - k;
         if (restK > 0) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ true, /*LowerPackedTriangleDM2*/ false, /*newton3*/ newton3,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ newton3, /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, intraSoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr2,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
@@ -875,7 +875,7 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ false, /*LowerPackedTriangleDM2*/ false, /*newton3*/ newton3,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ true, /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, interSoA1SoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr1,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
@@ -887,7 +887,7 @@ class AxilrodTellerMutoFunctorHWY
         const auto restK = soa2.size() - k;
 
         if (restK > 0) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ false, /*LowerPackedTriangleDM2*/ false, /*newton3*/ newton3,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ true, /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoA1SoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr1,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
@@ -1044,7 +1044,7 @@ class AxilrodTellerMutoFunctorHWY
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ false, /*LowerPackedTriangleDM2*/ false, /*newton3*/ newton3,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ newton3, /*remainder*/ false, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3PairDists, interSoA1SoA3PairDists, ownedStatePtr3, typeptr1, typeptr2,
               typeptr3, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
@@ -1056,7 +1056,7 @@ class AxilrodTellerMutoFunctorHWY
         const auto restK = soa3.size() - k;
 
         if (restK > 0) {
-          handleKLoopBody</*LowerPackedTriangleDM1*/ false, /*LowerPackedTriangleDM2*/ false, /*newton3*/ newton3,
+          handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ newton3, /*remainder*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3PairDists, interSoA1SoA3PairDists, ownedStatePtr3, typeptr1, typeptr2,
               typeptr3, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
@@ -1103,8 +1103,8 @@ class AxilrodTellerMutoFunctorHWY
    * registers, the cutoff criterion is checked, the particle properties are constructed, and the kernel is called. If
    * necessary, the globals are calculated.
    *
-   * @tparam LowerPackedTriangleDM1
-   * @tparam LowerPackedTriangleDM2
+   * @tparam LowerPackedTrianglePB1
+   * @tparam LowerPackedTrianglePB2
    * @tparam newton3
    * @tparam newton3Kernel
    * @tparam remainder
@@ -1147,7 +1147,7 @@ class AxilrodTellerMutoFunctorHWY
    * @param restK In the case of remainder, the remaining number of k particles
    * @return HWY_INLINE
    */
-  template <bool LowerPackedTriangleDM1, bool LowerPackedTriangleDM2, bool newton3, bool newton3Kernel, bool remainder,
+  template <bool LowerPackedTrianglePB1, bool LowerPackedTrianglePB2, bool newton3, bool newton3Kernel, bool remainder,
             bool alignedSoAView>
   HWY_INLINE void handleKLoopBody(
       const size_t i, const size_t j, const size_t k, const SoAFloatPrecision const_nu,
@@ -1163,10 +1163,10 @@ class AxilrodTellerMutoFunctorHWY
       size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t restK = 0) {
     // load distJKVecfrom precomputed data
     const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec, invR5JKVec] =
-        soaDists1.template loadRowVec<LowerPackedTriangleDM1, remainder>(j, k, restK);
+        soaDists1.template loadRowVec<LowerPackedTrianglePB1, remainder>(j, k, restK);
     // load distKIVec from precomputed data
     const auto [distXKIVecNeg, distYKIVecNeg, distZKIVecNeg, distSquaredKIVec, invR5KIVec] =
-        soaDists2.template loadRowVec<LowerPackedTriangleDM2, remainder>(i, k, restK);
+        soaDists2.template loadRowVec<LowerPackedTrianglePB2, remainder>(i, k, restK);
 
     const auto distXKIVec = highway::Neg(distXKIVecNeg);
     const auto distYKIVec = highway::Neg(distYKIVecNeg);
@@ -1197,19 +1197,14 @@ class AxilrodTellerMutoFunctorHWY
     // load nus
     auto nu = highway::Set(tag_double, const_nu);
     if constexpr (useMixing) {
-      HWY_ALIGN double nus[_vecLengthDouble] = {0.};
-
       if constexpr (remainder) {
-        for (size_t n = 0; n < restK; ++n) {
-          nus[n] = _PPLibrary->get().getMixingNu(typePtrI[i], typePtrJ[j], typePtrK[k + n]);
-        }
+        const auto mask = mdLib::highway::FirstN(mdLib::tag_size_t, restK);
+        const auto typeKIndices = highway::MaskedLoad(mask, tag_size_t, &typePtrK[k]);
+        nu = _PPLibrary->get().getMixingNuHWY</*remainder*/ true>(typePtrI[i], typePtrJ[j], typeKIndices, restK);
       } else {
-        for (size_t n = 0; n < _vecLengthDouble; ++n) {
-          nus[n] = _PPLibrary->get().getMixingNu(typePtrI[i], typePtrJ[j], typePtrK[k + n]);
-        }
+        const auto typeKIndices = highway::LoadU(tag_size_t, &typePtrK[k]);
+        nu = _PPLibrary->get().getMixingNuHWY</*remainder*/ false>(typePtrI[i], typePtrJ[j], typeKIndices);
       }
-
-      nu = highway::Load(tag_double, nus);
     }
 
     // The call to SoAKernelHWY always requires forceJX, forceJY, forceJZ. In the case of newton3==false these buffers
