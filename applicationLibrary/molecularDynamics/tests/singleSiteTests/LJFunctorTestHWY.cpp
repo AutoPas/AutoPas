@@ -114,15 +114,15 @@ bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCe
   EXPECT_GT(cell1.size(), 0);
   EXPECT_EQ(cell1.size(), cell2.size());
 
-  bool anyNotEqual = false;
+  bool allEqual = true;
 
-  for (size_t i = 0; i < cell1.size(); ++i) {
-    if (!checkParticlesAreEqual(cell1._particles[i], cell2._particles[i])) {
-      anyNotEqual = true;
+  for (size_t i = 0; i < std::min(cell1.size(), cell2.size()); ++i) {
+    if (not checkParticlesAreEqual(cell1._particles[i], cell2._particles[i])) {
+      allEqual = false;
     }
   }
 
-  return !anyNotEqual;
+  return allEqual;
 }
 
 /**
@@ -154,7 +154,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
 
   for (auto &particle : cell1HWY) {
     if (doDeleteSomeParticles) {
-      // pick some random particles to be marked as deleted
+      // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
@@ -166,7 +166,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
 
   for (auto &particle : cell2HWY) {
     if (doDeleteSomeParticles) {
-      // pick some random particles to be marked as deleted
+      // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 17) autopas::internal::markParticleAsDeleted(particle);
@@ -276,7 +276,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
 
   for (auto &particle : cellHWY) {
     if (doDeleteSomeParticles) {
-      // pick some random particles to be marked as deleted
+      // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
@@ -367,7 +367,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
-      // pick some random particles to be marked as deleted
+      // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
@@ -467,7 +467,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
 
   for (auto &particle : cellHWY) {
     if (doDeleteSomeParticles) {
-      // pick some random particles to be marked as deleted
+      // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);

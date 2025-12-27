@@ -89,6 +89,12 @@ bool autopas::Configuration::hasCompatibleValues() const {
     }
   }
 
+  // Check if the container supports the VectorizationPattern
+  const auto allowedVecPatterns = compatibleVectorizationPattern::allCompatibleVectorizationPattern(container);
+  if (allowedVecPatterns.find(vecPattern) == allowedVecPatterns.end()) {
+    return false;
+  }
+
   return true;
 }
 
