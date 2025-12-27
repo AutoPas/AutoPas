@@ -9,6 +9,7 @@
 #SBATCH --partition=cm4_tiny
 #SBATCH --qos=cm4_tiny
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=18
 #SBATCH --mem=1G
 #SBATCH --time=08:00:00
 
