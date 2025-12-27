@@ -1160,7 +1160,7 @@ class AxilrodTellerMutoFunctorHWY
       const autopas::OwnershipState ownedStateJ, double *const __restrict fxPtr, double *const __restrict fyPtr,
       double *const __restrict fzPtr, VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ,
       VectorDouble &potentialEnergySum, size_t &numKernelCallsN3Sum, size_t &numGlobalCalcsN3Sum,
-      size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t restK = 0) {
+      size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t restK = _vecLengthDouble) {
     // load distJKVecfrom precomputed data
     const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec, invR5JKVec] =
         soaDists1.template loadRowVec<LowerPackedTrianglePB1, remainder>(j, k, restK);
@@ -1197,14 +1197,10 @@ class AxilrodTellerMutoFunctorHWY
     // load nus
     auto nu = highway::Set(tag_double, const_nu);
     if constexpr (useMixing) {
-      if constexpr (remainder) {
-        const auto mask = mdLib::highway::FirstN(mdLib::tag_size_t, restK);
-        const auto typeKIndices = highway::MaskedLoad(mask, tag_size_t, &typePtrK[k]);
-        nu = _PPLibrary->get().getMixingNuHWY</*remainder*/ true>(typePtrI[i], typePtrJ[j], typeKIndices, restK);
-      } else {
-        const auto typeKIndices = highway::LoadU(tag_size_t, &typePtrK[k]);
-        nu = _PPLibrary->get().getMixingNuHWY</*remainder*/ false>(typePtrI[i], typePtrJ[j], typeKIndices);
-      }
+      // In the case of remainder=false, it is assumed that restK is the full vector length.
+      const auto mask = mdLib::highway::FirstN(mdLib::tag_long, restK);
+      const auto typeKIndices = highway::MaskedLoad(mask, tag_long, reinterpret_cast<const int64_t *>(&typePtrK[k]));
+      nu = _PPLibrary->get().getMixingNuHWY<remainder>(typePtrI[i], typePtrJ[j], typeKIndices, restK);
     }
 
     // The call to SoAKernelHWY always requires forceJX, forceJY, forceJZ. In the case of newton3==false these buffers

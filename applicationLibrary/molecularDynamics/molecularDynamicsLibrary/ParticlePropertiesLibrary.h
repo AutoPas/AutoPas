@@ -300,13 +300,12 @@ class ParticlePropertiesLibrary {
    * @return VectorDouble containing nu_ijk values for all lanes.
    */
   template <bool remainder>
-  mdLib::VectorDouble getMixingNuHWY(intType i, intType j, mdLib::VectorSizeT k, size_t lanes = 0) const {
+  mdLib::VectorDouble getMixingNuHWY(intType i, intType j, mdLib::VectorLong k, size_t lanes = 0) const {
     using D = mdLib::highway::ScalableTag<double>;
     using VI = mdLib::highway::RebindToSigned<D>;
 
     const auto baseIndices = mdLib::highway::Set(
-        mdLib::tag_size_t, static_cast<size_t>(i) * _numRegisteredSiteTypes * _numRegisteredSiteTypes +
-                               static_cast<size_t>(j) * _numRegisteredSiteTypes);
+        mdLib::tag_long, i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes);
 
     const auto indicesST = baseIndices + k;
 
