@@ -104,7 +104,7 @@ class Simulation {
   double _totalVirialSum{};
 
   /**
-   * Logger for FLOP count and hit rate.
+   * Logger for global variables calculated by the Functor, eg. Virial, Potential Energy, etc.
    */
   std::unique_ptr<GlobalVariableLogger> _globalLogger;
 
