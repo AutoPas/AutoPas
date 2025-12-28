@@ -64,9 +64,9 @@ thermostat:
   addBrownianMotion                  : true
 
 # ---------------------- Output ----------------------
-log-level                            : info
+log-level                            : warn
 no-end-config                        : true
-no-progress-bar                      : false
+no-progress-bar                      : true
 
 vtk-filename                         : PrecisionEquil
 vtk-output-folder                    : PrecisionEquilOutput
