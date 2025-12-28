@@ -111,6 +111,10 @@ class CellFunctorPsVL {
 
   void processCellSoANoN3(ParticleCell &cell);
 
+  signed long getDirectionIndex(const std::array<double, 3> &sortingDirection);
+
+  signed long flipDirectionIndex(signed long directionIndex);
+
   ParticleFunctor *_functor;
 
   const double _sortingCutoff;
@@ -121,6 +125,24 @@ class CellFunctorPsVL {
 
   std::vector<std::vector<SortedCellView<ParticleCell>>>* _orientationList = nullptr;
 };
+
+template <class ParticleCell, class ParticleFunctor, bool bidirectional>
+signed long CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::flipDirectionIndex(signed long directionIndex) {
+  return -(directionIndex+2);
+}
+
+
+template <class ParticleCell, class ParticleFunctor, bool bidirectional>
+signed long CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::getDirectionIndex(
+    const std::array<double, 3> &sortingDirection) {
+  const auto& [x, y, z] = sortingDirection;
+  int xInt = (x > 0) - (x < 0);
+  int yInt = (y > 0) - (y < 0);
+  int zInt = (z > 0) - (z < 0);
+
+  constexpr std::array<int, 3> dims{3, 3, 3};
+  return autopas::utils::ThreeDimensionalMapping::threeToOneD(xInt+1,yInt+1,zInt+1,dims) - 14;
+}
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::setOrientationLists(
@@ -146,13 +168,7 @@ template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
   unsigned long cell1Index, unsigned long cell2Index, const std::array<double, 3> &sortingDirection) {
 
-  const auto& [x, y, z] = sortingDirection;
-  int xInt = (x > 0) - (x < 0);
-  int yInt = (y > 0) - (y < 0);
-  int zInt = (z > 0) - (z < 0);
-
-  constexpr std::array<int, 3> dims{3, 3, 3};
-  signed long directionIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(xInt+1,yInt+1,zInt+1,dims) - 14;
+  signed long directionIndex = getDirectionIndex(sortingDirection);
 
   // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
   switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
@@ -206,7 +222,7 @@ void CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::processCellP
   bool revSecondView = false;
   if (directionIndex<0) {
     revSecondView = true;
-    directionIndex = -(directionIndex+2);
+    directionIndex = flipDirectionIndex(directionIndex);
   }
   auto &cell1Sorted = (*_orientationList)[cell1Index][directionIndex];
   auto &cell2Sorted = (*_orientationList)[cell2Index][directionIndex];
@@ -245,7 +261,7 @@ void CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::processCellP
   bool revSecondView = false;
   if (directionIndex<0) {
     revSecondView = true;
-    directionIndex = -(directionIndex+2);
+    directionIndex = flipDirectionIndex(directionIndex);
   }
 
   auto &cell1Sorted = (*_orientationList)[cell1Index][directionIndex];
