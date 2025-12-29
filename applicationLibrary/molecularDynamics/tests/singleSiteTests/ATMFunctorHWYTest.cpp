@@ -123,8 +123,7 @@ bool ATMFunctorHWYTest::AoSParticlesEqual(const FMCell &cell1, const FMCell &cel
 }
 
 template <bool mixing>
-void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bool doDeleteSomeParticles,
-                                                                bool useUnalignedViews) {
+void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bool doDeleteSomeParticles) {
   FMCell cell1HWY;
   FMCell cell2HWY;
   FMCell cell3HWY;
@@ -218,19 +217,10 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
       cell2NoHWY._particleSoABuffer, cell3HWY._particleSoABuffer, cell3NoHWY._particleSoABuffer,
       [](const auto &a, const auto &b) { return ATMFunctorHWYTest::SoAParticlesEqual(a, b); }, "after loading.");
 
-  if (useUnalignedViews) {
-    atmFunctorNoHWY.SoAFunctorTriple(cell1NoHWY._particleSoABuffer.constructView(1, cell1NoHWY.size()),
-                                     cell2NoHWY._particleSoABuffer.constructView(1, cell2NoHWY.size()),
-                                     cell3NoHWY._particleSoABuffer.constructView(1, cell3NoHWY.size()), newton3);
-    atmFunctorHWY.SoAFunctorTriple(cell1HWY._particleSoABuffer.constructView(1, cell1HWY.size()),
-                                   cell2HWY._particleSoABuffer.constructView(1, cell2HWY.size()),
-                                   cell3HWY._particleSoABuffer.constructView(1, cell3HWY.size()), newton3);
-  } else {
-    atmFunctorNoHWY.SoAFunctorTriple(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer,
-                                     cell3NoHWY._particleSoABuffer, newton3);
-    atmFunctorHWY.SoAFunctorTriple(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer,
-                                   cell3HWY._particleSoABuffer, newton3);
-  }
+  atmFunctorNoHWY.SoAFunctorTriple(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer,
+                                   cell3NoHWY._particleSoABuffer, newton3);
+  atmFunctorHWY.SoAFunctorTriple(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, cell3HWY._particleSoABuffer,
+                                 newton3);
 
   assertTripletEqual(
       cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer, cell2HWY._particleSoABuffer,
@@ -256,8 +246,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bo
 }
 
 template <bool mixing>
-void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                              bool useUnalignedViews) {
+void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles) {
   FMCell cell1HWY;
   FMCell cell2HWY;
 
@@ -331,15 +320,8 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
       cell2NoHWY._particleSoABuffer,
       [](const auto &a, const auto &b) { return ATMFunctorHWYTest::SoAParticlesEqual(a, b); }, "after loading.");
 
-  if (useUnalignedViews) {
-    atmFunctorNoHWY.SoAFunctorPair(cell1NoHWY._particleSoABuffer.constructView(1, cell1NoHWY.size()),
-                                   cell2NoHWY._particleSoABuffer.constructView(1, cell2NoHWY.size()), newton3);
-    atmFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer.constructView(1, cell1HWY.size()),
-                                 cell2HWY._particleSoABuffer.constructView(1, cell2HWY.size()), newton3);
-  } else {
-    atmFunctorNoHWY.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
-    atmFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
-  }
+  atmFunctorNoHWY.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
+  atmFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
 
   assertPairEqual(
       cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer, cell2HWY._particleSoABuffer,
@@ -362,8 +344,7 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool
 }
 
 template <bool mixing>
-void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles,
-                                                             bool useUnalignedViews) {
+void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellHWY;
 
   size_t numParticles = 7;
@@ -418,13 +399,9 @@ void ATMFunctorHWYTest::testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool 
   ASSERT_TRUE(SoAParticlesEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
       << "Cells not equal after loading.";
 
-  if (useUnalignedViews) {
-    atmFunctorNoHWY.SoAFunctorSingle(cellNoHWY._particleSoABuffer.constructView(1, cellNoHWY.size()), newton3);
-    atmFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer.constructView(1, cellHWY.size()), newton3);
-  } else {
-    atmFunctorNoHWY.SoAFunctorSingle(cellNoHWY._particleSoABuffer, newton3);
-    atmFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer, newton3);
-  }
+  atmFunctorNoHWY.SoAFunctorSingle(cellNoHWY._particleSoABuffer, newton3);
+  atmFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer, newton3);
+
   ASSERT_TRUE(SoAParticlesEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
@@ -523,54 +500,27 @@ TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYAoS) {
 TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYOneCellAlignedAccess) {
   const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
-    testATMFunctorVSATMFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, false);
+    testATMFunctorVSATMFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle);
   } else {
-    testATMFunctorVSATMFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, false);
-  }
-}
-
-TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYOneCellUseUnalignedViews) {
-  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
-  if (mixing) {
-    testATMFunctorVSATMFunctorHWYOneCell<true>(newton3, doDeleteSomeParticle, true);
-  } else {
-    testATMFunctorVSATMFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle, true);
+    testATMFunctorVSATMFunctorHWYOneCell<false>(newton3, doDeleteSomeParticle);
   }
 }
 
 TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYTwoCellsAlignedAccess) {
   const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
-    testATMFunctorVSATMFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, false);
+    testATMFunctorVSATMFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle);
   } else {
-    testATMFunctorVSATMFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, false);
-  }
-}
-
-TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYTwoCellsUseUnalignedViews) {
-  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
-  if (mixing) {
-    testATMFunctorVSATMFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, true);
-  } else {
-    testATMFunctorVSATMFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, true);
+    testATMFunctorVSATMFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle);
   }
 }
 
 TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYThreeCellsAlignedAccess) {
   const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
   if (mixing) {
-    testATMFunctorVSATMFunctorHWYThreeCells<true>(newton3, doDeleteSomeParticle, false);
+    testATMFunctorVSATMFunctorHWYThreeCells<true>(newton3, doDeleteSomeParticle);
   } else {
-    testATMFunctorVSATMFunctorHWYThreeCells<false>(newton3, doDeleteSomeParticle, false);
-  }
-}
-
-TEST_P(ATMFunctorHWYTest, testATMFunctorVSATMFunctorHWYThreeCellsUseUnalignedViews) {
-  const auto [mixing, newton3, doDeleteSomeParticle] = GetParam();
-  if (mixing) {
-    testATMFunctorVSATMFunctorHWYThreeCells<true>(newton3, doDeleteSomeParticle, true);
-  } else {
-    testATMFunctorVSATMFunctorHWYThreeCells<false>(newton3, doDeleteSomeParticle, true);
+    testATMFunctorVSATMFunctorHWYThreeCells<false>(newton3, doDeleteSomeParticle);
   }
 }
 

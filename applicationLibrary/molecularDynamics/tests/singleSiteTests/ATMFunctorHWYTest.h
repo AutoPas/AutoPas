@@ -44,10 +44,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * precalculated mixing coefficients from the ParticlePropertiesLibrary are used.
    * @param newton3
    * @param doDeleteSomeParticles
-   * @param useUnalignedViews
    */
   template <bool mixing>
-  void testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
+  void testATMFunctorVSATMFunctorHWYThreeCells(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Checks that the application of SoALoader, SoAFunctorPair and SoAExtractor are equal for the HWY & non-HWY functors.
@@ -61,10 +60,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * precalculated mixing coefficients from the ParticlePropertiesLibrary are used.
    * @param newton3
    * @param doDeleteSomeParticles
-   * @param useUnalignedViews
    */
   template <bool mixing>
-  void testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
+  void testATMFunctorVSATMFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Checks that the application of SoALoader, SoAFunctorSingle and SoAExtractor are equal for the HWY & non-HWY
@@ -78,10 +76,9 @@ class ATMFunctorHWYTest : public AutoPasTestBase, public ::testing::WithParamInt
    * precalculated mixing coefficients from the ParticlePropertiesLibrary are used.
    * @param newton3
    * @param doDeleteSomeParticles
-   * @param useUnalignedViews
    */
   template <bool mixing>
-  void testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
+  void testATMFunctorVSATMFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Create two cells and compare AoSFunctor
