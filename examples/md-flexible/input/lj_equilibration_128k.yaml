@@ -3,11 +3,11 @@
 container                            : [LinkedCells]
 functor                              : Lennard-Jones (12-6) avx
 traversal                            : [lc_c01]
-newton3                              : [enabled, disabled]
-data-layout                          : [AoS, SoA]
+newton3                              : [enabled]
+data-layout                          : [SoA]
 
-verlet-rebuild-frequency             : 20
-verlet-skin-radius                   : 0.2
+verlet-rebuild-frequency             : 100
+verlet-skin-radius                   : 0.3
 
 selector-strategy                    : Fastest-Absolute-Value
 tuning-metric                        : time
@@ -51,7 +51,7 @@ thermostat:
   thermostatInterval                 : 25
   addBrownianMotion                  : true
 
-log-level                            : warn
+log-level                            : error
 no-end-config                        : true
 no-progress-bar                      : true
 
