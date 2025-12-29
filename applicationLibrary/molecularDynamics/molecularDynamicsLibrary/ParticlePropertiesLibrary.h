@@ -292,14 +292,12 @@ class ParticlePropertiesLibrary {
   /**
    * Returns precomputed mixed epsilon (nu) for given site types using vectorized Highway operations.
    *
-   * @tparam remainder If true, handles a partial vector with 'lanes' valid entries.
    * @param i Id of site one.
    * @param j Id of site two.
    * @param k Vector of site three indices.
    * @param lanes Number of valid lanes in remainder case (ignored if remainder == false).
    * @return VectorDouble containing nu_ijk values for all lanes.
    */
-  template <bool remainder>
   mdLib::VectorDouble getMixingNuHWY(intType i, intType j, mdLib::VectorLong k, size_t lanes = 0) const {
     using D = mdLib::highway::ScalableTag<double>;
     using VI = mdLib::highway::RebindToSigned<D>;
@@ -311,12 +309,8 @@ class ParticlePropertiesLibrary {
 
     const auto indices = mdLib::highway::BitCast(VI{}, indicesST);
 
-    if constexpr (remainder) {
-      const auto mask = mdLib::highway::FirstN(mdLib::tag_double, lanes);
-      return mdLib::highway::MaskedGatherIndex(mask, mdLib::tag_double, &_computedATMMixingData[0].nu, indices);
-    } else {
-      return mdLib::highway::GatherIndex(mdLib::tag_double, &_computedATMMixingData[0].nu, indices);
-    }
+    const auto mask = mdLib::highway::FirstN(mdLib::tag_double, lanes);
+    return mdLib::highway::MaskedGatherIndex(mask, mdLib::tag_double, &_computedATMMixingData[0].nu, indices);
   }
 
   /**

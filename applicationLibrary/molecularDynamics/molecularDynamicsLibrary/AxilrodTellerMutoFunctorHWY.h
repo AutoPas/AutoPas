@@ -656,30 +656,22 @@ class AxilrodTellerMutoFunctorHWY
         const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
-        const size_t blockEnd = j & ~(_vecLengthDouble - 1);
+        const size_t blockEnd = j;  // j & ~(_vecLengthDouble - 1);
 
         unsigned int k = 0;
+
         for (; k < blockEnd; k += _vecLengthDouble) {
+          const auto numLanesToProcess = std::min(_vecLengthDouble, j - k);
+
           handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ true, /*newton3*/ true,
-                          /*newton3Kernel*/ true, /*remainder*/ false, alignedSoAView>(
+                          /*newton3Kernel*/ true, alignedSoAView>(
               i, j, k, const_nu, intraSoAPairDists, intraSoAPairDists, ownedStatePtr, typePtr, typePtr, typePtr,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
               fZAccJ, ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ,
               potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum);
+              numGlobalCalcsNoN3Sum, numLanesToProcess);
         }
 
-        const auto restK = j - k;
-
-        if (restK > 0) {
-          handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ true, /*newton3*/ true,
-                          /*newton3Kernel*/ true, /*remainder*/ true, alignedSoAView>(
-              i, j, k, const_nu, intraSoAPairDists, intraSoAPairDists, ownedStatePtr, typePtr, typePtr, typePtr,
-              distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
-              fZAccJ, ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ,
-              potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum, restK);
-        }
         // Reduce force on particle J.
         fxPtr[j] += highway::ReduceSum(tag_double, fXAccJ);
         fyPtr[j] += highway::ReduceSum(tag_double, fYAccJ);
@@ -807,28 +799,19 @@ class AxilrodTellerMutoFunctorHWY
         const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
-        const size_t blockEnd = j & ~(_vecLengthDouble - 1);
+        const size_t blockEnd = j;
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
-          handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ newton3, /*remainder*/ false, alignedSoAView>(
-              i, j, k, const_nu, intraSoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr2,
-              typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
-              fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY,
-              virialSumZ, potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum);
-        }
+          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(j - k));
 
-        const auto restK = j - k;
-        if (restK > 0) {
           handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ newton3, /*remainder*/ true, alignedSoAView>(
+                          /*newton3Kernel*/ newton3, alignedSoAView>(
               i, j, k, const_nu, intraSoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr2,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
               fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY,
               virialSumZ, potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum, restK);
+              numGlobalCalcsNoN3Sum, numLanesToProcess);
         }
         // Reduce force on particle j.
         fxPtr2[j] += highway::ReduceSum(tag_double, fXAccJ);
@@ -871,30 +854,21 @@ class AxilrodTellerMutoFunctorHWY
         const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
-        unsigned int blockEnd = (soa2.size() / _vecLengthDouble) * _vecLengthDouble;
+        unsigned int blockEnd = soa2.size();
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
+          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(soa2.size() - k));
+
           handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ true, /*remainder*/ false, alignedSoAView>(
+                          /*newton3Kernel*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoA1SoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr1,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
               fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY,
               virialSumZ, potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum);
+              numGlobalCalcsNoN3Sum, numLanesToProcess);
         }
 
-        const auto restK = soa2.size() - k;
-
-        if (restK > 0) {
-          handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ true, /*remainder*/ true, alignedSoAView>(
-              i, j, k, const_nu, interSoA1SoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr1,
-              typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
-              fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY,
-              virialSumZ, potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum, restK);
-        }
         // Reduce force on particle j.
         fxPtr1[j] += highway::ReduceSum(tag_double, fXAccJ);
         fyPtr1[j] += highway::ReduceSum(tag_double, fYAccJ);
@@ -1040,31 +1014,21 @@ class AxilrodTellerMutoFunctorHWY
         const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
-        unsigned int blockEnd = (soa3.size() / _vecLengthDouble) * _vecLengthDouble;
+        unsigned int blockEnd = soa3.size();
 
         unsigned int k = 0;
         for (; k < blockEnd; k += _vecLengthDouble) {
+          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(soa3.size() - k));
+
           handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ newton3, /*remainder*/ false, alignedSoAView>(
+                          /*newton3Kernel*/ newton3, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3PairDists, interSoA1SoA3PairDists, ownedStatePtr3, typeptr1, typeptr2,
               typeptr3, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
               fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr3, fyPtr3, fzPtr3, virialSumX, virialSumY,
               virialSumZ, potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum);
+              numGlobalCalcsNoN3Sum, numLanesToProcess);
         }
 
-        const auto restK = soa3.size() - k;
-
-        if (restK > 0) {
-          handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ newton3, /*remainder*/ true, alignedSoAView>(
-              i, j, k, const_nu, interSoA2SoA3PairDists, interSoA1SoA3PairDists, ownedStatePtr3, typeptr1, typeptr2,
-              typeptr3, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
-              fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr3, fyPtr3, fzPtr3, virialSumX, virialSumY,
-              virialSumZ, potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
-              numGlobalCalcsNoN3Sum, restK);
-        }
-        // Reduce force on particle j.
         fxPtr2[j] += highway::ReduceSum(tag_double, fXAccJ);
         fyPtr2[j] += highway::ReduceSum(tag_double, fYAccJ);
         fzPtr2[j] += highway::ReduceSum(tag_double, fZAccJ);
@@ -1107,7 +1071,6 @@ class AxilrodTellerMutoFunctorHWY
    * @tparam LowerPackedTrianglePB2
    * @tparam newton3
    * @tparam newton3Kernel
-   * @tparam remainder
    * @tparam alignedSoAView
    * @param i current index of the i-loop
    * @param j current index of the j-loop
@@ -1144,10 +1107,10 @@ class AxilrodTellerMutoFunctorHWY
    * @param numGlobalCalcsN3Sum Globals calculation accumulator newton3
    * @param numKernelCallsNoN3Sum Kernel call accumulator no newton3
    * @param numGlobalCalcsNoN3Sum Globals calculation accumulator no newton3
-   * @param restK In the case of remainder, the remaining number of k particles
+   * @param numLanesToProcess In the case of remainder, the remaining number of k particles
    * @return HWY_INLINE
    */
-  template <bool LowerPackedTrianglePB1, bool LowerPackedTrianglePB2, bool newton3, bool newton3Kernel, bool remainder,
+  template <bool LowerPackedTrianglePB1, bool LowerPackedTrianglePB2, bool newton3, bool newton3Kernel,
             bool alignedSoAView>
   HWY_INLINE void handleKLoopBody(
       const size_t i, const size_t j, const size_t k, const SoAFloatPrecision const_nu,
@@ -1160,13 +1123,15 @@ class AxilrodTellerMutoFunctorHWY
       const autopas::OwnershipState ownedStateJ, double *const __restrict fxPtr, double *const __restrict fyPtr,
       double *const __restrict fzPtr, VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ,
       VectorDouble &potentialEnergySum, size_t &numKernelCallsN3Sum, size_t &numGlobalCalcsN3Sum,
-      size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t restK = _vecLengthDouble) {
+      size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t numLanesToProcess = _vecLengthDouble) {
+    const bool remainder = numLanesToProcess < _vecLengthDouble;
+
     // load distJKVecfrom precomputed data
     const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec, invR5JKVec] =
-        soaDists1.template loadRowVec<LowerPackedTrianglePB1, remainder>(j, k, restK);
+        soaDists1.template loadRowVec<LowerPackedTrianglePB1>(j, k);
     // load distKIVec from precomputed data
     const auto [distXKIVecNeg, distYKIVecNeg, distZKIVecNeg, distSquaredKIVec, invR5KIVec] =
-        soaDists2.template loadRowVec<LowerPackedTrianglePB2, remainder>(i, k, restK);
+        soaDists2.template loadRowVec<LowerPackedTrianglePB2>(i, k);
 
     const auto distXKIVec = highway::Neg(distXKIVecNeg);
     const auto distYKIVec = highway::Neg(distYKIVecNeg);
@@ -1174,8 +1139,13 @@ class AxilrodTellerMutoFunctorHWY
 
     // Since autopas::OwnershipState::dummy == 0, we can use LoadN (called from loadPacked) in the remainder-case, as it
     // sets the remaining lanes to 0
-    const auto ownershipK =
-        loadPacked<alignedSoAView, remainder>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]), restK);
+    auto ownershipK = loadPacked<alignedSoAView, false>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]),
+                                                        numLanesToProcess);
+
+    if (remainder) {
+      ownershipK = loadPacked<alignedSoAView, true>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]),
+                                                    numLanesToProcess);
+    }
 
     // calculate cutoff-masks between i<->k and j<->k
     const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
@@ -1197,10 +1167,10 @@ class AxilrodTellerMutoFunctorHWY
     // load nus
     auto nu = highway::Set(tag_double, const_nu);
     if constexpr (useMixing) {
-      // In the case of remainder=false, it is assumed that restK is the full vector length.
-      const auto mask = mdLib::highway::FirstN(mdLib::tag_long, restK);
+      // In the case of remainder=false, it is assumed that numLanesToProcess is the full vector length.
+      const auto mask = mdLib::highway::FirstN(mdLib::tag_long, numLanesToProcess);
       const auto typeKIndices = highway::MaskedLoad(mask, tag_long, reinterpret_cast<const int64_t *>(&typePtrK[k]));
-      nu = _PPLibrary->get().getMixingNuHWY<remainder>(typePtrI[i], typePtrJ[j], typeKIndices, restK);
+      nu = _PPLibrary->get().getMixingNuHWY(typePtrI[i], typePtrJ[j], typeKIndices, numLanesToProcess);
     }
 
     // The call to SoAKernelHWY always requires forceJX, forceJY, forceJZ. In the case of newton3==false these buffers
@@ -1225,7 +1195,7 @@ class AxilrodTellerMutoFunctorHWY
       }
 
       if constexpr (countFLOPs) {
-        numKernelCallsNoN3Sum += remainder ? restK : _vecLengthDouble;
+        numKernelCallsNoN3Sum += numLanesToProcess;
       }
 
       if constexpr (calculateGlobals) {
@@ -1272,7 +1242,7 @@ class AxilrodTellerMutoFunctorHWY
         }
 
         if constexpr (countFLOPs) {
-          numGlobalCalcsNoN3Sum += remainder ? restK : _vecLengthDouble;
+          numGlobalCalcsNoN3Sum += numLanesToProcess;
         }
       }
     } else {
@@ -1290,20 +1260,20 @@ class AxilrodTellerMutoFunctorHWY
       const auto forceKZ = highway::Neg(forceIZ + forceJZ);
 
       // Store force acting on particle k.
-      const VectorDouble fxK = loadPacked<alignedSoAView, remainder>(tag_double, &fxPtr[k], restK);
-      const VectorDouble fyK = loadPacked<alignedSoAView, remainder>(tag_double, &fyPtr[k], restK);
-      const VectorDouble fzK = loadPacked<alignedSoAView, remainder>(tag_double, &fzPtr[k], restK);
+      const VectorDouble fxK = loadPacked<alignedSoAView, false>(tag_double, &fxPtr[k], numLanesToProcess);
+      const VectorDouble fyK = loadPacked<alignedSoAView, false>(tag_double, &fyPtr[k], numLanesToProcess);
+      const VectorDouble fzK = loadPacked<alignedSoAView, false>(tag_double, &fzPtr[k], numLanesToProcess);
 
       const VectorDouble fxKNew = fxK + forceKX;
       const VectorDouble fyKNew = fyK + forceKY;
       const VectorDouble fzKNew = fzK + forceKZ;
 
-      storePacked<alignedSoAView, remainder>(tag_double, &fxPtr[k], fxKNew, restK);
-      storePacked<alignedSoAView, remainder>(tag_double, &fyPtr[k], fyKNew, restK);
-      storePacked<alignedSoAView, remainder>(tag_double, &fzPtr[k], fzKNew, restK);
+      storePacked<alignedSoAView, false>(tag_double, &fxPtr[k], fxKNew, numLanesToProcess);
+      storePacked<alignedSoAView, false>(tag_double, &fyPtr[k], fyKNew, numLanesToProcess);
+      storePacked<alignedSoAView, false>(tag_double, &fzPtr[k], fzKNew, numLanesToProcess);
 
       if constexpr (countFLOPs) {
-        numKernelCallsN3Sum += remainder ? restK : _vecLengthDouble;
+        numKernelCallsN3Sum += numLanesToProcess;
       }
 
       if constexpr (calculateGlobals) {
@@ -1360,7 +1330,7 @@ class AxilrodTellerMutoFunctorHWY
         virialSumZ += maskedVirialIZ + maskedVirialJZ + maskedVirialKZ;
 
         if constexpr (countFLOPs) {
-          numGlobalCalcsN3Sum += remainder ? restK : _vecLengthDouble;
+          numGlobalCalcsN3Sum += numLanesToProcess;
         }
       }
     }
@@ -1575,8 +1545,8 @@ class AxilrodTellerMutoFunctorHWY
     }
 
     // Highway-Vector load
-    template <bool LowerTriangle, bool remainder>
-    HWY_INLINE auto loadRowVec(const size_t i, const size_t jStart, const size_t width) const {
+    template <bool LowerTriangle>
+    HWY_INLINE auto loadRowVec(const size_t i, const size_t jStart) const {
       const size_t idx = [&]() {
         if constexpr (LowerTriangle) {
           return triIndex<true>(i, jStart);
@@ -1585,21 +1555,14 @@ class AxilrodTellerMutoFunctorHWY
         }
       }();
 
-      if constexpr (remainder) {
-        return std::tuple{highway::LoadN(tag_double, &_dx[idx], width), highway::LoadN(tag_double, &_dy[idx], width),
-                          highway::LoadN(tag_double, &_dz[idx], width),
-                          highway::LoadN(tag_double, &_squared[idx], width),
-                          highway::LoadN(tag_double, &_invR5[idx], width)};
+      if constexpr (LowerTriangle) {
+        return std::tuple{highway::LoadU(tag_double, &_dx[idx]), highway::LoadU(tag_double, &_dy[idx]),
+                          highway::LoadU(tag_double, &_dz[idx]), highway::LoadU(tag_double, &_squared[idx]),
+                          highway::LoadU(tag_double, &_invR5[idx])};
       } else {
-        if constexpr (LowerTriangle) {
-          return std::tuple{highway::LoadU(tag_double, &_dx[idx]), highway::LoadU(tag_double, &_dy[idx]),
-                            highway::LoadU(tag_double, &_dz[idx]), highway::LoadU(tag_double, &_squared[idx]),
-                            highway::LoadU(tag_double, &_invR5[idx])};
-        } else {
-          return std::tuple{highway::Load(tag_double, &_dx[idx]), highway::Load(tag_double, &_dy[idx]),
-                            highway::Load(tag_double, &_dz[idx]), highway::Load(tag_double, &_squared[idx]),
-                            highway::Load(tag_double, &_invR5[idx])};
-        }
+        return std::tuple{highway::Load(tag_double, &_dx[idx]), highway::Load(tag_double, &_dy[idx]),
+                          highway::Load(tag_double, &_dz[idx]), highway::Load(tag_double, &_squared[idx]),
+                          highway::Load(tag_double, &_invR5[idx])};
       }
     }
 
