@@ -13,7 +13,6 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -107,7 +106,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    * @param dim current dimension
    * @return Index for the _cellOffsets Array.
    */
-  unsigned long getIndex(const unsigned long pos, const unsigned int dim) const;
+  [[nodiscard]] unsigned long getIndex(unsigned long pos, unsigned int dim) const;
 };
 
 template <class ParticleCell, class PairwiseFunctor>
@@ -159,8 +158,7 @@ inline void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {
                     sortingDir = {1., 1., 1.};
                   }
 
-                  _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].push_back(
-                      std::make_pair(offset, utils::ArrayMath::normalize(sortingDir)));
+                  _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].emplace_back(offset, utils::ArrayMath::normalize(sortingDir));
                 }
               }
             }

@@ -67,7 +67,7 @@ class CellFunctorPsVL {
    * Getter
    * @return
    */
-  [[nodiscard]] bool getBidirectional() const { return bidirectional; }
+  [[nodiscard]] static bool getBidirectional() { return bidirectional; }
 
   void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &lists);
 
@@ -103,17 +103,17 @@ class CellFunctorPsVL {
    */
   void processCellPairAoSNoN3(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex);
 
-  void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
+  static void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
 
-  void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2);
+  static void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2);
 
-  void processCellSoAN3(ParticleCell &cell);
+  static void processCellSoAN3(ParticleCell &cell);
 
-  void processCellSoANoN3(ParticleCell &cell);
+  static void processCellSoANoN3(ParticleCell &cell);
 
-  signed long getDirectionIndex(const std::array<double, 3> &sortingDirection);
+  static signed long getDirectionIndex(const std::array<double, 3> &sortingDirection);
 
-  signed long flipDirectionIndex(signed long directionIndex);
+  static signed long flipDirectionIndex(signed long directionIndex);
 
   ParticleFunctor *_functor;
 

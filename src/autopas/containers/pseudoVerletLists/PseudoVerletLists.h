@@ -9,7 +9,6 @@
 
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "traversals/PsVLTraversalInterface.h"
 
@@ -53,8 +52,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
 
   void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *pseudoVerletTraversalInterface = dynamic_cast<PsVLTraversalInterface<ParticleCellType> *>(traversal);
-    if (pseudoVerletTraversalInterface) {
+    if (auto *pseudoVerletTraversalInterface = dynamic_cast<PsVLTraversalInterface<ParticleCellType> *>(traversal)) {
       pseudoVerletTraversalInterface->setOrientationLists(this->_orientationList);
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in PseudoVerletLists::computeInteractions");

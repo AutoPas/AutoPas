@@ -6,10 +6,8 @@
 
 #pragma once
 
-#include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
+
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/baseFunctors/CellFunctorPsVL.h"
 
 
@@ -44,16 +42,16 @@ class PsVLC08CellHandler {
   explicit PsVLC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
-      : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     dataLayout, useNewton3),
-        _interactionLength(interactionLength),
-        _cellLength(cellLength),
+      : _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
+            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
+                                                                         interactionLength)},
         _overlap(overlap),
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
-        _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
-            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
-                                                                         interactionLength)} {}
+        _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
+                     dataLayout, useNewton3),
+        _interactionLength(interactionLength),
+        _cellLength(cellLength) {}
 
   /**
    * Computes one interaction for each spacial direction based on the lower left

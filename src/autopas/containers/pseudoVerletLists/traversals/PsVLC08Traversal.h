@@ -9,7 +9,6 @@
 #include "PsVLC08CellHandler.h"
 #include "PsVLTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
