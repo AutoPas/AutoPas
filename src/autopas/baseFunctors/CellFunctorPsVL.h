@@ -1,6 +1,5 @@
 /**
  * @file CellFunctorPsVL.h
- *
  * @date 06.12.2025
  * @author Lars Doll
  */
@@ -18,9 +17,8 @@ namespace autopas::internal {
  * type ParticleFunctor. It is an internal object to handle interactions between
  * two cells of particles using the PseudoVerletList algorithm.
  * @tparam ParticleCell
- * @tparam ParticleFunctor the functor which
- * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
- * cell1)
+ * @tparam ParticleFunctor The ParticleFunctor which should be used for the interaction.
+ * @tparam bidirectional determines the use of newton3.
  */
 template <class ParticleCell, class ParticleFunctor, bool bidirectional = true>
 class CellFunctorPsVL {
@@ -42,11 +40,10 @@ class CellFunctorPsVL {
   void processCell(unsigned long cellIndex);
 
   /**
-   * Process the interactions between the particles of cell1 with particles of cell2.
+   * Process the interactions between the particles of cell1 with the particles of cell2.
    * @param cell1Index
    * @param cell2Index
-   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is
-   * given, sorting will be disabled.
+   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
   void processCellPair(unsigned long cell1Index, unsigned long cell2Index,
     const std::array<double, 3> &sortingDirection);
@@ -69,7 +66,11 @@ class CellFunctorPsVL {
    */
   [[nodiscard]] static bool getBidirectional() { return bidirectional; }
 
-  void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &lists);
+  /**
+   * Sets the orientationList
+   * @param list the orientationList
+   */
+  void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list);
 
  private:
 
@@ -111,8 +112,18 @@ class CellFunctorPsVL {
 
   static void processCellSoANoN3(ParticleCell &cell);
 
+  /**
+   * Utilizes the threeToOneD mapping to calculate the directionIndex relative to the center of a 3x3 cube of cells.
+   * @param sortingDirection
+   * @return directionIndex
+   */
   static signed long getDirectionIndex(const std::array<double, 3> &sortingDirection);
 
+  /**
+   * Flips negative directionIndices.
+   * @param directionIndex
+   * @return flipped directionIndex
+   */
   static signed long flipDirectionIndex(signed long directionIndex);
 
   ParticleFunctor *_functor;
@@ -145,9 +156,9 @@ signed long CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::getDi
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::setOrientationLists(
-    std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) {
-  _orientationList = &lists;
+void CellFunctorPsVL<ParticleCell, ParticleFunctor, bidirectional>::setOrientationList(
+    std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+  _orientationList = &list;
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>

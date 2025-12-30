@@ -1,5 +1,5 @@
 /**
-* @file PsVLTraversalInterface.h
+ * @file PsVLTraversalInterface.h
  * @date 08.12.2025
  * @author Lars Doll
  */
@@ -11,28 +11,30 @@
 namespace autopas {
 
 /**
- * This class provides the Traversal Interface for the verlet lists container.
- *
+ * This class provides the Traversal Interface for the pseudoVerletLists container.
  * The container only accepts traversals in its computeInteractions() method that implements this interface.
  */
 template <class ParticleCell>
 class PsVLTraversalInterface {
 public:
   /**
-   * Destructor
+   * Destructor.
    */
   virtual ~PsVLTraversalInterface() = default;
 
-
-  virtual void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationLists){
-    _orientationLists = &orientationLists;
+ /**
+  * Sets the orientationList.
+  * @param orientationList
+  */
+virtual void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationList){
+    _orientationList = &orientationList;
   }
 
 protected:
 /**
- * Orientation Lists
+ * OrientationList
  */
-std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationLists = nullptr;
+std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationList = nullptr;
 };
 
 }  // namespace autopas

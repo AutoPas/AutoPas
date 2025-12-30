@@ -1,6 +1,6 @@
 /**
  * @file PseudoVerletLists.h
- * @date 04 Dec 2025
+ * @date 04.12.2025
  * @author Lars Doll
  */
 
@@ -28,13 +28,14 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   using ParticleCellType = FullParticleCell<Particle_T>;
 
   /**
- * Constructor of the PseudoVerletLists class
- * The orientation lists are build using sortedCellView.
+ * Constructor of the PseudoVerletLists class.
+ * \image html PseudoVerletLists.png "Projection and Sorting of the Particles in 2D"
+ * The orientationList is built using sortedCellView.
  * @param boxMin
  * @param boxMax
  * @param cutoff
  * @param skin
- * @param cellSizeFactor cell size factor relative to cutoff
+ * @param cellSizeFactor cell size factor relative to cutoff.
  */
   PseudoVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                     const double skin, const double cellSizeFactor = 1.0)
@@ -53,7 +54,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     if (auto *pseudoVerletTraversalInterface = dynamic_cast<PsVLTraversalInterface<ParticleCellType> *>(traversal)) {
-      pseudoVerletTraversalInterface->setOrientationLists(this->_orientationList);
+      pseudoVerletTraversalInterface->setOrientationList(this->_orientationList);
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in PseudoVerletLists::computeInteractions");
     }
@@ -64,14 +65,14 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-  * get the actual orientation lists
-  * @return the orientationLists
+  * Get the orientationList.
+  * @return the orientationList.
   */
-  std::vector<std::vector<SortedCellView<ParticleCellType>>> &getOrientationLists() {return _orientationList;}
+  std::vector<std::vector<SortedCellView<ParticleCellType>>> &getOrientationList() {return _orientationList;}
 
   /**
-  * Rebuilds the orientationLists.
-  * @note This function will be called in computeInteractions()!
+  * Rebuilds the orientationList.
+  * \image html DirectionsForPseudoVerletLists.png "Indices of the directions for the orientationList"
   * @param traversal
   */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -95,12 +96,12 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   std::vector<std::vector<SortedCellView<ParticleCellType>>> _orientationList;
 
   /**
-   * Stores the normalized directions to the neighboring cells
+   * Stores the normalized directions to the neighboring cells.
    */
   std::array<std::array<double, 3>,13> _directions{};
 
   /**
-  * Stores the directions to the neighboring cells
+  * Stores the directions to the neighboring cells.
   */
   static constexpr std::array<std::array<double,3>, 13> _rawDirections = {{
     {{1,  0, 0}},

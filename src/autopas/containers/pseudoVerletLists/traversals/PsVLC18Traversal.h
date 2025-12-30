@@ -1,7 +1,7 @@
 /**
  * @file PsVLC18Traversal.h
- * @author nguyen
- * @date 06.09.2018
+ * @date 06.12.2025
+ * @author Lars Doll
  */
 
 #pragma once
@@ -39,27 +39,23 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
-   * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
-   * in that case the interactionLength is needed!
    */
   explicit PsVLC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
-        _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     dataLayout, useNewton3) {
+        _cellFunctor(pairwiseFunctor, interactionLength, dataLayout, useNewton3) {
     computeOffsets();
   }
 
   void traverseParticles() override;
 
   /**
-   * Computes all interactions between the base
-   * cell and adjacent cells with greater a ID.
-   * @param x X-index of base cell.
-   * @param y Y-index of base cell.
-   * @param z Z-index of base cell.
+   * Computes all interactions between the base cell and adjacent cells with greater ID.
+   * @param x X-index of the base cell.
+   * @param y Y-index of the base cell.
+   * @param z Z-index of the base cell.
    */
   void processBaseCell(unsigned long x, unsigned long y, unsigned long z);
 
@@ -71,13 +67,17 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   [[nodiscard]] bool isApplicable() const override { return true; }
 
-  void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) override;
+  /**
+   * Sets the orientationList.
+   * @param list
+   */
+  void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list) override;
 
   void setSortingThreshold(size_t sortingThreshold) override { }
 
  private:
   /**
-   * Computes pairs used in processBaseCell()
+   * Computes pairs used in processBaseCell().
    */
   void computeOffsets();
 
@@ -89,7 +89,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
       _cellFunctor;
 
   /**
-   * Type of an array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
+   * Type of array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
    * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
    * center of the cell defined by the offset. It is used for sorting.
    */
@@ -101,19 +101,19 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
   std::vector<std::vector<offsetArray_t>> _cellOffsets;
 
   /**
-   * Returns the index in the offsets array for the given position.
-   * @param pos current position in dimension dim
-   * @param dim current dimension
+   * Returns the index in the offset array for the given position.
+   * @param pos current position in dimension dim.
+   * @param dim current dimension.
    * @return Index for the _cellOffsets Array.
    */
   [[nodiscard]] unsigned long getIndex(unsigned long pos, unsigned int dim) const;
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::setOrientationLists(
-  std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) {
-  PsVLTraversalInterface<ParticleCell>::setOrientationLists(lists);
-  _cellFunctor.setOrientationLists(lists);
+void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::setOrientationList(
+  std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+  PsVLTraversalInterface<ParticleCell>::setOrientationList(list);
+  _cellFunctor.setOrientationList(list);
 }
 
 template <class ParticleCell, class PairwiseFunctor>
@@ -142,14 +142,14 @@ inline void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {
                     std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
                     std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
                 };
-                // calculate distance between the borders of the base cell and the other cell
+                // calculate the distance between the borders of the base cell and the other cell
                 const double distSquare = utils::ArrayMath::dot(pos, pos);
                 // only add cell offset if cell is within cutoff radius
                 if (distSquare <= interactionLengthSquare) {
                   // Calculate the sorting direction from the base cell and the other cell by use of the offset (x, y,
                   // z).
                   // Note: We have to calculate the sorting direction separately from pos, since pos is the offset
-                  // between the borders of cells. For neighbouring cells this would be 0 and the sorting direction
+                  // between the borders of cells. For neighboring cells this would be 0 and the sorting direction
                   // would be wrong.
                   std::array<double, 3> sortingDir = {static_cast<double>(x) * this->_cellLength[0],
                                                       static_cast<double>(y) * this->_cellLength[1],

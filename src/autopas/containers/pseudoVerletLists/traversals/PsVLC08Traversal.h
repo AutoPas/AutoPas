@@ -1,7 +1,7 @@
 /**
  * @file PsVLC08Traversal.h
- * @author Lars Doll
  * @date 20.12.2025
+ * @author Lars Doll
  */
 
 #pragma once
@@ -27,7 +27,7 @@ template <class ParticleCell, class PairwiseFunctor>
 class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public PsVLTraversalInterface<ParticleCell> {
  public:
   /**
-   * Constructor of the lc_c08 traversal.
+   * Constructor of the psvl_c08 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
@@ -60,17 +60,21 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   void setSortingThreshold(size_t sortingThreshold) override { }
 
-  void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) override;
+  /**
+ * Sets the orientationList.
+ * @param list
+ */
+  void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list) override;
 
  private:
   PsVLC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-void PsVLC08Traversal<ParticleCell, PairwiseFunctor>::setOrientationLists(
-  std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) {
-  PsVLTraversalInterface<ParticleCell>::setOrientationLists(lists);
-  _cellHandler.setOrientationLists(lists);
+void PsVLC08Traversal<ParticleCell, PairwiseFunctor>::setOrientationList(
+  std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+  PsVLTraversalInterface<ParticleCell>::setOrientationList(list);
+  _cellHandler.setOrientationList(list);
 }
 
 template <class ParticleCell, class PairwiseFunctor>

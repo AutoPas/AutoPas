@@ -28,7 +28,7 @@ template <class ParticleCell, class PairwiseFunctor>
 class PsVLC08CellHandler {
  public:
   /**
-   * Constructor of the LCC08CellHandler.
+   * Constructor of the PsVLC08CellHandler.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
    * @param interactionLength Interaction length (cutoff + skin).
@@ -36,8 +36,6 @@ class PsVLC08CellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
-   * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
-   * in that case the interactionLength is needed!
    */
   explicit PsVLC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
@@ -61,7 +59,7 @@ class PsVLC08CellHandler {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
-  void setOrientationLists(std::vector<std::vector<SortedCellView<ParticleCell>>> &lists);
+  void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list);
 
  protected:
   /**
@@ -105,9 +103,9 @@ class PsVLC08CellHandler {
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-void PsVLC08CellHandler<ParticleCell, PairwiseFunctor>::setOrientationLists(
-  std::vector<std::vector<SortedCellView<ParticleCell>>> &lists) {
-  _cellFunctor.setOrientationLists(lists);
+void PsVLC08CellHandler<ParticleCell, PairwiseFunctor>::setOrientationList(
+  std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+  _cellFunctor.setOrientationList(list);
 }
 
 template <class ParticleCell, class PairwiseFunctor>
