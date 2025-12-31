@@ -1434,6 +1434,12 @@ class AxilrodTellerMutoFunctorHWY
     /**
      * Struct for storing vector registers with precalculated x, y, z displacements, the squared distance, and the
      * inverse r^5 between two particles.
+     * 
+     * @param dx x-displacement between two particles.
+     * @param dy y-displacement between two particles.
+     * @param dz z-displacement between two particles.
+     * @param r2 The squared distance between two particles.
+     * @param invR5 The inverese distance to 5 between two particles (1.0/r^5).
      */
     struct DistRowVec {
       VectorDouble dx;
