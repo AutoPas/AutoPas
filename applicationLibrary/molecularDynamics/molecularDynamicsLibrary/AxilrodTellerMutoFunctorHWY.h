@@ -1039,47 +1039,47 @@ class AxilrodTellerMutoFunctorHWY
    * registers, the cutoff criterion is checked, the particle properties are constructed, and the kernel is called. If
    * necessary, the globals are calculated.
    *
-   * @tparam LowerPackedTrianglePB1
-   * @tparam LowerPackedTrianglePB2
-   * @tparam newton3
-   * @tparam newton3Kernel
-   * @param i current index of the i-loop
-   * @param j current index of the j-loop
-   * @param k current index of the k-loop
-   * @param const_nu nu value passed to the kernel (if a PPL is used, the values are constructed in the function body)
-   * @param soaDists1 precomputed pairwise distances
-   * @param soaDists2 precomputed pairwise distances
-   * @param ownedStatePtr Pointer to the ownershipstate SoA of k
-   * @param typePtrI Pointer to the typeID of i
-   * @param typePtrJ Pointer to the typeID of j
-   * @param typePtrK Pointer to the typeID of k
-   * @param distXIJVec All lanes of a highway vector filled with the x-offset between i and j
-   * @param distYIJVec All lanes of a highway vector filled with the y-offset between i and j
-   * @param distZIJVec All lanes of a highway vector filled with the z-offset between i and j
-   * @param distSquaredIJVec All lanes of a highway vector filled with the sqared distance between i and j
+   * @tparam LowerPackedTrianglePB1.
+   * @tparam LowerPackedTrianglePB2.
+   * @tparam newton3.
+   * @tparam newton3Kernel.
+   * @param i current index of the i-loop.
+   * @param j current index of the j-loop.
+   * @param k current index of the k-loop.
+   * @param const_nu nu value passed to the kernel (if a PPL is used, the values are constructed in the function body).
+   * @param soaDists1 precomputed pairwise distances.
+   * @param soaDists2 precomputed pairwise distances.
+   * @param ownedStatePtr Pointer to the ownershipstate SoA of k.
+   * @param typePtrI Pointer to the typeID of i.
+   * @param typePtrJ Pointer to the typeID of j.
+   * @param typePtrK Pointer to the typeID of k.
+   * @param distXIJVec All lanes of a highway vector filled with the x-offset between i and j.
+   * @param distYIJVec All lanes of a highway vector filled with the y-offset between i and j.
+   * @param distZIJVec All lanes of a highway vector filled with the z-offset between i and j.
+   * @param distSquaredIJVec All lanes of a highway vector filled with the sqared distance between i and j.
    * @param invR5IJVec All lanes of a highway vector filled with the inverse square root to 5 of the distance between i
-   * and j
-   * @param fXAccI Force x accumulator for i as highway vector
-   * @param fYAccI Force y accumulator for i as highway vector
-   * @param fZAccI Force z accumulator for i as highway vector
-   * @param fXAccJ Force x accumulator for j as highway vector
-   * @param fYAccJ Force y accumulator for j as highway vector
-   * @param fZAccJ Force z accumulator for j as highway vector
-   * @param ownedStateI Ownership state of i
-   * @param ownedStateJ Ownership state of j
-   * @param fxPtr Pointer to the x-force SoA for k
-   * @param fyPtr Pointer to the y-force SoA for k
-   * @param fzPtr Pointer to the z-force SoA for k
-   * @param virialSumX x-Virial accumulator
-   * @param virialSumY y-Virial accumulator
-   * @param virialSumZ z-Virial accumulator
-   * @param potentialEnergySum Potential energy accumulator
-   * @param numKernelCallsN3Sum Kernel call accumulator newton3
-   * @param numGlobalCalcsN3Sum Globals calculation accumulator newton3
-   * @param numKernelCallsNoN3Sum Kernel call accumulator no newton3
-   * @param numGlobalCalcsNoN3Sum Globals calculation accumulator no newton3
-   * @param numLanesToProcess In the case of remainder, the remaining number of k particles
-   * @return HWY_INLINE
+   * and j.
+   * @param fXAccI Force x accumulator for i as highway vector.
+   * @param fYAccI Force y accumulator for i as highway vector.
+   * @param fZAccI Force z accumulator for i as highway vector.
+   * @param fXAccJ Force x accumulator for j as highway vector.
+   * @param fYAccJ Force y accumulator for j as highway vector.
+   * @param fZAccJ Force z accumulator for j as highway vector.
+   * @param ownedStateI Ownership state of i.
+   * @param ownedStateJ Ownership state of j.
+   * @param fxPtr Pointer to the x-force SoA for k.
+   * @param fyPtr Pointer to the y-force SoA for k.
+   * @param fzPtr Pointer to the z-force SoA for k.
+   * @param virialSumX x-Virial accumulator.
+   * @param virialSumY y-Virial accumulator.
+   * @param virialSumZ z-Virial accumulator.
+   * @param potentialEnergySum Potential energy accumulator.
+   * @param numKernelCallsN3Sum Kernel call accumulator newton3.
+   * @param numGlobalCalcsN3Sum Globals calculation accumulator newton3.
+   * @param numKernelCallsNoN3Sum Kernel call accumulator no newton3.
+   * @param numGlobalCalcsNoN3Sum Globals calculation accumulator no newton3.
+   * @param numLanesToProcess The number of lanes to be processed. This should only be less than the length of the
+   * vector registers in the remainder case.
    */
   template <bool LowerPackedTrianglePB1, bool LowerPackedTrianglePB2, bool newton3, bool newton3Kernel>
   HWY_INLINE void handleKLoopBody(
@@ -1132,7 +1132,6 @@ class AxilrodTellerMutoFunctorHWY
     // load nus
     auto nu = highway::Set(tag_double, const_nu);
     if constexpr (useMixing) {
-      // In the case of remainder=false, it is assumed that numLanesToProcess is the full vector length.
       const auto typeKIndices =
           highway::MaskedLoad(remainderMask, tag_long, reinterpret_cast<const int64_t *>(&typePtrK[k]));
       nu = _PPLibrary->get().getMixingNuHWY(typePtrI[i], typePtrJ[j], typeKIndices, numLanesToProcess);
@@ -1433,6 +1432,18 @@ class AxilrodTellerMutoFunctorHWY
     using Vec = std::vector<SoAFloatPrecision, Alloc>;
 
     /**
+     * Struct for storing vector registers with precalculated x, y, z displacements, the squared distance, and the
+     * inverse r^5 between two particles.
+     */
+    struct DistRowVec {
+      VectorDouble dx;
+      VectorDouble dy;
+      VectorDouble dz;
+      VectorDouble r2;
+      VectorDouble invR5;
+    };
+
+    /**
      * Initializes the PrecomputeBuffer with the specified size. If the internal memory size is smaller than the
      * required size, it is increased.
      *
@@ -1504,7 +1515,7 @@ class AxilrodTellerMutoFunctorHWY
 
     // Highway-Vector load
     template <bool LowerTriangle>
-    HWY_INLINE auto loadRowVec(const size_t i, const size_t jStart) const {
+    HWY_INLINE DistRowVec loadRowVec(const size_t i, const size_t jStart) const {
       const size_t idx = [&]() {
         if constexpr (LowerTriangle) {
           return triIndex<true>(i, jStart);
@@ -1513,15 +1524,21 @@ class AxilrodTellerMutoFunctorHWY
         }
       }();
 
+      DistRowVec result;
       if constexpr (LowerTriangle) {
-        return std::tuple{highway::LoadU(tag_double, &_dx[idx]), highway::LoadU(tag_double, &_dy[idx]),
-                          highway::LoadU(tag_double, &_dz[idx]), highway::LoadU(tag_double, &_squared[idx]),
-                          highway::LoadU(tag_double, &_invR5[idx])};
+        result.dx = highway::LoadU(tag_double, &_dx[idx]);
+        result.dy = highway::LoadU(tag_double, &_dy[idx]);
+        result.dz = highway::LoadU(tag_double, &_dz[idx]);
+        result.r2 = highway::LoadU(tag_double, &_squared[idx]);
+        result.invR5 = highway::LoadU(tag_double, &_invR5[idx]);
       } else {
-        return std::tuple{highway::Load(tag_double, &_dx[idx]), highway::Load(tag_double, &_dy[idx]),
-                          highway::Load(tag_double, &_dz[idx]), highway::Load(tag_double, &_squared[idx]),
-                          highway::Load(tag_double, &_invR5[idx])};
+        result.dx = highway::Load(tag_double, &_dx[idx]);
+        result.dy = highway::Load(tag_double, &_dy[idx]);
+        result.dz = highway::Load(tag_double, &_dz[idx]);
+        result.r2 = highway::Load(tag_double, &_squared[idx]);
+        result.invR5 = highway::Load(tag_double, &_invR5[idx]);
       }
+      return result;
     }
 
     template <bool LowerTriangle>
@@ -1530,13 +1547,11 @@ class AxilrodTellerMutoFunctorHWY
                                 const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2,
                                 const SoAFloatPrecision cutoffSquared) {
       for (size_t i = 0; i < _nRows; ++i) {
-        const auto xi = xptr1[i];
-        const auto yi = yptr1[i];
-        const auto zi = zptr1[i];
+        const auto x1v = highway::Set(tag_double, xptr1[i]);
+        const auto y1v = highway::Set(tag_double, yptr1[i]);
+        const auto z1v = highway::Set(tag_double, zptr1[i]);
 
-        const auto x1v = highway::Set(tag_double, xi);
-        const auto y1v = highway::Set(tag_double, yi);
-        const auto z1v = highway::Set(tag_double, zi);
+        const auto cutoffSquaredV = highway::Set(tag_double, cutoffSquared);
 
         size_t j = 0;
         size_t rowLength = 0;
@@ -1545,10 +1560,18 @@ class AxilrodTellerMutoFunctorHWY
           rowLength = i;
           if (i == 0) continue;
         } else {
-          rowLength = _nCols;
+          rowLength = _nColsPadded;
         }
 
-        for (; j + _vecLengthDouble <= rowLength; j += _vecLengthDouble) {
+        auto checkLoopCondition = [&]() {
+          if constexpr (LowerTriangle) {
+            return j + _vecLengthDouble <= rowLength;
+          } else {
+            return j < rowLength;
+          }
+        };
+
+        for (; checkLoopCondition(); j += _vecLengthDouble) {
           const auto x2v = loadPacked(tag_double, &xptr2[j]);
           const auto y2v = loadPacked(tag_double, &yptr2[j]);
           const auto z2v = loadPacked(tag_double, &zptr2[j]);
@@ -1558,7 +1581,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto dz = z2v - z1v;
 
           const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
-          const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
+          const auto cutoffMask = highway::Le(dist2, cutoffSquaredV);
           const auto sqrtR2 = highway::Sqrt(dist2);
           const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
           const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
@@ -1580,7 +1603,7 @@ class AxilrodTellerMutoFunctorHWY
           }
         }
 
-        // Remainder
+        // Remainder (only used in the LowerTriangle case)
         if (j < rowLength) {
           const size_t width = rowLength - j;
 
