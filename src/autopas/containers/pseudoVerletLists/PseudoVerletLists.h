@@ -11,6 +11,8 @@
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/utils/ArrayMath.h"
 #include "traversals/PsVLTraversalInterface.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+
 
 namespace autopas {
 
@@ -42,7 +44,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor){
 
     for (size_t i = 0; i < _directions.size(); ++i) {
-      _directions[i] = utils::ArrayMath::normalize(_rawDirections[i]);
+      _directions[i] = utils::ArrayMath::normalize(getDirectionFromIndex(i));
     }
   }
 
@@ -65,8 +67,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-  * Get the orientationList.
-  * @return the orientationList.
+  * Getter.
   */
   std::vector<std::vector<SortedCellView<ParticleCellType>>> &getOrientationList() {return _orientationList;}
 
@@ -87,7 +88,33 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
     }
   }
 
+  /**
+  * Getter.
+  */
   std::vector<ParticleCellType> getCells() { return this->_linkedCells.getCells(); }
+
+  /**
+   * Converts a 1D index to its corresponding direction.
+   * @param index
+   * @return unnormalized direction
+   */
+  static std::array<double, 3> getDirectionFromIndex(size_t index) {
+    constexpr std::array<int, 3> dims{3, 3, 3};
+    const auto vec = autopas::utils::ThreeDimensionalMapping::oneToThreeD(
+        static_cast<int>(index) + 14, dims
+    );
+
+    return {static_cast<double>(vec[0] - 1),
+            static_cast<double>(vec[1] - 1),
+            static_cast<double>(vec[2] - 1)};
+  }
+
+  /**
+* Getter.
+*/
+  [[nodiscard]] std::array<std::array<double, 3>,13> getDirections() const {
+    return _directions;
+  }
 
   protected:
   /**
@@ -99,25 +126,6 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
    * Stores the normalized directions to the neighboring cells.
    */
   std::array<std::array<double, 3>,13> _directions{};
-
-  /**
-  * Stores the directions to the neighboring cells.
-  */
-  static constexpr std::array<std::array<double,3>, 13> _rawDirections = {{
-    {{1,  0, 0}},
-    {{ -1, 1, 0}},
-    {{ 0, 1, 0}},
-    {{ 1, 1, 0}},
-    {{-1, -1, 1}},
-    {{ 0, -1, 1}},
-    {{ 1, -1, 1}},
-    {{-1, 0, 1}},
-    {{0, 0, 1}},
-    {{ 1, 0, 1}},
-    {{-1, 1, 1}},
-    {{ 0, 1, 1}},
-    {{ 1, 1, 1}},
-}};
 };
 
 } // namespace autopas

@@ -5,7 +5,7 @@
  */
 
 #include "PseudoVerletListsTest.h"
-
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -25,7 +25,7 @@ TEST_F(PseudoVerletListsTest, OrientationListsHaveCorrectSize) {
 
   container.rebuildNeighborLists(nullptr);
 
-  const auto &orientationLists = container.getOrientationLists();
+  const auto &orientationLists = container.getOrientationList();
 
   // checks if there are as many orientationLists as Cells
   ASSERT_EQ(orientationLists.size(), container.getCells().size());
@@ -58,7 +58,7 @@ TEST_F(PseudoVerletListsTest, OrientationListsAreSorted) {
 
   container.rebuildNeighborLists(nullptr);
 
-  const auto &orientationLists = container.getOrientationLists();
+  const auto &orientationLists = container.getOrientationList();
 
   // iterate over all cells
   for (size_t cellId = 0; cellId < orientationLists.size(); ++cellId) {
@@ -96,7 +96,7 @@ TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
 
   container.rebuildNeighborLists(nullptr);
 
-  const auto &orientationLists = container.getOrientationLists();
+  const auto &orientationLists = container.getOrientationList();
   const auto &cells = container.getCells();
 
   // find the cell with the particle
@@ -136,3 +136,50 @@ TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
     }
   }
 }
+
+TEST_F(PseudoVerletListsTest, DirectionsAreCorrectAndNormalized) {
+  const double cutoff = 1.0;
+  const double skin = 0.2;
+  const double cellSizeFactor = 1.0;
+
+  autopas::PseudoVerletLists<ParticleFP64> container(
+      {0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
+
+  const auto directions = container.getDirections();
+
+  // raw directions as specified
+  static constexpr std::array<std::array<double, 3>, 13> rawDirections = {{
+    {{ 1,  0,  0}},
+    {{-1,  1,  0}},
+    {{ 0,  1,  0}},
+    {{ 1,  1,  0}},
+    {{-1, -1,  1}},
+    {{ 0, -1,  1}},
+    {{ 1, -1,  1}},
+    {{-1,  0,  1}},
+    {{ 0,  0,  1}},
+    {{ 1,  0,  1}},
+    {{-1,  1,  1}},
+    {{ 0,  1,  1}},
+    {{ 1,  1,  1}},
+}};
+
+  constexpr double tol = 1e-12;
+
+  ASSERT_EQ(directions.size(), rawDirections.size());
+
+  for (size_t i = 0; i < rawDirections.size(); ++i) {
+    // normalize using ArrayMath
+    const auto expected =
+        autopas::utils::ArrayMath::normalize(rawDirections[i]);
+
+    const auto &dir = directions[i];
+
+    for (size_t d = 0; d < 3; ++d) {
+      EXPECT_NEAR(dir[d], expected[d], tol)
+          << "Direction mismatch at index " << i
+          << ", component " << d;
+    }
+  }
+}
+
