@@ -46,39 +46,6 @@ TEST(RegressionModelsTest, MeanTest) {
   EXPECT_DOUBLE_EQ(result._value, 20.0);
 }
 
-TEST(RegressionModelsTest, SimpleLinearRegressionTest) {
-  SimpleLinearRegression reg(2, 3);
-
-  EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK);
-  EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK);
-
-  auto result = reg.predict(3);
-  EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 4.0, 1e-6);  // y = x + 1
-
-  EXPECT_EQ(reg.addNewPoint(3, 7), RegressionBase::ReturnCode::OK);
-
-  result = reg.predict(6);
-  EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 14.0, 1e-6);  // y = 2.5*x - 1
-
-  EXPECT_EQ(reg.addNewPoint(6, 21), RegressionBase::ReturnCode::EXCEEDED_MAX_POINTS);  // would be 4*x - 3.75
-
-  result = reg.predict(6);
-  EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 14.0, 1e-6);  // y = 2.5*x - 1
-
-  // (point not relevant for prediction but for the sum)
-  EXPECT_EQ(reg.getSumY(), 33);
-
-  // Reset
-  reg.reset();
-  EXPECT_EQ(reg.getN(), 0u);
-  EXPECT_EQ(reg.getSumY(), 0);
-
-  EXPECT_EQ(reg.predict(6)._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS);
-}
-
 TEST(RegressionModelsTest, SimpleLinearRegressionBoostTest) {
   SimpleLinearRegressionBoost reg(2, 3);
 

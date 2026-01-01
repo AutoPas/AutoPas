@@ -124,7 +124,6 @@ class LogicHandler {
             _currentContainer->addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
-            std::cout << "container leaving during rebuild rebuild" << std::endl;
           }
         }
         buffer.clear();
@@ -149,7 +148,6 @@ class LogicHandler {
           if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
             leavingBufferParticles.push_back(p);
             fastRemoveP();
-            std::cout << "buffer leaving no rebuild" << std::endl;
           } else {
             ++iter;
           }
@@ -164,8 +162,7 @@ class LogicHandler {
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
     bool doDataStructureUpdate;
-#if defined(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS) && !defined(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN) && \
-    !defined(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN_SELF)
+#if defined(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS) && !defined(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN)
     this->checkNeighborListsInvalidDoDynamicRebuild();
     doDataStructureUpdate = not neighborListsAreValid();
 #ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER
@@ -775,13 +772,6 @@ class LogicHandler {
    * @return True iff the neighbor lists will not be rebuilt.
    */
   bool neighborListsAreValidBuf();
-
-  // for the tuning via YAML parameter decision criteria, max points considered for rebuild, min points considered
-  // prediction of remainder traversal time and max points considered for prediction of max remainder traversal time
-  void initializeRebuildEstimator(const unsigned criteria, const unsigned maxRebuild, const unsigned minRemainder,
-                                  const unsigned maxRemainder) {
-    _rebuildDecisionContext.initializeRebuildEstimator(criteria, maxRebuild, minRemainder, maxRemainder);
-  }
 
  private:
   /**

@@ -220,9 +220,6 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-  _autoPasContainer->initializeRebuildEstimator(_configuration.criterion.value, _configuration.maxRebuild.value,
-                                                _configuration.minRemainder.value, _configuration.maxRemainder.value);
-
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {

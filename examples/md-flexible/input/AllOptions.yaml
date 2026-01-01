@@ -116,9 +116,5 @@ no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim
 vtk-output-folder                    :  allOptionsOutput
 vtk-write-frequency                  :  1
-criterion                            :  0
-max-rebuild                          :  10000
-min-remainder                        :  2
-max-remainder                        :  100
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt

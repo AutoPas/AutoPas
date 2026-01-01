@@ -138,131 +138,6 @@ class Mean : public RegressionBase {
 };
 
 /**
- * Streaming implementation of simple linear regression with x as predictor
- * and y as response variable.
- *
- * Computes regression coefficients incrementally by maintaining only the
- * required aggregated sums instead of storing all individual samples.
- * This minimizes memory usage.
- */
-class SimpleLinearRegression : public RegressionBase {
- public:
-  SimpleLinearRegression() : RegressionBase(4, 15000) {}
-
-  SimpleLinearRegression(const size_t minN, const size_t maxN) : RegressionBase(minN, maxN) {}
-
-  void reset() {
-    RegressionBase::reset();
-    _sumX = 0.0;
-    _sumXX = 0.0;
-    _sumXY = 0.0;
-  }
-
-  ReturnCode addNewPoint(const long x, const long y) {
-    // If the maximum number of points is exceeded, no further x-related statistics
-    // are updated. The y-sum and sample counter are still maintained.
-    ReturnCode addSumY = RegressionBase::addNewPoint(y);
-    if (!isOk(addSumY)) {
-      return ReturnCode::OVERFLOW;
-    }
-    if (!exceedsMaxPoints()) {
-      _sumX = Math::safeAdd(_sumX, x);
-      if (isOverflown(_sumX)) {
-        return ReturnCode::OVERFLOW;
-      }
-
-      long const x_squared = Math::safeMul(x, x);
-      if (isOverflown(x_squared)) {
-        return ReturnCode::OVERFLOW;
-      }
-
-      _sumXX = Math::safeAdd(_sumXX, x_squared);
-      if (isOverflown(_sumXX)) {
-        return ReturnCode::OVERFLOW;
-      }
-
-      const long xy = Math::safeMul(x, y);
-      if (isOverflown(xy)) {
-        return ReturnCode::OVERFLOW;
-      }
-
-      _sumXY = Math::safeAdd(_sumXY, xy);
-      if (isOverflown(_sumXY)) {
-        return ReturnCode::OVERFLOW;
-      }
-    } else {
-      return ReturnCode::EXCEEDED_MAX_POINTS;
-    }
-    return ReturnCode::OK;
-  }
-
-  Result predict(const long x) {
-    if (not hasEnoughPoints()) {
-      return Result{0, ReturnCode::NOT_ENOUGH_POINTS, false};
-    }
-    // If the maximum number of points has not been reached yet, recompute the
-    // regression coefficients. Once the estimator is full, cached coefficients
-    // are reused to avoid unnecessary recomputation.
-    if (!exceedsMaxPoints()) {
-      // Calculate denominator: n * sumXX - sumX * sumX
-      const long n_long = static_cast<long>(_n);
-
-      const long n_sumXX = Math::safeMul(n_long, _sumXX);
-      if (isOverflown(n_sumXX)) {
-        return Result{0, ReturnCode::OVERFLOW, false};
-      }
-
-      const long sumX_squared = Math::safeMul(_sumX, _sumX);
-      if (isOverflown(sumX_squared)) {
-        return Result{0, ReturnCode::OVERFLOW, false};
-      }
-
-      const long denominator = Math::safeSub(n_sumXX, sumX_squared);
-      if (isOverflown(denominator)) {
-        return Result{0, ReturnCode::OVERFLOW, false};
-      }
-
-      if (denominator == 0) {
-        return Result{0, ReturnCode::DIVIDE_BY_ZERO, false};
-      }
-
-      // Calculate numerator: n * sumXY - sumX * sumY
-      const long n_sumXY = Math::safeMul(n_long, _sumXY);
-      if (isOverflown(n_sumXY)) {
-        return Result{0, ReturnCode::OVERFLOW, false};
-      }
-
-      const long sumX_sumY = Math::safeMul(_sumX, _sumY);
-      if (isOverflown(sumX_sumY)) {
-        return Result{0, ReturnCode::OVERFLOW, false};
-      }
-
-      const long numerator = Math::safeSub(n_sumXY, sumX_sumY);
-      if (isOverflown(numerator)) {
-        return Result{0, ReturnCode::OVERFLOW, false};
-      }
-
-      // Calculate beta1 and beta0
-      _last_ß1 = static_cast<double>(numerator) / static_cast<double>(denominator);
-      _last_ß0 = static_cast<double>(_sumY) / static_cast<double>(_n) -
-                 _last_ß1 * (static_cast<double>(_sumX) / static_cast<double>(_n));
-    }
-    const double prediction = _last_ß0 + _last_ß1 * static_cast<double>(x);
-    return Result{prediction, ReturnCode::OK, true};
-  }
-
- private:
-  /// Aggregated sums required for online regression computation
-  long _sumX = 0;
-  long _sumXX = 0;
-  long _sumXY = 0;
-
-  /// Cached regression coefficients (intercept and slope)
-  double _last_ß0 = 0.0;
-  double _last_ß1 = 0.0;
-};
-
-/**
  * Streaming implementation of simple linear regression using the Boost library with x as predictor
  * and y as response variable.
  *
@@ -381,11 +256,7 @@ class SimpleLinearRegressionSeparateZero {
 
  private:
   Mean _zero{SIZE_MAX};
-#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN_SELF
-  SimpleLinearRegression _rest{};
-#else
   SimpleLinearRegressionBoost _rest{};
-#endif
 };
 
 class RebuildDecisionContext {
@@ -394,18 +265,6 @@ class RebuildDecisionContext {
   [[nodiscard]] double getRebuildNeighborTimeEstimate() const { return _rebuildNeighborTimeEstimate; }
   [[nodiscard]] double getRemainderTraversalTimeEstimate() const { return _remainderTraversalTimeEstimate; }
   [[nodiscard]] size_t getNumParticlesBufferEstimate() const { return _numParticlesBufferEstimate; }
-
-  void initializeRebuildEstimator(const unsigned criteria, const unsigned maxRebuild, const unsigned minRemainder,
-                                  unsigned maxRemainder) {
-    _criteria = criteria;
-    _rebuildNeighborTimeMean.setMaxN(maxRebuild);
-#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN_SELF
-    if (maxRemainder < 50) {
-      maxRemainder = 10000;
-    }
-#endif
-    _remainderTraversalTimePredictor.setMinMax(minRemainder, maxRemainder);
-  }
 
   /**
    * Called after a neighbor list rebuild to reset remainder traversal estimator state and
@@ -489,25 +348,12 @@ class RebuildDecisionContext {
       _remainderTraversalTimeEstimate = value_remainder;
 
       const double rebuildIncline = value_rebuild / (rf * rf);
-      double remainderIncline =
+      const double remainderIncline =
           (value_remainder - static_cast<double>(_remainderTraversalTimePredictor.getSumY()) / rf) / (rf + 1);
-      switch (_criteria) {
-        case 1:
-          remainderIncline = (value_remainder - static_cast<double>(_lastRemainderTraversalTime)) / rf;
-          if (remainderIncline >= rebuildIncline or value_rebuild <= value_remainder) {
-            doDynamicRebuild = true;
-          }
-          break;
-        case 2:
-          if (value_rebuild <= 2.5 * value_remainder) {
-            doDynamicRebuild = true;
-          }
-          break;
-        default:
-          if (remainderIncline >= rebuildIncline or value_rebuild <= value_remainder) {
-            doDynamicRebuild = true;
-          }
+      if (remainderIncline >= rebuildIncline or value_rebuild <= value_remainder) {
+        doDynamicRebuild = true;
       }
+
     } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW ||
                returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW ||
                // No rebuild has been performed yet; trigger one to obtain an initial rebuild time estimate
@@ -546,9 +392,6 @@ class RebuildDecisionContext {
    * if no rebuild is performed.
    */
   long _lastRemainderTraversalTime{0};
-
-  // Selected rebuild decision criterion (configurable via YAML)
-  unsigned _criteria{0};
 
   /**
    * Estimates the particle buffer size by extrapolating from the particle increase
