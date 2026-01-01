@@ -282,27 +282,43 @@ class AxilrodTellerMutoFunctorHWY
     if (soa.size() <= 2) return;
 
     // check if the position, force and ownership SoAs are aligned to enable aligned vector loads
-    const bool alignedVectors = areAllSoAsAligned(soa);
-    if (not alignedVectors) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("AxilrodTellerMutoFunctorHWY only allows aligned SoAs.");
-    }
+    const bool alignedVectors =
+        isAligned<decltype(soa), Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
+                  Particle_T::AttributeNames::forceZ>(soa, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa), Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+                  Particle_T::AttributeNames::posZ>(soa, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa), Particle_T::AttributeNames::ownershipState>(soa, alignmentSoAFloatHwyVector);
 
-    SoAFunctorSingleImpl(soa);
+    if (alignedVectors) {
+      SoAFunctorSingleImpl</*alignedSoAView*/ true>(soa);
+    } else {
+      SoAFunctorSingleImpl</*alignedSoAView*/ false>(soa);
+    }
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
     // check if the position, force and ownership SoAs are aligned to enable aligned vector loads
-    const bool alignedVectors = areAllSoAsAligned(soa1, soa2);
-    if (not alignedVectors) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("AxilrodTellerMutoFunctorHWY only allows aligned SoAs.");
-    }
+    const bool alignedVectors =
+        isAligned<decltype(soa2), Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
+                  Particle_T::AttributeNames::forceZ>(soa2, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa2), Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+                  Particle_T::AttributeNames::posZ>(soa2, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa2), Particle_T::AttributeNames::ownershipState>(soa2, alignmentSoAFloatHwyVector);
 
     if (newton3) {
-      SoAFunctorPairImpl</*newton3*/ true>(soa1, soa2);
+      if (alignedVectors) {
+        SoAFunctorPairImpl</*newton3*/ true, /*alignedSoAView*/ true>(soa1, soa2);
+      } else {
+        SoAFunctorPairImpl</*newton3*/ true, /*alignedSoAView*/ false>(soa1, soa2);
+      }
     } else {
-      SoAFunctorPairImpl</*newton3*/ false>(soa1, soa2);
+      if (alignedVectors) {
+        SoAFunctorPairImpl</*newton3*/ false, /*alignedSoAView*/ true>(soa1, soa2);
+      } else {
+        SoAFunctorPairImpl</*newton3*/ false, /*alignedSoAView*/ false>(soa1, soa2);
+      }
     }
   }
 
@@ -311,15 +327,25 @@ class AxilrodTellerMutoFunctorHWY
     if (soa1.size() == 0 || soa2.size() == 0 || soa3.size() == 0) return;
 
     // check if the position, force and ownership SoAs are aligned to enable aligned vector loads
-    const bool alignedVectors = areAllSoAsAligned(soa1, soa2, soa3);
-    if (not alignedVectors) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("AxilrodTellerMutoFunctorHWY only allows aligned SoAs.");
-    }
+    const bool alignedVectors =
+        isAligned<decltype(soa3), Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
+                  Particle_T::AttributeNames::forceZ>(soa3, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa3), Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+                  Particle_T::AttributeNames::posZ>(soa3, alignmentSoAFloatHwyVector) and
+        isAligned<decltype(soa3), Particle_T::AttributeNames::ownershipState>(soa3, alignmentSoAFloatHwyVector);
 
     if (newton3) {
-      SoAFunctorTripleImpl</*newton3*/ true>(soa1, soa2, soa3);
+      if (alignedVectors) {
+        SoAFunctorTripleImpl</*newton3*/ true, /*alignedSoAView*/ true>(soa1, soa2, soa3);
+      } else {
+        SoAFunctorTripleImpl</*newton3*/ true, /*alignedSoAView*/ false>(soa1, soa2, soa3);
+      }
     } else {
-      SoAFunctorTripleImpl</*newton3*/ false>(soa1, soa2, soa3);
+      if (alignedVectors) {
+        SoAFunctorTripleImpl</*newton3*/ false, /*alignedSoAView*/ true>(soa1, soa2, soa3);
+      } else {
+        SoAFunctorTripleImpl</*newton3*/ false, /*alignedSoAView*/ false>(soa1, soa2, soa3);
+      }
     }
   }
 
@@ -548,6 +574,7 @@ class AxilrodTellerMutoFunctorHWY
  private:
   struct PrecomputeBuffer;
 
+  template <bool alignedSoAView>
   void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
     const auto threadnum = autopas::autopas_get_thread_num();
 
@@ -587,7 +614,8 @@ class AxilrodTellerMutoFunctorHWY
     auto &intraSoAPairDists = precomputeBuffers1[threadnum];
     intraSoAPairDists.template init</*LowerTriangle*/ true>(soaSize, soaSize);
     // soa1 <-> soa1
-    intraSoAPairDists.template fillHighway</*LowerTriangle*/ true>(xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, cutoffSquared);
+    intraSoAPairDists.template fillHighway</*LowerTriangle*/ true, alignedSoAView>(xPtr, yPtr, zPtr, xPtr, yPtr, zPtr,
+                                                                                   cutoffSquared);
 
     if constexpr (countFLOPs) {
       numDistanceCalculationSum += (soaSize * soaSize - soaSize) / 2;
@@ -636,7 +664,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto numLanesToProcess = std::min(_vecLengthDouble, j - k);
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ true, /*newton3*/ true,
-                          /*newton3Kernel*/ true>(
+                          /*newton3Kernel*/ true, alignedSoAView>(
               i, j, k, const_nu, intraSoAPairDists, intraSoAPairDists, ownedStatePtr, typePtr, typePtr, typePtr,
               distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI, fXAccJ, fYAccJ,
               fZAccJ, ownedStateI, ownedStateJ, fxPtr, fyPtr, fzPtr, virialSumX, virialSumY, virialSumZ,
@@ -669,7 +697,7 @@ class AxilrodTellerMutoFunctorHWY
     }
   }
 
-  template <bool newton3>
+  template <bool newton3, bool alignedSoAView>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     const auto threadnum = autopas::autopas_get_thread_num();
 
@@ -719,11 +747,11 @@ class AxilrodTellerMutoFunctorHWY
     interSoA1SoA2PairDists.template init</*LowerTriangle*/ false>(soa1Size, soa2Size);
 
     // soa2 <-> soa2
-    intraSoA2PairDists.template fillHighway</*LowerTriangle*/ true>(xptr2, yptr2, zptr2, xptr2, yptr2, zptr2,
-                                                                    cutoffSquared);
+    intraSoA2PairDists.template fillHighway</*LowerTriangle*/ true, alignedSoAView>(xptr2, yptr2, zptr2, xptr2, yptr2,
+                                                                                    zptr2, cutoffSquared);
     // soa1 <-> soa2
-    interSoA1SoA2PairDists.template fillHighway</*LowerTriangle*/ false>(xptr1, yptr1, zptr1, xptr2, yptr2, zptr2,
-                                                                         cutoffSquared);
+    interSoA1SoA2PairDists.template fillHighway</*LowerTriangle*/ false, alignedSoAView>(xptr1, yptr1, zptr1, xptr2,
+                                                                                         yptr2, zptr2, cutoffSquared);
 
     if constexpr (countFLOPs) {
       const size_t packedSizeSoA2 = (soa2Size * soa2Size - soa2Size) / 2;
@@ -778,7 +806,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(j - k));
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ newton3>(
+                          /*newton3Kernel*/ newton3, alignedSoAView>(
               i, j, k, const_nu, intraSoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr2,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
               fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY,
@@ -833,7 +861,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(soa2.size() - k));
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ true>(
+                          /*newton3Kernel*/ true, alignedSoAView>(
               i, j, k, const_nu, interSoA1SoA2PairDists, interSoA1SoA2PairDists, ownedStatePtr2, typeptr1, typeptr1,
               typeptr2, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
               fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr2, fyPtr2, fzPtr2, virialSumX, virialSumY,
@@ -868,7 +896,7 @@ class AxilrodTellerMutoFunctorHWY
     }
   }
 
-  template <bool newton3>
+  template <bool newton3, bool alignedSoAView>
   void SoAFunctorTripleImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                             autopas::SoAView<SoAArraysType> soa3) {
     const auto threadnum = autopas::autopas_get_thread_num();
@@ -928,11 +956,11 @@ class AxilrodTellerMutoFunctorHWY
     interSoA2SoA3PairDists.template init</*LowerTriangle*/ false>(soa2Size, soa3Size);
 
     // soa1 <-> soa3
-    interSoA1SoA3PairDists.template fillHighway</*LowerTriangle*/ false>(xptr1, yptr1, zptr1, xptr3, yptr3, zptr3,
-                                                                         cutoffSquared);
+    interSoA1SoA3PairDists.template fillHighway</*LowerTriangle*/ false, alignedSoAView>(xptr1, yptr1, zptr1, xptr3,
+                                                                                         yptr3, zptr3, cutoffSquared);
     // soa2 <-> soa3
-    interSoA2SoA3PairDists.template fillHighway</*LowerTriangle*/ false>(xptr2, yptr2, zptr2, xptr3, yptr3, zptr3,
-                                                                         cutoffSquared);
+    interSoA2SoA3PairDists.template fillHighway</*LowerTriangle*/ false, alignedSoAView>(xptr2, yptr2, zptr2, xptr3,
+                                                                                         yptr3, zptr3, cutoffSquared);
 
     if constexpr (countFLOPs) {
       numDistanceCalculationSum += soa1Size * soa3Size + soa2Size * soa3Size;
@@ -993,7 +1021,7 @@ class AxilrodTellerMutoFunctorHWY
           const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(soa3.size() - k));
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
-                          /*newton3Kernel*/ newton3>(
+                          /*newton3Kernel*/ newton3, alignedSoAView>(
               i, j, k, const_nu, interSoA2SoA3PairDists, interSoA1SoA3PairDists, ownedStatePtr3, typeptr1, typeptr2,
               typeptr3, distXIJVec, distYIJVec, distZIJVec, distSquaredIJVec, invR5IJVec, fXAccI, fYAccI, fZAccI,
               fXAccJ, fYAccJ, fZAccJ, ownedStateI, ownedStateJ, fxPtr3, fyPtr3, fzPtr3, virialSumX, virialSumY,
@@ -1039,49 +1067,51 @@ class AxilrodTellerMutoFunctorHWY
    * registers, the cutoff criterion is checked, the particle properties are constructed, and the kernel is called. If
    * necessary, the globals are calculated.
    *
-   * @tparam LowerPackedTrianglePB1.
-   * @tparam LowerPackedTrianglePB2.
-   * @tparam newton3.
-   * @tparam newton3Kernel.
-   * @param i current index of the i-loop.
-   * @param j current index of the j-loop.
-   * @param k current index of the k-loop.
-   * @param const_nu nu value passed to the kernel (if a PPL is used, the values are constructed in the function body).
-   * @param soaDists1 precomputed pairwise distances.
-   * @param soaDists2 precomputed pairwise distances.
-   * @param ownedStatePtr Pointer to the ownershipstate SoA of k.
-   * @param typePtrI Pointer to the typeID of i.
-   * @param typePtrJ Pointer to the typeID of j.
-   * @param typePtrK Pointer to the typeID of k.
-   * @param distXIJVec All lanes of a highway vector filled with the x-offset between i and j.
-   * @param distYIJVec All lanes of a highway vector filled with the y-offset between i and j.
-   * @param distZIJVec All lanes of a highway vector filled with the z-offset between i and j.
-   * @param distSquaredIJVec All lanes of a highway vector filled with the sqared distance between i and j.
+   * @tparam LowerPackedTrianglePB1
+   * @tparam LowerPackedTrianglePB2
+   * @tparam newton3
+   * @tparam newton3Kernel
+   * @tparam alignedSoAView
+   * @param i current index of the i-loop
+   * @param j current index of the j-loop
+   * @param k current index of the k-loop
+   * @param const_nu nu value passed to the kernel (if a PPL is used, the values are constructed in the function body)
+   * @param soaDists1 precomputed pairwise distances
+   * @param soaDists2 precomputed pairwise distances
+   * @param ownedStatePtr Pointer to the ownershipstate SoA of k
+   * @param typePtrI Pointer to the typeID of i
+   * @param typePtrJ Pointer to the typeID of j
+   * @param typePtrK Pointer to the typeID of k
+   * @param distXIJVec All lanes of a highway vector filled with the x-offset between i and j
+   * @param distYIJVec All lanes of a highway vector filled with the y-offset between i and j
+   * @param distZIJVec All lanes of a highway vector filled with the z-offset between i and j
+   * @param distSquaredIJVec All lanes of a highway vector filled with the sqared distance between i and j
    * @param invR5IJVec All lanes of a highway vector filled with the inverse square root to 5 of the distance between i
-   * and j.
-   * @param fXAccI Force x accumulator for i as highway vector.
-   * @param fYAccI Force y accumulator for i as highway vector.
-   * @param fZAccI Force z accumulator for i as highway vector.
-   * @param fXAccJ Force x accumulator for j as highway vector.
-   * @param fYAccJ Force y accumulator for j as highway vector.
-   * @param fZAccJ Force z accumulator for j as highway vector.
-   * @param ownedStateI Ownership state of i.
-   * @param ownedStateJ Ownership state of j.
-   * @param fxPtr Pointer to the x-force SoA for k.
-   * @param fyPtr Pointer to the y-force SoA for k.
-   * @param fzPtr Pointer to the z-force SoA for k.
-   * @param virialSumX x-Virial accumulator.
-   * @param virialSumY y-Virial accumulator.
-   * @param virialSumZ z-Virial accumulator.
-   * @param potentialEnergySum Potential energy accumulator.
-   * @param numKernelCallsN3Sum Kernel call accumulator newton3.
-   * @param numGlobalCalcsN3Sum Globals calculation accumulator newton3.
-   * @param numKernelCallsNoN3Sum Kernel call accumulator no newton3.
-   * @param numGlobalCalcsNoN3Sum Globals calculation accumulator no newton3.
-   * @param numLanesToProcess The number of lanes to be processed. This should only be less than the length of the
-   * vector registers in the remainder case.
+   * and j
+   * @param fXAccI Force x accumulator for i as highway vector
+   * @param fYAccI Force y accumulator for i as highway vector
+   * @param fZAccI Force z accumulator for i as highway vector
+   * @param fXAccJ Force x accumulator for j as highway vector
+   * @param fYAccJ Force y accumulator for j as highway vector
+   * @param fZAccJ Force z accumulator for j as highway vector
+   * @param ownedStateI Ownership state of i
+   * @param ownedStateJ Ownership state of j
+   * @param fxPtr Pointer to the x-force SoA for k
+   * @param fyPtr Pointer to the y-force SoA for k
+   * @param fzPtr Pointer to the z-force SoA for k
+   * @param virialSumX x-Virial accumulator
+   * @param virialSumY y-Virial accumulator
+   * @param virialSumZ z-Virial accumulator
+   * @param potentialEnergySum Potential energy accumulator
+   * @param numKernelCallsN3Sum Kernel call accumulator newton3
+   * @param numGlobalCalcsN3Sum Globals calculation accumulator newton3
+   * @param numKernelCallsNoN3Sum Kernel call accumulator no newton3
+   * @param numGlobalCalcsNoN3Sum Globals calculation accumulator no newton3
+   * @param numLanesToProcess In the case of remainder, the remaining number of k particles
+   * @return HWY_INLINE
    */
-  template <bool LowerPackedTrianglePB1, bool LowerPackedTrianglePB2, bool newton3, bool newton3Kernel>
+  template <bool LowerPackedTrianglePB1, bool LowerPackedTrianglePB2, bool newton3, bool newton3Kernel,
+            bool alignedSoAView>
   HWY_INLINE void handleKLoopBody(
       const size_t i, const size_t j, const size_t k, const SoAFloatPrecision const_nu,
       const PrecomputeBuffer &soaDists1, const PrecomputeBuffer &soaDists2,
@@ -1094,7 +1124,7 @@ class AxilrodTellerMutoFunctorHWY
       double *const __restrict fzPtr, VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ,
       VectorDouble &potentialEnergySum, size_t &numKernelCallsN3Sum, size_t &numGlobalCalcsN3Sum,
       size_t &numKernelCallsNoN3Sum, size_t &numGlobalCalcsNoN3Sum, size_t numLanesToProcess = _vecLengthDouble) {
-    const auto remainderMask = mdLib::highway::FirstN(mdLib::tag_long, numLanesToProcess);
+    const bool remainder = numLanesToProcess < _vecLengthDouble;
 
     // load distJKVecfrom precomputed data
     const auto [distXJKVec, distYJKVec, distZJKVec, distSquaredJKVec, invR5JKVec] =
@@ -1107,10 +1137,15 @@ class AxilrodTellerMutoFunctorHWY
     const auto distYKIVec = highway::Neg(distYKIVecNeg);
     const auto distZKIVec = highway::Neg(distZKIVecNeg);
 
-    // Since autopas::OwnershipState::dummy == 0, we can use MaskedLoad in the remainder-case, as it sets the remaining
-    // lanes to 0
-    const auto ownershipK =
-        highway::MaskedLoad(remainderMask, tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]));
+    // Since autopas::OwnershipState::dummy == 0, we can use LoadN (called from loadPacked) in the remainder-case, as it
+    // sets the remaining lanes to 0
+    auto ownershipK = loadPacked<alignedSoAView, false>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]),
+                                                        numLanesToProcess);
+
+    if (remainder) {
+      ownershipK = loadPacked<alignedSoAView, true>(tag_long, reinterpret_cast<const int64_t *>(&ownedStatePtr[k]),
+                                                    numLanesToProcess);
+    }
 
     // calculate cutoff-masks between i<->k and j<->k
     const auto maskJK = highway::Le(distSquaredJKVec, highway::Set(tag_double, _cutoffSquared));
@@ -1132,8 +1167,9 @@ class AxilrodTellerMutoFunctorHWY
     // load nus
     auto nu = highway::Set(tag_double, const_nu);
     if constexpr (useMixing) {
-      const auto typeKIndices =
-          highway::MaskedLoad(remainderMask, tag_long, reinterpret_cast<const int64_t *>(&typePtrK[k]));
+      // In the case of remainder=false, it is assumed that numLanesToProcess is the full vector length.
+      const auto mask = mdLib::highway::FirstN(mdLib::tag_long, numLanesToProcess);
+      const auto typeKIndices = highway::MaskedLoad(mask, tag_long, reinterpret_cast<const int64_t *>(&typePtrK[k]));
       nu = _PPLibrary->get().getMixingNuHWY(typePtrI[i], typePtrJ[j], typeKIndices, numLanesToProcess);
     }
 
@@ -1224,17 +1260,17 @@ class AxilrodTellerMutoFunctorHWY
       const auto forceKZ = highway::Neg(forceIZ + forceJZ);
 
       // Store force acting on particle k.
-      const VectorDouble fxK = loadPacked(tag_double, &fxPtr[k]);
-      const VectorDouble fyK = loadPacked(tag_double, &fyPtr[k]);
-      const VectorDouble fzK = loadPacked(tag_double, &fzPtr[k]);
+      const VectorDouble fxK = loadPacked<alignedSoAView, false>(tag_double, &fxPtr[k], numLanesToProcess);
+      const VectorDouble fyK = loadPacked<alignedSoAView, false>(tag_double, &fyPtr[k], numLanesToProcess);
+      const VectorDouble fzK = loadPacked<alignedSoAView, false>(tag_double, &fzPtr[k], numLanesToProcess);
 
       const VectorDouble fxKNew = fxK + forceKX;
       const VectorDouble fyKNew = fyK + forceKY;
       const VectorDouble fzKNew = fzK + forceKZ;
 
-      storePacked(tag_double, &fxPtr[k], fxKNew);
-      storePacked(tag_double, &fyPtr[k], fyKNew);
-      storePacked(tag_double, &fzPtr[k], fzKNew);
+      storePacked<alignedSoAView, false>(tag_double, &fxPtr[k], fxKNew, numLanesToProcess);
+      storePacked<alignedSoAView, false>(tag_double, &fyPtr[k], fyKNew, numLanesToProcess);
+      storePacked<alignedSoAView, false>(tag_double, &fzPtr[k], fzKNew, numLanesToProcess);
 
       if constexpr (countFLOPs) {
         numKernelCallsN3Sum += numLanesToProcess;
@@ -1385,36 +1421,42 @@ class AxilrodTellerMutoFunctorHWY
     }
   }
 
-  template <class Tag, typename T>
-  HWY_INLINE static auto loadPacked(const Tag tag, const T *HWY_RESTRICT ptr) {
-    return highway::Load(tag, ptr);
+  template <bool alignedSoAView, bool remainder, class Tag, typename T>
+  HWY_INLINE static auto loadPacked(const Tag tag, const T *HWY_RESTRICT ptr, size_t numberToLoad = 0) {
+    if constexpr (remainder) {
+      // partial / remainder load
+      return highway::LoadN(tag, ptr, numberToLoad);
+    } else {
+      // full load
+      if constexpr (alignedSoAView) {
+        // aligned load
+        return highway::Load(tag, ptr);
+      } else {
+        // unaligned load
+        return highway::LoadU(tag, ptr);
+      }
+    }
   }
 
-  template <class Tag, typename T, typename Vec>
-  HWY_INLINE static void storePacked(const Tag tag, T *HWY_RESTRICT ptr, const Vec &v) {
-    highway::Store(v, tag, ptr);
-  }
-
-  template <class... SoAs>
-  bool areAllSoAsAligned(const SoAs &...soas) {
-    return (isSoAAligned(soas) and ...);
-  }
-
-  template <class SoA>
-  bool isSoAAligned(const SoA &soa) {
-    return isAttributeAligned<SoA, Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
-                              Particle_T::AttributeNames::forceZ>(soa, alignmentSoAFloatHwyVector) and
-
-           isAttributeAligned<SoA, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
-                              Particle_T::AttributeNames::posZ>(soa, alignmentSoAFloatHwyVector) and
-
-           isAttributeAligned<SoA, Particle_T::AttributeNames::ownershipState>(soa, alignmentSoAFloatHwyVector) and
-
-           isAttributeAligned<SoA, Particle_T::AttributeNames::typeId>(soa, alignmentSoAFloatHwyVector);
+  template <bool alignedSoAView, bool remainder, class Tag, typename T, typename Vec>
+  HWY_INLINE static void storePacked(const Tag tag, T *HWY_RESTRICT ptr, const Vec &v, size_t numberToStore = 0) {
+    if constexpr (remainder) {
+      // partial / remainder store
+      highway::StoreN(v, tag, ptr, numberToStore);
+    } else {
+      // full store
+      if constexpr (alignedSoAView) {
+        // aligned store
+        highway::Store(v, tag, ptr);
+      } else {
+        // unaligned store
+        highway::StoreU(v, tag, ptr);
+      }
+    }
   }
 
   template <class SoA, auto... Attributes>
-  HWY_INLINE bool isAttributeAligned(const SoA &soa, size_t alignment) {
+  HWY_INLINE bool isAligned(const SoA &soa, size_t alignment) {
     return (soa.template isAligned<Attributes>(alignment) and ...);
   }
 
@@ -1425,29 +1467,12 @@ class AxilrodTellerMutoFunctorHWY
    * are used.
    *
    * @tparam LowerTriangle If the matrix should use a lower packed triangle layout
+   * @tparam alignedSoAView if aligned loads can be used
    */
   struct PrecomputeBuffer {
    public:
     using Alloc = autopas::AlignedAllocator<SoAFloatPrecision>;
     using Vec = std::vector<SoAFloatPrecision, Alloc>;
-
-    /**
-     * Struct for storing vector registers with precalculated x, y, z displacements, the squared distance, and the
-     * inverse r^5 between two particles.
-     * 
-     * @param dx x-displacement between two particles.
-     * @param dy y-displacement between two particles.
-     * @param dz z-displacement between two particles.
-     * @param r2 The squared distance between two particles.
-     * @param invR5 The inverese distance to 5 between two particles (1.0/r^5).
-     */
-    struct DistRowVec {
-      VectorDouble dx;
-      VectorDouble dy;
-      VectorDouble dz;
-      VectorDouble r2;
-      VectorDouble invR5;
-    };
 
     /**
      * Initializes the PrecomputeBuffer with the specified size. If the internal memory size is smaller than the
@@ -1521,7 +1546,7 @@ class AxilrodTellerMutoFunctorHWY
 
     // Highway-Vector load
     template <bool LowerTriangle>
-    HWY_INLINE DistRowVec loadRowVec(const size_t i, const size_t jStart) const {
+    HWY_INLINE auto loadRowVec(const size_t i, const size_t jStart) const {
       const size_t idx = [&]() {
         if constexpr (LowerTriangle) {
           return triIndex<true>(i, jStart);
@@ -1530,34 +1555,30 @@ class AxilrodTellerMutoFunctorHWY
         }
       }();
 
-      DistRowVec result;
       if constexpr (LowerTriangle) {
-        result.dx = highway::LoadU(tag_double, &_dx[idx]);
-        result.dy = highway::LoadU(tag_double, &_dy[idx]);
-        result.dz = highway::LoadU(tag_double, &_dz[idx]);
-        result.r2 = highway::LoadU(tag_double, &_squared[idx]);
-        result.invR5 = highway::LoadU(tag_double, &_invR5[idx]);
+        return std::tuple{highway::LoadU(tag_double, &_dx[idx]), highway::LoadU(tag_double, &_dy[idx]),
+                          highway::LoadU(tag_double, &_dz[idx]), highway::LoadU(tag_double, &_squared[idx]),
+                          highway::LoadU(tag_double, &_invR5[idx])};
       } else {
-        result.dx = highway::Load(tag_double, &_dx[idx]);
-        result.dy = highway::Load(tag_double, &_dy[idx]);
-        result.dz = highway::Load(tag_double, &_dz[idx]);
-        result.r2 = highway::Load(tag_double, &_squared[idx]);
-        result.invR5 = highway::Load(tag_double, &_invR5[idx]);
+        return std::tuple{highway::Load(tag_double, &_dx[idx]), highway::Load(tag_double, &_dy[idx]),
+                          highway::Load(tag_double, &_dz[idx]), highway::Load(tag_double, &_squared[idx]),
+                          highway::Load(tag_double, &_invR5[idx])};
       }
-      return result;
     }
 
-    template <bool LowerTriangle>
+    template <bool LowerTriangle, bool alignedSoAView>
     HWY_INLINE void fillHighway(const SoAFloatPrecision *xptr1, const SoAFloatPrecision *yptr1,
                                 const SoAFloatPrecision *zptr1, const SoAFloatPrecision *xptr2,
                                 const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2,
                                 const SoAFloatPrecision cutoffSquared) {
       for (size_t i = 0; i < _nRows; ++i) {
-        const auto x1v = highway::Set(tag_double, xptr1[i]);
-        const auto y1v = highway::Set(tag_double, yptr1[i]);
-        const auto z1v = highway::Set(tag_double, zptr1[i]);
+        const auto xi = xptr1[i];
+        const auto yi = yptr1[i];
+        const auto zi = zptr1[i];
 
-        const auto cutoffSquaredV = highway::Set(tag_double, cutoffSquared);
+        const auto x1v = highway::Set(tag_double, xi);
+        const auto y1v = highway::Set(tag_double, yi);
+        const auto z1v = highway::Set(tag_double, zi);
 
         size_t j = 0;
         size_t rowLength = 0;
@@ -1566,50 +1587,34 @@ class AxilrodTellerMutoFunctorHWY
           rowLength = i;
           if (i == 0) continue;
         } else {
-          rowLength = _nColsPadded;
+          rowLength = _nCols;
         }
 
-        auto checkLoopCondition = [&]() {
-          if constexpr (LowerTriangle) {
-            return j + _vecLengthDouble <= rowLength;
-          } else {
-            return j < rowLength;
-          }
-        };
-
-        for (; checkLoopCondition(); j += _vecLengthDouble) {
-          const auto x2v = loadPacked(tag_double, &xptr2[j]);
-          const auto y2v = loadPacked(tag_double, &yptr2[j]);
-          const auto z2v = loadPacked(tag_double, &zptr2[j]);
+        for (; j + _vecLengthDouble <= rowLength; j += _vecLengthDouble) {
+          const auto x2v = loadPacked<alignedSoAView, false>(tag_double, &xptr2[j]);
+          const auto y2v = loadPacked<alignedSoAView, false>(tag_double, &yptr2[j]);
+          const auto z2v = loadPacked<alignedSoAView, false>(tag_double, &zptr2[j]);
 
           const auto dx = x2v - x1v;
           const auto dy = y2v - y1v;
           const auto dz = z2v - z1v;
 
           const auto dist2 = highway::MulAdd(dx, dx, highway::MulAdd(dy, dy, dz * dz));
-          const auto cutoffMask = highway::Le(dist2, cutoffSquaredV);
+          const auto cutoffMask = highway::Le(dist2, highway::Set(tag_double, cutoffSquared));
           const auto sqrtR2 = highway::Sqrt(dist2);
           const auto r5 = highway::Mul(highway::Mul(dist2, dist2), sqrtR2);
           const auto invr5 = highway::MaskedDiv(cutoffMask, highway::Set(tag_double, 1.0), r5);
 
           const size_t idx = index<LowerTriangle>(i, j);
 
-          if constexpr (LowerTriangle) {
-            highway::StoreU(dx, tag_double, &_dx[idx]);
-            highway::StoreU(dy, tag_double, &_dy[idx]);
-            highway::StoreU(dz, tag_double, &_dz[idx]);
-            highway::StoreU(dist2, tag_double, &_squared[idx]);
-            highway::StoreU(invr5, tag_double, &_invR5[idx]);
-          } else {
-            highway::Store(dx, tag_double, &_dx[idx]);
-            highway::Store(dy, tag_double, &_dy[idx]);
-            highway::Store(dz, tag_double, &_dz[idx]);
-            highway::Store(dist2, tag_double, &_squared[idx]);
-            highway::Store(invr5, tag_double, &_invR5[idx]);
-          }
+          storePacked<not LowerTriangle, false>(tag_double, &_dx[idx], dx);
+          storePacked<not LowerTriangle, false>(tag_double, &_dy[idx], dy);
+          storePacked<not LowerTriangle, false>(tag_double, &_dz[idx], dz);
+          storePacked<not LowerTriangle, false>(tag_double, &_squared[idx], dist2);
+          storePacked<not LowerTriangle, false>(tag_double, &_invR5[idx], invr5);
         }
 
-        // Remainder (only used in the LowerTriangle case)
+        // Remainder
         if (j < rowLength) {
           const size_t width = rowLength - j;
 
