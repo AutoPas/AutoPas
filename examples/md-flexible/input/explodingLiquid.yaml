@@ -1,7 +1,7 @@
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 # md-flexible compiled for multi-site molecules.
 container                        :  [VerletClusterLists]
-traversal                        :  [vcl_c08]
+traversal                        :  [vcl_c06]
 data-layout                      :  [AoS, SoA]
 newton3                          :  [enabled]
 verlet-rebuild-frequency         :  10
@@ -42,5 +42,5 @@ Objects:
       velocity                   :  [0, 0, 0]
 no-end-config                    :  true
 no-progress-bar                  :  false
-vtk-filename                     :  explodingLiquid_c08
+vtk-filename                     :  explodingLiquid_c06
 vtk-write-frequency              :  100
