@@ -1,24 +1,25 @@
 /**
-* @file PseudoVerletListsTest.cpp
+ * @file PseudoVerletListsTest.cpp
  * @author Lars Doll
  * @date 20.12.2025
  */
 
 #include "PseudoVerletListsTest.h"
-#include "autopas/utils/ArrayMath.h"
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
+#include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/commonTypedefs.h"
 
-
-
+/**
+ *  This test verifies that for each cell, there is an entry with 13 sortedCellViews in OrientationList.
+ */
 TEST_F(PseudoVerletListsTest, OrientationListsHaveCorrectSize) {
-  const double cutoff = 1.0;
-  const double skin = 0.2;
-  const double cellSizeFactor = 1.0;
+  constexpr double cutoff = 1.0;
+  constexpr double skin = 0.2;
+  constexpr double cellSizeFactor = 1.0;
 
-  autopas::PseudoVerletLists<ParticleFP64> container(
-      {0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
+  autopas::PseudoVerletLists<ParticleFP64> container({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
 
   ParticleFP64 p({1., 1., 1.}, {0., 0., 0.}, 0);
   container.addParticle(p);
@@ -32,18 +33,20 @@ TEST_F(PseudoVerletListsTest, OrientationListsHaveCorrectSize) {
 
   // checks if there are 13 directions for each cell
   for (size_t cellId = 0; cellId < orientationLists.size(); ++cellId) {
-    EXPECT_EQ(orientationLists[cellId].size(), 13)
-        << "Wrong number of directions in cell " << cellId;
+    EXPECT_EQ(orientationLists[cellId].size(), 13) << "Wrong number of directions in cell " << cellId;
   }
 }
 
+/**
+ * This test verifies that the particles are stored in the correct order.
+ * To do this, it checks in each direction whether the projected distance of the particles is monotonically increasing.
+ */
 TEST_F(PseudoVerletListsTest, OrientationListsAreSorted) {
-  const double cutoff = 2.0;
-  const double skin = 0.2;
-  const double cellSizeFactor = 1.0;
+  constexpr double cutoff = 2.0;
+  constexpr double skin = 0.2;
+  constexpr double cellSizeFactor = 1.0;
 
-  autopas::PseudoVerletLists<ParticleFP64> container(
-      {0., 0., 0.}, {5., 5., 5.}, cutoff, skin, cellSizeFactor);
+  autopas::PseudoVerletLists<ParticleFP64> container({0., 0., 0.}, {5., 5., 5.}, cutoff, skin, cellSizeFactor);
 
   container.addParticle(ParticleFP64({1.5, 1.0, 1.0}, {0., 0., 0.}, 0));
   container.addParticle(ParticleFP64({1.0, 1.5, 1.0}, {0., 0., 0.}, 1));
@@ -73,23 +76,23 @@ TEST_F(PseudoVerletListsTest, OrientationListsAreSorted) {
 
       // check monotonic increase of projected positions
       for (size_t i = 0; i + 1 < sortedView.size(); ++i) {
-        EXPECT_LE(sortedView._particles[i].first,
-                  sortedView._particles[i + 1].first)
-            << "SortedCellView not sorted in cell " << cellId
-            << ", direction " << dir
-            << ", at index " << i;
+        EXPECT_LE(sortedView._particles[i].first, sortedView._particles[i + 1].first)
+            << "SortedCellView not sorted in cell " << cellId << ", direction " << dir << ", at index " << i;
       }
     }
   }
 }
 
+/**
+ * This test verifies that a particle exists only in its cell
+ * and its corresponding sortedCellViews and cannot be found in any other lists.
+ */
 TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
-  const double cutoff = 1.0;
-  const double skin = 0.2;
-  const double cellSizeFactor = 1.0;
+  constexpr double cutoff = 1.0;
+  constexpr double skin = 0.2;
+  constexpr double cellSizeFactor = 1.0;
 
-  autopas::PseudoVerletLists<ParticleFP64> container(
-      {0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
+  autopas::PseudoVerletLists<ParticleFP64> container({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
 
   ParticleFP64 p({1.5, 1.0, 1.0}, {0., 0., 0.}, 0);
   container.addParticle(p);
@@ -130,56 +133,51 @@ TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
     if (i == particleCellId) continue;
     for (const auto &view : orientationLists[i]) {
       for (const auto &projPair : view._particles) {
-        EXPECT_NE(projPair.second->getID(), p.getID())
-            << "Particle exists in SortedCellViews of different cells";
+        EXPECT_NE(projPair.second->getID(), p.getID()) << "Particle exists in SortedCellViews of different cells";
       }
     }
   }
 }
 
+/**
+ * This test verifies that the directions used in PseudoVerletLists have been set correctly.
+ */
 TEST_F(PseudoVerletListsTest, DirectionsAreCorrectAndNormalized) {
-  const double cutoff = 1.0;
-  const double skin = 0.2;
-  const double cellSizeFactor = 1.0;
+  constexpr double cutoff = 1.0;
+  constexpr double skin = 0.2;
+  constexpr double cellSizeFactor = 1.0;
 
-  autopas::PseudoVerletLists<ParticleFP64> container(
-      {0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
+  const autopas::PseudoVerletLists<ParticleFP64> container({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, cellSizeFactor);
 
   const auto directions = container.getDirections();
 
   // raw directions as specified
   static constexpr std::array<std::array<double, 3>, 13> rawDirections = {{
-    {{ 1,  0,  0}},
-    {{-1,  1,  0}},
-    {{ 0,  1,  0}},
-    {{ 1,  1,  0}},
-    {{-1, -1,  1}},
-    {{ 0, -1,  1}},
-    {{ 1, -1,  1}},
-    {{-1,  0,  1}},
-    {{ 0,  0,  1}},
-    {{ 1,  0,  1}},
-    {{-1,  1,  1}},
-    {{ 0,  1,  1}},
-    {{ 1,  1,  1}},
-}};
-
-  constexpr double tol = 1e-12;
+      {{1, 0, 0}},
+      {{-1, 1, 0}},
+      {{0, 1, 0}},
+      {{1, 1, 0}},
+      {{-1, -1, 1}},
+      {{0, -1, 1}},
+      {{1, -1, 1}},
+      {{-1, 0, 1}},
+      {{0, 0, 1}},
+      {{1, 0, 1}},
+      {{-1, 1, 1}},
+      {{0, 1, 1}},
+      {{1, 1, 1}},
+  }};
 
   ASSERT_EQ(directions.size(), rawDirections.size());
 
   for (size_t i = 0; i < rawDirections.size(); ++i) {
-    // normalize using ArrayMath
-    const auto expected =
-        autopas::utils::ArrayMath::normalize(rawDirections[i]);
+    const auto expected = autopas::utils::ArrayMath::normalize(rawDirections[i]);
 
     const auto &dir = directions[i];
 
     for (size_t d = 0; d < 3; ++d) {
-      EXPECT_NEAR(dir[d], expected[d], tol)
-          << "Direction mismatch at index " << i
-          << ", component " << d;
+      constexpr double tol = 1e-12;
+      EXPECT_NEAR(dir[d], expected[d], tol) << "Direction mismatch at index " << i << ", component " << d;
     }
   }
 }
-

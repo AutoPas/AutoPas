@@ -346,18 +346,21 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
       break;
     }
     case TraversalOption::psvl_c18: {
-      traversal = std::make_unique<PsVLC18Traversal<ParticleCell_T, PairwiseFunctor_T>>(traversalInfo.cellsPerDim,
-          &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength, dataLayout, useNewton3);
+      traversal = std::make_unique<PsVLC18Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
       break;
     }
     case TraversalOption::psvl_c08: {
-      traversal = std::make_unique<PsVLC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(traversalInfo.cellsPerDim,
-          &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength, dataLayout, useNewton3);
+      traversal = std::make_unique<PsVLC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
       break;
     }
     case TraversalOption::psvl_c01: {
-      traversal = std::make_unique<PsVLC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(traversalInfo.cellsPerDim,
-          &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength, dataLayout, useNewton3);
+      traversal = std::make_unique<PsVLC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
       break;
     }
     default: {

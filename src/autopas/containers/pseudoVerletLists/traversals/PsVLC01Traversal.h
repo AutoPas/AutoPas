@@ -18,43 +18,63 @@
 namespace autopas {
 
 /**
- * This class provides the c01 traversal.
+ * This class provides the psVl_c01 traversal.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor,3>,
-                       public PsVLTraversalInterface<ParticleCell> {
+class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 3>,
+                         public PsVLTraversalInterface<ParticleCell> {
  public:
-  explicit PsVLC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor, const double interactionLength,
-                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+  explicit PsVLC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                            const double interactionLength, const std::array<double, 3> &cellLength,
+                            DataLayoutOption dataLayout, bool useNewton3)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, 3>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                                       dataLayout, useNewton3),
-    _cellFunctor(pairwiseFunctor, interactionLength, dataLayout, useNewton3) {
+                                                            dataLayout, useNewton3),
+        _cellFunctor(pairwiseFunctor, interactionLength, dataLayout, useNewton3) {
     computeOffsets();
   }
-private:
+
+ private:
   /**
    * Computes pairs used in processBaseCell().
    */
   void computeOffsets();
 
+  /**
+   * Returns the index in the offset array for the given position.
+   * @param pos current position in dimension dim.
+   * @param dim current dimension.
+   * @return Index for the _cellOffsets Array.
+   */
   [[nodiscard]] unsigned long getIndex(unsigned long pos, unsigned int dim) const;
 
+  /**
+   * Getter.
+   */
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c01; }
 
+  /**
+   * C01 traversal is always usable.
+   * @return
+   */
   [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
- * Sets the orientationList.
- * @param list
- */
+   * Sets the orientationList.
+   * @param list
+   */
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list) override;
 
-  void setSortingThreshold(size_t sortingThreshold) override { }
+  void setSortingThreshold(size_t sortingThreshold) override {}
 
-
+  /**
+   * Computes all interactions between the base cell and adjacent cells.
+   * @param x X-index of the base cell.
+   * @param y Y-index of the base cell.
+   * @param z Z-index of the base cell.
+   */
   void processBaseCell(unsigned long x, unsigned long y, unsigned long z);
 
   /**
@@ -62,24 +82,24 @@ private:
    */
   internal::CellFunctorPsVL<ParticleCell, PairwiseFunctor,
                             /*bidirectional*/ true>
-    _cellFunctor;
+      _cellFunctor;
 
   /**
-  * Type of array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
-  * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
-  * center of the cell defined by the offset. It is used for sorting.
-  */
+   * Type of array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
+   * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
+   * center of the cell defined by the offset. It is used for sorting.
+   */
   using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
 
   /**
-  * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
-  */
+   * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
+   */
   std::vector<offsetArray_t> _cellOffsets;
 };
 
 template <class ParticleCell, class PairwiseFunctor>
 void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::setOrientationList(
-  std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+    std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
   PsVLTraversalInterface<ParticleCell>::setOrientationList(list);
   _cellFunctor.setOrientationList(list);
 }
@@ -140,7 +160,7 @@ inline void PsVLC01Traversal<ParticleCell, Functor>::computeOffsets() {
 
 template <class ParticleCell, class PairwiseFunctor>
 unsigned long PsVLC01Traversal<ParticleCell, PairwiseFunctor>::getIndex(const unsigned long pos,
-                                                                      const unsigned int dim) const {
+                                                                        const unsigned int dim) const {
   unsigned long index;
   if (pos < this->_overlap[dim]) {
     index = pos;
@@ -153,13 +173,11 @@ unsigned long PsVLC01Traversal<ParticleCell, PairwiseFunctor>::getIndex(const un
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(
-    unsigned long x, unsigned long y, unsigned long z) {
+void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long x, unsigned long y,
+                                                                      unsigned long z) {
+  const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
-  const unsigned long baseIndex =
-      utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-
-  const unsigned long xArray = getIndex(x, 0); // oder: x - this->_overlap[0]
+  const unsigned long xArray = getIndex(x, 0);
 
   offsetArray_t &offsets = _cellOffsets[xArray];
 
@@ -173,6 +191,5 @@ void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(
     }
   }
 }
-
 
 }  // namespace autopas

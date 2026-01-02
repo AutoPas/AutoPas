@@ -12,6 +12,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
+#include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
@@ -19,7 +20,6 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
-#include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
 
 namespace autopas {
 /**

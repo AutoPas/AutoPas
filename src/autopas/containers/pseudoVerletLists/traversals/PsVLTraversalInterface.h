@@ -16,25 +16,25 @@ namespace autopas {
  */
 template <class ParticleCell>
 class PsVLTraversalInterface {
-public:
+ public:
   /**
    * Destructor.
    */
   virtual ~PsVLTraversalInterface() = default;
 
- /**
-  * Sets the orientationList.
-  * @param orientationList
-  */
-virtual void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationList){
+  /**
+   * Sets the orientationList.
+   * @param orientationList
+   */
+  virtual void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationList) {
     _orientationList = &orientationList;
   }
 
-protected:
-/**
- * OrientationList
- */
-std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationList = nullptr;
+ protected:
+  /**
+   * OrientationList
+   */
+  std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationList = nullptr;
 };
 
 }  // namespace autopas

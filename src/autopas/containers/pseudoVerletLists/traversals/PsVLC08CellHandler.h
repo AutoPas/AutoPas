@@ -6,10 +6,8 @@
 
 #pragma once
 
-
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 #include "autopas/baseFunctors/CellFunctorPsVL.h"
-
+#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 
 namespace autopas {
 
@@ -38,8 +36,8 @@ class PsVLC08CellHandler {
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit PsVLC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                            double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
+                              double interactionLength, const std::array<double, 3> &cellLength,
+                              const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
       : _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
             LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
                                                                          interactionLength)},
@@ -88,8 +86,8 @@ class PsVLC08CellHandler {
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctorPsVL<ParticleCell, PairwiseFunctor,
-                          /*bidirectional*/ true>
-    _cellFunctor;
+                            /*bidirectional*/ true>
+      _cellFunctor;
 
   /**
    * Interaction length (cutoff + skin).
@@ -104,13 +102,13 @@ class PsVLC08CellHandler {
 
 template <class ParticleCell, class PairwiseFunctor>
 void PsVLC08CellHandler<ParticleCell, PairwiseFunctor>::setOrientationList(
-  std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+    std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
   _cellFunctor.setOrientationList(list);
 }
 
 template <class ParticleCell, class PairwiseFunctor>
 inline void PsVLC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                             unsigned long baseIndex) {
+                                                                               unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;

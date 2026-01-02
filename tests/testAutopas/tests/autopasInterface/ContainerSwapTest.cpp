@@ -202,8 +202,9 @@ std::vector<autopas::Configuration> containerConfigs = {
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
      autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::pseudoVerletLists, 1, autopas::TraversalOption::psvl_c18, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
+    {autopas::ContainerOption::pseudoVerletLists, 1, autopas::TraversalOption::psvl_c18,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise}};
 
 // Generates all unique pairs of configurations, order does not matter and no pairs of the same configuration.
 std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateUniquePairs(

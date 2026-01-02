@@ -28,7 +28,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public PsVLTraversalInterface<ParticleCell> {
+class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
+                         public PsVLTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the psvl_c18 traversal.
@@ -41,8 +42,8 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit PsVLC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          const double interactionLength, const std::array<double, 3> &cellLength,
-                          DataLayoutOption dataLayout, bool useNewton3)
+                            const double interactionLength, const std::array<double, 3> &cellLength,
+                            DataLayoutOption dataLayout, bool useNewton3)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength, dataLayout, useNewton3) {
@@ -73,7 +74,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    */
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list) override;
 
-  void setSortingThreshold(size_t sortingThreshold) override { }
+  void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
   /**
@@ -111,7 +112,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
 
 template <class ParticleCell, class PairwiseFunctor>
 void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::setOrientationList(
-  std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+    std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
   PsVLTraversalInterface<ParticleCell>::setOrientationList(list);
   _cellFunctor.setOrientationList(list);
 }
@@ -158,7 +159,8 @@ inline void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {
                     sortingDir = {1., 1., 1.};
                   }
 
-                  _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].emplace_back(offset, utils::ArrayMath::normalize(sortingDir));
+                  _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].emplace_back(
+                      offset, utils::ArrayMath::normalize(sortingDir));
                 }
               }
             }
@@ -171,7 +173,7 @@ inline void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {
 
 template <class ParticleCell, class PairwiseFunctor>
 unsigned long PsVLC18Traversal<ParticleCell, PairwiseFunctor>::getIndex(const unsigned long pos,
-                                                                      const unsigned int dim) const {
+                                                                        const unsigned int dim) const {
   unsigned long index;
   if (pos < this->_overlap[dim]) {
     index = pos;
@@ -184,8 +186,8 @@ unsigned long PsVLC18Traversal<ParticleCell, PairwiseFunctor>::getIndex(const un
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long x,
-                                                                    unsigned long y, unsigned long z) {
+void PsVLC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long x, unsigned long y,
+                                                                      unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   const unsigned long xArray = getIndex(x, 0);

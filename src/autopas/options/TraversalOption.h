@@ -197,7 +197,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vvl_as_built,
 
-    //PseudoVerletLists Traversals:
+    // PseudoVerletLists Traversals:
     /**
      *
      */
@@ -342,7 +342,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
 
-        //Pseudo Verlet Lists Traversals:
+        // Pseudo Verlet Lists Traversals:
         {TraversalOption::psvl_c18, "psvl_c18"},
         {TraversalOption::psvl_c08, "psvl_c08"},
         {TraversalOption::psvl_c01, "psvl_c01"},

@@ -24,7 +24,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public PsVLTraversalInterface<ParticleCell> {
+class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
+                         public PsVLTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the psvl_c08 traversal.
@@ -37,8 +38,8 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit PsVLC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          double interactionLength, const std::array<double, 3> &cellLength,
-                          DataLayoutOption dataLayout, bool useNewton3)
+                            double interactionLength, const std::array<double, 3> &cellLength,
+                            DataLayoutOption dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
 
@@ -58,12 +59,12 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
-  void setSortingThreshold(size_t sortingThreshold) override { }
+  void setSortingThreshold(size_t sortingThreshold) override {}
 
   /**
- * Sets the orientationList.
- * @param list
- */
+   * Sets the orientationList.
+   * @param list
+   */
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list) override;
 
  private:
@@ -72,7 +73,7 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>
 
 template <class ParticleCell, class PairwiseFunctor>
 void PsVLC08Traversal<ParticleCell, PairwiseFunctor>::setOrientationList(
-  std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+    std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
   PsVLTraversalInterface<ParticleCell>::setOrientationList(list);
   _cellHandler.setOrientationList(list);
 }
