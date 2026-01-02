@@ -1494,7 +1494,11 @@ class AxilrodTellerMutoFunctorHWY
       const size_t size = [&]() {
         if constexpr (LowerTriangle) {
           assert(rows == cols and "LowerTriangle requires a square matrix");
-          return (rows * rows - rows) / 2;
+
+          const size_t logicalSize = (rows * rows - rows) / 2;
+
+          // SIMD padding so that full vector loads are always safe
+          return ((logicalSize + _vecLengthDouble - 1) / _vecLengthDouble) * _vecLengthDouble;
         } else {
           return rows * _nColsPadded;
         }
