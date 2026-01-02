@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J virialSpin
+#SBATCH -J perfExploding
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
@@ -16,7 +16,7 @@ module load gcc/15.2.0
 
 PROJECT_DIR="$SLURM_SUBMIT_DIR"
 BIN="$PROJECT_DIR/../build/examples/md-flexible/md-flexible"
-YAML="$PROJECT_DIR/../build/examples/md-flexible/SpinodalDecomposition_equilibration.yaml"
+YAML="$PROJECT_DIR/../build/examples/md-flexible/explodingLiquid.yaml"
 
 RUNBASE="$PROJECT_DIR/runs/virialSpin_$SLURM_JOB_ID"
 mkdir -p "$RUNBASE"
