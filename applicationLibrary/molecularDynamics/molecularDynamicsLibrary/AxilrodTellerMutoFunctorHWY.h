@@ -1163,22 +1163,25 @@ class AxilrodTellerMutoFunctorHWY
       }
 
       if constexpr (calculateGlobals) {
+        const auto remainderMaskDouble = highway::RebindMask(tag_double, remainderMask);
+
         const auto potentialEnergy3 = factor * (allDistsSquared - _threeDoubleVec * allDotProducts);
 
         // sum potential energy only on owned particles
         const auto ownedMaskI =
-            highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
-                        highway::Set(tag_double, static_cast<double>(ownedStateI)));
+            highway::And(highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
+                                     highway::Set(tag_double, static_cast<double>(ownedStateI))),
+                         remainderMaskDouble);
 
-        potentialEnergySum += highway::IfThenElse(ownedMaskI, potentialEnergy3, _zeroDoubleVec);
+        potentialEnergySum += highway::IfThenElseZero(ownedMaskI, potentialEnergy3);
         // Virial for i
         const auto virialIX = forceIX * (distXKIVec - distXIJVec);
         const auto virialIY = forceIY * (distYKIVec - distYIJVec);
         const auto virialIZ = forceIZ * (distZKIVec - distZIJVec);
 
-        const auto maskedVirialIX = highway::IfThenElse(ownedMaskI, virialIX, _zeroDoubleVec);
-        const auto maskedVirialIY = highway::IfThenElse(ownedMaskI, virialIY, _zeroDoubleVec);
-        const auto maskedVirialIZ = highway::IfThenElse(ownedMaskI, virialIZ, _zeroDoubleVec);
+        const auto maskedVirialIX = highway::IfThenElseZero(ownedMaskI, virialIX);
+        const auto maskedVirialIY = highway::IfThenElseZero(ownedMaskI, virialIY);
+        const auto maskedVirialIZ = highway::IfThenElseZero(ownedMaskI, virialIZ);
 
         virialSumX += maskedVirialIX;
         virialSumY += maskedVirialIY;
@@ -1186,19 +1189,20 @@ class AxilrodTellerMutoFunctorHWY
 
         if constexpr (newton3Kernel) {
           const auto ownedMaskJ =
-              highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
-                          highway::Set(tag_double, static_cast<double>(ownedStateJ)));
+              highway::And(highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
+                                       highway::Set(tag_double, static_cast<double>(ownedStateJ))),
+                           remainderMaskDouble);
 
-          potentialEnergySum += highway::IfThenElse(ownedMaskJ, potentialEnergy3, _zeroDoubleVec);
+          potentialEnergySum += highway::IfThenElseZero(ownedMaskJ, potentialEnergy3);
 
           // Virial for j
           const auto virialJX = forceJX * (distXIJVec - distXJKVec);
           const auto virialJY = forceJY * (distYIJVec - distYJKVec);
           const auto virialJZ = forceJZ * (distZIJVec - distZJKVec);
 
-          const auto maskedVirialJX = highway::IfThenElse(ownedMaskJ, virialJX, _zeroDoubleVec);
-          const auto maskedVirialJY = highway::IfThenElse(ownedMaskJ, virialJY, _zeroDoubleVec);
-          const auto maskedVirialJZ = highway::IfThenElse(ownedMaskJ, virialJZ, _zeroDoubleVec);
+          const auto maskedVirialJX = highway::IfThenElseZero(ownedMaskJ, virialJX);
+          const auto maskedVirialJY = highway::IfThenElseZero(ownedMaskJ, virialJY);
+          const auto maskedVirialJZ = highway::IfThenElseZero(ownedMaskJ, virialJZ);
 
           virialSumX += maskedVirialJX;
           virialSumY += maskedVirialJY;
@@ -1241,23 +1245,27 @@ class AxilrodTellerMutoFunctorHWY
       }
 
       if constexpr (calculateGlobals) {
+        const auto remainderMaskDouble = highway::RebindMask(tag_double, remainderMask);
+
         const auto potentialEnergy3 = factor * (allDistsSquared - _threeDoubleVec * allDotProducts);
 
         // sum potential energy only on owned particles
         const auto ownedMaskI =
-            highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
-                        highway::Set(tag_double, static_cast<double>(ownedStateI)));
+            highway::And(highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
+                                     highway::Set(tag_double, static_cast<double>(ownedStateI))),
+                         remainderMaskDouble);
         const auto ownedMaskJ =
-            highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
-                        highway::Set(tag_double, static_cast<double>(ownedStateJ)));
+            highway::And(highway::Eq(highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)),
+                                     highway::Set(tag_double, static_cast<double>(ownedStateJ))),
+                         remainderMaskDouble);
         const auto ownedMaskK =
             highway::Eq(highway::ConvertTo(tag_double, ownershipK),
                         highway::Set(tag_double, static_cast<double>(autopas::OwnershipState::owned)));
 
         // potential energy for i,j,k (masked)
-        const auto potentialEnergyI = highway::IfThenElse(ownedMaskI, potentialEnergy3, _zeroDoubleVec);
-        const auto potentialEnergyJ = highway::IfThenElse(ownedMaskJ, potentialEnergy3, _zeroDoubleVec);
-        const auto potentialEnergyK = highway::IfThenElse(ownedMaskK, potentialEnergy3, _zeroDoubleVec);
+        const auto potentialEnergyI = highway::IfThenElseZero(ownedMaskI, potentialEnergy3);
+        const auto potentialEnergyJ = highway::IfThenElseZero(ownedMaskJ, potentialEnergy3);
+        const auto potentialEnergyK = highway::IfThenElseZero(ownedMaskK, potentialEnergy3);
 
         potentialEnergySum += potentialEnergyI + potentialEnergyJ + potentialEnergyK;
 
@@ -1266,27 +1274,27 @@ class AxilrodTellerMutoFunctorHWY
         const auto virialIY = forceIY * (distYKIVec - distYIJVec);
         const auto virialIZ = forceIZ * (distZKIVec - distZIJVec);
 
-        const auto maskedVirialIX = highway::IfThenElse(ownedMaskI, virialIX, _zeroDoubleVec);
-        const auto maskedVirialIY = highway::IfThenElse(ownedMaskI, virialIY, _zeroDoubleVec);
-        const auto maskedVirialIZ = highway::IfThenElse(ownedMaskI, virialIZ, _zeroDoubleVec);
+        const auto maskedVirialIX = highway::IfThenElseZero(ownedMaskI, virialIX);
+        const auto maskedVirialIY = highway::IfThenElseZero(ownedMaskI, virialIY);
+        const auto maskedVirialIZ = highway::IfThenElseZero(ownedMaskI, virialIZ);
 
         // Virial for j
         const auto virialJX = forceJX * (distXIJVec - distXJKVec);
         const auto virialJY = forceJY * (distYIJVec - distYJKVec);
         const auto virialJZ = forceJZ * (distZIJVec - distZJKVec);
 
-        const auto maskedVirialJX = highway::IfThenElse(ownedMaskJ, virialJX, _zeroDoubleVec);
-        const auto maskedVirialJY = highway::IfThenElse(ownedMaskJ, virialJY, _zeroDoubleVec);
-        const auto maskedVirialJZ = highway::IfThenElse(ownedMaskJ, virialJZ, _zeroDoubleVec);
+        const auto maskedVirialJX = highway::IfThenElseZero(ownedMaskJ, virialJX);
+        const auto maskedVirialJY = highway::IfThenElseZero(ownedMaskJ, virialJY);
+        const auto maskedVirialJZ = highway::IfThenElseZero(ownedMaskJ, virialJZ);
 
         // Virial for k
         const auto virialKX = forceKX * (distXJKVec - distXKIVec);
         const auto virialKY = forceKY * (distYJKVec - distYKIVec);
         const auto virialKZ = forceKZ * (distZJKVec - distZKIVec);
 
-        const auto maskedVirialKX = highway::IfThenElse(ownedMaskK, virialKX, _zeroDoubleVec);
-        const auto maskedVirialKY = highway::IfThenElse(ownedMaskK, virialKY, _zeroDoubleVec);
-        const auto maskedVirialKZ = highway::IfThenElse(ownedMaskK, virialKZ, _zeroDoubleVec);
+        const auto maskedVirialKX = highway::IfThenElseZero(ownedMaskK, virialKX);
+        const auto maskedVirialKY = highway::IfThenElseZero(ownedMaskK, virialKY);
+        const auto maskedVirialKZ = highway::IfThenElseZero(ownedMaskK, virialKZ);
 
         // Reduce the virial
         virialSumX += maskedVirialIX + maskedVirialJX + maskedVirialKX;
@@ -1434,18 +1442,27 @@ class AxilrodTellerMutoFunctorHWY
     /**
      * Struct for storing vector registers with precalculated x, y, z displacements, the squared distance, and the
      * inverse r^5 between two particles.
-     *
-     * @param dx x-displacement between two particles.
-     * @param dy y-displacement between two particles.
-     * @param dz z-displacement between two particles.
-     * @param r2 The squared distance between two particles.
-     * @param invR5 The inverese distance to 5 between two particles (1.0/r^5).
      */
     struct DistRowVec {
+      /**
+       * x-displacement between two particles.
+       */
       VectorDouble dx;
+      /**
+       * y-displacement between two particles.
+       */
       VectorDouble dy;
+      /**
+       * z-displacement between two particles.
+       */
       VectorDouble dz;
+      /**
+       * The squared distance between two particles.
+       */
       VectorDouble r2;
+      /**
+       * The inverese distance to 5 between two particles (1.0/r^5).
+       */
       VectorDouble invR5;
     };
 
