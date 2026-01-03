@@ -89,6 +89,8 @@ namespace mdLib {
  * A functor to handle Axilrod-Teller-Muto interactions between three particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
+ * Note: This functor only supports aligned SoAs. A version that also supports unaligned SoAs can be found here:
+ * https://github.com/AutoPas/AutoPas/commit/2ccd4f57333e219f237e64e21b00b7a34ecca5fe
  * @tparam Particle_T The type of particle.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
@@ -628,12 +630,9 @@ class AxilrodTellerMutoFunctorHWY
         const auto distSquaredIJVec = highway::Set(tag_double, distSquaredIJ);
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
-        const size_t blockEnd = j;  // j & ~(_vecLengthDouble - 1);
-
-        unsigned int k = 0;
-
-        for (; k < blockEnd; k += _vecLengthDouble) {
-          const auto numLanesToProcess = std::min(_vecLengthDouble, j - k);
+        const size_t blockEnd = j;
+        for (unsigned int k = 0; k < blockEnd; k += _vecLengthDouble) {
+          const auto numLanesToProcess = std::min(_vecLengthDouble, blockEnd - k);
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ true, /*newton3*/ true,
                           /*newton3Kernel*/ true>(
@@ -772,10 +771,8 @@ class AxilrodTellerMutoFunctorHWY
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
         const size_t blockEnd = j;
-
-        unsigned int k = 0;
-        for (; k < blockEnd; k += _vecLengthDouble) {
-          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(j - k));
+        for (unsigned int k = 0; k < blockEnd; k += _vecLengthDouble) {
+          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(blockEnd - k));
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ true, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ newton3>(
@@ -827,10 +824,8 @@ class AxilrodTellerMutoFunctorHWY
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
         unsigned int blockEnd = soa2.size();
-
-        unsigned int k = 0;
-        for (; k < blockEnd; k += _vecLengthDouble) {
-          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(soa2.size() - k));
+        for (unsigned int k = 0; k < blockEnd; k += _vecLengthDouble) {
+          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(blockEnd - k));
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ true>(
@@ -987,10 +982,8 @@ class AxilrodTellerMutoFunctorHWY
         const auto invR5IJVec = highway::Set(tag_double, invR5IJ);
 
         unsigned int blockEnd = soa3.size();
-
-        unsigned int k = 0;
-        for (; k < blockEnd; k += _vecLengthDouble) {
-          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(soa3.size() - k));
+        for (unsigned int k = 0; k < blockEnd; k += _vecLengthDouble) {
+          const auto numLanesToProcess = std::min(_vecLengthDouble, static_cast<size_t>(blockEnd - k));
 
           handleKLoopBody</*LowerPackedTrianglePB1*/ false, /*LowerPackedTrianglePB2*/ false, /*newton3*/ newton3,
                           /*newton3Kernel*/ newton3>(
@@ -1000,7 +993,7 @@ class AxilrodTellerMutoFunctorHWY
               virialSumZ, potentialEnergySum, numKernelCallsN3Sum, numGlobalCalcsN3Sum, numKernelCallsNoN3Sum,
               numGlobalCalcsNoN3Sum, numLanesToProcess);
         }
-
+        // Reduce force on particle j.
         fxPtr2[j] += highway::ReduceSum(tag_double, fXAccJ);
         fyPtr2[j] += highway::ReduceSum(tag_double, fYAccJ);
         fzPtr2[j] += highway::ReduceSum(tag_double, fZAccJ);
