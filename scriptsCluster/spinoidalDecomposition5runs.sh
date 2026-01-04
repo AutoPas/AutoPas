@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J 20spacingSpinodal
+#SBATCH -J 10spacingSpinodal
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
