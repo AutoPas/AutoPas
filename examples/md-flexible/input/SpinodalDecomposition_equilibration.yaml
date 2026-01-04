@@ -33,7 +33,7 @@ Objects:
     0:
       particle-type-id           :  0
       particles-per-dimension    :  [160, 160, 160]
-      particle-spacing           :  1.5
+      particle-spacing           :  2.0
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
 thermostat:
@@ -44,5 +44,5 @@ thermostat:
   addBrownianMotion              :  true
 #vtk-write-frequency              :  0 #100000
 #vtk-filename                     :  SpinodalDecomposition_equilibration
-no-progress-bar                      :  false
+no-progress-bar                      :  true
 
