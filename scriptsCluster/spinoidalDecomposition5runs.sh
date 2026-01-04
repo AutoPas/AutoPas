@@ -8,7 +8,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=18
 #SBATCH --mem=200G
-#SBATCH --time=08:00:00
+#SBATCH --time=24:00:00
 set -euo pipefail
 
 module load slurm_setup
