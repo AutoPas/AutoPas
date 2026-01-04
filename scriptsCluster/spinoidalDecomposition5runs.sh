@@ -16,7 +16,7 @@ module load gcc/15.2.0
 
 PROJECT_DIR="$SLURM_SUBMIT_DIR"
 BIN="$PROJECT_DIR/../build/examples/md-flexible/md-flexible"
-YAML="$PROJECT_DIR/../build/examples/md-flexible/explodingLiquid.yaml"
+YAML="$PROJECT_DIR/../build/examples/md-flexible/SpinodalDecomposition_equilibration.yaml"
 
 RUNBASE="$PROJECT_DIR/runs/virialSpin_$SLURM_JOB_ID"
 mkdir -p "$RUNBASE"
