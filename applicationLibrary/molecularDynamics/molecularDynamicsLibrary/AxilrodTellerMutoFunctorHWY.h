@@ -1562,6 +1562,7 @@ class AxilrodTellerMutoFunctorHWY
     }
 
     template <bool LowerTriangle>
+    __attribute__((no_sanitize("address")))
     HWY_INLINE void fillHighway(const SoAFloatPrecision *xptr1, const SoAFloatPrecision *yptr1,
                                 const SoAFloatPrecision *zptr1, const SoAFloatPrecision *xptr2,
                                 const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2,
