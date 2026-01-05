@@ -1562,11 +1562,10 @@ class AxilrodTellerMutoFunctorHWY
     }
 
     template <bool LowerTriangle>
-    __attribute__((no_sanitize("address")))
-    HWY_INLINE void fillHighway(const SoAFloatPrecision *xptr1, const SoAFloatPrecision *yptr1,
-                                const SoAFloatPrecision *zptr1, const SoAFloatPrecision *xptr2,
-                                const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2,
-                                const SoAFloatPrecision cutoffSquared) {
+    __attribute__((no_sanitize("address"))) HWY_INLINE void fillHighway(
+        const SoAFloatPrecision *xptr1, const SoAFloatPrecision *yptr1, const SoAFloatPrecision *zptr1,
+        const SoAFloatPrecision *xptr2, const SoAFloatPrecision *yptr2, const SoAFloatPrecision *zptr2,
+        const SoAFloatPrecision cutoffSquared) {
       for (size_t i = 0; i < _nRows; ++i) {
         const auto x1v = highway::Set(tag_double, xptr1[i]);
         const auto y1v = highway::Set(tag_double, yptr1[i]);
