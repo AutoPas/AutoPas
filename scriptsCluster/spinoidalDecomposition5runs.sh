@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J 2000iters06Spinodal
+#SBATCH -J VCLc06NoEarlyStopSpinodal
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
