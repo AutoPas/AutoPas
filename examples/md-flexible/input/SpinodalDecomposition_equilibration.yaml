@@ -33,7 +33,7 @@ Objects:
     0:
       particle-type-id           :  0
       particles-per-dimension    :  [160, 160, 160]
-      particle-spacing           :  1.5
+      particle-spacing           :  2.0
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
 thermostat:

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J VCLc06NoEarlyStopSpinodal
+#SBATCH -J VCLc06DifferentSpacings
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
