@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J 10spacingSpinodal
+#SBATCH -J 2000iters06Spinodal
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
@@ -8,7 +8,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=18
 #SBATCH --mem=200G
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 set -euo pipefail
 
 module load slurm_setup
