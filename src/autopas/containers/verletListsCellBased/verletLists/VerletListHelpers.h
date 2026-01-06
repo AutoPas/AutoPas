@@ -25,6 +25,8 @@ class VerletListHelpers {
    */
   using NeighborListAoSType = std::unordered_map<Particle_T *, std::vector<Particle_T *>>;
 
+  using NeighborListSoAType = std::vector<std::vector<size_t, AlignedAllocator<size_t>>>;
+
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
@@ -228,6 +230,9 @@ class VerletListHelpers {
     //ex soa is the SoABuffer of the current cell
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.size() == 0) return;
+      //LIKWID_MARKER_START("distance calculation - single cell");
+
+      const double cutoffSquared = this->_interactionLengthSquared;
 
       auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -235,21 +240,19 @@ class VerletListHelpers {
       const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
       size_t numPart = soa.size();
-      for (unsigned int i = 0; i < numPart; ++i) {
+      for (size_t i = 0; i < numPart; ++i) {
         auto &currentListSoAI = _verletListsSoA[_particlePtr2indexMap.at(ptrptr[i])];
 
-        for (unsigned int j = i + 1; j < numPart; ++j) {
-          const double drx = xptr[i] - xptr[j];
-          const double dry = yptr[i] - yptr[j];
-          const double drz = zptr[i] - zptr[j];
+        const double xi = xptr[i];
+        const double yi = yptr[i];
+        const double zi = zptr[i];
 
-          const double drx2 = drx * drx;
-          const double dry2 = dry * dry;
-          const double drz2 = drz * drz;
+        for (size_t j = i + 1; j < numPart; ++j) {
+          const double drx = xi - xptr[j];
+          const double dry = yi - yptr[j];
+          const double drz = zi - zptr[j];
 
-          const double dr2 = drx2 + dry2 + drz2;
-
-          if (dr2 < this->_interactionLengthSquared) {
+          if (drx*drx + dry*dry + drz*drz < cutoffSquared) {
             currentListSoAI.push_back(_particlePtr2indexMap.at(ptrptr[j]));
             if (not newton3) {
               // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
@@ -280,23 +283,20 @@ class VerletListHelpers {
       const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
       size_t numPart1 = soa1.size();
-      for (unsigned int i = 0; i < numPart1; ++i) {
+      for (size_t i = 0; i < numPart1; ++i) {
 
         size_t numPart2 = soa2.size();
         auto  &currentListSoA = _verletListsSoA[_particlePtr2indexMap.at(ptr1ptr[i])];
+        const double x1 = x1ptr[i];
+        const double y1 = y1ptr[i];
+        const double z1 = z1ptr[i];
 
-        for (unsigned int j = 0; j < numPart2; ++j) {
-          const double drx = x1ptr[i] - x2ptr[j];
-          const double dry = y1ptr[i] - y2ptr[j];
-          const double drz = z1ptr[i] - z2ptr[j];
+        for (size_t j = 0; j < numPart2; ++j) {
+          const double drx = x1 - x2ptr[j];
+          const double dry = y1 - y2ptr[j];
+          const double drz = z1 - z2ptr[j];
 
-          const double drx2 = drx * drx;
-          const double dry2 = dry * dry;
-          const double drz2 = drz * drz;
-
-          const double dr2 = drx2 + dry2 + drz2;
-
-          if (dr2 < this->_interactionLengthSquared) {
+          if (drx*drx + dry*dry + drz*drz  < cutoffSquared) {
           currentListSoA.push_back(_particlePtr2indexMap.at(ptr2ptr[j]));
           }
         }
