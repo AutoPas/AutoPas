@@ -5,21 +5,20 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS]
+data-layout                      :  [SoA]
 traversal                        :  [ vl_list_iteration] # Please see AllOptions.yaml for a comprehensive list of traversals
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones AVX
+functor                          :  lj
 newton3                          :  [disabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [23, 23, 23]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  7500
-energy-sensor                    :  rapl
+iterations                       :  100
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 Sites:
@@ -39,7 +38,7 @@ Objects:
     0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [20, 20, 3]
+      box-length                 :  [100, 80, 15]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
   Sphere:
@@ -57,6 +56,6 @@ thermostat:
   addBrownianMotion                  :  false
 vtk-filename                     :  fallingDrop_simple
 vtk-write-frequency              :  100
-vtk-output-folder                :  "../../../../../../../mnt/c/Users/Tobias Langer/Documents/Bildung/TU_München/Bachelorarbeit/VTK-Output"
+vtk-output-folder                :  simple_test
 no-end-config                    :  true
 log-level                        :  info
