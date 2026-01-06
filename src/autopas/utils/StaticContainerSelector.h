@@ -19,6 +19,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletListsSoA.h"
 
 namespace autopas {
 /**
@@ -50,6 +51,8 @@ decltype(auto) withStaticContainerType(ParticleContainerInterface<Particle_T> &c
       return function(dynamic_cast<VerletListsCells<Particle_T, VLCCellPairNeighborList<Particle_T>> &>(container));
     case ContainerOption::varVerletListsAsBuild:
       return function(dynamic_cast<VarVerletLists<Particle_T, VerletNeighborListAsBuild<Particle_T>> &>(container));
+    case ContainerOption::verletListsSoA:
+      return function(dynamic_cast<VerletListsSoA<Particle_T> &>(container));
     case ContainerOption::octree:
       return function(dynamic_cast<Octree<Particle_T> &>(container));
   }

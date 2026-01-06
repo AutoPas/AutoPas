@@ -63,6 +63,8 @@ class ContainerOption : public Option<ContainerOption> {
      * Improves data locality and cache efficiency.
      */
     pairwiseVerletLists,
+
+    verletListsSoA,
     /**
      * Octree : Particles are put into an octree. This data structure is optimized if the data is non-uniformly
      * distributed since it is space adaptive
@@ -109,6 +111,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
+        {ContainerOption::verletListsSoA, "VerletListsSoA"},
         {ContainerOption::octree, "Octree"},
     };
   };

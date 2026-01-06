@@ -210,6 +210,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         case ContainerOption::pairwiseVerletLists: {
           return allVLPCompatibleTraversals();
         }
+        case ContainerOption::verletListsSoA: {
+          return allVLCompatibleTraversals();
+        }
         case ContainerOption::octree: {
           return allOTCompatibleTraversals();
         }

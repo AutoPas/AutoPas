@@ -139,6 +139,16 @@ class ContainerIterator {
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated over.
    * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
    */
+  //ex IteratorBehavior behavior enum Value : Value_t
+  //ex owned = 0b00001 : Iterate only over owned particles.
+  //ex halo = 0b00010 : Iterate only over halo particles.
+  //ex ownedOrHalo = 0b00011 : Iterate over both halo and owned particles. Defined fore ease of access.
+  //ex dummy = 0b00100 : Iterate only over dummy particles.
+  //ex ownedOrHaloOrDummy = 0b00111 Iterate over both halo and owned particles and also dummy particles. Defined fore ease of access.
+  //ex forceSequential = 0b01000 Force the iterator to behave like a sequential iterator even when created in a parallel region.
+  //ex containerOnly = 0b10000 Force the iterator to iterate over Container only
+
+
   ContainerIterator(ContainerType &container, IteratorBehavior behavior, ParticleVecType *additionalVectorsToIterate)
       : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate, {}, {}) {
     static_assert(regionIter == false,

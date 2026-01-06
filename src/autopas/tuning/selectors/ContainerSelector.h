@@ -97,6 +97,11 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
           VerletListsCellsHelpers::VLCBuildType::soaBuild);
       break;
     }
+    case ContainerOption::verletListsSoA: {
+      container = std::make_unique<VerletListsSoA<Particle_T>>(
+      boxMin, boxMax, cutoff, verletSkin, VerletListsSoA<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
+      break;
+    }
     case ContainerOption::octree: {
       container =
           std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
