@@ -39,6 +39,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   enum AttributeNames : int {
     ptr,
     id,
+    liveId,
     posX,
     posY,
     posZ,
@@ -63,7 +64,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, size_t /*liveId*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
                                        size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
@@ -88,6 +89,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
+    } else if constexpr (attribute == AttributeNames::liveId) {
+      return getLiveId();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
@@ -132,6 +135,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
+    } else if constexpr (attribute == AttributeNames::liveId) {
+      setLiveId(value);
     } else if constexpr (attribute == AttributeNames::posX) {
       _r[0] = value;
     } else if constexpr (attribute == AttributeNames::posY) {
@@ -189,6 +194,10 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    */
   void setTypeId(size_t typeId);
 
+  [[nodiscard]] size_t getLiveId() const;
+
+  void setLiveId(size_t liveId);
+
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
@@ -209,6 +218,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Old Force of the particle experiences as 3D vector.
    */
   std::array<double, 3> _oldF = {0., 0., 0.};
+
+  size_t _liveId = 0;
 };
 
 }  // namespace mdLib

@@ -187,7 +187,7 @@ class VerletListHelpers {
     double _interactionLengthSquared;
   };
 
-  class VerletListGeneratorFunctorSoA : public PairwiseFunctor<Particle_T, VerletListGeneratorFunctor> {
+  class VerletListGeneratorFunctorSoA : public PairwiseFunctor<Particle_T, VerletListGeneratorFunctorSoA> {
    public:
     /**
      * Structure of the SoAs defined by the particle.
@@ -199,9 +199,8 @@ class VerletListHelpers {
      * @param verletListsAoS
      * @param interactionLength
      */
-    VerletListGeneratorFunctorSoA(NeighborListSoAType &verletListsSoA, std::unordered_map<const Particle_T *,
-                                  size_t> particlePtr2indexMap, double interactionLength)
-    : PairwiseFunctor<Particle_T, VerletListGeneratorFunctor>(interactionLength),
+    VerletListGeneratorFunctorSoA(NeighborListSoAType &verletListsSoA, double interactionLength)
+    : PairwiseFunctor<Particle_T, VerletListGeneratorFunctorSoA>(interactionLength),
       _verletListsSoA(verletListsSoA),
       _particlePtr2indexMap(particlePtr2indexMap),
       _interactionLengthSquared(interactionLength * interactionLength){}
@@ -238,10 +237,11 @@ class VerletListHelpers {
       const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+      auto *const liveId = soa.template begin<Particle_T::AttributeNames::liveId>();
 
       size_t numPart = soa.size();
       for (size_t i = 0; i < numPart; ++i) {
-        auto &currentListSoAI = _verletListsSoA[_particlePtr2indexMap.at(ptrptr[i])];
+        auto &currentListSoAI = _verletListsSoA[liveId[i]];
 
         const double xi = xptr[i];
         const double yi = yptr[i];
@@ -253,10 +253,10 @@ class VerletListHelpers {
           const double drz = zi - zptr[j];
 
           if (drx*drx + dry*dry + drz*drz < cutoffSquared) {
-            currentListSoAI.push_back(_particlePtr2indexMap.at(ptrptr[j]));
+            currentListSoAI.push_back(liveId[j]);
             if (not newton3) {
               // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
-              _verletListsSoA[_particlePtr2indexMap.at(ptrptr[j])].push_back(_particlePtr2indexMap.at(ptrptr[i]));
+              _verletListsSoA[liveId[j]].push_back(liveId[i]);
             }
           }
         }
@@ -272,21 +272,25 @@ class VerletListHelpers {
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
 
+      const double cutoffSquared = this->_interactionLengthSquared;
+
       auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+      auto *const liveId1 = soa1.template begin<Particle_T::AttributeNames::liveId>();
 
       auto **const __restrict ptr2ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+      auto *const liveId2 = soa2.template begin<Particle_T::AttributeNames::liveId>();
 
       size_t numPart1 = soa1.size();
       for (size_t i = 0; i < numPart1; ++i) {
 
         size_t numPart2 = soa2.size();
-        auto  &currentListSoA = _verletListsSoA[_particlePtr2indexMap.at(ptr1ptr[i])];
+        auto  &currentListSoA = _verletListsSoA[liveId1[i]];
         const double x1 = x1ptr[i];
         const double y1 = y1ptr[i];
         const double z1 = z1ptr[i];
@@ -297,7 +301,7 @@ class VerletListHelpers {
           const double drz = z1 - z2ptr[j];
 
           if (drx*drx + dry*dry + drz*drz  < cutoffSquared) {
-          currentListSoA.push_back(_particlePtr2indexMap.at(ptr2ptr[j]));
+          currentListSoA.push_back(liveId2[j]);
           }
         }
       }
@@ -306,10 +310,10 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::Functor::getNeededAttr()
      */
-    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
-      return std::array<typename Particle_T::AttributeNames, 4>{
+    constexpr static std::array<typename Particle_T::AttributeNames, 5> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 5>{
         Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
-        Particle_T::AttributeNames::posZ};
+        Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::liveId};
     }
 
     /**
@@ -321,7 +325,6 @@ class VerletListHelpers {
 
    private:
     NeighborListSoAType &_verletListsSoA;
-    std::unordered_map<const Particle_T *, size_t> _particlePtr2indexMap;
     double _interactionLengthSquared;
   };
 

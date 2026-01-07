@@ -100,8 +100,7 @@ public:
    */
   void updateSoAVerletLists(bool useNewton3) {
     generateSoANeighborLists();
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctorSoA f(this->_soaNeighborLists, this->_particlePtr2indexMap,
-                                                                         this->getCutoff() + this->getVerletSkin());
+    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctorSoA f(this->_soaNeighborLists, this->getCutoff() + this->getVerletSkin());
 
     DataLayoutOption dataLayout;
     dataLayout = DataLayoutOption::soa;
@@ -122,17 +121,16 @@ public:
     size_t numParticles = 0;
     size_t index = 0;
     this->_soaNeighborLists.clear();
-    this->_particlePtr2indexMap.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
-      this->_particlePtr2indexMap[&(*iter)] = index;
+      (&(*iter))->setLiveId(index);
     }
     this->_soaNeighborLists.resize(numParticles);
 
     for (auto &neighborlist : this->_soaNeighborLists) {
       neighborlist.clear();
-      neighborlist.reserve(64);
+      neighborlist.reserve(256);
     }
 
     return numParticles;
@@ -145,14 +143,8 @@ private:
   typename VerletListHelpers<Particle_T>::NeighborListAoSType _aosNeighborLists;
 
   /**
-   * Mapping of every particle, represented by its pointer, to an index.
-   * The index indexes all particles in the container.
-   */
-  std::unordered_map<const Particle_T *, size_t> _particlePtr2indexMap;
-
-  /**
    * verlet list for SoA:
-   * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
+   * For every Particle, a vector of its neighbor indices is stored.
    */
   std::vector<std::vector<size_t, AlignedAllocator<size_t>>> _soaNeighborLists;
 
