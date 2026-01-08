@@ -376,6 +376,14 @@ class VerletClusterListsRebuilder {
       return clusterIter < tower.getFirstOwnedCluster() or clusterIter >= tower.getFirstTailHaloCluster();
     };
     const double interactionLength = std::sqrt(_interactionLengthSqr);
+
+        auto &clustersB = towerB.getClusters();
+        const size_t nB = clustersB.size();
+        std::vector<double> bMinX(nB), bMinY(nB), bMinZ(nB);
+        std::vector<double> bMaxX(nB), bMaxY(nB), bMaxZ(nB);
+        std::vector<bool> bValid(nB);
+        std::vector<bool> bIsHalo(nB);
+
     // iterate over all clusters from tower A. In newton3 mode go over all of them, otherwise only owned.
     for (auto clusterIterA = _newton3 ? towerA.getClusters().begin() : towerA.getFirstOwnedCluster();
          clusterIterA < (_newton3 ? towerA.getClusters().end() : towerA.getFirstTailHaloCluster()); ++clusterIterA) {
@@ -383,29 +391,54 @@ class VerletClusterListsRebuilder {
         clusterIterA->getNeighbors()->reserve((towerA.getNumActualParticles() + 8 * towerB.getNumActualParticles()) *
                                               neighborListReserveHeuristicFactor);
 
+        size_t startB = 0;
+        if (isSameTower && _newton3) {
+        startB = (clusterIterA - towerA.getClusters().begin()) + 1;
+        }
+
+        for (size_t i = 0; i < nB; ++i) {
+        if (clustersB[i].empty()) {
+          bValid[i] = false;
+            continue;
+          }
+         const auto [bmin, bmax] = clustersB[i].getBoundingBox();
+        bMinX[i] = bmin[0];
+        bMinY[i] = bmin[1];
+        bMinZ[i] = bmin[2];
+        bMaxX[i] = bmax[0];
+        bMaxY[i] = bmax[1];
+        bMaxZ[i] = bmax[2];
+        bValid[i] = true;
+        }
+        const auto [aMin, aMax] = clusterIterA->getBoundingBox();
+        auto firstOwnedB = towerB.getFirstOwnedCluster();
+        auto firstTailHaloB = towerB.getFirstTailHaloCluster();
         // if we are within one tower depending on newton3 only look at forward neighbors
         // clusterIterB can't be const because it will potentially be added as a non-const neighbor
-        for (auto clusterIterB = isSameTower and _newton3 ? clusterIterA + 1 : towerB.getClusters().begin();
-             clusterIterB < towerB.getClusters().end(); ++clusterIterB) {
+        for (size_t i = startB; i < nB; ++i) {
+            auto it = clustersB.begin() + i;
+            bIsHalo[i] = (it < firstOwnedB) or (it >= firstTailHaloB);
+
           // a cluster cannot be a neighbor to itself
-          if (&*clusterIterA == &*clusterIterB) {
+          if (&*clusterIterA == &clustersB[i]) {
             continue;
           }
+
           // never do halo-halo interactions
-          if (isHaloCluster(clusterIterA, towerA) and isHaloCluster(clusterIterB, towerB)) {
-            continue;
-          }
-          if (not clusterIterB->empty()) {
-            const auto [aMin, aMax] = clusterIterA->getBoundingBox();
-            const auto [bMin, bMax] = clusterIterB->getBoundingBox();
-           //  if (bMin[2] > aMax[2] + interactionLength) {
+          if (isHaloCluster(clusterIterA, towerA) && bIsHalo[i]) continue;
+
+            if (!bValid[i]) continue;
+            const double dx = std::max(0.0, aMin[0] - bMaxX[i]) + std::max(0.0, bMinX[i] - aMax[0]);
+            const double dy = std::max(0.0, aMin[1] - bMaxY[i]) + std::max(0.0, bMinY[i] - aMax[1]);
+            const double dz = std::max(0.0, aMin[2] - bMaxZ[i]) + std::max(0.0, bMinZ[i] - aMax[2]);
+           //  if (bmin[2] > aMax[2] + interactionLength) {
              //   break;   
           //  }
-            const auto boxDistSquared = boxDistanceSquared(aMin, aMax, bMin, bMax);
+            const auto boxDistSquared = dx*dx + dy*dy + dz*dz;
             if (boxDistSquared <= _interactionLengthSqr) {
-              clusterIterA->addNeighbor(*clusterIterB);
+              clusterIterA->addNeighbor(clustersB[i]);
             }
-          }
+          
         }
       }
     }
