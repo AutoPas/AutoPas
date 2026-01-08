@@ -2,11 +2,11 @@
 
 container                            : [LinkedCells]
 functor                              : Lennard-Jones (12-6) avx
-traversal                            : [lc_c01]
+traversal                            : [lc_c01, lc_c01_combined_SoA]
 newton3                              : [enabled, disabled]
 data-layout                          : [AoS, SoA]
 
-verlet-rebuild-frequency             : 20
+verlet-rebuild-frequency             : 100
 verlet-skin-radius                   : 0.2
 
 selector-strategy                    : Fastest-Absolute-Value
@@ -24,7 +24,7 @@ box-max                              : [104.657, 104.657, 104.657]  # 97.868 + 6
 
 cell-size                            : [1]
 deltaT                               : 0.002
-iterations                           : 200000
+iterations                           : 2000
 boundary-type                        : [periodic, periodic, periodic]
 subdivide-dimension                  : [true, true, true]
 fastParticlesThrow                   : false

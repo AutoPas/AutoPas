@@ -2,9 +2,9 @@
 
 container                            : [LinkedCells]
 functor                              : Lennard-Jones (12-6) avx
-traversal                            : [lc_c01]
-newton3                              : [enabled]
-data-layout                          : [SoA]
+traversal                            : [lc_c01, lc_c01_combined_SoA]
+newton3                              : [enabled, disabled]
+data-layout                          : [AoS, SoA]
 
 verlet-rebuild-frequency             : 100
 verlet-skin-radius                   : 0.3
@@ -24,7 +24,7 @@ box-max                              : [68.383, 68.383, 68.383]   # 61.594 + 6.7
 
 cell-size                            : [1]
 deltaT                               : 0.002
-iterations                           : 200000
+iterations                           : 2000
 boundary-type                        : [periodic, periodic, periodic]
 subdivide-dimension                  : [true, true, true]
 fastParticlesThrow                   : false
