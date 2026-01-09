@@ -41,6 +41,8 @@ class VLTraversalInterface {
     _soaNeighborLists = &soaNeighborLists;
   }
 
+  virtual void setSoaTryout(bool soATryOut) = 0;
+
  protected:
   /**
    * The cells of the underlying linked cells container of the verlet lists container.

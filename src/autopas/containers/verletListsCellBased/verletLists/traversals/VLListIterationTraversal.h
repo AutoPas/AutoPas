@@ -41,6 +41,10 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     return (not _useNewton3) and (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa);
   }
 
+  [[nodiscard]] bool isSoaTryout() const { return _soaTryout; }
+
+  void setSoaTryout(bool soaTryout) override { _soaTryout = soaTryout; }
+
   void initTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
@@ -104,16 +108,33 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       }
 
       case DataLayoutOption::soa: {
-        if (not _useNewton3) {
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
-          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+        if (_soaTryout) {
+          if (not _useNewton3) {
+            /// @todo find a sensible chunk size
+            AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+            for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+              //ep SoA Functor call
+              _functor->SoAFunctorVerletTryout(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+            }
+          } else {
+            // iterate over SoA
+            for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+              _functor->SoAFunctorVerletTryout(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+            }
           }
         } else {
-          // iterate over SoA
-          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+          if (not _useNewton3) {
+            /// @todo find a sensible chunk size
+            AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+            for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+              //ep SoA Functor call
+              _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+            }
+          } else {
+            // iterate over SoA
+            for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+              _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+            }
           }
         }
         return;
@@ -134,6 +155,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * SoA buffer of verlet lists.
    */
   SoA<typename ParticleType::SoAArraysType> _soa;
+
+  bool _soaTryout = false;
 };
 
 }  // namespace autopas
