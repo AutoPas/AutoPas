@@ -83,15 +83,11 @@ namespace autopas::utils {
     template <typename Target, std::size_t... I>
     void markModified(std::index_sequence<I...>) {
       (std::get<I>(views).template modify<Target>(), ...);
-      setDirty<Target>();
     }
 
     template <typename Target, std::size_t... I>
     void sync(std::index_sequence<I...>) {
-      if (checkDirty<Target>()) {
-        (std::get<I>(views).template sync<Target>(), ...);
-        clearDirty<Target>();
-      }
+      (std::get<I>(views).template sync<Target>(), ...);
     }
 
     void operator= (KokkosSoA<Types...> &other) {
@@ -108,48 +104,6 @@ namespace autopas::utils {
     void addParticleImpl(size_t position, const Particle_T& p, std::index_sequence<I...>) {
       ((operator()<I, false, true>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
     }
-
-    template <typename Target>
-    void setDirty();
-
-    template <>
-    void setDirty<Kokkos::CudaSpace>() {
-      deviceDirty = true;
-    }
-
-    template <>
-    void setDirty<Kokkos::HostSpace>() {
-      hostDirty = true;
-    }
-
-    template <typename Target>
-    void clearDirty();
-
-    template <>
-    void clearDirty<Kokkos::CudaSpace>() {
-      deviceDirty = false;
-    }
-
-    template <>
-    void clearDirty<Kokkos::HostSpace>() {
-      hostDirty = false;
-    }
-
-    template <typename Target>
-    bool checkDirty();
-
-    template <>
-    bool checkDirty<Kokkos::CudaSpace>() {
-      return deviceDirty;
-    }
-
-    template <>
-    bool checkDirty<Kokkos::HostSpace>() {
-      return hostDirty;
-    }
-
-    bool hostDirty {false};
-    bool deviceDirty {false};
 
 #ifdef KOKKOS_ENABLE_CUDA
     std::tuple<Kokkos::DualView<Types, Kokkos::Cuda>...> views {};
