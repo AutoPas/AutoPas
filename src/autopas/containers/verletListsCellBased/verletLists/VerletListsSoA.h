@@ -120,17 +120,21 @@ public:
   size_t generateSoANeighborLists() {
     size_t numParticles = 0;
     size_t index = 0;
-    this->_soaNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
-      (&(*iter))->setLiveId(index);
+      iter->setOldVerletSize(iter->getLiveId() ? _soaNeighborLists[iter->getLiveId()].size(): 64);
+      iter->setLiveId(index);
     }
+
+    this->_soaNeighborLists.clear();
     this->_soaNeighborLists.resize(numParticles);
 
-    for (auto &neighborlist : this->_soaNeighborLists) {
-      neighborlist.clear();
-      neighborlist.reserve(256);
+    index = 0;
+
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
+      this->_soaNeighborLists[index].clear();
+      this->_soaNeighborLists[index].reserve(iter->getOldVerletSize());
     }
 
     return numParticles;
