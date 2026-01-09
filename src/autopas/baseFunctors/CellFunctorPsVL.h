@@ -50,25 +50,25 @@ class CellFunctorPsVL {
                        const std::array<double, 3> &sortingDirection);
 
   /**
-   * Getter
+   * Getter.
    * @return
    */
   [[nodiscard]] DataLayoutOption getDataLayout() const { return _dataLayout; }
 
   /**
-   * Getter
+   * Getter.
    * @return
    */
   [[nodiscard]] bool getNewton3() const { return _useNewton3; }
 
   /**
-   * Getter
+   * Getter.
    * @return
    */
   [[nodiscard]] static bool getBidirectional() { return bidirectional; }
 
   /**
-   * Sets the orientationList
+   * Sets the orientationList.
    * @param list the orientationList
    */
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list);

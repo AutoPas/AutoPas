@@ -32,7 +32,8 @@ class PsVLTraversalInterface {
 
  protected:
   /**
-   * OrientationList
+   * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the
+   * neighboring cell.
    */
   std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationList = nullptr;
 };

@@ -19,8 +19,7 @@ namespace autopas {
 
 /**
  * This class provides the psVl_c01 traversal.
- *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell the type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
