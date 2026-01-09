@@ -65,6 +65,8 @@ public:
         constexpr auto I = std::make_index_sequence<tupleSize>();
         ownedSoA.template sync<DeviceSpace::execution_space>(I);
 
+        func->SoAFunctorSingleKokkos(ownedSoA, newton3);
+
         func->SoAFunctorPairKokkos(ownedSoA, ownedSoA, newton3);
 
         // TODO: only modify changed attributes (Functor will have to return which attributes he did change)

@@ -77,7 +77,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   KOKKOS_INLINE_FUNCTION
-  virtual void SoAFunctorSingleKokkos(int i, const Particle_T::KokkosSoAArraysType& soa, size_t N, bool newton3) {
+  virtual void SoAFunctorSingleKokkos(const Particle_T::KokkosSoAArraysType& soa, bool newton3) {
     // No Op unless overridden
   }
 
