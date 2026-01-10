@@ -6,7 +6,7 @@ verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  None
 data-layout                      :  [AoS, SoA]
-traversal                        :  [vcl_c08]
+traversal                        :  [vcl_c06]
 newton3                          :  [enabled]
 functor                          :  Lennard-Jones (12-6) AVX
 cutoff                           :  2.5
@@ -33,7 +33,7 @@ Objects:
     0:
       particle-type-id           :  0
       particles-per-dimension    :  [160, 160, 160]
-      particle-spacing           :  2.0
+      particle-spacing           :  1.0
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
 thermostat:

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J VCLc08Spacings2
+#SBATCH -J VCLc06Spacings1
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
