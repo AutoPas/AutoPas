@@ -18,7 +18,7 @@ box-max                          :  [15, 60, 15]
 cell-size                        :  [1]
 deltaT                           :  0.00182367
 iterations                       :  12000
-energy-sensor                    :  raspl
+energy-sensor                    :  likwid
 boundary-type                    :  [periodic, periodic, periodic]
 Sites:
   0:
