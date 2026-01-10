@@ -26,6 +26,17 @@ template <class ParticleCell, class PairwiseFunctor>
 class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 3>,
                          public PsVLTraversalInterface<ParticleCell> {
  public:
+  /**
+   * Constructor of the c01 traversal.
+   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
+   * y and z direction (incl. halo).
+   * @param pairwiseFunctor The functor that defines the interaction of particles.
+   * @param interactionLength Interaction length (cutoff + skin).
+   * @param cellLength cell length in CellBlock3D
+   * @param dataLayout The data layout with which this traversal should be initialized.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   * in that case the interactionLength is needed!
+   */
   explicit PsVLC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                             const double interactionLength, const std::array<double, 3> &cellLength,
                             DataLayoutOption dataLayout, bool useNewton3)

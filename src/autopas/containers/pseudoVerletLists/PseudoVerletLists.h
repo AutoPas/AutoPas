@@ -15,6 +15,14 @@
 
 namespace autopas {
 
+/**
+ * PseudoVerletLists class. Pseudo Verlet lists store 13 SortedCellViews for each cell,
+ * each of which projects the particles onto the cell connection axis to a neighboring cell.
+ * By sorting the particles, the loop can be terminated earlier without needing to check
+ * each particle to see if it is within the cutoff.
+ * By introducing a skin, the sorted cell views do not have to be updated at each calculation step.
+ * @tparam Particle_T type of the Particle
+ */
 template <class Particle_T>
 class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
  public:
@@ -67,6 +75,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Getter.
+   * @return _orientationList
    */
   std::vector<std::vector<SortedCellView<ParticleCellType>>> &getOrientationList() { return _orientationList; }
 
@@ -89,6 +98,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Getter.
+   * @return _cells from linkedCells
    */
   std::vector<ParticleCellType> getCells() { return this->_linkedCells.getCells(); }
 
@@ -106,6 +116,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Getter.
+   * @return _directions
    */
   [[nodiscard]] std::array<std::array<double, 3>, 13> getDirections() const { return _directions; }
 

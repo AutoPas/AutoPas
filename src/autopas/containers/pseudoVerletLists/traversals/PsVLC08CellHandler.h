@@ -57,6 +57,10 @@ class PsVLC08CellHandler {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
+  /**
+   * Sets the orientationList.
+   * @param list
+   */
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list);
 
  protected:
