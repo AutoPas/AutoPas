@@ -1131,12 +1131,18 @@ class LJFunctor
     const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
+    const SoAFloatPrecision xI = xptr[indexFirst];
+    const SoAFloatPrecision yI = yptr[indexFirst];
+    const SoAFloatPrecision zI = zptr[indexFirst];
+
     auto *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
     [[maybe_unused]] auto *const __restrict typeptr1 = soa.template begin<Particle_T::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptr2 = soa.template begin<Particle_T::AttributeNames::typeId>();
+
+    const size_t typeIdI = typeptr1[indexFirst];
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
@@ -1193,11 +1199,11 @@ class LJFunctor
     if (neighborListSize >= vecsize) {
       alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
       alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
-      // broadcast of the position of particle i
+      // broadcast of the position of particle i to a vector of size vecsize
       for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-        xtmp[tmpj] = xptr[indexFirst];
-        ytmp[tmpj] = yptr[indexFirst];
-        ztmp[tmpj] = zptr[indexFirst];
+        xtmp[tmpj] = xI;
+        ytmp[tmpj] = yI;
+        ztmp[tmpj] = zI;
       }
       // loop over the verlet list from 0 to x*vecsize
       for (; joff < neighborListSize - vecsize + 1; joff += vecsize) {
@@ -1211,11 +1217,13 @@ class LJFunctor
 
         if constexpr (useMixing) {
           for (size_t j = 0; j < vecsize; j++) {
+            const size_t liveIdJ = neighborListPtr[joff + j];
+            const size_t typeIdJ = typeptr2[liveIdJ];
             sigmaSquareds[j] =
-                _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
-            epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
+                _PPLibrary->getMixingSigmaSquared(typeIdI, typeIdJ);
+            epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeIdI, typeIdJ);
             if constexpr (applyShift) {
-              shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
+              shift6s[j] = _PPLibrary->getMixingShift6(typeIdI, typeIdJ);
             }
           }
         }
@@ -1223,10 +1231,11 @@ class LJFunctor
         // gather position of particle j
         #pragma omp simd safelen(vecsize)
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-          xArr[tmpj] = xptr[neighborListPtr[joff + tmpj]];
-          yArr[tmpj] = yptr[neighborListPtr[joff + tmpj]];
-          zArr[tmpj] = zptr[neighborListPtr[joff + tmpj]];
-          ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
+          const size_t liveIdJ = neighborListPtr[joff + tmpj];
+          xArr[tmpj] = xptr[liveIdJ];
+          yArr[tmpj] = yptr[liveIdJ];
+          zArr[tmpj] = zptr[liveIdJ];
+          ownedStateArr[tmpj] = ownedStatePtr[liveIdJ];
         }
         // do omp simd with reduction of the interaction
         #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
@@ -1344,9 +1353,9 @@ class LJFunctor
         continue;
       }
 
-      const SoAFloatPrecision drx = xptr[indexFirst] - xptr[j];
-      const SoAFloatPrecision dry = yptr[indexFirst] - yptr[j];
-      const SoAFloatPrecision drz = zptr[indexFirst] - zptr[j];
+      const SoAFloatPrecision drx = xI - xptr[j];
+      const SoAFloatPrecision dry = yI - yptr[j];
+      const SoAFloatPrecision drz = zI - zptr[j];
 
       const SoAFloatPrecision drx2 = drx * drx;
       const SoAFloatPrecision dry2 = dry * dry;
