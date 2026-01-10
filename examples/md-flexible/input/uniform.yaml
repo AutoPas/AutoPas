@@ -5,19 +5,19 @@ traversal                        :  [psvl_c18]
 data-layout                      :  [AoS]
 newton3                          :  [enabled]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  0.2
+verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
-selector-strategy                :  Fastest-Mean-Value
+selector-strategy                :  Fastest-Absolute-Value
 tuning-strategies                :  [predictive-tuning]
-tuning-interval                  :  300000
-tuning-samples                   :  10
-functor                          :  Lennard-Jones-AVX2
-cutoff                           :  2
+tuning-interval                  :  2500
+tuning-samples                   :  3
+functor                          :  Lennard-Jones AVX
+cutoff                           :  3
 box-min                          :  [0, 0, 0]
-box-max                          :  [8, 8, 8]
+box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
-deltaT                           :  0.00182367
-iterations                       :  12000
+deltaT                           :  0.0005
+iterations                       :  50000
 energy-sensor                    :  rapl
 boundary-type                    :  [none, none, none]
 Sites:
@@ -34,8 +34,8 @@ Sites:
 Objects:
   CubeUniform:
     0:
-      numberOfParticles              :  100000
-      box-length                     :  [8, 8, 8]
+      numberOfParticles              :  1000000
+      box-length                     :  [48, 28, 10]
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0

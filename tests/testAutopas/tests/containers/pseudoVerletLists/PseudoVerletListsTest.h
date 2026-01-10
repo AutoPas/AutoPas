@@ -10,4 +10,4 @@
 #include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
 #include "autopas/particles/ParticleDefinitions.h"
 
-class PseudoVerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> { };
+class PseudoVerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> {};
