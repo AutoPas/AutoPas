@@ -51,10 +51,15 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c08; }
 
   /**
-   * C08 traversals are always usable.
+   * C08 traversals are always usable. Supports only AoS.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicable() const override {
+    if (this->_dataLayout == DataLayoutOption::aos) {
+      return true;
+    }
+    return false;
+  }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()

@@ -1,19 +1,17 @@
 /**
  * @file PsVLC01Traversal.h
  * @author Lars Doll
- * @date 01.01.2026
+ * @date 12.01.2026
  */
 
 #pragma once
 
 #include "PsVLTraversalInterface.h"
-#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/baseFunctors/CellFunctorPsVL.h"
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
 
@@ -46,30 +44,28 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor,
     computeOffsets();
   }
 
- private:
   /**
    * Computes pairs used in processBaseCell().
    */
   void computeOffsets();
 
-  /**
-   * Returns the index in the offset array for the given position.
-   * @param pos current position in dimension dim.
-   * @param dim current dimension.
-   * @return Index for the _cellOffsets Array.
-   */
-  [[nodiscard]] unsigned long getIndex(unsigned long pos, unsigned int dim) const;
+  void traverseParticles() override;
 
   /**
-   * Getter.
-   */
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c01; }
-
-  /**
-   * C01 traversal is always usable.
+   * C01 traversals are only usable if useNewton3 is disabled.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicable() const override {
+    if (this->_useNewton3 == false && this->_dataLayout == DataLayoutOption::aos) {
+      return true;
+    }
+    return false;
+  }
+  /**
+   * Getter.
+   * @return
+   */
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c08; }
 
   /**
    * Sets the orientationList.
@@ -79,13 +75,35 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor,
 
   void setSortingThreshold(size_t sortingThreshold) override {}
 
+ private:
+  using CellOffsetsType = std::vector<std::vector<std::pair<long, std::array<double, 3>>>>;
+
   /**
-   * Computes all interactions between the base cell and adjacent cells.
-   * @param x X-index of the base cell.
-   * @param y Y-index of the base cell.
-   * @param z Z-index of the base cell.
+   * Computes all interactions between the base
+   * cell and adjacent cells.
+   * @param x X-index of base cell.
+   * @param y Y-index of base cell.
+   * @param z Z-index of base cell.
    */
-  void processBaseCell(unsigned long x, unsigned long y, unsigned long z);
+  inline void processBaseCell(unsigned long x, unsigned long y, unsigned long z);
+
+  /**
+   * Pairwise implementation of processBaseCell().
+   * @copydoc processBaseCell()
+   */
+  inline void processBaseCellPairwise(unsigned long x, unsigned long y, unsigned long z);
+
+  /**
+   * Pairwise implementation of computeOffsets().
+   * @copydoc computeOffsets()
+   */
+  void computePairwiseOffsets();
+
+  /**
+   * Pairs or triplets for processBaseCell().
+   * @note std::map not applicable since ordering arising from insertion is important for later processing!
+   */
+  CellOffsetsType _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -93,18 +111,6 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor,
   internal::CellFunctorPsVL<ParticleCell, PairwiseFunctor,
                             /*bidirectional*/ true>
       _cellFunctor;
-
-  /**
-   * Type of array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
-   * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
-   * center of the cell defined by the offset. It is used for sorting.
-   */
-  using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
-
-  /**
-   * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
-   */
-  std::vector<offsetArray_t> _cellOffsets;
 };
 
 template <class ParticleCell, class PairwiseFunctor>
@@ -114,8 +120,13 @@ void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::setOrientationList(
   _cellFunctor.setOrientationList(list);
 }
 
-template <class ParticleCell, class Functor>
-inline void PsVLC01Traversal<ParticleCell, Functor>::computeOffsets() {
+template <class ParticleCell, class PairwiseFunctor>
+inline void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {
+  computePairwiseOffsets();
+}
+
+template <class ParticleCell, class PairwiseFunctor>
+inline void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::computePairwiseOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
   const auto interactionLengthSquare{this->_interactionLength * this->_interactionLength};
@@ -169,37 +180,32 @@ inline void PsVLC01Traversal<ParticleCell, Functor>::computeOffsets() {
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-unsigned long PsVLC01Traversal<ParticleCell, PairwiseFunctor>::getIndex(const unsigned long pos,
-                                                                        const unsigned int dim) const {
-  unsigned long index;
-  if (pos < this->_overlap[dim]) {
-    index = pos;
-  } else if (pos < this->_cellsPerDimension[dim] - this->_overlap[dim]) {
-    index = this->_overlap[dim];
-  } else {
-    index = pos - this->_cellsPerDimension[dim] + 2 * this->_overlap[dim] + 1ul;
-  }
-  return index;
+inline void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long x, unsigned long y,
+                                                                             unsigned long z) {
+  processBaseCellPairwise(x, y, z);
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long x, unsigned long y,
-                                                                      unsigned long z) {
-  const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+inline void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::processBaseCellPairwise(unsigned long x, unsigned long y,
+                                                                                     unsigned long z) {
+  unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
-  const unsigned long xArray = getIndex(x, 0);
+  for (const auto &slice : _cellOffsets) {
+    for (auto const &[offset, r] : slice) {
+      const unsigned long otherIndex = baseIndex + offset;
 
-  offsetArray_t &offsets = _cellOffsets[xArray];
-
-  for (auto const &[offset, r] : offsets) {
-    const unsigned long otherIndex = baseIndex + offset;
-
-    if (baseIndex == otherIndex) {
-      this->_cellFunctor.processCell(baseIndex);
-    } else {
-      this->_cellFunctor.processCellPair(baseIndex, otherIndex, r);
+      if (baseIndex == otherIndex) {
+        this->_cellFunctor.processCell(baseIndex);
+      } else {
+        this->_cellFunctor.processCellPair(baseIndex, otherIndex, r);
+      }
     }
   }
 }
 
+template <class ParticleCell, class PairwiseFunctor>
+inline void PsVLC01Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+  auto &cells = *(this->_cells);
+  this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(x, y, z); });
+}
 }  // namespace autopas

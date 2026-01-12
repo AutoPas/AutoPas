@@ -63,10 +63,15 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c18; }
 
   /**
-   * C18 traversal is always usable.
+   * C18 traversal is always usable. Supports only AoS.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicable() const override {
+    if (this->_dataLayout == DataLayoutOption::aos) {
+      return true;
+    }
+    return false;
+  }
 
   /**
    * Sets the orientationList.
