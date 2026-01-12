@@ -61,7 +61,7 @@ public:
       }
       else if (_dataLayout == DataLayoutOption::soa) {
         auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
-        auto& haloSoA = DSKokkosTraversalInterface<Particle_T>::_haloParticles.getSoA().getSoA();
+        auto& haloSoA = DSKokkosTraversalInterface<Particle_T>::_haloParticles.getSoA();
 
         constexpr auto tupleSize = ownedSoA.tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
