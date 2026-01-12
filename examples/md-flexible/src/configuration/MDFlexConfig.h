@@ -165,7 +165,7 @@ class MDFlexConfig {
   void addLJParametersToSite(unsigned long siteId, double epsilon, double sigma);
 
   /**
-   * Adds the Axilrod-Teller parameter nu to the specified site.
+   * Adds the Axilrod-Teller-Muto parameter nu to the specified site.
    * Checks if the given site exists and if the parameter was already specified.
    *
    * @param siteId unique site type id
@@ -205,17 +205,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption {
-    none,
-    lj12_6,
-    lj12_6_AVX,
-    lj12_6_SVE,
-    lj12_6_Globals,
-    lj12_6_XSIMD,
-    lj12_6_MIPP,
-    lj12_6_SIMDe,
-    lj12_6_HWY
-  };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
 
   /**
    * Choice of the Triwise functor
@@ -303,7 +293,7 @@ class MDFlexConfig {
    * vectorizationPattern
    */
   MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
-      autopas::VectorizationPatternOption::getMostOptions(), "vectorizationPattern", true,
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorization-pattern", true,
       "Vectorization Pattern for HWY Functor."};
   /**
    * cellSizeFactors
@@ -529,18 +519,17 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{
-      // Default is a dummy option
-      FunctorOption::lj12_6_AVX, "functor", true,
-      "Pairwise force functor to use. Possible Values: (lennard-jones "
-      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals lennard-jones-xsimd lennard-jones-simde "
-      "lennard-jones-mipp lennard-jones-highway)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
+                                                      FunctorOption::none, "functor", true,
+                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-highway)"};
   /**
    * functorOption3B
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true,
+      "Triwise force functor to use. Possible Values: (axilrod-teller-muto)"};
   /**
    * iterations
    */

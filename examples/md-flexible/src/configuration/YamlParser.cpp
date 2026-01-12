@@ -228,16 +228,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
+        } else if (strArg.find("hwy") != std::string::npos or strArg.find("highway") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
-        } else if (strArg.find("xsimd") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_XSIMD;
-        } else if (strArg.find("mipp") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_MIPP;
-        } else if (strArg.find("simde") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
-        } else if (strArg.find("highway") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -248,7 +242,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-        if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
+        if (strArg.find("atm") != std::string::npos or strArg.find("axilrod-teller-muto") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
           throw std::runtime_error("Unrecognized triwise functor!");
@@ -659,7 +653,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                                                  siteErrors, false);
           config.addLJParametersToSite(siteID, epsilon, sigma);
 
-          // Check Axilrod-Teller parameter
+          // Check Axilrod-Teller-Muto parameter
           const auto nu =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           config.addATParametersToSite(siteID, nu);

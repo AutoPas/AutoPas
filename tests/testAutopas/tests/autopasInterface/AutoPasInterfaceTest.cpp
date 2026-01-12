@@ -7,14 +7,12 @@
 #include "AutoPasInterfaceTest.h"
 
 #include "autopas/AutoPasDecl.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "autopas/utils/StaticCellSelector.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -39,6 +37,9 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
+  autoPas.setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                                autopas::InteractionTypeOption::pairwise);
+
   // init autopas
   autoPas.init();
 }
@@ -59,6 +60,8 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
     aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
+    aP->setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                              autopas::InteractionTypeOption::pairwise);
     // init autopas
     aP->init();
   }
@@ -473,23 +476,22 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   constexpr double skinLocal = .1;
   constexpr double interactionLength = cutoffLocal + skinLocal;
   constexpr unsigned int clusterSize = 4;
+  constexpr size_t sortingThreshold = 8;
   const std::array<double, 3> boxMinLocal{0., 0., 0.};
   const std::array<double, 3> boxMaxLocal{33., 11., 11.};
   const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
       cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
   LJFunctorGlobals functor(cutoffLocal);
-  const autopas::ContainerSelectorInfo containerSelectorInfo{conf.cellSizeFactor, skinLocal, rebuildFrequency,
-                                                             clusterSize, conf.loadEstimator};
-  autopas::ContainerSelector<Molecule> containerSelector{boxMinLocal, boxMaxLocal, cutoffLocal};
-  containerSelector.selectContainer(conf.container, containerSelectorInfo);
-  auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
-      containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<LJFunctorGlobals>(
-            conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
-      });
+  const autopas::ContainerSelectorInfo containerSelectorInfo{boxMinLocal,         boxMaxLocal,       cutoffLocal,
+                                                             conf.cellSizeFactor, skinLocal,         clusterSize,
+                                                             sortingThreshold,    conf.loadEstimator};
 
-  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr->isApplicable())
+  auto container = autopas::ContainerSelector<Molecule>::generateContainer(conf.container, containerSelectorInfo);
+  auto traversalPtr = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, LJFunctorGlobals>(
+      conf, functor, traversalSelectorInfo);
+
+  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr != nullptr)
       << "Either the domain is chosen badly (fix this!) or hasCompatibleValues and isApplicable don't follow the same"
          "logic anymore.";
 }
@@ -505,8 +507,8 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
                              std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
-                             autopas::InteractionTypeOption::pairwise,
-                             autopas::VectorizationPatternOption::getAllOptions())),
+                             autopas::VectorizationPatternOption::getAllOptions(),
+                             autopas::InteractionTypeOption::pairwise)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////

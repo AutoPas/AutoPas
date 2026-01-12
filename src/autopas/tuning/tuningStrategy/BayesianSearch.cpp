@@ -22,8 +22,8 @@ autopas::BayesianSearch::BayesianSearch(
     : _interactionType(interactionType),
       _containerOptionsSet(allowedContainerOptions),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
-      _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
+      _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
       _encoder(),
       _invalidConfigs(),
@@ -162,7 +162,7 @@ bool autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::v
   return optimizeSuggestions(configQueue, evidenceCollection);
 }
 
-bool autopas::BayesianSearch::needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+bool autopas::BayesianSearch::needsDomainSimilarityStatistics() const { return false; }
 
 autopas::TuningStrategyOption autopas::BayesianSearch::getOptionType() const {
   return autopas::TuningStrategyOption::bayesianSearch;

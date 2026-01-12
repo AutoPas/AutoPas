@@ -6,13 +6,13 @@ newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS]
 
 # Uncomment to combine pairwise and 3-body interaction
-#functor                              :  lj-avx
+#functor                              :  lj-hwy
 #traversal                            :  [lc_c01, lc_c08, lc_sliced]
 #newton3                              :  [enabled, disabled]
 #data-layout                          :  [AoS, SoA]
 
 verlet-rebuild-frequency             :  10
-verlet-skin-radius-per-timestep      :  0.02
+verlet-skin-radius      :  0.2
 selector-strategy                    :  Fastest-Absolute-Value
 tuning-strategies                    :  []
 tuning-interval                      :  2000

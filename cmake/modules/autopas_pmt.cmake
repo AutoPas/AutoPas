@@ -1,3 +1,8 @@
+option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+        "Enables energy measurements and tuning using PMT library and enables the RAPL interface, by default, allowing for energy measurement on Intel and AMD hardware."
+        ON
+)
+
 if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
     option(pmt_ForceBundled "Do not look for an installed version, always used bundled." ON)
@@ -7,13 +12,12 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
     set(PMT_BUILD_RAPL ON CACHE BOOL "RAPL is by default enabled when PMT is enabled" FORCE)
 
     if (NOT ${pmt_ForceBundled})
-        set(expectedVersion ${expectedVersion} QUIET)
         if (pmt_FOUND)
             message(STATUS "pmt - using installed version ${pmt_VERSION}")
             set_target_properties(pmt::pmt PROPERTIES "IMPORTED_GLOBAL" "TRUE")
             return()
         else()
-            message(STATUS "pmt - no system version compatible to version ${expectedVersion} found")
+            message(STATUS "pmt not found!")
             message(STATUS "pmt - if you want to use your version point the cmake variable pmt_DIR to the directory containing pmtConfig.cmake in order to find package")
         endif()
     endif()

@@ -111,7 +111,7 @@ bool MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::v
 
   // Rebuild the grouping (_bucket) of ranks according to subdomain similarity.
   autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(
-      _comm, &_bucket, _smoothedHomogeneity, _maxDensity, _mpiTuningMaxDifferenceForBucket,
+      _comm, &_bucket, _smoothedPDBinStdDevDensity, _smoothedPDBinMaxDensity, _mpiTuningMaxDifferenceForBucket,
       _mpiTuningWeightForMaxDensity);
 
   // Grab our subset of configurations from the queue
@@ -143,11 +143,11 @@ bool MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::v
   return false;
 }
 
-bool MPIParallelizedStrategy::needsSmoothedHomogeneityAndMaxDensity() const { return true; }
+bool MPIParallelizedStrategy::needsDomainSimilarityStatistics() const { return true; }
 
-void MPIParallelizedStrategy::receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity) {
-  _smoothedHomogeneity = homogeneity;
-  _maxDensity = maxDensity;
+void MPIParallelizedStrategy::receiveDomainSimilarityStatistics(double pdBinStdDevDensity, double pdBinMaxDensity) {
+  _smoothedPDBinStdDevDensity = pdBinStdDevDensity;
+  _smoothedPDBinMaxDensity = pdBinMaxDensity;
 }
 
 const AutoPas_MPI_Comm &MPIParallelizedStrategy::getBucket() const { return _bucket; }

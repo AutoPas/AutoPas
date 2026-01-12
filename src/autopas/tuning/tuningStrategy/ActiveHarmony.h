@@ -79,7 +79,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    */
   bool searchSpaceIsEmpty() const;
 
-  bool needsSmoothedHomogeneityAndMaxDensity() const override;
+  bool needsDomainSimilarityStatistics() const override;
 
   bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;

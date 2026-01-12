@@ -43,12 +43,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   /**
    * The particle cell used in this CellBasedParticleContainer
    */
-  using ParticleCell = OctreeNodeWrapper<Particle_T>;
+  using ParticleCellType = OctreeNodeWrapper<Particle_T>;
 
   /**
    * The particle type used in this container.
    */
-  using ParticleType = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCellType::ParticleType;
 
   /**
    * This particle container contains two cells. Both cells are octrees.
@@ -68,12 +68,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @param boxMax The maximum coordinate of the enclosing box
    * @param cutoff The cutoff radius
    * @param skin The skin radius
-   * @param rebuildFrequency The Rebuild Frequency
    * @param cellSizeFactor The cell size factor
+   * @param sortingThreshold The threshold for sorting
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-         const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency) {
+         const double skin, const double cellSizeFactor, const size_t sortingThreshold)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
@@ -140,7 +140,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   }
 
   void computeInteractions(TraversalInterface *traversal) override {
-    if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal)) {
+    if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCellType> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
     }
 
@@ -153,14 +153,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::octree; }
-
-  /**
-   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-   * @note The octree stores the particles in its leaves. Even though the leaves inherit from `FullParticleCell`, they
-   * are an extension of `FullParticleCell`. However, the interface stays the same and the leaves can be treated just
-   * like regular `FullParticleCell`s.
-   */
-  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     // TODO create a balanced tree and reserve space in the leaves.
@@ -605,8 +597,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * A logger that can be called to log the octree data structure.
    */
   OctreeLogger<Particle_T> logger;
-
-  double skin;
 };
 
 }  // namespace autopas

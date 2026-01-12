@@ -101,13 +101,13 @@ void AutoPas<Particle_T>::init() {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
         _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
-        interactionType, _allowedVecPatternsOptions[interactionType]);
+        _allowedVecPatternsOptions[interactionType], interactionType);
 
     AutoTuner::TuningStrategiesListType tuningStrategies;
     tuningStrategies.reserve(_tuningStrategyOptions.size());
     for (const auto &strategy : _tuningStrategyOptions) {
       tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-          searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
+          searchSpace, strategy, _tuningStrategyFactoryInfo, interactionType, _outputSuffix));
     }
     if (_useTuningStrategyLoggerProxy) {
       tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));

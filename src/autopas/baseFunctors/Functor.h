@@ -151,6 +151,14 @@ class Functor {
   virtual bool allowsNonNewton3() = 0;
 
   /**
+   * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
+   *
+   * @param vecPattern
+   * @return whether the functor is capable of using the specified Vectorization Pattern
+   */
+  virtual bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) = 0;
+
+  /**
    * Specifies whether the functor should be considered for the auto-tuning process.
    * @return true if and only if this functor is relevant for auto-tuning.
    */
@@ -170,7 +178,7 @@ class Functor {
   [[nodiscard]] double getCutoff() const { return _cutoff; }
 
   /**
-   * Setter for the vectorization pattern to choose
+   * Setter for the vectorization pattern to be used
    * @param vecPattern
    */
   virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}

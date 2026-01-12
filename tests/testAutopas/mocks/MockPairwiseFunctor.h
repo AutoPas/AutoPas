@@ -12,6 +12,7 @@
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 
 template <class Particle_T>
 class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, MockPairwiseFunctor<Particle_T>> {
@@ -59,9 +60,12 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, MockPair
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD(bool, allowsNonNewton3, (), (override));
 
-  //  bool isRelevantForTuning() { return true; }
+  // bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
 
-  //  std::string getName() { return "functorName"; }
+  // std::string getName() { return "functorName"; }
   MOCK_METHOD(std::string, getName, (), (override));
+
+  // bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) { return true; }
+  MOCK_METHOD(bool, isVecPatternAllowed, (const autopas::VectorizationPatternOption::Value), (override));
 };

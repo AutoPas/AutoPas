@@ -6,7 +6,7 @@ Please keep in mind the following notes while working.
 
 ## C++
 ### General Notes
-* Cpp standard: C++17. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++20` including the alternative version of the code.
+* Cpp standard: C++20. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++23` including the alternative version of the code.
 * Pointers: Always use smart pointers when you are managing memory. Don't use `new` or `delete`.
 * OpenMP: Use AutoPas wrapper functions and macros for OpenMP from [`WrapOpenMP.h`](/src/autopas/utils/WrapOpenMP.h) instead of native OpenMP to allow clean building without OpenMP.
 * `#pragma once` instead of header guards.
@@ -127,6 +127,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Create a new set of compatible traversals in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
 * Create a new `case` statement in [`StaticContainerSelector`](/src/autopas/utils/StaticContainerSelector.h).
 * Add a case for the new container in [`ContainerSelector::generateContainer()`](/src/autopas/tuning/selectors/ContainerSelector.h).
+* Check [`CompatibleVectorizationPattern::allCompatibleVectorizationPattern()`](...) is correct.
+  * By default, all vectorization patterns are compatible with the container. 
+  * This should function correctly for containers which use SoAFunctor Single and Pair.
+  * Containers which use SoAFunctorVerlet, or otherwise only support the traditional 1xVecLength vectorization pattern, should specify this.
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp) and [`StringUtilsTest::parseContainerOptionsTest`](/tests/testAutopas/tests/utils/StringUtilsTest.cpp)).
 * Add new unit tests for your container.

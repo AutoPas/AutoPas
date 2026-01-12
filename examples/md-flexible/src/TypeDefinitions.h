@@ -30,24 +30,12 @@
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
-#include "molecularDynamicsLibrary/LJFunctorXSIMD.h"
-#endif
-
-#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
-#include "molecularDynamicsLibrary/LJFunctorSIMDe.h"
-#endif
-
-#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
-#include "molecularDynamicsLibrary/LJFunctorMIPP.h"
-#endif
-
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #endif
 
 #endif
@@ -141,57 +129,6 @@ using LJFunctorTypeHWY = mdLib::LJFunctorHWY<ParticleType, true, true, autopas::
 
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
-/**
- * Type of LJFunctorXSIMD used in md-flexible
- * Switches between mdLib::LJFunctorXSIMD and mdLib::LJMultisiteFunctorXSIMD as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorXSIMD is yet to be written, so a compiler pre-processing error is thrown.
- */
-#if MD_FLEXIBLE_MODE == MULTISITE
-#error "Multi-Site Lennard-Jones Functor does not have XSIMD support!"
-#else
-
-using LJFunctorTypeXSIMD = mdLib::LJFunctorXSIMD<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                                 mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
-#endif
-
-#endif
-
-#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
-/**
- * Type of LJFunctorSIMDe used in md-flexible
- * Switches between mdLib::LJFunctorSIMDe and mdLib::LJMultisiteFunctorSIMDe as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorSIMDe is yet to be written, so a compiler pre-processing error is thrown.
- */
-#if MD_FLEXIBLE_MODE == MULTISITE
-#error "Multi-Site Lennard-Jones Functor does not have SIMDe support!"
-#else
-
-using LJFunctorTypeSIMDe = mdLib::LJFunctorSIMDe<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                                 mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
-#endif
-
-#endif
-
-#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
-/**
- * Type of LJFunctorMIPP used in md-flexible
- * Switches between mdLib::LJFunctorMIPP and mdLib::LJMultisiteFunctorMIPP as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorMIPP is yet to be written, so a compiler pre-processing error is thrown.
- */
-#if MD_FLEXIBLE_MODE == MULTISITE
-#error "Multi-Site Lennard-Jones Functor does not have MIPP support!"
-#else
-
-using LJFunctorTypeMIPP = mdLib::LJFunctorMIPP<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
-#endif
-
-#endif
-
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
 /**
  * Type of LJFunctorTypeSVE used in md-flexible.
@@ -208,15 +145,15 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
 /**
- * Type of ATFunctor used in md-flexible.
+ * Type of ATMFunctor used in md-flexible.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
-                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
+                                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif

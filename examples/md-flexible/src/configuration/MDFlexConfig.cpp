@@ -204,8 +204,6 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   initializeParticlePropertiesLibrary();
 
   initializeObjects();
-
-  // @todo filter vec patterns here to avoid non-HWY functors searching for patterns?
 }
 
 std::string MDFlexConfig::to_string() const {
@@ -319,22 +317,6 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
         break;
       }
-      case FunctorOption::lj12_6_Globals: {
-        os << "Lennard-Jones (12-6) with globals" << endl;
-        break;
-      }
-      case FunctorOption::lj12_6_XSIMD: {
-        os << "Lennard-Jones (12-6) XSIMD Wrapper" << endl;
-        break;
-      }
-      case FunctorOption::lj12_6_MIPP: {
-        os << "Lennard-Jones (12-6) MIPP Wrapper" << endl;
-        break;
-      }
-      case FunctorOption::lj12_6_SIMDe: {
-        os << "Lennard-Jones (12-6) SIMD Everywhere Wrapper" << endl;
-        break;
-      }
       case FunctorOption::lj12_6_HWY: {
         os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
         break;
@@ -347,6 +329,8 @@ std::string MDFlexConfig::to_string() const {
     os << indent;
     printOption(newton3Options, -indentWidth);
   }
+
+  printOption(vecPatternOptions);
 
   // TODO c++20: use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
@@ -361,7 +345,7 @@ std::string MDFlexConfig::to_string() const {
         break;
       }
       case FunctorOption3B::at: {
-        os << "Axilrod-Teller" << endl;
+        os << "Axilrod-Teller-Muto" << endl;
         break;
       }
     }
@@ -619,7 +603,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
   // initialize AT parameters
   for (auto [siteTypeId, nu] : nuMap.value) {
-    _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
+    _particlePropertiesLibrary->addATMParametersToSite(siteTypeId, nu);
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

@@ -38,8 +38,8 @@ class VCLTraversalInterface {
    */
   virtual void setTowers(std::vector<internal::ClusterTower<Particle_T>> &towers) { _towers = &towers; }
   /**
-   * Returns whether this traversal needs the static cluster thread partiton of the cluster list.
-   * @return whether this traversal needs the static cluster thread partiton of the cluster list.
+   * Returns whether this traversal needs the static cluster thread partition of the cluster list.
+   * @return whether this traversal needs the static cluster thread partition of the cluster list.
    */
   virtual bool needsStaticClusterThreadPartition() { return false; };
 

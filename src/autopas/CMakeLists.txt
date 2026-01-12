@@ -12,11 +12,6 @@ file(
     "*.cuh"
 )
 
-option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-        "Enables energy measurements and tuning using PMT library and enables the RAPL interface, by default, allowing for energy measurement on Intel and AMD hardware."
-        ON
-)
-
 option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
@@ -41,9 +36,6 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
-        xsimd
-        mipp
-        simde
         hwy
     PRIVATE
         # harmony are only needed privately when building AutoPas.

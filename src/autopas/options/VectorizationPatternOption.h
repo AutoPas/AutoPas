@@ -15,6 +15,13 @@ inline namespace options {
 
 /**
  * Class representing the choices of possible vectorization patterns for the Pairwise Functors
+ *
+ * Vectorization patterns refer to the specific strategies used to load and
+ * arrange particle data into SIMD registers. Different patterns can lead to different
+ * SIMD efficiency due to variation in memory access behavior and data locality.
+ *
+ * For details and benchmarking results, see:
+ * https://doi.org/10.48550/arXiv.2512.03565
  */
 class VectorizationPatternOption : public Option<VectorizationPatternOption> {
  public:
@@ -24,18 +31,42 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
   enum Value {
     /**
      * Interact one particle from the first list with the full vector length from the second list
+     *
+     * ---------------------------------
+     * | i | i | i | i | i | i | i | i |
+     * ---------------------------------
+     * | j |j+1|j+2|j+3|j+4|j+5|j+6|j+7|
+     *  --------------------------------
      */
     p1xVec,
     /**
      * Interact two particles from the first list with half the vector length from the second list
+     *
+     * ---------------------------------
+     * | i | i | i | i |i+1|i+1|i+1|i+1|
+     * ---------------------------------
+     * | j |j+1|j+2|j+3| j |j+1|j+2|j+3|
+     *  --------------------------------
      */
     p2xVecDiv2,
     /**
      * Interact half the vector length from the first list with two particles from the second list
+     *
+     * ---------------------------------
+     * | i |i+1|i+2|i+3| i |i+1|i+2|i+3|
+     * ---------------------------------
+     * | j | j | j | j |j+1|j+1|j+1|j+1|
+     *  --------------------------------
      */
     pVecDiv2x2,
     /**
      * Interact the full vector length from the first list with one particle from the second list
+     *
+     * ---------------------------------
+     * | i |i+1|i+2|i+3|i+4|i+5|i+6|i+7|
+     * ---------------------------------
+     * | j | j | j | j | j | j | j | j |
+     *  --------------------------------
      */
     pVecx1
   };
@@ -69,10 +100,10 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
    */
   static std::map<VectorizationPatternOption, std::string> getOptionNames() {
     return {
-        {VectorizationPatternOption::p1xVec, "1xVectorLength"},
-        {VectorizationPatternOption::p2xVecDiv2, "2xVectorLengthDiv2"},
-        {VectorizationPatternOption::pVecDiv2x2, "VectorLengthDiv2x2"},
-        {VectorizationPatternOption::pVecx1, "VectorLengthx1"},
+        {p1xVec, "1xVectorLength"},
+        {p2xVecDiv2, "2xVectorLengthDiv2"},
+        {pVecDiv2x2, "VectorLengthDiv2x2"},
+        {pVecx1, "VectorLengthx1"},
     };
   }
 

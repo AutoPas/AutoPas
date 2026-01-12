@@ -25,7 +25,7 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
+      vecPatternOptions, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       vecPatternOptions, maxEvidence);
@@ -70,7 +70,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, vecPatternOptions);
+      vecPatternOptions, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       vecPatternOptions, maxEvidence,

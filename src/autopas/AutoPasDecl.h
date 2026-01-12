@@ -1212,6 +1212,8 @@ class AutoPas {
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
       {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
+      // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
+      // default.
       {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
   /**
    * What kind of interactions AutoPas should expect.

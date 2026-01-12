@@ -88,9 +88,11 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
-  if (vecPattern != VectorizationPatternOption::p1xVec) {
-    // @todo if not HWY Functor, this should return false
-    // Consequently, we need some sort of access to the functor
+
+  // Check if the container supports the VectorizationPattern
+  const auto allowedVecPatterns = compatibleVectorizationPattern::allCompatibleVectorizationPattern(container);
+  if (allowedVecPatterns.find(vecPattern) == allowedVecPatterns.end()) {
+    return false;
   }
 
   return true;
