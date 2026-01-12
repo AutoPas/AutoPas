@@ -61,13 +61,16 @@ public:
       }
       else if (_dataLayout == DataLayoutOption::soa) {
         auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
+        auto& haloSoA = DSKokkosTraversalInterface<Particle_T>::_haloParticles.getSoA().getSoA();
+
         constexpr auto tupleSize = ownedSoA.tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
+
         ownedSoA.template sync<DeviceSpace::execution_space>(I);
+        haloSoA.template sync<DeviceSpace::execution_space>(I);
 
         func->SoAFunctorSingleKokkos(ownedSoA, newton3);
-
-        func->SoAFunctorPairKokkos(ownedSoA, ownedSoA, newton3);
+        func->SoAFunctorPairKokkos(ownedSoA, haloSoA, newton3);
 
         // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
         ownedSoA.template markModified<DeviceSpace::execution_space>(I);

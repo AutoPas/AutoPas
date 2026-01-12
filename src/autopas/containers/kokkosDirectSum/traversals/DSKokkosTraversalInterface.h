@@ -25,11 +25,9 @@ public:
 
     auto storageLayout = input.getLayout();
     _ownedParticles.setLayout(storageLayout);
-    size_t N = input.size();
 
     if (storageLayout == DataLayoutOption::aos) {
       _ownedParticles.getAoS() = input.getAoS();
-      // Kokkos::deep_copy(_ownedParticles.getAoS().getView(), input.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
       _ownedParticles.getSoA() = input.getSoA();
@@ -42,15 +40,10 @@ public:
     _haloParticles.setLayout(storageLayout);
 
     if (storageLayout == DataLayoutOption::aos) {
-      // _haloParticles.getAoS().resize(N);
-      // Kokkos::deep_copy(_haloParticles.getAoS().getView(), input.getAoS().getView()); TODO: sync particles
+      _haloParticles.getAoS() = input.getAoS();
     }
     else if (storageLayout == DataLayoutOption::soa) {
-      // TODO: sync from host to device if required
-      // _haloParticles.getSoA().resize(N);
-      // constexpr size_t tupleSize = input.tupleSize();
-      // constexpr auto I = std::make_index_sequence<tupleSize>();
-      // _haloParticles.getSoA().copyFrom(input.getSoA(), I); TODO: sync particles
+      _haloParticles.getSoA() = input.getSoA();
     }
   }
 
@@ -59,13 +52,9 @@ public:
 
     if (storageLayout == DataLayoutOption::aos) {
       output.getAoS() = _ownedParticles.getAoS();
-      // Kokkos::deep_copy(output.getAoS().getView(), _ownedParticles.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
       output.getSoA() = _ownedParticles.getSoA();
-      // constexpr size_t tupleSize = output.tupleSize();
-      // constexpr auto I = std::make_index_sequence<tupleSize>();
-      // output.getSoA().copyFrom(_ownedParticles.getSoA(), I); TODO: sync particles
     }
   }
 
@@ -74,13 +63,9 @@ public:
 
     if (storageLayout == DataLayoutOption::aos) {
       output.getAoS() = _haloParticles.getAoS();
-      // Kokkos::deep_copy(output.getAoS().getView(), _haloParticles.getAoS().getView()); TODO: sync particles
     }
     else if (storageLayout == DataLayoutOption::soa) {
       output.getSoA() = _haloParticles.getSoA();
-      // constexpr size_t tupleSize = output.tupleSize();
-      // constexpr auto I = std::make_index_sequence<tupleSize>();
-      // output.getSoA().copyFrom(_haloParticles.getSoA(), I); TODO: sync particles
     }
   }
 
