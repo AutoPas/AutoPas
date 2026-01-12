@@ -330,7 +330,7 @@ class LJFunctorHWY
    * @tparam reversed
    * @param i
    * @param vecEnd
-   * @return the number of registers filled.
+   * @return the number of lanes filled.
    */
   template <bool reversed>
   constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
@@ -396,7 +396,7 @@ class LJFunctorHWY
    *
    * @tparam vecPattern
    * @param j
-   * @return the number of registers filled.
+   * @return the number of lanes filled.
    */
   template <VectorizationPattern vecPattern>
   constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
@@ -899,7 +899,7 @@ class LJFunctorHWY
 
     MaskLong ownedMaskJLong = highway::Ne(ownedStateJLong, _zeroLong);
 
-    // conert to a double mask since we perform logical operations with other double masks in the kernel.
+    // convert to a double mask since we perform logical operations with other double masks in the kernel.
     ownedMaskJ = highway::RebindMask(tag_double, ownedMaskJLong);
   }
 
