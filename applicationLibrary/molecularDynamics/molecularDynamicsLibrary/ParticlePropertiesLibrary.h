@@ -6,12 +6,15 @@
 
 #pragma once
 
+#include <hwy/highway.h>
+
 #include <algorithm>
 #include <cmath>
 #include <map>
 #include <set>
 #include <vector>
 
+#include "HighwayDefs.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -284,6 +287,30 @@ class ParticlePropertiesLibrary {
     return _computedATMMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
                                   k]
         .nu;
+  }
+
+  /**
+   * Returns precomputed mixed epsilon (nu) for given site types using vectorized Highway operations.
+   *
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @param k Vector of site three indices.
+   * @param lanes Number of valid lanes in remainder case (ignored if remainder == false).
+   * @return VectorDouble containing nu_ijk values for all lanes.
+   */
+  mdLib::VectorDouble getMixingNuHWY(intType i, intType j, mdLib::VectorLong k, size_t lanes = 0) const {
+    using D = mdLib::highway::ScalableTag<double>;
+    using VI = mdLib::highway::RebindToSigned<D>;
+
+    const auto baseIndices = mdLib::highway::Set(
+        mdLib::tag_long, i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes);
+
+    const auto indicesST = baseIndices + k;
+
+    const auto indices = mdLib::highway::BitCast(VI{}, indicesST);
+
+    const auto mask = mdLib::highway::FirstN(mdLib::tag_double, lanes);
+    return mdLib::highway::MaskedGatherIndex(mask, mdLib::tag_double, &_computedATMMixingData[0].nu, indices);
   }
 
   /**

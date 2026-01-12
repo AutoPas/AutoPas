@@ -348,6 +348,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Axilrod-Teller-Muto" << endl;
         break;
       }
+      case FunctorOption3B::at_HWY: {
+        os << "Axilrod-Teller-Muto Highway" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions3B, -indentWidth);

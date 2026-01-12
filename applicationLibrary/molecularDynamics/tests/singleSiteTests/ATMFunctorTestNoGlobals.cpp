@@ -48,9 +48,9 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
     EXPECT_NEAR(f1one[1], this->expectedForceMixingP1[1], this->absDelta);
     EXPECT_NEAR(f1one[2], this->expectedForceMixingP1[2], this->absDelta);
   } else {
-    EXPECT_NEAR(f1one[0], this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1one[1], this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1one[2], this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1one[0], this->expectedForceNonMixingP1[0], this->absDelta);
+    EXPECT_NEAR(f1one[1], this->expectedForceNonMixingP1[1], this->absDelta);
+    EXPECT_NEAR(f1one[2], this->expectedForceNonMixingP1[2], this->absDelta);
   }
   if (newton3) {
     if (mixing) {
@@ -61,12 +61,12 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
       EXPECT_NEAR(f3one[1], this->expectedForceMixingP3[1], this->absDelta);
       EXPECT_NEAR(f3one[2], this->expectedForceMixingP3[2], this->absDelta);
     } else {
-      EXPECT_NEAR(f2one[0], this->expectedForceP2[0], this->absDelta);
-      EXPECT_NEAR(f2one[1], this->expectedForceP2[1], this->absDelta);
-      EXPECT_NEAR(f2one[2], this->expectedForceP2[2], this->absDelta);
-      EXPECT_NEAR(f3one[0], this->expectedForceP3[0], this->absDelta);
-      EXPECT_NEAR(f3one[1], this->expectedForceP3[1], this->absDelta);
-      EXPECT_NEAR(f3one[2], this->expectedForceP3[2], this->absDelta);
+      EXPECT_NEAR(f2one[0], this->expectedForceNonMixingP2[0], this->absDelta);
+      EXPECT_NEAR(f2one[1], this->expectedForceNonMixingP2[1], this->absDelta);
+      EXPECT_NEAR(f2one[2], this->expectedForceNonMixingP2[2], this->absDelta);
+      EXPECT_NEAR(f3one[0], this->expectedForceNonMixingP3[0], this->absDelta);
+      EXPECT_NEAR(f3one[1], this->expectedForceNonMixingP3[1], this->absDelta);
+      EXPECT_NEAR(f3one[2], this->expectedForceNonMixingP3[2], this->absDelta);
     }
   } else {
     EXPECT_DOUBLE_EQ(f2one[0], 0);
@@ -93,13 +93,13 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
     EXPECT_NEAR(f2two[1], factor * this->expectedForceMixingP2[1], this->absDelta);
     EXPECT_NEAR(f2two[2], factor * this->expectedForceMixingP2[2], this->absDelta);
   } else {
-    EXPECT_NEAR(f1two[0], factor * this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1two[1], factor * this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1two[2], factor * this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1two[0], factor * this->expectedForceNonMixingP1[0], this->absDelta);
+    EXPECT_NEAR(f1two[1], factor * this->expectedForceNonMixingP1[1], this->absDelta);
+    EXPECT_NEAR(f1two[2], factor * this->expectedForceNonMixingP1[2], this->absDelta);
 
-    EXPECT_NEAR(f2two[0], factor * this->expectedForceP2[0], this->absDelta);
-    EXPECT_NEAR(f2two[1], factor * this->expectedForceP2[1], this->absDelta);
-    EXPECT_NEAR(f2two[2], factor * this->expectedForceP2[2], this->absDelta);
+    EXPECT_NEAR(f2two[0], factor * this->expectedForceNonMixingP2[0], this->absDelta);
+    EXPECT_NEAR(f2two[1], factor * this->expectedForceNonMixingP2[1], this->absDelta);
+    EXPECT_NEAR(f2two[2], factor * this->expectedForceNonMixingP2[2], this->absDelta);
   }
   if (newton3) {
     if (mixing) {
@@ -107,9 +107,9 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
       EXPECT_NEAR(f3two[1], factor * this->expectedForceMixingP3[1], this->absDelta);
       EXPECT_NEAR(f3two[2], factor * this->expectedForceMixingP3[2], this->absDelta);
     } else {
-      EXPECT_NEAR(f3two[0], factor * this->expectedForceP3[0], this->absDelta);
-      EXPECT_NEAR(f3two[1], factor * this->expectedForceP3[1], this->absDelta);
-      EXPECT_NEAR(f3two[2], factor * this->expectedForceP3[2], this->absDelta);
+      EXPECT_NEAR(f3two[0], factor * this->expectedForceNonMixingP3[0], this->absDelta);
+      EXPECT_NEAR(f3two[1], factor * this->expectedForceNonMixingP3[1], this->absDelta);
+      EXPECT_NEAR(f3two[2], factor * this->expectedForceNonMixingP3[2], this->absDelta);
     }
   } else {
     EXPECT_DOUBLE_EQ(f3two[0], 0);
@@ -137,17 +137,17 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
     EXPECT_NEAR(f3three[1], factor * this->expectedForceMixingP3[1], this->absDelta);
     EXPECT_NEAR(f3three[2], factor * this->expectedForceMixingP3[2], this->absDelta);
   } else {
-    EXPECT_NEAR(f1three[0], factor * this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1three[1], factor * this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1three[2], factor * this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1three[0], factor * this->expectedForceNonMixingP1[0], this->absDelta);
+    EXPECT_NEAR(f1three[1], factor * this->expectedForceNonMixingP1[1], this->absDelta);
+    EXPECT_NEAR(f1three[2], factor * this->expectedForceNonMixingP1[2], this->absDelta);
 
-    EXPECT_NEAR(f2three[0], factor * this->expectedForceP2[0], this->absDelta);
-    EXPECT_NEAR(f2three[1], factor * this->expectedForceP2[1], this->absDelta);
-    EXPECT_NEAR(f2three[2], factor * this->expectedForceP2[2], this->absDelta);
+    EXPECT_NEAR(f2three[0], factor * this->expectedForceNonMixingP2[0], this->absDelta);
+    EXPECT_NEAR(f2three[1], factor * this->expectedForceNonMixingP2[1], this->absDelta);
+    EXPECT_NEAR(f2three[2], factor * this->expectedForceNonMixingP2[2], this->absDelta);
 
-    EXPECT_NEAR(f3three[0], factor * this->expectedForceP3[0], this->absDelta);
-    EXPECT_NEAR(f3three[1], factor * this->expectedForceP3[1], this->absDelta);
-    EXPECT_NEAR(f3three[2], factor * this->expectedForceP3[2], this->absDelta);
+    EXPECT_NEAR(f3three[0], factor * this->expectedForceNonMixingP3[0], this->absDelta);
+    EXPECT_NEAR(f3three[1], factor * this->expectedForceNonMixingP3[1], this->absDelta);
+    EXPECT_NEAR(f3three[2], factor * this->expectedForceNonMixingP3[2], this->absDelta);
   }
 
   // order of second and third particle should not matter
@@ -165,9 +165,9 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
     EXPECT_NEAR(f1one[1], this->expectedForceMixingP1[1], this->absDelta);
     EXPECT_NEAR(f1one[2], this->expectedForceMixingP1[2], this->absDelta);
   } else {
-    EXPECT_NEAR(f1one[0], this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1one[1], this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1one[2], this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1one[0], this->expectedForceNonMixingP1[0], this->absDelta);
+    EXPECT_NEAR(f1one[1], this->expectedForceNonMixingP1[1], this->absDelta);
+    EXPECT_NEAR(f1one[2], this->expectedForceNonMixingP1[2], this->absDelta);
   }
   if (newton3) {
     if (mixing) {
@@ -178,12 +178,12 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testAoSNoGlobalsATM) {
       EXPECT_NEAR(f3one[1], this->expectedForceMixingP3[1], this->absDelta);
       EXPECT_NEAR(f3one[2], this->expectedForceMixingP3[2], this->absDelta);
     } else {
-      EXPECT_NEAR(f2one[0], this->expectedForceP2[0], this->absDelta);
-      EXPECT_NEAR(f2one[1], this->expectedForceP2[1], this->absDelta);
-      EXPECT_NEAR(f2one[2], this->expectedForceP2[2], this->absDelta);
-      EXPECT_NEAR(f3one[0], this->expectedForceP3[0], this->absDelta);
-      EXPECT_NEAR(f3one[1], this->expectedForceP3[1], this->absDelta);
-      EXPECT_NEAR(f3one[2], this->expectedForceP3[2], this->absDelta);
+      EXPECT_NEAR(f2one[0], this->expectedForceNonMixingP2[0], this->absDelta);
+      EXPECT_NEAR(f2one[1], this->expectedForceNonMixingP2[1], this->absDelta);
+      EXPECT_NEAR(f2one[2], this->expectedForceNonMixingP2[2], this->absDelta);
+      EXPECT_NEAR(f3one[0], this->expectedForceNonMixingP3[0], this->absDelta);
+      EXPECT_NEAR(f3one[1], this->expectedForceNonMixingP3[1], this->absDelta);
+      EXPECT_NEAR(f3one[2], this->expectedForceNonMixingP3[2], this->absDelta);
     }
   } else {
     EXPECT_DOUBLE_EQ(f2one[0], 0);
@@ -202,9 +202,23 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
 
-  for (typename TestType::InteractionType interactionType :
-       {TestType::InteractionType::triple, TestType::InteractionType::pair12, TestType::InteractionType::pair21,
-        TestType::InteractionType::verlet, TestType::InteractionType::own}) {
+  // Helper lambdas to check the forces
+  auto testNonZeroForce = [&](const std::array<double, 3> &particleForce, const std::array<double, 3> &expectedForce,
+                              const std::string &type) {
+    for (size_t i = 0; i < 3; i++) {
+      EXPECT_NEAR(particleForce[i], expectedForce[i], this->absDelta)
+          << "Failed for SoAFunctor: " << type << ", Newton3: " << newton3;
+    }
+  };
+  auto testZeroForce = [&](const std::array<double, 3> &particleForce, const std::string &type) {
+    for (size_t i = 0; i < 3; i++) {
+      EXPECT_DOUBLE_EQ(particleForce[i], 0) << "Failed for SoAFunctor: " << type << ", Newton3: " << newton3;
+    }
+  };
+
+  for (typename TestType::SoAFunctorType soaFunctorType :
+       {TestType::SoAFunctorType::triple, TestType::SoAFunctorType::pair12, TestType::SoAFunctorType::pair21,
+        TestType::SoAFunctorType::single, TestType::SoAFunctorType::verlet}) {
     ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
     std::unique_ptr<FuncType> functor;
 
@@ -222,326 +236,168 @@ TYPED_TEST_P(ATMFunctorTestNoGlobals, testSoANoGlobalsATM) {
       functor->setParticleProperties(this->nu);
     }
 
+    const auto expectedForceP1 = mixing ? this->expectedForceMixingP1 : this->expectedForceNonMixingP1;
+    const auto expectedForceP2 = mixing ? this->expectedForceMixingP2 : this->expectedForceNonMixingP2;
+    const auto expectedForceP3 = mixing ? this->expectedForceMixingP3 : this->expectedForceNonMixingP3;
+
+    // Set up the particles
+    // This array stores pointers to the 3 particles that might reside in the same or different cells
+    std::array<Molecule *, 3> moleculePtrs{};
+
     FMCell cell1, cell2, cell3;
-    {
-      // particle 1 is always in cell1
-      Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-      cell1.addParticle(p1);
+    // Add particle 1 to cell1
+    Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+    cell1.addParticle(p1);
 
-      // The cell of particle 2 depends on the InteractionType.
-      Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
-      switch (interactionType) {
-        case TestType::InteractionType::verlet:
-          // same as for own
-        case TestType::InteractionType::pair21:
-          // same as for own
-        case TestType::InteractionType::own:
-          // If we interact one cell with itself, it should be in cell1 as well.
-          cell1.addParticle(p2);
-          break;
-        case TestType::InteractionType::pair12:
-          // same as for cell triple
-        case TestType::InteractionType::triple:
-          // Second particle should be in cell2
-          cell2.addParticle(p2);
-          break;
-        default:
-          FAIL();
-      }
-
-      // The cell of particle 3 depends on the InteractionType.
-      Molecule p3({0.3, 0.2, 0.1}, {0., 0., 0.}, 2, (mixing) ? 2 : 0);
-      switch (interactionType) {
-        case TestType::InteractionType::verlet:
-          // same as for own
-        case TestType::InteractionType::own:
-          // If we interact one cell with itself, it should be in cell1 as well.
-          cell1.addParticle(p3);
-          break;
-        case TestType::InteractionType::pair21:
-          // same as for pair12
-        case TestType::InteractionType::pair12:
-          // third particle is always in cell2 for pair tests
-          cell2.addParticle(p3);
-          break;
-        case TestType::InteractionType::triple:
-          // third particle should be in cell3
-          cell3.addParticle(p3);
-          break;
-        default:
-          FAIL();
-      }
+    // Distribute particles 2 and 3 depending on the SoA functor to test
+    // Gather pointers to the 3 molecules for easier testing
+    Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
+    Molecule p3({0.3, 0.2, 0.1}, {0., 0., 0.}, 2, (mixing) ? 2 : 0);
+    switch (soaFunctorType) {
+      case TestType::SoAFunctorType::single:
+        cell1.addParticle(p2);
+        cell1.addParticle(p3);
+        moleculePtrs[1] = &cell1._particles[1];
+        moleculePtrs[2] = &cell1._particles[2];
+        break;
+      case TestType::SoAFunctorType::pair21:
+        cell1.addParticle(p2);
+        cell2.addParticle(p3);
+        moleculePtrs[1] = &cell1._particles[1];
+        moleculePtrs[2] = &cell2._particles[0];
+        break;
+      case TestType::SoAFunctorType::pair12:
+        cell2.addParticle(p2);
+        cell2.addParticle(p3);
+        moleculePtrs[1] = &cell2._particles[0];
+        moleculePtrs[2] = &cell2._particles[1];
+        break;
+      case TestType::SoAFunctorType::triple:
+        cell2.addParticle(p2);
+        cell3.addParticle(p3);
+        moleculePtrs[1] = &cell2._particles[0];
+        moleculePtrs[2] = &cell3._particles[0];
+        break;
+      case TestType::SoAFunctorType::verlet:
+        cell1.addParticle(p2);
+        cell1.addParticle(p3);
+        moleculePtrs[1] = &cell1._particles[1];
+        moleculePtrs[2] = &cell1._particles[2];
+        break;
+      default:
+        FAIL();
     }
-    // Load the particles into the soa.
-    functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-    functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-    functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    moleculePtrs[0] = &cell1._particles[0];
 
-    if (auto msg = this->shouldSkipIfNotImplemented([&]() {
-          switch (interactionType) {
-            case TestType::InteractionType::own:
-              // Interaction of one cell with itself
-              functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3);
-              break;
-            case TestType::InteractionType::pair12:
-              // Interaction of a cell pair
-              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-              break;
-            case TestType::InteractionType::pair21:
-              // Interaction of a cell pair
-              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-              break;
-            case TestType::InteractionType::triple:
-              // Interaction of a cell pair
-              functor->SoAFunctorTriple(cell1._particleSoABuffer, cell2._particleSoABuffer, cell3._particleSoABuffer,
-                                        newton3);
-              break;
-            case TestType::InteractionType::verlet:
-              // Build verlet list
-              std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(3);
-              neighborList[0].push_back(1);
-              neighborList[0].push_back(2);
-              if (not newton3) {
-                neighborList[1].push_back(0);
-                neighborList[1].push_back(2);
-                neighborList[2].push_back(0);
-                neighborList[2].push_back(1);
-              }
-              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 0, neighborList[0], newton3);
-              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 1, neighborList[1], newton3);
-              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 2, neighborList[2], newton3);
+    // Create helper lambdas to load/extract particles to/from the SoAs
+    auto cells = std::array{&cell1, &cell2, &cell3};
+    auto loadParticlesToSoA = [&]() {
+      for (auto &cell : cells) {
+        functor->SoALoader(*cell, cell->_particleSoABuffer, 0, /*skipSoAResize*/ false);
+      }
+    };
+    auto extractParticlesFromSoA = [&]() {
+      for (auto &cell : cells) {
+        functor->SoAExtractor(*cell, cell->_particleSoABuffer, 0);
+      }
+    };
+
+    // Lambda helper to call the corresponding SoA functor and perform the force interactions
+    auto computeFunctorInteractions = [&](auto &c1, auto &c2, auto &c3) {
+      switch (soaFunctorType) {
+        case TestType::SoAFunctorType::single:
+          functor->SoAFunctorSingle(c1._particleSoABuffer, newton3);
+          break;
+        case TestType::SoAFunctorType::pair12:
+        case TestType::SoAFunctorType::pair21:
+          functor->SoAFunctorPair(c1._particleSoABuffer, c2._particleSoABuffer, newton3);
+          break;
+        case TestType::SoAFunctorType::triple:
+          functor->SoAFunctorTriple(c1._particleSoABuffer, c2._particleSoABuffer, c3._particleSoABuffer, newton3);
+          break;
+        case TestType::SoAFunctorType::verlet:
+          // Build verlet list
+          std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(3);
+          neighborList[0] = {1, 2};
+          if (not newton3) {
+            neighborList[1] = {0, 2};
+            neighborList[2] = {0, 1};
           }
-        });
+          functor->SoAFunctorVerlet(c1._particleSoABuffer, 0, neighborList[0], newton3);
+          functor->SoAFunctorVerlet(c1._particleSoABuffer, 1, neighborList[1], newton3);
+          functor->SoAFunctorVerlet(c1._particleSoABuffer, 2, neighborList[2], newton3);
+      }
+    };
+
+    ///// First Iteration /////
+
+    loadParticlesToSoA();
+    // Perform the interaction based on the soa functor type - Skip if not yet implemented
+    if (auto msg = this->shouldSkipIfNotImplemented([&]() { computeFunctorInteractions(cell1, cell2, cell3); });
         msg != "") {
-      GTEST_SKIP() << msg;
+      std::cout << msg << std::endl;
+      continue;
+    }
+    extractParticlesFromSoA();
+
+    // Test the forces
+    // Particle 1
+    testNonZeroForce(moleculePtrs[0]->getF(), expectedForceP1, ATMFunctorTest::to_string(soaFunctorType));
+
+    // Particle 2
+    if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or
+        soaFunctorType == TestType::SoAFunctorType::pair21 or soaFunctorType == TestType::SoAFunctorType::verlet) {
+      // If particle 2 is in the same cell as particle 1, its forces should already be calculated
+      testNonZeroForce(moleculePtrs[1]->getF(), expectedForceP2, ATMFunctorTest::to_string(soaFunctorType));
+    } else {  // Particle 2 is in a different cell, so the forces are zero when newton3 == false
+      testZeroForce(moleculePtrs[1]->getF(), ATMFunctorTest::to_string(soaFunctorType));
     }
 
-    // Extract the particles from the soa
-    functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
-    functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);
-    functor->SoAExtractor(cell3, cell3._particleSoABuffer, 0);
-
-    // force of particle 1
-    auto f1 = cell1.begin()->getF();
-
-    if (mixing) {
-      EXPECT_NEAR(f1[0], this->expectedForceMixingP1[0], this->absDelta);
-      EXPECT_NEAR(f1[1], this->expectedForceMixingP1[1], this->absDelta);
-      EXPECT_NEAR(f1[2], this->expectedForceMixingP1[2], this->absDelta);
+    // Particle 3
+    if (newton3 or soaFunctorType == TestType::SoAFunctorType::single or
+        soaFunctorType == TestType::SoAFunctorType::verlet) {
+      testNonZeroForce(moleculePtrs[2]->getF(), expectedForceP3, ATMFunctorTest::to_string(soaFunctorType));
     } else {
-      EXPECT_NEAR(f1[0], this->expectedForceP1[0], this->absDelta);
-      EXPECT_NEAR(f1[1], this->expectedForceP1[1], this->absDelta);
-      EXPECT_NEAR(f1[2], this->expectedForceP1[2], this->absDelta);
+      testZeroForce(moleculePtrs[2]->getF(), ATMFunctorTest::to_string(soaFunctorType));
     }
 
-    // force of particle 2
-    std::array<double, 3> f2 = {0., 0., 0.};
-    switch (interactionType) {
-      case TestType::InteractionType::verlet:
-      case TestType::InteractionType::pair21:
-      case TestType::InteractionType::own:
-        f2 = (++cell1.begin())->getF();
-        break;
-      case TestType::InteractionType::pair12:
-      case TestType::InteractionType::triple:
-        f2 = cell2.begin()->getF();
-        break;
-    }
+    ///// Second Iteration /////
 
-    // if the interactionType is own, then the forces of the second particle should always be calculated!
-    if (newton3 or interactionType == TestType::InteractionType::own or
-        interactionType == TestType::InteractionType::pair21 or interactionType == TestType::InteractionType::verlet) {
-      if (mixing) {
-        EXPECT_NEAR(f2[0], this->expectedForceMixingP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], this->expectedForceMixingP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], this->expectedForceMixingP2[2], this->absDelta);
-      } else {
-        EXPECT_NEAR(f2[0], this->expectedForceP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], this->expectedForceP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], this->expectedForceP2[2], this->absDelta);
-      }
-    } else {
-      EXPECT_DOUBLE_EQ(f2[0], 0);
-      EXPECT_DOUBLE_EQ(f2[1], 0);
-      EXPECT_DOUBLE_EQ(f2[2], 0);
-    }
-
-    // force of particle 3
-    std::array<double, 3> f3 = {0., 0., 0.};
-    switch (interactionType) {
-      case TestType::InteractionType::verlet:
-      case TestType::InteractionType::own: {
-        auto iter = ++cell1.begin();
-        f3 = (++iter)->getF();
-        break;
-      }
-      case TestType::InteractionType::pair21:
-        f3 = cell2.begin()->getF();
-        break;
-      case TestType::InteractionType::pair12:
-        f3 = (++cell2.begin())->getF();
-        break;
-      case TestType::InteractionType::triple:
-        f3 = cell3.begin()->getF();
-        break;
-    }
-
-    // if the interactionType is own, then the forces of the third particle should always be calculated!
-    if (newton3 or interactionType == TestType::InteractionType::own or
-        interactionType == TestType::InteractionType::verlet) {
-      if (mixing) {
-        EXPECT_NEAR(f3[0], this->expectedForceMixingP3[0], this->absDelta);
-        EXPECT_NEAR(f3[1], this->expectedForceMixingP3[1], this->absDelta);
-        EXPECT_NEAR(f3[2], this->expectedForceMixingP3[2], this->absDelta);
-      } else {
-        EXPECT_NEAR(f3[0], this->expectedForceP3[0], this->absDelta);
-        EXPECT_NEAR(f3[1], this->expectedForceP3[1], this->absDelta);
-        EXPECT_NEAR(f3[2], this->expectedForceP3[2], this->absDelta);
-      }
-    } else {
-      EXPECT_DOUBLE_EQ(f3[0], 0);
-      EXPECT_DOUBLE_EQ(f3[1], 0);
-      EXPECT_DOUBLE_EQ(f3[2], 0);
-    }
-
-    // Second cell interaction for types with multiple cells
-    if (interactionType != TestType::InteractionType::own and interactionType != TestType::InteractionType::verlet) {
-      functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-      functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-      functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
-      switch (interactionType) {
-        case TestType::InteractionType::pair12:
-          // Interaction of a cell pair
-          functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
-          break;
-        case TestType::InteractionType::pair21:
-          // Interaction of a cell pair
-          functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
-          break;
-        case TestType::InteractionType::triple:
-          // Interaction of a cell triplet
-          functor->SoAFunctorTriple(cell2._particleSoABuffer, cell1._particleSoABuffer, cell3._particleSoABuffer,
-                                    newton3);
-          break;
-        default:
-          break;
-      }
-      functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
-      functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);
-      functor->SoAExtractor(cell3, cell3._particleSoABuffer, 0);
-
-      // Force on particles 1 and 2
-      f1 = cell1.begin()->getF();
-      std::array<double, 3> f2 = {0., 0., 0.};
-      switch (interactionType) {
-        case TestType::InteractionType::pair21:
-          f2 = (++cell1.begin())->getF();
-          break;
-        case TestType::InteractionType::pair12:
-        case TestType::InteractionType::triple:
-          f2 = cell2.begin()->getF();
-          break;
-        default:
-          break;
-      }
+    // Only done for types with multiple cells
+    if (soaFunctorType != TestType::SoAFunctorType::single and soaFunctorType != TestType::SoAFunctorType::verlet) {
+      loadParticlesToSoA();
+      computeFunctorInteractions(cell2, cell1, cell3);
+      extractParticlesFromSoA();
 
       // Test the forces after the second interaction
       double factor = newton3 ? 2. : 1.;
-      if (mixing) {
-        EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->absDelta);
-        EXPECT_NEAR(f1[1], factor * this->expectedForceMixingP1[1], this->absDelta);
-        EXPECT_NEAR(f1[2], factor * this->expectedForceMixingP1[2], this->absDelta);
+      testNonZeroForce(moleculePtrs[0]->getF(), expectedForceP1 * factor, ATMFunctorTest::to_string(soaFunctorType));
+      testNonZeroForce(moleculePtrs[1]->getF(), expectedForceP2 * factor, ATMFunctorTest::to_string(soaFunctorType));
 
-        EXPECT_NEAR(f2[0], factor * this->expectedForceMixingP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], factor * this->expectedForceMixingP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], factor * this->expectedForceMixingP2[2], this->absDelta);
+      if (newton3 or soaFunctorType != TestType::SoAFunctorType::triple) {
+        testNonZeroForce(moleculePtrs[2]->getF(), expectedForceP3 * factor, ATMFunctorTest::to_string(soaFunctorType));
       } else {
-        EXPECT_NEAR(f1[0], factor * this->expectedForceP1[0], this->absDelta);
-        EXPECT_NEAR(f1[1], factor * this->expectedForceP1[1], this->absDelta);
-        EXPECT_NEAR(f1[2], factor * this->expectedForceP1[2], this->absDelta);
-
-        EXPECT_NEAR(f2[0], factor * this->expectedForceP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], factor * this->expectedForceP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], factor * this->expectedForceP2[2], this->absDelta);
+        testZeroForce(moleculePtrs[2]->getF(), ATMFunctorTest::to_string(soaFunctorType));
       }
 
-      // Force on particle 3
-      std::array<double, 3> f3 = {0., 0., 0.};
-      switch (interactionType) {
-        case TestType::InteractionType::pair21:
-          f3 = cell2.begin()->getF();
-          break;
-        case TestType::InteractionType::pair12:
-          f3 = (++cell2.begin())->getF();
-          break;
-        case TestType::InteractionType::triple:
-          f3 = cell3.begin()->getF();
-          break;
-        default:
-          break;
-      }
+      ///// Third Iteration /////
 
-      if (newton3 or interactionType != TestType::InteractionType::triple) {
-        if (mixing) {
-          EXPECT_NEAR(f3[0], factor * this->expectedForceMixingP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceMixingP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceMixingP3[2], this->absDelta);
-        } else {
-          EXPECT_NEAR(f3[0], factor * this->expectedForceP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceP3[2], this->absDelta);
-        }
-      } else {
-        EXPECT_DOUBLE_EQ(f3[0], 0);
-        EXPECT_DOUBLE_EQ(f3[1], 0);
-        EXPECT_DOUBLE_EQ(f3[2], 0);
-      }
+      // Only needed for SoAFunctorTriple
+      if (soaFunctorType == TestType::SoAFunctorType::triple) {
+        loadParticlesToSoA();
+        computeFunctorInteractions(cell3, cell1, cell2);
+        extractParticlesFromSoA();
 
-      // Third interaction for 3 cells
-      if (interactionType == TestType::InteractionType::triple) {
-        functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-        functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-        functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
-
-        functor->SoAFunctorTriple(cell3._particleSoABuffer, cell1._particleSoABuffer, cell2._particleSoABuffer,
-                                  newton3);
-
-        functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
-        functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);
-        functor->SoAExtractor(cell3, cell3._particleSoABuffer, 0);
-
-        double factor = newton3 ? 3. : 1.;
-        if (mixing) {
-          EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->absDelta);
-          EXPECT_NEAR(f1[1], factor * this->expectedForceMixingP1[1], this->absDelta);
-          EXPECT_NEAR(f1[2], factor * this->expectedForceMixingP1[2], this->absDelta);
-
-          EXPECT_NEAR(f2[0], factor * this->expectedForceMixingP2[0], this->absDelta);
-          EXPECT_NEAR(f2[1], factor * this->expectedForceMixingP2[1], this->absDelta);
-          EXPECT_NEAR(f2[2], factor * this->expectedForceMixingP2[2], this->absDelta);
-
-          EXPECT_NEAR(f3[0], factor * this->expectedForceMixingP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceMixingP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceMixingP3[2], this->absDelta);
-        } else {
-          EXPECT_NEAR(f1[0], factor * this->expectedForceP1[0], this->absDelta);
-          EXPECT_NEAR(f1[1], factor * this->expectedForceP1[1], this->absDelta);
-          EXPECT_NEAR(f1[2], factor * this->expectedForceP1[2], this->absDelta);
-
-          EXPECT_NEAR(f2[0], factor * this->expectedForceP2[0], this->absDelta);
-          EXPECT_NEAR(f2[1], factor * this->expectedForceP2[1], this->absDelta);
-          EXPECT_NEAR(f2[2], factor * this->expectedForceP2[2], this->absDelta);
-
-          EXPECT_NEAR(f3[0], factor * this->expectedForceP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceP3[2], this->absDelta);
-        }
+        factor = newton3 ? 3. : 1.;
+        testNonZeroForce(moleculePtrs[0]->getF(), expectedForceP1 * factor, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(moleculePtrs[1]->getF(), expectedForceP2 * factor, ATMFunctorTest::to_string(soaFunctorType));
+        testNonZeroForce(moleculePtrs[2]->getF(), expectedForceP3 * factor, ATMFunctorTest::to_string(soaFunctorType));
       }
     }
 
     if (::testing::Test::HasFailure()) {
       std::cerr << "Failures for options: " << std::endl
-                << "\tInteractionType: " << interactionType << std::endl
+                << "\tSoAFunctorType: " << soaFunctorType << std::endl
                 << "\tnewton3: " << newton3 << std::endl;
     }
   }
@@ -561,7 +417,29 @@ struct Newton3True : public TypeWrapper<FuncType, true> {};
 template <class FuncType>
 struct Newton3False : public TypeWrapper<FuncType, false> {};
 
-using MyTypes = ::testing::Types<Newton3True<ATMFunMixNoGlob>, Newton3False<ATMFunMixNoGlob>,
-                                 Newton3True<ATMFunNoMixNoGlob>, Newton3False<ATMFunNoMixNoGlob>>;
+using MyTypes =
+    ::testing::Types<Newton3True<ATMFunMixNoGlob>, Newton3False<ATMFunMixNoGlob>, Newton3True<ATMFunNoMixNoGlob>,
+                     Newton3False<ATMFunNoMixNoGlob>, Newton3True<ATMFunHWYMixNoGlob>, Newton3False<ATMFunHWYMixNoGlob>,
+                     Newton3True<ATMFunHWYNoMixNoGlob>, Newton3False<ATMFunHWYNoMixNoGlob>>;
 
-INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestNoGlobals, MyTypes);
+template <typename TypeList>
+struct ATMFunctorTypeNames {
+  template <typename T>
+  static std::string GetName(int) {
+    using F = typename T::FuncType;
+
+    const std::string n3 = T::newton3 ? "Newton3" : "NoNewton3";
+
+    if constexpr (std::is_same_v<F, ATMFunHWYMixNoGlob>) {
+      return "HWY_Mix_" + n3;
+    } else if constexpr (std::is_same_v<F, ATMFunHWYNoMixNoGlob>) {
+      return "HWY_NoMix_" + n3;
+    } else if constexpr (std::is_same_v<F, ATMFunMixNoGlob>) {
+      return "Mix_" + n3;
+    } else if constexpr (std::is_same_v<F, ATMFunNoMixNoGlob>) {
+      return "NoMix_" + n3;
+    }
+  }
+};
+
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATMFunctorTestNoGlobals, MyTypes, ATMFunctorTypeNames<MyTypes>);
