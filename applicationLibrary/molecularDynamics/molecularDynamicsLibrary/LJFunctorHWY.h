@@ -529,9 +529,9 @@ class LJFunctorHWY
       const VectorDouble fz2 =
           remainder ? highway::LoadN(tag_double, &fz2Ptr[j], rest) : highway::LoadU(tag_double, &fz2Ptr[j]);
 
-      const VectorDouble fx2New = fx2 - fx;
-      const VectorDouble fy2New = fy2 - fy;
-      const VectorDouble fz2New = fz2 - fz;
+      const VectorDouble fx2New = highway::Sub(fx2, fx);
+      const VectorDouble fy2New = highway::Sub(fy2, fy);
+      const VectorDouble fz2New = highway::Sub(fz2, fz);
 
       remainder ? highway::StoreN(fx2New, tag_double, &fx2Ptr[j], rest)
                 : highway::StoreU(fx2New, tag_double, &fx2Ptr[j]);
@@ -626,9 +626,9 @@ class LJFunctorHWY
       const auto upperFyAcc = highway::UpperHalf(tag_double_half, fyAcc);
       const auto upperFzAcc = highway::UpperHalf(tag_double_half, fzAcc);
 
-      const auto fxAccCombined = lowerFxAcc + upperFxAcc;
-      const auto fyAccCombined = lowerFyAcc + upperFyAcc;
-      const auto fzAccCombined = lowerFzAcc + upperFzAcc;
+      const auto fxAccCombined = highway::Add(lowerFxAcc, upperFxAcc);
+      const auto fyAccCombined = highway::Add(lowerFyAcc, upperFyAcc);
+      const auto fzAccCombined = highway::Add(lowerFzAcc, upperFzAcc);
 
       const int index = reversed ? (remainder ? 0 : i - _vecLengthDouble / 2 + 1) : i;
 
@@ -653,9 +653,9 @@ class LJFunctorHWY
       const VectorDouble oldFz =
           remainder ? highway::LoadN(tag_double, &fzPtr[i], restI) : highway::LoadU(tag_double, &fzPtr[i]);
 
-      const VectorDouble fxNew = oldFx + fxAcc;
-      const VectorDouble fyNew = oldFy + fyAcc;
-      const VectorDouble fzNew = oldFz + fzAcc;
+      const VectorDouble fxNew = highway::Add(oldFx, fxAcc);
+      const VectorDouble fyNew = highway::Add(oldFy, fyAcc);
+      const VectorDouble fzNew = highway::Add(oldFz, fzAcc);
 
       remainder ? highway::StoreN(fxNew, tag_double, &fxPtr[i], restI) : highway::StoreU(fxNew, tag_double, &fxPtr[i]);
       remainder ? highway::StoreN(fyNew, tag_double, &fyPtr[i], restI) : highway::StoreU(fyNew, tag_double, &fyPtr[i]);
@@ -1040,15 +1040,15 @@ class LJFunctorHWY
     fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedMaskJ, restJ);
 
     // distance calculations
-    const auto drX = x1 - x2;
-    const auto drY = y1 - y2;
-    const auto drZ = z1 - z2;
+    const auto drX = highway::Sub(x1, x2);
+    const auto drY = highway::Sub(y1, y2);
+    const auto drZ = highway::Sub(z1, z2);
 
-    const auto drX2 = drX * drX;
-    const auto drY2 = drY * drY;
-    const auto drZ2 = drZ * drZ;
+    const auto drX2 = highway::Mul(drX, drX);
+    const auto drY2 = highway::Mul(drY, drY);
+    const auto drZ2 = highway::Mul(drZ, drZ);
 
-    const auto dr2 = drX2 + drY2 + drZ2;
+    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
 
     VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
 
@@ -1061,33 +1061,33 @@ class LJFunctorHWY
 
     // compute LJ Potential
     const auto invDr2 = highway::Set(tag_double, 1.0) / dr2;
-    const auto lj2 = sigmaSquareds * invDr2;
-    const auto lj4 = lj2 * lj2;
-    const auto lj6 = lj2 * lj4;
-    const auto lj12 = lj6 * lj6;
-    const auto lj12m6 = lj12 - lj6;
-    const auto lj12m6alj12 = lj12m6 + lj12;
-    const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
-    const auto fac = lj12m6alj12e * invDr2;
+    const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
+    const auto lj4 = highway::Mul(lj2, lj2);
+    const auto lj6 = highway::Mul(lj2, lj4);
+    const auto lj12 = highway::Mul(lj6, lj6);
+    const auto lj12m6 = highway::Sub(lj12, lj6);
+    const auto lj12m6alj12 = highway::Add(lj12m6, lj12);
+    const auto lj12m6alj12e = highway::Add(lj12m6alj12, epsilon24s);
+    const auto fac = highway::Mul(lj12m6alj12e, invDr2);
 
     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
-    const VectorDouble fx = drX * facMasked;
-    const VectorDouble fy = drY * facMasked;
-    const VectorDouble fz = drZ * facMasked;
+    const VectorDouble fx = highway::Mul(drX, facMasked);
+    const VectorDouble fy = highway::Mul(drY, facMasked);
+    const VectorDouble fz = highway::Mul(drZ, facMasked);
 
-    fxAcc = fxAcc + fx;
-    fyAcc = fyAcc + fy;
-    fzAcc = fzAcc + fz;
+    fxAcc = highway::Add(fxAcc, fx);
+    fyAcc = highway::Add(fyAcc, fy);
+    fzAcc = highway::Add(fzAcc, fz);
 
     if constexpr (newton3) {
       handleNewton3Reduction<remainderJ, reversed, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, i, j, restJ);
     }
 
     if constexpr (calculateGlobals) {
-      auto virialX = fx * drX;
-      auto virialY = fy * drY;
-      auto virialZ = fz * drZ;
+      auto virialX = highway::Mul(fx, drX);
+      auto virialY = highway::Mul(fy, drY);
+      auto virialZ = highway::Mul(fz, drZ);
 
       auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
       auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
@@ -1095,7 +1095,7 @@ class LJFunctorHWY
       auto energyFactor = highway::MaskedSet(tag_double, dummyMask, 1.0);
 
       if constexpr (newton3) {
-        energyFactor = energyFactor + highway::MaskedSet(tag_double, dummyMask, 1.0);
+        energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, dummyMask, 1.0));
       }
 
       uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
