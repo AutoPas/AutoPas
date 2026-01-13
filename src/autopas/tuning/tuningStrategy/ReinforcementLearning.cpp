@@ -18,7 +18,7 @@ autopas::ReinforcementLearning::ReinforcementLearning(const std::set<Configurati
         "Reinforcement Learning Tuning.");
   }
 
-  if (learningRate <= 0 || learningRate > 1) {
+  if (learningRate <= 0 or learningRate > 1) {
     utils::ExceptionHandler::exception("The learning rate must be between 0 and 1 for Reinforcement Learning Tuning.");
   }
 
