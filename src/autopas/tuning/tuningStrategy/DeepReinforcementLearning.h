@@ -283,7 +283,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   std::unordered_map<Configuration, DRLHistoryData, ConfigHash> _history;
 
   /**
-   * Store the input length of the neural network. This is equivalent to the number of evidences stored in the history.
+   * Store the input length of the neural network. This is equivalent to the number of evidences stored in the history for a particular configuration.
    */
   size_t _inputLength = 4;
 
