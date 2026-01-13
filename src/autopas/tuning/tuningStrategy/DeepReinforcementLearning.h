@@ -152,7 +152,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
 
   /**
    * Constructor for the DeepReinforcementLearning class.
-   * @param train Whether to train the neural network or not.
+   * @param retrain Whether to retrain the neural network or not. (I.e. make this simple a deep learning strategy)
    * @param explorationSamples The number of exploration samples to use.
    * @param explorationMethod The exploration method to use.
    */
