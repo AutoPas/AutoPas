@@ -270,7 +270,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   /**
    * Store if the neural network should be retrained with reinforcement learning.
    */
-  bool _train = false;
+  bool _retrain = false;
 
   /**
    * Store the search space to be used.
