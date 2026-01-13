@@ -1192,8 +1192,8 @@ class LJFunctorHWY
       }
 
       SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
-          fy2Tmp, fz2Tmp, &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
+          0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(),
+          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, 0, 0);
 
       if constexpr (newton3) {
@@ -1223,8 +1223,8 @@ class LJFunctorHWY
       }
 
       SoAKernel<newton3, false, true, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
-          fy2Tmp, fz2Tmp, &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
+          0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(),
+          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, 0, rest);
 
       if constexpr (newton3) {
