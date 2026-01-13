@@ -15,7 +15,7 @@ TEST_F(ReinforcementLearningTest, invalidConfigurationConstructor) {
   // Set the exception policy to throw exceptions
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
-  // Create a search space with only one configuration
+  // Create a search space with no configurations
   std::set<autopas::Configuration> searchSpace = {};
   EXPECT_THROW(autopas::ReinforcementLearning(searchSpace, 0.8, 0.8),
                autopas::utils::ExceptionHandler::AutoPasException)
