@@ -343,8 +343,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
   }
 
   // Sort the configurations by their scores
-  std::sort(sortedConfigs.begin(), sortedConfigs.end(),
-            [](const auto &a, const auto &b) { return a.second < b.second; });
+  std::ranges::sort(sortedConfigs, [](const auto &a, const auto &b) { return a.second < b.second; });
 
   // Select the top configurations (no overflow possible due to the input validation)
   for (size_t i = 0; i < _exploitationSamples; i++) {
