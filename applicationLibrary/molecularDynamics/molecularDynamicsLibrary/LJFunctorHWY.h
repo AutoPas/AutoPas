@@ -548,9 +548,9 @@ class LJFunctorHWY
       const auto upperFy = highway::UpperHalf(tag_double_half, fy);
       const auto upperFz = highway::UpperHalf(tag_double_half, fz);
 
-      const auto fxCombined = lowerFx + upperFx;
-      const auto fyCombined = lowerFy + upperFy;
-      const auto fzCombined = lowerFz + upperFz;
+      const auto fxCombined = highway::Add(lowerFx, upperFx);
+      const auto fyCombined = highway::Add(lowerFy, upperFy);
+      const auto fzCombined = highway::Add(lowerFz, upperFz);
 
       const int lanes = remainder ? rest : _vecLengthDouble / 2;
 
@@ -638,9 +638,9 @@ class LJFunctorHWY
       const auto oldFy = highway::LoadN(tag_double_half, &fyPtr[index], lanes);
       const auto oldFz = highway::LoadN(tag_double_half, &fzPtr[index], lanes);
 
-      const auto newFx = oldFx + fxAccCombined;
-      const auto newFy = oldFy + fyAccCombined;
-      const auto newFz = oldFz + fzAccCombined;
+      const auto newFx = highway::Add(oldFx, fxAccCombined);
+      const auto newFy = highway::Add(oldFy, fyAccCombined);
+      const auto newFz = highway::Add(oldFz, fzAccCombined);
 
       highway::StoreN(newFx, tag_double_half, &fxPtr[index], lanes);
       highway::StoreN(newFy, tag_double_half, &fyPtr[index], lanes);
@@ -1060,7 +1060,7 @@ class LJFunctorHWY
     }
 
     // compute LJ Potential
-    const auto invDr2 = highway::Set(tag_double, 1.0) / dr2;
+    const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
     const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
     const auto lj4 = highway::Mul(lj2, lj2);
     const auto lj6 = highway::Mul(lj2, lj4);
