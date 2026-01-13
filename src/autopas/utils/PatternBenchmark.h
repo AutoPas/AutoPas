@@ -162,7 +162,7 @@ class PatternBenchmark {
    */
   template <class Functor_T, class Particle_T>
   std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> calculateVecPatternMap(
-      Functor_T &functor, bool newton3) {
+      Functor_T &functor, bool newton3, double hitRate) {
     using PatternType = autopas::VectorizationPatternOption::Value;
     std::set<VectorizationPatternOption> patternSet = VectorizationPatternOption::getAllOptions();
     std::vector<PatternType> patterns{};
@@ -189,7 +189,7 @@ class PatternBenchmark {
 
           allResults[numberParticlesSoA1 - 1 + _benchmarkSize * (numberParticlesSoA2 - 1)][pattern] =
               runSingleBenchmark<Functor_T, Particle_T>(functor, 100, 100, numberParticlesSoA1, numberParticlesSoA2,
-                                                        0.16, pattern, timer, newton3);
+                                                        hitRate, pattern, timer, newton3);
         }
       }
     }
@@ -221,41 +221,105 @@ class PatternBenchmark {
    */
   template <class Functor_T, typename Particle_T>
   void runBenchmark(Functor_T &functor, bool printPatternResults) {
-    _optimalPatternsNewton3On = calculateVecPatternMap<Functor_T, Particle_T>(functor, true);
-    _optimalPatternsNewton3Off = calculateVecPatternMap<Functor_T, Particle_T>(functor, false);
+    _optimalPatternsNewton3OnSide = calculateVecPatternMap<Functor_T, Particle_T>(functor, true, 0.3);
+    _optimalPatternsNewton3OffSide = calculateVecPatternMap<Functor_T, Particle_T>(functor, false, 0.3);
+    _optimalPatternsNewton3OnEdge = calculateVecPatternMap<Functor_T, Particle_T>(functor, true, 0.08);
+    _optimalPatternsNewton3OffEdge = calculateVecPatternMap<Functor_T, Particle_T>(functor, false, 0.08);
+    _optimalPatternsNewton3OnCorner = calculateVecPatternMap<Functor_T, Particle_T>(functor, true, 0.02);
+    _optimalPatternsNewton3OffCorner = calculateVecPatternMap<Functor_T, Particle_T>(functor, false, 0.02);
     _patternsCalculated = true;
 
     if (printPatternResults) {
       const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
-      std::ofstream newton3File(
-          "newton3on_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
+      std::ofstream newton3SideFile(
+          "newton3on_side_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
           std::ios::out);
-      if (newton3File.is_open()) {
-        newton3File << "pattern,firstCellSize,SecondCellSize\n";
+      if (newton3SideFile.is_open()) {
+        newton3SideFile << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3File << VectorizationPatternOption{_optimalPatternsNewton3On[(secondSize - 1) * _benchmarkSize +
+            newton3SideFile << VectorizationPatternOption{_optimalPatternsNewton3OnSide[(secondSize - 1) * _benchmarkSize +
                                                                                 (firstSize - 1)]}
                                .to_string()
                         << "," << firstSize << "," << secondSize << "\n";
           }
         }
-        newton3File.close();
+        newton3SideFile.close();
       }
-      std::ofstream newton3offFile(
-          "newton3off_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
+      std::ofstream newton3offSideFile(
+          "newton3off_side_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
           std::ios::out);
-      if (newton3offFile.is_open()) {
-        newton3offFile << "pattern,firstCellSize,SecondCellSize\n";
+      if (newton3offSideFile.is_open()) {
+        newton3offSideFile << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3offFile << VectorizationPatternOption{_optimalPatternsNewton3Off[(secondSize - 1) * _benchmarkSize +
+            newton3offSideFile << VectorizationPatternOption{_optimalPatternsNewton3OffSide[(secondSize - 1) * _benchmarkSize +
                                                                                     (firstSize - 1)]}
                                   .to_string()
                            << "," << firstSize << "," << secondSize << "\n";
           }
         }
-        newton3offFile.close();
+        newton3offSideFile.close();
+      }
+      std::ofstream newton3EdgeFile(
+          "newton3on_edge_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
+          std::ios::out);
+      if (newton3EdgeFile.is_open()) {
+        newton3EdgeFile << "pattern,firstCellSize,SecondCellSize\n";
+        for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
+          for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
+            newton3EdgeFile << VectorizationPatternOption{_optimalPatternsNewton3OnSide[(secondSize - 1) * _benchmarkSize +
+                                                                                (firstSize - 1)]}
+            .to_string()
+     << "," << firstSize << "," << secondSize << "\n";
+          }
+        }
+        newton3EdgeFile.close();
+      }
+      std::ofstream newton3offEdgeFile(
+          "newton3off_edge_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
+          std::ios::out);
+      if (newton3offEdgeFile.is_open()) {
+        newton3offEdgeFile << "pattern,firstCellSize,SecondCellSize\n";
+        for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
+          for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
+            newton3offEdgeFile << VectorizationPatternOption{_optimalPatternsNewton3OffSide[(secondSize - 1) * _benchmarkSize +
+                                                                                    (firstSize - 1)]}
+            .to_string()
+     << "," << firstSize << "," << secondSize << "\n";
+          }
+        }
+        newton3offEdgeFile.close();
+      }
+      std::ofstream newton3CornerFile(
+          "newton3on_corner_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
+          std::ios::out);
+      if (newton3CornerFile.is_open()) {
+        newton3CornerFile << "pattern,firstCellSize,SecondCellSize\n";
+        for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
+          for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
+            newton3CornerFile << VectorizationPatternOption{_optimalPatternsNewton3OnSide[(secondSize - 1) * _benchmarkSize +
+                                                                                (firstSize - 1)]}
+            .to_string()
+     << "," << firstSize << "," << secondSize << "\n";
+          }
+        }
+        newton3EdgeFile.close();
+      }
+      std::ofstream newton3offCornerFile(
+          "newton3off_corner_patterns" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv",
+          std::ios::out);
+      if (newton3offCornerFile.is_open()) {
+        newton3offCornerFile << "pattern,firstCellSize,SecondCellSize\n";
+        for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
+          for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
+            newton3offCornerFile << VectorizationPatternOption{_optimalPatternsNewton3OffSide[(secondSize - 1) * _benchmarkSize +
+                                                                                    (firstSize - 1)]}
+            .to_string()
+     << "," << firstSize << "," << secondSize << "\n";
+          }
+        }
+        newton3offCornerFile.close();
       }
     }
   }
@@ -270,19 +334,35 @@ class PatternBenchmark {
    * @param newton3 whether newton3 optimization is applied.
    */
   inline VectorizationPatternOption::Value getBenchmarkResult(size_t firstBufferSize, size_t secondBufferSize,
-                                                              bool newton3) {
+                                                              bool newton3, size_t type) { // type is just a temp name and should be an enum: 0 = side, 1 = edge, 2 =  corner
     autopas::VectorizationPatternOption::Value vectorizationPattern =
         autopas::VectorizationPatternOption::Value::p1xVec;
     // if at least one buffer has 0 particles it should just return p1xVec
     if (firstBufferSize != 0 and secondBufferSize != 0) {
       if (newton3) {
-        vectorizationPattern =
-            _optimalPatternsNewton3On[(std::min(firstBufferSize, _benchmarkSize) - 1) +
-                                      _benchmarkSize * (std::min(secondBufferSize, _benchmarkSize) - 1)];
+        if (type == 0) {
+          vectorizationPattern =
+              _optimalPatternsNewton3OnSide[(std::min(firstBufferSize, _benchmarkSize) - 1) +
+                                          _benchmarkSize * (std::min(secondBufferSize, _benchmarkSize) - 1)];
+        } else if (type == 1) {
+          vectorizationPattern =
+              _optimalPatternsNewton3OnEdge[(std::min(firstBufferSize, _benchmarkSize) - 1)];
+        } else if (type == 2){
+           vectorizationPattern =
+             _optimalPatternsNewton3OnCorner[(std::min(firstBufferSize, _benchmarkSize) - 1)];
+        }
       } else {
-        vectorizationPattern =
-            _optimalPatternsNewton3Off[(std::min(firstBufferSize, _benchmarkSize) - 1) +
-                                       _benchmarkSize * (std::min(secondBufferSize, _benchmarkSize) - 1)];
+        if (type == 0) {
+          vectorizationPattern =
+              _optimalPatternsNewton3OffSide[(std::min(firstBufferSize, _benchmarkSize) - 1) +
+                                           _benchmarkSize * (std::min(secondBufferSize, _benchmarkSize) - 1)];
+        } else if (type == 1) {
+          vectorizationPattern =
+              _optimalPatternsNewton3OffEdge[(std::min(firstBufferSize, _benchmarkSize) - 1)];
+        } else if (type == 2){
+           vectorizationPattern =
+             _optimalPatternsNewton3OffCorner[(std::min(firstBufferSize, _benchmarkSize) - 1)];
+        }
       }
     }
     return vectorizationPattern;
@@ -292,8 +372,12 @@ class PatternBenchmark {
    * both variables represent the optimal pattern results for vectorization pattern selection benchmarking. They are
    * only set once at the beginning of the simulation.
    */
-  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3On;
-  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3Off;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3OnSide;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3OffSide;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3OnEdge;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3OffEdge;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3OnCorner;
+  std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3OffCorner;
 
   /**
    * boolean to determine if pattern benchmark has already been executed

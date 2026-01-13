@@ -190,6 +190,8 @@ class Functor {
    */
   virtual void setPatternBenchmark(PatternBenchmark *patternBenchmark) {}
 
+  virtual void setType(size_t type) {}
+
   /**
    * Returns true if the functor can make use of a vector pattern lookup table.
    * @return boolean

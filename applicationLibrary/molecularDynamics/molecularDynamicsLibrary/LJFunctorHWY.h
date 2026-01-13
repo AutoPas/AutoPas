@@ -210,7 +210,7 @@ class LJFunctorHWY
 
     if (_patternBenchmark != nullptr) {
       autopas::VectorizationPatternOption::Value vectorizationPattern =
-          (*_patternBenchmark).getBenchmarkResult(soa1.size(), soa2.size(), newton3);
+          (*_patternBenchmark).getBenchmarkResult(soa1.size(), soa2.size(), newton3, _type);
 
       switch (vectorizationPattern) {
         case VectorizationPattern::p1xVec: {
@@ -1490,5 +1490,7 @@ class LJFunctorHWY
       VectorizationPattern::pVecx1};
 
   autopas::PatternBenchmark *_patternBenchmark = nullptr;
+
+  size_t _type{};
 };
 }  // namespace mdLib
