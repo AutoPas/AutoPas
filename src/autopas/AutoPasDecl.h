@@ -833,7 +833,7 @@ class AutoPas {
    * Set the number of exploration samples for deep reinforcement learning.
    * @param explorationSamples The number of exploration samples.
    */
-  void setExplorationSamples(unsigned int explorationSamples) {
+  void setNumExplorationSamples(unsigned int explorationSamples) {
     _tuningStrategyFactoryInfo.explorationSamples = explorationSamples;
   }
 
