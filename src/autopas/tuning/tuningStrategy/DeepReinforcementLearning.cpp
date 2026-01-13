@@ -176,7 +176,7 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
 
       // Select the exploration samples if the config queue is larger than the exploration samples
       if (configQueue.size() > _explorationSamples) {
-        std::set<Configuration> samples = getExplorationSamples();
+        const std::set<Configuration> samples = getExplorationSamples();
         configQueue.clear();
 
         for (const auto &sample : samples) {
