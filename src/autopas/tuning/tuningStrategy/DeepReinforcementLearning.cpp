@@ -302,7 +302,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
 
     default: {
       utils::ExceptionHandler::exception("DeepReinforcementLearning: Unknown exploration method.");
-      return _rand.randomSubset(_searchSpace, _explorationSamples);  // Fallback to random exploration
+      return {};
     }
   }
 }
