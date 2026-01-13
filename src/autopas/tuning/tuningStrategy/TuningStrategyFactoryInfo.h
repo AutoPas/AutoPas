@@ -68,7 +68,7 @@ struct TuningStrategyFactoryInfo {
   /**
    * Number of exploration samples for deep reinforcement learning.
    */
-  unsigned int explorationSamples{4};
+  unsigned int numExplorationSamples{4};
 
   /**
    * If reinforcement training updates are enabled for deep reinforcement learning.
