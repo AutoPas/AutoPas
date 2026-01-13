@@ -61,7 +61,7 @@ bool autopas::ReinforcementLearning::optimizeSuggestions(std::vector<Configurati
     // Initialize the exploration queue
     Random randomEngine{};
 
-    // Remove the best configuration from the queue
+    // Remove the prior best configuration from the queue
     const size_t bestIdx = std::find(configQueue.begin(), configQueue.end(), _bestConfiguration) - configQueue.begin();
     std::swap(configQueue[bestIdx], configQueue[configQueue.size() - 1]);
     configQueue.resize(configQueue.size() - 1);
