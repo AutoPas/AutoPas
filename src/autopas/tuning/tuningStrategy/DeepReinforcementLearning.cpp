@@ -151,7 +151,7 @@ void autopas::DeepReinforcementLearning::addEvidence(const Configuration &config
       // In the exploration and exploitation state, we collect evidence and update the exploration samples.
       _trainingInputData.push_back(_history.at(configuration).getValueVector(_minEvidence));
       _trainingOutputData.push_back(static_cast<double>(evidence.value));
-      _history.at(configuration).addValue(evidence.value);
+      _history.at(configuration).addValue(static_cast<double>(evidence.value));
 
       break;
     }
