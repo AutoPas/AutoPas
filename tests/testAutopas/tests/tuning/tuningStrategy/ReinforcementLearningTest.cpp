@@ -339,7 +339,7 @@ TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
       << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
 
   EXPECT_EQ(configQueue.size(), 4)
-      << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
+      << "ReinforcementLearning should never clear the queue intentionally when resetting.";
 
   it = 1;
   rl.addEvidence(configQueue.back(), evidence);
