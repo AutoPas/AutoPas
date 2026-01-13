@@ -9,6 +9,8 @@
 
 #include <hwy/highway.h>
 
+#include <optional>
+
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/options/VectorizationPatternOption.h"
@@ -24,8 +26,14 @@ namespace highway = hwy::HWY_NAMESPACE;
 constexpr highway::ScalableTag<double> tag_double;
 /** Highway tag for full long register */
 constexpr highway::ScalableTag<int64_t> tag_long;
-/** Number of double values in a full register */
-constexpr size_t _vecLengthDouble{highway::Lanes(tag_double)};
+/**
+ * Number of double values in a full register. Not constexpr on all architectures, so cannot be assumed, but, when
+ * possible (e.g. on x86), we provide this constexpr so compilers may make optimizations.*/
+HWY_LANES_CONSTEXPR inline size_t _vecLengthDouble{highway::Lanes(tag_double)};
+/**
+ * Upper bound on the number of double values in a full register. Always constexpr.
+ */
+constexpr size_t _maxVecLengthDouble{highway::MaxLanes(tag_double)};
 /** Type for a Double vector register */
 using VectorDouble = decltype(highway::Zero(tag_double));
 /** Type for a Long vector register */
@@ -907,9 +915,11 @@ class LJFunctorHWY
   inline void fillPhysicsRegisters(const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
                                    VectorDouble &epsilon24s, VectorDouble &sigmaSquareds, VectorDouble &shift6s,
                                    const unsigned int j, const unsigned int restI, const unsigned int restJ) {
-    HWY_ALIGN double epsilons[_vecLengthDouble] = {0.};
-    HWY_ALIGN double sigmas[_vecLengthDouble] = {0.};
-    HWY_ALIGN double shifts[_vecLengthDouble] = {0.};
+    // We overestimate the array size. This should be a tight/perfect upper bound on x86, and should never be large
+    // enough on e.g. ARM/RISC-V to cause issues.
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble); ++j) {
@@ -958,10 +968,10 @@ class LJFunctorHWY
       }
     }
 
-    epsilon24s = highway::Load(tag_double, epsilons);
-    sigmaSquareds = highway::Load(tag_double, sigmas);
+    epsilon24s = highway::Load(tag_double, epsilons.data());
+    sigmaSquareds = highway::Load(tag_double, sigmas.data());
     if constexpr (applyShift) {
-      shift6s = highway::Load(tag_double, shifts);
+      shift6s = highway::Load(tag_double, shifts.data());
     }
   }
 
@@ -1137,18 +1147,22 @@ class LJFunctorHWY
     const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
     const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
     const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
-    const int64_t ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
+    const auto ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
     const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
     const MaskDouble ownedMaskI = highway::Ne(ownedStateI, _zeroDouble);
 
-    HWY_ALIGN double x2Tmp[_vecLengthDouble] = {0.};
-    HWY_ALIGN double y2Tmp[_vecLengthDouble] = {0.};
-    HWY_ALIGN double z2Tmp[_vecLengthDouble] = {0.};
-    HWY_ALIGN double fx2Tmp[_vecLengthDouble] = {0.};
-    HWY_ALIGN double fy2Tmp[_vecLengthDouble] = {0.};
-    HWY_ALIGN double fz2Tmp[_vecLengthDouble] = {0.};
-    HWY_ALIGN size_t typeID2Tmp[_vecLengthDouble] = {0};
-    HWY_ALIGN autopas::OwnershipState ownedStates2Tmp[_vecLengthDouble] = {autopas::OwnershipState::dummy};
+    // We overestimate the array size. This should be a tight/perfect upper bound on x86, and should never be large
+    // enough on e.g. ARM/RISC-V to cause issues.
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> x2Tmp{};
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> y2Tmp{};
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> z2Tmp{};
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> fx2Tmp{};
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> fy2Tmp{};
+    HWY_ALIGN std::array<double, _maxVecLengthDouble> fz2Tmp{};
+    HWY_ALIGN std::array<size_t, _maxVecLengthDouble> typeID2Tmp{};
+    // ownedStates2Tmp is int64_t because we can directly use static_case on the individual elements below, unlike other
+    // functors where we have to resort to unsafe reinterpret_cast
+    HWY_ALIGN std::array<int64_t, _maxVecLengthDouble> ownedStates2Tmp{static_cast<int64_t>(autopas::OwnershipState::dummy)};
 
     size_t j = 0;
     const size_t vecEnd = (neighborList.size() / _vecLengthDouble) * _vecLengthDouble;
@@ -1165,11 +1179,11 @@ class LJFunctorHWY
           fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
         }
         typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
-        ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
+        ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedStatePtr[neighborList[j + vecIndex]]);
       }
 
       SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
+          0, 0, ownedMaskI, ownedStates2Tmp, x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
           fy2Tmp, fz2Tmp, &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, 0, 0);
 
@@ -1199,7 +1213,7 @@ class LJFunctorHWY
       }
 
       SoAKernel<newton3, false, true, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
+          0, 0, ownedMaskI, ownedStates2Tmp, x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
           fy2Tmp, fz2Tmp, &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, 0, rest);
 
@@ -1428,7 +1442,7 @@ class LJFunctorHWY
   bool _postProcessed;
 
   // The Vectorization Pattern currently used in the SoA functor.
-  VectorizationPattern _vecPattern;
+  VectorizationPattern _vecPattern{};
 
   // Vectorization Pattern that the functor can handle.
   static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {
