@@ -41,8 +41,8 @@ void autopas::DeepReinforcementLearning::DRLHistoryData::addValue(const double v
 
 void autopas::DeepReinforcementLearning::DRLHistoryData::ageData() {
   // Increment tuning phases to age the data
-  for (size_t i = 0; i < _inputLength; i++) {
-    _tuningPhases[i]++;
+  for (auto &tuningPhase : _tuningPhases) {
+    tuningPhase++;
   }
 }
 
