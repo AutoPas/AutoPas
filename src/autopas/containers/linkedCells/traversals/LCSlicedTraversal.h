@@ -67,7 +67,7 @@ inline void LCSlicedTraversal<ParticleCell, PairwiseFunctor>::traverseParticles(
   auto &cells = *(this->_cells);
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _cellHandler.processBaseCell(cells, id);
+    _cellHandler.processBaseCell(cells, id, this->_cellsPerDimension);
   });
 }
 

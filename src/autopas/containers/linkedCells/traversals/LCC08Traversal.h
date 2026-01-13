@@ -70,7 +70,7 @@ inline void LCC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _cellHandler.processBaseCell(cells, baseIndex);
+    _cellHandler.processBaseCell(cells, baseIndex, this->_cellsPerDimension);
   });
 }
 

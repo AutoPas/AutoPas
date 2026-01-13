@@ -99,7 +99,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::processBasePack6(std::vec
       // skip cells outside radius
       if (isIn) {
         const unsigned long ulIndex = threeToOneD(index, signedDims);
-        _cellHandler.processBaseCell(cells, ulIndex);
+        _cellHandler.processBaseCell(cells, ulIndex, this->_cellsPerDimension);
       }
     }
   }

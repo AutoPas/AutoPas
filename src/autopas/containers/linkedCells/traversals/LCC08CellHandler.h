@@ -59,7 +59,7 @@ class LCC08CellHandler {
    * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
+  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex, std::array<unsigned long, 3> dims);
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -109,7 +109,7 @@ class LCC08CellHandler {
 
 template <class ParticleCell, class PairwiseFunctor>
 inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                             unsigned long baseIndex) {
+                                                                             unsigned long baseIndex, std::array<unsigned long, 3> dims ) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;
@@ -120,7 +120,15 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);
     } else {
-      this->_cellFunctor.processCellPair(cell1, cell2, r);
+      const auto cellIndex13D = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex1, dims);
+      const auto cellIndex23D = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, dims);
+      size_t type = 2;
+      for (int i = 0; i < 3; ++i) {
+        if (cellIndex13D[i] == cellIndex23D[i]) {
+          type -= 1;
+        }
+      }
+      this->_cellFunctor.processCellPair(cell1, cell2, r, type);
     }
   }
 }

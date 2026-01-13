@@ -50,7 +50,7 @@ class CellFunctor {
    * given, sorting will be disabled.
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
-                       const std::array<double, 3> &sortingDirection = {0., 0., 0.});
+                       const std::array<double, 3> &sortingDirection = {0., 0., 0.}, size_t type = 2);
 
   /**
    * Getter
@@ -167,7 +167,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(Part
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection, size_t type) {
   if ((_dataLayout == DataLayoutOption::soa and
        (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
       (_dataLayout == DataLayoutOption::aos and (cell1.isEmpty() or cell2.isEmpty()))) {
@@ -194,18 +194,6 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
       }
       break;
     case DataLayoutOption::soa:
-      // hacky temp solution for getting whether cell pair share a side, edge, or corner
-      int type = 2;
-      for (auto &temp : sortingDirection) {
-        if (temp <= 1e-8) {
-          // zero-component => corner -> edge -> side
-          type--;
-        }
-      }
-      // sanity check
-      if (type < 0 or type > 2) {
-        utils::ExceptionHandler::exception("Sorting direction is not a corner, edge or side!");
-      }
       if (_useNewton3) {
         processCellPairSoAN3(cell1, cell2, type);
       } else {

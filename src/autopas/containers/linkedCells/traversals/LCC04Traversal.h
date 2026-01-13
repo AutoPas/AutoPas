@@ -157,7 +157,7 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor>::processBasePack32(std::vecto
 
     if (isIn) {
       const unsigned long ulIndex = threeToOneD(index, signedDims);
-      _cellHandler.processBaseCell(cells, ulIndex);
+      _cellHandler.processBaseCell(cells, ulIndex, this->_cellsPerDimension);
     }
   }
 }
