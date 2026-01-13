@@ -558,9 +558,9 @@ class LJFunctorHWY
       const auto fy2 = highway::LoadN(tag_double_half, &fy2Ptr[j], lanes);
       const auto fz2 = highway::LoadN(tag_double_half, &fz2Ptr[j], lanes);
 
-      const auto newFx = fx2 - fxCombined;
-      const auto newFy = fy2 - fyCombined;
-      const auto newFz = fz2 - fzCombined;
+      const auto newFx = highway::Sub(fx2, fxCombined);
+      const auto newFy = highway::Sub(fy2, fyCombined);
+      const auto newFz = highway::Sub(fz2, fzCombined);
 
       highway::StoreN(newFx, tag_double_half, &fx2Ptr[j], lanes);
       highway::StoreN(newFy, tag_double_half, &fy2Ptr[j], lanes);
