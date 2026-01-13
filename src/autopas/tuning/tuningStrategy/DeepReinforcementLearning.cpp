@@ -290,8 +290,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
 
       // Shuffle the array to prevent order-based preferences in case of multiple algorithms with the same age.
       std::ranges::shuffle(sortedHistory, _rand);
-      std::sort(sortedHistory.begin(), sortedHistory.end(),
-                [](const auto &a, const auto &b) { return a.second < b.second; });
+      std::ranges::sort(sortedHistory, [](const auto &a, const auto &b) { return a.second < b.second; });
 
       std::set<Configuration> ret;
       for (size_t i = 0; i < _explorationSamples; i++) {
