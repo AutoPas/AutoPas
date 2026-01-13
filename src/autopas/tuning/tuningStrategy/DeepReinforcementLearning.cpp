@@ -254,13 +254,10 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       double timeScale = 1.0 / _minEvidence;
 
       for (const Configuration &config : _searchSpace) {
-        double priority = 0.0;
-
-        // Calculate the priority based on the last tuning phase
+        // Calculate the priority based on when the configuration was last tested.
         double lastTuningPhase = _history.at(config).lastSearched();
-
-        priority += lastTuningPhase * lastTuningPhase * _phaseScale;
-        priority -= _history.at(config).predictedEvidence() * timeScale;
+        
+        const auto priority = lastTuningPhase * lastTuningPhase * _phaseScale - _history.at(config).predictedEvidence() * timeScale;
 
         explorationPriority.emplace_back(config, priority);
       }
