@@ -268,7 +268,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   ExplorationMethod _explorationMethod = ExplorationMethod::polynomial;
 
   /**
-   * Store if the neural network should be trained.
+   * Store if the neural network should be retrained with reinforcement learning.
    */
   bool _train = false;
 
