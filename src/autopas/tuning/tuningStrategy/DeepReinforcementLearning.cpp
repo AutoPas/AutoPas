@@ -263,8 +263,8 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       }
 
       // Sort the configuration queue
-      std::sort(explorationPriority.begin(), explorationPriority.end(),
-                [](const auto &a, const auto &b) { return a.second > b.second; });
+      std::ranges::sort(explorationPriority,
+            [](const auto &a, const auto &b) { return a.second > b.second; });
 
       // Generate the subset
       std::set<autopas::Configuration> subSet;
