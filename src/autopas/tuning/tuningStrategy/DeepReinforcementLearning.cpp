@@ -186,7 +186,7 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
       }
 
       // Search the exploration samples
-      if (!configQueue.empty()) {
+      if (not configQueue.empty()) {
         return false;
       }
 
