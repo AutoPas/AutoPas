@@ -109,7 +109,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
 
     /**
      * Get how many tuning phases ago the algorithm was last searched.
-     * @return The number of tuning phases the algorithm was last searched.
+     * @return The number of tuning phases ago the algorithm was last searched.
      */
     [[nodiscard]] size_t lastSearched() const;
 
