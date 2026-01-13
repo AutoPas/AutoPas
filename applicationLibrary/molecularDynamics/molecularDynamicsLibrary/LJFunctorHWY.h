@@ -82,7 +82,6 @@ class LJFunctorHWY
   explicit LJFunctorHWY(double cutoff, std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
                                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
-        _cutoffSquared{highway::Set(tag_double, cutoff * cutoff)},
         _cutoffSquareAoS{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -444,7 +443,7 @@ class LJFunctorHWY
                              const double *const __restrict zPtr,
                              const autopas::OwnershipState *const __restrict ownedStatePtr, VectorDouble &x1,
                              VectorDouble &y1, VectorDouble &z1, MaskDouble &ownedMaskI, const size_t restI) {
-    VectorLong ownedStateILong = _zeroLong;
+    VectorLong ownedStateILong = highway::Zero(tag_long);
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       const auto owned = static_cast<int64_t>(ownedStatePtr[i]);
@@ -461,10 +460,10 @@ class LJFunctorHWY
       y1 = highway::Set(tag_double, yPtr[i]);
       z1 = highway::Set(tag_double, zPtr[i]);
 
-      VectorLong tmpOwnedI = _zeroLong;
-      VectorDouble tmpX1 = _zeroDouble;
-      VectorDouble tmpY1 = _zeroDouble;
-      VectorDouble tmpZ1 = _zeroDouble;
+      VectorLong tmpOwnedI = highway::Zero(tag_long);
+      VectorDouble tmpX1 = highway::Zero(tag_double);
+      VectorDouble tmpY1 = highway::Zero(tag_double);
+      VectorDouble tmpZ1 = highway::Zero(tag_double);
 
       if constexpr (not remainder) {
         const auto index = reversed ? i - 1 : i + 1;
@@ -511,7 +510,7 @@ class LJFunctorHWY
       }
     }
 
-    MaskLong ownedMaskILong = highway::Ne(ownedStateILong, _zeroLong);
+    MaskLong ownedMaskILong = highway::Ne(ownedStateILong, highway::Zero(tag_long));
 
     // conert to a double mask since we perform logical operations with other double masks in the kernel.
     ownedMaskI = highway::RebindMask(tag_double, ownedMaskILong);
@@ -689,15 +688,15 @@ class LJFunctorHWY
       double *const __restrict fyPtr2, double *const __restrict fzPtr2, const size_t *const __restrict typeIDptr1,
       const size_t *const __restrict typeIDptr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
       VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecEnd) {
-    VectorDouble fxAcc = _zeroDouble;
-    VectorDouble fyAcc = _zeroDouble;
-    VectorDouble fzAcc = _zeroDouble;
+    VectorDouble fxAcc = highway::Zero(tag_double);
+    VectorDouble fyAcc = highway::Zero(tag_double);
+    VectorDouble fzAcc = highway::Zero(tag_double);
 
     MaskDouble ownedMaskI;
 
-    VectorDouble x1 = _zeroDouble;
-    VectorDouble y1 = _zeroDouble;
-    VectorDouble z1 = _zeroDouble;
+    VectorDouble x1 = highway::Zero(tag_double);
+    VectorDouble y1 = highway::Zero(tag_double);
+    VectorDouble z1 = highway::Zero(tag_double);
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
@@ -744,10 +743,10 @@ class LJFunctorHWY
     const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     // initialize and declare vector variables
-    auto virialSumX = _zeroDouble;
-    auto virialSumY = _zeroDouble;
-    auto virialSumZ = _zeroDouble;
-    auto uPotSum = _zeroDouble;
+    auto virialSumX = highway::Zero(tag_double);
+    auto virialSumY = highway::Zero(tag_double);
+    auto virialSumZ = highway::Zero(tag_double);
+    auto uPotSum = highway::Zero(tag_double);
 
     for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1;
          checkFirstLoopCondition<true, VectorizationPattern::p1xVec>(i, 0);
@@ -798,10 +797,10 @@ class LJFunctorHWY
     const auto *const __restrict typeID1ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
     const auto *const __restrict typeID2ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
-    VectorDouble virialSumX = _zeroDouble;
-    VectorDouble virialSumY = _zeroDouble;
-    VectorDouble virialSumZ = _zeroDouble;
-    VectorDouble uPotSum = _zeroDouble;
+    VectorDouble virialSumX = highway::Zero(tag_double);
+    VectorDouble virialSumY = highway::Zero(tag_double);
+    VectorDouble virialSumZ = highway::Zero(tag_double);
+    VectorDouble uPotSum = highway::Zero(tag_double);
 
     std::ptrdiff_t i = 0;
     for (; checkFirstLoopCondition<false, vecPattern>(i, soa1.size()); incrementFirstLoop<vecPattern>(i)) {
@@ -847,7 +846,7 @@ class LJFunctorHWY
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
                              VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
                              const unsigned int rest) {
-    VectorLong ownedStateJLong = _zeroLong;
+    VectorLong ownedStateJLong = highway::Zero(tag_long);
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       if constexpr (remainder) {
@@ -883,10 +882,10 @@ class LJFunctorHWY
       z2 = highway::Set(tag_double, z2Ptr[j]);
 
       if constexpr (remainder) {
-        ownedStateJLong = highway::ConcatLowerLower(tag_long, _zeroLong, ownedStateJ);
-        x2 = highway::ConcatLowerLower(tag_double, _zeroDouble, x2);
-        y2 = highway::ConcatLowerLower(tag_double, _zeroDouble, y2);
-        z2 = highway::ConcatLowerLower(tag_double, _zeroDouble, z2);
+        ownedStateJLong = highway::ConcatLowerLower(tag_long, highway::Zero(tag_long), ownedStateJ);
+        x2 = highway::ConcatLowerLower(tag_double, highway::Zero(tag_double), x2);
+        y2 = highway::ConcatLowerLower(tag_double, highway::Zero(tag_double), y2);
+        z2 = highway::ConcatLowerLower(tag_double, highway::Zero(tag_double), z2);
       } else {
         const auto tmpOwnedJ = highway::Set(tag_long, ownedStatePtr2[j + 1]);
         const auto tmpX2 = highway::Set(tag_double, x2Ptr[j + 1]);
@@ -905,7 +904,7 @@ class LJFunctorHWY
       z2 = highway::Set(tag_double, z2Ptr[j]);
     }
 
-    MaskLong ownedMaskJLong = highway::Ne(ownedStateJLong, _zeroLong);
+    MaskLong ownedMaskJLong = highway::Ne(ownedStateJLong, highway::Zero(tag_long));
 
     // convert to a double mask since we perform logical operations with other double masks in the kernel.
     ownedMaskJ = highway::RebindMask(tag_double, ownedMaskJLong);
@@ -1018,13 +1017,19 @@ class LJFunctorHWY
                         VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
                         VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum,
                         const unsigned int restI, const unsigned int restJ) {
-    VectorDouble epsilon24s = _epsilon24;
-    VectorDouble sigmaSquareds = _sigmaSquared;
-    VectorDouble shift6s = _shift6;
+    VectorDouble epsilon24s = highway::Undefined(tag_double);
+    VectorDouble sigmaSquareds = highway::Undefined(tag_double);
+    VectorDouble shift6s = highway::Undefined(tag_double);
 
     if constexpr (useMixing) {
       fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(typeID1Ptr, typeID2Ptr, epsilon24s,
                                                                          sigmaSquareds, shift6s, j, restI, restJ);
+    } else {
+      epsilon24s = highway::Set(tag_double, _epsilon24AoS);
+      sigmaSquareds = highway::Set(tag_double, _sigmaSquareAoS);
+      if constexpr (applyShift) {
+        shift6s = highway::Set(tag_double, _shift6AoS);
+      }
     }
 
     VectorDouble x2;
@@ -1045,15 +1050,17 @@ class LJFunctorHWY
 
     const auto dr2 = drX2 + drY2 + drZ2;
 
+    VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+
     const auto dummyMask = highway::And(ownedMaskI, ownedMaskJ);
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquared);
+    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
     }
 
     // compute LJ Potential
-    const auto invDr2 = _oneDouble / dr2;
+    const auto invDr2 = highway::Set(tag_double, 1.0) / dr2;
     const auto lj2 = sigmaSquareds * invDr2;
     const auto lj4 = lj2 * lj2;
     const auto lj6 = lj2 * lj4;
@@ -1085,10 +1092,10 @@ class LJFunctorHWY
       auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
       auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
 
-      auto energyFactor = highway::IfThenElseZero(dummyMask, _oneDouble);
+      auto energyFactor = highway::MaskedSet(tag_double, dummyMask, 1.0);
 
       if constexpr (newton3) {
-        energyFactor = energyFactor + highway::IfThenElseZero(dummyMask, _oneDouble);
+        energyFactor = energyFactor + highway::MaskedSet(tag_double, dummyMask, 1.0);
       }
 
       uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
@@ -1149,7 +1156,7 @@ class LJFunctorHWY
     const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
     const auto ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
     const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
-    const MaskDouble ownedMaskI = highway::Ne(ownedStateI, _zeroDouble);
+    const MaskDouble ownedMaskI = highway::Ne(ownedStateI, highway::Zero(tag_double));
 
     // We overestimate the array size. This should be a tight/perfect upper bound on x86, and should never be large
     // enough on e.g. ARM/RISC-V to cause issues.
@@ -1361,14 +1368,6 @@ class LJFunctorHWY
    * @param sigmaSquare
    */
   void setParticleProperties(const double epsilon24, const double sigmaSquare) {
-    _epsilon24 = highway::Set(tag_double, epsilon24);
-    _sigmaSquared = highway::Set(tag_double, sigmaSquare);
-    if constexpr (applyShift) {
-      _shift6 = highway::Set(tag_double, ParticlePropertiesLibrary<double, size_t>::calcShift6(
-                                             epsilon24, sigmaSquare, highway::GetLane(_cutoffSquared)));
-    } else {
-      _shift6 = _zeroDouble;
-    }
     _epsilon24AoS = epsilon24;
     _sigmaSquareAoS = sigmaSquare;
     if constexpr (applyShift) {
@@ -1403,26 +1402,6 @@ class LJFunctorHWY
     double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
-
-  // helper variables for the LJ-calculation used in the kernel.
-  // vector register of doubles containing only zeros.
-  const VectorDouble _zeroDouble{highway::Zero(tag_double)};
-  // vector register of long integers containing only zeros.
-  const VectorLong _zeroLong{highway::Zero(tag_long)};
-  // vector register of doubles containing only ones.
-  const VectorDouble _oneDouble{highway::Set(tag_double, 1.)};
-  // vector register of long integers containing only ones.
-  const VectorLong _oneLong{highway::Set(tag_long, 1)};
-  // vector register of doubles containing dummy ownership state.
-  const VectorDouble _ownedStateDummy{highway::Zero(tag_double)};
-  // vector register to hold the squared cutoff in all lanes.
-  const VectorDouble _cutoffSquared{};
-  // vector register to hold the _hift6 values.
-  VectorDouble _shift6{highway::Zero(tag_double)};
-  // vector register to hold the epsilon24 values.
-  VectorDouble _epsilon24{highway::Zero(tag_double)};
-  // vector register to hold the sigmaSquared values.
-  VectorDouble _sigmaSquared{highway::Zero(tag_double)};
 
   // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
