@@ -1169,7 +1169,8 @@ class LJFunctorHWY
     HWY_ALIGN std::array<size_t, _maxVecLengthDouble> typeID2Tmp{};
     // ownedStates2Tmp is int64_t because we can directly use static_case on the individual elements below, unlike other
     // functors where we have to resort to unsafe reinterpret_cast
-    HWY_ALIGN std::array<int64_t, _maxVecLengthDouble> ownedStates2Tmp{static_cast<int64_t>(autopas::OwnershipState::dummy)};
+    HWY_ALIGN std::array<int64_t, _maxVecLengthDouble> ownedStates2Tmp;
+    ownedStates2Tmp.fill(static_cast<int64_t>(autopas::OwnershipState::dummy));
 
     size_t j = 0;
     const size_t vecEnd = (neighborList.size() / _vecLengthDouble) * _vecLengthDouble;
@@ -1186,11 +1187,12 @@ class LJFunctorHWY
           fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
         }
         typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
-        ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedStatePtr[neighborList[j + vecIndex]]);
+        const auto ownedState = ownedStatePtr[neighborList[j + vecIndex]];
+        ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedState);
       }
 
       SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, ownedStates2Tmp, x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
+          0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
           fy2Tmp, fz2Tmp, &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, 0, 0);
 
@@ -1216,11 +1218,12 @@ class LJFunctorHWY
           fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
         }
         typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
-        ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
+        const auto ownedState = ownedStatePtr[neighborList[j + vecIndex]];
+        ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedState);
       }
 
       SoAKernel<newton3, false, true, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, ownedStates2Tmp, x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
+          0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp, y2Tmp, z2Tmp, fx2Tmp,
           fy2Tmp, fz2Tmp, &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, 0, rest);
 
