@@ -200,7 +200,7 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
       _trainingOutputData.clear();
 
       // Select the exploitation samples
-      std::set<Configuration> samples = getExploitationSamples();
+      const std::set<Configuration> samples = getExploitationSamples();
       configQueue.clear();
 
       for (const auto &sample : samples) {
