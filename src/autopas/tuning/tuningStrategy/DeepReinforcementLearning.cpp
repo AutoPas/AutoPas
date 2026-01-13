@@ -236,7 +236,7 @@ bool autopas::DeepReinforcementLearning::reset(size_t iteration, size_t tuningPh
   }
 
   // Age the history table
-  for (auto &[config, history] : _history) {
+  for (auto &history: _history | std::views::values) {
     history.ageData();
   }
 
