@@ -827,7 +827,7 @@ class AutoPas {
    * Get the number of exploration samples for deep reinforcement learning.
    * @return The number of exploration samples.
    */
-  [[nodiscard]] unsigned int getExplorationSamples() const { return _tuningStrategyFactoryInfo.explorationSamples; }
+  [[nodiscard]] unsigned int getNumExplorationSamples() const { return _tuningStrategyFactoryInfo.explorationSamples; }
 
   /**
    * Set the number of exploration samples for deep reinforcement learning.
