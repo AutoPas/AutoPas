@@ -267,7 +267,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
             [](const auto &a, const auto &b) { return a.second > b.second; });
 
       // Generate the subset
-      std::set<autopas::Configuration> subSet;
+      std::set<Configuration> subset;
 
       for (size_t i = 0; i < _explorationSamples; i++) {
         subSet.emplace(explorationPriority[i].first);
