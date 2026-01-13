@@ -78,7 +78,7 @@ bool autopas::ReinforcementLearning::optimizeSuggestions(std::vector<Configurati
   }
 
   // Perform a greedy search over the configurations in the exploitation phase.
-  if (configQueue.size() == 0 && _explorationPhase) {
+  if (configQueue.empty() and _explorationPhase) {
     _explorationPhase = false;
 
     // Find the configuration with the highest preference
