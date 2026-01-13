@@ -19,7 +19,7 @@ autopas::DeepReinforcementLearning::DRLHistoryData::DRLHistoryData(const size_t 
 
   // Initialize the tuning phases
   _tuningPhases.resize(_inputLength);
-  std::normal_distribution<> dist(expectedResampleInterval, expectedResampleInterval / 4);
+  std::normal_distribution<> dist(static_cast<double>(expectedResampleInterval), static_cast<double>(expectedResampleInterval) / 4);
   _tuningPhases[0] = 0;
 
   for (size_t i = 1; i < _inputLength; i++) {
