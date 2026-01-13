@@ -1886,6 +1886,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       }
       functor.setPatternBenchmark(&(autoTuner.patternBenchmark));
     }
+  }
 }
 
 template <typename Particle_T>
