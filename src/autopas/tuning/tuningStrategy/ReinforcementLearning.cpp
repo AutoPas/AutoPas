@@ -22,7 +22,7 @@ autopas::ReinforcementLearning::ReinforcementLearning(const std::set<Configurati
     utils::ExceptionHandler::exception("The learning rate must be between 0 and 1 for Reinforcement Learning Tuning.");
   }
 
-  if (discountFactor <= 0 || discountFactor > 1) {
+  if (discountFactor <= 0 or discountFactor > 1) {
     utils::ExceptionHandler::exception(
         "The discount factor must be between 0 and 1 for Reinforcement Learning Tuning.");
   }
