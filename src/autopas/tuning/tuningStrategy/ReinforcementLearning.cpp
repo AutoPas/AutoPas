@@ -99,7 +99,7 @@ bool autopas::ReinforcementLearning::optimizeSuggestions(std::vector<Configurati
   }
 
   // Return true if the tuning is finished.
-  if (configQueue.size() == 0 && !_explorationPhase) {
+  if (configQueue.empty() and not _explorationPhase) {
     return true;
   }
 
