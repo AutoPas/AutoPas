@@ -80,9 +80,9 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> autopas::DeepReinforcementLearning::DRL
   return vec;
 }
 
-autopas::DeepReinforcementLearning::DeepReinforcementLearning(const bool train, const size_t numExplorationSamples,
+autopas::DeepReinforcementLearning::DeepReinforcementLearning(const bool retrain, const size_t numExplorationSamples,
                                                               const ExplorationMethod explorationMethod)
-    : _explorationMethod(explorationMethod), _train(train), _numExplorationSamples(numExplorationSamples) {
+    : _explorationMethod(explorationMethod), _retrain(retrain), _numExplorationSamples(numExplorationSamples) {
   // Test that there is at least two exploration sample
   if (_numExplorationSamples <= 1) {
     utils::ExceptionHandler::exception("DeepReinforcementLearning: The exploration samples may not be less than 2.");
@@ -185,7 +185,7 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
     }
 
     // Code for optimizing suggestions in the retraining state
-    if (_train) {
+    if (_retrain) {
       retrainNeuralNetwork();
     }
 

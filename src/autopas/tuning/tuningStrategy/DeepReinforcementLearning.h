@@ -158,7 +158,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
    * @param numExplorationSamples The number of exploration samples to use.
    * @param explorationMethod The exploration method to use.
    */
-  explicit DeepReinforcementLearning(const bool train, const size_t numExplorationSamples = 3,
+  explicit DeepReinforcementLearning(const bool retrain, const size_t numExplorationSamples = 3,
                                      const ExplorationMethod explorationMethod = ExplorationMethod::polynomial);
 
   /**
