@@ -91,7 +91,7 @@ class PatternBenchmark {
                         std::map<std::string, autopas::utils::Timer> &timer, bool newton3) {
     timer.at("Functor").start();
 
-    functor.SoAFunctorPair(cells.first._particleSoABuffer, cells.second._particleSoABuffer, newton3);
+    functor.SoAFunctorPair(cells.first._particleSoABuffer, cells.second._particleSoABuffer, newton3, 3);
 
     timer.at("Functor").stop();
   }

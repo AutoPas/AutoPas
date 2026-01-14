@@ -222,9 +222,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(
 
           auto restView =
               cell1->_particleSoABuffer.constructView(numParticlesBaseCell, cell1->_particleSoABuffer.size());
-          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, _useNewton3);
+          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, _useNewton3, 2);
           if (not _useNewton3) {
-            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, _useNewton3);
+            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, _useNewton3, 2);
           }
           cell1ViewEnd = cell1->_particleSoABuffer.size();
           continue;
@@ -256,9 +256,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(
 
       auto cell1View = cell1->_particleSoABuffer.constructView(cell1ViewStart, cell1ViewEnd);
       auto currentCSView = currentCS._particleSoABuffer.constructView(currentCSViewStart, currentCSViewEnd);
-      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, _useNewton3);
+      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, _useNewton3, 2);
       if (not _useNewton3) {
-        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, _useNewton3);
+        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, _useNewton3, 2);
       }
     }
   }

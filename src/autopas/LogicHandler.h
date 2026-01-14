@@ -1574,7 +1574,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferBufferSoA(
         // For all interactions between different buffers we turn newton3 always off,
         // which ensures that only one thread at a time is writing to a buffer. This saves expensive locks.
         auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-        f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+        f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false, 2);
       }
     }
   }
@@ -1627,7 +1627,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferHaloBufferSoA(
       auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
       auto &haloBufferSoA =
           haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
-      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
+      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false, 2);
     }
   }
 }

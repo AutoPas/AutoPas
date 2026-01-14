@@ -84,7 +84,7 @@ class VCLClusterFunctor {
         }
       }
     } else {
-      _functor->SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), _useNewton3);
+      _functor->SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), _useNewton3, 2);
     }
   }
 

@@ -452,7 +452,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
         auto startIndex = baseCell.size();
         auto endIndex = combinationSlice[slice]._particleSoABuffer.size();
         _functor->SoAFunctorPair(baseCell._particleSoABuffer,
-                                 {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
+                                 {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false, 2);
         // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {

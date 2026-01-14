@@ -127,7 +127,7 @@ class VerletListHelpers {
      * @param soa2 soa of second cell
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
      */
-    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
+    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/, size_t type) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
 
       auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
