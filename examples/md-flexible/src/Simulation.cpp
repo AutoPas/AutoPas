@@ -174,7 +174,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setLearningRate(_configuration.learningRate.value);
   _autoPasContainer->setDiscountFactor(_configuration.discountFactor.value);
-  _autoPasContainer->setExplorationSamples(_configuration.explorationSamples.value);
+  _autoPasContainer->setNumExplorationSamples(_configuration.numExplorationSamples.value);
   _autoPasContainer->setDoReinforcementUpdates(_configuration.doReinforcementUpdates.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);

@@ -48,7 +48,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.acquisitionFunctionOption,
       config.learningRate,
       config.discountFactor,
-      config.explorationSamples,
+      config.numExplorationSamples,
       config.doReinforcementUpdates,
       config.boundaryOption,
       config.boxLength,
@@ -209,10 +209,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.explorationSamples)::getoptChar: {
+      case decltype(config.numExplorationSamples)::getoptChar: {
         try {
-          config.explorationSamples.value = stoul(strArg);
-          if (config.explorationSamples.value < 2) {
+          config.numExplorationSamples.value = stoul(strArg);
+          if (config.numExplorationSamples.value < 2) {
             cerr << "Exploration samples have to be greater than one!" << endl;
             displayHelp = true;
           }

@@ -6,8 +6,6 @@
 
 #include "DeepReinforcementLearningTest.h"
 
-#include "autopas/tuning/utils/SearchSpaceGenerators.h"
-
 /**
  * Test if valid constructors do not throw.
  */
@@ -62,30 +60,15 @@ TEST_F(DeepReinforcementLearningTest, firstSearchIsFullSearch) {
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
   // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+  const auto searchSpace = configQueueBase;
 
   for (const bool train : {true, false}) {
-    for (size_t explorationSamples = 2; explorationSamples <= 8; explorationSamples++) {
+    for (size_t numExplorationSamples = 2; numExplorationSamples <= 8; numExplorationSamples++) {
       for (const autopas::DeepReinforcementLearning::ExplorationMethod explorationMethod :
            {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial,
             autopas::DeepReinforcementLearning::ExplorationMethod::random,
             autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo}) {
-        autopas::DeepReinforcementLearning drl(train, explorationSamples, explorationMethod);
+        autopas::DeepReinforcementLearning drl(train, numExplorationSamples, explorationMethod);
         std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
         autopas::EvidenceCollection evidenceCollection{};
 
@@ -133,30 +116,15 @@ TEST_F(DeepReinforcementLearningTest, validExplorationExploitationSize) {
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
   // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+  const auto searchSpace = configQueueBase;
 
   for (const bool train : {true, false}) {
-    for (size_t explorationSamples = 2; explorationSamples <= 8; explorationSamples++) {
+    for (size_t numExplorationSamples = 2; numExplorationSamples <= 8; numExplorationSamples++) {
       for (const autopas::DeepReinforcementLearning::ExplorationMethod explorationMethod :
            {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial,
             autopas::DeepReinforcementLearning::ExplorationMethod::random,
             autopas::DeepReinforcementLearning::ExplorationMethod::longestAgo}) {
-        autopas::DeepReinforcementLearning drl(train, explorationSamples, explorationMethod);
+        autopas::DeepReinforcementLearning drl(train, numExplorationSamples, explorationMethod);
         std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
         autopas::EvidenceCollection evidenceCollection{};
 
@@ -187,7 +155,7 @@ TEST_F(DeepReinforcementLearningTest, validExplorationExploitationSize) {
           std::vector<autopas::Configuration> configQueueResetCopy = configQueue;
           EXPECT_FALSE(drl.reset(tuningPhase, tuningPhase * 1000, configQueue, evidenceCollection))
               << "DeepReinforcementLearning should not clear the queue ever intentionally when resetting.";
-          EXPECT_EQ(configQueue.size(), explorationSamples)
+          EXPECT_EQ(configQueue.size(), numExplorationSamples)
               << "DeepReinforcementLearning should shrink the config queue to the number of exploration samples.";
 
           drl.addEvidence(configQueue.back(), evidence);
@@ -252,30 +220,15 @@ TEST_F(DeepReinforcementLearningTest, badConfigurationDoesNotStarve) {
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
   // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+  const auto searchSpace = configQueueBase;
 
   // This test only applies to the polynomial exploration method. A lower number of exploration sample options is
   // searched, for the test to be faster.
   for (const bool train : {true, false}) {
-    for (size_t explorationSamples = 3; explorationSamples <= 5; explorationSamples++) {
+    for (size_t numExplorationSamples = 3; numExplorationSamples <= 5; numExplorationSamples++) {
       for (const autopas::DeepReinforcementLearning::ExplorationMethod explorationMethod :
            {autopas::DeepReinforcementLearning::ExplorationMethod::polynomial}) {
-        autopas::DeepReinforcementLearning drl(train, explorationSamples, explorationMethod);
+        autopas::DeepReinforcementLearning drl(train, numExplorationSamples, explorationMethod);
         std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
         autopas::EvidenceCollection evidenceCollection{};
         autopas::Configuration targetConfig = *(searchSpace.begin()++);

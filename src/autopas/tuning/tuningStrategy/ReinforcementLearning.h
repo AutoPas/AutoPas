@@ -24,10 +24,10 @@ class ReinforcementLearning final : public TuningStrategyInterface {
    * @param searchSpace The search space to use.
    * @param learningRate The learning rate for the reinforcement learning algorithm.
    * @param discountFactor The discount factor for the reinforcement learning algorithm.
-   * @param randomExplorations Optional: The number of random explorations to perform.
+   * @param numRandomExplorations Optional: The number of random explorations to perform.
    */
   explicit ReinforcementLearning(const std::set<Configuration> &searchSpace, const double learningRate,
-                                 const double discountFactor, const size_t randomExplorations = 5);
+                                 const double discountFactor, const size_t numRandomExplorations = 5);
 
   ~ReinforcementLearning() override = default;
 
@@ -87,11 +87,11 @@ class ReinforcementLearning final : public TuningStrategyInterface {
   double _discountFactor;
 
   /**
-   * Store the random exploration factor.
+   * Store the number of random explorations.
    *
-   * This factor defines how many random explorations will take place every tuning phase.
+   * This defines how many random explorations will take place every tuning phase.
    */
-  size_t _randomExplorations = 5;
+  size_t _numRandomExplorations = 5;
 
   /**
    * Store the state of the reinforcement learning algorithm.

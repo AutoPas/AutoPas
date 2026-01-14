@@ -266,7 +266,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(discountFactor);
   }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::deepReinforcementLearning})) {
-    printOption(explorationSamples);
+    printOption(numExplorationSamples);
     printOption(doReinforcementUpdates);
   }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::mpiDivideAndConquer})) {

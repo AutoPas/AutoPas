@@ -521,10 +521,10 @@ class MDFlexConfig {
       "reinforcement learning algorithm. This value has to be between 0 and 1 (exclusive)."};
 
   /**
-   * explorationSamples
+   * numExplorationSamples
    */
-  MDFlexOption<unsigned int, __LINE__> explorationSamples{
-      4, "exploration-samples", true,
+  MDFlexOption<unsigned int, __LINE__> numExplorationSamples{
+      4, "num-exploration-samples", true,
       "For the deep reinforcement learning tuning strategy: Number of configurations to explore during the exploration "
       "phase. This value has to be greater than one."};
 

@@ -21,6 +21,10 @@ namespace autopas {
  * This class implements a deep reinforcement learning approach to tune the configurations. Therefore, the method learns
  * from previously collected evidence and will use this data to predict the next best configurations. This method does
  * not use information about the domain.
+ *
+ * This implementation is based on the thesis "Low-Data Algorithm Selection in AutoPas"
+ * (https://mediatum.ub.tum.de/node?id=1797277). The constant parameters were found through the parameter tuning in the
+ * thesis.
  */
 class DeepReinforcementLearning final : public TuningStrategyInterface {
  public:
@@ -68,7 +72,7 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   };
 
   /**
-   * Container for the evidence history.
+   * Container for the evidence history of a single configuration.
    */
   class DRLHistoryData final {
    public:
@@ -125,13 +129,11 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
    private:
     /**
      * Store a random number generator.
-     * @note If one wants to execute DeepReinforcementLearning class in parallel, this should be changed to a
-     * thread-local variable.
      */
-    static inline Random _rand = Random();
+    static inline thread_local Random _rand = Random(0x5CD85F7E3F2262B3);
 
     /**
-     * Store the values (evidences) of the last searched algorithms.
+     * Store the values (evidences) of the last searches.
      */
     std::vector<double> _values;
 
@@ -153,10 +155,10 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   /**
    * Constructor for the DeepReinforcementLearning class.
    * @param retrain Whether to retrain the neural network or not. (I.e. make this simple a deep learning strategy)
-   * @param explorationSamples The number of exploration samples to use.
+   * @param numExplorationSamples The number of exploration samples to use.
    * @param explorationMethod The exploration method to use.
    */
-  explicit DeepReinforcementLearning(const bool train, const size_t explorationSamples = 3,
+  explicit DeepReinforcementLearning(const bool train, const size_t numExplorationSamples = 3,
                                      const ExplorationMethod explorationMethod = ExplorationMethod::polynomial);
 
   /**
@@ -251,19 +253,17 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   [[nodiscard]] std::set<Configuration> getExploitationSamples() const;
 
   /**
-   * Train the neural network. This is done based on the _trainingInputData and _trainingOutputData.
+   * Retrain the neural network. This is done based on the _retrainingInputData and _retrainingOutputData.
    */
-  void trainNeuralNetwork();
+  void retrainNeuralNetwork();
 
   /**
-   * Store a random number generator.
-   * @note If one wants to execute DeepReinforcementLearning class in parallel, this should be changed to a thread-local
-   * variable.
+   * The random number generator.
    */
-  static inline Random _rand = Random();
+  static inline thread_local Random _rand = Random(0xDB91B2DB10E659CF);
 
   /**
-   * Store the exploration method to be used.
+   * The exploration method to be used.
    */
   ExplorationMethod _explorationMethod = ExplorationMethod::polynomial;
 
@@ -273,87 +273,88 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   bool _retrain = false;
 
   /**
-   * Store the search space to be used.
+   * The configurations that have been explored.
    */
-  std::set<Configuration> _searchSpace;
+  std::set<Configuration> _exploredConfigurations;
 
   /**
-   * Store the history of the search.
+   * The history of the search.
    */
   std::unordered_map<Configuration, DRLHistoryData, ConfigHash> _history;
 
   /**
-   * Store the input length of the neural network. This is equivalent to the number of evidences stored in the history for a particular configuration.
+   * The input length of the neural network. This is equivalent to the number of evidences stored in the history for a
+   * particular configuration.
    */
   size_t _inputLength = 4;
 
   /**
-   * Store the size of the hidden layer.
+   * The size of the hidden layer.
    */
   size_t _hiddenLayerSize = 16;
 
   /**
-   * Store the hidden layer weights. This is a _inputLength * 2 x _hiddenLayerSize matrix for the hidden layer.
+   * The hidden layer weights. This is a _inputLength * 2 x _hiddenLayerSize matrix for the hidden layer.
    */
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> _hiddenLayer;
 
   /**
-   * Store the hidden layer bias vector. This is a _hiddenLayerSize x 1 vector for the hidden layer biases.
+   * The hidden layer bias vector. This is a _hiddenLayerSize x 1 vector for the hidden layer biases.
    */
   Eigen::Matrix<double, Eigen::Dynamic, 1> _hiddenLayerBias;
 
   /**
-   * Store the output layer weights. This is a _hiddenLayerSize x 1 vector for the output layer.
+   * The output layer weights. This is a _hiddenLayerSize x 1 vector for the output layer.
    */
   Eigen::Matrix<double, Eigen::Dynamic, 1> _outputLayer;
 
   /**
-   * Store the output layer bias. This is a scalar value for the output layer bias.
+   * The output layer bias. This is a scalar value for the output layer bias.
    */
   double _outputLayerBias = 2.715298880101034151e-01;
 
   /**
-   * Store the training input data. This is a vector of _inputLength x 1 matrices for the training input data.
+   * The retraining input data. This is a vector of _inputLength x 1 matrices for the retraining input data.
    */
-  std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>> _trainingInputData;
+  std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>> _retrainingInputData;
 
   /**
-   * Store the training output data. This is a vector of scalar values for the training output data.
+   * The retraining output data. This is a vector of scalar values for the retraining output data.
    */
-  std::vector<double> _trainingOutputData;
+  std::vector<double> _retrainingOutputData;
 
   /**
-   * Define the number of training iterations.
+   * The number of retraining iterations.
    */
-  size_t _trainingIterations = 34;
+  size_t _retrainingIterations = 34;
 
   /**
-   * Store the learning rate.
+   * The learning rate.
    */
   double _learningRate = 1.771665733218049020e-09;
 
   /**
-   * Store the current state of the tuning process.
+   * The current state of the tuning process.
    */
   TuningState _state = TuningState::firstSearch;
 
   /**
-   * Store the minimum evidence found during the full search.
+   * The minimum evidence found during the full search.
    */
   double _minEvidence = std::numeric_limits<double>::infinity();
 
   /**
-   * Store the number of samples to be used for exploration.
+   * The number of samples to be used for exploration.
    */
-  size_t _explorationSamples = 4;
+  size_t _numExplorationSamples = 4;
 
   /**
-   * Store the number of samples to be used for exploitation.
+   * The number of samples to be used for exploitation.
    */
-  size_t _exploitationSamples = 1;
+  size_t _numExploitationSamples = 1;
 
   /**
-   * Store the scaling factor used for the priority of the age of a data in polynomial exploration.
+   * The scaling factor used for the priority of the age of a data in polynomial exploration.
    *
    * The phase scale factor defines how much the priority depends on the squared age of the data. It is only used if the
    * polynomial method is being used for selecting the exploration samples.

@@ -468,11 +468,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.discountFactor.description;
 
         config.discountFactor.value = node[key].as<double>();
-      } else if (key == config.explorationSamples.name) {
+      } else if (key == config.numExplorationSamples.name) {
         expected = "Integer Value";
-        description = config.explorationSamples.description;
+        description = config.numExplorationSamples.description;
 
-        config.explorationSamples.value = node[key].as<int>();
+        config.numExplorationSamples.value = node[key].as<int>();
       } else if (key == config.doReinforcementUpdates.name) {
         expected = "Boolean Value";
         description = config.doReinforcementUpdates.description;

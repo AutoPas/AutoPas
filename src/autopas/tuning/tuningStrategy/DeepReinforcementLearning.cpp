@@ -6,6 +6,9 @@
 
 #include "DeepReinforcementLearning.h"
 
+#include <algorithm>
+#include <ranges>
+
 #include "autopas/utils/logging/Logger.h"
 
 autopas::DeepReinforcementLearning::DRLHistoryData::DRLHistoryData(const size_t inputLength, const double value,
@@ -17,13 +20,18 @@ autopas::DeepReinforcementLearning::DRLHistoryData::DRLHistoryData(const size_t 
   _values.resize(_inputLength);
   _values.assign(_inputLength, value);
 
+  // To make the history data more naturally distributed at the beginning, we initialize the tuning phases
+  // with some random ages distributed about the expected resample interval.
+
   // Initialize the tuning phases
   _tuningPhases.resize(_inputLength);
-  std::normal_distribution<> dist(static_cast<double>(expectedResampleInterval), static_cast<double>(expectedResampleInterval) / 4);
+  std::normal_distribution<> dist(static_cast<double>(expectedResampleInterval),
+                                  static_cast<double>(expectedResampleInterval) / 4);
   _tuningPhases[0] = 0;
 
   for (size_t i = 1; i < _inputLength; i++) {
-    _tuningPhases[i] = _tuningPhases[i - 1] + dist(_rand);
+    double initialAge = std::max(1.0, dist(_rand));
+    _tuningPhases[i] = _tuningPhases[i - 1] + std::round(initialAge);
   }
 }
 
@@ -49,7 +57,8 @@ void autopas::DeepReinforcementLearning::DRLHistoryData::ageData() {
 size_t autopas::DeepReinforcementLearning::DRLHistoryData::lastSearched() const { return _tuningPhases[0]; }
 
 double autopas::DeepReinforcementLearning::DRLHistoryData::predictedEvidence() const {
-  return _values[0] - _tuningPhases[0] * (_values[1] - _values[0]) / (_tuningPhases[1] - _tuningPhases[0]);
+  return _values[0] - static_cast<double>(_tuningPhases[0]) * (_values[1] - _values[0]) /
+                          static_cast<double>(_tuningPhases[1] - _tuningPhases[0]);
 }
 
 Eigen::Matrix<double, Eigen::Dynamic, 1> autopas::DeepReinforcementLearning::DRLHistoryData::getValueVector(
@@ -71,11 +80,11 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> autopas::DeepReinforcementLearning::DRL
   return vec;
 }
 
-autopas::DeepReinforcementLearning::DeepReinforcementLearning(const bool train, const size_t explorationSamples,
+autopas::DeepReinforcementLearning::DeepReinforcementLearning(const bool train, const size_t numExplorationSamples,
                                                               const ExplorationMethod explorationMethod)
-    : _explorationMethod(explorationMethod), _train(train), _explorationSamples(explorationSamples) {
+    : _explorationMethod(explorationMethod), _train(train), _numExplorationSamples(numExplorationSamples) {
   // Test that there is at least two exploration sample
-  if (_explorationSamples <= 1) {
+  if (_numExplorationSamples <= 1) {
     utils::ExceptionHandler::exception("DeepReinforcementLearning: The exploration samples may not be less than 2.");
   }
 
@@ -136,92 +145,69 @@ autopas::TuningStrategyOption autopas::DeepReinforcementLearning::getOptionType(
 }
 
 void autopas::DeepReinforcementLearning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-  switch (_state) {
-    case TuningState::firstSearch: {
-      // In the first search state, we simply collect evidence without any further processing.
-      _searchSpace.insert(configuration);
-      _history.emplace(configuration, DRLHistoryData(_inputLength, evidence.value,
-                                                     static_cast<double>(_searchSpace.size()) / _explorationSamples));
-      _minEvidence = std::min(_minEvidence, static_cast<double>(evidence.value));
-      break;
-    }
-
-    case TuningState::exploration:
-    case TuningState::exploitation: {
-      // In the exploration and exploitation state, we collect evidence and update the exploration samples.
-      _trainingInputData.push_back(_history.at(configuration).getValueVector(_minEvidence));
-      _trainingOutputData.push_back(static_cast<double>(evidence.value));
-      _history.at(configuration).addValue(static_cast<double>(evidence.value));
-
-      break;
-    }
-
-    default: {
-      utils::ExceptionHandler::exception("DeepReinforcementLearning: Unknown tuning state.");
-      break;
-    }
+  if (_state == TuningState::firstSearch) {
+    // In the first search state, we simply collect evidence without any further processing.
+    _exploredConfigurations.insert(configuration);
+    _history.emplace(configuration,
+                     DRLHistoryData(_inputLength, static_cast<double>(evidence.value),
+                                    static_cast<double>(_exploredConfigurations.size()) / _numExplorationSamples));
+    _minEvidence = std::min(_minEvidence, static_cast<double>(evidence.value));
+  } else {
+    // In the exploration and exploitation state, we collect evidence and update the exploration samples.
+    _retrainingInputData.push_back(_history.at(configuration).getValueVector(_minEvidence));
+    _retrainingOutputData.push_back(static_cast<double>(evidence.value));
+    _history.at(configuration).addValue(static_cast<double>(evidence.value));
   }
 }
 
 bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                                              const EvidenceCollection &evidenceCollection) {
-  switch (_state) {
-    case TuningState::firstSearch: {
-      // During the first search, we simply perform a full search.
-      return true;
-    }
+  if (_state == TuningState::firstSearch) {
+    // During the first search, we simply perform a full search.
+    return true;
+  } else if (_state == TuningState::exploration) {
+    // Code for optimizing suggestions in the exploration state
 
-    case TuningState::exploration: {
-      // Code for optimizing suggestions in the exploration state
-
-      // Select the exploration samples if the config queue is larger than the exploration samples
-      if (configQueue.size() > _explorationSamples) {
-        const std::set<Configuration> samples = getExplorationSamples();
-        configQueue.clear();
-
-        for (const auto &sample : samples) {
-          // If the sample is not in the history, add it to the config queue.
-          configQueue.push_back(sample);
-        }
-      }
-
-      // Search the exploration samples
-      if (not configQueue.empty()) {
-        return false;
-      }
-
-      // Code for optimizing suggestions in the training state
-      if (_train) {
-        trainNeuralNetwork();
-      }
-
-      // Clear the training data
-      _trainingInputData.clear();
-      _trainingOutputData.clear();
-
-      // Select the exploitation samples
-      const std::set<Configuration> samples = getExploitationSamples();
+    // Select the exploration samples if the config queue is larger than the exploration samples
+    if (configQueue.size() > _numExplorationSamples) {
+      const std::set<Configuration> samples = getExplorationSamples();
       configQueue.clear();
 
       for (const auto &sample : samples) {
         // If the sample is not in the history, add it to the config queue.
         configQueue.push_back(sample);
       }
-
-      // Transition to the exploitation if the training has finished
-      _state = TuningState::exploitation;
-      return true;
     }
 
-    case TuningState::exploitation: {
-      // Search all exploitation samples and finish the search
-      return true;
-    }
-
-    default: {
-      utils::ExceptionHandler::exception("DeepReinforcementLearning: Unknown tuning state.");
+    // Search the exploration samples
+    if (not configQueue.empty()) {
       return false;
     }
+
+    // Code for optimizing suggestions in the retraining state
+    if (_train) {
+      retrainNeuralNetwork();
+    }
+
+    // Clear the retraining data
+    _retrainingInputData.clear();
+    _retrainingOutputData.clear();
+
+    // Select the exploitation samples
+    const std::set<Configuration> samples = getExploitationSamples();
+    configQueue.clear();
+
+    for (const auto &sample : samples) {
+      // If the sample is not in the history, add it to the config queue.
+      configQueue.push_back(sample);
+    }
+
+    // Transition to the exploitation if the retraining has finished
+    _state = TuningState::exploitation;
+    return true;
+  } else {
+    // Search all exploitation samples and finish the search
+    return true;
   }
 }
 
@@ -236,7 +222,7 @@ bool autopas::DeepReinforcementLearning::reset(size_t iteration, size_t tuningPh
   }
 
   // Age the history table
-  for (auto &history: _history | std::views::values) {
+  for (auto &history : _history | std::views::values) {
     history.ageData();
   }
 
@@ -253,32 +239,32 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       std::vector<std::pair<Configuration, double>> explorationPriority;
       double timeScale = 1.0 / _minEvidence;
 
-      for (const Configuration &config : _searchSpace) {
+      for (const Configuration &config : _exploredConfigurations) {
         // Calculate the priority based on when the configuration was last tested.
         double lastTuningPhase = _history.at(config).lastSearched();
-        
-        const auto priority = lastTuningPhase * lastTuningPhase * _phaseScale - _history.at(config).predictedEvidence() * timeScale;
+
+        const auto priority =
+            lastTuningPhase * lastTuningPhase * _phaseScale - _history.at(config).predictedEvidence() * timeScale;
 
         explorationPriority.emplace_back(config, priority);
       }
 
       // Sort the configuration queue
-      std::ranges::sort(explorationPriority,
-            [](const auto &a, const auto &b) { return a.second > b.second; });
+      std::ranges::sort(explorationPriority, [](const auto &a, const auto &b) { return a.second > b.second; });
 
       // Generate the subset
       std::set<Configuration> subset;
 
-      for (size_t i = 0; i < _explorationSamples; i++) {
-        subSet.emplace(explorationPriority[i].first);
+      for (size_t i = 0; i < _numExplorationSamples; i++) {
+        subset.emplace(explorationPriority[i].first);
       }
 
-      return subSet;
+      return subset;
     }
 
     case ExplorationMethod::random: {
       // Implementation for random exploration
-      return _rand.randomSubset(_searchSpace, _explorationSamples);
+      return _rand.randomSubset(_exploredConfigurations, _numExplorationSamples);
     }
 
     case ExplorationMethod::longestAgo: {
@@ -293,7 +279,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       std::ranges::sort(sortedHistory, [](const auto &a, const auto &b) { return a.second < b.second; });
 
       std::set<Configuration> ret;
-      for (size_t i = 0; i < _explorationSamples; i++) {
+      for (size_t i = 0; i < _numExplorationSamples; i++) {
         ret.emplace(sortedHistory[i].first);
       }
 
@@ -309,13 +295,13 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
 
 double autopas::DeepReinforcementLearning::evaluate(const DRLHistoryData &sample) const {
   // Prevent theoretical errors, if the execution is extremely fast and the timing sensor has a low resolution
-  double scale = (_minEvidence > 0.0) ? (1.0 / _minEvidence) : 1.0;
+  const double scale = (_minEvidence > 0.0) ? (1.0 / _minEvidence) : 1.0;
 
   // Evaluate the sample using the neural network
-  Eigen::Matrix<double, 1, Eigen::Dynamic> input = sample.getValueVector(scale).transpose();
-  auto hiddenOut = input * _hiddenLayer + _hiddenLayerBias.transpose();
-  auto activatedHidden = hiddenOut.unaryExpr([](const double x) { return activationFunction(x); });
-  double output = _outputLayer.dot(activatedHidden) + _outputLayerBias;
+  const Eigen::Matrix<double, 1, Eigen::Dynamic> input = sample.getValueVector(scale).transpose();
+  const auto hiddenOut = input * _hiddenLayer + _hiddenLayerBias.transpose();
+  const auto activatedHidden = hiddenOut.unaryExpr([](const double x) { return activationFunction(x); });
+  const double output = _outputLayer.dot(activatedHidden) + _outputLayerBias;
 
   if (output <= 0.0) [[unlikely]] {
     AutoPasLog(DEBUG, "DeepReinforcementLearning: Neural Network output is {} (this value should always be > 0.0).",
@@ -327,9 +313,12 @@ double autopas::DeepReinforcementLearning::evaluate(const DRLHistoryData &sample
 
 std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploitationSamples() const {
   // Handle invalid input sizes
-  if (_exploitationSamples > _searchSpace.size()) {
-    utils::ExceptionHandler::exception("DeepReinforcementLearning: Exploitation samples exceed search space size.");
-    return _searchSpace;  // Return the entire search space if samples exceed size
+  if (_numExploitationSamples > _exploredConfigurations.size()) {
+    AutoPasLog(WARN,
+               "DeepReinforcementLearning: The number of exploitation samples ({}) is larger than the number of "
+               "explored configurations ({}).",
+               _numExploitationSamples, _exploredConfigurations.size());
+    return _exploredConfigurations;  // Return the entire search space if samples exceed size
   }
 
   // Collect the exploitation samples based on the history
@@ -346,7 +335,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
   std::ranges::sort(sortedConfigs, [](const auto &a, const auto &b) { return a.second < b.second; });
 
   // Select the top configurations (no overflow possible due to the input validation)
-  for (size_t i = 0; i < _exploitationSamples; i++) {
+  for (size_t i = 0; i < _numExploitationSamples; i++) {
     const Configuration config = sortedConfigs[i].first;
 
     // Prevent duplicate searches
@@ -360,41 +349,40 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
   return exploitationSamples;
 }
 
-void autopas::DeepReinforcementLearning::trainNeuralNetwork() {
-  for (size_t i = 0; i < _trainingIterations; i++) {
-    for (size_t j = 0; j < _trainingInputData.size(); j++) {
+void autopas::DeepReinforcementLearning::retrainNeuralNetwork() {
+  for (size_t i = 0; i < _retrainingIterations; i++) {
+    for (size_t j = 0; j < _retrainingInputData.size(); j++) {
       // Forward propagate
-      const auto &input = _trainingInputData[j];
-      double target = _trainingOutputData[j];
-
+      const auto &input = _retrainingInputData[j];
+      const double target = _retrainingOutputData[j];
       // Hidden layer: input * weights + bias
       Eigen::Matrix<double, 1, Eigen::Dynamic> hiddenInput = input.transpose() * _hiddenLayer;
       hiddenInput += _hiddenLayerBias.transpose();
 
       // Activation
-      Eigen::Matrix<double, 1, Eigen::Dynamic> hiddenOutput =
+      const Eigen::Matrix<double, 1, Eigen::Dynamic> hiddenOutput =
           hiddenInput.unaryExpr([](const double x) { return activationFunction(x); });
 
       // Output layer: hidden * weights + bias
-      double output = hiddenOutput * _outputLayer + _outputLayerBias;
+      const double output = hiddenOutput * _outputLayer + _outputLayerBias;
 
       // Compute loss and gradients (mean squared error)
-      double error = output - target;
-      double dLoss_dOutput = 2.0 * error;
+      const double error = output - target;
+      const double dLoss_dOutput = 2.0 * error;
 
       // Gradients for output layer
-      Eigen::Matrix<double, Eigen::Dynamic, 1> dOutputLayer = hiddenOutput.transpose() * dLoss_dOutput;
-      double dOutputLayerBias = dLoss_dOutput;
+      const Eigen::Matrix<double, Eigen::Dynamic, 1> dOutputLayer = hiddenOutput.transpose() * dLoss_dOutput;
+      const double dOutputLayerBias = dLoss_dOutput;
 
       // Gradients for hidden layer
-      Eigen::Matrix<double, Eigen::Dynamic, 1> dHidden = _outputLayer * dLoss_dOutput;
-      Eigen::Matrix<double, Eigen::Dynamic, 1> dHiddenActivation =
+      const Eigen::Matrix<double, Eigen::Dynamic, 1> dHidden = _outputLayer * dLoss_dOutput;
+      const Eigen::Matrix<double, Eigen::Dynamic, 1> dHiddenActivation =
           hiddenInput.unaryExpr([](const double x) { return activationFunctionDerivative(x); })
               .transpose()
               .cwiseProduct(dHidden);
 
-      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> dHiddenLayer = input * dHiddenActivation.transpose();
-      Eigen::Matrix<double, Eigen::Dynamic, 1> dHiddenLayerBias = dHiddenActivation;
+      const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> dHiddenLayer = input * dHiddenActivation.transpose();
+      const Eigen::Matrix<double, Eigen::Dynamic, 1> dHiddenLayerBias = dHiddenActivation;
 
       // Update weights and biases
       _outputLayer -= _learningRate * dOutputLayer;

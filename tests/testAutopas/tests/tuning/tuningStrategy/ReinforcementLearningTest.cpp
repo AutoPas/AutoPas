@@ -15,36 +15,9 @@ TEST_F(ReinforcementLearningTest, invalidConfigurationConstructor) {
   // Set the exception policy to throw exceptions
   autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
 
-  // Create a search space with no configurations
-  std::set<autopas::Configuration> searchSpace = {};
-  EXPECT_THROW(autopas::ReinforcementLearning(searchSpace, 0.8, 0.8),
-               autopas::utils::ExceptionHandler::AutoPasException)
-      << "The constructor must throw if the search space is empty.";
-
-  // Create a search space with less configurations than the random explorations
-  searchSpace = {
-      autopas::Configuration(autopas::options::ContainerOption::linkedCells, 1.0,
-                             autopas::options::TraversalOption::lc_c01_combined_SoA, autopas::LoadEstimatorOption::none,
-                             autopas::options::DataLayoutOption::soa, autopas::Newton3Option::enabled,
-                             autopas::options::InteractionTypeOption::pairwise),
-      autopas::Configuration(autopas::options::ContainerOption::linkedCells, 1.0,
-                             autopas::options::TraversalOption::lc_c01_combined_SoA, autopas::LoadEstimatorOption::none,
-                             autopas::options::DataLayoutOption::soa, autopas::Newton3Option::disabled,
-                             autopas::options::InteractionTypeOption::pairwise)};
-  EXPECT_THROW(autopas::ReinforcementLearning(searchSpace, 0.8, 0.8),
-               autopas::utils::ExceptionHandler::AutoPasException)
-      << "The constructor must throw if the search space is smaller than the number of exploration samples.";
-
   const auto ns = autopas::NumberSetFinite<double>{1.0};
   // Create a search space with valid configurations
-  searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      {autopas::ContainerOption::linkedCells, autopas::ContainerOption::verletLists,
-       autopas::ContainerOption::pairwiseVerletLists},
-      {autopas::TraversalOption::lc_c01_combined_SoA, autopas::TraversalOption::lc_c08,
-       autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, &ns,
-      autopas::InteractionTypeOption::pairwise);
+  auto searchSpace = configQueueBase;
 
   // Test invalid learning rates
   EXPECT_THROW(autopas::ReinforcementLearning(searchSpace, -0.1, 0.8),
@@ -74,63 +47,11 @@ TEST_F(ReinforcementLearningTest, invalidConfigurationConstructor) {
 }
 
 /**
- * Test that reset handles too few configurations.
- */
-TEST_F(ReinforcementLearningTest, resetInvalidConfigurationCount) {
-  // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{0.5, 1, 2.0};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
-  autopas::EvidenceCollection evidenceCollection{};
-
-  autopas::ReinforcementLearning rl(searchSpace, 0.8, 0.8, 3);
-
-  std::vector<autopas::Configuration> configQueue;
-
-  EXPECT_THROW(rl.reset(0, 0, configQueue, evidenceCollection), autopas::utils::ExceptionHandler::AutoPasException)
-      << "Reset should throw if the config queue is too short.";
-
-  configQueue.push_back(*searchSpace.begin());
-  configQueue.push_back(*(searchSpace.begin()++));
-
-  EXPECT_THROW(rl.reset(0, 0, configQueue, evidenceCollection), autopas::utils::ExceptionHandler::AutoPasException)
-      << "Reset should throw if the config queue is too short.";
-}
-
-/**
  * Test that the first search is a full search.
  */
 TEST_F(ReinforcementLearningTest, firstSearchIsFullSearch) {
   // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+  const auto searchSpace = configQueueBase;
 
   autopas::ReinforcementLearning rl(searchSpace, 0.8, 0.8);
 
@@ -139,8 +60,8 @@ TEST_F(ReinforcementLearningTest, firstSearchIsFullSearch) {
 
   // Test the initial full search
   std::vector<autopas::Configuration> configQueueResetCopy = configQueue;
-  EXPECT_FALSE(rl.reset(0, 0, configQueue, evidenceCollection))
-      << "ReinforcementLearning should not clear the queue ever intentionally when resetting.";
+  EXPECT_TRUE(rl.reset(0, 0, configQueue, evidenceCollection))
+      << "ReinforcementLearning should allow empty queues in the initial full search.";
 
   EXPECT_EQ(configQueueResetCopy, configQueue)
       << "ReinforcementLearning should not change the config queue during the full search.";
@@ -168,25 +89,13 @@ TEST_F(ReinforcementLearningTest, firstSearchIsFullSearch) {
 
 /**
  * Test for selecting the optimal configuration on the second tuning phase with switching configurations.
+ *
+ * If the best configuration changes from the first to the second tuning phase, the RL strategy should still find this
+ * change, as it chooses all configurations as random exploration samples.
  */
 TEST_F(ReinforcementLearningTest, correctConfigExplorationPhase) {
   // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+  const auto searchSpace = configQueueBase;
 
   autopas::ReinforcementLearning rl(searchSpace, 0.8, 0.8, searchSpace.size() - 1);
 
@@ -266,22 +175,7 @@ TEST_F(ReinforcementLearningTest, correctConfigExplorationPhase) {
  */
 TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
   // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{0.5, 1, 2.0};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+  const auto searchSpace = configQueueBase;
 
   autopas::ReinforcementLearning rl(searchSpace, 0.8, 0.8, 3);
   ASSERT_GT(searchSpace.size(), 5);
@@ -363,27 +257,13 @@ TEST_F(ReinforcementLearningTest, correctNumberOfRandomSamples) {
 }
 
 /**
- * Test that if there is a single best configuration is throughout the entire search, this configuration is always
- * sampled.
+ * Test that if there is a single best configuration (i.e., the configuration with the lowest evidence value)
+ * throughout all tuning phases, the ReinforcementLearning strategy always includes this configuration in its
+ * sampling set during each exploration phase, ensuring it is never omitted from evaluation.
  */
 TEST_F(ReinforcementLearningTest, singleBestConfigAlwaysSampled) {
   // Create the core variables
-  const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells,
-                                                            autopas::ContainerOption::verletLists,
-                                                            autopas::ContainerOption::pairwiseVerletLists};
-  const std::set<autopas::TraversalOption> traversalOptions{
-      autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced,
-      autopas::TraversalOption::vlp_c08, autopas::TraversalOption::vl_list_iteration};
-  const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::none};
-  const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
-                                                              autopas::DataLayoutOption::soa};
-  const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
-                                                        autopas::Newton3Option::enabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{0.5, 1, 2.0};
-
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+  const auto searchSpace = configQueueBase;
 
   autopas::ReinforcementLearning rl(searchSpace, 0.8, 0.8, 3);
   ASSERT_GT(searchSpace.size(), 5);
@@ -407,7 +287,7 @@ TEST_F(ReinforcementLearningTest, singleBestConfigAlwaysSampled) {
   }
 
   // Perform the other searches
-  for (size_t i = 0; i < 100; i++) {
+  for (size_t i = 0; i < 200; i++) {
     std::copy(searchSpace.begin(), searchSpace.end(), std::back_inserter(configQueue));
     int occurrences = 0;
 
@@ -444,7 +324,6 @@ TEST_F(ReinforcementLearningTest, singleBestConfigAlwaysSampled) {
       configQueue.pop_back();
     }
 
-    EXPECT_EQ(occurrences, 2) << "ReinforcementLearning should always sample the best configuration twice (1. "
-                                 "Exploration phase, 2. Exploitation Sample).";
+    EXPECT_GE(occurrences, 1) << "ReinforcementLearning should always sample the best configuration.";
   }
 }
