@@ -1113,7 +1113,7 @@ class LJFunctorHWY
     const auto lj12 = highway::Mul(lj6, lj6);
     const auto lj12m6 = highway::Sub(lj12, lj6);
     const auto lj12m6alj12 = highway::Add(lj12m6, lj12);
-    const auto lj12m6alj12e = highway::Add(lj12m6alj12, epsilon24s);
+    const auto lj12m6alj12e = highway::Mul(lj12m6alj12, epsilon24s);
     const auto fac = highway::Mul(lj12m6alj12e, invDr2);
 
     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
