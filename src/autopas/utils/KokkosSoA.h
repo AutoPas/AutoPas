@@ -58,7 +58,7 @@ namespace autopas::utils {
 
     template <size_t attribute>
     KOKKOS_INLINE_FUNCTION
-    constexpr std::tuple_element<attribute, std::tuple<Kokkos::View<Types>...>>::type& getView() const {
+    constexpr std::tuple_element<attribute, std::tuple<Kokkos::DualView<Types>...>>::type& getView() const {
       return std::get<attribute>(views);
     }
 
