@@ -268,7 +268,7 @@ class PatternBenchmark {
         newton3EdgeFile << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3EdgeFile << VectorizationPatternOption{_optimalPatternsNewton3OnSide[(secondSize - 1) * _benchmarkSize +
+            newton3EdgeFile << VectorizationPatternOption{_optimalPatternsNewton3OnEdge[(secondSize - 1) * _benchmarkSize +
                                                                                 (firstSize - 1)]}
             .to_string()
      << "," << firstSize << "," << secondSize << "\n";
@@ -283,7 +283,7 @@ class PatternBenchmark {
         newton3offEdgeFile << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3offEdgeFile << VectorizationPatternOption{_optimalPatternsNewton3OffSide[(secondSize - 1) * _benchmarkSize +
+            newton3offEdgeFile << VectorizationPatternOption{_optimalPatternsNewton3OffEdge[(secondSize - 1) * _benchmarkSize +
                                                                                     (firstSize - 1)]}
             .to_string()
      << "," << firstSize << "," << secondSize << "\n";
@@ -298,7 +298,7 @@ class PatternBenchmark {
         newton3CornerFile << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3CornerFile << VectorizationPatternOption{_optimalPatternsNewton3OnSide[(secondSize - 1) * _benchmarkSize +
+            newton3CornerFile << VectorizationPatternOption{_optimalPatternsNewton3OnCorner[(secondSize - 1) * _benchmarkSize +
                                                                                 (firstSize - 1)]}
             .to_string()
      << "," << firstSize << "," << secondSize << "\n";
@@ -313,7 +313,7 @@ class PatternBenchmark {
         newton3offCornerFile << "pattern,firstCellSize,SecondCellSize\n";
         for (size_t secondSize = 1; secondSize <= _benchmarkSize; secondSize++) {
           for (size_t firstSize = 1; firstSize <= _benchmarkSize; firstSize++) {
-            newton3offCornerFile << VectorizationPatternOption{_optimalPatternsNewton3OffSide[(secondSize - 1) * _benchmarkSize +
+            newton3offCornerFile << VectorizationPatternOption{_optimalPatternsNewton3OffCorner[(secondSize - 1) * _benchmarkSize +
                                                                                     (firstSize - 1)]}
             .to_string()
      << "," << firstSize << "," << secondSize << "\n";
