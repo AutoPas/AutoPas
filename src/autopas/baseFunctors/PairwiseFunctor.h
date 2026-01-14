@@ -76,7 +76,6 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
     utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
   }
 
-  KOKKOS_INLINE_FUNCTION
   virtual void SoAFunctorSingleKokkos(const Particle_T::KokkosSoAArraysType& soa, bool newton3) {
     // No Op unless overridden
   }
