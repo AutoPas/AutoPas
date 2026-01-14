@@ -99,7 +99,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
+  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, size_t type = 2) {
     utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
   }
 

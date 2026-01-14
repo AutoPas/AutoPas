@@ -189,7 +189,7 @@ class LJFunctorAVX
    */
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                             const bool newton3) final {
+                             const bool newton3, size_t type) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {

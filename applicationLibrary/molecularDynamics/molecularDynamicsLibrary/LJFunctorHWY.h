@@ -205,12 +205,12 @@ class LJFunctorHWY
   */
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                             bool newton3) final {
+                             bool newton3, size_t type) final {
     // check if a pattern map with optimal pattern is provided
 
     if (_patternBenchmark != nullptr) {
       autopas::VectorizationPatternOption::Value vectorizationPattern =
-          (*_patternBenchmark).getBenchmarkResult(soa1.size(), soa2.size(), newton3, _type);
+          (*_patternBenchmark).getBenchmarkResult(soa1.size(), soa2.size(), newton3, type);
 
       switch (vectorizationPattern) {
         case VectorizationPattern::p1xVec: {

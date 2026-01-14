@@ -303,17 +303,15 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoAN3(ParticleCell &cell1,
                                                                                      ParticleCell &cell2, size_t type) {
-  _functor->setType(type);
-  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
+  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true, type);
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoANoN3(ParticleCell &cell1,
                                                                                        ParticleCell &cell2, size_t type) {
-  _functor->setType(type);
-  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
+  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false, type);
   if constexpr (bidirectional) {
-    _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+    _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false, type);
   }
 }
 
