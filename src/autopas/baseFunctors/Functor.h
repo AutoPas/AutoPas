@@ -196,7 +196,7 @@ class Functor {
    * Returns true if the functor can make use of a vector pattern lookup table.
    * @return boolean
    */
-  virtual bool canUseVectorPatternLookupTable() { return false; };
+  [[nodiscard]] virtual bool canUseVectorPatternLookupTable() const { return false; };
 
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.

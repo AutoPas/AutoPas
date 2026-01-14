@@ -1441,7 +1441,7 @@ class LJFunctorHWY
    * Returns true if the functor can make use of a vector pattern lookup table.
    * @return boolean
    */
-  virtual bool canUseVectorPatternLookupTable() { return true; };
+  [[nodiscard]] bool canUseVectorPatternLookupTable() const final { return true; };
 
  private:
   /**
