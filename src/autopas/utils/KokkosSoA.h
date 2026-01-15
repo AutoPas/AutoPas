@@ -99,6 +99,10 @@ namespace autopas::utils {
       views = other.views;
     }
 
+    void operator= (const KokkosSoA<Types...> &other) {
+      views = other.views;
+    }
+
   private:
     template <std::size_t... I>
     void resizeImpl(size_t numParticles, std::index_sequence<I...>) {
