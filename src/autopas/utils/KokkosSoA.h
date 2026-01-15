@@ -25,7 +25,6 @@ namespace autopas::utils {
 
     KokkosSoA(const KokkosSoA<Types...>& other) {
       views = other.views;
-      std::cout << "Explicit copy of KokkosSoA" << std::endl;
     }
 
     KOKKOS_FUNCTION

@@ -33,8 +33,6 @@ namespace autopas::utils {
           break;
         }
       }
-
-      std::cout << "Explicit copy of KokkosStorage" << std::endl;
     }
 
     void resize(size_t numParticles) {
