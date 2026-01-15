@@ -20,6 +20,23 @@ namespace autopas::utils {
   public:
     KokkosStorage() {}
 
+    KokkosStorage(const KokkosStorage& other) {
+      _layout = other.getLayout();
+
+      switch (_layout) {
+        case DataLayoutOption::aos: {
+          storageAoS = other.getAoS();
+          break;
+        }
+        case DataLayoutOption::soa: {
+          storageSoA = other.getSoA();
+          break;
+        }
+      }
+
+      std::cout << "Explicit copy of KokkosStorage" << std::endl;
+    }
+
     void resize(size_t numParticles) {
 
       switch (_layout) {

@@ -25,7 +25,7 @@ namespace autopas::utils {
 
     KokkosSoA(const KokkosSoA<Types...>& other) {
       views = other.views;
-      std::cout << "Copy called" << std::endl;
+      std::cout << "Explicit copy of KokkosSoA" << std::endl;
     }
 
     KOKKOS_FUNCTION
