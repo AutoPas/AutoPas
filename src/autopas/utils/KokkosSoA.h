@@ -23,6 +23,11 @@ namespace autopas::utils {
       resize(N);
     }
 
+    KokkosSoA(const KokkosSoA<Types...>& other) {
+      views = other.views;
+      std::cout << "Copy called" << std::endl;
+    }
+
     KOKKOS_FUNCTION
     KokkosSoA(size_t N, const std::string& label) : views{Kokkos::DualView<Types>(label, N)...} {}
 
@@ -58,7 +63,7 @@ namespace autopas::utils {
 
     template <size_t attribute>
     KOKKOS_INLINE_FUNCTION
-    constexpr std::tuple_element<attribute, std::tuple<Kokkos::DualView<Types>...>>::type& getView() const {
+    constexpr auto& getView() const {
       return std::get<attribute>(views);
     }
 
