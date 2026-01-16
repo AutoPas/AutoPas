@@ -87,7 +87,7 @@ private:
   }
 
   template <typename ExecSpace, std::size_t... I>
-  void modifyComputed(auto particles, std::index_sequence<I...>) {
+  void modifyComputed(auto& particles, std::index_sequence<I...>) {
     (particles.template markModified<ExecSpace, Functor::getComputedAttr()[I]-1>(), ...);
   }
 
