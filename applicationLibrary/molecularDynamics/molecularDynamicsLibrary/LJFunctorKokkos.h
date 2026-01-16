@@ -145,15 +145,11 @@ class LJFunctorKokkos
     }
   }
 
-  // TODO: correct memory space
-  KOKKOS_INLINE_FUNCTION
-  void SoAFunctorPairKokkos(Particle_T::KokkosSoAArraysType& soa1, Particle_T::KokkosSoAArraysType& soa2, bool newton3) final {
+  void SoAFunctorPairKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, bool newton3) final {
     // No Op unless overridden
   }
 
-  // TODO: correct memory space
-  KOKKOS_INLINE_FUNCTION
-  void SoAFunctorSingleKokkos(int i, const Particle_T::KokkosSoAArraysType& soa, size_t N, bool newton3) final {
+  void SoAFunctorSingleKokkos(const Particle_T::KokkosSoAArraysType& soa, bool newton3) final {
     // No Op unless overridden
   }
 

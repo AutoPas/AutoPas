@@ -66,14 +66,14 @@ public:
         constexpr auto tupleSize = ownedSoA.tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
 
-        ownedSoA.template sync<DeviceSpace::execution_space>(I);
-        haloSoA.template sync<DeviceSpace::execution_space>(I);
+        ownedSoA.template syncAll<DeviceSpace::execution_space>(I);
+        haloSoA.template syncAll<DeviceSpace::execution_space>(I);
 
         func->SoAFunctorSingleKokkos(ownedSoA, newton3);
         func->SoAFunctorPairKokkos(ownedSoA, haloSoA, newton3);
 
         // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
-        ownedSoA.template markModified<DeviceSpace::execution_space>(I);
+        ownedSoA.template markAllModified<DeviceSpace::execution_space>(I);
         // TODO: consider halo particles
       }
     }

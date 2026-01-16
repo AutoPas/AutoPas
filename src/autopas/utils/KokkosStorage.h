@@ -70,14 +70,11 @@ namespace autopas::utils {
 
       storageSoA.resize(size);
       _converter.convertToSoA(storageAoS, storageSoA, size, I);
-      storageSoA.template markModified<Kokkos::HostSpace::execution_space>(I);
     }
 
     void convertToAoS(size_t size) {
       constexpr size_t tupleSize = storageSoA.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
-
-      storageSoA.template sync<Kokkos::HostSpace::execution_space>(I);
 
       storageAoS.resize(size);
       _converter.convertToAoS(storageSoA, storageAoS, size, I);
@@ -109,7 +106,7 @@ namespace autopas::utils {
       constexpr auto tupleSize = storageSoA.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
 
-      storageSoA.template sync<Target>(I);
+      storageSoA.template syncAll<Target>(I);
     }
 
     template <typename Target>
@@ -117,7 +114,7 @@ namespace autopas::utils {
       constexpr auto tupleSize = storageSoA.tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
 
-      storageSoA.template markModified<Target>(I);
+      storageSoA.template markAllModified<Target>(I);
     }
 
     void setLayout(DataLayoutOption newLayout) {
