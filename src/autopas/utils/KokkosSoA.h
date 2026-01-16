@@ -89,9 +89,9 @@ namespace autopas::utils {
       (std::get<I>(views).template modify<Target>(), ...);
     }
 
-    template <class Attributes, typename Target, std::size_t... I>
-    void markRequestedModified(Attributes attributes, std::index_sequence<I...>) {
-      (std::get<attributes[I]>(views).template modify<Target>(), ...);
+    template <typename Target, std::size_t I>
+    void markModified() {
+      std::get<I>(views).template modify<Target>();
     }
 
     template <typename Target, std::size_t... I>
@@ -99,9 +99,9 @@ namespace autopas::utils {
       (std::get<I>(views).template sync<Target>(), ...);
     }
 
-    template <class Attributes, typename Target, std::size_t... I>
-    void syncRequested(Attributes attributes, std::index_sequence<I...>) {
-      (std::get<attributes[I]>(views).template sync<Target>(), ...);
+    template <typename Target, std::size_t I>
+    void sync() {
+      std::get<I>(views).template sync<Target>();
     }
 
     void operator= (KokkosSoA<Types...> &other) {

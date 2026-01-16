@@ -63,18 +63,16 @@ public:
         auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
         auto& haloSoA = DSKokkosTraversalInterface<Particle_T>::_haloParticles.getSoA();
 
-        constexpr auto tupleSize = ownedSoA.tupleSize();
-        constexpr auto I = std::make_index_sequence<tupleSize>();
+        const auto I = std::make_index_sequence<Functor::getNeededAttr().size()>{};
 
-        ownedSoA.template syncAll<DeviceSpace::execution_space>(I);
-        haloSoA.template syncAll<DeviceSpace::execution_space>(I);
+        syncNeeded<DeviceSpace::execution_space>(ownedSoA, I);
+        syncNeeded<DeviceSpace::execution_space>(haloSoA, I);
 
         func->SoAFunctorSingleKokkos(ownedSoA, newton3);
         func->SoAFunctorPairKokkos(ownedSoA, haloSoA, newton3);
 
-        // TODO: only modify changed attributes (Functor will have to return which attributes he did change)
-        ownedSoA.template markAllModified<DeviceSpace::execution_space>(I);
-        // TODO: consider halo particles
+        constexpr auto J = std::make_index_sequence<Functor::getComputedAttr().size()>{};
+        modifyComputed<DeviceSpace::execution_space>(ownedSoA, J);
       }
     }
 
@@ -82,6 +80,16 @@ public:
     }
 
 private:
+
+  template <typename ExecSpace, std::size_t... I>
+  void syncNeeded(auto& particles, std::index_sequence<I...>) {
+    (particles.template sync<ExecSpace, Functor::getNeededAttr()[I]-1>(), ...);
+  }
+
+  template <typename ExecSpace, std::size_t... I>
+  void modifyComputed(auto particles, std::index_sequence<I...>) {
+    (particles.template markModified<ExecSpace, Functor::getComputedAttr()[I]-1>(), ...);
+  }
 
 
 #ifdef KOKKOS_ENABLE_CUDA
