@@ -3,9 +3,9 @@
 export OMP_PROC_BIND=spread
 export OMP_PLACES=threads
 
-BINARY="./build-remote-release/examples/md-flexible/md-flexible"
+BINARY="./build-remote-release-cpu/examples/md-flexible/md-flexible"
 PARTICLES=64000
-TYPE="GPU"
+TYPE="CPU-NEW"
 CSV_FILE="results.csv"
 BASE_LENGTH=40
 

@@ -9,7 +9,7 @@ using DeviceSpace = Kokkos::Cuda;
 using DeviceSpace = Kokkos::Hip;
 #elif KOKKOS_ENABLE_SYCL
 using DeviceSpace = Kokkos::Sycl;
-#elif
+#else
 using DeviceSpace = Kokkos::OpenMP;
 #endif
 
