@@ -297,7 +297,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.functorOption)::getoptChar: {
-        if (strArg.find("avx") != string::npos) {
+         if (strArg.find("kokkos") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::kk_lj;
+        } else if (strArg.find("avx") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;

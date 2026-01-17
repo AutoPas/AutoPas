@@ -52,6 +52,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     oldForceY,
     oldForceZ,
     typeId,
+    blockId,
     ownershipState
   };
 
@@ -66,7 +67,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>;
+                                       size_t /*typeid*/, size_t /*blockid*/, autopas::OwnershipState /*ownershipState*/>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -114,6 +115,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       return getOldF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
       return getTypeId();
+    }else if constexpr (attribute == AttributeNames::blockId) {
+      return getBlockId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
@@ -158,6 +161,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       _oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
+    }else if constexpr (attribute == AttributeNames::blockId) {
+      setBlockId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
@@ -187,7 +192,19 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Set the type id of the Molecule.
    * @param typeId
    */
+
   void setTypeId(size_t typeId);
+ /**
+   * Get BlockId.
+   * @return
+   */
+  [[nodiscard]] size_t getBlockId() const;
+
+  /**
+   * Set the block id of the Molecule.
+   * @param blockId
+   */
+  void setBlockId(size_t blockId);
 
   /**
    * Creates a string containing all data of the particle.
@@ -204,6 +221,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * a molId to look up molecular attributes (including siteIds of the sites).
    */
   size_t _typeId = 0;
+
+  size_t _blockId = 0;
 
   /**
    * Old Force of the particle experiences as 3D vector.

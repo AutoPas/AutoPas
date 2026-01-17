@@ -13,7 +13,7 @@ tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  Lennard-Jones Kokkos
 newton3                          :  [enabled]
-cutoff                           :  3
+cutoff                           :  3.5
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
@@ -56,7 +56,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  fallingDrop
-vtk-write-frequency              :  100
+vtk-write-frequency              :  1
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info

@@ -138,6 +138,14 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
       autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
+  // print type ids
+  timestepFile << "        <DataArray Name=\"blockIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
+  autoPasContainer.forEach(
+      [&](ParticleType const& particle) { timestepFile << "        " << particle.getBlockId() << "\n"; },
+      autopas::IteratorBehavior::owned);
+  timestepFile << "        </DataArray>\n";
+
+
   // print ids
   timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   autoPasContainer.forEach(
@@ -345,6 +353,7 @@ void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
   timestepFile << "      <PDataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
 #endif
   timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"blockIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "    </PPointData>\n";
   timestepFile << "    <PCellData/>\n";

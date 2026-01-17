@@ -2,10 +2,12 @@
 
 #include <filesystem>
 
+#include "../../../../../../build-debug-remote/_deps/kokkos-src/algorithms/src/std_algorithms/Kokkos_ForEachN.hpp"
 #include "KokkosTraversalInterface.h"
 #include "Kokkos_Sort.hpp"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/utils/kokkos/KokkosSoA.h"
+#include "std_algorithms/Kokkos_ForEach.hpp"
 
 constexpr auto normalize(const double coord, const double cell_size) -> int64_t {
   const double scaled_distance = std::max(0.0, coord) / cell_size;
@@ -78,17 +80,18 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
 
   [[nodiscard]] bool isApplicable() const override { return true; }
 
-  void initTraversal() override {
-    // TODO make dynamic
-    clusterParticles();
-    updateBoundingBox();
-    updatePairs();
-  }
+  void initTraversal() override {}
   void traverseParticles() override { calculateForce(); }
 
   void endTraversal() override {
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<utils::kokkos::DeviceSpace>(0, _soa.size()), KOKKOS_CLASS_LAMBDA(auto index) {
+          _soa.template get<Particle_T::AttributeNames::blockId>().d_view(index) = index / BLOCK_SIZE;
+        });
+    space.fence();
     _soa.template markModifiedAll<utils::kokkos::DeviceSpace>();
     _soa.template syncAll<utils::kokkos::HostSpace>();
+
     for (auto i = 0; i < _soa.size(); ++i) {
       _functor.store_particle(_soa, i);
     }
@@ -96,7 +99,6 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
 
   void rebuild(std::vector<Particle_T> &particles) override {
     _soa.resize(particles.size());
-
     _num_blocks = (_soa.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     Kokkos::resize(_bounding_box, _num_blocks, 3, 2);
@@ -106,15 +108,18 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
     Kokkos::resize(_permutations, _soa.size());
     Kokkos::fence();
 
-    auto s = _soa.size();
-    for (size_t i = 0; i < particles.size(); ++i) {
-      auto &particle = particles[i];
-      _functor.load_particle(_soa, particle, i);
-    }
+    Kokkos::parallel_for("load_particles_host", Kokkos::RangePolicy<utils::kokkos::HostSpace>(0, particles.size()),
+                         [&](const int i) {
+                           auto &particle = particles[i];
+                           _functor.load_particle(_soa, particle, i);
+                         });
+    Kokkos::fence();
+
     _soa.template markModifiedAll<utils::kokkos::HostSpace>();
     Kokkos::fence();
     _soa.template syncAll<utils::kokkos::DeviceSpace>();
-    space.fence();
+    Kokkos::fence();
+
     clusterParticles();
     updateBoundingBox();
     updatePairs();
@@ -130,16 +135,6 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
   constexpr static int BLOCK_SIZE = 32;
 
   void calculateForce() {
-    // Kokkos::parallel_for(
-    //     "clear force", Kokkos::RangePolicy<autopas::utils::kokkos::DeviceSpace>(0, _soa.size()),
-    //     KOKKOS_CLASS_LAMBDA(const int64_t i) {
-    //       _soa.template get<Particle_T::AttributeNames::forceX>().d_view(i) = 0;
-    //       _soa.template get<Particle_T::AttributeNames::forceY>().d_view(i) = 0;
-    //       _soa.template get<Particle_T::AttributeNames::forceZ>().d_view(i) = 0;
-    //     });
-    //
-    // space.fence();
-
     typedef Kokkos::View<double *[3], typename autopas::utils::kokkos::DeviceSpace::scratch_memory_space,
                          Kokkos::MemoryTraits<Kokkos::Unmanaged>>
         block;
@@ -173,7 +168,7 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
           } else {
             for (uint64_t i = b1_start; i < b1_end; ++i) {
               auto mask = _pairs(pair_id, 2);
-              if (mask & (1L << (i - b1_start))) {
+              if (mask & (1l << (i - b1_start))) {
                 _functor.KokkosSoAFunctorPairwise(team, _soa, block1, i, b1_start, b2_start, b2_end);
               }
             }
@@ -209,7 +204,6 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
           Kokkos::parallel_reduce(
               Kokkos::TeamThreadRange(team, start, end),
               [&](const int64_t b2, uint64_t &inner_sum) {
-                // TODO Don't calculate if b1 ==b2
                 auto distance =
                     bbox_distance_sq(_bounding_box(b1, X_AXIS, AXIS_MIN), _bounding_box(b1, X_AXIS, AXIS_MAX),
                                      _bounding_box(b1, Y_AXIS, AXIS_MIN), _bounding_box(b1, Y_AXIS, AXIS_MAX),
@@ -220,7 +214,7 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
                 if (distance <= _interactionLength * _interactionLength) {
                   auto b1_start = b1 * BLOCK_SIZE;
                   auto b1_end = Kokkos::min((b1 + 1) * BLOCK_SIZE, _soa.size());
-                  uint64_t mask = 0l;
+                  int64_t mask = 0l;
                   for (int64_t i = b1_start; i < b1_end; ++i) {
                     auto pos_x = _soa.template get<Particle_T::AttributeNames::posX>().d_view(i);
                     auto pos_y = _soa.template get<Particle_T::AttributeNames::posY>().d_view(i);
@@ -231,11 +225,10 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
                                          _bounding_box(b2, Y_AXIS, AXIS_MAX), _bounding_box(b2, Z_AXIS, AXIS_MIN),
                                          _bounding_box(b2, Z_AXIS, AXIS_MAX));
                     if (dist <= _interactionLength * _interactionLength) {
-                      // TODO filter halo to halo interactions
-                      mask |= 1L << (i - b1_start);
+                      mask |= 1l << (i - b1_start);
                     }
                   }
-                  if (mask > 0L) {
+                  if (mask > 0l) {
                     inner_sum += 1;
                   }
                 }
@@ -278,7 +271,7 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
             if (distance <= _interactionLength * _interactionLength) {
               size_t b1_start = b1 * BLOCK_SIZE;
               size_t b1_end = Kokkos::min((b1 + 1) * BLOCK_SIZE, _soa.size());
-              uint64_t mask = 0l;
+              int64_t mask = 0l;
 
               for (uint64_t i = b1_start; i < b1_end; ++i) {
                 auto pos_x = _soa.template get<Particle_T::AttributeNames::posX>().d_view(i);
@@ -289,16 +282,15 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
                                              _bounding_box(b2, Y_AXIS, AXIS_MIN), _bounding_box(b2, Y_AXIS, AXIS_MAX),
                                              _bounding_box(b2, Z_AXIS, AXIS_MIN), _bounding_box(b2, Z_AXIS, AXIS_MAX));
                 if (dist <= _interactionLength * _interactionLength) {
-                  // TODO filter halo to halo
-                  mask |= 1L << (i - b1_start);
+                  mask |= 1l << (i - b1_start);
                 }
               }
 
-              if (mask > 0L) {
+              if (mask > 0l) {
                 if (final) {
                   _pairs(current_index + num, 0) = b1;
                   _pairs(current_index + num, 1) = b2;
-                  _pairs(current_index + num, 2) = static_cast<int64_t>(mask);
+                  _pairs(current_index + num, 2) = mask;
                 }
                 num += 1;
               }
@@ -330,9 +322,9 @@ class KokkosVCLTraversal : public autopas::TraversalInterface, public KokkosTrav
           const size_t start = block_id * BLOCK_SIZE;
           const size_t end = Kokkos::min(start + BLOCK_SIZE, _soa.size());
 
-          Kokkos::MinMax<double>::value_type minmax_x = Kokkos::MinMax<double>::value_type();
-          Kokkos::MinMax<double>::value_type minmax_y = Kokkos::MinMax<double>::value_type();
-          Kokkos::MinMax<double>::value_type minmax_z = Kokkos::MinMax<double>::value_type();
+          auto minmax_x = Kokkos::MinMax<double>::value_type();
+          auto minmax_y = Kokkos::MinMax<double>::value_type();
+          auto minmax_z = Kokkos::MinMax<double>::value_type();
 
           min_max_reduction<Particle_T::AttributeNames::posX>(team, start, end, minmax_x);
           min_max_reduction<Particle_T::AttributeNames::posY>(team, start, end, minmax_y);

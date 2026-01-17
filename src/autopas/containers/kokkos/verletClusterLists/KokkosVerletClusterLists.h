@@ -22,7 +22,10 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
     return autopas::ContainerOption::kokkosVerletClusterLists;
   }
 
-  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {}
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    std::lock_guard<AutoPasLock> lock(_particlesLock);
+    particles.reserve(numParticles + numParticlesHaloEstimate);
+  }
 
  protected:
   void addParticleImpl(const Particle_T &p) override {
@@ -36,8 +39,12 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
 
  public:
   bool updateHaloParticle(const Particle_T &haloParticle) override {
-    // TODO
-
+    for (auto &p : particles) {
+      if (p.getID() == haloParticle.getID()) {
+        p = haloParticle;
+        return true;
+      }
+    }
     return false;
   }
   void rebuildNeighborLists(autopas::TraversalInterface *traversal) override {
@@ -74,12 +81,10 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
   [[nodiscard]] double getVerletSkin() const override { return _verletSkin; }
 
-  [[nodiscard]] size_t getStepsSinceLastRebuild() const override {
-    // TODO
-    return 0;
-  }
+  [[nodiscard]] size_t getStepsSinceLastRebuild() const override { return _stepsSinceLastRebuild; }
+
   void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
-    // TODO
+    _stepsSinceLastRebuild = stepsSinceLastRebuild;
   }
 
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + this->getVerletSkin(); }
@@ -184,5 +189,6 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
   double _cutoff;
   double _verletSkin;
   int _rebuildFrequency;
+  size_t _stepsSinceLastRebuild;
 };
 }  // namespace autopas

@@ -17,6 +17,9 @@ void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldFor
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 
+size_t MoleculeLJ::getBlockId() const { return _blockId; }
+void MoleculeLJ::setBlockId(size_t blockId) { _blockId = blockId; }
+
 std::string MoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;
@@ -28,6 +31,7 @@ std::string MoleculeLJ::toString() const {
      << "\nForce              : " << _f
      << "\nOld Force          : " << _oldF
      << "\nType ID            : " << _typeId
+     << "\nBlock ID            : " << _blockId
      << "\nOwnershipState     : " << _ownershipState;
   // clang-format on
   return text.str();

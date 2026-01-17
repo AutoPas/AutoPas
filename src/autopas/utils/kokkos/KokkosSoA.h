@@ -31,30 +31,25 @@ class KokkosSoA {
   inline constexpr void markModified() {
     auto &view = _soaStorage.template get<AttributeName>();
     view.template modify<Space>();
-    Kokkos::fence();
   }
   template <size_t AttributeName, typename Space>
   inline constexpr void sync() {
     auto &view = _soaStorage.template get<AttributeName>();
     view.template sync<Space>();
-    Kokkos::fence();
+
   }
 
   template <typename Space>
   inline constexpr void syncAll() {
     _soaStorage.apply([](auto &view) {
-      Kokkos::fence();
       view.template sync<Space>();
-      Kokkos::fence();
     });
   }
 
   template <typename Space>
   inline constexpr void markModifiedAll() {
     _soaStorage.apply([](auto &view) {
-      Kokkos::fence();
       view.template modify<Space>();
-      Kokkos::fence();
     });
   }
 

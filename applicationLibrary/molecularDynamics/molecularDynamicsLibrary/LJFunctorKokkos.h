@@ -112,17 +112,18 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
     });
   };
 
+  KOKKOS_FUNCTION
   void load_particle(auto &soa, Particle_T &particle, size_t index) const {
     Particle_T *p = &particle;
     soa.template get<Particle_T::AttributeNames::ptr>().h_view(index) = reinterpret_cast<uintptr_t>(p);
 
-
-    // Load forces (global force is applied before and needs to be kept)
-    soa.template get<Particle_T::AttributeNames::posX>().h_view(index) =
+    soa.template get<Particle_T::AttributeNames::forceZ>().h_view(index) =
         particle.template get<Particle_T::AttributeNames::forceX>();
-    soa.template get<Particle_T::AttributeNames::posY>().h_view(index) =
+
+    soa.template get<Particle_T::AttributeNames::forceY>().h_view(index) =
         particle.template get<Particle_T::AttributeNames::forceY>();
-    soa.template get<Particle_T::AttributeNames::posZ>().h_view(index) =
+
+    soa.template get<Particle_T::AttributeNames::forceZ>().h_view(index) =
         particle.template get<Particle_T::AttributeNames::forceZ>();
 
     soa.template get<Particle_T::AttributeNames::posX>().h_view(index) =
@@ -133,6 +134,7 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
         particle.template get<Particle_T::AttributeNames::posZ>();
   }
 
+  KOKKOS_FUNCTION
   void store_particle(auto &soa, size_t index) const {
     auto particle = reinterpret_cast<Particle_T *>(soa.template get<Particle_T::AttributeNames::ptr>().h_view(index));
 
@@ -142,6 +144,9 @@ class LJFunctorKokkos final : public autopas::KokkosFunctor<Particle_T, LJFuncto
         soa.template get<Particle_T::AttributeNames::forceY>().h_view(index));
     particle->template set<Particle_T::AttributeNames::forceZ>(
         soa.template get<Particle_T::AttributeNames::forceZ>().h_view(index));
+
+    particle->template set<Particle_T::AttributeNames::blockId>(
+      soa.template get<Particle_T::AttributeNames::blockId>().h_view(index));
   }
 
  private:
