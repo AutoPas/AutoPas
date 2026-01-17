@@ -12,7 +12,7 @@ BASE_LENGTH=40
 echo "num_particles,type,scale,side_length,mfups_sec" > "$CSV_FILE"
 
 # Iterating from 0.1 up to 3.0
-for i in $(seq 1 1 30); do
+for i in $(seq 30 -1 1); do
     VALS=$(awk "BEGIN { scale=$i/10; len=$BASE_LENGTH*scale; printf \"%.4f %.4f\", scale, len }")
     SCALE=$(echo $VALS | cut -d' ' -f1)
     LENGTH_FMT=$(echo $VALS | cut -d' ' -f2)
@@ -28,7 +28,7 @@ for i in $(seq 1 1 30); do
       --boundary-type reflective reflective reflective \
       --box-length "$LENGTH_FMT" "$LENGTH_FMT" "$LENGTH_FMT" \
       --newton3 enabled \
-      --particle-generator uniform \
+      --particle-generator gaussian \
       --particles-total $PARTICLES \
       --deltaT 0.0 \
       --iterations 1000 \
@@ -41,4 +41,5 @@ for i in $(seq 1 1 30); do
     if [ -n "$MFUPS" ]; then
       echo "$PARTICLES,$TYPE,$SCALE,$LENGTH_FMT,$MFUPS" >> "$CSV_FILE"
     fi
+    sleep 10
 done

@@ -97,7 +97,7 @@ class KokkosVerletClusterLists : public autopas::ParticleContainerInterface<Part
     }
     return TraversalSelectorInfo(
         // dummy value
-        {1, 1, 1}, this->_cutoff + this->_verletSkin, cellSize, 0);
+        {1, 1, 1}, this->_cutoff , cellSize, 0);
   }
 
   bool deleteParticle(Particle_T &particle) override {
