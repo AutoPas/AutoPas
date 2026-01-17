@@ -254,7 +254,7 @@ class LJFunctorHWY
    * @return true if the loop over i should be continued, else false.
    */
   template <bool reversed, VectorizationPattern vecPattern>
-  constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long vecEnd) {
+  static constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long vecEnd) {
     if constexpr (reversed) {
       if constexpr (vecPattern == VectorizationPattern::p1xVec) {
         return i >= 0;
@@ -298,7 +298,7 @@ class LJFunctorHWY
    * @param i
    */
   template <VectorizationPattern vecPattern>
-  constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
+  static constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       --i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -318,7 +318,7 @@ class LJFunctorHWY
    * @param i
    */
   template <VectorizationPattern vecPattern>
-  constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
+  static constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       ++i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -340,7 +340,7 @@ class LJFunctorHWY
    * @return the number of lanes filled.
    */
   template <bool reversed>
-  constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
+  static constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
     return reversed ? (i < 0 ? 0 : i + 1) : vecEnd - i;
   }
 
@@ -353,7 +353,7 @@ class LJFunctorHWY
    * @return  true if the inner loop over j should be continued, else false.
    */
   template <VectorizationPattern vecPattern>
-  constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
+  static constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
     std::ptrdiff_t limit = 0;
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -385,7 +385,7 @@ class LJFunctorHWY
    * @param j
    */
   template <VectorizationPattern vecPattern>
-  constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
+  static constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       j += _vecLengthDouble;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -406,7 +406,7 @@ class LJFunctorHWY
    * @return the number of lanes filled.
    */
   template <VectorizationPattern vecPattern>
-  constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
+  static constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return static_cast<int>(j & (_vecLengthDouble - 1));
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -439,7 +439,7 @@ class LJFunctorHWY
    * @param restI The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
-  inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
+  static void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
                              const double *const __restrict zPtr,
                              const autopas::OwnershipState *const __restrict ownedStatePtr, VectorDouble &x1,
                              VectorDouble &y1, VectorDouble &z1, MaskDouble &ownedMaskI, const size_t restI) {
@@ -512,12 +512,12 @@ class LJFunctorHWY
 
     MaskLong ownedMaskILong = highway::Ne(ownedStateILong, highway::Zero(tag_long));
 
-    // conert to a double mask since we perform logical operations with other double masks in the kernel.
+    // convert to a double mask since we perform logical operations with other double masks in the kernel.
     ownedMaskI = highway::RebindMask(tag_double, ownedMaskILong);
   }
 
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
-  inline void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
+  static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
                                      double *const __restrict fz2Ptr, const size_t i, const size_t j,
                                      const size_t rest) {
@@ -591,7 +591,7 @@ class LJFunctorHWY
   }
 
   template <bool reversed, bool remainder, VectorizationPattern vecPattern>
-  inline void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
+  static void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
                                      double *const __restrict fzPtr, const VectorDouble &fxAcc,
                                      const VectorDouble &fyAcc, const VectorDouble &fzAcc, const int restI) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -842,10 +842,10 @@ class LJFunctorHWY
    * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
-  inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
-                             const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
-                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
-                             const unsigned int rest) {
+  static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
+                                    const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
+                                    VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
+                                    const unsigned int rest) {
     VectorLong ownedStateJLong = highway::Zero(tag_long);
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
