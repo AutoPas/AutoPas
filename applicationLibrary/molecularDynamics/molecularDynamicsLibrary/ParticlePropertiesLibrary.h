@@ -231,7 +231,9 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  auto getLJMixingData(intType i, intType j) const { return _computedLJMixingData[i * _numRegisteredSiteTypes + j]; }
+  auto getLJMixingData(intType i, intType j) const {
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j];
+  }
 
   /**
    * Get a pointer to Mixing Data for one pair of LJ site types.
@@ -281,9 +283,8 @@ class ParticlePropertiesLibrary {
    * @return nu_ijk
    */
   floatType getMixingNu(intType i, intType j, intType k) const {
-    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
-                                 k]
-        .nu;
+    return
+    _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k].nu;
   }
 
   /**
@@ -294,9 +295,22 @@ class ParticlePropertiesLibrary {
    * @return
    */
   auto getATMixingData(intType i, intType j, intType k) const {
-    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
-                                 k];
+    return
+    _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k];
   }
+
+  struct PackedLJMixingData {
+    floatType epsilon24;
+    floatType sigmaSquared;
+    floatType shift6;
+  };
+
+ [[nodiscard]] std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>>
+  getComputedLJMixingData() const {
+    return _computedLJMixingData;
+ }
+
+  [[nodiscard]] intType getNumRegisteredSiteTypes() const { return _numRegisteredSiteTypes; }
 
  private:
   intType _numRegisteredSiteTypes{0};

@@ -1146,6 +1146,10 @@ class LJFunctor
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
+    using PackedLJMixingData = ParticlePropertiesLibrary<SoAFloatPrecision, unsigned long>::PackedLJMixingData;
+    const std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> computedLJMixingData = _PPLibrary->getComputedLJMixingData();
+    const size_t numRegisteredSiteTypes = _PPLibrary->getNumberRegisteredSiteTypes();
+
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
@@ -1236,7 +1240,17 @@ class LJFunctor
           yArr[tmpj] = yptr[liveIdJ];
           zArr[tmpj] = zptr[liveIdJ];
           ownedStateArr[tmpj] = ownedStatePtr[liveIdJ];
+          if constexpr (useMixing) {
+          const size_t typeIdJ = typeptr2[liveIdJ];
+          const size_t mixingIndex = typeIdI * numRegisteredSiteTypes + typeIdJ;
+          sigmaSquareds[tmpj] = computedLJMixingData[mixingIndex].sigmaSquared;
+          epsilon24s[tmpj] = computedLJMixingData[mixingIndex].epsilon24;
+          if constexpr (applyShift) {
+            shift6s[tmpj] = computedLJMixingData[mixingIndex].shift6;
+          }
+          }
         }
+
         // do omp simd with reduction of the interaction
         #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
