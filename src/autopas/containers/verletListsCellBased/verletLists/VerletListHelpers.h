@@ -202,7 +202,6 @@ class VerletListHelpers {
     VerletListGeneratorFunctorSoA(NeighborListSoAType &verletListsSoA, double interactionLength)
     : PairwiseFunctor<Particle_T, VerletListGeneratorFunctorSoA>(interactionLength),
       _verletListsSoA(verletListsSoA),
-      _particlePtr2indexMap(particlePtr2indexMap),
       _interactionLengthSquared(interactionLength * interactionLength){}
 
     std::string getName() override { return "VerletListGeneratorFunctorSoA"; }
@@ -233,7 +232,6 @@ class VerletListHelpers {
 
       const double cutoffSquared = this->_interactionLengthSquared;
 
-      auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
@@ -274,13 +272,11 @@ class VerletListHelpers {
 
       const double cutoffSquared = this->_interactionLengthSquared;
 
-      auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
       auto *const liveId1 = soa1.template begin<Particle_T::AttributeNames::liveId>();
 
-      auto **const __restrict ptr2ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
@@ -310,9 +306,9 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::Functor::getNeededAttr()
      */
-    constexpr static std::array<typename Particle_T::AttributeNames, 5> getNeededAttr() {
-      return std::array<typename Particle_T::AttributeNames, 5>{
-        Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 4>{
+        Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
         Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::liveId};
     }
 
