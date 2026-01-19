@@ -283,9 +283,13 @@ class VerletListHelpers {
       auto *const liveId2 = soa2.template begin<Particle_T::AttributeNames::liveId>();
 
       size_t numPart1 = soa1.size();
-      for (size_t i = 0; i < numPart1; ++i) {
+      size_t numPart2 = soa2.size();
 
-        size_t numPart2 = soa2.size();
+      thread_local std::vector<size_t> verletTemp;
+      verletTemp.resize(numPart2);
+
+      for (size_t i = 0; i < numPart1; ++i) {
+        size_t tempPos = 0;
         auto  &currentListSoA = _verletListsSoA[liveId1[i]];
         const double x1 = x1ptr[i];
         const double y1 = y1ptr[i];
@@ -296,11 +300,14 @@ class VerletListHelpers {
           const double dry = y1 - y2ptr[j];
           const double drz = z1 - z2ptr[j];
 
-          if (drx*drx + dry*dry + drz*drz  < cutoffSquared) {
-          currentListSoA.push_back(liveId2[j]);
-          }
+          const bool mask = drx*drx + dry*dry + drz*drz < cutoffSquared;
+          verletTemp[tempPos] = liveId2[j];
+          tempPos += mask;
         }
+
+        currentListSoA.insert(currentListSoA.end(), verletTemp.begin(), verletTemp.begin() + tempPos);
       }
+      // LIKWID_MARKER_STOP("distance calculation - cell pair - SoA");
     }
 
     /**
