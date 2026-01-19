@@ -309,7 +309,11 @@ class LogicHandler {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _currentContainer->reserve(numParticles, numHaloParticles);
+    // reserve is called for the container only in the rebuild iterations.
+    // during non-rebuild iterations, particles are not added in the container but in buffer.
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+      _currentContainer->reserve(numParticles, numHaloParticles);
+    }
   }
 
   /**
