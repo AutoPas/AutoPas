@@ -638,7 +638,7 @@ class LogicHandler {
     // Initialize the maximum velocity
     double maxVelocity = 0;
     // Iterate the particles to determine maximum velocity
-	AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
       double tempVelAbs = sqrt(dot(tempVel, tempVel));
@@ -1275,13 +1275,13 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   if (autoTuner.inFirstTuningIteration()) {
     _numRebuildsInNonTuningPhase = 0;
   }
-// Rebuild frequency estimation should be triggered early in the tuning phase.
-// This is necessary because runtime prediction for each trial configuration
-// depends on the rebuild frequency.
-// To avoid the influence of poorly initialized velocities at the start of the simulation,
-// only the last sample of the first configuration is used.
-// The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
 
+  // Rebuild frequency estimation should be triggered early in the tuning phase.
+  // This is necessary because runtime prediction for each trial configuration
+  // depends on the rebuild frequency.
+  // To avoid the influence of poorly initialized velocities at the start of the simulation,
+  // only the last sample of the first configuration is used.
+  // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
   if (autoTuner.inFirstConfigurationLastSample()) {
     // Fetch the needed information for estimating the rebuild frequency using Velocity Method
     // get the estimate from the velocity method
