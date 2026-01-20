@@ -526,9 +526,9 @@ class LJFunctorHWY
       const VectorDouble fx2 =
           remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fx2Ptr[j]) : highway::LoadU(tag_double, &fx2Ptr[j]);
       const VectorDouble fy2 =
-          remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fx2Ptr[j]) : highway::LoadU(tag_double, &fy2Ptr[j]);
+          remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fy2Ptr[j]) : highway::LoadU(tag_double, &fy2Ptr[j]);
       const VectorDouble fz2 =
-          remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fx2Ptr[j]) : highway::LoadU(tag_double, &fz2Ptr[j]);
+          remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fz2Ptr[j]) : highway::LoadU(tag_double, &fz2Ptr[j]);
 
       const VectorDouble fx2New = highway::Sub(fx2, fx);
       const VectorDouble fy2New = highway::Sub(fy2, fy);
