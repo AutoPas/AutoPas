@@ -637,8 +637,10 @@ class AutoPas {
    * @param verletSkin
    */
   void setVerletSkin(double verletSkin) { _logicHandlerInfo.verletSkin = verletSkin; }
+
   /**
-   * Set time step of the simulation. Used for rf Estimation.
+   * Set time step of the simulation.
+   * This is currently used for estimating the rebuild frequency.
    * @param deltaT
    */
   void setDeltaT(double deltaT) { _logicHandlerInfo.deltaT = deltaT; }

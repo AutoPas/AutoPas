@@ -628,17 +628,17 @@ class LogicHandler {
 
   /**
    * Estimates the rebuild frequency based on the current maximum velocity in the container
-   * Using the formula rf = skin/deltaT/vmax/2 + 1
-   * @param skin double is the skin length used in the simulation.
-   * @param deltaT double is the time step
-   * @return estimate of the rebuild frequency
+   * Using the formula rf = skin/deltaT/vmax/2
+   * @param skin is the skin length used in the simulation
+   * @param deltaT is the time step
+   * @return estimate of the current rebuild frequency
    */
   double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     using autopas::utils::ArrayMath::dot;
     // Initialize the maximum velocity
     double maxVelocity = 0;
     // Iterate the particles to determine maximum velocity
+	AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
       double tempVelAbs = sqrt(dot(tempVel, tempVel));
@@ -646,7 +646,6 @@ class LogicHandler {
     }
     // return the rebuild frequency estimate
     return skin / maxVelocity / deltaT / 2;
-#endif
   }
   /**
    * getter function for _neighborListInvalidDoDynamicRebuild
@@ -1276,8 +1275,13 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   if (autoTuner.inFirstTuningIteration()) {
     _numRebuildsInNonTuningPhase = 0;
   }
-  // use the last sample of the first configuration to estimate the mean rebuild frequency of the subsequent tuning
-  // phase set the rebuild frequency estimate for all subsequent iterations
+// Rebuild frequency estimation should be triggered early in the tuning phase.
+// This is necessary because runtime prediction for each trial configuration
+// depends on the rebuild frequency.
+// To avoid the influence of poorly initialized velocities at the start of the simulation,
+// only the last sample of the first configuration is used.
+// The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
+
   if (autoTuner.inFirstConfigurationLastSample()) {
     // Fetch the needed information for estimating the rebuild frequency using Velocity Method
     // get the estimate from the velocity method
