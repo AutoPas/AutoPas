@@ -522,22 +522,23 @@ class LJFunctorHWY
                                      double *const __restrict fz2Ptr, const size_t i, const size_t j,
                                      const size_t rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+      auto firstNMaskDouble = highway::FirstN(tag_double, rest);
       const VectorDouble fx2 =
-          remainder ? highway::LoadN(tag_double, &fx2Ptr[j], rest) : highway::LoadU(tag_double, &fx2Ptr[j]);
+          remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fx2Ptr[j]) : highway::LoadU(tag_double, &fx2Ptr[j]);
       const VectorDouble fy2 =
-          remainder ? highway::LoadN(tag_double, &fy2Ptr[j], rest) : highway::LoadU(tag_double, &fy2Ptr[j]);
+          remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fx2Ptr[j]) : highway::LoadU(tag_double, &fy2Ptr[j]);
       const VectorDouble fz2 =
-          remainder ? highway::LoadN(tag_double, &fz2Ptr[j], rest) : highway::LoadU(tag_double, &fz2Ptr[j]);
+          remainder ? highway::MaskedLoad(firstNMaskDouble, tag_double, &fx2Ptr[j]) : highway::LoadU(tag_double, &fz2Ptr[j]);
 
       const VectorDouble fx2New = highway::Sub(fx2, fx);
       const VectorDouble fy2New = highway::Sub(fy2, fy);
       const VectorDouble fz2New = highway::Sub(fz2, fz);
 
-      remainder ? highway::StoreN(fx2New, tag_double, &fx2Ptr[j], rest)
+      remainder ? highway::BlendedStore(fx2New, firstNMaskDouble, tag_double, &fx2Ptr[j])
                 : highway::StoreU(fx2New, tag_double, &fx2Ptr[j]);
-      remainder ? highway::StoreN(fy2New, tag_double, &fy2Ptr[j], rest)
+      remainder ? highway::BlendedStore(fy2New, firstNMaskDouble, tag_double, &fy2Ptr[j])
                 : highway::StoreU(fy2New, tag_double, &fy2Ptr[j]);
-      remainder ? highway::StoreN(fz2New, tag_double, &fz2Ptr[j], rest)
+      remainder ? highway::BlendedStore(fz2New, firstNMaskDouble, tag_double, &fz2Ptr[j])
                 : highway::StoreU(fz2New, tag_double, &fz2Ptr[j]);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
@@ -850,11 +851,13 @@ class LJFunctorHWY
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       if constexpr (remainder) {
-        x2 = highway::LoadN(tag_double, &x2Ptr[j], rest);
-        y2 = highway::LoadN(tag_double, &y2Ptr[j], rest);
-        z2 = highway::LoadN(tag_double, &z2Ptr[j], rest);
+        auto firstNMaskDouble = highway::FirstN(tag_double, rest);
+        x2 = highway::MaskedLoad(firstNMaskDouble, tag_double, &x2Ptr[j]);
+        y2 = highway::MaskedLoad(firstNMaskDouble, tag_double, &y2Ptr[j]);
+        z2 = highway::MaskedLoad(firstNMaskDouble, tag_double, &z2Ptr[j]);
 
-        ownedStateJLong = highway::LoadN(tag_long, &ownedStatePtr2[j], rest);
+        auto firstNMaskLong = highway::RebindMask(tag_long, firstNMaskDouble);
+        ownedStateJLong = highway::MaskedLoad(firstNMaskLong, tag_long, &ownedStatePtr2[j]);
       } else {
         x2 = highway::LoadU(tag_double, &x2Ptr[j]);
         y2 = highway::LoadU(tag_double, &y2Ptr[j]);
