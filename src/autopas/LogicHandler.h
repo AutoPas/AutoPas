@@ -38,6 +38,14 @@
 
 namespace autopas {
 
+#ifdef KOKKOS_ENABLE_CUDA
+  using DeviceSpace = Kokkos::CudaSpace;
+  constexpr bool ForEachHostFlag = false;
+#else
+  using DeviceSpace = Kokkos::HostSpace;
+  constexpr bool ForEachHostFlag = true;
+#endif
+
 /**
  * The LogicHandler takes care of the containers s.t. they are all in the same valid state.
  * This is mainly done by incorporating a global container rebuild frequency, which defines when containers and their
@@ -1131,19 +1139,20 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
     }
   }
   else {
-    /*
-    withStaticContainerType(getContainer(), [&] (auto& actualContainer) {
-      actualContainer.forEachKokkos(KOKKOS_LAMBDA(int i, auto& storage) {
-      const auto pX = storage.template get<Particle_T::AttributeNames::posX, true>(i);
-      const auto pY = storage.template get<Particle_T::AttributeNames::posY, true>(i);
-      const auto pZ = storage.template get<Particle_T::AttributeNames::posZ, true>(i);
 
-      storage.template set<Particle_T::AttributeNames::rebuildX, true>(pX, i);
-      storage.template set<Particle_T::AttributeNames::rebuildY, true>(pY, i);
-      storage.template set<Particle_T::AttributeNames::rebuildZ, true>(pZ, i);
-    }, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage) {
+      const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
+      const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
+      const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+
+      storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i) = pX;
+      storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i) = pY;
+      storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i) = pZ;
+    };
+
+    withStaticContainerType(getContainer(), [&lambda] (auto& actualContainer) {
+      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(lambda, IteratorBehavior::owned | IteratorBehavior::containerOnly);
     });
-    */
   }
 #endif
 }
@@ -1211,16 +1220,15 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     bool test = _neighborListInvalidDoDynamicRebuild;
 
-    // TODO: sth else than HostSpace
     auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, bool& local) {
 
-        const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true>(i);
-        const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true>(i);
-        const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+        const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
+        const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
+        const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
 
-        const auto rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, true>(i);
-        const auto rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, true>(i);
-        const auto rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, true>(i);
+        const auto rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i);
+        const auto rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i);
+        const auto rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i);
 
         const auto dX = rebuildX - pX;
         const auto dY = rebuildY - pY;
@@ -1232,7 +1240,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
       };
 
     withStaticContainerType(getContainer(), [&lambda, &test](auto& actualContainer) {
-      actualContainer.template reduceKokkos<Kokkos::HostSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+      actualContainer.template reduceKokkos<DeviceSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
     });
     _neighborListInvalidDoDynamicRebuild = test;
 

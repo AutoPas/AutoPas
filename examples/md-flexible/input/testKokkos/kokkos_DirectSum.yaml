@@ -4,7 +4,8 @@ container                            :  [KokkosDirectSum]
 functor                              :  Lennard-Jones (12-6) kokkos
 traversal                            :  [ds_naive_parallel]
 newton3                              :  [disabled]
-data-layout                          :  [AoS]
+data-layout                          :  [SoA]
+container-layout                     :  [SoA]
 
 # General options
 verlet-rebuild-frequency             :  20

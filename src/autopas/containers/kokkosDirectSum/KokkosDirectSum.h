@@ -18,8 +18,6 @@
 
 namespace autopas {
 
-const size_t INIT_PARTICLES = 0;
-
 template <class Particle_T>
     class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
@@ -129,7 +127,6 @@ template <class Particle_T>
             }
 
             /* TODO: Begin of Code Crime (investigate generalizations of this -> every container does EXACTLY the same) */
-            // TODO: begin will need to initiate data transfer and conversion as the container iterator requires an AoS particle
             [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
                 IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                 typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
@@ -176,7 +173,7 @@ template <class Particle_T>
 
             template <typename Lambda>
             void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-              // TODO: consider behavior
+              // TODO
             }
 
             template <class ExecSpace, typename Lambda>
@@ -196,8 +193,8 @@ template <class Particle_T>
 
               auto& owned = _ownedParticles;
               // TODO: make sure that no AoS runs on Cuda
+              // TODO: consider behavior
               Kokkos::parallel_for("forEachKokkos", Kokkos::RangePolicy<ExecSpace>(0, numParticles), KOKKOS_LAMBDA(int i)  {
-                  // TODO: consider behavior
                   forEachLambda(i, owned);
                 });
 
@@ -227,7 +224,7 @@ template <class Particle_T>
 
             [[nodiscard]] double getCutoff() const final { return 0; }
 
-            void setCutoff(double cutoff) final { /* TODO */ };
+            void setCutoff(double) final {};
 
             [[nodiscard]] double getInteractionLength() const final { return 0; }
 
@@ -254,8 +251,16 @@ template <class Particle_T>
             }
 
             bool deleteParticle(size_t cellIndex, size_t particleIndex) final {
-                // TODO
+              if (cellIndex == 0 && particleIndex > numberOfOwned) {
+                // Particle does not exist in owned list
                 return false;
+              } else if (cellIndex == 1 && particleIndex > numberOfHalo) {
+                // Particle does not exist in halo list
+                return false;
+              }
+              auto& storage = (cellIndex == 0) ? _ownedParticles : _haloParticles;
+              storage.template operator()<Particle_T::AttributeNames::ownershipState, true, true>(particleIndex) = OwnershipState::dummy;
+              return true;
             }
     
     private:
@@ -447,28 +452,13 @@ template <class Particle_T>
 
         utils::KokkosStorage<Particle_T> _haloParticles {};
 
-        /* AoS Data structure */
-        //utils::KokkosAoS<MemSpace, Particle_T> _hostOwnedParticlesAoS {};
-
-        //utils::KokkosAoS<MemSpace, Particle_T> _hostHaloParticlesAoS {};
-
-        /* SoA data structure */
-
-        // Particle_T::template KokkosSoAArraysType<HostSpace> _hostOwnedParticlesSoA {};
-
-        // Particle_T::template KokkosSoAArraysType<HostSpace> _hostHaloParticlesSoA {};
-
-        /* AoSoA data structure */
-
-        // TODO: implement
-
         size_t numberOfOwned {0};
 
         size_t numberOfHalo {0};
 
-        size_t capacityOwned {INIT_PARTICLES};
+        size_t capacityOwned {0};
 
-        size_t capacityHalo {INIT_PARTICLES/4};
+        size_t capacityHalo {0};
 
         };
 }

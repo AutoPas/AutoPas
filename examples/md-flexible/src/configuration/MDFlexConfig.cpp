@@ -317,6 +317,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
         break;
       }
+      case FunctorOption::lj12_6_KOKKOS: {
+        os << "Lennard-Jones (12-6) Kokkos" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions, -indentWidth);

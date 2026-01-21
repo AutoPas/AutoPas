@@ -99,6 +99,8 @@ class ParticleBase {
    */
   idType _id;
 
+  floatType _mass;
+
   /**
    * Defines the state of the ownership of the particle.
    */
