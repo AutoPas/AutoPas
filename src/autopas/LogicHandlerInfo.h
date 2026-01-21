@@ -40,7 +40,8 @@ class LogicHandlerInfo {
    */
   size_t sortingThreshold{8};
   /**
-   * time step to be used in the simulation. Used in rf Estimation.
+   * Time step used in the simulation.
+   * This is currently used in rebuild frequency estimation for dynamic containers.
    */
   double deltaT{0};
 };

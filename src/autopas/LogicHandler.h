@@ -635,9 +635,9 @@ class LogicHandler {
    */
   double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
     using autopas::utils::ArrayMath::dot;
-    // Initialize the maximum velocity
+    // Initialize the maximum velocity to zero
     double maxVelocity = 0;
-    // Iterate the particles to determine maximum velocity
+    // Iterate over the owned particles in container to determine maximum velocity
     AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
@@ -1280,15 +1280,18 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   // This is necessary because runtime prediction for each trial configuration
   // depends on the rebuild frequency.
   // To avoid the influence of poorly initialized velocities at the start of the simulation,
-  // only the last sample of the first configuration is used.
+  // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
   // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
   if (autoTuner.inFirstConfigurationLastSample()) {
-    // Fetch the needed information for estimating the rebuild frequency using Velocity Method
-    // get the estimate from the velocity method
+    // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
+    // and estimate the current rebuild frequency using the velocity method.
     double rebuildFrequencyEstimate =
         getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
     double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
-    // if velocity method estimate exceeds upper-bound, set rebuild frequency as upper-bound
+    // The user defined rebuild frequnecy is considered as the upper bound.
+    // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
+    // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
+    // buffer interactions.
     if (rebuildFrequencyEstimate > userProvidedRF) {
       autoTuner.setRebuildFrequency(userProvidedRF);
     } else {
