@@ -65,7 +65,7 @@ namespace autopas::utils {
     }
 
     void convertToSoA(size_t size) {
-      constexpr size_t tupleSize = storageSoA.tupleSize();
+      constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
 
       storageSoA.resize(size);
@@ -73,7 +73,7 @@ namespace autopas::utils {
     }
 
     void convertToAoS(size_t size) {
-      constexpr size_t tupleSize = storageSoA.tupleSize();
+      constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
 
       storageAoS.resize(size);
@@ -103,7 +103,7 @@ namespace autopas::utils {
 
     template <typename Target>
     void sync() {
-      constexpr auto tupleSize = storageSoA.tupleSize();
+      constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
 
       storageSoA.template syncAll<Target>(I);
@@ -111,7 +111,7 @@ namespace autopas::utils {
 
     template <typename Target>
     void markModified() {
-      constexpr auto tupleSize = storageSoA.tupleSize();
+      constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
 
       storageSoA.template markAllModified<Target>(I);
