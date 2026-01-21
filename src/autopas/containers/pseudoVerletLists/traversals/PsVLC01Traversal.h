@@ -65,7 +65,7 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor,
    * Getter.
    * @return
    */
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c08; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c01; }
 
   /**
    * Sets the orientationList.
@@ -109,7 +109,7 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor,
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctorPsVL<ParticleCell, PairwiseFunctor,
-                            /*bidirectional*/ true>
+                            /*bidirectional*/ false>
       _cellFunctor;
 };
 

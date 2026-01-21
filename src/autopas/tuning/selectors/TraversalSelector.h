@@ -358,14 +358,13 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
           dataLayout, useNewton3);
       break;
     }
-      /**
-       * case TraversalOption::psvl_c01: {
-       *  traversal = std::make_unique<PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>>(
-       *      traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
-       *      dataLayout, useNewton3);
-       *  break;
-       *}
-       */
+    case TraversalOption::psvl_c01: {
+      traversal = std::make_unique<PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
+
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
                                          traversalType.to_string());
