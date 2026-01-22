@@ -156,7 +156,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
           TraversalOption::vlc_c01,
-          TraversalOption::vlp_c01};
+          TraversalOption::vlp_c01,
+          TraversalOption::psvl_c01};
 };
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
@@ -172,7 +173,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * @return
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
-  return {/*TraversalOption::psvl_c01,*/ TraversalOption::psvl_c08, TraversalOption::psvl_c18};
+  return {TraversalOption::psvl_c01, TraversalOption::psvl_c08, TraversalOption::psvl_c18};
 };
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
