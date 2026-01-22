@@ -13,6 +13,8 @@
 
 #include <array>
 
+#include <hwy/highway.h>
+
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -23,6 +25,19 @@
 #include "autopas/utils/inBox.h"
 
 namespace mdLib {
+  namespace highway = hwy::HWY_NAMESPACE;
+  /** Highway tag for full double register */
+  constexpr highway::ScalableTag<double> tag_double;
+  /** Highway tag for full long register */
+  constexpr highway::ScalableTag<int64_t> tag_long;
+  /**
+ * Upper bound on the number of double values in a full register. Always constexpr.
+ */
+  constexpr size_t _maxVecLengthDouble{highway::MaxLanes(tag_double)};
+  /** Type for a Double vector register */
+  using VectorDouble = decltype(highway::Zero(tag_double));
+  /** Type for a Long vector register */
+  using VectorLong = decltype(highway::Zero(tag_long));
 
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
@@ -470,23 +485,22 @@ class LJFunctorAVX
     __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
     if (useMixing) {
-      // the first argument for set lands in the last bits of the register
-      epsilon24s = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-          _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
-      sigmaSquareds = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-          _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
+
+      for (int j = 0; j < (remainderIsMasked ? rest : 4); ++j) {
+        epsilons[j] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + j));
+        sigmas[j] = _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + j));
+        if constexpr (applyShift) {
+          shifts[j] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + j));
+        }
+      }
+
+      epsilon24s = _mm256_load_pd(epsilons.data());
+      sigmaSquareds = _mm256_load_pd(sigmas.data());
       if constexpr (applyShift) {
-        shift6s = _mm256_set_pd(
-            (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-            (not remainderIsMasked or rest > 2) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-            (not remainderIsMasked or rest > 1) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-            _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
+        shift6s = _mm256_load_pd(shifts.data());
       }
     }
 
