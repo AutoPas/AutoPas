@@ -76,6 +76,11 @@ public:
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
 
+    auto *mortonTraversalInterface = dynamic_cast<MortonIndexTraversalInterface *> (traversal);
+    if (mortonTraversalInterface) {
+      mortonTraversalInterface->setCellsByMortonIndex(this->_linkedCells.getCellsByMortonIndex());
+    }
+
     // LIKWID_MARKER_START("force calculation");
     traversal->initTraversal();
     traversal->traverseParticles();
@@ -110,6 +115,12 @@ public:
         LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctorSoA>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+
+    auto *mortonTraversalInterface = dynamic_cast<MortonIndexTraversalInterface *> (&traversal);
+    if (mortonTraversalInterface) {
+      mortonTraversalInterface->setCellsByMortonIndex(this->_linkedCells.getCellsByMortonIndex());
+    }
+
     this->_linkedCells.computeInteractions(&traversal);
 
     this->_soaListIsValid = true;
@@ -118,6 +129,44 @@ public:
   /**
    * @return Number of particles in the container
    */
+//   size_t generateSoANeighborLists() {
+//     size_t numParticles = 0;
+//     size_t index = 0;
+//     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
+//     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
+//     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
+//
+//        /*if (iter->getLiveId() != std::numeric_limits<size_t>::max()) {
+//         const auto oldId = iter->getLiveId();
+//         const auto &lst = _soaNeighborLists[oldId];
+//          std::cout << "\n" << "[" << oldId << "] [";
+//
+//          for (size_t k = 0; k < lst.size(); k++) {
+//            std::cout << lst[k] << (k + 1 < lst.size() ? ", " : "");
+//          }
+//          std::cout << "]";
+//        }*/
+//
+//       iter->setOldVerletSize((iter->getLiveId() != std::numeric_limits<size_t>::max())
+//                               && (iter->getLiveId() < _soaNeighborLists.size()) ?
+//                             _soaNeighborLists[iter->getLiveId()].size() : 64);
+//       iter->setLiveId(index);
+//     }
+//     // std::cout << "\n";
+//
+//     this->_soaNeighborLists.clear();
+//     this->_soaNeighborLists.resize(numParticles);
+//
+//     index = 0;
+//
+//     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
+//       this->_soaNeighborLists[index].clear();
+//       this->_soaNeighborLists[index].reserve(iter->getOldVerletSize());
+//     }
+//
+//     return numParticles;
+//   }
+
   size_t generateSoANeighborLists() {
     size_t numParticles = 0;
     size_t index = 0;
@@ -133,9 +182,11 @@ public:
 
     index = 0;
 
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
-      this->_soaNeighborLists[index].clear();
-      this->_soaNeighborLists[index].reserve(iter->getOldVerletSize());
+    for (size_t cellId : cellsByMortonIndex) {
+      for (size_t i = 0; i < cells[cellId]._particles.size();  ++i, ++index) {
+        this->_soaNeighborLists[index].clear();
+        this->_soaNeighborLists[index].reserve(cells[cellId]._particles[i].getOldVerletSize());
+      }
     }
 
     return numParticles;

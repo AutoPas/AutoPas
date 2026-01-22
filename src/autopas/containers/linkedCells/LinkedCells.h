@@ -498,6 +498,17 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    */
   std::vector<ParticleCellType> &getCells() { return this->_cells; }
 
+  [[nodiscard]] const std::vector<size_t> &getCellsByMortonIndex() {
+    if ( !_mortonIndicesValid || _mortonNumCells != this->_cells.size() || _mortonDims != this->_cellBlock.getCellsPerDimensionWithHalo() ) {
+      sortCellsByMortonIndex(this->_cells.size(), this->_cellBlock.getCellsPerDimensionWithHalo());
+      _mortonIndicesValid = true;
+      _mortonNumCells = this->_cells.size();
+      _mortonDims = this->_cellBlock.getCellsPerDimensionWithHalo();
+    }
+
+    return _cellsByMortonIndex;
+  }
+
  protected:
   /**
    * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
@@ -595,6 +606,25 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * load estimation algorithm for balanced traversals.
    */
   LoadEstimatorOption _loadEstimator;
+
+  std::vector<size_t> _cellsByMortonIndex;
+  bool _mortonIndicesValid{false};
+  size_t _mortonNumCells{0};
+  std::array<size_t, 3> _mortonDims{};
+
+  void sortCellsByMortonIndex(size_t numCells, const std::array<size_t, 3> dims) {
+    _cellsByMortonIndex.resize(numCells);
+    std::iota(_cellsByMortonIndex.begin(), _cellsByMortonIndex.end(), 0);
+
+    std::vector<size_t> mortonIndices(numCells);
+
+    for (size_t i = 0; i < numCells; ++i) {
+      const auto index3d = utils::ThreeDimensionalMapping::oneToThreeD(i, dims);
+      mortonIndices[i] = utils::ThreeDimensionalMapping::threeDtoMortonIndex(index3d);
+    }
+
+    std::ranges::sort(_cellsByMortonIndex, [&](size_t i1, size_t i2) { return mortonIndices[i1] < mortonIndices[i2]; });
+  }
 };
 
 }  // namespace autopas

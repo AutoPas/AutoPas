@@ -6,6 +6,9 @@
  */
 #pragma once
 
+#include <likwid-marker.h>
+
+#include "MortonIndexTraverslInterface.h"
 #include "VLTraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
@@ -21,7 +24,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
+class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell>, public MortonIndexTraversalInterface {
   using ParticleType = typename ParticleCell::ParticleType;
 
  public:
@@ -51,15 +54,17 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
       // SoALoader.
       std::vector<size_t> offsets(cells.size() + 1);
-      std::inclusive_scan(
-          cells.begin(), cells.end(), offsets.begin() + 1,
-          [](const size_t &partialSum, const auto &cell) { return partialSum + cell.size(); }, 0);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
+        offsets[i + 1] = offsets[i] + cells[cellId].size();
+      }
 
       _soa.resizeArrays(offsets.back());
 
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
-        _functor->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
+        const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
+        _functor->SoALoader(cells[cellId], _soa, offsets[i], /*skipSoAResize*/ true);
       }
     }
   }
@@ -67,10 +72,14 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   void endTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      size_t offset = 0;
-      for (auto &cell : cells) {
-        _functor->SoAExtractor(cell, _soa, offset);
-        offset += cell.size();
+      std::vector<size_t> offsets(cells.size() + 1);
+      for (size_t i = 0; i < cells.size(); ++i) {
+        const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
+        offsets[i + 1] = offsets[i] + cells[cellId].size();
+      }
+      for (size_t i = 0; i < cells.size(); ++i) {
+        const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
+          _functor->SoAExtractor(cells[cellId], _soa, offsets[i]);
       }
     }
   }

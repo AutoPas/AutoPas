@@ -8,6 +8,7 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/MortonIndexTraverslInterface.h"
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
@@ -24,7 +25,7 @@ namespace autopas {
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
 template <class ParticleCell, class Functor, int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
+class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface, public MortonIndexTraversalInterface {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.
@@ -64,7 +65,8 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
       /// @todo find a condition on when to use omp or when it is just overhead
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
-        _dataLayoutConverter.loadDataLayout(cells[i]);
+        const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
+        _dataLayoutConverter.loadDataLayout(cells[cellId]);
       }
     }
   }
@@ -78,7 +80,8 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
       /// @todo find a condition on when to use omp or when it is just overhead
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
-        _dataLayoutConverter.storeDataLayout(cells[i]);
+        const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
+        _dataLayoutConverter.storeDataLayout(cells[cellId]);
       }
     }
   }

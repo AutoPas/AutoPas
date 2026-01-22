@@ -61,4 +61,37 @@ constexpr std::array<T, 3> oneToThreeD(T ind, const std::array<T, 3> &dims) {
   return pos;
 }
 
+template<typename T>
+constexpr uint64_t threeDtoMortonIndex(T x, T y, T z){
+  uint64_t mortonIndex = 0;
+  for (uint64_t i = 0; i < (sizeof(uint64_t)* CHAR_BIT)/3; ++i) {
+    mortonIndex |= ((x & ((uint64_t)1 << i)) << 2*i) | ((y & ((uint64_t)1 << i)) << (2*i + 1)) | ((z & ((uint64_t)1 << i)) << (2*i + 2));
+  }
+  return mortonIndex;
+}
+
+template<typename T>
+constexpr T threeDtoMortonIndex(const std::array<T, 3> &index3d) {
+  return threeDtoMortonIndex(index3d[0], index3d[1], index3d[2]);
+}
+
+inline uint64_t compactBits(uint64_t n) {
+  n &= 0x1249249249249249;
+  n = (n ^ (n >> 2)) & 0x30c30c30c30c30c3;
+  n = (n ^ (n >> 4)) & 0xf00f00f00f00f00f;
+  n = (n ^ (n >> 8)) & 0x00ff0000ff0000ff;
+  n = (n ^ (n >> 16)) & 0x00ff00000000ffff;
+  n = (n ^ (n >> 32)) & 0x1fffff;
+  return n;
+}
+
+template<typename T>
+constexpr std::array<T, 3> mortonIndexToThreeD(T mortonIndex) {
+  std::array<T, 3> pos{};
+  pos[2] = compactBits(mortonIndex >> 2);
+  pos[1] = compactBits(mortonIndex >> 1);
+  pos[0] = compactBits(mortonIndex);
+  return pos;
+}
+
 }  // namespace autopas::utils::ThreeDimensionalMapping

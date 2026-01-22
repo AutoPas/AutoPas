@@ -228,7 +228,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    */
   std::array<double, 3> _oldF = {0., 0., 0.};
 
-  size_t _liveId = 0;
+  size_t _liveId = std::numeric_limits<size_t>::max();
 
   size_t _oldVerletSize = 0;
 };
