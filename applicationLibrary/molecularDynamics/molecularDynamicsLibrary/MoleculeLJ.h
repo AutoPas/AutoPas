@@ -29,7 +29,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @param moleculeId Unique Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
+  MoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos, const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
              unsigned long typeId = 0);
 
   ~MoleculeLJ() override = default;
@@ -68,17 +68,17 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*rebuildX*/, double /*rebuildY*/, double /*rebuildZ*/,
-                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       double /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+      autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, ParticleSoAFloatPrecision /*x*/, ParticleSoAFloatPrecision /*y*/, ParticleSoAFloatPrecision /*z*/,
+                                       ParticleSoAFloatPrecision /*rebuildX*/, ParticleSoAFloatPrecision /*rebuildY*/, ParticleSoAFloatPrecision /*rebuildZ*/,
+                                       ParticleSoAFloatPrecision /*vx*/, ParticleSoAFloatPrecision /*vy*/, ParticleSoAFloatPrecision /*vz*/, ParticleSoAFloatPrecision /*fx*/, ParticleSoAFloatPrecision /*fy*/,
+                                       ParticleSoAFloatPrecision /*fz*/, ParticleSoAFloatPrecision /*oldFx*/, ParticleSoAFloatPrecision /*oldFy*/, ParticleSoAFloatPrecision /*oldFz*/,
+                                       ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
-  using KokkosSoAArraysType = autopas::utils::KokkosSoA<size_t* /*id*/, double* /*x*/, double* /*y*/, double* /*z*/,
-                                       double* /*rebuildX*/, double* /*rebuildY*/, double* /*rebuildZ*/,
-                                       double* /*vx*/, double* /*vy*/, double* /*vz*/, double* /*fx*/, double* /*fy*/,
-                                       double* /*fz*/, double* /*oldFx*/, double* /*oldFy*/, double* /*oldFz*/,
-                                       double* /*mass*/, size_t* /*typeid*/, autopas::OwnershipState* /*ownershipState*/>;
+  using KokkosSoAArraysType = autopas::utils::KokkosSoA<size_t* /*id*/, ParticleSoAFloatPrecision* /*x*/, ParticleSoAFloatPrecision* /*y*/, ParticleSoAFloatPrecision* /*z*/,
+                                       ParticleSoAFloatPrecision* /*rebuildX*/, ParticleSoAFloatPrecision* /*rebuildY*/, ParticleSoAFloatPrecision* /*rebuildZ*/,
+                                       ParticleSoAFloatPrecision* /*vx*/, ParticleSoAFloatPrecision* /*vy*/, ParticleSoAFloatPrecision* /*vz*/, ParticleSoAFloatPrecision* /*fx*/, ParticleSoAFloatPrecision* /*fy*/,
+                                       ParticleSoAFloatPrecision* /*fz*/, ParticleSoAFloatPrecision* /*oldFx*/, ParticleSoAFloatPrecision* /*oldFy*/, ParticleSoAFloatPrecision* /*oldFz*/,
+                                       ParticleSoAFloatPrecision* /*mass*/, size_t* /*typeid*/, autopas::OwnershipState* /*ownershipState*/>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -242,13 +242,13 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] const std::array<double, 3> &getOldF() const;
+  [[nodiscard]] const std::array<ParticleSoAFloatPrecision, 3> &getOldF() const;
 
   /**
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce);
+  void setOldF(const std::array<ParticleSoAFloatPrecision, 3> &oldForce);
 
   /**
    * Get TypeId.
@@ -281,7 +281,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   /**
    * Old Force of the particle experiences as 3D vector.
    */
-  std::array<double, 3> _oldF = {0., 0., 0.};
+  std::array<ParticleSoAFloatPrecision, 3> _oldF = {0., 0., 0.};
 };
 
 }  // namespace mdLib
