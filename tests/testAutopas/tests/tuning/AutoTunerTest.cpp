@@ -965,7 +965,7 @@ TEST_F(AutoTunerTest, testMultipleTuners) {
 void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinitely) const {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  constexpr autopas::AutoTunerInfo autoTunerInfo{ .tuningInterval = 100, .maxSamples = 1 };
+  constexpr autopas::AutoTunerInfo autoTunerInfo{.tuningInterval = 100, .maxSamples = 1};
   constexpr unsigned int rebuildFrequency = 1;
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
@@ -976,7 +976,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   };
 
   autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
-  
+
   // 1) Sample first config (accepted).
   const auto [config1, stillTuning1] = autoTuner.getNextConfig();
   EXPECT_TRUE(stillTuning1);
