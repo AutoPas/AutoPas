@@ -631,6 +631,27 @@ class LogicHandler {
   }
 
   /**
+   * Estimates the rebuild frequency based on the current maximum velocity in the container
+   * Using the formula rf = skin/deltaT/vmax/2
+   * @param skin is the skin length used in the simulation
+   * @param deltaT is the time step
+   * @return estimate of the current rebuild frequency
+   */
+  double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
+    using autopas::utils::ArrayMath::dot;
+    // Initialize the maximum velocity to zero
+    double maxVelocity = 0;
+    // Iterate over the owned particles in container to determine maximum velocity
+    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      std::array<double, 3> tempVel = iter->getV();
+      double tempVelAbs = sqrt(dot(tempVel, tempVel));
+      maxVelocity = std::max(tempVelAbs, maxVelocity);
+    }
+    // return the rebuild frequency estimate
+    return skin / maxVelocity / deltaT / 2;
+  }
+  /**
    * getter function for _neighborListInvalidDoDynamicRebuild
    * @return bool stored in _neighborListInvalidDoDynamicRebuild
    */
@@ -1256,8 +1277,30 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   auto &autoTuner = *_autoTunerRefs[interactionType];
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
-    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
+  }
+
+  // Rebuild frequency estimation should be triggered early in the tuning phase.
+  // This is necessary because runtime prediction for each trial configuration
+  // depends on the rebuild frequency.
+  // To avoid the influence of poorly initialized velocities at the start of the simulation,
+  // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
+  // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
+  if (autoTuner.inFirstConfigurationLastSample()) {
+    // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
+    // and estimate the current rebuild frequency using the velocity method.
+    double rebuildFrequencyEstimate =
+        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
+    double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
+    // The user defined rebuild frequnecy is considered as the upper bound.
+    // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
+    // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
+    // buffer interactions.
+    if (rebuildFrequencyEstimate > userProvidedRF) {
+      autoTuner.setRebuildFrequency(userProvidedRF);
+    } else {
+      autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
+    }
   }
 #endif
   utils::Timer timerTotal;
