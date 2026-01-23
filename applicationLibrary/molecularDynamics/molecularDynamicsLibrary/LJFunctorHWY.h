@@ -843,9 +843,9 @@ class LJFunctorHWY
    */
   template <bool remainder, VectorizationPattern vecPattern>
   static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
-                                    const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
-                                    VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
-                                    const unsigned int rest) {
+                             const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
+                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
+                             const unsigned int rest) {
     VectorLong ownedStateJLong = highway::Zero(tag_long);
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -1193,8 +1193,8 @@ class LJFunctorHWY
 
       SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(
           0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(),
-          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, 0, 0);
+          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+          virialSumY, virialSumZ, uPotSum, 0, 0);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
@@ -1224,8 +1224,8 @@ class LJFunctorHWY
 
       SoAKernel<newton3, false, true, false, VectorizationPattern::p1xVec>(
           0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(),
-          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, 0, rest);
+          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+          virialSumY, virialSumZ, uPotSum, 0, rest);
 
       if constexpr (newton3) {
         for (long vecIndex = 0; vecIndex < _vecLengthDouble && vecIndex < rest; ++vecIndex) {
