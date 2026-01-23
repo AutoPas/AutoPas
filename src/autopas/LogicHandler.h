@@ -124,7 +124,6 @@ class LogicHandler {
             _currentContainer->addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
-            std::cout << "container leaving during rebuild rebuild" << std::endl;
           }
         }
         buffer.clear();
@@ -149,7 +148,6 @@ class LogicHandler {
           if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
             leavingBufferParticles.push_back(p);
             fastRemoveP();
-            std::cout << "buffer leaving no rebuild" << std::endl;
           } else {
             ++iter;
           }
