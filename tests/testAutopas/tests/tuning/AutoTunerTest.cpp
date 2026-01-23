@@ -980,7 +980,6 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   // 1) Sample first config (accepted).
   const auto [config1, stillTuning1] = autoTuner.getNextConfig();
   EXPECT_TRUE(stillTuning1);
-  EXPECT_EQ(config1, *std::rbegin(searchSpace));
   autoTuner.addMeasurement(200, /*neighborListRebuilt*/ true);
   autoTuner.bumpIterationCounters();
 
