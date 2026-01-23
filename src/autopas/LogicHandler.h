@@ -83,6 +83,10 @@ class LogicHandler {
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
+
+      // give outputSuffix to PatternBenchmark object in AutoTuner
+      auto &autoTuner = *_autoTunerRefs[interactionType];
+      autoTuner.patternBenchmark.outputSuffix = outputSuffix;
     }
 
     // initialize locks needed for remainder traversal
@@ -1869,6 +1873,20 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // if no config is left after rejecting this one, an exception is thrown here.
     std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
   } while (true);
+
+  // override regular AutoPas algorithm selection/auto-tuning pattern selection with benchmark pattern selection if relevant
+  if (_logicHandlerInfo.useBenchmarkPatternSelection) {
+    /* An optimal pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object
+     * if the functor can use pattern selection.
+     */
+    if (functor.canUseVectorPatternLookupTable()) {
+      if (not autoTuner.patternBenchmark._patternsCalculated) {
+        autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
+                                                                     _logicHandlerInfo.createPatternBenchmarkOutput);
+      }
+      functor.setPatternBenchmark(&(autoTuner.patternBenchmark));
+    }
+  }
 }
 
 template <typename Particle_T>

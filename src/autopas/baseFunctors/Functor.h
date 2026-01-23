@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/PatternBenchmark.h"
 #include "autopas/utils/SoAView.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 
@@ -181,6 +182,19 @@ class Functor {
    * @param vecPattern
    */
   virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}
+
+  /**
+   * Setter for the patternBenchmark attribute for functors that use this benchmark to select performance efficient
+   * vectorization patterns
+   * @param patternBenchmark pointer to the pattern benchmark object
+   */
+  virtual void setPatternBenchmark(PatternBenchmark *patternBenchmark) {}
+
+  /**
+   * Returns true if the functor can make use of a vector pattern lookup table.
+   * @return boolean
+   */
+  virtual bool canUseVectorPatternLookupTable() { return false; };
 
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.

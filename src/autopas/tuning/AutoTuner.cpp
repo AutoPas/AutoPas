@@ -469,4 +469,5 @@ void AutoTuner::checkEarlyStoppingCondition() {
     _iterationBaseline += skippedSamples;
   }
 }
+
 }  // namespace autopas

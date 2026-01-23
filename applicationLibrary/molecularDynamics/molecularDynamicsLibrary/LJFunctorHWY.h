@@ -17,6 +17,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/PatternBenchmark.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace mdLib {
@@ -205,41 +206,86 @@ class LJFunctorHWY
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    switch (_vecPattern) {
-      case VectorizationPattern::p1xVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+    // check if a pattern map with optimal pattern is provided
+
+    if (_patternBenchmark != nullptr) {
+      autopas::VectorizationPatternOption::Value vectorizationPattern =
+          (*_patternBenchmark).getBenchmarkResult(soa1.size(), soa2.size(), newton3);
+
+      switch (vectorizationPattern) {
+        case VectorizationPattern::p1xVec: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+          }
+          break;
         }
-        break;
-      }
-      case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+        case VectorizationPattern::p2xVecDiv2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          }
+          break;
         }
-        break;
-      }
-      case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+        case VectorizationPattern::pVecDiv2x2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          }
+          break;
         }
-        break;
-      }
-      case VectorizationPattern::pVecx1: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+        case VectorizationPattern::pVecx1: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+          }
+          break;
         }
-        break;
+        default:
+          autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
       }
-      default:
-        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+
+    } else {
+      switch (_vecPattern) {
+        case VectorizationPattern::p1xVec: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+          }
+          break;
+        }
+        case VectorizationPattern::p2xVecDiv2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          }
+          break;
+        }
+        case VectorizationPattern::pVecDiv2x2: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          }
+          break;
+        }
+        case VectorizationPattern::pVecx1: {
+          if (newton3) {
+            SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
+          } else {
+            SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+          }
+          break;
+        }
+        default:
+          autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+      }
     }
   }
 
@@ -1385,6 +1431,18 @@ class LJFunctorHWY
    */
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
+  /**
+   * Setter for the patternBenchmark attribute for functors that use this benchmark to select performance efficient
+   * vectorization patterns
+   * @param patternBenchmark pointer to the pattern benchmark object
+   */
+  void setPatternBenchmark(autopas::PatternBenchmark *patternBenchmark) final { _patternBenchmark = patternBenchmark; }
+  /**
+   * Returns true if the functor can make use of a vector pattern lookup table.
+   * @return boolean
+   */
+  virtual bool canUseVectorPatternLookupTable() { return true; };
+
  private:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -1430,5 +1488,7 @@ class LJFunctorHWY
   static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {
       VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2, VectorizationPattern::pVecDiv2x2,
       VectorizationPattern::pVecx1};
+
+  autopas::PatternBenchmark *_patternBenchmark = nullptr;
 };
 }  // namespace mdLib

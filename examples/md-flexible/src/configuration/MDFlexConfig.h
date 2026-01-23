@@ -833,7 +833,23 @@ class MDFlexConfig {
    */
   MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
                                                "If tuning information should be logged. Possible Values: (true false)"};
+  /**
+   * This determines if benchmark pattern selection is used in the simulations. If false it defaults to the auto-tuning
+   * pattern selection.
+   *
+   */
+  MDFlexOption<bool, __LINE__> useBenchmarkPatternSelection{
+      true, "use-benchmark-pattern-selection", true,
+      "If true, benchmark-based vectorization pattern selection is applied; if false, standard AutoPas auto-tuning is "
+      "used to select a globally applied pattern. Possible Values: (true false)"};
 
+  /**
+   * This determines if benchmark pattern result is created as two csv files for newton3 on and off.
+   *
+   */
+  MDFlexOption<bool, __LINE__> createPatternBenchmarkOutput{
+      true, "create-pattern-benchmark-output", true,
+      "If true, benchmark pattern result output is created as two csv files. Possible Values: (true false)"};
   /**
    * The suffix for files created by the tuning logger.
    */

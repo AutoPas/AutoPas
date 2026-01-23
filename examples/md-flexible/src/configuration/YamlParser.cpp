@@ -596,6 +596,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.useTuningLogger.description;
 
         config.useTuningLogger.value = node[config.useTuningLogger.name].as<bool>();
+      } else if (key == config.useBenchmarkPatternSelection.name) {
+        expected = "Boolean Value";
+        description = config.useBenchmarkPatternSelection.description;
+
+        config.useBenchmarkPatternSelection.value = node[config.useBenchmarkPatternSelection.name].as<bool>();
+      } else if (key == config.createPatternBenchmarkOutput.name) {
+        expected = "Boolean Value";
+        description = config.createPatternBenchmarkOutput.description;
+
+        config.createPatternBenchmarkOutput.value = node[config.createPatternBenchmarkOutput.name].as<bool>();
       } else if (key == config.outputSuffix.name) {
         expected = "String";
         description = config.outputSuffix.description;
