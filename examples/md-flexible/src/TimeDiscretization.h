@@ -33,7 +33,8 @@ namespace TimeDiscretization {
  */
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      const ParticleType::ParticleSoAFloatPrecision &deltaT,
+                                      const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &globalForce,
                                       bool fastParticlesThrow);
 
 /**

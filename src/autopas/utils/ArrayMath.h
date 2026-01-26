@@ -17,35 +17,37 @@
 namespace autopas::utils::ArrayMath {
 
 /**
- * Adds two arrays, returns the result.
- * @tparam T floating point type
+ * Adds two arrays, returns the result as array of type T.
+ * @tparam T floating point type of array a
+ * @tparam P floating point type of array b
  * @tparam SIZE size of the arrays
  * @param a first summand
  * @param b second summand
  * @return a + b
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+template <class T, class P, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<P, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = a[d] + b[d];
+    result[d] = a[d] + static_cast<T>(b[d]);
   }
   return result;
 }
 
 /**
- * Subtracts array b from array a and returns the result.
- * @tparam T floating point type
+ * Subtracts array b from array a and returns the result as array of type T.
+ * @tparam T floating point type of array a
+ * @tparam P floating point type of array b
  * @tparam SIZE size of the arrays
  * @param a
  * @param b
  * @return a - b
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+template <class T, class P, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array<P, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = a[d] - b[d];
+    result[d] = a[d] - static_cast<T>(b[d]);
   }
   return result;
 }
@@ -103,17 +105,18 @@ template <class T, std::size_t SIZE>
 
 /**
  * Multiplies two array's element wise and returns the result.
- * @tparam T floating point type
+ * @tparam T floating point type of a
+ * @tparam P floating point type of b
  * @tparam SIZE size of the arrays
  * @param a
  * @param b
  * @return element-wise multiplication of a and b
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> mul(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+template <class T, class P, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> mul(const std::array<T, SIZE> &a, const std::array<P, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = a[d] * b[d];
+    result[d] = a[d] * static_cast<T>(b[d]);
   }
   return result;
 }
@@ -223,17 +226,18 @@ template <class T, std::size_t SIZE>
 /**
  * Generates the dot product of two arrays.
  * Returns the sum of a[i]*b[i] summed over all i, where i is in [0, SIZE)
- * @tparam T floating point type
+ * @tparam T floating point type of array a
+ * @tparam P floating point type of array b
  * @tparam SIZE size of the arrays
  * @param a first array
  * @param b second array
  * @return dot product of a and b
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+template <class T, class P, std::size_t SIZE>
+[[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<P, SIZE> &b) {
   T result = 0.;
   for (std::size_t i = 0; i < SIZE; i++) {
-    result += a[i] * b[i];
+    result += a[i] * static_cast<P>(b[i]);
   }
   return result;
 }
@@ -470,44 +474,47 @@ constexpr std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, const std::arr
 }
 
 /**
- * Subtracts array b from array a and returns the result.
- * @tparam T floating point type
+ * Subtracts array b from array a and returns the result as array of type a
+ * @tparam T floating point type of a
+ * @tparam P floating point type of b
  * @tparam SIZE size of the arrays
  * @param a
  * @param b
  * @return a - b
  */
-template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+template <class T, class P, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, const std::array<P, SIZE> &b) {
   return sub(a, b);
 }
 
 /**
  * Assignment operator to subtract two arrays
- * @tparam T floating point type
+ * @tparam T floating point type of a
+ * @tparam P floating point type of b
  * @tparam SIZE size of the arrays
  * @param a
  * @param b
  * @return a - b
  */
-template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+template <class T, class P, std::size_t SIZE>
+constexpr std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, const std::array<P, SIZE> &b) {
   for (std::size_t d = 0; d < SIZE; ++d) {
-    a[d] -= b[d];
+    a[d] -= static_cast<T>(b[d]);
   }
   return a;
 }
 
 /**
  * Multiplies two array's element wise and returns the result.
- * @tparam T floating point type
+ * @tparam T floating point type of a
+ * @tparam P floating point type of b
  * @tparam SIZE size of the arrays
  * @param a
  * @param b
  * @return element-wise multiplication of a and b
  */
-template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+template <class T, class P, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std::array<P, SIZE> &b) {
   return mul(a, b);
 }
 
@@ -584,15 +591,16 @@ constexpr std::array<T, SIZE> &operator/=(std::array<T, SIZE> &a, const std::arr
 
 /**
  * Adds a scalar s to each element of array a and returns the result.
- * @tparam T floating point type
+ * @tparam T floating point type for array
+ * @tparam P floating point type for scalar
  * @tparam SIZE size of the array a
  * @param a the array
  * @param s the scalar to be added to each element of a
  * @return array who's elements are a[i]+s
  */
-template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, T s) {
-  return addScalar(a, s);
+template <class T, class P, std::size_t SIZE, std::enable_if_t<std::is_arithmetic<P>::value, bool> = true>
+constexpr std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, P s) {
+  return addScalar(a, static_cast<T>(s));
 }
 
 /**
@@ -613,15 +621,16 @@ constexpr std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, T s) {
 
 /**
  * Subtracts a scalar s from each element of array a and returns the result.
- * @tparam T floating point type
+ * @tparam T floating point type for array
+ * @tparam P floating point type for scalar
  * @tparam SIZE size of the array a
  * @param a the array
  * @param s the scalar to be subtracted from each element of a
  * @return array who's elements are a[i]-s
  */
-template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, T s) {
-  return subScalar(a, s);
+template <class T, class P, std::size_t SIZE, std::enable_if_t<std::is_arithmetic<P>::value, bool> = true>
+constexpr std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, P s) {
+  return subScalar(a, static_cast<T>(s));
 }
 
 /**
@@ -642,15 +651,16 @@ constexpr std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, T s) {
 
 /**
  * Multiplies a scalar s to each element of array a and returns the result.
- * @tparam T floating point type
+ * @tparam T floating point type for array
+ * @tparam P floating point type for scalar
  * @tparam SIZE size of the array a
  * @param a the array
  * @param s the scalar to be multiplied to each element of a
  * @return array who's elements are a[i]*s
  */
-template <class T, std::size_t SIZE>
-constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, T s) {
-  return mulScalar(a, s);
+template <class T, class P, std::size_t SIZE, std::enable_if_t<std::is_arithmetic<P>::value, bool> = true>
+constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, P s) {
+  return mulScalar(a, static_cast<T>(s));
 }
 
 /**

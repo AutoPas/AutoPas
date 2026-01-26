@@ -442,9 +442,15 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
+  const std::array globalForce {
+    static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(0)),
+    static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(1)),
+    static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(2))
+  };
   TimeDiscretization::calculatePositionsAndResetForces(
-      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value),
+      globalForce, _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -540,7 +546,7 @@ bool Simulation::calculateTriwiseForces() {
   return wasTuningIteration;
 }
 
-void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
+void Simulation::calculateGlobalForces(const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &globalForce) {
   AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
@@ -583,7 +589,11 @@ void Simulation::updateSimulationPauseState() {
 
     // reset the forces which accumulated during the tuning phase
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF(_configuration.globalForce.value);
+      particle->setF({
+        static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(0)),
+        static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(1)),
+        static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(2)),
+      });
     }
 
     // calculate the forces of the latest iteration again

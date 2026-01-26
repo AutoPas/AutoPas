@@ -18,6 +18,7 @@
 #else
 
 #include <molecularDynamicsLibrary/MoleculeLJ.h>
+#include <molecularDynamicsLibrary/KokkosMoleculeLJ.h>
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include <molecularDynamicsLibrary/LJFunctor.h>
@@ -42,7 +43,7 @@
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
  */
-using FloatPrecision = double;
+using FloatPrecision = float;
 
 /**
  * Type of the Particles used in md-flexible.
@@ -52,7 +53,8 @@ using FloatPrecision = double;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
-using ParticleType = mdLib::MoleculeLJ;
+// TODO: switch for precision
+using ParticleType = mdLib::KokkosMoleculeLJ;
 #endif
 
 namespace mdFlexibleTypeDefs {

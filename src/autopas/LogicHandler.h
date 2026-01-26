@@ -1506,7 +1506,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferContainerAoS(
 
   // Helper function to obtain the lock responsible for a given position.
   // Implemented as lambda because it can reuse a lot of information that is known in this context.
-  const auto getSpacialLock = [&](const std::array<double, 3> &pos) -> std::mutex & {
+  const auto getSpacialLock = [&](const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &pos) -> std::mutex & {
     const auto posDistFromLowerCorner = pos - haloBoxMin;
     const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
     // Lock coordinates are the position scaled by the number of locks
@@ -1522,7 +1522,12 @@ void LogicHandler<Particle_T>::remainderHelperBufferContainerAoS(
     auto &haloParticleBuffer = haloParticleBuffers[bufferId];
     // 1. particleBuffer with all close particles in container
     for (auto &&p1 : particleBuffer) {
-      const auto pos = p1.getR();
+      const auto particlePos = p1.getR();
+      const std::array pos {
+        static_cast<double>(particlePos.at(0)),
+        static_cast<double>(particlePos.at(1)),
+        static_cast<double>(particlePos.at(2))
+      };
       const auto min = pos - cutoff;
       const auto max = pos + cutoff;
       container.forEachInRegion(
@@ -1544,7 +1549,12 @@ void LogicHandler<Particle_T>::remainderHelperBufferContainerAoS(
 
     // 2. haloParticleBuffer with owned, close particles in container
     for (auto &&p1halo : haloParticleBuffer) {
-      const auto pos = p1halo.getR();
+      const auto haloPos = p1halo.getR();
+      const std::array pos {
+        static_cast<double>(haloPos.at(0)),
+        static_cast<double>(haloPos.at(1)),
+        static_cast<double>(haloPos.at(2))
+      };
       const auto min = pos - cutoff;
       const auto max = pos + cutoff;
       container.forEachInRegion(

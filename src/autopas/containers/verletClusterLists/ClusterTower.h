@@ -155,7 +155,11 @@ class ClusterTower : public FullParticleCell<Particle_T> {
       auto &dummy = lastCluster[_clusterSize - index];
       dummy = lastCluster[0];  // use first Particle in last cluster as dummy particle!
       dummy.setOwnershipState(OwnershipState::dummy);
-      dummy.setR({dummyStartX, 0, dummyDistZ * static_cast<double>(index)});
+      dummy.setR({
+        static_cast<Particle_T::ParticleSoAFloatPrecision>(dummyStartX),
+        0,
+        static_cast<Particle_T::ParticleSoAFloatPrecision>(dummyDistZ) * static_cast<Particle_T::ParticleSoAFloatPrecision>(index)
+      });
       dummy.setID(std::numeric_limits<size_t>::max());
     }
   }

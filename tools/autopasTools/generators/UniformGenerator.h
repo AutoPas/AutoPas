@@ -92,7 +92,12 @@ void UniformGenerator::fillWithParticles(Container &container, const Particle &d
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
-    particle.setR(randomPosition(generator, boxMin, boxMax));
+    auto pos = randomPosition(generator, boxMin, boxMax);
+    particle.setR({
+      static_cast<Particle::ParticleSoAFloatPrecision>(pos.at(0)),
+      static_cast<Particle::ParticleSoAFloatPrecision>(pos.at(1)),
+      static_cast<Particle::ParticleSoAFloatPrecision>(pos.at(2))
+    });
     particle.setID(i);
     particle.setOwnershipState(autopas::OwnershipState::owned);
     container.addParticle(particle);

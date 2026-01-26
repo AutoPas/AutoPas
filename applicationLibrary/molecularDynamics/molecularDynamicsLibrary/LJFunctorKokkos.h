@@ -22,10 +22,9 @@ public:
   using SoAArraysType = typename Particle_T::SoAArraysType;
   using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
 
-  explicit LJFunctorKokkos(double cutoff, ParticlePropertiesLibrary<double, size_t> &)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<MemSpace, Particle_T, applyShift, useMixing,
-          useNewton3, calculateGlobals, countFLOPs, relevantForTuning>, MemSpace>(cutoff),
-      _cutoffSquared{cutoff * cutoff}
+  explicit LJFunctorKokkos(double cutoff, ParticlePropertiesLibrary<FloatPrecision, size_t> &)
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos, MemSpace>(cutoff),
+      _cutoffSquared{static_cast<FloatPrecision>(cutoff * cutoff)}
   {}
 
   /* Overrides for actual execution */

@@ -41,22 +41,22 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 16> Attributes = {
-    mdLib::MoleculeLJ::AttributeNames::id,
-    mdLib::MoleculeLJ::AttributeNames::posX,
-    mdLib::MoleculeLJ::AttributeNames::posY,
-    mdLib::MoleculeLJ::AttributeNames::posZ,
-    mdLib::MoleculeLJ::AttributeNames::velocityX,
-    mdLib::MoleculeLJ::AttributeNames::velocityY,
-    mdLib::MoleculeLJ::AttributeNames::velocityZ,
-    mdLib::MoleculeLJ::AttributeNames::forceX,
-    mdLib::MoleculeLJ::AttributeNames::forceY,
-    mdLib::MoleculeLJ::AttributeNames::forceZ,
-    mdLib::MoleculeLJ::AttributeNames::oldForceX,
-    mdLib::MoleculeLJ::AttributeNames::oldForceY,
-    mdLib::MoleculeLJ::AttributeNames::oldForceZ,
-    mdLib::MoleculeLJ::AttributeNames::typeId,
-    mdLib::MoleculeLJ::AttributeNames::mass,
-    mdLib::MoleculeLJ::AttributeNames::ownershipState};
+    mdLib::KokkosMoleculeLJ::AttributeNames::id,
+    mdLib::KokkosMoleculeLJ::AttributeNames::posX,
+    mdLib::KokkosMoleculeLJ::AttributeNames::posY,
+    mdLib::KokkosMoleculeLJ::AttributeNames::posZ,
+    mdLib::KokkosMoleculeLJ::AttributeNames::velocityX,
+    mdLib::KokkosMoleculeLJ::AttributeNames::velocityY,
+    mdLib::KokkosMoleculeLJ::AttributeNames::velocityZ,
+    mdLib::KokkosMoleculeLJ::AttributeNames::forceX,
+    mdLib::KokkosMoleculeLJ::AttributeNames::forceY,
+    mdLib::KokkosMoleculeLJ::AttributeNames::forceZ,
+    mdLib::KokkosMoleculeLJ::AttributeNames::oldForceX,
+    mdLib::KokkosMoleculeLJ::AttributeNames::oldForceY,
+    mdLib::KokkosMoleculeLJ::AttributeNames::oldForceZ,
+    mdLib::KokkosMoleculeLJ::AttributeNames::typeId,
+    mdLib::KokkosMoleculeLJ::AttributeNames::mass,
+    mdLib::KokkosMoleculeLJ::AttributeNames::ownershipState};
 #endif
 
 /**

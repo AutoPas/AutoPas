@@ -51,7 +51,11 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
       double startx = evenRow ? boxMin[0] : boxMin[0] + xOffset;
       for (double x = startx; x < boxMax[0]; x += spacing) {
         auto p = defaultParticle;
-        p.setR({x, y, z});
+        p.setR({
+          static_cast<ParticleType::ParticleSoAFloatPrecision>(x),
+          static_cast<ParticleType::ParticleSoAFloatPrecision>(y),
+          static_cast<ParticleType::ParticleSoAFloatPrecision>(z)
+        });
         p.setID(id++);
         container.addParticle(p);
       }

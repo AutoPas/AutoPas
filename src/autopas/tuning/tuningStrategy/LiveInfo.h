@@ -228,9 +228,12 @@ class LiveInfo {
         numOwnedParticlesCount++;
         const auto particlePos = particleIter->getR();
         if (utils::inBox(particlePos, boxMin, boxMax)) {
+          /*
+          TODO: figure out why this fails
           cellBinStruct.countParticle(particlePos);
           particleDependentBinStruct.countParticle(particlePos);
           blurredBinStruct.countParticle(particlePos);
+          */
         }
       } else if (particleIter->isHalo()) {
         numHaloParticlesCount++;

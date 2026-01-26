@@ -103,7 +103,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  [[nodiscard]] bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
+  [[nodiscard]] bool isInsideLocalDomain(const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates) const override;
 
   /**
    * Calculates and returns the extent of the subdomain with inde subdomainIndex.

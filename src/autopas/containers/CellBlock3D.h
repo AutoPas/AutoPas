@@ -123,7 +123,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos The position for which the cell is needed.
    * @return Cell at the given position.
    */
-  ParticleCell &getContainingCell(const std::array<double, 3> &pos) const;
+  ParticleCell &getContainingCell(const std::array<typename ParticleCell::ParticleType::ParticleSoAFloatPrecision, 3> &pos) const;
 
   /**
    * Get the lower and upper corner of the cell at the 1d index index1d
@@ -147,14 +147,14 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos The position of interest.
    * @return The 3d cell index,
    */
-  [[nodiscard]] std::array<index_t, 3> get3DIndexOfPosition(const std::array<double, 3> &pos) const;
+  [[nodiscard]] std::array<index_t, 3> get3DIndexOfPosition(const std::array<typename ParticleCell::ParticleType::ParticleSoAFloatPrecision, 3> &pos) const;
 
   /**
    * Get the 1d index of the cell block for a given position.
    * @param pos the position of interest.
    * @return The 1d cell index.
    */
-  [[nodiscard]] index_t get1DIndexOfPosition(const std::array<double, 3> &pos) const;
+  [[nodiscard]] index_t get1DIndexOfPosition(const std::array<typename ParticleCell::ParticleType::ParticleSoAFloatPrecision, 3> &pos) const;
 
   /**
    * Get the dimension of the cell block including the halo boxes.
@@ -186,7 +186,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance The maximal distance to the position.
    * @return A vector of references to nearby halo cells.
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
+  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<typename ParticleCell::ParticleType::ParticleSoAFloatPrecision, 3> &position, double allowedDistance) const {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto index3D = get3DIndexOfPosition(position);
@@ -313,13 +313,13 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
 template <class ParticleCell>
 inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::get1DIndexOfPosition(
-    const std::array<double, 3> &pos) const {
+    const std::array<typename ParticleCell::ParticleType::ParticleSoAFloatPrecision, 3> &pos) const {
   return threeToOneD(get3DIndexOfPosition(pos));
 }
 
 template <class ParticleCell>
 inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::get3DIndexOfPosition(
-    const std::array<double, 3> &pos) const {
+    const std::array<typename ParticleCell::ParticleType::ParticleSoAFloatPrecision, 3> &pos) const {
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (size_t dim = 0; dim < 3; dim++) {
@@ -477,7 +477,7 @@ inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<Parti
 }
 
 template <class ParticleCell>
-inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<double, 3> &pos) const {
+inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<typename ParticleCell::ParticleType::ParticleSoAFloatPrecision, 3> &pos) const {
   auto ind = get1DIndexOfPosition(pos);
   return getCell(ind);
 }

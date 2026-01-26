@@ -44,7 +44,12 @@ class Object {
     particle.setID(particleId);
     particle.setTypeId(_typeId);
     particle.setOwnershipState(autopas::OwnershipState::owned);
-    particle.setV(_velocity);
+    std::array vel = {
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_velocity.at(0)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_velocity.at(1)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_velocity.at(2)),
+    };
+    particle.setV(vel);
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
 #if MD_FLEXIBLE_MODE == MULTISITE

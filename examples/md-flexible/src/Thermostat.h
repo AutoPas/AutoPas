@@ -206,7 +206,12 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const std::array<double, 3> normal3DVecTranslational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
+      auto velIncrement = normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()];
+      iter->addV({
+        static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(0)),
+        static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(1)),
+        static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(2))
+      });
 #if MD_FLEXIBLE_MODE == MULTISITE
       const std::array<double, 3> normal3DVecRotational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
@@ -259,10 +264,12 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
                immediateTargetTemperature);
   }
 
+  // TODO: forEachKokkos()
   // Scale velocities (and angular velocities) with the scaling map
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
+    std::array newVel = iter->getV() * scalingMap[iter->getTypeId()];
+    iter->setV(newVel);
 #if MD_FLEXIBLE_MODE == MULTISITE
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif

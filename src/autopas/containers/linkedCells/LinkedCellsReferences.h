@@ -244,8 +244,16 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
         // We extend the search box for cells here since particles might have moved
-        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
-                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
+        return {_cellBlock.get1DIndexOfPosition({
+          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(0)),
+          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(1)),
+          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(2)),
+        }),
+          _cellBlock.get1DIndexOfPosition({
+          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(0)),
+          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(1)),
+          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(2)),
+        })};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -486,9 +494,20 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     using namespace autopas::utils::ArrayMath::literals;
 
+    const std::array lower {
+      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(0)),
+      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(1)),
+      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(2))
+    };
+    const std::array higher {
+      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(0)),
+      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(1)),
+      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(2))
+    };
+
     // We increase the search region by skin, as particles can move over cell borders.
-    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
-    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lower - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higher + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);

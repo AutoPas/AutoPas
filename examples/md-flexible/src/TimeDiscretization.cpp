@@ -27,7 +27,8 @@ namespace TimeDiscretization {
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      const ParticleType::ParticleSoAFloatPrecision &deltaT,
+                                      const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &globalForce,
                                       bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
@@ -220,7 +221,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
       const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
       const auto force = iter->getF();
       const auto oldForce = iter->getOldF();
-      const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
+      const auto changeInVel = (force + oldForce) * static_cast<ParticleType::ParticleSoAFloatPrecision>(deltaT / (2 * molecularMass));
       iter->addV(changeInVel);
     }
   }

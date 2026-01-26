@@ -22,14 +22,15 @@ namespace autopas::utils {
  * @param high the upper corner of the box (exclusive)
  * @return true if position is inside the box, false otherwise
  */
-template <typename T>
-bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+template <typename T, typename P>
+bool inBox(const std::array<T, 3> &position, const std::array<P, 3> &low, const std::array<P, 3> &high) {
   static_assert(std::is_floating_point<T>::value, "inBox assumes floating point types");
+  static_assert(std::is_floating_point<P>::value, "inBox assumes floating point types");
 
   bool inBox = true;
   for (int d = 0; d < 3; ++d) {
-    const bool isLargerThanLower = position[d] >= low[d];
-    const bool isSmallerThanHigher = position[d] < high[d];
+    const bool isLargerThanLower = position[d] >= static_cast<T>(low[d]);
+    const bool isSmallerThanHigher = position[d] < static_cast<T>(high[d]);
     inBox = inBox and isLargerThanLower and isSmallerThanHigher;
   }
   return inBox;
@@ -46,8 +47,8 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const 
  * @param high the upper corner of the box (exclusive)
  * @return true if position is not inside the box, false otherwise
  */
-template <typename T>
-bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+template <typename T, typename P>
+bool notInBox(const std::array<T, 3> &position, const std::array<P, 3> &low, const std::array<P, 3> &high) {
   return not(inBox(position, low, high));
 }
 

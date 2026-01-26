@@ -52,7 +52,7 @@ class ParticleBase {
    * @param id Id of the particle.
    * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
-  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
+  ParticleBase(const std::array<floatType, 3> &r, const std::array<floatType, 3> &v, idType id,
                OwnershipState ownershipState = OwnershipState::owned)
       : _r(r),
         _v(v),
@@ -134,30 +134,49 @@ class ParticleBase {
    * get the force acting on the particle
    * @return force
    */
-  [[nodiscard]] const std::array<double, 3> &getF() const { return _f; }
+  [[nodiscard]] const std::array<floatType, 3> &getF() const {
+    return _f;
+  }
 
   /**
    * Set the force acting on the particle
    * @param f force
    */
-  void setF(const std::array<double, 3> &f) { _f = f; }
+  void setF(const std::array<floatType, 3> &f) {
+    _f = f;
+    /*
+    _f.at(0) = static_cast<floatType>(f.at(0));
+    _f.at(1) = static_cast<floatType>(f.at(1));
+    _f.at(2) = static_cast<floatType>(f.at(2));
+    */
+  }
 
   /**
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<double, 3> &f) {
+  void addF(const std::array<floatType, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
     _f += f;
+    /*
+    _f.at(0) += static_cast<floatType>(f.at(0));
+    _f.at(1) += static_cast<floatType>(f.at(1));
+    _f.at(2) += static_cast<floatType>(f.at(2));
+    */
   }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<double, 3> &f) {
+  void subF(const std::array<floatType, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
     _f -= f;
+    /*
+    _f.at(0) -= static_cast<floatType>(f.at(0));
+    _f.at(1) -= static_cast<floatType>(f.at(1));
+    _f.at(2) -= static_cast<floatType>(f.at(2));
+    */
   }
 
   /**
@@ -176,25 +195,35 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  [[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
+  [[nodiscard]] const std::array<floatType, 3> &getR() const {
+    return _r;
+  }
 
   /**
    * Set the position of the particle
    * @param r new position
    */
-  void setR(const std::array<double, 3> &r) { _r = r; }
+  void setR(const std::array<floatType, 3> &r) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _r = r;
+    /*
+    _r.at(0) = static_cast<floatType>(r.at(0));
+    _r.at(1) = static_cast<floatType>(r.at(1));
+    _r.at(2) = static_cast<floatType>(r.at(2));
+    */
+  }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**
    * Get the last rebuild position of the particle
    * @return current rebuild position
    */
-  [[nodiscard]] const std::array<double, 3> &getRAtRebuild() const { return _rAtRebuild; }
+  [[nodiscard]] const std::array<floatType, 3> &getRAtRebuild() const { return _rAtRebuild; }
   /**
    * Set the rebuild position of the particle
    * @param r rebuild position to be set
    */
-  void setRAtRebuild(const std::array<double, 3> &r) { _rAtRebuild = r; }
+  void setRAtRebuild(const std::array<floatType, 3> &r) { _rAtRebuild = r; }
 
   /**
    * Update the rebuild position of the particle to current position
@@ -206,7 +235,7 @@ class ParticleBase {
    * This is used to check if neighbor lists are still valid inside the logic handler
    * @return displacement vector of particle since rebuild
    */
-  const std::array<double, 3> calculateDisplacementSinceRebuild() const {
+  const std::array<floatType, 3> calculateDisplacementSinceRebuild() const {
     return utils::ArrayMath::sub(_rAtRebuild, _r);
   }
 #endif
@@ -220,10 +249,10 @@ class ParticleBase {
    * @param maxDistSquared The maximum expected movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool setRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+  bool setRDistanceCheck(const std::array<floatType, 3> &r, floatType maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto distanceVec = r - _r;
-    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
+    const floatType distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
     setR(r);
     const bool distanceIsFine =
         distanceSquared < maxDistSquared or autopas::utils::Math::isNearAbs(maxDistSquared, 0., 1e-12);
@@ -238,9 +267,14 @@ class ParticleBase {
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
-  void addR(const std::array<double, 3> &r) {
+  void addR(const std::array<floatType, 3> &r) {
     using namespace autopas::utils::ArrayMath::literals;
     _r += r;
+    /*
+    _r.at(0) += static_cast<floatType>(r.at(0));
+    _r.at(1) += static_cast<floatType>(r.at(1));
+    _r.at(2) += static_cast<floatType>(r.at(2));
+    */
   }
 
   /**
@@ -254,7 +288,7 @@ class ParticleBase {
    * @param maxDistSquared The maximum expected movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool addRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+  bool addRDistanceCheck(const std::array<floatType, 3> &r, floatType maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto newR = _r + r;
     return setRDistanceCheck(newR, maxDistSquared);
@@ -264,21 +298,35 @@ class ParticleBase {
    * Get the velocity of the particle
    * @return current velocity
    */
-  [[nodiscard]] const std::array<double, 3> &getV() const { return _v; }
+  [[nodiscard]] const std::array<floatType, 3> &getV() const {
+    return _v;
+  }
 
   /**
    * Set the velocity of the particle
    * @param v new velocity
    */
-  void setV(const std::array<double, 3> &v) { _v = v; }
+  void setV(const std::array<floatType, 3> &v) {
+    _v = v;
+    /*
+    _v.at(0) = static_cast<floatType>(v.at(0));
+    _v.at(1) = static_cast<floatType>(v.at(1));
+    _v.at(2) = static_cast<floatType>(v.at(2));
+    */
+  }
 
   /**
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
-  void addV(const std::array<double, 3> &v) {
+  void addV(const std::array<floatType, 3> &v) {
     using namespace autopas::utils::ArrayMath::literals;
     _v += v;
+    /*
+    _v.at(0) += static_cast<floatType>(v.at(0));
+    _v.at(1) += static_cast<floatType>(v.at(1));
+    _v.at(2) += static_cast<floatType>(v.at(2));
+    */
   }
 
   /**

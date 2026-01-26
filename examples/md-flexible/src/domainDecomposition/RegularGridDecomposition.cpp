@@ -148,7 +148,7 @@ void RegularGridDecomposition::initializeNeighborIndices() {
   }
 }
 
-bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
+bool RegularGridDecomposition::isInsideLocalDomain(const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates) const {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
 
@@ -202,7 +202,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     const double rightHaloMax = _localBoxMax[dimensionIndex] + _skinWidth;
 
     for (const auto &particle : _haloParticles) {
-      std::array<double, _dimensionCount> position = particle.getR();
+      std::array<ParticleType::ParticleSoAFloatPrecision, _dimensionCount> position = particle.getR();
       if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
         _particlesForLeftNeighbor.push_back(particle);
 
@@ -312,10 +312,16 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     auto reflect = [&](bool isUpper) {
       const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
 
+      // TODO: forEachKokkos()
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma
-        const auto position = p->getR();
+        const auto pos = p->getR();
+        const std::array position {
+          static_cast<double>(pos.at(0)),
+          static_cast<double>(pos.at(1)),
+          static_cast<double>(pos.at(2)),
+        };
         const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
 
         // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
@@ -340,8 +346,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // mirror particle for use with the actual functor.
 
         // Calculates force acting on site from another site
-        const auto LJKernel = [](const std::array<double, 3> sitePosition,
-                                 const std::array<double, 3> mirrorSitePosition, const double sigmaSquared,
+        const auto LJKernel = [](const std::array<double, 3>& sitePosition,
+                                 const std::array<double, 3>& mirrorSitePosition, const double sigmaSquared,
                                  const double epsilon24) {
           const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
           const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
@@ -419,7 +425,11 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
           const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF(force);
+          p->addF({
+            static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(0)),
+            static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(1)),
+            static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(2)),
+          });
 #endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE
