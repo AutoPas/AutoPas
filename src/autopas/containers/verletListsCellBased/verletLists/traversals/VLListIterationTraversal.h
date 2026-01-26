@@ -53,18 +53,18 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     if (_dataLayout == DataLayoutOption::soa) {
       // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
       // SoALoader.
-      std::vector<size_t> offsets(cells.size() + 1);
+      _offsets.resize(cells.size() + 1);
       for (size_t i = 0; i < cells.size(); ++i) {
         const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-        offsets[i + 1] = offsets[i] + cells[cellId].size();
+        _offsets[i + 1] = _offsets[i] + cells[cellId].size();
       }
 
-      _soa.resizeArrays(offsets.back());
+      _soa.resizeArrays(_offsets.back());
 
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-        _functor->SoALoader(cells[cellId], _soa, offsets[i], /*skipSoAResize*/ true);
+        _functor->SoALoader(cells[cellId], _soa, _offsets[i], /*skipSoAResize*/ true);
       }
     }
   }
@@ -72,14 +72,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   void endTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      std::vector<size_t> offsets(cells.size() + 1);
       for (size_t i = 0; i < cells.size(); ++i) {
         const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-        offsets[i + 1] = offsets[i] + cells[cellId].size();
-      }
-      for (size_t i = 0; i < cells.size(); ++i) {
-        const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-          _functor->SoAExtractor(cells[cellId], _soa, offsets[i]);
+          _functor->SoAExtractor(cells[cellId], _soa, _offsets[i]);
       }
     }
   }
@@ -136,7 +131,6 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             /// @todo find a sensible chunk size
             AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
             for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-              //ep SoA Functor call
               _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
             }
           } else {
@@ -166,6 +160,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   SoA<typename ParticleType::SoAArraysType> _soa;
 
   bool _soaTryout = false;
+
+  std::vector<size_t> _offsets;
 };
 
 }  // namespace autopas
