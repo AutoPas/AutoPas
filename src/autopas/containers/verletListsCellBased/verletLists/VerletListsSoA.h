@@ -176,17 +176,34 @@ public:
       iter->setOldVerletSize(iter->getLiveId() ? _soaNeighborLists[iter->getLiveId()].size(): 64);
       iter->setLiveId(index);
     }
+    std::vector<uint16_t> oldVerletSizes;
+    oldVerletSizes.reserve(_oldNumParticles);
+
+    auto &cells = this->_linkedCells.getCells();
+    const auto cellsByMortonIndex = this->_linkedCells.getCellsByMortonIndex();
+
+    for (size_t cellId : cellsByMortonIndex) {
+      for (size_t i = 0; i < cells[cellId]._particles.size();  ++i, ++numParticles, ++index) {
+        Particle_T &particleI = cells[cellId]._particles[i];
+
+        oldVerletSizes.push_back( particleI.getLiveId() != std::numeric_limits<size_t>::max() && particleI.getLiveId() < _soaNeighborLists.size() ?
+                       _soaNeighborLists[particleI.getLiveId()].size(): 64);
+        particleI.setLiveId(index);
+      }
+    }
+
+    _oldNumParticles = numParticles;
+
+    // std::cout << "\n";
 
     this->_soaNeighborLists.clear();
     this->_soaNeighborLists.resize(numParticles);
 
     index = 0;
 
-    for (size_t cellId : cellsByMortonIndex) {
-      for (size_t i = 0; i < cells[cellId]._particles.size();  ++i, ++index) {
-        this->_soaNeighborLists[index].clear();
-        this->_soaNeighborLists[index].reserve(cells[cellId]._particles[i].getOldVerletSize());
-      }
+    for (size_t particleI = 0; particleI < numParticles; ++particleI) {
+      _soaNeighborLists[particleI].clear();
+      _soaNeighborLists[particleI].reserve(oldVerletSizes[particleI]);
     }
 
     return numParticles;
@@ -213,6 +230,8 @@ private:
    * Specifies for what data layout the verlet lists are build.
    */
   BuildVerletListType _buildVerletListType;
+
+  size_t _oldNumParticles = 0;
 };
 
 };// namespace autopas

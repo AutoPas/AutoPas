@@ -20,9 +20,6 @@ void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 size_t MoleculeLJ::getLiveId() const { return _liveId; }
 void MoleculeLJ::setLiveId(size_t liveId) { _liveId = liveId; }
 
-size_t MoleculeLJ::getOldVerletSize() const { return _oldVerletSize; }
-void MoleculeLJ::setOldVerletSize(size_t oldVerletSize) { _oldVerletSize = oldVerletSize; }
-
 std::string MoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;
@@ -35,8 +32,7 @@ std::string MoleculeLJ::toString() const {
      << "\nForce              : " << _f
      << "\nOld Force          : " << _oldF
      << "\nType ID            : " << _typeId
-     << "\nOwnership State    : " << _ownershipState
-     << "\nOld Verlet Size    : " << _oldVerletSize;
+     << "\nOwnership State    : " << _ownershipState;
   // clang-format on
   return text.str();
 }

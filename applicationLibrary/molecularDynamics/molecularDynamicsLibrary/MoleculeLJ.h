@@ -53,8 +53,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     oldForceY,
     oldForceZ,
     typeId,
-    ownershipState,
-    oldVerletSize
+    ownershipState
   };
 
   /**
@@ -68,7 +67,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, size_t /*liveId*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/, size_t /*oldVerletSize*/>::Type;
+                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -120,8 +119,6 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
-    } else if constexpr (attribute == AttributeNames::oldVerletSize) {
-      return getOldVerletSize();
     } else {
       autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
     }
@@ -168,8 +165,6 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
-    } else if constexpr (attribute == AttributeNames::oldVerletSize) {
-      setOldVerletSize(value);
     } else {
       autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
@@ -203,10 +198,6 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
 
   void setLiveId(size_t liveId);
 
-  [[nodiscard]] size_t getOldVerletSize() const;
-
-  void setOldVerletSize(size_t oldVerletSize);
-
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
@@ -229,8 +220,6 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   std::array<double, 3> _oldF = {0., 0., 0.};
 
   size_t _liveId = std::numeric_limits<size_t>::max();
-
-  size_t _oldVerletSize = 0;
 };
 
 }  // namespace mdLib
