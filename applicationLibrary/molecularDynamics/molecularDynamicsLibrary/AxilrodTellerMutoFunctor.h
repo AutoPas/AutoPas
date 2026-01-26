@@ -1167,9 +1167,12 @@ class AxilrodTellerMutoFunctor
 
     // Loop over all valid j-k pairs
     for (size_t j = 0; j < soa2Size; ++j) {
-      if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) {
+      const auto ownedStateJ = ownedStatePtr2[j];
+      if (ownedStateJ == autopas::OwnershipState::dummy) {
         continue;
       }
+      const SoAFloatPrecision isOwnedJ = ownedStateJ == autopas::OwnershipState::owned ? 1.0 : 0.0;
+
       const SoAFloatPrecision xj = xptr2[j];
       const SoAFloatPrecision yj = yptr2[j];
       const SoAFloatPrecision zj = zptr2[j];
@@ -1180,9 +1183,11 @@ class AxilrodTellerMutoFunctor
       SoAFloatPrecision fZAccJ = 0.;
 
       for (size_t k = 0; k < soa3Size; ++k) {
-        if (ownedStatePtr3[k] == autopas::OwnershipState::dummy) {
+        const auto ownedStateK = ownedStatePtr3[k];
+        if (ownedStateK == autopas::OwnershipState::dummy) {
           continue;
         }
+        const SoAFloatPrecision isOwnedK = ownedStateK == autopas::OwnershipState::owned ? 1.0 : 0.0;
 
         const SoAFloatPrecision xk = xptr3[k];
         const SoAFloatPrecision yk = yptr3[k];
@@ -1204,12 +1209,13 @@ class AxilrodTellerMutoFunctor
         SoAFloatPrecision fYAccK = 0.;
         SoAFloatPrecision fZAccK = 0.;
 
-#pragma omp simd
+#pragma omp simd reduction (+: fXAccJ, fYAccJ, fZAccJ, fXAccK, fYAccK, fZAccK, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (unsigned int i = 0; i < soa1Size; ++i) {
           const auto ownedStateI = ownedStatePtr1[i];
           if (ownedStateI == autopas::OwnershipState::dummy) {
             continue;
           }
+          const SoAFloatPrecision isOwnedI = ownedStateI == autopas::OwnershipState::owned ? 1.0 : 0.0;
 
           const SoAFloatPrecision xi = xptr1[i];
           const SoAFloatPrecision yi = yptr1[i];
@@ -1258,12 +1264,10 @@ class AxilrodTellerMutoFunctor
             if constexpr (calculateGlobals) {
               const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
-              if (ownedStateI == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * (-distXJK - 2.0 * distXIJ);
-                virialSumY += forceIY * (-distYJK - 2.0 * distYIJ);
-                virialSumZ += forceIZ * (-distZJK - 2.0 * distZIJ);
-              }
+              potentialEnergySum += potentialEnergy3 * isOwnedI;
+              virialSumX += forceIX * (-distXJK - 2.0 * distXIJ) * isOwnedI;
+              virialSumY += forceIY * (-distYJK - 2.0 * distYIJ) * isOwnedI;
+              virialSumZ += forceIZ * (-distZJK - 2.0 * distZIJ) * isOwnedI;
 
               if constexpr (countFLOPs) {
                 ++numGlobalCalcsNoN3Sum;
@@ -1299,24 +1303,28 @@ class AxilrodTellerMutoFunctor
             }
             if constexpr (calculateGlobals) {
               const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-              if (ownedStateI == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceIX * (-distXJK - 2.0 * distXIJ);
-                virialSumY += forceIY * (-distYJK - 2.0 * distYIJ);
-                virialSumZ += forceIZ * (-distZJK - 2.0 * distZIJ);
-              }
-              if (ownedStatePtr2[j] == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceJX * (distXIJ - distXJK);
-                virialSumY += forceJY * (distYIJ - distYJK);
-                virialSumZ += forceJZ * (distZIJ - distZJK);
-              }
-              if (ownedStatePtr3[k] == autopas::OwnershipState::owned) {
-                potentialEnergySum += potentialEnergy3;
-                virialSumX += forceKX * (2.0 * distXJK + distXIJ);
-                virialSumY += forceKY * (2.0 * distYJK + distYIJ);
-                virialSumZ += forceKZ * (2.0 * distZJK + distZIJ);
-              }
+              potentialEnergySum += potentialEnergy3 * (isOwnedI + isOwnedJ + isOwnedK);
+
+              SoAFloatPrecision localVirialX = 0.0;
+              SoAFloatPrecision localVirialY = 0.0;
+              SoAFloatPrecision localVirialZ = 0.0;
+
+              localVirialX += forceIX * (-distXJK - 2.0 * distXIJ) * isOwnedI;
+              localVirialY += forceIY * (-distYJK - 2.0 * distYIJ) * isOwnedI;
+              localVirialZ += forceIZ * (-distZJK - 2.0 * distZIJ) * isOwnedI;
+
+              localVirialX += forceJX * (distXIJ - distXJK) * isOwnedJ;
+              localVirialY += forceJY * (distYIJ - distYJK) * isOwnedJ;
+              localVirialZ += forceJZ * (distZIJ - distZJK) * isOwnedJ;
+
+              localVirialX += forceKX * (2.0 * distXJK + distXIJ) * isOwnedK;
+              localVirialY += forceKY * (2.0 * distYJK + distYIJ) * isOwnedK;
+              localVirialZ += forceKZ * (2.0 * distZJK + distZIJ) * isOwnedK;
+
+              virialSumX += localVirialX;
+              virialSumY += localVirialY;
+              virialSumZ += localVirialZ;
+
               if constexpr (countFLOPs) {
                 ++numGlobalCalcsN3Sum;
               }
