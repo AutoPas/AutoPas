@@ -190,13 +190,13 @@ void ATMFunctorFlopCounterTest::testFLOPCounterSoA(bool newton3, FunctorFunction
       if (not newton3) {
         atmFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell0._particleSoABuffer, newton3);
         expectedNumTriplets = 8;
-        maxNumDistanceCalculations = 16;
+        maxNumDistanceCalculations = 24;
         expectedNoN3KernelCalls = 1;
         expectedNoN3GlobalsCalcs = calculateGlobals ? 1 : 0;
         expectedN3KernelCalls = 1;
         expectedN3GlobalsCalcs = calculateGlobals ? 1 : 0;
       } else {
-        maxNumDistanceCalculations = 8;
+        maxNumDistanceCalculations = 12;
         expectedN3KernelCalls = 1;
         expectedN3GlobalsCalcs = calculateGlobals ? 1 : 0;
       }
