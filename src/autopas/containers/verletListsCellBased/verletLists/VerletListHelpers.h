@@ -11,6 +11,7 @@
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
 namespace autopas {
 
 /**
