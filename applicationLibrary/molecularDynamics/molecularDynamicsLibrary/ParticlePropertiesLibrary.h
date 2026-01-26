@@ -305,8 +305,8 @@ class ParticlePropertiesLibrary {
     floatType shift6;
   };
 
- [[nodiscard]] std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>>
-  getComputedLJMixingData() const {
+ [[nodiscard]] const std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>>
+  &getComputedLJMixingData() const {
     return _computedLJMixingData;
  }
 
@@ -334,12 +334,6 @@ class ParticlePropertiesLibrary {
   // Allocate memory for the respective parameters
   bool _storeLJData{false};
   bool _storeATData{false};
-
-  struct PackedLJMixingData {
-    floatType epsilon24;
-    floatType sigmaSquared;
-    floatType shift6;
-  };
 
   struct PackedATMixingData {
     floatType nu;
