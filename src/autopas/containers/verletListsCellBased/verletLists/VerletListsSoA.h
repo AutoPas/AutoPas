@@ -170,12 +170,6 @@ public:
   size_t generateSoANeighborLists() {
     size_t numParticles = 0;
     size_t index = 0;
-    // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
-    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
-      iter->setOldVerletSize(iter->getLiveId() ? _soaNeighborLists[iter->getLiveId()].size(): 64);
-      iter->setLiveId(index);
-    }
     std::vector<uint16_t> oldVerletSizes;
     oldVerletSizes.reserve(_oldNumParticles);
 
