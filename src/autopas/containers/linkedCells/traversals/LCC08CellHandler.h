@@ -9,6 +9,7 @@
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/MortonIndexTraverslInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -25,7 +26,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC08CellHandler {
+class LCC08CellHandler : public MortonIndexTraversalInterface {
  public:
   /**
    * Constructor of the LCC08CellHandler.

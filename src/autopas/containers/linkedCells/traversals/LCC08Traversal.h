@@ -67,11 +67,19 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
 
 template <class ParticleCell, class PairwiseFunctor>
 inline void LCC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
-  auto &cells = *(this->_cells);
-  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
-    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _cellHandler.processBaseCell(cells, baseIndex);
-  });
+  auto *mortonIndexCellHandler = dynamic_cast<MortonIndexTraversalInterface *> (&_cellHandler);
+  if (mortonIndexCellHandler) {
+    mortonIndexCellHandler->setCellsByMortonIndex(*this->_cellsByMortonIndex);
+  }
+  auto &cells = *this->_cells;
+  this->c08Traversal(
+    [&] (unsigned long x, unsigned long y, unsigned long z)
+      {
+      //mortonIndex
+      unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+      _cellHandler.processBaseCell(cells, baseIndex);
+      }
+  );
 }
 
 }  // namespace autopas
