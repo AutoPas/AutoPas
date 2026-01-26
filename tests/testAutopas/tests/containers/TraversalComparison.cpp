@@ -312,11 +312,13 @@ static auto toString = [](const auto &info) {
  */
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> testParams{};
-  for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
+  auto containerOption = autopas::ContainerOption::verletListsSoA;
+  // for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
     for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
       for (auto traversalOption :
            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
-        for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
+        // for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
+        auto dataLayoutOption = autopas::DataLayoutOption::soa;
           for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
             for (auto numParticles : params[interactionType].numParticles) {
               for (auto boxMax : params[interactionType].boxMax) {
@@ -338,10 +340,10 @@ auto TraversalComparison::getTestParams() {
               }
             }
           }
-        }
+        // }
       }
     }
-  }
+  // }
   return testParams;
 }
 

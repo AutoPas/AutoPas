@@ -167,7 +167,7 @@ class TestParticle : public ParticleFP64 {
   }
   TestParticle(const TestParticle &testParticle) : ParticleFP64(testParticle) { ++numParticles; }
   ~TestParticle() override { --numParticles; }
-  using SoAArraysType = autopas::utils::SoAType<TestParticle *, unsigned long /*id*/, double /*x*/, double /*y*/,
+  using SoAArraysType = autopas::utils::SoAType<TestParticle *, unsigned long /*id*/, unsigned long /*liveId*/, double /*x*/, double /*y*/,
                                                 double /*z*/, double /*fx*/, double /*fy*/, double /*fz*/,
                                                 autopas::OwnershipState /*ownershipState*/>::Type;
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>

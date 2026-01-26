@@ -576,7 +576,7 @@ class LJFunctor
 
   void SoAFunctorVerletTryout(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                       const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                      bool newton3) {
+                      bool newton3) final{
     if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImplTryout<true>(soa, indexFirst, neighborList);
@@ -1147,8 +1147,14 @@ class LJFunctor
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     using PackedLJMixingData = ParticlePropertiesLibrary<SoAFloatPrecision, unsigned long>::PackedLJMixingData;
-    const std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> computedLJMixingData = _PPLibrary->getComputedLJMixingData();
-    const size_t numRegisteredSiteTypes = _PPLibrary->getNumberRegisteredSiteTypes();
+    size_t numRegisteredSiteTypes = 0;
+    const PackedLJMixingData * __restrict computedLJMixingDataRow = nullptr;
+
+    if constexpr (useMixing) {
+      const auto &computedLJMixingData = _PPLibrary->getComputedLJMixingData();
+      numRegisteredSiteTypes = _PPLibrary->getNumberRegisteredSiteTypes();
+      computedLJMixingDataRow = computedLJMixingData.data() + typeIdI * numRegisteredSiteTypes;
+    }
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
@@ -1219,19 +1225,6 @@ class LJFunctor
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
 
-        if constexpr (useMixing) {
-          for (size_t j = 0; j < vecsize; j++) {
-            const size_t liveIdJ = neighborListPtr[joff + j];
-            const size_t typeIdJ = typeptr2[liveIdJ];
-            sigmaSquareds[j] =
-                _PPLibrary->getMixingSigmaSquared(typeIdI, typeIdJ);
-            epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeIdI, typeIdJ);
-            if constexpr (applyShift) {
-              shift6s[j] = _PPLibrary->getMixingShift6(typeIdI, typeIdJ);
-            }
-          }
-        }
-
         // gather position of particle j
         #pragma omp simd safelen(vecsize)
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
@@ -1240,13 +1233,14 @@ class LJFunctor
           yArr[tmpj] = yptr[liveIdJ];
           zArr[tmpj] = zptr[liveIdJ];
           ownedStateArr[tmpj] = ownedStatePtr[liveIdJ];
+
           if constexpr (useMixing) {
           const size_t typeIdJ = typeptr2[liveIdJ];
-          const size_t mixingIndex = typeIdI * numRegisteredSiteTypes + typeIdJ;
-          sigmaSquareds[tmpj] = computedLJMixingData[mixingIndex].sigmaSquared;
-          epsilon24s[tmpj] = computedLJMixingData[mixingIndex].epsilon24;
+          const PackedLJMixingData mixingDataJ = computedLJMixingDataRow[typeIdJ];
+          sigmaSquareds[tmpj] = mixingDataJ.sigmaSquared;
+          epsilon24s[tmpj] = mixingDataJ.epsilon24;
           if constexpr (applyShift) {
-            shift6s[tmpj] = computedLJMixingData[mixingIndex].shift6;
+            shift6s[tmpj] = mixingDataJ.shift6;
           }
           }
         }
@@ -1294,7 +1288,7 @@ class LJFunctor
           fyacc += fy;
           fzacc += fz;
 
-          if (newton3) {
+          if constexpr (newton3) {
             fxArr[j] = fx;
             fyArr[j] = fy;
             fzArr[j] = fz;
@@ -1335,7 +1329,7 @@ class LJFunctor
           }
         }
         // scatter the forces to where they belong, this is only needed for newton3
-        if (newton3) {
+        if constexpr (newton3) {
         #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             const size_t j = neighborListPtr[joff + tmpj];

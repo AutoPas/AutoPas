@@ -14,6 +14,7 @@
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletListsSoA.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"

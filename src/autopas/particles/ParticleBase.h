@@ -37,6 +37,7 @@ class ParticleBase {
         _v({0., 0., 0.}),
         _f({0.0, 0.0, 0.0}),
         _id(0),
+        _liveId(0),
         _ownershipState(OwnershipState::owned)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
@@ -58,6 +59,7 @@ class ParticleBase {
         _v(v),
         _f({0.0, 0.0, 0.0}),
         _id(id),
+        _liveId(0),
         _ownershipState(ownershipState)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
@@ -103,6 +105,8 @@ class ParticleBase {
    * Defines the state of the ownership of the particle.
    */
   OwnershipState _ownershipState;
+
+  size_t _liveId;
 
  public:
   /**
@@ -181,6 +185,9 @@ class ParticleBase {
    * @param r new position
    */
   void setR(const std::array<double, 3> &r) { _r = r; }
+
+  size_t getLiveId() const { return _liveId; }
+  void setLiveId(size_t liveId) { _liveId = liveId; }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**
@@ -333,7 +340,7 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int { ptr, id, liveId, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
    * Floating Point Type used for this particle
@@ -350,7 +357,7 @@ class ParticleBase {
    * owned is currently used as a floatType to ease calculations within the functors.
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
+      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, idType /*liveId*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
@@ -374,6 +381,8 @@ class ParticleBase {
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
+    } else if constexpr (attribute == AttributeNames::liveId) {
+      return getLiveId();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
@@ -403,6 +412,8 @@ class ParticleBase {
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
+    } else if constexpr (attribute == AttributeNames::liveId) {
+      setLiveId(value);
     } else if constexpr (attribute == AttributeNames::posX) {
       _r[0] = value;
     } else if constexpr (attribute == AttributeNames::posY) {
