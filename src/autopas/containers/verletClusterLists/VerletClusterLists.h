@@ -370,6 +370,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     for (size_t i = 0ul; i < _towerBlock.size(); ++i) {
       _towerBlock[i].deleteDummyParticles();
     }
+    // Delete dummy particles also from the _particlesToAdd vector
     AUTOPAS_OPENMP(parallel for)
     for (size_t i = 0ul; i < _particlesToAdd.size(); ++i) {
       _particlesToAdd[i].erase(std::remove_if(_particlesToAdd[i].begin(), _particlesToAdd[i].end(),

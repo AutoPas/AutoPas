@@ -73,14 +73,7 @@ class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   }
 
   void initTraversal() override {
-    // Reinitialize the sliced traversal with up to date tower information
-    auto towerSideLength = this->_verletClusterLists->getTowerSideLength();
-    this->_cellLength = {towerSideLength[0], towerSideLength[1],
-                         this->_verletClusterLists->getBoxMax()[2] - this->_verletClusterLists->getBoxMin()[2]};
-    auto towersPerDim = this->_verletClusterLists->getTowersPerDimension();
-    this->_cellsPerDimension = {towersPerDim[0], towersPerDim[1], 1};
-    SlicedBasedTraversal<ParticleCell, PairwiseFunctor>::init();
-
+    SlicedBasedTraversal<ParticleCell, PairwiseFunctor>::reinitForVCL(this->_verletClusterLists);
     SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>::initTraversal();
   }
 

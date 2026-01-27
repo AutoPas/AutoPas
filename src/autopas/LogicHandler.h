@@ -211,7 +211,7 @@ class LogicHandler {
     const auto &oldMin = _currentContainer->getBoxMin();
     const auto &oldMax = _currentContainer->getBoxMax();
 
-    // if nothing changed do nothing
+    // if nothing changed, do nothing
     if (oldMin == boxMin and oldMax == boxMax) {
       return {};
     }
@@ -243,6 +243,10 @@ class LogicHandler {
       }
     }
 
+    // The new box size is valid, so update the current container info.
+    _currentContainerSelectorInfo.boxMin = boxMin;
+    _currentContainerSelectorInfo.boxMax = boxMax;
+
     // check all particles
     std::vector<Particle_T> particlesNowOutside;
     for (auto pIter = _currentContainer->begin(); pIter.isValid(); ++pIter) {
@@ -261,13 +265,11 @@ class LogicHandler {
       }
     }
 
-    // actually resize the container
-    _currentContainerSelectorInfo.boxMin = boxMin;
-    _currentContainerSelectorInfo.boxMax = boxMax;
+    // Resize by generating a new container with the new box size and moving all particles to it.
     auto newContainer = ContainerSelector<Particle_T>::generateContainer(_currentContainer->getContainerType(),
                                                                          _currentContainerSelectorInfo);
     setCurrentContainer(std::move(newContainer));
-    // The container might have changed sufficiently enough so that we need more or less spatial locks
+    // The container might have changed sufficiently that we would need a different number of spatial locks.
     const auto boxLength = boxMax - boxMin;
     const auto interactionLengthInv = 1. / _currentContainer->getInteractionLength();
     initSpacialLocks(boxLength, interactionLengthInv);
@@ -307,7 +309,11 @@ class LogicHandler {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _currentContainer->reserve(numParticles, numHaloParticles);
+    // reserve is called for the container only in the rebuild iterations.
+    // during non-rebuild iterations, particles are not added in the container but in buffer.
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+      _currentContainer->reserve(numParticles, numHaloParticles);
+    }
   }
 
   /**
@@ -624,6 +630,27 @@ class LogicHandler {
 #endif
   }
 
+  /**
+   * Estimates the rebuild frequency based on the current maximum velocity in the container
+   * Using the formula rf = skin/deltaT/vmax/2
+   * @param skin is the skin length used in the simulation
+   * @param deltaT is the time step
+   * @return estimate of the current rebuild frequency
+   */
+  double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
+    using autopas::utils::ArrayMath::dot;
+    // Initialize the maximum velocity to zero
+    double maxVelocity = 0;
+    // Iterate over the owned particles in container to determine maximum velocity
+    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      std::array<double, 3> tempVel = iter->getV();
+      double tempVelAbs = sqrt(dot(tempVel, tempVel));
+      maxVelocity = std::max(tempVelAbs, maxVelocity);
+    }
+    // return the rebuild frequency estimate
+    return skin / maxVelocity / deltaT / 2;
+  }
   /**
    * getter function for _neighborListInvalidDoDynamicRebuild
    * @return bool stored in _neighborListInvalidDoDynamicRebuild
@@ -1250,8 +1277,30 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   auto &autoTuner = *_autoTunerRefs[interactionType];
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
-    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
+  }
+
+  // Rebuild frequency estimation should be triggered early in the tuning phase.
+  // This is necessary because runtime prediction for each trial configuration
+  // depends on the rebuild frequency.
+  // To avoid the influence of poorly initialized velocities at the start of the simulation,
+  // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
+  // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
+  if (autoTuner.inFirstConfigurationLastSample()) {
+    // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
+    // and estimate the current rebuild frequency using the velocity method.
+    double rebuildFrequencyEstimate =
+        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
+    double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
+    // The user defined rebuild frequnecy is considered as the upper bound.
+    // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
+    // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
+    // buffer interactions.
+    if (rebuildFrequencyEstimate > userProvidedRF) {
+      autoTuner.setRebuildFrequency(userProvidedRF);
+    } else {
+      autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
+    }
   }
 #endif
   utils::Timer timerTotal;
@@ -1823,39 +1872,33 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
 #ifdef AUTOPAS_LOG_LIVEINFO
-  // if live info has not been gathered yet, gather it now and log it
-  if (info.get().empty()) {
-    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-  }
+  auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+  info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+              _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     auto configuration = autoTuner.getCurrentConfig();
-    auto [traversalPtr, ignore] = isConfigurationApplicable(configuration, functor);
+    auto [traversalPtr, _] = isConfigurationApplicable(configuration, functor);
 
     if (not traversalPtr) {
       // TODO: Can we handle this case gracefully?
-      AutoPasLog(WARN,
-                 "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
-                 functor.getName());
+      utils::ExceptionHandler::exception(
+          "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
+          functor.getName());
     }
     return {configuration, std::move(traversalPtr), false};
   }
 
   if (autoTuner.needsLiveInfo()) {
-    // Gather Live Info
-    utils::Timer timerGatherLiveInfo;
-    timerGatherLiveInfo.start();
-    auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
-    info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-                _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-    timerGatherLiveInfo.stop();
-    AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
-
+    // If live info has not been gathered yet, gather it now and send it to the tuner.
+    if (info.get().empty()) {
+      auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
+      info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
+                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+    }
     autoTuner.receiveLiveInfo(info);
   }
 
@@ -2003,7 +2046,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
-  // Generates a traversal if applicable, otherwise returns std::nullopt
+  // Generates a traversal if applicable, otherwise returns a nullptr
   auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
       config, functor, containerPtr->getTraversalSelectorInfo());
 

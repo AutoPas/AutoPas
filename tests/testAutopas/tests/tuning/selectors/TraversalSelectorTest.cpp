@@ -30,11 +30,12 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   for (const auto &traversalOption : autopas::TraversalOption::getAllPairwiseOptions()) {
     autopas::DataLayoutOption datalayout = autopas::DataLayoutOption::aos;
     bool newton3 = false;
-    if (traversalOption == autopas::TraversalOption::lc_c01_combined_SoA or
-        traversalOption == autopas::TraversalOption::lc_c04_combined_SoA) {
+    auto onlySoATraversals = autopas::compatibleTraversals::allTraversalsSupportingOnlySoA();
+    if (std::find(onlySoATraversals.begin(), onlySoATraversals.end(), traversalOption) != onlySoATraversals.end()) {
       datalayout = autopas::DataLayoutOption::soa;  // these traversals only work with SoA
     }
-    if (traversalOption == autopas::TraversalOption::ot_c18) {
+    auto onlyN3Traversals = autopas::compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
+    if (std::find(onlyN3Traversals.begin(), onlyN3Traversals.end(), traversalOption) != onlyN3Traversals.end()) {
       newton3 = true;  // this traversal only supports Newton3 enabled
     }
     auto traversal = autopas::TraversalSelector::generateTraversal<FPCell, MPairwiseFunctor>(

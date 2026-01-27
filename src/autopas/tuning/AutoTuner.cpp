@@ -171,7 +171,13 @@ bool AutoTuner::tuneConfiguration() {
   return _isTuning;
 }
 
-const Configuration &AutoTuner::getCurrentConfig() const { return _configQueue.back(); }
+const Configuration &AutoTuner::getCurrentConfig() const {
+  if (_configQueue.empty()) {
+    utils::ExceptionHandler::exception(
+        "AutoTuner::getCurrentConfig(): Cannot get the current Configuration as the config queue is empty");
+  }
+  return _configQueue.back();
+}
 
 std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
@@ -426,6 +432,8 @@ bool AutoTuner::inTuningPhase() const {
 bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
+
+bool AutoTuner::inFirstConfigurationLastSample() const { return (_iteration % _tuningInterval == _maxSamples - 1); }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 

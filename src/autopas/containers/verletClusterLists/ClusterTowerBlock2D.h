@@ -147,7 +147,9 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     const std::array<double, 3> boxSize = _boxMax - _boxMin;
     const std::array<double, 2> boxSize2D{boxSize[0], boxSize[1]};
     if (numParticles == 0) {
-      return {boxSize2D, {3, 3}};  // owned tower plus two halo layers in each direction
+      // We always build at least 3 towers per direction (one owned, two halo)
+      // This is needed for sliced traversals to work correctly.
+      return {boxSize2D, {3, 3}};
     }
 
     const double volume = boxSize[0] * boxSize[1] * boxSize[2];
