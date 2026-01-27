@@ -1940,7 +1940,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     if (traversalPtr) {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       selectConfigurationTimer.stop();
-      AutoPasLog(TRACE, "Select Configuration took {} ms. Of this, isConfigurationApplicable took {} ms and rejectConfig took {} ms. A total of {} configurations were rejected.", selectConfigurationTimer.getTotalTime(), isConfigurationApplicableTimer.getTotalTime(), rejectIndefinitely.getTotalTime(), numRejectedConfigs);
+      AutoPasLog(TRACE, "Select Configuration took {} ms. Of this, isConfigurationApplicable took {} ms and rejectConfig took {} ms. A total of {} configurations were rejected.", selectConfigurationTimer.getTotalTime(), isConfigurationApplicableTimer.getTotalTime(), rejectConfigurationTimer.getTotalTime(), numRejectedConfigs);
 #endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
