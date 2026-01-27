@@ -1931,15 +1931,16 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
     if (traversalPtr) {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+      selectConfigurationTimer.stop();
+      AutoPasLog(TRACE, "Select Configuration took {} ms.", selectConfigurationTimer.getTotalTime());
+#endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
     std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
   } while (true);
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  selectConfigurationTimer.stop();
-  AutoPasLog(TRACE, "Select Configuration took {} ms.", selectConfigurationTimer.getTotalTime());
-#endif
+
 }
 
 template <typename Particle_T>
