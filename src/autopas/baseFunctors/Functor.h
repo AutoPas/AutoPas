@@ -213,11 +213,11 @@ class Functor {
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getNeededAttr()[I]>()...);
+    [[maybe_unused]] auto const attributePointers = std::make_tuple(soa.template begin<Functor_T::getNeededAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
-    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
       /**
        * The following statement writes the values of all attributes defined in neededAttr into the respective position
        * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
@@ -225,7 +225,7 @@ class Functor {
        * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[0]>()),
        * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
        */
-      ((std::get<I>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[I]>()), ...);
+      (( (std::get<I> (attributePointers)) [particleIndex] = cellIter->template get <(Functor_T::getNeededAttr()) [I]> () ), ...);
     }
   }
 

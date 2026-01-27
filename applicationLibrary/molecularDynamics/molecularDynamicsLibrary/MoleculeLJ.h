@@ -74,7 +74,10 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @tparam attribute Attribute name.
    * @return this.
    */
-  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  template <
+    AttributeNames attribute,
+    std::enable_if_t<attribute == AttributeNames::ptr, bool> = true
+  >
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     return this;
   }
@@ -85,7 +88,10 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    * @note Moving this function to the .cpp leads to undefined references
    */
-  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  template <
+    AttributeNames attribute,
+    std::enable_if_t<attribute != AttributeNames::ptr, bool> = true
+  >
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();

@@ -708,14 +708,16 @@ void Simulation::loadParticles() {
   // When loading checkpoints, the config file might contain particles that do not belong to this rank,
   // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
   // Idea: Only load what belongs here and send the rest away.
-  _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
-    if (_domainDecomposition->isInsideLocalDomain(p.getR())) {
-      // Mark particle in vector as dummy, so we know it has been inserted.
-      p.setOwnershipState(autopas::OwnershipState::dummy);
-      return true;
+  _autoPasContainer->addParticlesIf(_configuration.particles,
+    [&](auto &p) {
+      if (_domainDecomposition->isInsideLocalDomain(p.getR())) {
+        // Mark particle in vector as dummy, so we know it has been inserted.
+        p.setOwnershipState(autopas::OwnershipState::dummy);
+        return true;
+      }
+      return false;
     }
-    return false;
-  });
+  );
 
   // Remove what has been inserted. Everything that remains does not belong into this rank.
   _configuration.particles.erase(std::remove_if(_configuration.particles.begin(), _configuration.particles.end(),
