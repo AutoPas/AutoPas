@@ -9,7 +9,6 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -85,9 +84,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+      _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
+  _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
@@ -103,6 +104,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
   const auto outputSuffix =
       "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
+
+  if (rank == 0) {
+    _globalLogger = std::make_unique<GlobalVariableLogger>(outputSuffix);
+  }
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
@@ -172,6 +177,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
+  _autoPasContainer->setDeltaT(_configuration.deltaT.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
@@ -206,6 +212,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 void Simulation::finalize() {
   _timers.total.stop();
+  _totalEnergySensor.endMeasurement();
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
   logSimulationState();
@@ -227,11 +234,16 @@ void Simulation::run() {
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
+    }
 
-      _timers.updateContainer.start();
-      auto emigrants = _autoPasContainer->updateContainer();
-      _timers.updateContainer.stop();
+    // We update the container, even if dt=0, to bump the iteration counter, which is needed to ensure containers can
+    // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
+    // iteration counter which can be used to uniquely identify functor calls.
+    _timers.updateContainer.start();
+    auto emigrants = _autoPasContainer->updateContainer();
+    _timers.updateContainer.stop();
 
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing
@@ -293,7 +305,19 @@ void Simulation::run() {
       updateThermostat();
     }
     _timers.computationalLoad.stop();
-
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    // Summing the potential energy over all MPI ranks
+    double potentialEnergyOverMPIRanks{}, virialSumOverMPIRanks{};
+    autopas::AutoPas_MPI_Reduce(&_totalPotentialEnergy, &potentialEnergyOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE,
+                                AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+    autopas::AutoPas_MPI_Reduce(&_totalVirialSum, &virialSumOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, 0,
+                                AUTOPAS_MPI_COMM_WORLD);
+    if (_domainDecomposition->getDomainIndex() == 0) {
+      _globalLogger->logGlobals(_iteration, potentialEnergyOverMPIRanks, virialSumOverMPIRanks);
+    }
+    _totalPotentialEnergy = 0.;
+    _totalVirialSum = 0.;
+#endif
     if (not _simulationIsPaused) {
       ++_iteration;
     }
@@ -521,14 +545,26 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+#endif
+    return isTuningIteration;
+  });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+#endif
+    return isTuningIteration;
+  });
   return wasTuningIteration;
 }
 
@@ -605,6 +641,11 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  double totalEnergy = _totalEnergySensor.getJoules();
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &totalEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+#endif
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const long wallClockTime = _timers.total.getTotalTime();
@@ -660,6 +701,9 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << "\n";
+#endif
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+    std::cout << "Total Energy Consumed (in Joules)    : " << totalEnergy << "\n";
 #endif
   }
 }
@@ -833,10 +877,10 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-      return f(ATFunctor{cutoff, particlePropertiesLibrary});
+      return f(ATMFunctor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
-          "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
+          "MD-Flexible was not compiled with support for AxilrodTellerMuto Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
     }
