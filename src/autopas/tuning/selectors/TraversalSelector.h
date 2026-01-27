@@ -386,20 +386,24 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
     }
     // VerletLists
     case TraversalOption::vl_list_iteration: {
-      return std::make_unique<VLListIterationTraversal<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, dataLayout,
-                                                                                      useNewton3);
+      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(&triwiseFunctor, dataLayout,
+                                                                                          useNewton3);
+      break;
     }
     case TraversalOption::vl_list_intersection_sorted_3b: {
-      return std::make_unique<VLListIntersectionTraversalSorted3B<ParticleCell, TriwiseFunctor>>(
+      traversal = std::make_unique<VLListIntersectionTraversalSorted3B<ParticleCell_T, TriwiseFunctor_T>>(
           &triwiseFunctor, dataLayout, useNewton3);
+      break;
     }
     case TraversalOption::vl_list_intersection_hashing_3b: {
-      return std::make_unique<VLListIntersectionTraversalHashing3B<ParticleCell, TriwiseFunctor>>(
+      traversal = std::make_unique<VLListIntersectionTraversalHashing3B<ParticleCell_T, TriwiseFunctor_T>>(
           &triwiseFunctor, dataLayout, useNewton3);
+      break;
     }
     case TraversalOption::vl_pair_list_iteration_3b: {
-      return std::make_unique<VLPairListIterationTraversal3B<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, dataLayout,
-                                                                                            useNewton3);
+      traversal = std::make_unique<VLPairListIterationTraversal3B<ParticleCell_T, TriwiseFunctor_T>>(&triwiseFunctor,
+                                                                                                dataLayout, useNewton3);
+      break;
     }
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",

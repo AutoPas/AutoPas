@@ -179,6 +179,38 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     } else {
       auto triwiseTraversal =
           LCC08NeighborListBuilding3B<ParticleCellType,
+                                      typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+      this->_linkedCells.computeInteractions(&triwiseTraversal);
+    }
+
+    _soaListIsValid = false;
+  }
+
+  /* Update the pair verlet lists for AoS usage
+   * @param useNewton3
+   */
+  virtual void updatePairVerletListsAoS3B(bool useNewton3) {
+    updateVerletListsAoS<InteractionTypeOption::triwise>(false);
+    generateAoSNeighborPairsLists();
+    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists,
+                                                                             this->getCutoff() + this->getVerletSkin());
+
+    /// @todo autotune traversal
+    DataLayoutOption dataLayout;
+    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
+      dataLayout = DataLayoutOption::aos;
+    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
+      // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
+      AutoPasLog(WARN, "Pair Verlet Lists can currently only be built with AoS DataLayout, using that instead!");
+      dataLayout = DataLayoutOption::aos;
+    } else {
+      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                         _buildVerletListType);
+    }
+
+    auto traversal = VLListIterationTraversal<ParticleCellType,
                                               typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
         &f, dataLayout, useNewton3);
     this->computeInteractions(&traversal);
