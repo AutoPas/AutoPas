@@ -2065,6 +2065,10 @@ template <class Functor>
 std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
     const Configuration &config, Functor &functor) {
   // Check if the container supports the traversal
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  utils::Timer compatibilityChecks;
+  compatibilityChecks.start();
+#endif
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
   if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
@@ -2081,6 +2085,9 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   }
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  compatibilityChecks.stop();
+  AutoPasLog(TRACE, "Compatibility checks took {} ns", compatibilityChecks.getTotalTime());
+
   utils::Timer generateContainerTimer;
   generateContainerTimer.start();
 #endif
