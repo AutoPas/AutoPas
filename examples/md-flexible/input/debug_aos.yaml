@@ -1,0 +1,50 @@
+container                            :  [VerletLists]
+functor                              :  lj
+traversal                            :  [vl_list_iteration]
+newton3                              :  [disabled]
+data-layout                          :  [AoS]
+
+verlet-rebuild-frequency             :  20
+verlet-skin-radius                   :  0.2
+selector-strategy                    :  Fastest-Absolute-Value
+tuning-strategies                    :  []
+tuning-interval                      :  2000
+tuning-samples                       :  10
+tuning-max-evidence                  :  10
+
+cutoff                               :  3.0
+box-min                              :  [0, 0, 0]
+box-max                              :  [10, 10, 10]
+cell-size                            :  [1] # factor
+deltaT                               :  0.0002
+iterations                           :  10000
+boundary-type                        :  [reflective, reflective, reflective]
+fastParticlesThrow                   :  false
+
+Sites:
+  0:
+    epsilon                          :  1.
+    sigma                            :  1.
+    mass                             :  1.
+Objects:
+  CubeGrid:
+    0:
+      particles-per-dimension       :   [6, 6, 6]
+      bottomLeftCorner               :  [4, 4, 4]
+      particle-spacing               :  1.0
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+thermostat:
+  initialTemperature                 :  5.
+  targetTemperature                  :  5.
+  deltaTemperature                   :  0.5
+  thermostatInterval                 :  25
+  addBrownianMotion                  :  true
+
+log-level                            :  warn
+no-end-config                        :  true
+no-progress-bar                      :  false
+vtk-filename                         :  block_test
+vtk-output-folder                    :  block_test
+vtk-write-frequency                  :  50
+#log-file                            : log.txt

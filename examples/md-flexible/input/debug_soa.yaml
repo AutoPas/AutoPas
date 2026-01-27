@@ -1,0 +1,51 @@
+container                            :  [VerletListsSoA]
+functor                              :  lj
+traversal                            :  [vl_list_iteration]
+newton3                              :  [disabled]
+data-layout                          :  [SoA]
+
+verlet-rebuild-frequency             :  10
+verlet-skin-radius                   :  0.2
+selector-strategy                    :  Fastest-Absolute-Value
+tuning-strategies                    :  []
+tuning-interval                      :  2000
+tuning-samples                       :  10
+tuning-max-evidence                  :  10
+
+cutoff                               :  3.0
+box-min                              :  [0, 0, 0]
+box-max                              :  [0, 0, 0]
+cell-size                            :  [1] # factor
+deltaT                               :  0.0002 # set to 0 to freeze application
+iterations                           :  15
+boundary-type                        :  [reflective, reflective, reflective]
+globalForce                          :  [0,-12.44,0]
+fastParticlesThrow                   :  false
+
+Sites:
+  0:
+    epsilon                          :  1.
+    sigma                            :  1.
+    mass                             :  1.
+Objects:
+  CubeGrid:
+    0:
+      particles-per-dimension       :   [8, 8, 8]
+      bottomLeftCorner               :  [0, 0, 0]
+      particle-spacing               :  1.0
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+thermostat:
+  initialTemperature                 :  100
+  targetTemperature                  :  100
+  deltaTemperature                   :  0.5
+  thermostatInterval                 :  25
+  addBrownianMotion                  :  true
+
+log-level                            :  warn
+no-end-config                        :  true
+no-progress-bar                      :  false
+#vtk-filename                         :  debug_soa
+#vtk-output-folder                    :  vtk-output
+#vtk-write-frequency                  :  1
+#log-file                            : log.txt
