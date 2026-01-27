@@ -3,7 +3,7 @@
 ## Requirements
 * CMake 3.14 or newer
 * a CMake generator target (`make` is tested)
-* a C++20 compiler (gcc11, clang13, and ~~icpc 2019~~ are tested)
+* a C++20 compiler (gcc13, clang16, and ~~icpc 2019~~ are tested)
 * OpenMP (comes with GCC, for Clang you need `libomp`)
 
 Optional:
@@ -83,6 +83,22 @@ Note that user must have `LIKWID` installed before enabling this option.
 Additionally, an energy sensor used for measurement needs to be selected during runtime by specifying the option `energy-sensor` in the input file. 
 The default is set to `rapl` and will be used when no option is specified. 
 However, when multiple sensors are compiled, user can choose any of the available sensors by specifying the `energy-sensor` option.
+
+#### RAPL Permissions
+Energy measurements using Intel RAPL require read access to the system powercap files located at:
+```bash
+/sys/class/powercap/intel-rapl*
+```
+By default, these files are readable only by the root user and simulation need to be run with `sudo`. This is not ideal.
+For example, running MPI applications with `sudo` is strongly discouraged, the recommended workaround is to adjust the permissions of the RAPL files once prior to running the simulation:
+```bash
+sudo chmod -R a+r /sys/class/powercap/intel-rapl*
+```
+This command grants read-only access to all users, allowing the simulation to access RAPL energy counters without requiring sudo.
+However, these permission changes apply only until the next system reboot.
+After a reboot, the command must be executed again unless a persistent [udev](https://linuxconfig.org/tutorial-on-how-to-write-basic-udev-rules-in-linux) rule is configured.
+
+**Note**: On most Linux clusters, such persistent configuration is typically not required, as system administrators already provide user-level access to RAPL counters.
 
 ### Select a Non-Default Compiler
 If you want to use a different compiler than your system default, change the `CC` and `CXX` environment variables during initial configuration AND building:

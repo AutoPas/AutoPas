@@ -11,6 +11,7 @@
 #include <string>
 #include <tuple>
 
+#include "GlobalVariableLogger.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
@@ -91,6 +92,21 @@ class Simulation {
    * Pointer to the output stream.
    */
   std::ostream *_outputStream;
+
+  /**
+   * Variable to store total potential energy for the current iteration from both 2B and 3B interactions.
+   */
+  double _totalPotentialEnergy{};
+
+  /**
+   * Variable to store total virial sum for the current iteration from both 2B and 3B interactions.
+   */
+  double _totalVirialSum{};
+
+  /**
+   * Logger for global variables calculated by the Functor, eg. Virial, Potential Energy, etc.
+   */
+  std::unique_ptr<GlobalVariableLogger> _globalLogger;
 
   /**
    * Number of completed iterations. Aka. number of current iteration.
@@ -233,6 +249,11 @@ class Simulation {
      */
     autopas::utils::Timer updateContainer;
   };
+
+  /**
+   * Sensor for energy measurement
+   */
+  autopas::utils::EnergySensor _totalEnergySensor;
 
   /**
    * The timers used during the simulation.

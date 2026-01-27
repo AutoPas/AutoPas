@@ -240,7 +240,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-        if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
+        if (strArg.find("atm") != std::string::npos or strArg.find("axilrod-teller-muto") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
           throw std::runtime_error("Unrecognized triwise functor!");
@@ -646,7 +646,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                                                  siteErrors, false);
           config.addLJParametersToSite(siteID, epsilon, sigma);
 
-          // Check Axilrod-Teller parameter
+          // Check Axilrod-Teller-Muto parameter
           const auto nu =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           config.addATParametersToSite(siteID, nu);

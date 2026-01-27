@@ -1,5 +1,5 @@
 /**
- * @file ATFunctorFlopCounterTest.h
+ * @file ATMFunctorFlopCounterTest.h
  * @author muehlhaeusser
  * @date 30.07.24
  */
@@ -9,13 +9,13 @@
 #include "AutoPasTestBase.h"
 #include "autopas/options/DataLayoutOption.h"
 
-class ATFunctorFlopCounterTest
+class ATMFunctorFlopCounterTest
     : public AutoPasTestBase,
       public ::testing::WithParamInterface<std::tuple<autopas::DataLayoutOption, bool, bool, bool>> {
  public:
-  ATFunctorFlopCounterTest() = default;
+  ATMFunctorFlopCounterTest() = default;
 
-  ~ATFunctorFlopCounterTest() override = default;
+  ~ATMFunctorFlopCounterTest() override = default;
 
   template <bool calculateGlobals>
   void testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3, bool isVerlet);

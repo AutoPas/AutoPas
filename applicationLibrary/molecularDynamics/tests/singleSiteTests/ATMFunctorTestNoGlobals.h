@@ -1,5 +1,5 @@
 /**
- * @file ATFunctorTestNoGlobals.h
+ * @file ATMFunctorTestNoGlobals.h
  * @author muehlhaeusser
  * @date 26.09.23
  */
@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include "ATFunctorTest.h"
+#include "ATMFunctorTest.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 template <class FuncType>
-class ATFunctorTestNoGlobals : public ATFunctorTest {
+class ATMFunctorTestNoGlobals : public ATMFunctorTest {
  public:
-  ATFunctorTestNoGlobals() : ATFunctorTest() {}
+  ATMFunctorTestNoGlobals() : ATMFunctorTest() {}
 
   constexpr static double cutoff{1.};
   constexpr static double nu{1.};
