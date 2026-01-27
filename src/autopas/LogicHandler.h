@@ -2091,22 +2091,35 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   utils::Timer generateContainerTimer;
   generateContainerTimer.start();
 #endif
+
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
                             _verletClusterSize, _sortingThreshold, config.loadEstimator);
-  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
+
+  // If we have no current container or needs to be updated to the new config.container, we need to generate a new
+  // container.
+  const bool generateNewContainer = _currentContainer == nullptr or _currentContainer->getContainerType() != containerPtr->getContainerType() or
+                        containerInfo != _currentContainerSelectorInfo;
+
+  if (generateNewContainer) {
+    // For now, set the local containerPtr to the new container. We do not copy the particles over and set the member
+    // _currentContainer until after we know that the traversal is applicable to the domain.
+    containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
+  }
+
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   generateContainerTimer.stop();
   AutoPasLog(TRACE, "generateContainer took {} ns", generateContainerTimer.getTotalTime());
   utils::Timer generateTraversalTimer;
   generateTraversalTimer.start();
 #endif
-  const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
+  const auto traversalInfo = generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns a nullptr
   auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
-      config, functor, containerPtr->getTraversalSelectorInfo());
+      config, functor, traversalInfo);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   generateTraversalTimer.stop();
@@ -2115,8 +2128,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   setCurrentContainerTimer.start();
 #endif
 
-  if (traversalPtr and (_currentContainer->getContainerType() != containerPtr->getContainerType() or
-                        containerInfo != _currentContainerSelectorInfo)) {
+  // If the traversal is applicable to the domain, and the configuration requires generating a new container,
+  // update the member _currentContainer with setCurrentContainer, copying the particle data over, and update
+  // _currentContainerSelectorInfo.
+  if (traversalPtr and generateNewContainer) {
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
   }
