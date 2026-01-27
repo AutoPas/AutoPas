@@ -1934,7 +1934,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     if (traversalPtr) {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       selectConfigurationTimer.stop();
-      AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.", selectConfigurationTimer.getTotalTime(), numRejectedConfigs);
+      AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.",
+                 selectConfigurationTimer.getTotalTime(), numRejectedConfigs);
 #endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
@@ -1942,7 +1943,6 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     numRejectedConfigs++;
     std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
   } while (true);
-
 }
 
 template <typename Particle_T>
@@ -2076,8 +2076,9 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.
-  const bool generateNewContainer = _currentContainer == nullptr or _currentContainer->getContainerType() != config.container or
-                        containerInfo != _currentContainerSelectorInfo;
+  const bool generateNewContainer = _currentContainer == nullptr or
+                                    _currentContainer->getContainerType() != config.container or
+                                    containerInfo != _currentContainerSelectorInfo;
 
   if (generateNewContainer) {
     // For now, set the local containerPtr to the new container. We do not copy the particles over and set the member
@@ -2085,11 +2086,12 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
   }
 
-  const auto traversalInfo = generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
+  const auto traversalInfo =
+      generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns a nullptr
-  auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
-      config, functor, traversalInfo);
+  auto traversalPtr =
+      TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(config, functor, traversalInfo);
 
   // If the traversal is applicable to the domain, and the configuration requires generating a new container,
   // update the member _currentContainer with setCurrentContainer, copying the particle data over, and update
