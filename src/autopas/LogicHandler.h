@@ -2080,22 +2080,44 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  utils::Timer generateContainerTimer;
+  generateContainerTimer.start();
+#endif
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
                             _verletClusterSize, _sortingThreshold, config.loadEstimator);
   auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  generateContainerTimer.stop();
+  AutoPasLog(TRACE, "generateContainer took {} ns", generateContainerTimer.getTotalTime());
+  utils::Timer generateTraversalTimer;
+  generateTraversalTimer.start();
+#endif
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns a nullptr
   auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
       config, functor, containerPtr->getTraversalSelectorInfo());
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  generateTraversalTimer.stop();
+  AutoPasLog(TRACE, "generateTraversalFromConfig took {} ns", generateTraversalTimer.getTotalTime());
+  utils::Timer setCurrentContainerTimer;
+  setCurrentContainerTimer.start();
+#endif
+
   if (traversalPtr and (_currentContainer->getContainerType() != containerPtr->getContainerType() or
                         containerInfo != _currentContainerSelectorInfo)) {
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
   }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  setCurrentContainerTimer.stop();
+  AutoPasLog(TRACE, "setCurrentContainer took {} ns", setCurrentContainerTimer.getTotalTime());
+#endif
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
 }
