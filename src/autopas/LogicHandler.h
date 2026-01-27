@@ -1961,6 +1961,11 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   autoTuner.logTuningResult(stillTuning, tuningTimer.getTotalTime());
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
+  for (const auto &[_, tuner] : _autoTunerRefs) {
+    if (tuner->getCurrentConfig().traversal != configuration.traversal) {
+      _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    };
+  }
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
 
   /// Computing the particle interactions
