@@ -1920,25 +1920,39 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     autoTuner.receiveLiveInfo(info);
   }
 
+  size_t numRejectedConfigs = 0;
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  utils::Timer selectConfigurationTimer;
+  utils::Timer selectConfigurationTimer, isConfigurationApplicableTimer, rejectConfigurationTimer;
   selectConfigurationTimer.start();
 #endif
   auto [configuration, stillTuning] = autoTuner.getNextConfig();
 
   // loop as long as we don't get a valid configuration
   do {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    isConfigurationApplicableTimer.start();
+#endif
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    isConfigurationApplicableTimer.stop();
+#endif
     if (traversalPtr) {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       selectConfigurationTimer.stop();
-      AutoPasLog(TRACE, "Select Configuration took {} ms.", selectConfigurationTimer.getTotalTime());
+      AutoPasLog(TRACE, "Select Configuration took {} ms. Of this, isConfigurationApplicable took {} ms and rejectConfig took {} ms. A total of {} configurations were rejected.", selectConfigurationTimer.getTotalTime(), isConfigurationApplicableTimer.getTotalTime(), rejectIndefinitely.getTotalTime(), numRejectedConfigs);
 #endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
+    numRejectedConfigs++;
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    rejectConfigurationTimer.start();
+#endif
     std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    rejectConfigurationTimer.stop();
+#endif
   } while (true);
 
 }
