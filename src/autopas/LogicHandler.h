@@ -1044,7 +1044,7 @@ class LogicHandler {
   /**
    * The current container holding the particles.
    */
-  std::unique_ptr<ParticleContainerInterface<Particle_T>> _currentContainer;
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> _currentContainer{nullptr};
 
   /**
    * The current configuration for the container.
@@ -2100,7 +2100,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.
-  const bool generateNewContainer = _currentContainer == nullptr or _currentContainer->getContainerType() != containerPtr->getContainerType() or
+  const bool generateNewContainer = _currentContainer == nullptr or _currentContainer->getContainerType() != config.container or
                         containerInfo != _currentContainerSelectorInfo;
 
   if (generateNewContainer) {
