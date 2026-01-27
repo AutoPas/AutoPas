@@ -6,7 +6,7 @@ verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [SoA]
-traversal                        :  [ vl_list_iteration] # Please see AllOptions.yaml for a comprehensive list of traversals
+traversal                        :  [vl_list_iteration] # Please see AllOptions.yaml for a comprehensive list of traversals
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
@@ -33,15 +33,15 @@ Sites:
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension: [ 40, 10, 10 ]
+      particles-per-dimension: [ 50, 20, 50 ]
       particle-spacing: 1.2
       bottomLeftCorner: [ 0.6, 0.6, 0.6 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
     1:
-      particles-per-dimension: [ 40, 20, 10 ]
+      particles-per-dimension: [ 50, 20, 50 ]
       particle-spacing: 1.2
-      bottomLeftCorner: [ 0.6, 12.6, 0.6 ]
+      bottomLeftCorner: [ 0.6, 24.6, 0.6 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 1
 thermostat:
@@ -50,8 +50,8 @@ thermostat:
   deltaTemperature                   :  0.5
   thermostatInterval                 :  25
   addBrownianMotion                  :  true
-vtk-filename                     :  rayleigh_taylor
-vtk-write-frequency              :  50
-vtk-output-folder                :  vtk-output
-no-end-config                    :  true
-log-level                        :  info
+#vtk-filename                     :  rayleigh_taylor
+#vtk-write-frequency              :  50
+#vtk-output-folder                :  vtk-output
+#no-end-config                    :  true
+#log-level                        :  info
