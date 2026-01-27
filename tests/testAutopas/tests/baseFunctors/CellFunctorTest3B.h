@@ -9,7 +9,6 @@
 #include "AutoPasTestBase.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/baseFunctors/Functor.h"
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <typename T>

@@ -69,14 +69,14 @@ class ParticlePropertiesLibrary {
   void addLJParametersToSite(const intType siteId, const floatType epsilon, const floatType sigma);
 
   /**
-   * Adds the AT properties of a single site type to the library.
+   * Adds the ATM properties of a single site type to the library.
    *
    * Checks if a site with given siteId was already registered.
    * Old values will be overwritten.
    * @param siteId
    * @param nu
    */
-  void addATParametersToSite(const intType siteId, const floatType nu);
+  void addATMParametersToSite(const intType siteId, const floatType nu);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -283,20 +283,21 @@ class ParticlePropertiesLibrary {
    * @return nu_ijk
    */
   floatType getMixingNu(intType i, intType j, intType k) const {
-    return
-    _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k].nu;
+    return _computedATMMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
+                                  k]
+        .nu;
   }
 
   /**
-   * Get complete mixing data for one triplet of AT site types.
+   * Get complete mixing data for one triplet of ATM site types.
    * @param i Id of site one.
    * @param j Id of site two.
    * @param k Id of site three.
    * @return
    */
-  auto getATMixingData(intType i, intType j, intType k) const {
-    return
-    _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k];
+  auto getATMMixingData(intType i, intType j, intType k) const {
+    return _computedATMMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
+                                  k];
   }
 
   struct PackedLJMixingData {
@@ -320,7 +321,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
-  std::vector<floatType> _nus;  // Factor for AxilrodTeller potential
+  std::vector<floatType> _nus;  // Factor for AxilrodTellerMuto potential
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -340,7 +341,7 @@ class ParticlePropertiesLibrary {
   };
 
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
-  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
+  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMMixingData;
 };
 
 template <typename floatType, typename intType>
@@ -385,10 +386,11 @@ void ParticlePropertiesLibrary<floatType, intType>::addLJParametersToSite(intTyp
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addATParametersToSite(intType siteID, floatType nu) {
+void ParticlePropertiesLibrary<floatType, intType>::addATMParametersToSite(intType siteID, floatType nu) {
   if (siteID >= _numRegisteredSiteTypes) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addATParametersToSite(): Trying to set the axilrod-teller parameter for a site "
+        "ParticlePropertiesLibrary::addATMParametersToSite(): Trying to set the axilrod-teller-muto parameter for a "
+        "site "
         "type with id {},"
         " which has not been registered yet. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
@@ -480,7 +482,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
   }
 
   if (_storeATData) {
-    _computedATMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes * _numRegisteredSiteTypes);
+    _computedATMMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes * _numRegisteredSiteTypes);
     for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
       for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
         for (size_t thirdIndex = 0ul; thirdIndex < _numRegisteredSiteTypes; ++thirdIndex) {
@@ -488,7 +490,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
                                      _numRegisteredSiteTypes * secondIndex + thirdIndex;
           // geometric mixing as used in e.g. https://doi.org/10.1063/1.3567308
           const floatType mixedNu = cbrt(_nus[firstIndex] * _nus[secondIndex] * _nus[thirdIndex]);
-          _computedATMixingData[globalIndex3B].nu = mixedNu;
+          _computedATMMixingData[globalIndex3B].nu = mixedNu;
         }
       }
     }

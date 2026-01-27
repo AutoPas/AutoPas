@@ -1,5 +1,5 @@
 /**
- * @file AxilrodTellerFunctor.h
+ * @file AxilrodTellerMutoFunctor.h
  * @author M. Muehlhaeusser
  * @date 25/07/23
  */
@@ -20,12 +20,13 @@
 namespace mdLib {
 
 /**
- * The Axilrod-Teller potential
+ * The Axilrod-Teller-Muto potential
  * ---
  * The reference paper of Axilrod and Teller can be found here: https://doi.org/10.1063/1.1723844
- * \image html 3_body_sketch.png "Sketch of three particles that are used in the Axilrod-Teller Functor" width=400px
+ * \image html 3_body_sketch.png "Sketch of three particles that are used in the Axilrod-Teller-Muto Functor"
+ * width=400px
  *
- * The Axilrod-Teller potential is a model for the interactions of three molecules which appear when the van
+ * The Axilrod-Teller-Muto potential is a model for the interactions of three molecules which appear when the van
  * der Waals forces are approximated to the third order. It is usually combined with a model for pairwise interaction as
  * e.g. the Lennard-Jones potential.
  *
@@ -83,7 +84,7 @@ namespace mdLib {
  */
 
 /**
- * A functor to handle Axilrod-Teller(-Muto) interactions between three particles (molecules).
+ * A functor to handle Axilrod-Teller-Muto interactions between three particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
  * @tparam Particle_T The type of particle.
@@ -95,9 +96,9 @@ namespace mdLib {
  */
 template <class Particle_T, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool countFLOPs = false>
-class AxilrodTellerFunctor
+class AxilrodTellerMutoFunctor
     : public autopas::TriwiseFunctor<
-          Particle_T, AxilrodTellerFunctor<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
+          Particle_T, AxilrodTellerMutoFunctor<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -112,7 +113,7 @@ class AxilrodTellerFunctor
   /**
    * Deleted default constructor
    */
-  AxilrodTellerFunctor() = delete;
+  AxilrodTellerMutoFunctor() = delete;
 
  private:
   /**
@@ -120,9 +121,9 @@ class AxilrodTellerFunctor
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle_T,
-                                AxilrodTellerFunctor<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
+  explicit AxilrodTellerMutoFunctor(double cutoff, void * /*dummy*/)
+      : autopas::TriwiseFunctor<
+            Particle_T, AxilrodTellerMutoFunctor<Particle_T, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -146,7 +147,7 @@ class AxilrodTellerFunctor
    *
    * @param cutoff
    */
-  explicit AxilrodTellerFunctor(double cutoff) : AxilrodTellerFunctor(cutoff, nullptr) {
+  explicit AxilrodTellerMutoFunctor(double cutoff) : AxilrodTellerMutoFunctor(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -158,15 +159,15 @@ class AxilrodTellerFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit AxilrodTellerFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : AxilrodTellerFunctor(cutoff, nullptr) {
+  explicit AxilrodTellerMutoFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : AxilrodTellerMutoFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  std::string getName() final { return "AxilrodTellerFunctorAutoVec"; }
+  std::string getName() final { return "AxilrodTellerMutoFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return true; }
 
@@ -292,7 +293,7 @@ class AxilrodTellerFunctor
    *
    * This is only necessary if no particlePropertiesLibrary is used.
    *
-   * @param nu The Axilrod-Teller potential parameter
+   * @param nu The Axilrod-Teller-Muto potential parameter
    */
   void setParticleProperties(SoAFloatPrecision nu) { _nu = nu; }
 
@@ -507,7 +508,7 @@ class AxilrodTellerFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerletImpl() is not implemented.");
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerMutoFunctor::SoAFunctorVerletImpl() is not implemented.");
   }
 
   /**
@@ -593,7 +594,7 @@ class AxilrodTellerFunctor
 
   const double _cutoffSquared;
 
-  // Parameter of the Axilrod-Teller potential
+  // Parameter of the Axilrod-Teller-Muto potential
   // not const because they might be reset through PPL
   double _nu = 0.0;
 
