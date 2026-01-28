@@ -1870,20 +1870,11 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  utils::Timer liveInfoTimer;
-#endif
   LiveInfo info{};
 #ifdef AUTOPAS_LOG_LIVEINFO
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  liveInfoTimer.start();
-#endif
   auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
   info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
               _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  liveInfoTimer.stop();
-#endif
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
@@ -1904,19 +1895,10 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   if (autoTuner.needsLiveInfo()) {
     // If live info has not been gathered yet, gather it now and send it to the tuner.
     if (info.get().empty()) {
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-      liveInfoTimer.start();
-#endif
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                   _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-      liveInfoTimer.stop();
-#endif
     }
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-    AutoPasLog(TRACE, "Gathered LiveInfo in {} ms.", liveInfoTimer.getTotalTime());
-#endif
     autoTuner.receiveLiveInfo(info);
   }
 
