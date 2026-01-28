@@ -309,7 +309,11 @@ class LogicHandler {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _currentContainer->reserve(numParticles, numHaloParticles);
+    // reserve is called for the container only in the rebuild iterations.
+    // during non-rebuild iterations, particles are not added in the container but in buffer.
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+      _currentContainer->reserve(numParticles, numHaloParticles);
+    }
   }
 
   /**
@@ -626,6 +630,27 @@ class LogicHandler {
 #endif
   }
 
+  /**
+   * Estimates the rebuild frequency based on the current maximum velocity in the container
+   * Using the formula rf = skin/deltaT/vmax/2
+   * @param skin is the skin length used in the simulation
+   * @param deltaT is the time step
+   * @return estimate of the current rebuild frequency
+   */
+  double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
+    using autopas::utils::ArrayMath::dot;
+    // Initialize the maximum velocity to zero
+    double maxVelocity = 0;
+    // Iterate over the owned particles in container to determine maximum velocity
+    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      std::array<double, 3> tempVel = iter->getV();
+      double tempVelAbs = sqrt(dot(tempVel, tempVel));
+      maxVelocity = std::max(tempVelAbs, maxVelocity);
+    }
+    // return the rebuild frequency estimate
+    return skin / maxVelocity / deltaT / 2;
+  }
   /**
    * getter function for _neighborListInvalidDoDynamicRebuild
    * @return bool stored in _neighborListInvalidDoDynamicRebuild
@@ -1019,7 +1044,7 @@ class LogicHandler {
   /**
    * The current container holding the particles.
    */
-  std::unique_ptr<ParticleContainerInterface<Particle_T>> _currentContainer;
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> _currentContainer{nullptr};
 
   /**
    * The current configuration for the container.
@@ -1252,8 +1277,30 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   auto &autoTuner = *_autoTunerRefs[interactionType];
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
-    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
+  }
+
+  // Rebuild frequency estimation should be triggered early in the tuning phase.
+  // This is necessary because runtime prediction for each trial configuration
+  // depends on the rebuild frequency.
+  // To avoid the influence of poorly initialized velocities at the start of the simulation,
+  // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
+  // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
+  if (autoTuner.inFirstConfigurationLastSample()) {
+    // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
+    // and estimate the current rebuild frequency using the velocity method.
+    double rebuildFrequencyEstimate =
+        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
+    double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
+    // The user defined rebuild frequnecy is considered as the upper bound.
+    // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
+    // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
+    // buffer interactions.
+    if (rebuildFrequencyEstimate > userProvidedRF) {
+      autoTuner.setRebuildFrequency(userProvidedRF);
+    } else {
+      autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
+    }
   }
 #endif
   utils::Timer timerTotal;
@@ -1873,26 +1920,41 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     autoTuner.receiveLiveInfo(info);
   }
 
+  size_t numRejectedConfigs = 0;
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  utils::Timer selectConfigurationTimer;
+  utils::Timer selectConfigurationTimer, isConfigurationApplicableTimer, rejectConfigurationTimer;
   selectConfigurationTimer.start();
 #endif
   auto [configuration, stillTuning] = autoTuner.getNextConfig();
 
   // loop as long as we don't get a valid configuration
   do {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    isConfigurationApplicableTimer.start();
+#endif
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    isConfigurationApplicableTimer.stop();
+#endif
     if (traversalPtr) {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+      selectConfigurationTimer.stop();
+      AutoPasLog(TRACE, "Select Configuration took {} ms. Of this, isConfigurationApplicable took {} ms and rejectConfig took {} ms. A total of {} configurations were rejected.", selectConfigurationTimer.getTotalTime(), isConfigurationApplicableTimer.getTotalTime(), rejectConfigurationTimer.getTotalTime(), numRejectedConfigs);
+#endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
-    std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
-  } while (true);
+    numRejectedConfigs++;
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  selectConfigurationTimer.stop();
-  AutoPasLog(TRACE, "Select Configuration took {} ms.", selectConfigurationTimer.getTotalTime());
+    rejectConfigurationTimer.start();
 #endif
+    std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+    rejectConfigurationTimer.stop();
+#endif
+  } while (true);
+
 }
 
 template <typename Particle_T>
@@ -2003,6 +2065,10 @@ template <class Functor>
 std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
     const Configuration &config, Functor &functor) {
   // Check if the container supports the traversal
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  utils::Timer compatibilityChecks;
+  compatibilityChecks.start();
+#endif
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
   if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
@@ -2018,22 +2084,62 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  compatibilityChecks.stop();
+  AutoPasLog(TRACE, "Compatibility checks took {} ns", compatibilityChecks.getTotalTime());
+
+  utils::Timer generateContainerTimer;
+  generateContainerTimer.start();
+#endif
+
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
                             _verletClusterSize, _sortingThreshold, config.loadEstimator);
-  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
-  const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
+
+  // If we have no current container or needs to be updated to the new config.container, we need to generate a new
+  // container.
+  const bool generateNewContainer = _currentContainer == nullptr or _currentContainer->getContainerType() != config.container or
+                        containerInfo != _currentContainerSelectorInfo;
+
+  if (generateNewContainer) {
+    // For now, set the local containerPtr to the new container. We do not copy the particles over and set the member
+    // _currentContainer until after we know that the traversal is applicable to the domain.
+    containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
+  }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  generateContainerTimer.stop();
+  AutoPasLog(TRACE, "generateContainer took {} ns", generateContainerTimer.getTotalTime());
+  utils::Timer generateTraversalTimer;
+  generateTraversalTimer.start();
+#endif
+  const auto traversalInfo = generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns a nullptr
   auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
-      config, functor, containerPtr->getTraversalSelectorInfo());
+      config, functor, traversalInfo);
 
-  if (traversalPtr and (_currentContainer->getContainerType() != containerPtr->getContainerType() or
-                        containerInfo != _currentContainerSelectorInfo)) {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  generateTraversalTimer.stop();
+  AutoPasLog(TRACE, "generateTraversalFromConfig took {} ns", generateTraversalTimer.getTotalTime());
+  utils::Timer setCurrentContainerTimer;
+  setCurrentContainerTimer.start();
+#endif
+
+  // If the traversal is applicable to the domain, and the configuration requires generating a new container,
+  // update the member _currentContainer with setCurrentContainer, copying the particle data over, and update
+  // _currentContainerSelectorInfo.
+  if (traversalPtr and generateNewContainer) {
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
   }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  setCurrentContainerTimer.stop();
+  AutoPasLog(TRACE, "setCurrentContainer took {} ns", setCurrentContainerTimer.getTotalTime());
+#endif
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
 }

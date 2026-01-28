@@ -106,8 +106,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
         functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
   } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-    mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                                globals /*calculateGlobals*/>
+    mdLib::AxilrodTellerMutoFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                                    globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_nu);
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
