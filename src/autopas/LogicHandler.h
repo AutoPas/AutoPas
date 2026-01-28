@@ -961,21 +961,22 @@ class LogicHandler {
                                                  TriwiseFunctor *f);
 
   /**
-   * Helper Method for computeRemainderInteractions3B. This method calculates all interactions between one buffer
-   * particle and two particles from the container.
+   * Helper Method for computeRemainderInteractions3B. This method calculates all interactions between the buffer
+   * particles and any two particles from the container. It first identifies all particle pairs from the container which
+   * would form valid triplets with the buffer particles. This is done in a per-particle parallel manner. In a second
+   * step the buffer particles are distributed into bins by slicing the domain along the diagonal. The forces are
+   * computed in a parallel manner by using a tri-colored approach on these slices to avoid race conditions.
    *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
    * @tparam TriwiseFunctor Functor type to use for the interactions.
    * @param bufferParticles Vector of Particle pointers containing pointers to all buffer particles (owned and halo).
-   * @param numOwnedBufferParticles Number of owned particles. (First half of the bufferParticles).
    * @param container
    * @param f
    */
   template <bool newton3, class ContainerType, class TriwiseFunctor>
   void remainderHelper3bBufferContainerContainerAoS(const std::vector<Particle_T *> &bufferParticles,
-                                                    size_t numOwnedBufferParticles, ContainerType &container,
-                                                    TriwiseFunctor *f);
+                                                    ContainerType &container, TriwiseFunctor *f);
 
   /**
    * Check that the simulation box is at least of interaction length in each direction.
@@ -1664,7 +1665,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
 #endif
 
   // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
-  remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
+  remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, container, f);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainerContainer.stop();
@@ -1772,42 +1773,106 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferBufferContainerAoS(
 template <class Particle_T>
 template <bool newton3, class ContainerType, class TriwiseFunctor>
 void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
-    const std::vector<Particle_T *> &bufferParticles, const size_t numOwnedBufferParticles, ContainerType &container,
-    TriwiseFunctor *f) {
-  // Todo: parallelize without race conditions - https://github.com/AutoPas/AutoPas/issues/904
-  using autopas::utils::ArrayUtils::static_cast_copy_array;
+    const std::vector<Particle_T *> &bufferParticles, ContainerType &container, TriwiseFunctor *f) {
   using namespace autopas::utils::ArrayMath::literals;
-
+  if (bufferParticles.empty()) {
+    return;
+  }
+  const size_t numBufferParticles = bufferParticles.size();
   const double cutoff = container.getCutoff();
+  const double cutoffSquared = cutoff * cutoff;
 
-  for (auto i = 0; i < bufferParticles.size(); ++i) {
-    Particle_T &p1 = *bufferParticles[i];
-    const auto pos = p1.getR();
-    const auto boxmin = pos - cutoff;
-    const auto boxmax = pos + cutoff;
+  // Step 1: Create a sorted cell view on all buffer particles
+  const auto domainDiagonal = container.getBoxMax() - container.getBoxMin();
+  ReferenceParticleCell<Particle_T> cellView;
+  cellView.reserve(numBufferParticles);
+  for (auto pRef : bufferParticles) {
+    cellView.addParticleReference(pRef);
+  }
+  SortedCellView<ReferenceParticleCell<Particle_T>> sortedCellView(cellView, domainDiagonal);
+
+  // Step 2: Find all valid particle pairs from the container for each of the buffer particles. This can be done in
+  // parallel since all particles are accessed in read-only manner. The data structure is a vector, which holds a list
+  // of all valid container particle pairs for each buffer particle.
+  std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> bufferParticleNeighborLists(numBufferParticles);
+
+  // Estimate the number of pairs per buffer particle to reserve memory
+  const double searchVolume = 8. * cutoff * cutoff * cutoff;
+  const double domainVolume = utils::ArrayMath::prod(container.getBoxMax() - container.getBoxMin());
+  const double numParticlesPerSearchVolume =
+      container.getNumberOfParticles(IteratorBehavior::owned) * (searchVolume / domainVolume);
+  const auto estimatedPairsPerParticle = static_cast<size_t>(numParticlesPerSearchVolume * numParticlesPerSearchVolume);
+
+  AUTOPAS_OPENMP(parallel for schedule(static))
+  for (size_t i = 0; i < numBufferParticles; i++) {
+    bufferParticleNeighborLists[i].reserve(estimatedPairsPerParticle);
+    auto &[pProjection, p1Ptr] = sortedCellView._particles[i];
+    const auto pos1 = p1Ptr->getR();
+    const auto boxMin = pos1 - cutoff;
+    const auto boxMax = pos1 + cutoff;
 
     auto p2Iter = container.getRegionIterator(
-        boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
+        boxMin, boxMax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
     for (; p2Iter.isValid(); ++p2Iter) {
-      Particle_T &p2 = *p2Iter;
-
+      const auto pos2 = p2Iter->getR();
+      const auto p1p2Dist = pos2 - pos1;
+      if (utils::ArrayMath::dot(p1p2Dist, p1p2Dist) > cutoffSquared) {
+        continue;
+      }
       auto p3Iter = p2Iter;
       ++p3Iter;
-
       for (; p3Iter.isValid(); ++p3Iter) {
-        Particle_T &p3 = *p3Iter;
+        const auto pos3 = p3Iter->getR();
+        const auto p2p3Dist = pos3 - pos2;
+        if (utils::ArrayMath::dot(p2p3Dist, p2p3Dist) > cutoffSquared) {
+          continue;
+        }
+        const auto p1p3Dist = pos3 - pos1;
+        if (utils::ArrayMath::dot(p1p3Dist, p1p3Dist) > cutoffSquared) {
+          continue;
+        }
+        // All distances are below the cutoff, so append to the neighbor list.
+        bufferParticleNeighborLists[i].emplace_back(&(*p2Iter), &(*p3Iter));
+      }
+    }
+  }
 
-        if constexpr (newton3) {
-          f->AoSFunctor(p1, p2, p3, true);
-        } else {
-          if (i < numOwnedBufferParticles) {
-            f->AoSFunctor(p1, p2, p3, false);
-          }
-          if (p2.isOwned()) {
-            f->AoSFunctor(p2, p1, p3, false);
-          }
-          if (p3.isOwned()) {
-            f->AoSFunctor(p3, p1, p2, false);
+  // Step 3: Bin buffer particles into slices along the domain diagonal of size cutoff
+  // Every "bin" contains pointers to the respective buffer particles alongside their index in the sortedCellView to
+  // simplify mapping back later.
+  std::vector<std::vector<std::pair<size_t, Particle_T *>>> binnedBufferParticles;
+  const auto estimatedSizePerBin = numBufferParticles / (utils::ArrayMath::L2Norm(domainDiagonal) / cutoff);
+  binnedBufferParticles.emplace_back(estimatedSizePerBin);
+  double binStart = sortedCellView._particles[0].first;  // Projection of the first particle
+  for (size_t i = 0; i < numBufferParticles; ++i) {
+    auto &[pProjection, pPtr] = sortedCellView._particles[i];
+
+    // The slice thickness is at least the cutoff. The next slice starts with the position of the next particle.
+    if (pProjection - binStart > cutoff) {
+      binStart = pProjection;
+      binnedBufferParticles.emplace_back();
+    }
+    binnedBufferParticles.back().emplace_back(i, pPtr);
+  }
+
+  // Step 4: Iterate over the binned buffer particles in a 3-colored parallel manner to avoid race conditions.
+  for (auto color = 0; color < 3; color++) {
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    for (size_t i = 0 + color; i < binnedBufferParticles.size(); i += 3) {
+      for (auto &[p1Index, p1Ptr] : binnedBufferParticles[i]) {
+        for (auto &[p2Ptr, p3Ptr] : bufferParticleNeighborLists[p1Index]) {
+          if constexpr (newton3) {
+            f->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
+          } else {
+            if (p1Ptr->isOwned()) {
+              f->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, false);
+            }
+            if (p2Ptr->isOwned()) {
+              f->AoSFunctor(*p2Ptr, *p1Ptr, *p3Ptr, false);
+            }
+            if (p3Ptr->isOwned()) {
+              f->AoSFunctor(*p3Ptr, *p1Ptr, *p2Ptr, false);
+            }
           }
         }
       }
