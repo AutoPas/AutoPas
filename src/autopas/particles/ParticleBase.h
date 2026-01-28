@@ -430,12 +430,14 @@ class ParticleBase {
       return getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
       return getR()[2];
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     } else if constexpr (attribute == AttributeNames::rebuildX) {
       return getRAtRebuild()[0];
     } else if constexpr (attribute == AttributeNames::rebuildY) {
       return getRAtRebuild()[1];
     } else if constexpr (attribute == AttributeNames::rebuildZ) {
       return getRAtRebuild()[2];
+#endif
     } else if constexpr (attribute == AttributeNames::forceX) {
       return getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
@@ -465,12 +467,14 @@ class ParticleBase {
       _r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
       _r[2] = value;
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     } else if constexpr (attribute == AttributeNames::rebuildX) {
       _rAtRebuild()[0] = value;
     } else if constexpr (attribute == AttributeNames::rebuildY) {
       _rAtRebuild()[1] = value;
     } else if constexpr (attribute == AttributeNames::rebuildZ) {
       _rAtRebuild()[2] = value;
+#endif
     } else if constexpr (attribute == AttributeNames::forceX) {
       _f[0] = value;
     } else if constexpr (attribute == AttributeNames::forceY) {

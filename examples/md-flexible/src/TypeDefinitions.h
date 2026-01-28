@@ -43,7 +43,7 @@
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
  */
-using FloatPrecision = float;
+using FloatPrecision = double;
 
 /**
  * Type of the Particles used in md-flexible.
@@ -54,7 +54,7 @@ using FloatPrecision = float;
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
 // TODO: switch for precision
-using ParticleType = mdLib::KokkosMoleculeLJ;
+using ParticleType = mdLib::MoleculeLJ;
 #endif
 
 namespace mdFlexibleTypeDefs {
