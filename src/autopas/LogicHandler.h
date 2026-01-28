@@ -1476,7 +1476,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   }();
 
   auto &autoTuner = *_autoTunerRefs[interactionType];
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#if defined(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS) && !defined(AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN)
   if (autoTuner.inFirstTuningIteration()) {
     _numRebuildsInNonTuningPhase = 0;
   }
@@ -1502,6 +1502,12 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     } else {
       autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
     }
+  }
+#endif
+#ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN
+  if (autoTuner.inFirstTuningIteration()) {
+    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
+    _numRebuildsInNonTuningPhase = 0;
   }
 #endif
   utils::Timer timerTotal;
