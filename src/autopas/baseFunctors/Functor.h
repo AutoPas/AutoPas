@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/VerletListLJData.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
@@ -113,6 +114,11 @@ class Functor {
     SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
+  template <class ParticleCell>
+  void VerletListLJDataLoader(ParticleCell &cell, VerletListLJData<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJData, size_t offset, bool skipVerletListLJDataResize) {
+    verletListLJDataLoaderImpl(cell, verletListLJData, offset, skipVerletListLJDataResize);
+  }
+
   /**
    * Copies the data stored in the soa back into the cell.
    *
@@ -125,6 +131,11 @@ class Functor {
   template <typename ParticleCell>
   void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
     SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
+  }
+
+  template <typename ParticleCell>
+  void VerletListLJDataExtractor(ParticleCell &cell, VerletListLJData<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJData, size_t offset) {
+    VerletListLJDataExtractorImpl(cell, verletListLJData, offset);
   }
 
   /**
@@ -229,6 +240,25 @@ class Functor {
     }
   }
 
+  template <typename cell_t>
+  void verletListLJDataLoaderImpl(cell_t &cell, VerletListLJData<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJData, size_t offset, bool skipVerletListLJDataResize) {
+
+    if (not skipVerletListLJDataResize) {
+      verletListLJData.resize(offset + cell.size());
+    }
+
+    if (cell.isEmpty()) return;
+
+    auto cellIter = cell.begin();
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
+      verletListLJData._positionsXYZ[particleIndex] = {cellIter->getR()[0], cellIter->getR()[1], cellIter->getR()[2], 0};
+      verletListLJData._typeIds[particleIndex] = cellIter->getTypeId();
+      verletListLJData._ownershipStates[particleIndex] = static_cast<uint8_t>(cellIter->getOwnershipState());
+      verletListLJData._forcesXXZ[particleIndex] = {cellIter->getF()[0], cellIter->getF()[1], cellIter->getF()[2], 0};
+
+    }
+  }
+
   /**
    * Implements extraction of SoA buffers.
    * @tparam cell_t Cell type.
@@ -260,6 +290,18 @@ class Functor {
        * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
        */
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+    }
+  }
+
+  template <typename cell_t>
+  void VerletListLJDataExtractorImpl(cell_t &cell, VerletListLJData<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJData, size_t offset) {
+    if (cell.isEmpty()) return;
+
+    auto cellIter = cell.begin();
+    // write values in SoAs back to particles
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
+      auto &forcesXYZAtIndex = verletListLJData._forcesXXZ[particleIndex];
+      cellIter->setF({forcesXYZAtIndex[0], forcesXYZAtIndex[1], forcesXYZAtIndex[2]});
     }
   }
 

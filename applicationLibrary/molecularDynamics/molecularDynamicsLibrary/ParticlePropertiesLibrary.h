@@ -306,9 +306,19 @@ class ParticlePropertiesLibrary {
     floatType shift6;
   };
 
+  struct alignas(16) PackedEpsilon24Sigma {
+    floatType epsilon24;
+    floatType sigmaSquared;
+  };
+
  [[nodiscard]] const std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>>
   &getComputedLJMixingData() const {
     return _computedLJMixingData;
+ }
+
+  [[nodiscard]] const std::vector<PackedEpsilon24Sigma, autopas::AlignedAllocator<PackedEpsilon24Sigma>>
+   &getComputedEpsilon24Sigma() const {
+   return _computedEpsilon24Sigma;
  }
 
   [[nodiscard]] intType getNumRegisteredSiteTypes() const { return _numRegisteredSiteTypes; }
@@ -342,6 +352,7 @@ class ParticlePropertiesLibrary {
 
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMMixingData;
+  std::vector<PackedEpsilon24Sigma, autopas::AlignedAllocator<PackedEpsilon24Sigma>> _computedEpsilon24Sigma;
 };
 
 template <typename floatType, typename intType>
@@ -460,6 +471,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
   if (_storeLJData) {
     const auto cutoffSquared = _cutoff * _cutoff;
     _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
+    _computedEpsilon24Sigma.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
     for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
       for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
@@ -468,11 +480,13 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
         // epsilon
         const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
         _computedLJMixingData[globalIndex].epsilon24 = epsilon24;
+        _computedEpsilon24Sigma[globalIndex].epsilon24 = epsilon24;
 
         // sigma
         const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
         const floatType sigmaSquared = sigma * sigma;
         _computedLJMixingData[globalIndex].sigmaSquared = sigmaSquared;
+        _computedEpsilon24Sigma[globalIndex].sigmaSquared = sigmaSquared;
 
         // shift6
         const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);

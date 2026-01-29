@@ -67,7 +67,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, size_t /*liveId*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+                                       uint16_t /*typeid*/, uint8_t /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -96,7 +96,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::liveId) {
-      return getLiveId();
+      return _liveId;
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
@@ -122,9 +122,9 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       return getOldF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
-      return getTypeId();
+      return _typeId;
     } else if constexpr (attribute == AttributeNames::ownershipState) {
-      return this->_ownershipState;
+      return static_cast<uint8_t>(this->_ownershipState);
     } else {
       autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
     }
@@ -170,7 +170,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
-      this->_ownershipState = value;
+      this->_ownershipState = autopas::OwnershipState(static_cast<int64_t>(value));
     } else {
       autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
@@ -192,13 +192,13 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Get TypeId.
    * @return
    */
-  [[nodiscard]] size_t getTypeId() const;
+  [[nodiscard]] uint16_t getTypeId() const;
 
   /**
    * Set the type id of the Molecule.
    * @param typeId
    */
-  void setTypeId(size_t typeId);
+  void setTypeId(uint16_t typeId);
 
   [[nodiscard]] size_t getLiveId() const;
 
@@ -218,7 +218,7 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * In multi-site simulations, where a multi-site molecule class inheriting from this class is used, typeId is used as
    * a molId to look up molecular attributes (including siteIds of the sites).
    */
-  size_t _typeId = 0;
+  uint16_t _typeId = 0;
 
   /**
    * Old Force of the particle experiences as 3D vector.

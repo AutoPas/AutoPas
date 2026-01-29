@@ -41,7 +41,7 @@ class VLTraversalInterface {
     _soaNeighborLists = &soaNeighborLists;
   }
 
-  virtual void setSoaTryout(bool soATryOut) = 0;
+  virtual void setPreloadMixingLJPtr(bool preloadMixingLJPtr) = 0;
 
  protected:
   /**

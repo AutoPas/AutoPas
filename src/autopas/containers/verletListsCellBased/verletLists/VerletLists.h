@@ -81,6 +81,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
                                                          _soaNeighborLists);
+      if (this->_preloadLJMixingPtr) {
+        verletTraversalInterface->setPreloadMixingLJPtr(true);
+      }
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
