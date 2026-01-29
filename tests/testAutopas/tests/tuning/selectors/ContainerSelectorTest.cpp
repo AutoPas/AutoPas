@@ -11,7 +11,7 @@
 
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   autopas::ContainerSelectorInfo containerInfo(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, 64, 8,
-                                               autopas::LoadEstimatorOption::none);
+  autopas::LoadEstimatorOption::none, useMortonIndex, preloadLJMixingPtr, useLiveId, reserveVLSizes);
 
   // test all individual options
   for (auto containerOp : autopas::ContainerOption::getAllOptions()) {

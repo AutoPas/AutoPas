@@ -44,5 +44,10 @@ class LogicHandlerInfo {
    * This is currently used in rebuild frequency estimation for dynamic containers.
    */
   double deltaT{0};
+
+  bool useMortonIndex = false;
+  bool preloadLJMixingPtr = false;
+  bool useLiveId = false;
+  bool reserveVLSizes = false;
 };
 }  // namespace autopas

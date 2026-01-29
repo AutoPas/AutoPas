@@ -18,11 +18,25 @@ class AllContainersTestsBase : public AutoPasTestBase {
   const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = 1;
+  const bool useMortonIndex = true;
+  const bool preloadLJMixingPtr = true;
+  const bool useLiveId = true;
+  const bool reserveVLSizes = true;
 
   template <class Particle_T>
   auto getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
-    const autopas::ContainerSelectorInfo selectorInfo{boxMin, boxMax, cutoff, cellSizeFactor,
-                                                      skin,   32,     8,      autopas::LoadEstimatorOption::none};
+    const autopas::ContainerSelectorInfo selectorInfo{boxMin,
+                                                      boxMax,
+                                                      cutoff,
+                                                      cellSizeFactor,
+                                                      skin,
+                                                      32,
+                                                      8,
+                                                      autopas::LoadEstimatorOption::none,
+                                                      useMortonIndex,
+                                                      preloadLJMixingPtr,
+                                                      useLiveId,
+                                                      reserveVLSizes};
     auto container = autopas::ContainerSelector<Particle_T>::generateContainer(containerOptionToTest, selectorInfo);
     return std::move(container);
   }

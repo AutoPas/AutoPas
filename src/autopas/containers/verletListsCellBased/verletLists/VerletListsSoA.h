@@ -77,7 +77,7 @@ public:
     }
 
     auto *mortonTraversalInterface = dynamic_cast<MortonIndexTraversalInterface *> (traversal);
-    if (mortonTraversalInterface) {
+    if (mortonTraversalInterface && this->_useMortonIndex) {
       mortonTraversalInterface->setCellsByMortonIndex(this->_linkedCells.getCellsByMortonIndex());
     }
 
@@ -105,7 +105,15 @@ public:
    * @param useNewton3
    */
   void updateSoAVerletLists(bool useNewton3) {
-    generateSoANeighborLists();
+    if (this->_useMortonIndex && this->_useLiveId && this->_reserveVLSizes) {
+      generateSoANeighborListsWithMortonOrderAndReserving();
+    } else if (this->_useMortonIndex && this->_useLiveId && !this->_reserveVLSizes) {
+      generateSoANeighborListsWithMortonOrder();
+    } else if (this->_useLiveId && this->_reserveVLSizes && !this->_useMortonIndex) {
+      generateSoANeighborListsWithReserving();
+    } else {
+      generateSoANeighborLists();
+    }
     typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctorSoA f(this->_soaNeighborLists, this->getCutoff() + this->getVerletSkin());
 
     DataLayoutOption dataLayout;
@@ -117,13 +125,36 @@ public:
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
 
     auto *mortonTraversalInterface = dynamic_cast<MortonIndexTraversalInterface *> (&traversal);
-    if (mortonTraversalInterface) {
+    if (mortonTraversalInterface && this->_useMortonIndex) {
       mortonTraversalInterface->setCellsByMortonIndex(this->_linkedCells.getCellsByMortonIndex());
     }
 
     this->_linkedCells.computeInteractions(&traversal);
 
     this->_soaListIsValid = true;
+  }
+
+  size_t generateSoANeighborLists() {
+    size_t numParticles = 0;
+    size_t index = 0;
+
+    // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
+    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
+
+      iter->setLiveId(index);
+    }
+
+    this->_soaNeighborLists.clear();
+    this->_soaNeighborLists.resize(numParticles);
+
+    index = 0;
+
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
+      this->_soaNeighborLists[index].clear();
+    }
+
+    return numParticles;
   }
 
   /**
@@ -166,8 +197,65 @@ public:
 //
 //     return numParticles;
 //   }
+   size_t generateSoANeighborListsWithReserving() {
+    size_t numParticles = 0;
+    size_t index = 0;
+    std::vector<uint16_t> oldVerletSizes;
+    oldVerletSizes.reserve(_oldNumParticles);
+
+     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
+     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
+     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
+
+       oldVerletSizes.push_back(!_soaNeighborLists.empty() && !_soaNeighborLists[index].empty() ? _soaNeighborLists[index].size() : 64);
+       iter->setLiveId(index);
+     }
+
+    _oldNumParticles = numParticles;
+
+     this->_soaNeighborLists.clear();
+     this->_soaNeighborLists.resize(numParticles);
 
   size_t generateSoANeighborLists() {
+     index = 0;
+
+     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
+       this->_soaNeighborLists[index].clear();
+       this->_soaNeighborLists[index].reserve(oldVerletSizes[index]);
+     }
+
+     return numParticles;
+   }
+
+  size_t generateSoANeighborListsWithMortonOrder() {
+    size_t numParticles = 0;
+    size_t index = 0;
+
+    auto &cells = this->_linkedCells.getCells();
+    const auto cellsByMortonIndex = this->_linkedCells.getCellsByMortonIndex();
+
+    for (size_t cellId : cellsByMortonIndex) {
+      for (size_t i = 0; i < cells[cellId]._particles.size();  ++i, ++numParticles, ++index) {
+        Particle_T &particleI = cells[cellId]._particles[i];
+
+        particleI.setLiveId(index);
+      }
+    }
+
+
+    this->_soaNeighborLists.clear();
+    this->_soaNeighborLists.resize(numParticles);
+
+    index = 0;
+
+    for (size_t particleI = 0; particleI < numParticles; ++particleI) {
+      _soaNeighborLists[particleI].clear();
+    }
+
+    return numParticles;
+  }
+
+  size_t generateSoANeighborListsWithMortonOrderAndReserving() {
     size_t numParticles = 0;
     size_t index = 0;
     std::vector<uint16_t> oldVerletSizes;

@@ -1113,6 +1113,22 @@ class AutoPas {
    */
   size_t getSortingThreshold() const { return _sortingThreshold; }
 
+ [[nodiscard]] bool useMortonIndex() const { return _useMortonIndex; }
+
+  void setUseMortonIndex(bool useMortonIndex) { _useMortonIndex = useMortonIndex; }
+
+  [[nodiscard]] bool preloadLJMixingPtr() const { return _preloadLJMixingPtr; }
+
+  void setPreloadLJMixingIndex(bool preloadLJMixingIndex) { _preloadLJMixingPtr = preloadLJMixingIndex; }
+
+  [[nodiscard]] bool useLiveId() const { return _useLiveId; }
+
+  void setUseLiveId(bool useLiveId) { _useLiveId = useLiveId; }
+
+  [[nodiscard]] bool reserveVLSizes() const { return _reserveVLSizes; }
+
+  void setReserveVLSizes(bool reserveVLSizes) { _reserveVLSizes = reserveVLSizes; }
+
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
 
@@ -1219,5 +1235,10 @@ class AutoPas {
    */
   template <class F>
   void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
+
+  bool _useMortonIndex = false;
+  bool _preloadLJMixingPtr = false;
+  bool _useLiveId = false;
+  bool _reserveVLSizes = false;
 };  // class AutoPas
 }  // namespace autopas

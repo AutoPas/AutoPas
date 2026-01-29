@@ -29,4 +29,9 @@ class ParticleCounterTest : public AutoPasTestBase, public ::testing::WithParamI
   static constexpr unsigned int _numOwnedParticles = 3;
   static constexpr unsigned int _numHaloParticles = 4;
   static constexpr unsigned int _numDummyParticles = 1;
+
+  static constexpr bool _useMortonIndex = true;
+  static constexpr bool _preloadLJMixingPtr = true;
+  static constexpr bool _useLiveId = true;
+  static constexpr bool _reserveVLSizes = true;
 };

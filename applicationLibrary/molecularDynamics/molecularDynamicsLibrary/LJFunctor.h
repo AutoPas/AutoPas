@@ -1472,6 +1472,334 @@ class LJFunctor
     double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
 
+ template <bool newton3>
+  void SoAFunctorVerletPreloadMixingLJPtrImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+
+    auto *const __restrict forceXPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict forceYPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict forceZPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict typeIdPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    const size_t neighborListSize = neighborList.size();
+    const size_t *const __restrict neighborListPtr = neighborList.data();
+
+    const SoAFloatPrecision xI = xPtr[indexFirst];
+    const SoAFloatPrecision yI = yPtr[indexFirst];
+    const SoAFloatPrecision zI = zPtr[indexFirst];
+
+    const size_t typeIdI = typeIdPtr[indexFirst];
+
+    // checks whether particle i is owned.
+    const auto ownedStateI = ownedStatePtr[indexFirst];
+    if (ownedStateI == 0) {
+      return;
+    }
+
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    SoAFloatPrecision shift6 = _shift6;
+    SoAFloatPrecision sigmaSquared = _sigmaSquared;
+    SoAFloatPrecision epsilon24 = _epsilon24;
+
+    using PackedLJMixingData = ParticlePropertiesLibrary<SoAFloatPrecision, unsigned long>::PackedLJMixingData;
+    size_t numRegisteredSiteTypes = 0;
+    const PackedLJMixingData * __restrict computedLJMixingDataRow = nullptr;
+
+    if constexpr (useMixing) {
+      const auto &computedLJMixingData = _PPLibrary->getComputedLJMixingData();
+      numRegisteredSiteTypes = _PPLibrary->getNumberRegisteredSiteTypes();
+      computedLJMixingDataRow = computedLJMixingData.data() + typeIdI * numRegisteredSiteTypes;
+    }
+
+    SoAFloatPrecision potentialEnergySum = 0.;
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    // Counters for when countFLOPs is activated
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
+
+    SoAFloatPrecision forceXAcc = 0;
+    SoAFloatPrecision forceYAcc = 0;
+    SoAFloatPrecision forceZAcc = 0;
+
+    const auto threadNum = autopas::autopas_get_thread_num();
+
+    // this is a magic number, that should correspond to at least
+    // vectorization width*N have testet multiple sizes:
+    // 4: does not give a speedup, slower than original AoSFunctor
+    // 8: small speedup compared to AoS
+    // 12: highest speedup compared to Aos
+    // 16: smaller speedup
+    // in theory this is a variable, we could auto-tune over...
+#ifdef __AVX512F__
+    // use a multiple of 8 for avx
+    constexpr size_t vecSize = 16;
+#else
+    // for everything else 12 is faster
+    constexpr size_t vecSize = 12;
+#endif
+
+    size_t jOff = 0;
+
+    // if the size of the verlet list is larger than the given size vecsize,
+    // we will use a vectorized version.
+    if (neighborListSize >= vecSize) {
+      alignas(64) std::array<SoAFloatPrecision, vecSize> xTmp, yTmp, zTmp, xArr, yArr, zArr, forceXArr, forceYArr, forceZArr;
+      alignas(64) std::array<uint8_t, vecSize> ownedStateArr{};
+      // broadcast of the position of particle i to a vector of size vecsize
+      for (size_t tmpJ = 0; tmpJ < vecSize; tmpJ++) {
+        xTmp[tmpJ] = xI;
+        yTmp[tmpJ] = yI;
+        zTmp[tmpJ] = zI;
+      }
+      // loop over the verlet list from 0 to x*vecsize
+      // in each iteration we calculate the interactions of particle i with
+      // vecsize particles in the neighborlist of particle i starting at
+      // particle joff
+      for (; jOff < neighborListSize - vecSize + 1; jOff += vecSize) {
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> sigmaSquareds;
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> epsilon24s;
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> shift6s;
+
+        // gather position of particle j
+        #pragma omp simd safelen(vecSize)
+        for (size_t tmpJ = 0; tmpJ < vecSize; tmpJ++) {
+          const size_t liveIdJ = neighborListPtr[jOff + tmpJ];
+          xArr[tmpJ] = xPtr[liveIdJ];
+          yArr[tmpJ] = yPtr[liveIdJ];
+          zArr[tmpJ] = zPtr[liveIdJ];
+          ownedStateArr[tmpJ] = ownedStatePtr[liveIdJ];
+
+          if constexpr (useMixing) {
+          const size_t typeIdJ = typeIdPtr[liveIdJ];
+          const PackedLJMixingData mixingDataJ = computedLJMixingDataRow[typeIdJ];
+          sigmaSquareds[tmpJ] = mixingDataJ.sigmaSquared;
+          epsilon24s[tmpJ] = mixingDataJ.epsilon24;
+          if constexpr (applyShift) {
+            shift6s[tmpJ] = mixingDataJ.shift6;
+          }
+          }
+        }
+
+        // do omp simd with reduction of the interaction
+        #pragma omp simd reduction(+ : forceXAcc, forceYAcc, forceZAcc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecSize)
+        for (size_t j = 0; j < vecSize; j++) {
+          if constexpr (useMixing) {
+            sigmaSquared = sigmaSquareds[j];
+            epsilon24 = epsilon24s[j];
+            if constexpr (applyShift) {
+              shift6 = shift6s[j];
+            }
+          }
+
+          const auto ownedStateJ = ownedStateArr[j];
+
+          const SoAFloatPrecision drX = xTmp[j] - xArr[j];
+          const SoAFloatPrecision drY = yTmp[j] - yArr[j];
+          const SoAFloatPrecision drZ = zTmp[j] - zArr[j];
+
+          const SoAFloatPrecision drX2 = drX * drX;
+          const SoAFloatPrecision drY2 = drY * drY;
+          const SoAFloatPrecision drZ2 = drZ * drZ;
+
+          const SoAFloatPrecision dr2 = drX2 + drY2 + drZ2;
+
+          // Mask away if distance is too large or any particle is a dummy. ownedStateI was already checked previously.
+          const bool mask = dr2 <= cutoffSquared and ownedStateJ != 0;
+
+          const SoAFloatPrecision inverseDr2 = 1. / dr2;
+          const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
+          const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+          const SoAFloatPrecision lj12 = lj6 * lj6;
+          const SoAFloatPrecision lj12m6 = lj12 - lj6;
+          const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * inverseDr2;
+
+          const SoAFloatPrecision forceXIJ = drX * fac;
+          const SoAFloatPrecision forceYIJ = drY * fac;
+          const SoAFloatPrecision forceZIJ = drZ * fac;
+
+          forceXAcc += forceXIJ;
+          forceYAcc += forceYIJ;
+          forceZAcc += forceZIJ;
+
+          if constexpr (newton3) {
+            forceXArr[j] = forceXIJ;
+            forceYArr[j] = forceYIJ;
+            forceZArr[j] = forceZIJ;
+          }
+
+          if constexpr (countFLOPs) {
+            numDistanceCalculationSum += ownedStateJ != 0 ? 1 : 0;
+            if constexpr (newton3) {
+              numKernelCallsN3Sum += mask;
+            } else {
+              numKernelCallsNoN3Sum += mask;
+            }
+          }
+
+          if (calculateGlobals) {
+            SoAFloatPrecision virialx = drX * forceXIJ;
+            SoAFloatPrecision virialy = drY * forceYIJ;
+            SoAFloatPrecision virialz = drZ * forceZIJ;
+            SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
+
+            // We add 6 times the potential energy for each owned particle. Correction of total sum in endTraversal().
+            const SoAFloatPrecision energyFactor =
+                (ownedStateI == 1 ? 1. : 0.) +
+                (newton3 ? (ownedStateJ == 1 ? 1. : 0.) : 0.);
+            potentialEnergySum += potentialEnergy6 * energyFactor;
+            virialSumX += virialx * energyFactor;
+            virialSumY += virialy * energyFactor;
+            virialSumZ += virialz * energyFactor;
+
+            if constexpr (countFLOPs) {
+              if constexpr (newton3) {
+                numGlobalCalcsN3Sum += mask;
+              } else {
+                numGlobalCalcsNoN3Sum += mask;
+              }
+            }
+          }
+        }
+
+        // scatter the forces to where they belong, this is only needed for newton3
+        if constexpr (newton3) {
+        #pragma omp simd safelen(vecSize)
+          for (size_t tmpj = 0; tmpj < vecSize; tmpj++) {
+            const size_t j = neighborListPtr[jOff + tmpj];
+            forceXPtr[j] -= forceXArr[tmpj];
+            forceYPtr[j] -= forceYArr[tmpj];
+            forceZPtr[j] -= forceZArr[tmpj];
+          }
+        }
+      }
+    }
+
+    // this loop goes over the remainder and uses no optimizations
+    for (size_t jNeighIndex = jOff; jNeighIndex < neighborListSize; ++jNeighIndex) {
+      size_t j = neighborList[jNeighIndex];
+      if (j == indexFirst) {
+        continue;
+      }
+
+      if constexpr (useMixing) {
+        sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeIdPtr[indexFirst], typeIdPtr[j]);
+        epsilon24 = _PPLibrary->getMixing24Epsilon(typeIdPtr[indexFirst], typeIdPtr[j]);
+        if constexpr (applyShift) {
+          shift6 = _PPLibrary->getMixingShift6(typeIdPtr[indexFirst], typeIdPtr[j]);
+        }
+      }
+
+      const auto ownedStateJ = ownedStatePtr[j];
+      if (ownedStateJ == 0) {
+        continue;
+      }
+
+      const SoAFloatPrecision drX = xI - xPtr[j];
+      const SoAFloatPrecision drY = yI - yPtr[j];
+      const SoAFloatPrecision drZ = zI - zPtr[j];
+
+      const SoAFloatPrecision drX2 = drX * drX;
+      const SoAFloatPrecision drY2 = drY * drY;
+      const SoAFloatPrecision drZ2 = drZ * drZ;
+
+      const SoAFloatPrecision dr2 = drX2 + drY2 + drZ2;
+
+      if constexpr (countFLOPs) {
+        numDistanceCalculationSum += 1;
+      }
+
+      if (dr2 > cutoffSquared) {
+        continue;
+      }
+
+      const SoAFloatPrecision inverseDr2 = 1. / dr2;
+      const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
+      const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+      const SoAFloatPrecision lj12 = lj6 * lj6;
+      const SoAFloatPrecision lj12m6 = lj12 - lj6;
+      const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * inverseDr2;
+
+      const SoAFloatPrecision forceXIJ = drX * fac;
+      const SoAFloatPrecision forceYIJ = drY * fac;
+      const SoAFloatPrecision forceZIJ = drZ * fac;
+
+      forceXAcc += forceXIJ;
+      forceYAcc += forceYIJ;
+      forceZAcc += forceZIJ;
+
+      if (newton3) {
+        forceXPtr[j] -= forceXIJ;
+        forceYPtr[j] -= forceYIJ;
+        forceZPtr[j] -= forceZIJ;
+      }
+
+      if constexpr (countFLOPs) {
+        if constexpr (newton3) {
+          numKernelCallsN3Sum += 1;
+        } else {
+          numKernelCallsNoN3Sum += 1;
+        }
+      }
+
+      if (calculateGlobals) {
+        SoAFloatPrecision virialx = drX * forceXIJ;
+        SoAFloatPrecision virialy = drY * forceYIJ;
+        SoAFloatPrecision virialz = drZ * forceZIJ;
+        SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6);
+
+        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
+        const SoAFloatPrecision energyFactor =
+            (ownedStateI == 1 ? 1. : 0.) +
+            (newton3 ? (ownedStateJ == 1 ? 1. : 0.) : 0.);
+        potentialEnergySum += potentialEnergy6 * energyFactor;
+        virialSumX += virialx * energyFactor;
+        virialSumY += virialy * energyFactor;
+        virialSumZ += virialz * energyFactor;
+
+        if constexpr (countFLOPs) {
+          if constexpr (newton3) {
+            ++numGlobalCalcsN3Sum;
+          } else {
+            ++numGlobalCalcsNoN3Sum;
+          }
+        }
+      }
+    }
+
+    if (forceXAcc != 0 or forceYAcc != 0 or forceZAcc != 0) {
+      forceXPtr[indexFirst] += forceXAcc;
+      forceYPtr[indexFirst] += forceYAcc;
+      forceZPtr[indexFirst] += forceZAcc;
+    }
+
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadNum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadNum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadNum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadNum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadNum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+    }
+
+    if (calculateGlobals) {
+      _aosThreadDataGlobals[threadNum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadNum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadNum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadNum].virialSum[2] += virialSumZ;
+    }
+  }
+
   /**
    * This class stores internal data for FLOP counters for each thread. Make sure that this data has proper size, i.e.
    * k*64 Bytes!

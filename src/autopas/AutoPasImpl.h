@@ -82,6 +82,10 @@ void AutoPas<Particle_T>::init() {
   }
 
   _logicHandlerInfo.sortingThreshold = _sortingThreshold;
+  _logicHandlerInfo.useMortonIndex = _useMortonIndex;
+  _logicHandlerInfo.useLiveId = _useLiveId;
+  _logicHandlerInfo.preloadLJMixingPtr = _preloadLJMixingPtr;
+  _logicHandlerInfo.reserveVLSizes = _reserveVLSizes;
 
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.

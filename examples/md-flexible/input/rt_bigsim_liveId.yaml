@@ -1,0 +1,62 @@
+# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
+## md-flexible compiled for multi-site molecules.
+container                        :  [VerletListsSoA]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius               :  1.0
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [SoA]
+traversal                        :  [vl_list_iteration] # Please see AllOptions.yaml for a comprehensive list of traversals
+tuning-strategies                :  []
+tuning-interval                  :  2500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  lj
+newton3                          :  [disabled]
+cutoff                           :  3
+box-min                          :  [0, 0, 0]
+box-max                          :  [48,36,12]
+cell-size                        :  [1]
+deltaT                           :  0.0005
+iterations                       :  100
+boundary-type                    :  [periodic, reflective, periodic]
+globalForce                      :  [0,-12.44,0]
+Sites:
+  0:
+    epsilon                      :  1.0
+    sigma                        :  1.2
+    mass                         :  1.0
+  1:
+    epsilon : 1.0
+    sigma : 1.1
+    mass : 2.0
+Objects:
+  CubeGrid:
+    0:
+      particles-per-dimension: [ 50, 20, 50 ]
+      particle-spacing: 1.2
+      bottomLeftCorner: [ 0.6, 0.6, 0.6 ]
+      velocity: [ 0, 0, 0 ]
+      particle-type-id: 0
+    1:
+      particles-per-dimension: [ 50, 20, 50 ]
+      particle-spacing: 1.2
+      bottomLeftCorner: [ 0.6, 24.6, 0.6 ]
+      velocity: [ 0, 0, 0 ]
+      particle-type-id: 1
+thermostat:
+  initialTemperature                 :  40
+  targetTemperature                  :  40
+  deltaTemperature                   :  0.5
+  thermostatInterval                 :  25
+  addBrownianMotion                  :  true
+use-morton-index                     : false
+preload-lj-mixing-ptrs               : false
+use-live-id                          : true
+reserve-vl-sizes                     : false
+
+#vtk-filename                     :  rayleigh_taylor
+#vtk-write-frequency              :  50
+#vtk-output-folder                :  vtk-output
+#no-end-config                    :  true
+#log-level                        :  info

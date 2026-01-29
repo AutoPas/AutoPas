@@ -33,7 +33,8 @@ class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numParticles,
       size_t numHaloParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cellSizeFactor,
       double cutoff, double skin, unsigned int rebuildFrequency, double interactionLength,
-      Vector3DList particlePositions, Vector3DList haloParticlePositions);
+      Vector3DList particlePositions, Vector3DList haloParticlePositions,
+      bool useMortonIndex, bool preloadLJMixingPtr, bool useLiveId, bool reserveVLSizes);
 
   MockPairwiseFunctor<Molecule> mockFunctor;
 };

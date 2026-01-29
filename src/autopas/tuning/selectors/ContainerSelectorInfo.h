@@ -45,7 +45,8 @@ class ContainerSelectorInfo {
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
                                  unsigned int verletClusterSize, size_t sortingThreshold,
-                                 LoadEstimatorOption loadEstimator)
+                                 LoadEstimatorOption loadEstimator, bool useMortonIndex,
+                                 bool preloadLJMixingPtr, bool useLiveId, bool reserveVLSizes)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),
@@ -53,7 +54,11 @@ class ContainerSelectorInfo {
         verletSkin(verletSkin),
         verletClusterSize(verletClusterSize),
         sortingThreshold(sortingThreshold),
-        loadEstimator(loadEstimator) {}
+        loadEstimator(loadEstimator),
+        useMortonIndex(useMortonIndex),
+        preloadLJMixingPtr(preloadLJMixingPtr),
+        useLiveId(useLiveId),
+        reserveVLSizes(reserveVLSizes){}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -122,6 +127,11 @@ class ContainerSelectorInfo {
    * Load estimator for balanced sliced traversals.
    */
   LoadEstimatorOption loadEstimator;
+
+  bool useMortonIndex = false;
+  bool preloadLJMixingPtr = false;
+  bool useLiveId = false;
+  bool reserveVLSizes = false;
 };
 
 }  // namespace autopas

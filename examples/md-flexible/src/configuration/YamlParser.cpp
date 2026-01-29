@@ -844,6 +844,26 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
+      } else if (key == config.useMortonIndex.name) {
+        expected = "Boolean Value";
+        description = config.useMortonIndex.description;
+
+        config.useMortonIndex.value = node[config.useMortonIndex.name].as<bool>();
+      } else if (key == config.preloadLJMixingPtr.name) {
+        expected = "Boolean Value";
+        description = config.preloadLJMixingPtr.description;
+
+        config.preloadLJMixingPtr.value = node[config.preloadLJMixingPtr.name].as<bool>();
+      } else if (key == config.useLiveId.name) {
+        expected = "Boolean Value";
+        description = config.useLiveId.description;
+
+        config.useLiveId.value = node[config.useLiveId.name].as<bool>();
+      } else if (key == config.reserveVLSizes.name) {
+        expected = "Boolean Value";
+        description = config.reserveVLSizes.description;
+
+        config.reserveVLSizes.value = node[config.reserveVLSizes.name].as<bool>();
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

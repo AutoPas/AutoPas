@@ -472,7 +472,8 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
                                     size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMin,
                                     std::array<double, 3> boxMax, double cellSizeFactor, double cutoff, double skin,
                                     unsigned int rebuildFrequency, double interactionLength,
-                                    Vector3DList particlePositions, Vector3DList haloParticlePositions) {
+                                    Vector3DList particlePositions, Vector3DList haloParticlePositions,
+                                    bool useMortonIndex, bool preloadLJMixingPtr, bool useLiveId, bool reserveVLSizes) {
   using namespace autopas;
 
   double _cutoffsquare = cutoff * cutoff;
@@ -482,7 +483,8 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   // Construct container
   auto container = ContainerSelector<Molecule>::generateContainer(
       containerOption,
-      ContainerSelectorInfo{boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, autopas::LoadEstimatorOption::none});
+      ContainerSelectorInfo{boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, autopas::LoadEstimatorOption::none,
+                            useMortonIndex, preloadLJMixingPtr, useLiveId, reserveVLSizes});
 
   // Create a functor that is able to calculate forces
   LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, false /*calculateGlobals*/>
@@ -597,6 +599,11 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   unsigned int rebuildFrequency = 1;
   double interactionLength = _cutoff + skin;
 
+  const bool useMortonIndex = true;
+  const bool preloadLJMixingPtr = true;
+  const bool useLiveId = true;
+  const bool reserveVLSizes = true;
+
   // Obtain a starting configuration
   auto containerOption = ContainerOption::octree;
   auto traversalOption = TraversalOption::ot_c01;
@@ -634,13 +641,15 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   auto [calculatedForces, calculatedPairs] =
       calculateForcesAndPairs(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
                               numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin, rebuildFrequency,
-                              interactionLength, particlePositions, haloParticlePositions);
+                              interactionLength, particlePositions, haloParticlePositions,
+                              useMortonIndex, preloadLJMixingPtr, useLiveId, reserveVLSizes);
 
   // Calculate the forces using the reference implementation
   auto [referenceForces, referencePairs] = calculateForcesAndPairs(
       autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
       autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin,
-      rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
+      rebuildFrequency, interactionLength, particlePositions, haloParticlePositions,
+      useMortonIndex, preloadLJMixingPtr, useLiveId, reserveVLSizes);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   // std::sort(calculatedPairs.begin(), calculatedPairs.end());

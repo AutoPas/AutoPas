@@ -36,6 +36,10 @@ class Newton3OnOffTest
   static double getVerletSkin() { return 0.0; }
   static int getClusterSize() { return 4; }
   static int getSortingThreshold() { return 8; }
+  static bool getUseMortonIndex() { return true; }
+  static bool getPreLoadLJMixingPtr() { return true; }
+  static bool getUseLiveId() { return true; }
+  static bool getReserveVLSizes() { return true; }
 
   template <typename FunctorType>
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,

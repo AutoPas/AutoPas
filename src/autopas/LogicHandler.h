@@ -79,7 +79,11 @@ class LogicHandler {
                                                             _logicHandlerInfo.verletSkin,
                                                             _verletClusterSize,
                                                             _sortingThreshold,
-                                                            configuration.loadEstimator};
+                                                            configuration.loadEstimator,
+                                                            _logicHandlerInfo.useMortonIndex,
+                                                            _logicHandlerInfo.preloadLJMixingPtr,
+                                                            _logicHandlerInfo.useLiveId,
+                                                            _logicHandlerInfo.reserveVLSizes};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -2042,7 +2046,8 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+                            _verletClusterSize, _sortingThreshold, config.loadEstimator, _logicHandlerInfo.useMortonIndex,
+                            _logicHandlerInfo.preloadLJMixingPtr, _logicHandlerInfo.useLiveId, _logicHandlerInfo.reserveVLSizes);
   auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 

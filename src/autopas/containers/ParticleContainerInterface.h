@@ -413,6 +413,23 @@ class ParticleContainerInterface {
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
+
+  [[nodiscard]] bool useMortonIndex() const { return _useMortonIndex; }
+
+  void setUseMortonIndex(bool useMortonIndex) { _useMortonIndex = useMortonIndex; }
+
+  [[nodiscard]] bool preloadLJMixingPtr() const { return _preloadLJMixingPtr; }
+
+  void setPreloadLJMixingIndex(bool preloadLJMixingIndex) { _preloadLJMixingPtr = preloadLJMixingIndex; }
+
+  [[nodiscard]] bool useLiveId() const { return _useLiveId; }
+
+  void setUseLiveId(bool useLiveId) { _useLiveId = useLiveId; }
+
+  [[nodiscard]] bool reserveVLSizes() const { return _reserveVLSizes; }
+
+  void setReserveVLSizes(bool reserveVLSizes) { _reserveVLSizes = reserveVLSizes; }
+
  protected:
   /**
    * Stores the number of time-steps since last neighbor list rebuild
@@ -425,6 +442,11 @@ class ParticleContainerInterface {
    * Skin distance a particle is allowed to move in one time-step.
    */
   double _skin;
+
+  bool _useMortonIndex = false;
+  bool _preloadLJMixingPtr = false;
+  bool _useLiveId = false;
+  bool _reserveVLSizes = false;
 };
 
 }  // namespace autopas
