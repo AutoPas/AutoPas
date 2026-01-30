@@ -71,9 +71,9 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
     utils::ExceptionHandler::exception("Failed to initialize Treelite model: {}", e.what());
   }
 #else
-    utils::ExceptionHandler::exception(
-        "TreeliteBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF! "
-        "Set this CMake variable to ON to use this tuning strategy.");
+  utils::ExceptionHandler::exception(
+      "TreeliteBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF! "
+      "Set this CMake variable to ON to use this tuning strategy.");
 #endif
 }
 

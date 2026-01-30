@@ -9,12 +9,11 @@
 
 #include <cmath>
 #include <fstream>
+#include <json.hpp>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <json.hpp>
 
 #include "autopas/utils/ExceptionHandler.h"
 
