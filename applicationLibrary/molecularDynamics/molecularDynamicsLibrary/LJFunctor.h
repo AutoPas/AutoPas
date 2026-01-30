@@ -579,9 +579,9 @@ class LJFunctor
                       bool newton3) final{
     if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
-      SoAFunctorVerletImplTryout<true>(soa, indexFirst, neighborList);
+      SoAFunctorVerletPreloadMixingLJPtrImpl<true>(soa, indexFirst, neighborList);
     } else {
-      SoAFunctorVerletImplTryout<false>(soa, indexFirst, neighborList);
+      SoAFunctorVerletPreloadMixingLJPtrImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -607,8 +607,7 @@ class LJFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
-                                                              Particle_T::AttributeNames::posX,
+    return std::array<typename Particle_T::AttributeNames, 8>{Particle_T::AttributeNames::posX,
                                                               Particle_T::AttributeNames::posY,
                                                               Particle_T::AttributeNames::posZ,
                                                               Particle_T::AttributeNames::forceX,

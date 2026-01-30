@@ -300,10 +300,11 @@ class ParticlePropertiesLibrary {
                                   k];
   }
 
-  struct PackedLJMixingData {
+  struct alignas(32) PackedLJMixingData {
     floatType epsilon24;
     floatType sigmaSquared;
     floatType shift6;
+    floatType padding;
   };
 
  [[nodiscard]] const std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>>

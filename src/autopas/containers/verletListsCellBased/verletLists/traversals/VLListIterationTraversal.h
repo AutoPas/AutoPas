@@ -44,9 +44,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     return (not _useNewton3) and (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa);
   }
 
-  [[nodiscard]] bool isSoaTryout() const { return _soaTryout; }
+  [[nodiscard]] bool isPreloadMixingLJPtr() const { return _preloadMixingLJPtr; }
 
-  void setSoaTryout(bool soaTryout) override { _soaTryout = soaTryout; }
+  void setPreloadMixingLJPtr(bool preloadMixingLJPointer) override { _preloadMixingLJPtr = preloadMixingLJPointer; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -112,18 +112,19 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       }
 
       case DataLayoutOption::soa: {
-        if (_soaTryout) {
+        // LIKWID_MARKER_START("force calculation SoA");
+        if (_preloadMixingLJPtr) {
           if (not _useNewton3) {
             /// @todo find a sensible chunk size
             AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
             for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
               //ep SoA Functor call
-              _functor->SoAFunctorVerletTryout(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+              _functor->SoAFunctorVerletPreloadMixingLJ(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
             }
           } else {
             // iterate over SoA
             for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-              _functor->SoAFunctorVerletTryout(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+              _functor->SoAFunctorVerletPreloadMixingLJ(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
             }
           }
         } else {
@@ -159,7 +160,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    */
   SoA<typename ParticleType::SoAArraysType> _soa;
 
-  bool _soaTryout = false;
+  bool _preloadMixingLJPtr = false;
 
   std::vector<size_t> _offsets;
 };

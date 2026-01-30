@@ -71,7 +71,9 @@ public:
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
                                                          _soaNeighborLists);
-      verletTraversalInterface->setSoaTryout(true);
+      if (this->_preloadLJMixingPtr) {
+        verletTraversalInterface->setPreloadMixingLJPtr(true);
+      }
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
