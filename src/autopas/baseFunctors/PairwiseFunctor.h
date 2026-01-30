@@ -92,6 +92,10 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
                               const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
+  virtual void SoAFunctorVerletCompactSoA(VerletListsLJCompactSoA<typename Particle_T::ParticleSoAFloatPrecision> &verletListsCompactSoAData,
+                              const uint32_t indexFirst, const std::vector<uint32_t, AlignedAllocator<uint32_t>> &neighborList, bool newton3){
+    utils::ExceptionHandler::exception("{}::SoAFunctorVerletCompactSoA: not implemented", this->getName());
+   }
 
   /**
    * PairwiseFunctor for structure of arrays (SoA)

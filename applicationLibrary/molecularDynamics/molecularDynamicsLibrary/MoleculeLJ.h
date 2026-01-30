@@ -204,6 +204,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
 
   void setLiveId(size_t liveId);
 
+  [[nodiscard]] uint8_t getOwnershipStateSoA() const;
+
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.

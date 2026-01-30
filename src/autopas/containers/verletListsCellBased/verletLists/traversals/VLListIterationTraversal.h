@@ -59,12 +59,14 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         _offsets[i + 1] = _offsets[i] + cells[cellId].size();
       }
 
-      _soa.resizeArrays(_offsets.back());
+      // _soa.resizeArrays(_offsets.back());
+      _verletListsCompactSoAData.resize(_offsets.back());
 
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-        _functor->SoALoader(cells[cellId], _soa, _offsets[i], /*skipSoAResize*/ true);
+        // _functor->SoALoader(cells[cellId], _soa, _offsets[i], /*skipSoAResize*/ true);
+        _functor->CompactLJSoADataLoader(cells[cellId], _verletListsCompactSoAData, _offsets[i], true);
       }
     }
   }
@@ -74,7 +76,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     if (_dataLayout == DataLayoutOption::soa) {
       for (size_t i = 0; i < cells.size(); ++i) {
         const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-          _functor->SoAExtractor(cells[cellId], _soa, _offsets[i]);
+        // _functor->SoAExtractor(cells[cellId], _soa, _offsets[i]);
+        _functor->CompactLJSoADataExtractor(cells[cellId], _verletListsCompactSoAData, _offsets[i]);
       }
     }
   }
@@ -118,12 +121,15 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
             for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
               //ep SoA Functor call
-              _functor->SoAFunctorVerletTryout(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+              // _functor->SoAFunctorVerletPreloadMixingLJ(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+              _functor->SoAFunctorVerletCompactSoA(_verletListsCompactSoAData, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+
             }
           } else {
             // iterate over SoA
             for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-              _functor->SoAFunctorVerletTryout(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+              //_functor->SoAFunctorVerletPreloadMixingLJ(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+              _functor->SoAFunctorVerletCompactSoA(_verletListsCompactSoAData, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
             }
           }
         } else {
@@ -160,6 +166,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   SoA<typename ParticleType::SoAArraysType> _soa;
 
   bool _soaTryout = false;
+  VerletListsLJCompactSoA<typename ParticleType::ParticleSoAFloatPrecision> _verletListsCompactSoAData;
 
   std::vector<size_t> _offsets;
 };

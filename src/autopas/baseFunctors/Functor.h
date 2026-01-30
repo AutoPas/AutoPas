@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/VerletListsLJCompactSoA.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
@@ -113,6 +114,11 @@ class Functor {
     SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
+  template <class ParticleCell>
+  void CompactLJSoADataLoader(ParticleCell &cell, VerletListsLJCompactSoA<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJCompactSoA, size_t offset, bool skipVerletListLJDataResize) {
+    compactLJSoADataLoaderImpl(cell, verletListLJCompactSoA, offset, skipVerletListLJDataResize);
+  }
+
   /**
    * Copies the data stored in the soa back into the cell.
    *
@@ -125,6 +131,11 @@ class Functor {
   template <typename ParticleCell>
   void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
     SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
+  }
+
+  template <typename ParticleCell>
+  void CompactLJSoADataExtractor(ParticleCell &cell, VerletListsLJCompactSoA<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJCompactSoA, size_t offset) {
+    compactLJSoADataExtractorImpl(cell, verletListLJCompactSoA, offset);
   }
 
   /**
@@ -229,6 +240,28 @@ class Functor {
     }
   }
 
+  template <typename cell_t>
+  void compactLJSoADataLoaderImpl(cell_t &cell, VerletListsLJCompactSoA<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJCompactSoA, size_t offset, bool skipVerletListLJDataResize) {
+
+    if (not skipVerletListLJDataResize) {
+      verletListLJCompactSoA.resize(offset + cell.size());
+    }
+
+    if (cell.isEmpty()) return;
+
+    auto cellIter = cell.begin();
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
+      verletListLJCompactSoA._posX[particleIndex] = cellIter->getR()[0];
+      verletListLJCompactSoA._posY[particleIndex] = cellIter->getR()[1];
+      verletListLJCompactSoA._posZ[particleIndex] = cellIter->getR()[2];
+      verletListLJCompactSoA._forceX[particleIndex] = cellIter->getF()[0];
+      verletListLJCompactSoA._forceY[particleIndex] = cellIter->getF()[1];
+      verletListLJCompactSoA._forceZ[particleIndex] = cellIter->getF()[2];
+      verletListLJCompactSoA._typeIds[particleIndex] = cellIter->getTypeId();
+      verletListLJCompactSoA._ownershipStates[particleIndex] = cellIter->getOwnershipStateSoA();
+    }
+  }
+
   /**
    * Implements extraction of SoA buffers.
    * @tparam cell_t Cell type.
@@ -260,6 +293,19 @@ class Functor {
        * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
        */
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+
+  template <typename cell_t>
+  void compactLJSoADataExtractorImpl(cell_t &cell, VerletListsLJCompactSoA<typename Particle_T::ParticleSoAFloatPrecision> &verletListLJCompactSoA, size_t offset) {
+    if (cell.isEmpty()) return;
+
+    auto cellIter = cell.begin();
+    // write values in SoAs back to particles
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
+      cellIter->setF({verletListLJCompactSoA._forceX[particleIndex],
+                      verletListLJCompactSoA._forceY[particleIndex],
+                      verletListLJCompactSoA._forceZ[particleIndex]});
+    }
+  }
     }
   }
 

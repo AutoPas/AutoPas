@@ -20,6 +20,8 @@ void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 size_t MoleculeLJ::getLiveId() const { return _liveId; }
 void MoleculeLJ::setLiveId(size_t liveId) { _liveId = liveId; }
 
+uint8_t MoleculeLJ::getOwnershipStateSoA() const { return static_cast<uint8_t>(ParticleBase::getOwnershipState()); }
+
 std::string MoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;
