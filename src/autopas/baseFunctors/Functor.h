@@ -246,11 +246,11 @@ class Functor {
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
+    [[maybe_unused]] auto const attributePointers = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // write values in SoAs back to particles
-    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
       /**
        * The following statement writes the value of all attributes defined in computedAttr back into the particle.
        * I represents the index inside computedAttr.
@@ -259,7 +259,7 @@ class Functor {
        * (cellIter->template set<Functor_T::getComputedAttr()[0]>(std::get<0>(pointer)[i]),
        * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
        */
-      (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+      (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(attributePointers)[particleIndex]), ...);
     }
   }
 
