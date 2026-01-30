@@ -4,6 +4,7 @@
  * @date 18.12.25
  */
 
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/TreelitePredictor.h"
 
 #include <cmath>
@@ -13,9 +14,7 @@
 #include <utility>
 #include <vector>
 
-#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include <json.hpp>
-#endif
 
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -290,3 +289,4 @@ std::string TreelitePredictor::predict(const std::map<std::string, double> &live
 }
 
 }  // namespace autopas
+#endif

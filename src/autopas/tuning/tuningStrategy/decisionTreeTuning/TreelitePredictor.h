@@ -7,7 +7,6 @@
 #pragma once
 
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
-
 #include <treelite/c_api.h>
 
 #include <map>
@@ -18,7 +17,6 @@
 
 #include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
-#endif
 
 namespace autopas {
 
@@ -151,3 +149,4 @@ class TreelitePredictor {
 };
 
 }  // namespace autopas
+#endif

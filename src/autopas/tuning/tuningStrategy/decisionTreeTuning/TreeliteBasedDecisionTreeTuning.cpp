@@ -26,8 +26,8 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
       _modelTriwiseFileName(modelTriwiseFileName),
       _confidenceThreshold(confidenceThreshold),
       _interactionType(interactionType) {
-  try {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+  try {
     namespace fs = std::filesystem;
 
     // Select model based on interaction type.
