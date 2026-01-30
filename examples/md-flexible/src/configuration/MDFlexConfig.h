@@ -352,9 +352,26 @@ class MDFlexConfig {
   /**
    * modelFilename
    */
-  MDFlexOption<std::string, __LINE__> modelFilename{"", "model-filename", true,
-                                                    "Path to a .pkl file containing the model for the decision-tree "
-                                                    "tuning method. The path is relative to AUTOPAS_SOURCE_DIR"};
+  MDFlexOption<std::string, __LINE__> modelFilename{
+    "", "model-filename", true,
+    "Path to a .pkl file containing the model for the Python based decision-tree tuning method. "
+    "The path is relative to AUTOPAS_SOURCE_DIR"};
+
+  /**
+   * modelPairwiseFilename
+   */
+  MDFlexOption<std::string, __LINE__> modelPairwiseFilename{
+    "", "model-pairwise-filename", true,
+    "Path to a .tl file containing the pairwise model for the Treelite based decision-tree tuning method. "
+    "The path is relative to AUTOPAS_SOURCE_DIR"};
+
+  /**
+   * modelTriwiseFilename
+   */
+  MDFlexOption<std::string, __LINE__> modelTriwiseFilename{
+    "", "model-triwise-filename", true,
+    "Path to a .tl file containing the triwise model for the Treelite based decision-tree tuning method. "
+    "The path is relative to AUTOPAS_SOURCE_DIR"};
 
   /**
    * confidenceThreshold

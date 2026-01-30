@@ -1,11 +1,11 @@
 /**
- * @file DecisionTreeTuningTest.cpp
+ * @file PythonBasedDecisionTreeTuningTest.cpp
  * @author
  * Abdulkadir Pazar
  * @date 20.09.2024
  */
 
-#include "DecisionTreeTuningTest.h"
+#include "PythonBasedDecisionTreeTuningTest.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -15,7 +15,7 @@
 
 #include <filesystem>  // For checking the existence of test files
 
-#include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
+#include "autopas/tuning/tuningStrategy/decisionTreeTuning/PythonBasedDecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -39,13 +39,13 @@ class MockLiveInfo : public LiveInfo {
  *
  * Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
  */
-TEST(DecisionTreeTuningTest, TestScriptLoading) {
+TEST(PythonBasedDecisionTreeTuningTest, TestScriptLoading) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   std::set<autopas::Configuration> searchSpace;
 
   EXPECT_THROW(
       {
-        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8);
+        autopas::PythonBasedDecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8, InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
@@ -61,7 +61,7 @@ TEST(DecisionTreeTuningTest, TestScriptLoading) {
  *
  * Tests that a valid Python model response updates the configuration queue correctly.
  */
-TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
+TEST(PythonBasedDecisionTreeTuningTest, TestValidPythonResponse) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   // Define the search space for configurations
   std::set<autopas::Configuration> searchSpace = {
@@ -74,7 +74,7 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
       << "Test model file does not exist.";
 
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
+  autopas::PythonBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -111,7 +111,7 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
  *
  * Tests that a malformed model throws an exception during `reset()`.
  */
-TEST(DecisionTreeTuningTest, TestInvalidModel) {
+TEST(PythonBasedDecisionTreeTuningTest, TestInvalidModel) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
@@ -120,7 +120,7 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
   std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model_invalid.pkl";
   ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
       << "Invalid response test model file does not exist.";
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
+  autopas::PythonBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
 
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {

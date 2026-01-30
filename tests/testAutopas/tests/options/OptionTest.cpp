@@ -98,7 +98,9 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
       {autopas::TuningStrategyOption::slowConfigFilter, "slow-filter"},
       {autopas::TuningStrategyOption::sortByName, "sortbyname"},
       {autopas::TuningStrategyOption::tuningStrategyLogger, "tuningstratLogger"},
-      {autopas::TuningStrategyOption::decisionTreeTuning, "decision-tree"}};
+      {autopas::TuningStrategyOption::pythonBasedDecisionTreeTuning, "python-based"},
+      {autopas::TuningStrategyOption::treeliteBasedDecisionTreeTuning, "treelite-based"},
+  };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());
 

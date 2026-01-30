@@ -1,10 +1,10 @@
 /**
- * @file DecisionTreeTuning.cpp
+ * @file PythonBasedDecisionTreeTuning.cpp
  * @author Abdulkadir Pazar
  * @date 20.06.24
  */
 
-#include "DecisionTreeTuning.h"
+#include "PythonBasedDecisionTreeTuning.h"
 
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
@@ -21,7 +21,7 @@ namespace autopas {
 namespace py = pybind11;
 #endif
 
-DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
+PythonBasedDecisionTreeTuning::PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
                                        double confidenceThreshold, InteractionTypeOption interactionType)
     : _configurations(searchSpace), _modelFileName(modelFileName), _confidenceThreshold(confidenceThreshold),
   _interactionType(interactionType) {
@@ -38,22 +38,22 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
     py::module predictModule = py::module::import("predict");
 
     // Initialize the python object.
-    _decisionTreeTuningPyObj = predictModule.attr("DecisionTreeTuning")(_modelFileName, _interactionType.to_string());
+    _decisionTreeTuningPyObj = predictModule.attr("PythonBasedDecisionTreeTuning")(_modelFileName, _interactionType.to_string());
 
   } catch (const py::error_already_set &e) {
     utils::ExceptionHandler::exception("Failed to initialize Python environment: {}", e.what());
   }
 #else
-  utils::ExceptionHandler::exception("DecisionTreeTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
+  utils::ExceptionHandler::exception("PythonBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
 "Set this CMake variable to ON to use this tuning strategy.");
 #endif
 }
 
-DecisionTreeTuning::~DecisionTreeTuning() = default;
+PythonBasedDecisionTreeTuning::~PythonBasedDecisionTreeTuning() = default;
 
-bool DecisionTreeTuning::needsLiveInfo() const { return true; }
+bool PythonBasedDecisionTreeTuning::needsLiveInfo() const { return true; }
 
-void DecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
+void PythonBasedDecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
   _currentLiveInfo.clear();
   for (const auto &infoEntry : info.get()) {
     const auto &name = infoEntry.first;
@@ -68,21 +68,21 @@ void DecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
   }
 }
 
-bool DecisionTreeTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool PythonBasedDecisionTreeTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                                const EvidenceCollection &evidenceCollection) {
   std::string configPrediction = getPredictionFromPython();
   updateConfigQueue(configQueue, configPrediction);
   return true;
 }
 
-bool DecisionTreeTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+bool PythonBasedDecisionTreeTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                              const EvidenceCollection &evidenceCollection) {
   return true;
 }
 
-TuningStrategyOption DecisionTreeTuning::getOptionType() const { return TuningStrategyOption::decisionTreeTuning; }
+TuningStrategyOption PythonBasedDecisionTreeTuning::getOptionType() const { return TuningStrategyOption::pythonBasedDecisionTreeTuning; }
 
-std::string DecisionTreeTuning::getPredictionFromPython() {
+std::string PythonBasedDecisionTreeTuning::getPredictionFromPython() {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
@@ -106,7 +106,7 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
 #endif
 }
 
-void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQueue, const std::string &prediction) {
+void PythonBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQueue, const std::string &prediction) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     nlohmann::json predictionJson = nlohmann::json::parse(prediction);

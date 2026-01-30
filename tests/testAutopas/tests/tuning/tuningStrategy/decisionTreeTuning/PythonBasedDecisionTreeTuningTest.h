@@ -1,5 +1,5 @@
 /**
- * @file DecisionTreeTuningTest.h
+ * @file PythonBasedDecisionTreeTuningTest.h
  * @author Abdulkadir Pazar
  * @date 20.09.2024
  */
@@ -10,4 +10,4 @@
 
 #include "AutoPasTestBase.h"
 
-class DecisionTreeTuningTest : public AutoPasTestBase {};
+class PythonBasedDecisionTreeTuningTest : public AutoPasTestBase {};

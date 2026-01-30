@@ -1100,25 +1100,50 @@ class AutoPas {
   const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
 
   /**
-   * Set the name / path of the model file for the DecisionTreeTuning.
+   * Set the name / path of the model file for the PythonBasedDecisionTreeTuning.
    * @param modelFileName The name of the model file to use during decision tree tuning.
    */
   void setModelFileName(const std::string &modelFileName) { _tuningStrategyFactoryInfo.modelFileName = modelFileName; }
 
   /**
-   * Get the name / path of the model file for the DecisionTreeTuning.
+   * Get the name / path of the model file for the PythonBasedDecisionTreeTuning.
    * @return
    */
   const std::string &getModelFileName() const { return _tuningStrategyFactoryInfo.modelFileName; }
+
   /**
-   * Set the confidence threshold for the DecisionTreeTuning.
+   * Set the name / path of the pairwise model file for the TreeliteBasedDecisionTreeTuning.
+   * @param modelPairwiseFileName The name of the model file to use during decision tree tuning.
+   */
+  void setModelPairwiseFileName(const std::string &modelPairwiseFileName) { _tuningStrategyFactoryInfo.modelPairwiseFileName = modelPairwiseFileName; }
+
+  /**
+   * Get the name / path of the pairwise model file for the TreeliteBasedDecisionTreeTuning.
+   * @return
+   */
+  const std::string &getModelPairwiseFileName() const { return _tuningStrategyFactoryInfo.modelPairwiseFileName; }
+
+  /**
+   * Set the name / path of the triwise model file for the TreeliteBasedDecisionTreeTuning.
+   * @param modelTriwiseFileName The name of the model file to use during decision tree tuning.
+   */
+  void setModelTriwiseFileName(const std::string &modelTriwiseFileName) { _tuningStrategyFactoryInfo.modelTriwiseFileName = modelTriwiseFileName; }
+
+  /**
+   * Get the name / path of the triwise model file for the TreeliteBasedDecisionTreeTuning.
+   * @return
+   */
+  const std::string &getModelTriwiseFileName() const { return _tuningStrategyFactoryInfo.modelTriwiseFileName; }
+
+  /**
+   * Set the confidence threshold for the PythonBasedDecisionTreeTuning and TreeliteBasedDecisionTreeTuning.
    * @param confidenceThreshold The confidence threshold to use during decision tree tuning.
    */
   void setConfidenceThreshold(double confidenceThreshold) {
     _tuningStrategyFactoryInfo.confidenceThreshold = confidenceThreshold;
   }
   /**
-   * Get the confidence threshold for the DecisionTreeTuning.
+   * Get the confidence threshold for the PythonBasedDecisionTreeTuning and TreeliteBasedDecisionTreeTuning.
    * @return
    */
   double getConfidenceThreshold() const { return _tuningStrategyFactoryInfo.confidenceThreshold; }

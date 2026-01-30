@@ -1,5 +1,5 @@
 /**
- * @file DecisionTreeTuning.h
+ * @file PythonBasedDecisionTreeTuning.h
  * @author Abdulkadir Pazar
  * @date 20.06.24
  */
@@ -21,7 +21,7 @@
 namespace autopas {
 
 /**
- * @class DecisionTreeTuning
+ * @class PythonBasedDecisionTreeTuning
  *
  * This class uses a decision tree model to predict the best configuration based on the current live
  * information. The decision tree model is trained using the Python scikit-learn library. The Python
@@ -29,19 +29,19 @@ namespace autopas {
  *
  * @note This tuning strategy requires the CMake variable AUTOPAS_ENABLE_PYTHON_BASED_TUNING set to ON
  */
-class DecisionTreeTuning : public TuningStrategyInterface {
+class PythonBasedDecisionTreeTuning : public TuningStrategyInterface {
  public:
   /**
-   * Constructor of DecisionTreeTuning.
+   * Constructor of PythonBasedDecisionTreeTuning.
    * @param searchSpace Set of configurations to be considered.
    * @param modelFileName Name of the file containing the random forest models.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
-  DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
+  PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
                      double confidenceThreshold, InteractionTypeOption interactionType);
 
-  ~DecisionTreeTuning() override;
+  ~PythonBasedDecisionTreeTuning() override;
 
   [[nodiscard]] bool needsLiveInfo() const override;
   void receiveLiveInfo(const LiveInfo &value) override;

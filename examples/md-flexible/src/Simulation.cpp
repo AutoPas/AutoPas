@@ -167,6 +167,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
   _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
   _autoPasContainer->setModelFileName(_configuration.modelFilename.value);
+  _autoPasContainer->setModelPairwiseFileName(_configuration.modelPairwiseFilename.value);
+  _autoPasContainer->setModelTriwiseFileName(_configuration.modelTriwiseFilename.value);
   _autoPasContainer->setConfidenceThreshold(_configuration.confidenceThreshold.value);
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
