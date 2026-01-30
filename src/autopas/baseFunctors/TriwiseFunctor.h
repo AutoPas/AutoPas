@@ -115,7 +115,7 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
+                                const std::vector<uint32_t, AlignedAllocator<uint32_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
 };

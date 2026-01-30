@@ -26,7 +26,7 @@ class VerletListHelpers {
    */
   using NeighborListAoSType = std::unordered_map<Particle_T *, std::vector<Particle_T *>>;
 
-  using NeighborListSoAType = std::vector<std::vector<size_t, AlignedAllocator<size_t>>>;
+  using NeighborListSoAType = std::vector<std::vector<uint32_t, AlignedAllocator<uint32_t>>>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.

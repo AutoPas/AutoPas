@@ -214,7 +214,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * verlet list for SoA:
    * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
    */
-  std::vector<std::vector<size_t, AlignedAllocator<size_t>>> _soaNeighborLists;
+  std::vector<std::vector<uint32_t, AlignedAllocator<uint32_t>>> _soaNeighborLists;
 
   /**
    * Shows if the SoA neighbor list is currently valid.

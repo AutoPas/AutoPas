@@ -64,7 +64,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
   /**
    * This type represents the SoA neighbor list that each thread has for each color.
    */
-  using SoAThreadNeighborList = std::vector<std::pair<size_t, std::vector<size_t, autopas::AlignedAllocator<size_t>>>>;
+  using SoAThreadNeighborList = std::vector<std::pair<uint32_t, std::vector<uint32_t, autopas::AlignedAllocator<uint32_t>>>>;
   /**
    * This type represents the SoA thread lists for all colors.
    */
@@ -176,7 +176,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
         currentThreadList.clear();
         for (const auto &pair : _aosNeighborList[color][thread]) {
           size_t indexFirst = _aos2soaMap[pair.first];
-          std::vector<size_t, AlignedAllocator<size_t>> neighbors;
+          std::vector<uint32_t, AlignedAllocator<uint32_t>> neighbors;
           neighbors.reserve(pair.second.size());
           for (const auto &second : pair.second) {
             size_t indexSecond = _aos2soaMap[second];
