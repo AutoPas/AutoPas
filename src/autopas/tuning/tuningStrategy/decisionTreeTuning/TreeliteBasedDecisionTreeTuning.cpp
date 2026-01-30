@@ -8,9 +8,8 @@
 
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include <filesystem>
-#include <type_traits>
-
 #include <json.hpp>
+#include <type_traits>
 #endif
 
 #include "autopas/utils/ExceptionHandler.h"
@@ -33,10 +32,8 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
 
     // Select model based on interaction type.
     const std::string &modelFile =
-        (_interactionType == InteractionTypeOption::pairwise)
-            ? _modelPairwiseFileName
-            : _modelTriwiseFileName;
-    
+        (_interactionType == InteractionTypeOption::pairwise) ? _modelPairwiseFileName : _modelTriwiseFileName;
+
     if (modelFile.empty()) {
       utils::ExceptionHandler::exception(
           "TreeliteBasedDecisionTreeTuning: model file path is empty for interaction type '{}'.",
@@ -45,8 +42,7 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
 
     if (!modelFile.ends_with(".tl")) {
       utils::ExceptionHandler::exception(
-          "TreeliteBasedDecisionTreeTuning expects a '.tl' Treelite model file. Got '{}'.",
-          modelFile);
+          "TreeliteBasedDecisionTreeTuning expects a '.tl' Treelite model file. Got '{}'.", modelFile);
     }
 
     // Resolve paths relative to current working directory.
@@ -54,7 +50,7 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
     const fs::path basePath = modelPath.parent_path();
     const std::string baseStem = modelPath.stem().string();
 
-    const fs::path classesPath  = basePath / (baseStem + "_classes.txt");
+    const fs::path classesPath = basePath / (baseStem + "_classes.txt");
     const fs::path featuresPath = basePath / "features.json";
 
     // Fail fast if anything is missing.
@@ -75,16 +71,15 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
     utils::ExceptionHandler::exception("Failed to initialize Treelite model: {}", e.what());
   }
 #else
-  utils::ExceptionHandler::exception("TreeliteBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF! "
-"Set this CMake variable to ON to use this tuning strategy.");
+    utils::ExceptionHandler::exception(
+        "TreeliteBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF! "
+        "Set this CMake variable to ON to use this tuning strategy.");
 #endif
 }
 
 TreeliteBasedDecisionTreeTuning::~TreeliteBasedDecisionTreeTuning() = default;
 
-bool TreeliteBasedDecisionTreeTuning::needsLiveInfo() const {
-  return true;
-}
+bool TreeliteBasedDecisionTreeTuning::needsLiveInfo() const { return true; }
 
 void TreeliteBasedDecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
   _currentLiveInfo.clear();

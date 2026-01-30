@@ -74,8 +74,8 @@ TreelitePredictor::TreelitePredictor(const std::string &modelPath, const std::st
   tlCheck(TreeliteQueryNumFeature(_model, &numFeature), "TreeliteQueryNumFeature failed.");
 
   if (numFeature != static_cast<int>(_features.size())) {
-    autopas::utils::ExceptionHandler::exception(
-      "Treelite model expects {} features, but features.json provides {}. ",  numFeature, _features.size());
+    autopas::utils::ExceptionHandler::exception("Treelite model expects {} features, but features.json provides {}. ",
+                                                numFeature, _features.size());
   }
 
   _row.assign(_features.size(), 0.0f);
@@ -126,9 +126,9 @@ void TreelitePredictor::loadFeatures(const std::string &featuresPath) {
   // Enforce exact feature list to prevent silent mismatch.
   if (_features != _expectedFeatures) {
     std::ostringstream oss;
-    for (const auto& f : _expectedFeatures) oss << f << ' ';
-    autopas::utils::ExceptionHandler::exception(
-      "features.json does not match expected list of features: {}", oss.str());
+    for (const auto &f : _expectedFeatures) oss << f << ' ';
+    autopas::utils::ExceptionHandler::exception("features.json does not match expected list of features: {}",
+                                                oss.str());
   }
 }
 
@@ -162,31 +162,31 @@ void TreelitePredictor::loadClasses(const std::string &classesPath) {
   }
 
   // Check that each class label can be parsed into a valid AutoPas option.
-  for (const auto& cls : _classes) {
+  for (const auto &cls : _classes) {
     const auto labels = split(cls, ';');
 
-      if (labels.size() != _numLabels) {
-        autopas::utils::ExceptionHandler::exception(
-          "TreelitePredictor expected {} labels, but got {}: '{}'.", _numLabels, labels.size(), cls);
-      }
+    if (labels.size() != _numLabels) {
+      autopas::utils::ExceptionHandler::exception("TreelitePredictor expected {} labels, but got {}: '{}'.", _numLabels,
+                                                  labels.size(), cls);
+    }
 
-      try {
-        (void)ContainerOption::parseOptionExact(labels[0]);
-        (void)TraversalOption::parseOptionExact(labels[1]);
-        (void)LoadEstimatorOption::parseOptionExact(labels[2]);
-        (void)DataLayoutOption::parseOptionExact(labels[3]);
-        (void)Newton3Option::parseOptionExact(labels[4]);
+    try {
+      (void)ContainerOption::parseOptionExact(labels[0]);
+      (void)TraversalOption::parseOptionExact(labels[1]);
+      (void)LoadEstimatorOption::parseOptionExact(labels[2]);
+      (void)DataLayoutOption::parseOptionExact(labels[3]);
+      (void)Newton3Option::parseOptionExact(labels[4]);
 
-        // CellSizeFactor must be numeric.
-        size_t pos = 0;
-        const double csf = std::stod(labels[5], &pos);
-        if (pos != labels[5].size() || !std::isfinite(csf)) {
-          autopas::utils::ExceptionHandler::exception("Invalid CellSizeFactor token '{}', class='{}'.", labels[5], cls);
-        }
-      } catch (const std::exception &e) {
-        autopas::utils::ExceptionHandler::exception(
-            "Invalid label(s) in classes file. class='{}' error='{}'.", cls, e.what());
+      // CellSizeFactor must be numeric.
+      size_t pos = 0;
+      const double csf = std::stod(labels[5], &pos);
+      if (pos != labels[5].size() || !std::isfinite(csf)) {
+        autopas::utils::ExceptionHandler::exception("Invalid CellSizeFactor token '{}', class='{}'.", labels[5], cls);
       }
+    } catch (const std::exception &e) {
+      autopas::utils::ExceptionHandler::exception("Invalid label(s) in classes file. class='{}' error='{}'.", cls,
+                                                  e.what());
+    }
   }
 }
 
@@ -258,8 +258,7 @@ std::pair<int, double> TreelitePredictor::getConfidence() const {
   return {bestIdx, confidence};
 }
 
-std::pair<std::string, double> TreelitePredictor::getClassAndConfidence(
-    const std::map<std::string, double> &liveInfo) {
+std::pair<std::string, double> TreelitePredictor::getClassAndConfidence(const std::map<std::string, double> &liveInfo) {
   // Run inference on given live information.
   runInference(liveInfo);
 

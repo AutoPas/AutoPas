@@ -1115,7 +1115,9 @@ class AutoPas {
    * Set the name / path of the pairwise model file for the TreeliteBasedDecisionTreeTuning.
    * @param modelPairwiseFileName The name of the model file to use during decision tree tuning.
    */
-  void setModelPairwiseFileName(const std::string &modelPairwiseFileName) { _tuningStrategyFactoryInfo.modelPairwiseFileName = modelPairwiseFileName; }
+  void setModelPairwiseFileName(const std::string &modelPairwiseFileName) {
+    _tuningStrategyFactoryInfo.modelPairwiseFileName = modelPairwiseFileName;
+  }
 
   /**
    * Get the name / path of the pairwise model file for the TreeliteBasedDecisionTreeTuning.
@@ -1127,7 +1129,9 @@ class AutoPas {
    * Set the name / path of the triwise model file for the TreeliteBasedDecisionTreeTuning.
    * @param modelTriwiseFileName The name of the model file to use during decision tree tuning.
    */
-  void setModelTriwiseFileName(const std::string &modelTriwiseFileName) { _tuningStrategyFactoryInfo.modelTriwiseFileName = modelTriwiseFileName; }
+  void setModelTriwiseFileName(const std::string &modelTriwiseFileName) {
+    _tuningStrategyFactoryInfo.modelTriwiseFileName = modelTriwiseFileName;
+  }
 
   /**
    * Get the name / path of the triwise model file for the TreeliteBasedDecisionTreeTuning.

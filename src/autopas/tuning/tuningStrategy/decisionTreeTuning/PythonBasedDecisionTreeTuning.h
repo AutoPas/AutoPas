@@ -39,7 +39,7 @@ class PythonBasedDecisionTreeTuning : public TuningStrategyInterface {
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
   PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                     double confidenceThreshold, InteractionTypeOption interactionType);
+                                double confidenceThreshold, InteractionTypeOption interactionType);
 
   ~PythonBasedDecisionTreeTuning() override;
 

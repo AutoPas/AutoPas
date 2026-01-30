@@ -8,13 +8,12 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <spdlog/sinks/null_sink.h>
+#include <spdlog/spdlog.h>
 
 #include <filesystem>
 #include <sstream>
 #include <string>
-
-#include <spdlog/sinks/null_sink.h>
-#include <spdlog/spdlog.h>
 
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/TreeliteBasedDecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -27,8 +26,7 @@ namespace {
  * Return the directory that contains decision tree tuning test artifacts.
  */
 std::filesystem::path getTestDir() {
-  return std::filesystem::path{AUTOPAS_SOURCE_DIR} /
-         "tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning";
+  return std::filesystem::path{AUTOPAS_SOURCE_DIR} / "tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning";
 }
 }  // namespace
 
@@ -191,20 +189,17 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
 
   LiveInfo liveInfo;
   std::stringstream ss;
-  ss << 8 << ' '
-     << "meanParticlesPerCell" << ' ' << 1 << ' ' << meanParticlesPerCell << ' '
-     << "medianParticlesPerCell" << ' ' << 1 << ' ' << medianParticlesPerCell << ' '
-     << "maxParticlesPerCell" << ' ' << 1 << ' ' << maxParticlesPerCell << ' '
-     << "relativeParticlesPerCellStdDev" << ' ' << 1 << ' ' << relativeParticlesPerCellStdDev << ' '
-     << "threadCount" << ' ' << 1 << ' ' << threadCount << ' '
-     << "numCells" << ' ' << 1 << ' ' << numCells << ' '
-     << "numEmptyCells" << ' ' << 1 << ' ' << numEmptyCells << ' '
-     << "skin" << ' ' << 1 << ' ' << skin << ' ';
+  ss << 8 << ' ' << "meanParticlesPerCell" << ' ' << 1 << ' ' << meanParticlesPerCell << ' ' << "medianParticlesPerCell"
+     << ' ' << 1 << ' ' << medianParticlesPerCell << ' ' << "maxParticlesPerCell" << ' ' << 1 << ' '
+     << maxParticlesPerCell << ' ' << "relativeParticlesPerCellStdDev" << ' ' << 1 << ' '
+     << relativeParticlesPerCellStdDev << ' ' << "threadCount" << ' ' << 1 << ' ' << threadCount << ' ' << "numCells"
+     << ' ' << 1 << ' ' << numCells << ' ' << "numEmptyCells" << ' ' << 1 << ' ' << numEmptyCells << ' ' << "skin"
+     << ' ' << 1 << ' ' << skin << ' ';
   ss >> liveInfo;
   ASSERT_FALSE(liveInfo.get().empty()) << "LiveInfo deserialization produced an empty map.";
 
   tuningStrategy.receiveLiveInfo(liveInfo);
-  
+
   std::vector<Configuration> configQueue;
   configQueue.push_back(Configuration(ContainerOption::verletClusterLists, 1.0, TraversalOption::lc_c18,
                                       LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::disabled,
@@ -236,8 +231,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
 TEST(TreeliteBasedDecisionTreeTuningTest, TestConfidenceThresholdSkipsUpdate) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   // Avoid failures when emitting warning via AutoPasLog.
-  auto null_logger = std::make_shared<spdlog::logger>(
-    "AutoPasLog", std::make_shared<spdlog::sinks::null_sink_mt>());
+  auto null_logger = std::make_shared<spdlog::logger>("AutoPasLog", std::make_shared<spdlog::sinks::null_sink_mt>());
   spdlog::register_logger(null_logger);
 
   std::set<Configuration> searchSpace;
@@ -265,15 +259,12 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestConfidenceThresholdSkipsUpdate) {
 
   LiveInfo liveInfo;
   std::stringstream ss;
-  ss << 8 << ' '
-     << "meanParticlesPerCell" << ' ' << 1 << ' ' << meanParticlesPerCell << ' '
-     << "medianParticlesPerCell" << ' ' << 1 << ' ' << medianParticlesPerCell << ' '
-     << "maxParticlesPerCell" << ' ' << 1 << ' ' << maxParticlesPerCell << ' '
-     << "relativeParticlesPerCellStdDev" << ' ' << 1 << ' ' << relativeParticlesPerCellStdDev << ' '
-     << "threadCount" << ' ' << 1 << ' ' << threadCount << ' '
-     << "numCells" << ' ' << 1 << ' ' << numCells << ' '
-     << "numEmptyCells" << ' ' << 1 << ' ' << numEmptyCells << ' '
-     << "skin" << ' ' << 1 << ' ' << skin << ' ';
+  ss << 8 << ' ' << "meanParticlesPerCell" << ' ' << 1 << ' ' << meanParticlesPerCell << ' ' << "medianParticlesPerCell"
+     << ' ' << 1 << ' ' << medianParticlesPerCell << ' ' << "maxParticlesPerCell" << ' ' << 1 << ' '
+     << maxParticlesPerCell << ' ' << "relativeParticlesPerCellStdDev" << ' ' << 1 << ' '
+     << relativeParticlesPerCellStdDev << ' ' << "threadCount" << ' ' << 1 << ' ' << threadCount << ' ' << "numCells"
+     << ' ' << 1 << ' ' << numCells << ' ' << "numEmptyCells" << ' ' << 1 << ' ' << numEmptyCells << ' ' << "skin"
+     << ' ' << 1 << ' ' << skin << ' ';
   ss >> liveInfo;
   ASSERT_FALSE(liveInfo.get().empty()) << "LiveInfo deserialization produced an empty map.";
 

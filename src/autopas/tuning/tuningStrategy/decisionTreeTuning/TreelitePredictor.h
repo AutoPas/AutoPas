@@ -8,6 +8,8 @@
 
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 
+#include <treelite/c_api.h>
+
 #include <map>
 #include <set>
 #include <string>
@@ -16,8 +18,6 @@
 
 #include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
-
-#include <treelite/c_api.h>
 #endif
 
 namespace autopas {
@@ -143,14 +143,10 @@ class TreelitePredictor {
    * The expected feature list in the training order.
    */
   inline static const std::vector<std::string> _expectedFeatures = {
-    "meanParticlesPerCell",
-    "medianParticlesPerCell",
-    "maxParticlesPerCell",
-    "relativeParticlesPerCellStdDev",
-    "threadCount",
-    "numCells", 
-    "numEmptyCells",
-    "skin",
+      "meanParticlesPerCell", "medianParticlesPerCell",
+      "maxParticlesPerCell",  "relativeParticlesPerCellStdDev",
+      "threadCount",          "numCells",
+      "numEmptyCells",        "skin",
   };
 };
 

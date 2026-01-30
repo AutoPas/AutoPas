@@ -42,7 +42,8 @@ class TreeliteBasedDecisionTreeTuning : public TuningStrategyInterface {
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
   TreeliteBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelPairwiseFileName,
-                     const std::string &modelTriwiseFileName, double confidenceThreshold, InteractionTypeOption interactionType);
+                                  const std::string &modelTriwiseFileName, double confidenceThreshold,
+                                  InteractionTypeOption interactionType);
 
   ~TreeliteBasedDecisionTreeTuning() override;
 

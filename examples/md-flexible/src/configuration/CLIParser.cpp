@@ -621,14 +621,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.modelPairwiseFilename)::getoptChar: {
         config.modelPairwiseFilename.value = optarg;
         if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::parse(): model-pairwise-filename " + config.modelPairwiseFilename.value + " not found!");
+          throw std::runtime_error("CLIParser::parse(): model-pairwise-filename " + config.modelPairwiseFilename.value +
+                                   " not found!");
         }
         break;
       }
       case decltype(config.modelTriwiseFilename)::getoptChar: {
         config.modelTriwiseFilename.value = optarg;
         if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::parse(): model-triwise-filename " + config.modelTriwiseFilename.value + " not found!");
+          throw std::runtime_error("CLIParser::parse(): model-triwise-filename " + config.modelTriwiseFilename.value +
+                                   " not found!");
         }
         break;
       }

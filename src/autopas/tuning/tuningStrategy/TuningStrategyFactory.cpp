@@ -114,16 +114,15 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     }
 
     case TuningStrategyOption::pythonBasedDecisionTreeTuning: {
-      tuningStrategy =
-          std::make_unique<PythonBasedDecisionTreeTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
-            interactionType);
+      tuningStrategy = std::make_unique<PythonBasedDecisionTreeTuning>(searchSpace, info.modelFileName,
+                                                                       info.confidenceThreshold, interactionType);
       break;
     }
 
     case TuningStrategyOption::treeliteBasedDecisionTreeTuning: {
-      tuningStrategy =
-          std::make_unique<TreeliteBasedDecisionTreeTuning>(searchSpace, info.modelPairwiseFileName, 
-            info.modelTriwiseFileName, info.confidenceThreshold, interactionType);
+      tuningStrategy = std::make_unique<TreeliteBasedDecisionTreeTuning>(searchSpace, info.modelPairwiseFileName,
+                                                                         info.modelTriwiseFileName,
+                                                                         info.confidenceThreshold, interactionType);
       break;
     }
 

@@ -45,7 +45,8 @@ TEST(PythonBasedDecisionTreeTuningTest, TestScriptLoading) {
 
   EXPECT_THROW(
       {
-        autopas::PythonBasedDecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8, InteractionTypeOption::pairwise);
+        autopas::PythonBasedDecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8,
+                                                              InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);

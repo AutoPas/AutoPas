@@ -21,10 +21,14 @@ namespace autopas {
 namespace py = pybind11;
 #endif
 
-PythonBasedDecisionTreeTuning::PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                                       double confidenceThreshold, InteractionTypeOption interactionType)
-    : _configurations(searchSpace), _modelFileName(modelFileName), _confidenceThreshold(confidenceThreshold),
-  _interactionType(interactionType) {
+PythonBasedDecisionTreeTuning::PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace,
+                                                             const std::string &modelFileName,
+                                                             double confidenceThreshold,
+                                                             InteractionTypeOption interactionType)
+    : _configurations(searchSpace),
+      _modelFileName(modelFileName),
+      _confidenceThreshold(confidenceThreshold),
+      _interactionType(interactionType) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     // Initialize the Python interpreter using scoped_interpreter
@@ -38,14 +42,16 @@ PythonBasedDecisionTreeTuning::PythonBasedDecisionTreeTuning(const std::set<Conf
     py::module predictModule = py::module::import("predict");
 
     // Initialize the python object.
-    _decisionTreeTuningPyObj = predictModule.attr("PythonBasedDecisionTreeTuning")(_modelFileName, _interactionType.to_string());
+    _decisionTreeTuningPyObj =
+        predictModule.attr("PythonBasedDecisionTreeTuning")(_modelFileName, _interactionType.to_string());
 
   } catch (const py::error_already_set &e) {
     utils::ExceptionHandler::exception("Failed to initialize Python environment: {}", e.what());
   }
 #else
-  utils::ExceptionHandler::exception("PythonBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
-"Set this CMake variable to ON to use this tuning strategy.");
+  utils::ExceptionHandler::exception(
+      "PythonBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
+      "Set this CMake variable to ON to use this tuning strategy.");
 #endif
 }
 
@@ -69,18 +75,20 @@ void PythonBasedDecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
 }
 
 bool PythonBasedDecisionTreeTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                               const EvidenceCollection &evidenceCollection) {
+                                          const EvidenceCollection &evidenceCollection) {
   std::string configPrediction = getPredictionFromPython();
   updateConfigQueue(configQueue, configPrediction);
   return true;
 }
 
 bool PythonBasedDecisionTreeTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                             const EvidenceCollection &evidenceCollection) {
+                                                        const EvidenceCollection &evidenceCollection) {
   return true;
 }
 
-TuningStrategyOption PythonBasedDecisionTreeTuning::getOptionType() const { return TuningStrategyOption::pythonBasedDecisionTreeTuning; }
+TuningStrategyOption PythonBasedDecisionTreeTuning::getOptionType() const {
+  return TuningStrategyOption::pythonBasedDecisionTreeTuning;
+}
 
 std::string PythonBasedDecisionTreeTuning::getPredictionFromPython() {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
@@ -90,7 +98,7 @@ std::string PythonBasedDecisionTreeTuning::getPredictionFromPython() {
     pythonPredictionTimer.start();
 #endif
     // Convert live info to JSON string
-    const nlohmann::json liveInfoJson = _currentLiveInfo; // todo make this a reference
+    const nlohmann::json liveInfoJson = _currentLiveInfo;  // todo make this a reference
     // Call the Python function and get the result
     const py::object result = _decisionTreeTuningPyObj.attr("predict")(liveInfoJson.dump());
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
@@ -106,7 +114,8 @@ std::string PythonBasedDecisionTreeTuning::getPredictionFromPython() {
 #endif
 }
 
-void PythonBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQueue, const std::string &prediction) {
+void PythonBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQueue,
+                                                      const std::string &prediction) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     nlohmann::json predictionJson = nlohmann::json::parse(prediction);
