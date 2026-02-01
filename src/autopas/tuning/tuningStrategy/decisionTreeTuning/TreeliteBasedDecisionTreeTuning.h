@@ -14,11 +14,11 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 
-#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+// #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include <memory>
 
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/TreelitePredictor.h"
-#endif
+// #endif
 
 namespace autopas {
 
@@ -100,12 +100,12 @@ class TreeliteBasedDecisionTreeTuning : public TuningStrategyInterface {
    */
   InteractionTypeOption _interactionType;
 
-#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   /**
    * Treelite predictor used to run model inference.
    */
   std::unique_ptr<TreelitePredictor> _treeliteModel;
-#endif
+  // #endif
 };
 
 }  // namespace autopas
