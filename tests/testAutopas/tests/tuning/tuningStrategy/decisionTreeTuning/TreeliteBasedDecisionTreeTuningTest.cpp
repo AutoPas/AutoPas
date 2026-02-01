@@ -28,6 +28,16 @@ namespace {
 std::filesystem::path getTestDir() {
   return std::filesystem::path{AUTOPAS_SOURCE_DIR} / "tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning";
 }
+
+/**
+ * Register spdlog logger "AutoPasLog".
+ */
+void ensureNullLogger() {
+  if (!spdlog::get("AutoPasLog")) {
+    auto null_logger = std::make_shared<spdlog::logger>("AutoPasLog", std::make_shared<spdlog::sinks::null_sink_mt>());
+    spdlog::register_logger(null_logger);
+  }
+}
 }  // namespace
 
 /**
@@ -164,6 +174,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingFeaturesFile) {
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
   // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+  // Avoid failures when logging is enabled.
+  ensureNullLogger();
+
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir();
@@ -230,9 +243,8 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestConfidenceThresholdSkipsUpdate) {
   // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
-  // Avoid failures when emitting warning via AutoPasLog.
-  auto null_logger = std::make_shared<spdlog::logger>("AutoPasLog", std::make_shared<spdlog::sinks::null_sink_mt>());
-  spdlog::register_logger(null_logger);
+  // Avoid failures when logging is enabled.
+  ensureNullLogger();
 
   std::set<Configuration> searchSpace;
 
