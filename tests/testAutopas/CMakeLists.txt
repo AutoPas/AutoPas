@@ -19,8 +19,7 @@ target_link_libraries(
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:pybind11::embed>
-#        $<$<BOOL:${AUTOPAS_ENABLE_TREELITE_BASED_TUNING}>:treelite::treelite>
-        treelite::treelite
+        $<$<BOOL:${AUTOPAS_ENABLE_TREELITE_BASED_TUNING}>:treelite::treelite>
 )
 
 

@@ -1,10 +1,10 @@
-# set(AUTOPAS_ENABLE_TREELITE_BASED_TUNING
-#     OFF
-#     CACHE
-#     BOOL "Enables tuning strategies that use Treelite. If enabled, Treelite will be built (bundled) and linked."
-# )
-#
-# if (AUTOPAS_ENABLE_TREELITE_BASED_TUNING)
+set(AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+    OFF
+    CACHE
+    BOOL "Enables tuning strategies that use Treelite. If enabled, Treelite will be built (bundled) and linked."
+)
+
+if (AUTOPAS_ENABLE_TREELITE_BASED_TUNING)
   set(expectedVersion 4.6.1)
   set(bundledCommit b3930088a2b9d9385009ae95b96fd7fb55841d62)
 
@@ -62,4 +62,4 @@
     add_library(treelite::treelite ALIAS treelite)
   endif()
 
-# endif()
+endif()

@@ -46,7 +46,7 @@ void ensureNullLogger() {
  * Tests that when a non-existent model file is provided, the constructor throws.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingModelFile) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir();
@@ -58,9 +58,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingModelFile) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -69,7 +69,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingModelFile) {
  * Tests that an empty model path is rejected.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestEmptyModelPath) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   EXPECT_THROW(
@@ -78,9 +78,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestEmptyModelPath) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -89,7 +89,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestEmptyModelPath) {
  * Tests that a model path not ending in ".tl" is rejected by the constructor.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestModelWrongExtension) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir();
@@ -101,9 +101,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestModelWrongExtension) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -113,7 +113,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestModelWrongExtension) {
  * the constructor throws.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingClassesFile) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir() / "treelite_missing_classes_test";
@@ -131,9 +131,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingClassesFile) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -143,7 +143,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingClassesFile) {
  * the constructor throws.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingFeaturesFile) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir() / "treelite_missing_features_test";
@@ -161,9 +161,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingFeaturesFile) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -173,7 +173,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingFeaturesFile) {
  * reset() updates the configuration queue accordingly.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   // Avoid failures when logging is enabled.
   ensureNullLogger();
 
@@ -230,9 +230,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
   EXPECT_EQ(predictedConfig.newton3, Newton3Option::enabled);
   EXPECT_EQ(predictedConfig.loadEstimator, LoadEstimatorOption::none);
   EXPECT_DOUBLE_EQ(predictedConfig.cellSizeFactor, 1.0);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -242,7 +242,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
  * the configuration queue with a model prediction.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestConfidenceThresholdSkipsUpdate) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   // Avoid failures when logging is enabled.
   ensureNullLogger();
 
@@ -298,9 +298,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestConfidenceThresholdSkipsUpdate) {
   EXPECT_EQ(predictedConfig.traversal, initialConfig.traversal);
   EXPECT_EQ(predictedConfig.dataLayout, initialConfig.dataLayout);
   EXPECT_EQ(predictedConfig.newton3, initialConfig.newton3);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -309,7 +309,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestConfidenceThresholdSkipsUpdate) {
  * Tests that an invalid ".tl" file is rejected.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidModelFile) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir() / "treelite_invalid_model_test";
@@ -327,9 +327,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidModelFile) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -338,7 +338,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidModelFile) {
  * Tests that the constructor throws when the number of lables in a class is not as expected.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidClassSize) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir() / "treelite_invalid_classes_test" / "treelite_invalid_class_size_test";
@@ -356,9 +356,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidClassSize) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -367,7 +367,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidClassSize) {
  * Tests that the constructor throws when an invalid label is detected in a class.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidLabelInClass) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir() / "treelite_invalid_classes_test" / "treelite_invalid_label_test";
@@ -385,9 +385,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidLabelInClass) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -396,7 +396,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidLabelInClass) {
  * Tests that the constructor throws when the number of features is not as expected.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeaturesSize) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir() / "treelite_invalid_features_test" / "treelite_invalid_feature_list_size_test";
@@ -414,9 +414,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeaturesSize) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 /**
@@ -425,7 +425,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeaturesSize) {
  * Tests that the constructor throws when features.json doesn't match with known list of features.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeatures) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   const auto baseDir = getTestDir() / "treelite_invalid_features_test" / "treelite_invalid_feature_list_test";
@@ -443,9 +443,9 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeatures) {
                                                        InteractionTypeOption::pairwise);
       },
       autopas::utils::ExceptionHandler::AutoPasException);
-  // #else
-  //   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
-  // #endif
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
+#endif
 }
 
 }  // namespace autopas

@@ -5,19 +5,19 @@
  * @date 20.09.2024
  */
 
-#include "PythonBasedDecisionTreeTuningTest.h"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "PythonBasedDecisionTreeTuningTest.h"
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
 #endif
 
 #include <filesystem>  // For checking the existence of test files
 
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/PythonBasedDecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/options/InteractionTypeOption.h"
 
 namespace autopas {
 

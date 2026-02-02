@@ -6,11 +6,11 @@
 
 #include "TreeliteBasedDecisionTreeTuning.h"
 
-// #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include <filesystem>
 #include <json.hpp>
 #include <type_traits>
-// #endif
+#endif
 
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -26,7 +26,7 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
       _modelTriwiseFileName(modelTriwiseFileName),
       _confidenceThreshold(confidenceThreshold),
       _interactionType(interactionType) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   try {
     namespace fs = std::filesystem;
 
@@ -70,11 +70,11 @@ TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<
   } catch (const std::exception &e) {
     utils::ExceptionHandler::exception("Failed to initialize Treelite model: {}", e.what());
   }
-  // #else
-  //   utils::ExceptionHandler::exception(
-  //       "TreeliteBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF! "
-  //       "Set this CMake variable to ON to use this tuning strategy.");
-  // #endif
+#else
+  utils::ExceptionHandler::exception(
+      "TreeliteBasedDecisionTreeTuning constructed but AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF! "
+      "Set this CMake variable to ON to use this tuning strategy.");
+#endif
 }
 
 TreeliteBasedDecisionTreeTuning::~TreeliteBasedDecisionTreeTuning() = default;
@@ -114,7 +114,7 @@ TuningStrategyOption TreeliteBasedDecisionTreeTuning::getOptionType() const {
 }
 
 std::string TreeliteBasedDecisionTreeTuning::getPredictionFromTreelite() {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   try {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     utils::Timer timer;
@@ -138,12 +138,12 @@ std::string TreeliteBasedDecisionTreeTuning::getPredictionFromTreelite() {
     utils::ExceptionHandler::exception("Error during Treelite prediction: {}", e.what());
     return {};
   }
-  // #endif
+#endif
 }
 
 void TreeliteBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQueue,
                                                         const std::string &prediction) {
-  // #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   try {
     nlohmann::json predictionJson = nlohmann::json::parse(prediction);
     if (double confidence = predictionJson["confidence"]; confidence < _confidenceThreshold) {
@@ -175,7 +175,7 @@ void TreeliteBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuratio
   } catch (const std::exception &e) {
     AutoPasLog(ERROR, "Error parsing prediction: {}", e.what());
   }
-  // #endif
+#endif
 }
 
 }  // namespace autopas

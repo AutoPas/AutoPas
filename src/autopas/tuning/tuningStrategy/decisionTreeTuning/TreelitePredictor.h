@@ -6,7 +6,7 @@
 
 #pragma once
 
-// #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include <treelite/c_api.h>
 
 #include <map>
@@ -183,4 +183,4 @@ class TreelitePredictor {
 };
 
 }  // namespace autopas
-// #endif
+#endif
