@@ -64,35 +64,26 @@ std::vector<std::string> split(const std::string &s, const char delim) {
 
 TreelitePredictor::TreelitePredictor(const std::string &modelPath, const std::string &classesPath,
                                      const std::string &featuresPath) {
+  // Load features and classes before model to catch parsing error before model allocation.
   loadFeatures(featuresPath);
-  loadModel(modelPath);
   loadClasses(classesPath);
+  loadModel(modelPath);
 
   int numFeature = 0;
-  tlCheck(TreeliteQueryNumFeature(_model, &numFeature), "TreeliteQueryNumFeature failed.");
+  tlCheck(TreeliteQueryNumFeature(_model.get(), &numFeature), "TreeliteQueryNumFeature failed.");
 
   if (numFeature != static_cast<int>(_features.size())) {
     autopas::utils::ExceptionHandler::exception("Treelite model expects {} features, but features.json provides {}. ",
                                                 numFeature, _features.size());
   }
 
+  initGtilConfig();
+
   _row.assign(_features.size(), 0.0f);
   _out.assign(_classes.size(), 0.0f);
-
-  initGtilConfig();
 }
 
-TreelitePredictor::~TreelitePredictor() {
-  // Free Treelite resources explicitly.
-  if (_cfg != nullptr) {
-    TreeliteGTILDeleteConfig(_cfg);
-    _cfg = nullptr;
-  }
-  if (_model != nullptr) {
-    TreeliteFreeModel(_model);
-    _model = nullptr;
-  }
-}
+TreelitePredictor::~TreelitePredictor() = default;
 
 void TreelitePredictor::loadFeatures(const std::string &featuresPath) {
   std::ifstream file(featuresPath);
@@ -127,14 +118,6 @@ void TreelitePredictor::loadFeatures(const std::string &featuresPath) {
     for (const auto &f : _expectedFeatures) oss << f << ' ';
     autopas::utils::ExceptionHandler::exception("features.json does not match expected list of features: {}",
                                                 oss.str());
-  }
-}
-
-void TreelitePredictor::loadModel(const std::string &modelPath) {
-  tlCheck(TreeliteDeserializeModelFromFile(modelPath.c_str(), &_model),
-          "TreeliteDeserializeModelFromFile failed for '" + modelPath + "'.");
-  if (_model == nullptr) {
-    autopas::utils::ExceptionHandler::exception("Treelite returned a null model handle for '{}'.", modelPath);
   }
 }
 
@@ -188,17 +171,34 @@ void TreelitePredictor::loadClasses(const std::string &classesPath) {
   }
 }
 
+void TreelitePredictor::loadModel(const std::string &modelPath) {
+  TreeliteModelHandle modelHandle = nullptr;
+  tlCheck(TreeliteDeserializeModelFromFile(modelPath.c_str(), &modelHandle),
+          "TreeliteDeserializeModelFromFile failed for '" + modelPath + "'.");
+
+  if (modelHandle == nullptr) {
+    autopas::utils::ExceptionHandler::exception("Treelite returned a null model handle for '{}'.", modelPath);
+  }
+
+  // Take ownership of the new handle.
+  _model.reset(modelHandle);
+}
+
 void TreelitePredictor::initGtilConfig() {
   // Minimal GTIL configuration:
   // - default prediction type
   // - single-threaded inference
   const char *cfgJson = R"({"predict_type":"default","nthread":1})";
 
-  tlCheck(TreeliteGTILParseConfig(cfgJson, &_cfg), "TreeliteGTILParseConfig failed.");
+  TreeliteGTILConfigHandle cfgHandle = nullptr;
+  tlCheck(TreeliteGTILParseConfig(cfgJson, &cfgHandle), "TreeliteGTILParseConfig failed.");
 
-  if (_cfg == nullptr) {
+  if (cfgHandle == nullptr) {
     autopas::utils::ExceptionHandler::exception("Treelite returned a null GTIL config handle.");
   }
+
+  // Take ownership of the new handle.
+  _cfg.reset(cfgHandle);
 }
 
 void TreelitePredictor::runInference(const std::map<std::string, double> &liveInfo) {
@@ -218,8 +218,8 @@ void TreelitePredictor::runInference(const std::map<std::string, double> &liveIn
   }
 
   // Run inference for a single row.
-  tlCheck(TreeliteGTILPredict(_model, static_cast<const void *>(_row.data()), "float32",
-                              /*num_row=*/1, static_cast<void *>(_out.data()), _cfg),
+  tlCheck(TreeliteGTILPredict(_model.get(), static_cast<const void *>(_row.data()), "float32",
+                              /*num_row=*/1, static_cast<void *>(_out.data()), _cfg.get()),
           "TreeliteGTILPredict failed.");
 
   for (float val : _out) {
@@ -251,6 +251,9 @@ std::pair<int, double> TreelitePredictor::getConfidence() const {
   }
 
   // Normalize.
+  if (sum <= 0.0) {
+    autopas::utils::ExceptionHandler::exception("Treelite predictor output sum is non-positive.");
+  }
   double confidence = static_cast<double>(bestVal) / sum;
 
   return {bestIdx, confidence};

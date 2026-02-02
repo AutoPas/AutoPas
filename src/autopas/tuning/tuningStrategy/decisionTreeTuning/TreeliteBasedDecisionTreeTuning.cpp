@@ -157,7 +157,15 @@ void TreeliteBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuratio
     config.traversal = TraversalOption::parseOptionExact(predictionJson["Traversal"]);
     config.dataLayout = DataLayoutOption::parseOptionExact(predictionJson["Data Layout"]);
     config.newton3 = Newton3Option::parseOptionExact(predictionJson["Newton 3"]);
-    config.cellSizeFactor = std::stod(static_cast<std::string>(predictionJson["CellSizeFactor"]));
+    if (predictionJson["CellSizeFactor"].is_string()) {
+      config.cellSizeFactor = std::stod(static_cast<std::string>(predictionJson["CellSizeFactor"]));
+    } else if (predictionJson["CellSizeFactor"].is_number()) {
+      config.cellSizeFactor = predictionJson["CellSizeFactor"].get<double>();
+    } else {
+      AutoPasLog(ERROR, "Treelite prediction expected CellSizeFactor as string/number but got {}. Skipping update.",
+                 predictionJson["CellSizeFactor"].type_name());
+    }
+
     config.loadEstimator = LoadEstimatorOption::parseOptionExact(predictionJson["Load Estimator"]);
     config.interactionType = _interactionType;
 
@@ -165,7 +173,7 @@ void TreeliteBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuratio
     configQueue.push_back(config);
 
   } catch (const std::exception &e) {
-    utils::ExceptionHandler::exception("Error parsing prediction: {}", e.what());
+    AutoPasLog(ERROR, "Error parsing prediction: {}", e.what());
   }
   // #endif
 }
