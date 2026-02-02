@@ -17,6 +17,7 @@
 
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/options/InteractionTypeOption.h"
 
 namespace autopas {
 
@@ -39,18 +40,18 @@ class MockLiveInfo : public LiveInfo {
  *
  * Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
  */
-TEST(DecisionTreeTuningTest, TestScriptLoading) {
+TEST(DecisionTreeTuningTest, TestNonExistantModelLoading) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
-  std::set<autopas::Configuration> searchSpace;
+  std::set<Configuration> searchSpace;
 
   EXPECT_THROW(
       {
-        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8);
+        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8, InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      pybind11::error_already_set);
+      utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
 #endif
@@ -74,7 +75,7 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
       << "Test model file does not exist.";
 
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -120,7 +121,7 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
   std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model_invalid.pkl";
   ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
       << "Invalid response test model file does not exist.";
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8);
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
 
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
