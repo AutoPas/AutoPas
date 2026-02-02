@@ -5,10 +5,10 @@
  * @date 20.09.2024
  */
 
+#include "PythonBasedDecisionTreeTuningTest.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include "PythonBasedDecisionTreeTuningTest.h"
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
 #endif
