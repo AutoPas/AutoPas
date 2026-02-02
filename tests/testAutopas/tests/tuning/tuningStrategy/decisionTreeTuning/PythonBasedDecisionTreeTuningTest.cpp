@@ -17,6 +17,7 @@
 
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/PythonBasedDecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/options/InteractionTypeOption.h"
 
 namespace autopas {
 
@@ -35,23 +36,23 @@ class MockLiveInfo : public LiveInfo {
 };
 
 /**
- * @test TestScriptLoading
+ * @test TestNonExistantModelLoading
  *
  * Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
  */
-TEST(PythonBasedDecisionTreeTuningTest, TestScriptLoading) {
+TEST(PythonBasedDecisionTreeTuningTest, TestNonExistantModelLoading) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
-  std::set<autopas::Configuration> searchSpace;
+  std::set<Configuration> searchSpace;
 
   EXPECT_THROW(
       {
-        autopas::PythonBasedDecisionTreeTuning tuningStrategy(searchSpace, "/invalid_model.pkl", 0.8,
+        autopas::PythonBasedDecisionTreeTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8,
                                                               InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      pybind11::error_already_set);
+      utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
 #endif
