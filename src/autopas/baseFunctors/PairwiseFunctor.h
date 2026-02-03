@@ -13,6 +13,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/containers/verletListsCellBased/verletLists/SoAIndexIntType.h"
 
 namespace autopas {
 
@@ -84,12 +85,13 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                const std::vector<uint32_t, AlignedAllocator<uint32_t>> &neighborList, bool newton3) {
+                                const std::vector<SoAIndexIntType, AlignedAllocator<SoAIndexIntType>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
 
-  virtual void SoAFunctorVerletPreloadMixingLJ(SoAView<SoAArraysType> soa, const uint32_t indexFirst,
-                              const std::vector<uint32_t, AlignedAllocator<uint32_t>> &neighborList, bool newton3) {
+  virtual void SoAFunctorVerletPreloadMixingLJ(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                      const std::vector<SoAIndexIntType, AlignedAllocator<SoAIndexIntType>> &neighborList,
+                      bool newton3)  {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerletPreloadMixingLJ: not implemented", this->getName());
   }
 

@@ -266,7 +266,7 @@ private:
    * verlet list for SoA:
    * For every Particle, a vector of its neighbor indices is stored.
    */
-  std::vector<std::vector<uint32_t, AlignedAllocator<uint32_t>>> _soaNeighborLists;
+  std::vector<std::vector<autopas::SoAIndexIntType, AlignedAllocator<autopas::SoAIndexIntType>>> _soaNeighborLists;
 
   /**
    * Shows if the SoA neighbor list is currently valid.
@@ -279,6 +279,7 @@ private:
   BuildVerletListType _buildVerletListType;
 
   uint32_t _oldNumParticles = 0;
+  size_t _oldNumParticles = 0;
 };
 
 };// namespace autopas

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <likwid-marker.h>
+
 #include <atomic>
 
 #include "autopas/baseFunctors/PairwiseFunctor.h"
@@ -26,7 +28,7 @@ class VerletListHelpers {
    */
   using NeighborListAoSType = std::unordered_map<Particle_T *, std::vector<Particle_T *>>;
 
-  using NeighborListSoAType = std::vector<std::vector<uint32_t, AlignedAllocator<uint32_t>>>;
+  using NeighborListSoAType = std::vector<std::vector<autopas::SoAIndexIntType, AlignedAllocator<autopas::SoAIndexIntType>>>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
@@ -90,8 +92,10 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
+    //ex soa is the SoABuffer of the current cell
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.size() == 0) return;
+      //LIKWID_MARKER_START("distance calculation - single cell");
 
       auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -122,6 +126,7 @@ class VerletListHelpers {
           }
         }
       }
+      //LIKWID_MARKER_STOP("distance calculation - single cell");
     }
 
     /**
@@ -132,6 +137,7 @@ class VerletListHelpers {
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
+      //LIKWID_MARKER_START("distance calculation - cell pair");
 
       auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
@@ -165,6 +171,7 @@ class VerletListHelpers {
           }
         }
       }
+      //LIKWID_MARKER_STOP("distance calculation - cell pair");
     }
 
     /**
@@ -236,11 +243,11 @@ class VerletListHelpers {
       const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
-      auto *const liveId = soa.template begin<Particle_T::AttributeNames::liveId>();
+      auto const startIndex = soa.getParticlesIndexInSoAStart();
 
       size_t numPart = soa.size();
       for (size_t i = 0; i < numPart; ++i) {
-        auto &currentListSoAI = _verletListsSoA[liveId[i]];
+        auto &currentListSoAI = _verletListsSoA[startIndex + i];
 
         const double xi = xptr[i];
         const double yi = yptr[i];
@@ -252,10 +259,10 @@ class VerletListHelpers {
           const double drz = zi - zptr[j];
 
           if (drx*drx + dry*dry + drz*drz < cutoffSquared) {
-            currentListSoAI.push_back(liveId[j]);
+            currentListSoAI.push_back(startIndex + j);
             if (not newton3) {
               // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
-              _verletListsSoA[liveId[j]].push_back(liveId[i]);
+              _verletListsSoA[startIndex + j].push_back(startIndex + i);
             }
           }
         }
@@ -270,18 +277,19 @@ class VerletListHelpers {
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
+      // LIKWID_MARKER_START("distance calculation - cell pair - SoA");
 
       const double cutoffSquared = this->_interactionLengthSquared;
 
       const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
-      auto *const liveId1 = soa1.template begin<Particle_T::AttributeNames::liveId>();
+      auto const startIndex1 = soa1.getParticlesIndexInSoAStart();
 
       const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
       const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
-      auto *const liveId2 = soa2.template begin<Particle_T::AttributeNames::liveId>();
+      auto const startIndex2 = soa2.getParticlesIndexInSoAStart();
 
       size_t numPart1 = soa1.size();
       size_t numPart2 = soa2.size();
@@ -291,7 +299,7 @@ class VerletListHelpers {
 
       for (size_t i = 0; i < numPart1; ++i) {
         size_t tempPos = 0;
-        auto  &currentListSoA = _verletListsSoA[liveId1[i]];
+        auto  &currentListSoA = _verletListsSoA[startIndex1 + i];
         const double x1 = x1ptr[i];
         const double y1 = y1ptr[i];
         const double z1 = z1ptr[i];
@@ -302,7 +310,7 @@ class VerletListHelpers {
           const double drz = z1 - z2ptr[j];
 
           const bool mask = drx*drx + dry*dry + drz*drz < cutoffSquared;
-          verletTemp[tempPos] = liveId2[j];
+          verletTemp[tempPos] = startIndex2 + j;
           tempPos += mask;
         }
 
@@ -314,10 +322,10 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::Functor::getNeededAttr()
      */
-    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
-      return std::array<typename Particle_T::AttributeNames, 4>{
+    constexpr static std::array<typename Particle_T::AttributeNames, 3> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 3>{
         Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
-        Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::liveId};
+        Particle_T::AttributeNames::posZ};
     }
 
     /**

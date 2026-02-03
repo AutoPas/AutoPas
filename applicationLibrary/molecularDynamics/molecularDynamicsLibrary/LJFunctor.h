@@ -564,7 +564,7 @@ class LJFunctor
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<uint32_t, autopas::AlignedAllocator<uint32_t>> &neighborList,
+                        const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList,
                         bool newton3) final {
     if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
@@ -574,8 +574,8 @@ class LJFunctor
     }
   }
 
-  void SoAFunctorVerletPreloadMixingLJ(autopas::SoAView<SoAArraysType> soa, const uint32_t indexFirst,
-                      const std::vector<uint32_t, autopas::AlignedAllocator<uint32_t>> &neighborList,
+  void SoAFunctorVerletPreloadMixingLJ(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                      const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList,
                       bool newton3) final{
     if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
@@ -852,7 +852,7 @@ class LJFunctor
     SoAFloatPrecision fyacc = 0;
     SoAFloatPrecision fzacc = 0;
     const size_t neighborListSize = neighborList.size();
-    const uint32_t *const __restrict neighborListPtr = neighborList.data();
+    const autopas::SoAIndexIntType *const __restrict neighborListPtr = neighborList.data();
 
     // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];
@@ -1124,7 +1124,7 @@ class LJFunctor
 
   template <bool newton3>
   void SoAFunctorVerletPreloadMixingLJPtrImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                            const std::vector<uint32_t, autopas::AlignedAllocator<uint32_t>> &neighborList) {
+                            const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList) {
 
     const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
@@ -1138,7 +1138,7 @@ class LJFunctor
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     const size_t neighborListSize = neighborList.size();
-    const uint32_t *const __restrict neighborListPtr = neighborList.data();
+    const autopas::SoAIndexIntType *const __restrict neighborListPtr = neighborList.data();
 
     const SoAFloatPrecision xI = xPtr[indexFirst];
     const SoAFloatPrecision yI = yPtr[indexFirst];

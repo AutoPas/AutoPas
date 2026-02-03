@@ -30,7 +30,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
   /**
    * Helper type definition. Pair of particle and neighbor list for SoA layout.
    */
-  using SoAPairOfParticleAndList = std::pair<uint32_t, std::vector<uint32_t, autopas::AlignedAllocator<uint32_t>>>;
+  using SoAPairOfParticleAndList = std::pair<SoAIndexIntType, std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>>>;
 
   /**
    * Helper type definition. Vector of cells, for each cell a vector of neighbors.
@@ -315,7 +315,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
           size_t currentParticleGlobalIndex = particlePtrToIndex.at(particlePtr);
 
           // create SoA neighbor list for current particle
-          std::vector<uint32_t, autopas::AlignedAllocator<uint32_t>> currentSoANeighborList{};
+          std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> currentSoANeighborList{};
           currentSoANeighborList.reserve(neighbors.size());
 
           // fill the SoA neighbor list with the indices of the particles from the corresponding AoS neighbor list
@@ -360,6 +360,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
    * Contrary to aosNeighborList it saves global particle indices instead of particle pointers.
    */
   SoAListType _soaNeighborList = std::vector<
-      std::vector<std::vector<std::pair<uint32_t, std::vector<uint32_t, autopas::AlignedAllocator<uint32_t>>>>>>();
+      std::vector<std::vector<std::pair<SoAIndexIntType, std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>>>>>>();
 };
 }  // namespace autopas

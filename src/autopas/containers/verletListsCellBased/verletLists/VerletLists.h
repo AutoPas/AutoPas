@@ -16,6 +16,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include <likwid-marker.h>
 
 namespace autopas {
 
@@ -85,9 +86,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
 
+    // LIKWID_MARKER_START("force calculation");
     traversal->initTraversal();
     traversal->traverseParticles();
     traversal->endTraversal();
+    // LIKWID_MARKER_STOP("force calculation");
   }
 
   /**
@@ -164,6 +167,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Fills SoA neighbor list with particle indices.
    */
   void generateSoAListFromAoSVerletLists() {
+    // LIKWID_MARKER_START("AoS to SoA - list copy");
     // resize the list to the size of the aos neighborlist
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
@@ -175,9 +179,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
     // differentiate them from particles already marked for deletion.
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
-      // set the map
       _particlePtr2indexMap[&(*iter)] = index;
     }
+
     size_t accumulatedListSize = 0;
     for (const auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
       accumulatedListSize += neighborPtrVector.size();
@@ -190,6 +194,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         j++;
       }
     }
+
+    // LIKWID_MARKER_STOP("AoS to SoA - list copy");
 
     AutoPasLog(DEBUG,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
@@ -214,7 +220,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * verlet list for SoA:
    * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
    */
-  std::vector<std::vector<uint32_t, AlignedAllocator<uint32_t>>> _soaNeighborLists;
+  std::vector<std::vector<autopas::SoAIndexIntType, AlignedAllocator<autopas::SoAIndexIntType>>> _soaNeighborLists;
 
   /**
    * Shows if the SoA neighbor list is currently valid.
