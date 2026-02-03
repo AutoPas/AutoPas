@@ -1,12 +1,12 @@
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 ## md-flexible compiled for multi-site molecules.
-container                        :  [VerletClusterLists]
+container                        :  [LinkedCells]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  None
 data-layout                      :  [AoS, SoA]
-traversal                        :  [vcl_c06]
+traversal                        :  [lc_c08]
 newton3                          :  [enabled]
 functor                          :  Lennard-Jones (12-6) AVX
 cutoff                           :  2.5
