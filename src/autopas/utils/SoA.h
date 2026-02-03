@@ -286,5 +286,7 @@ class SoA {
 
   // storage container for the SoA's
   utils::SoAStorage<SoAArraysType> soaStorage;
+
+  SoAIndexIntType _particlesIndexInSoAStart = 0;
 };
 }  // namespace autopas
