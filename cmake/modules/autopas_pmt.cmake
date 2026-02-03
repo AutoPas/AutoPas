@@ -11,6 +11,10 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
     # however in AutoPas, it is set to ON by default whenever energy measurement is enabled.
     set(PMT_BUILD_RAPL ON CACHE BOOL "RAPL is by default enabled when PMT is enabled" FORCE)
 
+    # LIKWID can be enabled by setting the cmake option PMT_BUILD_LIKWID to ON. This is particularly useful on CoolMuc-4 where RAPL does not work.
+    set(PMT_BUILD_LIKWID OFF CACHE BOOL "LIKWID is OFF by default when PMT is enabled, but user can change this." )
+
+
     if (NOT ${pmt_ForceBundled})
         if (pmt_FOUND)
             message(STATUS "pmt - using installed version ${pmt_VERSION}")
