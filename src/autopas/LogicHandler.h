@@ -80,10 +80,13 @@ class LogicHandler {
                                                             _verletClusterSize,
                                                             _sortingThreshold,
                                                             configuration.loadEstimator,
-                                                            _logicHandlerInfo.useMortonIndex,
+                                                            _logicHandlerInfo.orderCellsByMortonIndex,
                                                             _logicHandlerInfo.preloadLJMixingPtr,
-                                                            _logicHandlerInfo.useLiveId,
-                                                            _logicHandlerInfo.reserveVLSizes};
+                                                            _logicHandlerInfo.useSoAIndex,
+                                                            _logicHandlerInfo.reserveVLSizes,
+                                                            _logicHandlerInfo.bucketSortParticles,
+                                                            _logicHandlerInfo.sortVerletLists,
+                                                            _logicHandlerInfo.useVerletIndex32};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -337,6 +340,7 @@ class LogicHandler {
     }
     Particle_T particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
+    // add owned particles to cell
     if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // Container has to (about to) be invalid to be able to add Particles!
       _currentContainer->template addParticle<false>(particleCopy);
@@ -1959,6 +1963,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
+  // ex based on functor and interactionType (pairwise or triwise) a configuration with a pointer of type TraversalInterface  is created
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
   auto &autoTuner = *_autoTunerRefs[interactionType];
@@ -2046,8 +2051,9 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator, _logicHandlerInfo.useMortonIndex,
-                            _logicHandlerInfo.preloadLJMixingPtr, _logicHandlerInfo.useLiveId, _logicHandlerInfo.reserveVLSizes);
+                            _verletClusterSize, _sortingThreshold, config.loadEstimator, _logicHandlerInfo.orderCellsByMortonIndex,
+                            _logicHandlerInfo.preloadLJMixingPtr, _logicHandlerInfo.useSoAIndex, _logicHandlerInfo.reserveVLSizes,
+                            _logicHandlerInfo.bucketSortParticles, _logicHandlerInfo.sortVerletLists, _logicHandlerInfo.useVerletIndex32);
   auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
   const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
 

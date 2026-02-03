@@ -19,6 +19,7 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/containers/verletListsCellBased/verletLists/SoAIndexIntType.h"
 
 namespace autopas {
 
@@ -414,21 +415,33 @@ class ParticleContainerInterface {
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
 
-  [[nodiscard]] bool useMortonIndex() const { return _useMortonIndex; }
+  [[nodiscard]] bool getOrderCellsByMortonIndex() const { return _orderCellsByMortonIndex; }
 
-  void setUseMortonIndex(bool useMortonIndex) { _useMortonIndex = useMortonIndex; }
+  void setOrderCellsByMortonIndex(bool orderCellsByMortonIndex) { _orderCellsByMortonIndex = orderCellsByMortonIndex; }
 
-  [[nodiscard]] bool preloadLJMixingPtr() const { return _preloadLJMixingPtr; }
+  [[nodiscard]] bool getPreloadMixingPtr() const { return _preloadLJMixingPtr; }
 
   void setPreloadLJMixingIndex(bool preloadLJMixingIndex) { _preloadLJMixingPtr = preloadLJMixingIndex; }
 
-  [[nodiscard]] bool useLiveId() const { return _useLiveId; }
+  [[nodiscard]] bool getUseSoAIndex() const { return _useSoAIndex; }
 
-  void setUseLiveId(bool useLiveId) { _useLiveId = useLiveId; }
+  void setUseIndexInSoAId(bool useSoAIndex) { _useSoAIndex = useSoAIndex; }
 
-  [[nodiscard]] bool reserveVLSizes() const { return _reserveVLSizes; }
+  [[nodiscard]] bool getReserveVLSizes() const { return _reserveVLSizes; }
 
   void setReserveVLSizes(bool reserveVLSizes) { _reserveVLSizes = reserveVLSizes; }
+
+ [[nodiscard]] bool getBucketSortParticles() const { return _bucketSortParticles; }
+
+  void setBucketSortParticles(bool bucketSortParticles) { _bucketSortParticles = bucketSortParticles; }
+
+  [[nodiscard]] bool getSortVerletLists() const { return _sortVerletLists; }
+
+  void setSortVerletLists(bool sortVerletLists) { _sortVerletLists = sortVerletLists; }
+
+  [[nodiscard]] bool getUseVerletIndex32() const { return _useVerletIndex32; }
+
+  void setUseVerletIndex32(bool useVerletIndex32) { _useVerletIndex32 = useVerletIndex32; }
 
  protected:
   /**
@@ -443,10 +456,13 @@ class ParticleContainerInterface {
    */
   double _skin;
 
-  bool _useMortonIndex = false;
+  bool _orderCellsByMortonIndex = false;
   bool _preloadLJMixingPtr = false;
-  bool _useLiveId = false;
+  bool _useSoAIndex = false;
   bool _reserveVLSizes = false;
+  bool _bucketSortParticles = false;
+  bool _sortVerletLists = false;
+  bool _useVerletIndex32 = false;
 };
 
 }  // namespace autopas

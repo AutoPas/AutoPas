@@ -103,8 +103,11 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static inline std::map<mykey_t, std::vector<std::array<double, 3>>> _forcesReference{};
   static inline std::map<mykey_t, Globals> _globalValuesReference{};
 
-  static constexpr bool _useMortonIndex = true;
+  static constexpr bool _orderCellsByMortonIndex = true;
   static constexpr bool _preloadLJMixingPtr = true;
-  static constexpr bool _useLiveId = true;
+  static constexpr bool _useSoAIndex = true;
   static constexpr bool _reserveVLSizes = true;
+  static constexpr bool _bucketSortParticles = true;
+  static constexpr bool _sortVerletLists = true;
+  static constexpr bool _useVerletIndex32 = true;
 };

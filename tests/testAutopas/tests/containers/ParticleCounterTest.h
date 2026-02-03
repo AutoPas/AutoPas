@@ -30,8 +30,11 @@ class ParticleCounterTest : public AutoPasTestBase, public ::testing::WithParamI
   static constexpr unsigned int _numHaloParticles = 4;
   static constexpr unsigned int _numDummyParticles = 1;
 
-  static constexpr bool _useMortonIndex = true;
+  static constexpr bool _orderCellsByMortonIndex = true;
   static constexpr bool _preloadLJMixingPtr = true;
-  static constexpr bool _useLiveId = true;
+  static constexpr bool _useSoAIndex = true;
   static constexpr bool _reserveVLSizes = true;
+  static constexpr bool _bucketSortParticles = true;
+  static constexpr bool _sortVerletLists = true;
+  static constexpr bool _useVerletIndex32 = true;
 };

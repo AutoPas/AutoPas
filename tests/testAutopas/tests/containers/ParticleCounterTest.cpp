@@ -38,10 +38,13 @@ TEST_P(ParticleCounterTest, testGetNumberOfParticles) {
                                                             32,
                                                             8,
                                                             autopas::LoadEstimatorOption::none,
-                                                            _useMortonIndex,
+                                                            _orderCellsByMortonIndex,
                                                             _preloadLJMixingPtr,
-                                                            _useLiveId,
-                                                            _reserveVLSizes};
+                                                            _useSoAIndex,
+                                                            _reserveVLSizes,
+                                                            _bucketSortParticles,
+                                                            _sortVerletLists,
+                                                            _useVerletIndex32};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
 
   // add owned particles

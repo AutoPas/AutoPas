@@ -18,10 +18,13 @@ class AllContainersTestsBase : public AutoPasTestBase {
   const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = 1;
-  const bool useMortonIndex = true;
+  const bool orderCellsByMortonIndex = true;
   const bool preloadLJMixingPtr = true;
-  const bool useLiveId = true;
+  const bool useSoAIndex = true;
   const bool reserveVLSizes = true;
+  bool bucketSortParticles = true;
+  bool sortVerletLists = true;
+  bool useVerletIndex32 = true;
 
   template <class Particle_T>
   auto getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
@@ -33,10 +36,13 @@ class AllContainersTestsBase : public AutoPasTestBase {
                                                       32,
                                                       8,
                                                       autopas::LoadEstimatorOption::none,
-                                                      useMortonIndex,
+                                                      orderCellsByMortonIndex,
                                                       preloadLJMixingPtr,
-                                                      useLiveId,
-                                                      reserveVLSizes};
+                                                      useSoAIndex,
+                                                      reserveVLSizes,
+                                                      bucketSortParticles,
+                                                      sortVerletLists,
+                                                      useVerletIndex32};
     auto container = autopas::ContainerSelector<Particle_T>::generateContainer(containerOptionToTest, selectorInfo);
     return std::move(container);
   }

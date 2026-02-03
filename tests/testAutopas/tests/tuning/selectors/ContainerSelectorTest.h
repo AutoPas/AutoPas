@@ -17,8 +17,11 @@ class ContainerSelectorTest : public AutoPasTestBase {
   const double cellSizeFactor = 1;
   const double verletSkin = 0.1;
   const unsigned int verletRebuildFrequency = 2;
-  const bool useMortonIndex = true;
+  const bool orderCellsByMortonIndex = true;
   const bool preloadLJMixingPtr = true;
-  const bool useLiveId = true;
+  const bool useSoAIndex = true;
   const bool reserveVLSizes = true;
+  const bool bucketSortParticles = true;
+  const bool sortVerletLists = true;
+  const bool useVerletIndex32 = true;
 };

@@ -82,10 +82,13 @@ void AutoPas<Particle_T>::init() {
   }
 
   _logicHandlerInfo.sortingThreshold = _sortingThreshold;
-  _logicHandlerInfo.useMortonIndex = _useMortonIndex;
-  _logicHandlerInfo.useLiveId = _useLiveId;
+  _logicHandlerInfo.orderCellsByMortonIndex = _orderCellsByMortonIndex;
+  _logicHandlerInfo.useSoAIndex = _useSoAIndex;
   _logicHandlerInfo.preloadLJMixingPtr = _preloadLJMixingPtr;
   _logicHandlerInfo.reserveVLSizes = _reserveVLSizes;
+  _logicHandlerInfo.bucketSortParticles = _bucketSortParticles;
+  _logicHandlerInfo.sortVerletLists = _sortVerletLists;
+  _logicHandlerInfo.useVerletIndex32 = _useVerletIndex32;
 
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.

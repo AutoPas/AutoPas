@@ -833,17 +833,26 @@ class MDFlexConfig {
   MDFlexOption<std::string, __LINE__> outputSuffix{"", "output-suffix", true,
                                                    "An identifier that is contained in the filename of all log files."};
 
-  MDFlexOption<bool, __LINE__> useMortonIndex{false, "use-morton-index", true,
+  MDFlexOption<bool, __LINE__> orderCellsByMortonIndex{false, "order-cells-by-morton-id", true,
                                                    "If Morton Indexing should be used for sorting the cells before traversal in VerletListsSoA. Possible Values: (true false)"};
 
   MDFlexOption<bool, __LINE__> preloadLJMixingPtr{false, "preload-lj-mixing-ptrs", true,
     "If the pointer to access LJ Mixing data should be preloaded in LJFunctor for VerletListsSoa. Possible Values: (true false)"};
 
-  MDFlexOption<bool, __LINE__> useLiveId{false, "use-live-id", true,
-    "If a liveId should be used per particle instead of a Map to store the index of a particle in the SoA data for VerletListsSoa. Possible Values: (true false)"};
+  MDFlexOption<bool, __LINE__> useSoAIndex{false, "use-soa-index", true,
+    "If a indexInSoA should be used per particle instead of a Map to store the index of a particle in the SoA data for VerletListsSoa. Possible Values: (true false)"};
 
   MDFlexOption<bool, __LINE__> reserveVLSizes{false, "reserve-vl-sizes", true,
                                                  "If the old size of a neighbor list should be used to reserve space for rebuilding the neighbor list for VerletListsSoa. Possible Values: (true false)"};
+
+  MDFlexOption<bool, __LINE__> bucketSortParticles{false, "bucket-sort-particles", true,
+                                               "If the by value particles in the cells should be sorted into buckets. Possible Values: (true false)"};
+
+  MDFlexOption<bool, __LINE__> sortVerletLists{false, "sort-verlet-lists", true,
+                                             "If the Verlet lists should be sorted by SoAIndex. Possible Values: (true false)"};
+
+  MDFlexOption<bool, __LINE__> useVerletIndex32{false, "use-verlet-index-32", true,
+                                           "If the indices used in the verlet lists should be 32 bits. The default value is 64 bits. Possible Values: (true false)"};
 
   /**
    * valueOffset used for cli-output alignment

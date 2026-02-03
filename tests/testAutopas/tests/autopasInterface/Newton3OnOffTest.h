@@ -38,8 +38,11 @@ class Newton3OnOffTest
   static int getSortingThreshold() { return 8; }
   static bool getUseMortonIndex() { return true; }
   static bool getPreLoadLJMixingPtr() { return true; }
-  static bool getUseLiveId() { return true; }
+  static bool getUseIndexInSoAId() { return true; }
   static bool getReserveVLSizes() { return true; }
+  static bool getBucketSortParticles() { return true; }
+  static bool getSortVerletLists() { return true; }
+  static bool getUseVerletIndex32() { return true; }
 
   template <typename FunctorType>
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,

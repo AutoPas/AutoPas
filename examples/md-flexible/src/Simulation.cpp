@@ -182,10 +182,13 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
-  _autoPasContainer->setUseMortonIndex(_configuration.useMortonIndex.value);
-  _autoPasContainer->setUseLiveId(_configuration.useLiveId.value);
+  _autoPasContainer->setOrderCellsByMortonIndex(_configuration.orderCellsByMortonIndex.value);
+  _autoPasContainer->setUseIndexInSoAId(_configuration.useSoAIndex.value);
   _autoPasContainer->setReserveVLSizes(_configuration.reserveVLSizes.value);
   _autoPasContainer->setPreloadLJMixingIndex(_configuration.preloadLJMixingPtr.value);
+  _autoPasContainer->setBucketSortParticles(_configuration.bucketSortParticles.value);
+  _autoPasContainer->setSortVerletLists(_configuration.sortVerletLists.value);
+  _autoPasContainer->setUseVerletIndex32(_configuration.useVerletIndex32.value);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
   _autoPasContainer->init();

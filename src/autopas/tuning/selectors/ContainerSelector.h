@@ -52,10 +52,13 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &cellSizeFactor = containerInfo.cellSizeFactor;
   const auto &loadEstimator = containerInfo.loadEstimator;
   const auto &sortingThreshold = containerInfo.sortingThreshold;
-  const auto &useMortonIndex = containerInfo.useMortonIndex;
+  const auto &orderCellsByMortonIndex = containerInfo.orderCellsByMortonIndex;
   const auto &preloadLJMixingPtr = containerInfo.preloadLJMixingPtr;
-  const auto &useLiveId = containerInfo.useLiveId;
+  const auto &useSoAIndex = containerInfo.useSoAIndex;
   const auto &reserveVLSizes = containerInfo.reserveVLSizes;
+  const auto &bucketSortParticles = containerInfo.bucketSortParticles;
+  const auto &sortVerletLists = containerInfo.sortVerletLists;
+  const auto &useVerletIndex32 = containerInfo.useVerletIndex32;
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
@@ -107,9 +110,12 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       container = std::make_unique<VerletListsSoA<Particle_T>>(
       boxMin, boxMax, cutoff, verletSkin, VerletListsSoA<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
       container->setPreloadLJMixingIndex(preloadLJMixingPtr);
-      container->setUseLiveId(useLiveId);
+      container->setUseIndexInSoAId(useSoAIndex);
       container->setReserveVLSizes(reserveVLSizes);
-      container->setUseMortonIndex(useMortonIndex);
+      container->setOrderCellsByMortonIndex(orderCellsByMortonIndex);
+      container->setBucketSortParticles(bucketSortParticles);
+      container->setSortVerletLists(sortVerletLists);
+      container->setUseVerletIndex32(useVerletIndex32);
       break;
     }
     case ContainerOption::octree: {

@@ -45,8 +45,9 @@ class ContainerSelectorInfo {
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
                                  unsigned int verletClusterSize, size_t sortingThreshold,
-                                 LoadEstimatorOption loadEstimator, bool useMortonIndex,
-                                 bool preloadLJMixingPtr, bool useLiveId, bool reserveVLSizes)
+                                 LoadEstimatorOption loadEstimator, bool orderCellsByMortonIndex,
+                                 bool preloadLJMixingPtr, bool useSoAIndex, bool reserveVLSizes,
+                                 bool bucketSortParticles, bool sortVerletLists, bool useVerletIndex32)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),
@@ -55,10 +56,13 @@ class ContainerSelectorInfo {
         verletClusterSize(verletClusterSize),
         sortingThreshold(sortingThreshold),
         loadEstimator(loadEstimator),
-        useMortonIndex(useMortonIndex),
+        orderCellsByMortonIndex(orderCellsByMortonIndex),
         preloadLJMixingPtr(preloadLJMixingPtr),
-        useLiveId(useLiveId),
-        reserveVLSizes(reserveVLSizes){}
+        useSoAIndex(useSoAIndex),
+        reserveVLSizes(reserveVLSizes),
+        bucketSortParticles(bucketSortParticles),
+        sortVerletLists(sortVerletLists),
+        useVerletIndex32(useVerletIndex32){}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -128,10 +132,13 @@ class ContainerSelectorInfo {
    */
   LoadEstimatorOption loadEstimator;
 
-  bool useMortonIndex = false;
+  bool orderCellsByMortonIndex = false;
   bool preloadLJMixingPtr = false;
-  bool useLiveId = false;
+  bool useSoAIndex = false;
   bool reserveVLSizes = false;
+  bool bucketSortParticles = false;
+  bool sortVerletLists = false;
+  bool useVerletIndex32 = false;
 };
 
 }  // namespace autopas

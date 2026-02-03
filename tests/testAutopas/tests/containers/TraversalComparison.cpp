@@ -151,10 +151,13 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
                                                             32,
                                                             sortingThreshold,
                                                             autopas::LoadEstimatorOption::none,
-                                                            _useMortonIndex,
+                                                            _orderCellsByMortonIndex,
                                                             _preloadLJMixingPtr,
-                                                            _useLiveId,
-                                                            _reserveVLSizes};
+                                                            _useSoAIndex,
+                                                            _reserveVLSizes,
+                                                            _bucketSortParticles,
+                                                            _sortVerletLists,
+                                                            _useVerletIndex32};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),

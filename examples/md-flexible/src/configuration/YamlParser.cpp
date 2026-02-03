@@ -844,26 +844,41 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
-      } else if (key == config.useMortonIndex.name) {
+      } else if (key == config.orderCellsByMortonIndex.name) {
         expected = "Boolean Value";
-        description = config.useMortonIndex.description;
+        description = config.orderCellsByMortonIndex.description;
 
-        config.useMortonIndex.value = node[config.useMortonIndex.name].as<bool>();
+        config.orderCellsByMortonIndex.value = node[config.orderCellsByMortonIndex.name].as<bool>();
       } else if (key == config.preloadLJMixingPtr.name) {
         expected = "Boolean Value";
         description = config.preloadLJMixingPtr.description;
 
         config.preloadLJMixingPtr.value = node[config.preloadLJMixingPtr.name].as<bool>();
-      } else if (key == config.useLiveId.name) {
+      } else if (key == config.useSoAIndex.name) {
         expected = "Boolean Value";
-        description = config.useLiveId.description;
+        description = config.useSoAIndex.description;
 
-        config.useLiveId.value = node[config.useLiveId.name].as<bool>();
+        config.useSoAIndex.value = node[config.useSoAIndex.name].as<bool>();
       } else if (key == config.reserveVLSizes.name) {
         expected = "Boolean Value";
         description = config.reserveVLSizes.description;
 
         config.reserveVLSizes.value = node[config.reserveVLSizes.name].as<bool>();
+      } else if (key == config.bucketSortParticles.name) {
+        expected = "Boolean Value";
+        description = config.bucketSortParticles.description;
+
+        config.bucketSortParticles.value = node[config.bucketSortParticles.name].as<bool>();
+      } else if (key == config.sortVerletLists.name) {
+        expected = "Boolean Value";
+        description = config.sortVerletLists.description;
+
+        config.sortVerletLists.value = node[config.sortVerletLists.name].as<bool>();
+      } else if (key == config.useVerletIndex32.name) {
+        expected = "Boolean Value";
+        description = config.useVerletIndex32.description;
+
+        config.useVerletIndex32.value = node[config.useVerletIndex32.name].as<bool>();
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

@@ -45,9 +45,12 @@ class LogicHandlerInfo {
    */
   double deltaT{0};
 
-  bool useMortonIndex = false;
+  bool orderCellsByMortonIndex = false;
   bool preloadLJMixingPtr = false;
-  bool useLiveId = false;
+  bool useSoAIndex = false;
   bool reserveVLSizes = false;
+  bool bucketSortParticles = false;
+  bool sortVerletLists = false;
+  bool useVerletIndex32 = false;
 };
 }  // namespace autopas
