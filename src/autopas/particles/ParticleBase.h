@@ -106,7 +106,7 @@ class ParticleBase {
    */
   OwnershipState _ownershipState;
 
-  size_t _liveId;
+  size_t _indexInSoA;
 
  public:
   /**
@@ -186,8 +186,8 @@ class ParticleBase {
    */
   void setR(const std::array<double, 3> &r) { _r = r; }
 
-  size_t getLiveId() const { return _liveId; }
-  void setLiveId(size_t liveId) { _liveId = liveId; }
+  size_t getIndexInSoA() const { return _indexInSoA; }
+  void setIndexInSoA(size_t indexInSoA) { _indexInSoA = indexInSoA; }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**
@@ -340,7 +340,7 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, liveId, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int { ptr, id, indexInSoA, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
    * Floating Point Type used for this particle
@@ -381,8 +381,8 @@ class ParticleBase {
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
-    } else if constexpr (attribute == AttributeNames::liveId) {
-      return getLiveId();
+    } else if constexpr (attribute == AttributeNames::indexInSoA) {
+      return getIndexInSoA();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
@@ -412,8 +412,8 @@ class ParticleBase {
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
-    } else if constexpr (attribute == AttributeNames::liveId) {
-      setLiveId(value);
+    } else if constexpr (attribute == AttributeNames::indexInSoA) {
+      setIndexInSoA(value);
     } else if constexpr (attribute == AttributeNames::posX) {
       _r[0] = value;
     } else if constexpr (attribute == AttributeNames::posY) {
