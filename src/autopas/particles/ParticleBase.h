@@ -37,7 +37,7 @@ class ParticleBase {
         _v({0., 0., 0.}),
         _f({0.0, 0.0, 0.0}),
         _id(0),
-        _liveId(0),
+        _indexInSoA(0),
         _ownershipState(OwnershipState::owned)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
@@ -59,7 +59,7 @@ class ParticleBase {
         _v(v),
         _f({0.0, 0.0, 0.0}),
         _id(id),
-        _liveId(0),
+        _indexInSoA(0),
         _ownershipState(ownershipState)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,

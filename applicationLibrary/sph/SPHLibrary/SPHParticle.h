@@ -398,7 +398,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
     accZ,
     engDot,
     ownershipState,
-    liveId
+    indexInSoA
   };
 
   /**
@@ -422,7 +422,7 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
                                                 double,  // accZ
                                                 double,  // engDot
                                                 autopas::OwnershipState,
-                                                double>::Type; //liveId
+                                                double>::Type; //indexInSoA
 
   /**
    * Non-const getter for the pointer of this object.
@@ -475,8 +475,8 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
       return getEngDot();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
-    } else if constexpr (attribute == AttributeNames::liveId) {
-      return this->_liveId;
+    } else if constexpr (attribute == AttributeNames::indexInSoA) {
+      return this->_indexInSoA;
     } else {
       autopas::utils::ExceptionHandler::exception("SPHParticle::get: unknown attribute");
     }
@@ -523,8 +523,8 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
       setEngDot(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       _ownershipState = value;
-    } else if constexpr (attribute == AttributeNames::liveId) {
-      _liveId = value;
+    } else if constexpr (attribute == AttributeNames::indexInSoA) {
+      _indexInSoA = value;
     } else {
       autopas::utils::ExceptionHandler::exception("SPHParticle::set: unknown attribute");
     }
@@ -550,6 +550,6 @@ class SPHParticle : public autopas::ParticleBaseFP64 {
   std::array<double, 3> _vel_half;  // velocity at half time-step
   double _eng_half;                 // energy at half time-step
 
-  double _liveId = std::numeric_limits<double>::max();
+  double _indexInSoA = std::numeric_limits<double>::max();
 };
 }  // namespace sphLib

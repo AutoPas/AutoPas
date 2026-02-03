@@ -17,16 +17,13 @@ void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldFor
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 
-size_t MoleculeLJ::getLiveId() const { return _liveId; }
-void MoleculeLJ::setLiveId(size_t liveId) { _liveId = liveId; }
-
 std::string MoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;
   // clang-format off
   text << "MoleculeLJ"
      << "\nID                 : " << _id
-     << "\nLive ID            : " << _liveId
+     << "\nLive ID            : " << _indexInSoA
      << "\nPosition           : " << _r
      << "\nVelocity           : " << _v
      << "\nForce              : " << _f

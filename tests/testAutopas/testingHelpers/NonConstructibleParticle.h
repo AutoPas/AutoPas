@@ -21,13 +21,13 @@ class NonConstructibleParticle : public autopas::ParticleBaseFP64 {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, liveId, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int { ptr, id, indexInSoA, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
    * The type for the SoA storage.
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<NonConstructibleParticle *, size_t /*id*/, size_t /*liveId*/, double /*x*/, double /*y*/,
+      typename autopas::utils::SoAType<NonConstructibleParticle *, size_t /*id*/, size_t /*indexInSoA*/, double /*x*/, double /*y*/,
                                        double /*z*/, double /*fx*/, double /*fy*/, double /*fz*/,
                                        autopas::OwnershipState /*ownershipState*/>::Type;
 
@@ -51,8 +51,8 @@ class NonConstructibleParticle : public autopas::ParticleBaseFP64 {
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
-    } else if constexpr (attribute == AttributeNames::liveId) {
-      return getLiveId();
+    } else if constexpr (attribute == AttributeNames::indexInSoA) {
+      return getIndexInSoA();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {

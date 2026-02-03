@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include "autopas/containers/verletListsCellBased/verletLists/SoAIndexIntType.h"
 
 namespace autopas {
 
@@ -81,6 +82,10 @@ class SoAView {
    * @return Number of particles.
    */
   [[nodiscard]] size_t size() const { return _endIndex - _startIndex; }
+
+  [[nodiscard]] SoAIndexIntType getParticlesIndexInSoAStart() const {
+    return static_cast<SoAIndexIntType>(_soa->getParticlesIndexInSoAStart() + _startIndex);
+  }
 
  private:
   /**

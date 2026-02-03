@@ -12,6 +12,7 @@
 #include <tuple>
 #include <vector>
 
+#include "autopas/containers/verletListsCellBased/verletLists/SoAIndexIntType.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
@@ -219,6 +220,13 @@ class SoA {
    * @return the constructed SoAView from \p startIndex (inclusive) to \p endIndex (exclusive).
    */
   SoAView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) { return {this, startIndex, endIndex}; }
+
+
+  [[nodiscard]] SoAIndexIntType getParticlesIndexInSoAStart() const { return _particlesIndexInSoAStart; }
+
+  void setParticlesIndexInSoAStart(SoAIndexIntType particles_live_id_start) {
+    _particlesIndexInSoAStart = particles_live_id_start;
+  }
 
  private:
   // actual implementation of read
