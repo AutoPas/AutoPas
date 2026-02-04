@@ -21,13 +21,13 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
-  const autopas::NumberSetFinite<int> threadCounts(std::set<int>{autopas::Configuration::ThreadCountNoTuning});
+  const autopas::NumberSetFinite<int> threadCounts{autopas::Configuration::ThreadCountNoTuning};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
       autopas::InteractionTypeOption::pairwise, &threadCounts);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
-                                      traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
+                                      traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, threadCounts,
                                       maxEvidence);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.begin(), searchSpace.end()};
@@ -73,7 +73,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
       autopas::InteractionTypeOption::pairwise, threadCounts);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
-                                      traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
+                                      traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, *threadCounts,
                                       maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound,
                                       predNumLHSamples, seed);
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};

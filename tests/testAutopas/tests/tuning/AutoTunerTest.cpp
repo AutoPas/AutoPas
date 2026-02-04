@@ -33,7 +33,7 @@ using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
-  const autopas::NumberSetFinite<int> threadCounts(std::set<int>{autopas::Configuration::ThreadCountNoTuning});
+  const autopas::NumberSetFinite<int> threadCounts{autopas::Configuration::ThreadCountNoTuning};
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 64;

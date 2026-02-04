@@ -66,6 +66,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedThreadCounts
    * @param maxEvidence Stop tuning after given number of evidence provided.
    * @param predAcqFunction Acquisition function used for prediction while tuning.
    * @param outputSuffix Suffix for output logger.
@@ -79,7 +80,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+      const NumberSet<int> &allowedThreadCounts = NumberSetFinite<int>({ autopas::Configuration::ThreadCountNoTuning }),
+      size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()());
 
@@ -130,6 +133,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  std::unique_ptr<NumberSet<int>> _threadCounts;
   FeatureVectorEncoder _encoder;
 
   /**

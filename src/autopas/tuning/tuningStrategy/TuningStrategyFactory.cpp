@@ -63,7 +63,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, info.maxEvidence, info.acquisitionFunctionOption);
+          searchSpaceDimensions.newton3Options, NumberSetFinite<int>{searchSpaceDimensions.threadCounts}, info.maxEvidence, info.acquisitionFunctionOption);
       break;
     }
 
@@ -73,11 +73,15 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
+          searchSpaceDimensions.newton3Options, NumberSetFinite<int>{searchSpaceDimensions.threadCounts}, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
       break;
     }
 
     case TuningStrategyOption::activeHarmony: {
+      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
+      if (searchSpaceDimensions.threadCounts != std::set<int>{ autopas::Configuration::ThreadCountNoTuning }) {
+        utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Thread tuning is not supported by ActiveHarmony!");
+      }
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
       if (std::getenv("HARMONY_HOST") != nullptr and not info.mpiDivideAndConquer) {
         unsetenv("HARMONY_HOST");
@@ -85,7 +89,6 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
                    "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
                    "HARMONY_HOST will be unset to enforce a local tuning session");
       }
-      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<ActiveHarmony>(
           interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,

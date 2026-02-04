@@ -1042,7 +1042,7 @@ class AutoPas {
     }
     const int maxThreadCounts = autopas_get_max_threads();
     if (allowedThreadCounts.getMax() > maxThreadCounts) {
-      utils::ExceptionHandler::exception("Error: minimum thread count exceeded {} > {}!", allowedThreadCounts.getMax(),
+      utils::ExceptionHandler::exception("Error: maximum thread count exceeded {} > {}!", allowedThreadCounts.getMax(),
                                          maxThreadCounts);
     }    
     _allowedThreadCounts = std::move(allowedThreadCounts.clone());

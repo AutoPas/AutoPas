@@ -11,9 +11,10 @@ autopas::FeatureVectorEncoder::FeatureVectorEncoder() = default;
 autopas::FeatureVectorEncoder::FeatureVectorEncoder(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType)
+    const autopas::NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType,
+    const NumberSetFinite<int> &threadCounts)
     : _interactionType(interactionType) {
-  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors);
+  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors, threadCounts);
 }
 
 autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
@@ -21,18 +22,21 @@ autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
 void autopas::FeatureVectorEncoder::setAllowedOptions(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors) {
+    const autopas::NumberSet<double> &cellSizeFactors, const NumberSet<int> &threadCounts) {
   _containerTraversalEstimatorOptions = containerTraversalEstimatorOptions;
   _dataLayoutOptions = dataLayoutOptions;
   _newton3Options = newton3Options;
+  const auto threadCountsSet = threadCounts.getAll();
+  _threadCounts = {threadCountsSet.begin(), threadCountsSet.end()};
 
-  _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
+  _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() + _threadCounts.size() +
                 tunableContinuousDims;
 
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
       _containerTraversalEstimatorOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::dataLayout)] = _dataLayoutOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
+  _discreteRestrictions[static_cast<size_t>(DiscreteIndices::threadCount)] = threadCounts.size();
 
   _continuousRestrictions[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = cellSizeFactors.clone();
 }
@@ -266,6 +270,7 @@ autopas::FeatureVectorEncoder::convertToTunable(const autopas::FeatureVector &ve
       getIndex(_containerTraversalEstimatorOptions, std::make_tuple(vec.container, vec.traversal, vec.loadEstimator));
   discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)] = getIndex(_dataLayoutOptions, vec.dataLayout);
   discreteValues[static_cast<size_t>(DiscreteIndices::newton3)] = getIndex(_newton3Options, vec.newton3);
+  discreteValues[static_cast<size_t>(DiscreteIndices::threadCount)] = getIndex(_threadCounts, vec.threadCount);
 
   ContinuousDimensionType continuousValues;
   continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
@@ -281,9 +286,9 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
           DiscreteIndices::containerTraversalEstimator)]];
   auto dataLayout = _dataLayoutOptions[discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)]];
   auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
+  auto threadCount = _threadCounts[discreteValues[static_cast<size_t>(DiscreteIndices::threadCount)]];
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
-  auto threadCount = continuousValues[static_cast<size_t>(DiscreteIndices::threadCount)];
 
   return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, _interactionType,
                        threadCount);

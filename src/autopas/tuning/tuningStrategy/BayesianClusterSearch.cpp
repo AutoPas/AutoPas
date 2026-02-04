@@ -15,6 +15,7 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
     const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+    const NumberSet<int> &allowedThreadCounts,
     size_t maxEvidence, AcquisitionFunctionOption predAcqFunction, const std::string &outputSuffix,
     size_t predNumLHSamples, unsigned long seed)
     : _interactionType(interactionType),
@@ -22,6 +23,7 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
+      _threadCounts(allowedThreadCounts.clone()),
       _encoder(),
       _invalidConfigs(),
       _rng(seed),
@@ -129,7 +131,7 @@ bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
 
 void autopas::BayesianClusterSearch::updateOptions() {
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, *_threadCounts);
 
   auto newRestrictions = _encoder.getDiscreteRestrictions();
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));
