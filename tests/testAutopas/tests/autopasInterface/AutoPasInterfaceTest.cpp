@@ -480,7 +480,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   const bool reserveVLSizes = true;
   bool bucketSortParticles = true;
   bool sortVerletLists = true;
-  bool useVerletIndex32 = true;
+  size_t sortingFrequency = 1;
   const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
       cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
@@ -489,7 +489,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
                                                              conf.cellSizeFactor, skinLocal,         clusterSize,
                                                              sortingThreshold,    conf.loadEstimator, orderCellsByMortonIndex,
                                                              preloadLJMixingPtr, useSoAIndex, reserveVLSizes,
-                                                             bucketSortParticles, sortVerletLists, useVerletIndex32};
+                                                             bucketSortParticles, sortVerletLists, sortingFrequency};
 
 
 

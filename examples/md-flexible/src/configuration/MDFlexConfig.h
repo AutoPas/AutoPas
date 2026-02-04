@@ -851,7 +851,7 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> sortVerletLists{false, "sort-verlet-lists", true,
                                              "If the Verlet lists should be sorted by SoAIndex. Possible Values: (true false)"};
 
-  MDFlexOption<bool, __LINE__> useVerletIndex32{false, "use-verlet-index-32", true,
+  MDFlexOption<unsigned int, __LINE__> sortingFrequency{1, "sorting-frequency", true,
                                            "If the indices used in the verlet lists should be 32 bits. The default value is 64 bits. Possible Values: (true false)"};
 
   /**

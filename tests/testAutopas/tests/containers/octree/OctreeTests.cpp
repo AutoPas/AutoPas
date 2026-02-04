@@ -474,7 +474,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
                                     unsigned int rebuildFrequency, double interactionLength,
                                     Vector3DList particlePositions, Vector3DList haloParticlePositions,
                                     bool orderCellsByMortonIndex, bool preloadLJMixingPtr, bool useSoAIndex, bool reserveVLSizes,
-                                    bool bucketSortParticles, bool sortVerletLists, bool useVerletIndex32) {
+                                    bool bucketSortParticles, bool sortVerletLists, size_t sortingFrequency) {
   using namespace autopas;
 
   double _cutoffsquare = cutoff * cutoff;
@@ -486,7 +486,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
       containerOption,
       ContainerSelectorInfo{boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, autopas::LoadEstimatorOption::none,
         orderCellsByMortonIndex, preloadLJMixingPtr, useSoAIndex, reserveVLSizes,
-        bucketSortParticles, sortVerletLists, useVerletIndex32});
+        bucketSortParticles, sortVerletLists, sortingFrequency});
 
   // Create a functor that is able to calculate forces
   LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, false /*calculateGlobals*/>
@@ -607,7 +607,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   const bool reserveVLSizes = true;
   bool bucketSortParticles = true;
   bool sortVerletLists = true;
-  bool useVerletIndex32 = true;
+  size_t sortingFrequency = 1;
 
   // Obtain a starting configuration
   auto containerOption = ContainerOption::octree;
@@ -648,7 +648,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
                               numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin, rebuildFrequency,
                               interactionLength, particlePositions, haloParticlePositions,
                               orderCellsByMortonIndex, preloadLJMixingPtr, useSoAIndex, reserveVLSizes,
-                              bucketSortParticles, sortVerletLists, useVerletIndex32);
+                              bucketSortParticles, sortVerletLists, sortingFrequency);
 
   // Calculate the forces using the reference implementation
   auto [referenceForces, referencePairs] = calculateForcesAndPairs(
@@ -656,7 +656,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
       autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin,
       rebuildFrequency, interactionLength, particlePositions, haloParticlePositions,
       orderCellsByMortonIndex, preloadLJMixingPtr, useSoAIndex, reserveVLSizes,
-      bucketSortParticles, sortVerletLists, useVerletIndex32);
+      bucketSortParticles, sortVerletLists, sortingFrequency);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   // std::sort(calculatedPairs.begin(), calculatedPairs.end());

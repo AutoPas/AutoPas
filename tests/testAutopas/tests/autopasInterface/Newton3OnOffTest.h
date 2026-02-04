@@ -42,7 +42,7 @@ class Newton3OnOffTest
   static bool getReserveVLSizes() { return true; }
   static bool getBucketSortParticles() { return true; }
   static bool getSortVerletLists() { return true; }
-  static bool getUseVerletIndex32() { return true; }
+  static size_t getSortingFrequency() { return 1; }
 
   template <typename FunctorType>
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,

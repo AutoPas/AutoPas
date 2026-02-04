@@ -874,11 +874,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.sortVerletLists.description;
 
         config.sortVerletLists.value = node[config.sortVerletLists.name].as<bool>();
-      } else if (key == config.useVerletIndex32.name) {
-        expected = "Boolean Value";
-        description = config.useVerletIndex32.description;
+      } else if (key == config.sortingFrequency.name) {
+        expected = "Unsigned Integer > 0";
+        description = config.sortingFrequency.description;
 
-        config.useVerletIndex32.value = node[config.useVerletIndex32.name].as<bool>();
+        config.sortingFrequency.value = node[config.sortingFrequency.name].as<unsigned long>();
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

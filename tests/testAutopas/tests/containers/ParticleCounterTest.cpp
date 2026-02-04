@@ -44,7 +44,7 @@ TEST_P(ParticleCounterTest, testGetNumberOfParticles) {
                                                             _reserveVLSizes,
                                                             _bucketSortParticles,
                                                             _sortVerletLists,
-                                                            _useVerletIndex32};
+                                                            _sortingFrequency};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
 
   // add owned particles

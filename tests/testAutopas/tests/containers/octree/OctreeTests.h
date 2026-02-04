@@ -35,7 +35,7 @@ class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<
       double cutoff, double skin, unsigned int rebuildFrequency, double interactionLength,
       Vector3DList particlePositions, Vector3DList haloParticlePositions,
       bool orderCellsByMortonIndex, bool preloadLJMixingPtr, bool useSoAIndex, bool reserveVLSizes,
-      bool bucketSortParticles, bool sortVerletLists, bool useVerletIndex32);
+      bool bucketSortParticles, bool sortVerletLists, size_t sortingFrequency);
 
   MockPairwiseFunctor<Molecule> mockFunctor;
 };

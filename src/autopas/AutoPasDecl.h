@@ -1137,9 +1137,9 @@ class AutoPas {
 
   void setSortVerletLists(bool sortVerletLists) { _sortVerletLists = sortVerletLists; }
 
-  [[nodiscard]] bool getUseVerletIndex32() const { return _useVerletIndex32; }
+  [[nodiscard]] size_t getSortingFrequency() const { return _sortingFrequency; }
 
-  void setUseVerletIndex32(bool useVerletIndex32) { _useVerletIndex32 = useVerletIndex32; }
+  void setsortingFrequency(size_t sortingFrequency) { _sortingFrequency = sortingFrequency; }
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
@@ -1254,6 +1254,6 @@ class AutoPas {
   bool _reserveVLSizes = false;
   bool _bucketSortParticles = false;
   bool _sortVerletLists = false;
-  bool _useVerletIndex32 = false;
+  size_t _sortingFrequency = 1;
 };  // class AutoPas
 }  // namespace autopas

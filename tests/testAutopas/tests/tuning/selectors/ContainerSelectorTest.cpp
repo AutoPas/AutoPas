@@ -12,7 +12,7 @@
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   autopas::ContainerSelectorInfo containerInfo(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, 64, 8,
   autopas::LoadEstimatorOption::none, orderCellsByMortonIndex, preloadLJMixingPtr, useSoAIndex, reserveVLSizes,
-  bucketSortParticles, sortVerletLists, useVerletIndex32);
+  bucketSortParticles, sortVerletLists, sortingFrequency);
 
   // test all individual options
   for (auto containerOp : autopas::ContainerOption::getAllOptions()) {

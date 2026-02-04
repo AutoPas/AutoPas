@@ -109,5 +109,5 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static constexpr bool _reserveVLSizes = true;
   static constexpr bool _bucketSortParticles = true;
   static constexpr bool _sortVerletLists = true;
-  static constexpr bool _useVerletIndex32 = true;
+  static constexpr size_t _sortingFrequency = 1;
 };

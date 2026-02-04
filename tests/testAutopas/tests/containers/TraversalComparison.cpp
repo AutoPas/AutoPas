@@ -157,7 +157,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
                                                             _reserveVLSizes,
                                                             _bucketSortParticles,
                                                             _sortVerletLists,
-                                                            _useVerletIndex32};
+                                                            _sortingFrequency};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),

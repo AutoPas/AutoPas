@@ -24,7 +24,7 @@ class AllContainersTestsBase : public AutoPasTestBase {
   const bool reserveVLSizes = true;
   bool bucketSortParticles = true;
   bool sortVerletLists = true;
-  bool useVerletIndex32 = true;
+  size_t sortingFrequency = 1;
 
   template <class Particle_T>
   auto getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
@@ -42,7 +42,7 @@ class AllContainersTestsBase : public AutoPasTestBase {
                                                       reserveVLSizes,
                                                       bucketSortParticles,
                                                       sortVerletLists,
-                                                      useVerletIndex32};
+                                                      sortingFrequency};
     auto container = autopas::ContainerSelector<Particle_T>::generateContainer(containerOptionToTest, selectorInfo);
     return std::move(container);
   }

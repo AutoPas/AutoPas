@@ -47,7 +47,7 @@ class ContainerSelectorInfo {
                                  unsigned int verletClusterSize, size_t sortingThreshold,
                                  LoadEstimatorOption loadEstimator, bool orderCellsByMortonIndex,
                                  bool preloadLJMixingPtr, bool useSoAIndex, bool reserveVLSizes,
-                                 bool bucketSortParticles, bool sortVerletLists, bool useVerletIndex32)
+                                 bool bucketSortParticles, bool sortVerletLists, size_t sortingFrequency)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),
@@ -62,7 +62,7 @@ class ContainerSelectorInfo {
         reserveVLSizes(reserveVLSizes),
         bucketSortParticles(bucketSortParticles),
         sortVerletLists(sortVerletLists),
-        useVerletIndex32(useVerletIndex32){}
+        sortingFrequency(sortingFrequency){}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -138,7 +138,7 @@ class ContainerSelectorInfo {
   bool reserveVLSizes = false;
   bool bucketSortParticles = false;
   bool sortVerletLists = false;
-  bool useVerletIndex32 = false;
+  size_t sortingFrequency = 1;
 };
 
 }  // namespace autopas

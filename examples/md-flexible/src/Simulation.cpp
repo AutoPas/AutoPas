@@ -188,7 +188,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setPreloadLJMixingIndex(_configuration.preloadLJMixingPtr.value);
   _autoPasContainer->setBucketSortParticles(_configuration.bucketSortParticles.value);
   _autoPasContainer->setSortVerletLists(_configuration.sortVerletLists.value);
-  _autoPasContainer->setUseVerletIndex32(_configuration.useVerletIndex32.value);
+  _autoPasContainer->setsortingFrequency(_configuration.sortingFrequency.value);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
   _autoPasContainer->init();

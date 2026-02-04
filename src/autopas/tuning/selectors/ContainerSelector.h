@@ -58,7 +58,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &reserveVLSizes = containerInfo.reserveVLSizes;
   const auto &bucketSortParticles = containerInfo.bucketSortParticles;
   const auto &sortVerletLists = containerInfo.sortVerletLists;
-  const auto &useVerletIndex32 = containerInfo.useVerletIndex32;
+  const auto &sortingFrequency = containerInfo.sortingFrequency;
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
@@ -115,7 +115,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       container->setOrderCellsByMortonIndex(orderCellsByMortonIndex);
       container->setBucketSortParticles(bucketSortParticles);
       container->setSortVerletLists(sortVerletLists);
-      container->setUseVerletIndex32(useVerletIndex32);
+      container->setsortingFrequency(sortingFrequency);
       break;
     }
     case ContainerOption::octree: {

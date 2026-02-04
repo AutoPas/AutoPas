@@ -51,6 +51,6 @@ class LogicHandlerInfo {
   bool reserveVLSizes = false;
   bool bucketSortParticles = false;
   bool sortVerletLists = false;
-  bool useVerletIndex32 = false;
+  size_t sortingFrequency = 1;
 };
 }  // namespace autopas

@@ -23,5 +23,5 @@ class ContainerSelectorTest : public AutoPasTestBase {
   const bool reserveVLSizes = true;
   const bool bucketSortParticles = true;
   const bool sortVerletLists = true;
-  const bool useVerletIndex32 = true;
+  const size_t sortingFrequency = 1;
 };
