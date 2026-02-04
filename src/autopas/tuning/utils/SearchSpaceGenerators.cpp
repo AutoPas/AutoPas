@@ -76,7 +76,7 @@ SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     optionSpace.dataLayoutOptions.insert(dataLayout);
     optionSpace.newton3Options.insert(newton3);
     optionSpace.cellSizeFactors.insert(csf);
-    optionSpace.threadCount.insert(threadCount);
+    optionSpace.threadCounts.insert(threadCount);
   }
   return optionSpace;
 }

@@ -269,11 +269,10 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   autopas::EvidenceCollection evidenceCollection{};
 
   // optimal configuration in first tuning phase
-  constexpr int threadCount = 1;
   const autopas::FeatureVector best1(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                      autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
-                                     threadCount);
+                                     autopas::Configuration::ThreadCountNoTuning);
 
   auto dummyTimeFun1 = [&best1](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best1 - target;
@@ -285,7 +284,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   const autopas::FeatureVector best2(autopas::ContainerOption::linkedCells, 2., autopas::TraversalOption::lc_c01,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                      autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
-                                     threadCount);
+                                     autopas::Configuration::ThreadCountNoTuning);
 
   auto dummyTimeFun2 = [&best2](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best2 - target;

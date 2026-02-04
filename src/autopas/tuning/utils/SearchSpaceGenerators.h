@@ -54,8 +54,10 @@ struct OptionSpace {
    * Available discrete cellSizeFactors options.
    */
   std::set<double> cellSizeFactors;
-
-  std::set<int> threadCount;
+  /**
+   * Available OpenMP thread counts.
+   */
+  std::set<int> threadCounts;
 };
 
 /**

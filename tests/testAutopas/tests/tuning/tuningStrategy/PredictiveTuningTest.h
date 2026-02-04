@@ -120,20 +120,22 @@ class PredictiveTuningTest : public AutoPasTestBase,
                                unsigned int tuningInterval,
                                const std::map<autopas::Configuration, long> &expectedPredictions);
 
-  static constexpr int _threadCount = autopas::Configuration::ThreadCountNoTuning;
   static constexpr autopas::Configuration _configurationLC_C01 =
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _threadCount);
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                             autopas::Configuration::ThreadCountNoTuning);
   static constexpr autopas::Configuration _configurationLC_C08 =
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _threadCount);
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                             autopas::Configuration::ThreadCountNoTuning);
 
   static constexpr autopas::Configuration _configurationLC_Sliced =
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _threadCount);
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                             autopas::Configuration::ThreadCountNoTuning);
 
   static constexpr double _relativeOptimumRange{1.2};
   static constexpr unsigned int _maxTuningIterationsWithoutTest{5};

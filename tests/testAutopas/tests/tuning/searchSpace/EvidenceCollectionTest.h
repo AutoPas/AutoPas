@@ -10,21 +10,21 @@
 #include "autopas/tuning/Configuration.h"
 
 class EvidenceCollectionTest : public AutoPasTestBase {
- private:
-  static constexpr int _threadCount = autopas::Configuration::ThreadCountNoTuning;
-
  public:
   static constexpr autopas::Configuration _configurationLC_C01 =
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _threadCount);
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                             autopas::Configuration::ThreadCountNoTuning);
   static constexpr autopas::Configuration _configurationLC_C08 =
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _threadCount);
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                             autopas::Configuration::ThreadCountNoTuning);
 
   static constexpr autopas::Configuration _configurationLC_Sliced =
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _threadCount);
+                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                             autopas::Configuration::ThreadCountNoTuning);
 };

@@ -252,11 +252,11 @@ TEST_P(TraversalComparison, traversalTest) {
   Globals calculatedGlobals;
   if (globals) {
     std::tie(calculatedForces, calculatedGlobals) = calculateForces<true>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, 0, key, true);
+        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, autopas::Configuration::ThreadCountNoTuning, key, true);
     generateReference<true>(key);
   } else {
     std::tie(calculatedForces, calculatedGlobals) = calculateForces<false>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, 0, key, true);
+        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, autopas::Configuration::ThreadCountNoTuning, key, true);
     generateReference<false>(key);
   }
 
