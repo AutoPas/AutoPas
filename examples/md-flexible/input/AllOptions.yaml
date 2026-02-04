@@ -23,6 +23,7 @@ tuning-samples                       :  3
 use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 energy-sensor                        :  rapl  # alternatively: likwid
+thread-count                         :  [1,2,4,8] # use [0] to disable thread tuning
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]

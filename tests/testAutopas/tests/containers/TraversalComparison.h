@@ -85,13 +85,13 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-      mykey_t key, bool useSorting);
+      int threadCount, mykey_t key, bool useSorting);
 
   template <typename Functor, bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForcesImpl(
       Functor functor, autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-      mykey_t key, bool useSorting);
+      int threadCount, mykey_t key, bool useSorting);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};

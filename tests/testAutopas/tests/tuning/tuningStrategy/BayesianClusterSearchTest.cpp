@@ -25,10 +25,11 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
+  const autopas::NumberSetFinite<int> threadCounts(std::set<int>{autopas::Configuration::ThreadCountNoTuning});
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, &threadCounts);
   autopas::BayesianClusterSearch bayesClusterSearch(autopas::InteractionTypeOption::pairwise, containerOptions,
                                                     cellSizeFactors, traversalOptions, loadEstimatorOptions,
                                                     dataLayoutOptions, newton3Options, maxEvidence);
@@ -81,10 +82,11 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1.};
+  const autopas::NumberSetFinite<int> threadCounts(std::set<int>{autopas::Configuration::ThreadCountNoTuning});
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, &threadCounts);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
       loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
@@ -96,7 +98,8 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
   // configuration to find
   const autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
+                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
+                                    threadCounts.getMin());
 
   auto dummyTimeFun = [&best](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best - target;
@@ -159,9 +162,11 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
+  const auto threadCounts =
+      std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}).get();
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, threadCounts);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
       loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
@@ -173,7 +178,8 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
   // optimal configuration in first tuning phase
   const autopas::FeatureVector best1(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise);
+                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                                     threadCounts->getMin());
 
   auto dummyTimeFun1 = [&best1](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best1 - target;
@@ -184,7 +190,8 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
   // optimal configuration in second tuning phase (only traversal changed)
   const autopas::FeatureVector best2(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise);
+                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                                     threadCounts->getMin());
 
   auto dummyTimeFun2 = [&best2](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best2 - target;
@@ -248,9 +255,11 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
+  const auto threadCounts =
+      std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}).get();
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, threadCounts);
   autopas::BayesianClusterSearch bayesClusterSearch(
       autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
       loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
@@ -260,9 +269,11 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   autopas::EvidenceCollection evidenceCollection{};
 
   // optimal configuration in first tuning phase
+  constexpr int threadCount = 1;
   const autopas::FeatureVector best1(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                     autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
+                                     autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
+                                     threadCount);
 
   auto dummyTimeFun1 = [&best1](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best1 - target;
@@ -273,7 +284,8 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   // optimal configuration in second tuning phase (every option changed)
   const autopas::FeatureVector best2(autopas::ContainerOption::linkedCells, 2., autopas::TraversalOption::lc_c01,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise);
+                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+                                     threadCount);
 
   auto dummyTimeFun2 = [&best2](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best2 - target;

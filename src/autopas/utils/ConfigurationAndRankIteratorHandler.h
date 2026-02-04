@@ -32,21 +32,26 @@ class ConfigurationAndRankIteratorHandler {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param interactionType
+   * @param threadCounts
    * @param numConfigs
    * @param commSize
    */
-  ConfigurationAndRankIteratorHandler(
-      const std::set<ContainerOption> &containerOptions, const std::set<double> &cellSizeFactors,
-      const std::set<TraversalOption> &traversalOptions, const std::set<LoadEstimatorOption> &loadEstimatorOptions,
-      const std::set<DataLayoutOption> &dataLayoutOptions, const std::set<Newton3Option> &newton3Options,
-      const InteractionTypeOption &interactionType, const int numConfigs, const int commSize)
+  ConfigurationAndRankIteratorHandler(const std::set<ContainerOption> &containerOptions,
+                                      const std::set<double> &cellSizeFactors,
+                                      const std::set<TraversalOption> &traversalOptions,
+                                      const std::set<LoadEstimatorOption> &loadEstimatorOptions,
+                                      const std::set<DataLayoutOption> &dataLayoutOptions,
+                                      const std::set<Newton3Option> &newton3Options,
+                                      const InteractionTypeOption &interactionType, const std::set<int> &threadCounts,
+                                      const int numConfigs, const int commSize)
       : _containers(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
         _newton3Options(newton3Options),
-        _interactionType(interactionType) {
+        _interactionType(interactionType),
+        _threadCounts(threadCounts) {
     reset(numConfigs, commSize);
   }
 
@@ -73,19 +78,21 @@ class ConfigurationAndRankIteratorHandler {
    * @param traversalIt out
    * @param dataLayoutIt out
    * @param newton3It out
+   * @param threadCountIt out
    */
   inline void getConfigIterators(std::set<ContainerOption>::iterator &containerIt,
                                  std::set<double>::iterator &cellSizeFactorIt,
                                  std::set<TraversalOption>::iterator &traversalIt,
                                  std::set<LoadEstimatorOption>::iterator &loadEstimatorIt,
                                  std::set<DataLayoutOption>::iterator &dataLayoutIt,
-                                 std::set<Newton3Option>::iterator &newton3It) {
+                                 std::set<Newton3Option>::iterator &newton3It, std::set<int>::iterator &threadCountIt) {
     containerIt = _containerIt;
     cellSizeFactorIt = _cellSizeFactorIt;
     traversalIt = _traversalIt;
     loadEstimatorIt = _loadEstimatorIt;
     dataLayoutIt = _dataLayoutIt;
     newton3It = _newton3It;
+    threadCountIt = _threadCountIt;
   }
 
   /**
@@ -148,6 +155,8 @@ class ConfigurationAndRankIteratorHandler {
    */
   [[nodiscard]] inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
 
+  [[nodiscard]] inline std::set<int>::iterator getThreadCountIterator() const { return _threadCountIt; }
+
  private:
   /**
    * Resets _allowedAndApplicableTraversalOptions to fit with whatever _containerOptions is pointing to.
@@ -172,6 +181,7 @@ class ConfigurationAndRankIteratorHandler {
   const std::set<DataLayoutOption> &_dataLayoutOptions;
   const std::set<Newton3Option> &_newton3Options;
   const InteractionTypeOption &_interactionType;
+  const std::set<int> &_threadCounts;
   std::set<TraversalOption> _allowedAndApplicableTraversalOptions;
   std::set<LoadEstimatorOption> _allowedAndApplicableLoadEstimatorOptions;
   std::set<ContainerOption>::iterator _containerIt;
@@ -180,6 +190,7 @@ class ConfigurationAndRankIteratorHandler {
   std::set<LoadEstimatorOption>::iterator _loadEstimatorIt;
   std::set<DataLayoutOption>::iterator _dataLayoutIt;
   std::set<Newton3Option>::iterator _newton3It;
+  std::set<int>::iterator _threadCountIt;
   int _rankIterator;
   int _remainingBlockSize;
   int _remainder;

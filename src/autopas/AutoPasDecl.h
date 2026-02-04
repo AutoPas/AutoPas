@@ -28,6 +28,7 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -1026,6 +1027,28 @@ class AutoPas {
   }
 
   /**
+   * Setter for the thread counts
+   * @param allowedThreadCounts
+   */
+  void setAllowedThreadCounts(const NumberSet<int> &allowedThreadCounts) {
+    if (allowedThreadCounts.getMin() == Configuration::ThreadCountNoTuning and allowedThreadCounts.size() != 1) {
+      utils::ExceptionHandler::exception(
+          "Error: when thread counts contain {} (no thread tuning), no other values may be provided!",
+          Configuration::ThreadCountNoTuning);
+    }
+    if (allowedThreadCounts.getMin() < 0) {
+      utils::ExceptionHandler::exception("Error: minimum thread count must be positive {} < 0!",
+                                         allowedThreadCounts.getMin());
+    }
+    const int maxThreadCounts = autopas_get_max_threads();
+    if (allowedThreadCounts.getMax() > maxThreadCounts) {
+      utils::ExceptionHandler::exception("Error: minimum thread count exceeded {} > {}!", allowedThreadCounts.getMax(),
+                                         maxThreadCounts);
+    }    
+    _allowedThreadCounts = std::move(allowedThreadCounts.clone());
+  }
+
+  /**
    * Setter for the maximal Difference for the bucket distribution.
    * @param MPITuningMaxDifferenceForBucket
    */
@@ -1183,6 +1206,11 @@ class AutoPas {
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
+  /**
+   * Thread counts to be used by OpenMP
+   */
+  std::unique_ptr<NumberSet<int>> _allowedThreadCounts{
+      std::make_unique<NumberSetFinite<int>>(std::set<int>({Configuration::ThreadCountNoTuning}))};
   /**
    * LogicHandler of autopas.
    */

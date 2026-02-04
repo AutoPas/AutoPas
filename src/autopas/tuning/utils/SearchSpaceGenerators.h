@@ -54,6 +54,8 @@ struct OptionSpace {
    * Available discrete cellSizeFactors options.
    */
   std::set<double> cellSizeFactors;
+
+  std::set<int> threadCount;
 };
 
 /**
@@ -74,7 +76,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
-                                         const InteractionTypeOption &interactionType);
+                                         const InteractionTypeOption &interactionType,
+                                         const NumberSetFinite<int> *allowedThreadCounts);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.

@@ -64,6 +64,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
       config.energySensorOption,
+      config.threadCounts,
       config.functorOption,
       config.functorOption3B,
       config.generatorOption,
@@ -591,6 +592,25 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.energySensorOption.value = *parsedOptions.begin();
+      }
+      case decltype(config.threadCounts)::getoptChar: {
+        const auto needles = autopas::utils::StringUtils::tokenize(strArg, autopas::utils::StringUtils::delimiters);
+        std::set<int> threadCounts;
+        for (const auto str : needles) {
+          try {
+            const int threadCount = std::stoi(str);
+            threadCounts.insert(threadCount);
+          } catch (const exception &) {
+            cerr << "Error parsing thread count options: " << strArg << endl;
+            displayHelp = true;
+            threadCounts.clear();
+            break;
+          }
+        }
+        if (not threadCounts.empty()) {
+          (*config.threadCounts.value) = {threadCounts};
+        }
+        break;
       }
       case decltype(config.ruleFilename)::getoptChar: {
         config.ruleFilename.value = optarg;

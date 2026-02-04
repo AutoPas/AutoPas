@@ -15,6 +15,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -23,6 +24,8 @@ namespace autopas {
  */
 class Configuration {
  public:
+  static constexpr int ThreadCountNoTuning = 0;
+
   /**
    * Constructor
    * @param _container
@@ -32,26 +35,35 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    * @param _interactionType
+   * @param _threadCount (optional, for energy tuning, defaults to maximum)
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType)
+                          InteractionTypeOption _interactionType, int _threadCount = ThreadCountNoTuning)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
-        interactionType(_interactionType) {}
+        interactionType(_interactionType),
+        threadCount(_threadCount) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration()
-      : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), interactionType() {}
+      : container(),
+        traversal(),
+        loadEstimator(),
+        dataLayout(),
+        newton3(),
+        cellSizeFactor(-1.),
+        interactionType(),
+        threadCount(ThreadCountNoTuning) {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -68,7 +80,7 @@ class Configuration {
     return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " +
            std::to_string(cellSizeFactor) + " , " + traversal.to_string(fixedLength) + " , " +
            loadEstimator.to_string(fixedLength) + " , " + dataLayout.to_string(fixedLength) + " , " +
-           newton3.to_string(fixedLength) + "}";
+           newton3.to_string(fixedLength) + ", " + std::to_string(threadCount) + "}";
   }
 
   /**
@@ -140,6 +152,10 @@ class Configuration {
    * Interaction type of the configuration.
    */
   InteractionTypeOption interactionType;
+  /**
+   * OpenMP thread count
+   */
+  int threadCount;
 
  private:
   /**
@@ -187,7 +203,7 @@ bool operator!=(const Configuration &lhs, const Configuration &rhs);
  * sets.
  *
  * Configurations are compared member wise in the order: container, cellSizeFactor, traversal, loadEstimator,
- * dataLayout, newton3.
+ * dataLayout, newton3, threadCount.
  *
  * @param lhs
  * @param rhs
@@ -205,12 +221,13 @@ struct ConfigHash {
    * @return
    */
   std::size_t operator()(Configuration configuration) const {
-    std::size_t enumHash = static_cast<std::size_t>(configuration.interactionType) +
-                           static_cast<std::size_t>(configuration.newton3) * 10 +
-                           static_cast<std::size_t>(configuration.dataLayout) * 100 +
-                           static_cast<std::size_t>(configuration.loadEstimator) * 1000 +
-                           static_cast<std::size_t>(configuration.traversal) * 10000 +
-                           static_cast<std::size_t>(configuration.container) * 100000;
+    std::size_t enumHash =
+        static_cast<std::size_t>(configuration.interactionType) + static_cast<std::size_t>(configuration.newton3) * 10 +
+        static_cast<std::size_t>(configuration.dataLayout) * 100 +
+        static_cast<std::size_t>(configuration.loadEstimator) * 1000 +
+        static_cast<std::size_t>(configuration.traversal) * 10000 +
+        static_cast<std::size_t>(configuration.container) * 100000 +
+        static_cast<std::size_t>(configuration.threadCount) * (1000000) * 100;  // Assuming < 1000 threads
     std::size_t doubleHash = std::hash<double>{}(configuration.cellSizeFactor);
 
     return enumHash ^ doubleHash;

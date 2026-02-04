@@ -496,13 +496,16 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
-                         ::testing::ValuesIn(autopas::SearchSpaceGenerators::cartesianProduct(
+auto container = autopas::SearchSpaceGenerators::cartesianProduct(
                              autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
                              std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
-                             autopas::InteractionTypeOption::pairwise)),
+                             autopas::InteractionTypeOption::pairwise,
+                             std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}).get()
+                          );
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
+                         ::testing::ValuesIn(container),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////

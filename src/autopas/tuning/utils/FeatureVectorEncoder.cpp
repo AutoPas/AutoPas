@@ -283,6 +283,8 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
   auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
+  auto threadCount = continuousValues[static_cast<size_t>(DiscreteIndices::threadCount)];
 
-  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, _interactionType);
+  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, _interactionType,
+                       threadCount);
 }

@@ -97,11 +97,12 @@ void AutoPas<Particle_T>::init() {
   }();
 
   // Create autotuners for each interaction type
+  const auto threadCounts = NumberSetFinite<int>{_allowedThreadCounts->getAll()};
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
         _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
-        interactionType);
+        interactionType, &threadCounts);
 
     AutoTuner::TuningStrategiesListType tuningStrategies;
     tuningStrategies.reserve(_tuningStrategyOptions.size());

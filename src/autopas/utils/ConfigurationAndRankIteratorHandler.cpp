@@ -13,6 +13,9 @@ namespace autopas::utils {
 
 inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   // advance to the next valid config
+  ++_threadCountIt;
+  if (_threadCountIt != _threadCounts.end()) return;
+  _threadCountIt = _threadCounts.begin();
   ++_newton3It;
   if (_newton3It != _newton3Options.end()) return;
   _newton3It = _newton3Options.begin();

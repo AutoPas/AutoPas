@@ -295,6 +295,12 @@ class MDFlexConfig {
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
       "Factor for the interaction length to determine the cell size."};
   /**
+   * threadCounts
+   */
+  MDFlexOption<std::shared_ptr<autopas::NumberSetFinite<int>>, __LINE__> threadCounts{
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}), "thread-count",
+      true, "OpenMP thread counts."};
+  /**
    * logFileName
    */
   MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true,

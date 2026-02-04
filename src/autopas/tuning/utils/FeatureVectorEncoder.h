@@ -23,7 +23,7 @@ class FeatureVectorEncoder {
   /**
    * Indices of the discrete part of convertToTunable().
    */
-  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, TOTALNUMBER };
+  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, threadCount, TOTALNUMBER };
 
   /**
    * Indices of the continuous part of convertToTunable().

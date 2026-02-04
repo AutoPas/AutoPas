@@ -21,10 +21,11 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
+  const autopas::NumberSetFinite<int> threadCounts(std::set<int>{autopas::Configuration::ThreadCountNoTuning});
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, &threadCounts);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       maxEvidence);
@@ -66,9 +67,11 @@ TEST_F(BayesianSearchTest, testFindBest) {
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
+  const auto threadCounts =
+      std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}).get();
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      autopas::InteractionTypeOption::pairwise, threadCounts);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound,
@@ -79,7 +82,8 @@ TEST_F(BayesianSearchTest, testFindBest) {
   // configuration to find
   const autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
+                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
+                                    threadCounts->getMin());
 
   // artificial time skip
   size_t iteration = 0;

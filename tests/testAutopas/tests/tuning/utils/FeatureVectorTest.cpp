@@ -64,14 +64,19 @@ TEST_F(FeatureVectorTest, lhsSampleFeatureCluster) {
 }
 
 TEST_F(FeatureVectorTest, distanceTest) {
+  constexpr int threadCount = autopas::Configuration::ThreadCountNoTuning;
   autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise,
+                            threadCount);
   autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise,
+                            threadCount);
   autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise,
+                            threadCount);
   autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise,
+                            threadCount);
 
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f2).squaredNorm(), 0);
@@ -122,6 +127,7 @@ TEST_F(FeatureVectorTest, onehot) {
 TEST_F(FeatureVectorTest, clusterEncode) {
   double iteration = 0.;
   auto cellSizeFactor = 1.0;
+  auto threadCount = 1;
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
 
@@ -137,7 +143,7 @@ TEST_F(FeatureVectorTest, clusterEncode) {
     for (const auto &dataLayout : dataLayouts) {
       for (const auto &newton3 : newtons) {
         vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
-                             InteractionTypeOption::pairwise);
+                             InteractionTypeOption::pairwise, threadCount);
       }
     }
   }
@@ -162,6 +168,7 @@ TEST_F(FeatureVectorTest, clusterEncode) {
 TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   double iteration = 42.;
   auto cellSizeFactor = 1.0;
+  auto threadCount = 1;
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
 
@@ -180,7 +187,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
     for (auto dataLayout : dataLayouts) {
       for (auto newton3 : newtons) {
         vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
-                             InteractionTypeOption::pairwise);
+                             InteractionTypeOption::pairwise, threadCount);
       }
     }
   }
@@ -210,6 +217,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
 TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
   double iteration = 123.;
   auto cellSizeFactor = 1.0;
+  auto threadCount = 1;
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
 
@@ -228,7 +236,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
     for (auto dataLayout : dataLayouts) {
       for (auto newton3 : newtons) {
         vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
-                             InteractionTypeOption::pairwise);
+                             InteractionTypeOption::pairwise, threadCount);
       }
     }
   }

@@ -7,12 +7,13 @@
 #include "Configuration.h"
 
 #include "autopas/utils/StringUtils.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
-         " , Newton 3: " + newton3.to_string() + "}";
+         " , Newton 3: " + newton3.to_string() + ", ThreadCount: " + std::to_string(threadCount) + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -22,7 +23,7 @@ std::string autopas::Configuration::getCSVLine() const { return getCSVRepresenta
 bool autopas::Configuration::hasValidValues() const {
   return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
          loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
-         interactionType != InteractionTypeOption();
+         interactionType != InteractionTypeOption() and threadCount > 0 and threadCount <= autopas_get_max_threads();
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {
@@ -115,8 +116,9 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
-                  lhs.interactionType) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator,
-                                                  rhs.dataLayout, rhs.newton3, rhs.interactionType);
+                  lhs.interactionType, lhs.threadCount) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal,
+                                                                   rhs.loadEstimator, rhs.dataLayout, rhs.newton3,
+                                                                   rhs.interactionType, lhs.threadCount);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
@@ -135,5 +137,7 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.dataLayout;
   in.ignore(max, ':');
   in >> configuration.newton3;
+  in.ignore(max, ':');
+  in >> configuration.threadCount;
   return in;
 }
