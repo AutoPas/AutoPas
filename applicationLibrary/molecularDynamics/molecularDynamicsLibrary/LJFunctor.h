@@ -1121,7 +1121,7 @@ class LJFunctor
     }
   }
 
-
+#pragma code_align (64)
   template <bool newton3>
   void SoAFunctorVerletPreloadMixingLJPtrImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList) {
@@ -1197,7 +1197,7 @@ class LJFunctor
     constexpr size_t vecSize = 16;
 #else
     // for everything else 12 is faster
-    constexpr size_t vecSize = 12;
+    constexpr size_t vecSize = 48;
 #endif
 
     size_t jOff = 0;
@@ -1205,8 +1205,7 @@ class LJFunctor
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
     if (neighborListSize >= vecSize) {
-      alignas(64) std::array<SoAFloatPrecision, vecSize> xArr, yArr, zArr, forceXArr, forceYArr, forceZArr;
-      alignas(64) std::array<autopas::OwnershipState, vecSize> ownedStateArr{};
+      alignas(64) std::array<SoAFloatPrecision, vecSize> xArr, yArr, zArr, forceXArr, forceYArr, forceZArr, ownedStateArr;
 
       [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> sigmaSquareds;
       [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> epsilon24s;
@@ -1224,7 +1223,7 @@ class LJFunctor
           xArr[tmpJ] = xPtr[indexInSoAJ];
           yArr[tmpJ] = yPtr[indexInSoAJ];
           zArr[tmpJ] = zPtr[indexInSoAJ];
-          ownedStateArr[tmpJ] = ownedStatePtr[indexInSoAJ];
+          ownedStateArr[tmpJ] = ownedStatePtr[indexInSoAJ] == autopas::OwnershipState::dummy ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
 
           if constexpr (useMixing) {
             const size_t typeIdJ = typeIdPtr[indexInSoAJ];
@@ -1239,6 +1238,7 @@ class LJFunctor
 
         if constexpr (!calculateGlobals && !countFLOPs) {
         #pragma omp simd reduction(+ : forceXAcc, forceYAcc, forceZAcc) safelen(vecSize)
+        #pragma code_align 64
           for (size_t j = 0; j < vecSize; j++) {
             if constexpr (useMixing) {
               sigmaSquared = sigmaSquareds[j];
@@ -1247,8 +1247,6 @@ class LJFunctor
                 shift6 = shift6s[j];
               }
             }
-
-            const auto ownedStateJ = ownedStateArr[j];
 
             const SoAFloatPrecision drX = xI - xArr[j];
             const SoAFloatPrecision drY = yI - yArr[j];
@@ -1262,7 +1260,8 @@ class LJFunctor
 
             // Mask away if distance is too large or any particle is a dummy. ownedStateI was already checked
             // previously.
-            const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+            const SoAFloatPrecision belowCutOff = dr2 <= cutoffSquared ? SoAFloatPrecision{1.} : SoAFloatPrecision{0};
+            const SoAFloatPrecision mask = belowCutOff * ownedStateArr[j];
 
             const SoAFloatPrecision inverseDr2 = 1. / dr2;
             const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
