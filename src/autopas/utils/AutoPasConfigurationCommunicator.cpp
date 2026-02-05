@@ -217,7 +217,7 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
   std::memcpy(&cellSizeFactor, &config[6], sizeof(double));
   int threadCount(autopas_get_max_threads());
-  std::memcpy(&cellSizeFactor, &config[6 + sizeof(double)], sizeof(int));
+  std::memcpy(&threadCount, &config[6 + sizeof(double)], sizeof(int));
   return {static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
           static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
           static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
