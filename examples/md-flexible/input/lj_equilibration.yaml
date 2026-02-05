@@ -9,7 +9,9 @@ traversal                            : [lc_c01]
 newton3                              : [enabled, disabled]
 data-layout                          : [AoS, SoA]
 
-# ---------------------- Tuning & Mechanics -------------------------
+# ---------------------:wq
+  :wq
+                                        - Tuning & Mechanics -------------------------
 verlet-rebuild-frequency             : 20
 verlet-skin-radius                   : 0.2
 

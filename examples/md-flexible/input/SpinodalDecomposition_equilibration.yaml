@@ -23,7 +23,7 @@ Objects:
   CubeGrid:
     0:
       particle-type-id           :  0
-      particles-per-dimension    :  [160, 160, 160]
+      particles-per-dimension    :  [80, 80, 80]
       particle-spacing           :  1.5
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
