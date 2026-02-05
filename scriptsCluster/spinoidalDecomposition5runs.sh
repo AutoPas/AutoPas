@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J LC_C08_SoA_N3Ref
+#SBATCH -J EarlyStoppingVCLC06
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
