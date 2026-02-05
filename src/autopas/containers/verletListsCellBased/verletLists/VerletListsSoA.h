@@ -79,7 +79,7 @@ public:
     }
 
     auto *mortonTraversalInterface = dynamic_cast<MortonIndexTraversalInterface *> (traversal);
-    if (mortonTraversalInterface && this->_useMortonIndex) {
+    if (mortonTraversalInterface && this->_orderCellsByMortonIndex) {
       mortonTraversalInterface->setCellsByMortonIndex(this->_linkedCells.getCellsByMortonIndex());
     }
 
@@ -107,15 +107,7 @@ public:
    * @param useNewton3
    */
   void updateSoAVerletLists(bool useNewton3) {
-    if (this->_useMortonIndex && this->_useLiveId && this->_reserveVLSizes) {
-      generateSoANeighborListsWithMortonOrderAndReserving();
-    } else if (this->_useMortonIndex && this->_useLiveId && !this->_reserveVLSizes) {
-      generateSoANeighborListsWithMortonOrder();
-    } else if (this->_useLiveId && this->_reserveVLSizes && !this->_useMortonIndex) {
-      generateSoANeighborListsWithReserving();
-    } else {
-      generateSoANeighborLists();
-    }
+    selectVLGenerationFunctionAtRuntime();
     typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctorSoA f(this->_soaNeighborLists, this->getCutoff() + this->getVerletSkin());
 
     DataLayoutOption dataLayout;
@@ -127,130 +119,138 @@ public:
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
 
     auto *mortonTraversalInterface = dynamic_cast<MortonIndexTraversalInterface *> (&traversal);
-    if (mortonTraversalInterface && this->_useMortonIndex) {
+    if (mortonTraversalInterface && this->_orderCellsByMortonIndex) {
       mortonTraversalInterface->setCellsByMortonIndex(this->_linkedCells.getCellsByMortonIndex());
     }
 
     this->_linkedCells.computeInteractions(&traversal);
 
+    if (this->_sortVerletLists) {
+      #pragma omp parallel for schedule(static)
+      for (auto &nl : _soaNeighborLists) {
+        std::ranges::sort(nl);
+      }
+    }
+
     this->_soaListIsValid = true;
   }
 
-  uint32_t generateSoANeighborLists() {
-    uint32_t numParticles = 0;
-    uint32_t index = 0;
+  size_t selectVLGenerationFunctionAtRuntime() {
+    const uint8_t key =
+        (static_cast<uint8_t>(this->_bucketSortParticles)      << 0) |
+        (static_cast<uint8_t>(this->_orderCellsByMortonIndex)  << 1) |
+        (static_cast<uint8_t>(this->_reserveVLSizes)           << 2);
 
-    // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
-    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
-
-      iter->setLiveId(index);
+    switch (key) {
+      case 0: return generateVerletListsSoA_Options<false,false,false>();
+      case 1: return generateVerletListsSoA_Options< true,false,false>();
+      case 2: return generateVerletListsSoA_Options<false, true,false>();
+      case 3: return generateVerletListsSoA_Options< true, true,false>();
+      case 4: return generateVerletListsSoA_Options<false,false, true>();
+      case 5: return generateVerletListsSoA_Options< true,false, true>();
+      case 6: return generateVerletListsSoA_Options<false, true, true>();
+      case 7: return generateVerletListsSoA_Options< true, true, true>();
+      default: __builtin_unreachable();
     }
-
-    this->_soaNeighborLists.clear();
-    this->_soaNeighborLists.resize(numParticles);
-
-    index = 0;
-
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
-      this->_soaNeighborLists[index].clear();
-    }
-
-    return numParticles;
   }
 
-  /**
-   * @return Number of particles in the container
-   */
-   uint32_t generateSoANeighborListsWithReserving() {
-    uint32_t numParticles = 0;
-    uint32_t index = 0;
-    std::vector<uint16_t> oldVerletSizes;
+  template<bool bucketSortParticles, bool orderCellsByMortonIndex, bool reserveVLSizes>
+  size_t generateVerletListsSoA_Options() {
+    size_t numParticles = 0;
+    size_t index = 0;
+    std::vector<size_t> oldVerletSizes;
     oldVerletSizes.reserve(_oldNumParticles);
 
-     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
-     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles, ++index) {
-
-       oldVerletSizes.push_back(!_soaNeighborLists.empty() && !_soaNeighborLists[index].empty() ? _soaNeighborLists[index].size() : 64);
-       iter->setLiveId(index);
-     }
-
-    _oldNumParticles = numParticles;
-
-     this->_soaNeighborLists.clear();
-     this->_soaNeighborLists.resize(numParticles);
-
-     index = 0;
-
-     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
-       this->_soaNeighborLists[index].clear();
-       this->_soaNeighborLists[index].reserve(oldVerletSizes[index]);
-     }
-
-     return numParticles;
-   }
-
-  uint32_t generateSoANeighborListsWithMortonOrder() {
-    uint32_t numParticles = 0;
-    uint32_t index = 0;
-
     auto &cells = this->_linkedCells.getCells();
-    const auto cellsByMortonIndex = this->_linkedCells.getCellsByMortonIndex();
+    #pragma omp parallel for schedule(static)
+    for (size_t cellId = 0; cellId < cells.size(); ++cellId) {
+      auto &cellParticles = cells[cellId]._particles;
+      const size_t particleNumCell = cellParticles.size();
 
-    for (size_t cellId : cellsByMortonIndex) {
-      for (uint32_t i = 0; i < cells[cellId]._particles.size();  ++i, ++numParticles, ++index) {
-        Particle_T &particleI = cells[cellId]._particles[i];
+      if constexpr (bucketSortParticles) {
+        if (_sortingCounter == this->_sortingFrequency && cellParticles.size() > 1) {
+          const auto [cellLowerCorner, cellUpperCorner] = this->_linkedCells.getCellBlock().getCellBoundingBox(cellId);
+          const double midX = 0.5 * (cellLowerCorner[0] + cellUpperCorner[0]);
+          const double midY = 0.5 * (cellLowerCorner[1] + cellUpperCorner[1]);
+          const double midZ = 0.5 * (cellLowerCorner[2] + cellUpperCorner[2]);
 
-        particleI.setLiveId(index);
+          std::array<size_t, 8> particlesPerKey{};
+          for (const auto &particle : cellParticles) {
+            const auto &pos= particle.getR();
+            const uint8_t key = static_cast<uint8_t>((pos[0] >= midX) | ((pos[1] >= midY) << 1) | ((pos[2] >= midZ) << 2));
+            ++particlesPerKey[key];
+          }
+
+          std::array<std::vector<Particle_T>, 8> buckets{};
+          for (uint8_t i = 0; i < 8; ++i) {
+            buckets[i].clear();
+            buckets[i].reserve(particlesPerKey[i]);
+          }
+
+          for (auto &particle : cellParticles) {
+            const auto &pos = particle.getR();
+            const uint8_t key = static_cast<uint8_t>((pos[0] >= midX) | ((pos[1] >= midY) << 1) | ((pos[2] >= midZ) << 2));
+            buckets[key].push_back(std::move(particle));
+          }
+
+          cellParticles.clear();
+          cellParticles.reserve(particleNumCell);
+          for (uint8_t i = 0; i < 8; i++) {
+            cellParticles.insert(cellParticles.end(),
+              std::make_move_iterator(buckets[i].begin()),
+              std::make_move_iterator(buckets[i].end()));
+          }
+        }
       }
     }
 
-
-    this->_soaNeighborLists.clear();
-    this->_soaNeighborLists.resize(numParticles);
-
-    index = 0;
-
-    for (uint32_t particleI = 0; particleI < numParticles; ++particleI) {
-      _soaNeighborLists[particleI].clear();
-    }
-
-    return numParticles;
-  }
-
-  uint32_t generateSoANeighborListsWithMortonOrderAndReserving() {
-    uint32_t numParticles = 0;
-    uint32_t index = 0;
-    std::vector<uint16_t> oldVerletSizes;
-    oldVerletSizes.reserve(_oldNumParticles);
-
-    auto &cells = this->_linkedCells.getCells();
-    const auto cellsByMortonIndex = this->_linkedCells.getCellsByMortonIndex();
-
-    for (size_t cellId : cellsByMortonIndex) {
-      for (uint32_t i = 0; i < cells[cellId]._particles.size();  ++i, ++numParticles, ++index) {
-        Particle_T &particleI = cells[cellId]._particles[i];
-
-        oldVerletSizes.push_back( particleI.getLiveId() != std::numeric_limits<size_t>::max() && particleI.getLiveId() < _soaNeighborLists.size() ?
-        oldVerletSizes.push_back( particleI.getLiveId() != std::numeric_limits<uint32_t>::max() && particleI.getLiveId() < _soaNeighborLists.size() ?
-                       _soaNeighborLists[particleI.getLiveId()].size(): 64);
-        particleI.setLiveId(index);
+    if constexpr (orderCellsByMortonIndex) {
+      const auto cellsByMortonIndex = this->_linkedCells.getCellsByMortonIndex();
+      for (size_t cellId : cellsByMortonIndex) {
+        cells[cellId]._particleSoABuffer.setParticlesIndexInSoAStart(index);
+        for (size_t i = 0; i < cells[cellId]._particles.size();  ++i, ++numParticles, ++index) {
+          Particle_T &particleI = cells[cellId]._particles[i];
+          if constexpr(reserveVLSizes) {
+            oldVerletSizes.push_back(particleI.getIndexInSoA() != std::numeric_limits<size_t>::max() && particleI.getIndexInSoA() < _soaNeighborLists.size() ?
+                           _soaNeighborLists[particleI.getIndexInSoA()].size(): 64);
+          }
+          particleI.setIndexInSoA(index);
+        }
+      }
+    } else {
+      for (size_t cellId = 0; cellId < cells.size(); ++cellId) {
+        cells[cellId]._particleSoABuffer.setParticlesIndexInSoAStart(index);
+        for (size_t i = 0; i < cells[cellId]._particles.size();  ++i, ++numParticles, ++index) {
+          Particle_T &particleI = cells[cellId]._particles[i];
+          if constexpr(reserveVLSizes) {
+            oldVerletSizes.push_back(particleI.getIndexInSoA() != std::numeric_limits<size_t>::max() && particleI.getIndexInSoA() < _soaNeighborLists.size() ?
+                           _soaNeighborLists[particleI.getIndexInSoA()].size(): 64);
+          }
+          particleI.setIndexInSoA(index);
+        }
       }
     }
 
     _oldNumParticles = numParticles;
 
-    // std::cout << "\n";
-
     this->_soaNeighborLists.clear();
     this->_soaNeighborLists.resize(numParticles);
 
     index = 0;
 
-    for (uint32_t particleI = 0; particleI < numParticles; ++particleI) {
+    for (size_t particleI = 0; particleI < numParticles; ++particleI) {
       _soaNeighborLists[particleI].clear();
-      _soaNeighborLists[particleI].reserve(oldVerletSizes[particleI]);
+      if constexpr(reserveVLSizes) {
+        _soaNeighborLists[particleI].reserve(oldVerletSizes[particleI]);
+      }
+    }
+
+    if constexpr (bucketSortParticles) {
+      if (_sortingCounter == this->_sortingFrequency) {
+        _sortingCounter = 1;
+      } else {
+        _sortingCounter++;
+      }
     }
 
     return numParticles;
@@ -279,7 +279,8 @@ private:
   BuildVerletListType _buildVerletListType;
 
   uint32_t _oldNumParticles = 0;
-  size_t _oldNumParticles = 0;
+
+  size_t _sortingCounter = this->_sortingFrequency;
 };
 
 };// namespace autopas
