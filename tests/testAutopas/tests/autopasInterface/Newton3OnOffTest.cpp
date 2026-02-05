@@ -44,7 +44,7 @@ INSTANTIATE_TEST_SUITE_P(
           Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff(),
           Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkin(), Newton3OnOffTest::getClusterSize(),
           Newton3OnOffTest::getSortingThreshold(), autopas::LoadEstimatorOption::none,
-          Newton3OnOffTest::getUseMortonIndex(), Newton3OnOffTest::getPreLoadLJMixingPtr(),
+          Newton3OnOffTest::getOrderCellsByMortonIndex(), Newton3OnOffTest::getPreLoadLJMixingPtr(),
           Newton3OnOffTest::getUseIndexInSoAId(), Newton3OnOffTest::getReserveVLSizes(),
           Newton3OnOffTest::getBucketSortParticles(), Newton3OnOffTest::getSortVerletLists(), Newton3OnOffTest::getSortingFrequency());
 
@@ -121,7 +121,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   }
   const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(),
                                                      getVerletSkin(), getClusterSize(), getSortingThreshold(),
-                                                     autopas::LoadEstimatorOption::none, getUseMortonIndex(),
+                                                     autopas::LoadEstimatorOption::none, getOrderCellsByMortonIndex(),
                                                      getPreLoadLJMixingPtr(), getUseIndexInSoAId(), getReserveVLSizes(),
                                                      getBucketSortParticles(), getSortVerletLists(),
                                                      getSortingFrequency());

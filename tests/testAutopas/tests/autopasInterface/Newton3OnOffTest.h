@@ -36,7 +36,7 @@ class Newton3OnOffTest
   static double getVerletSkin() { return 0.0; }
   static int getClusterSize() { return 4; }
   static int getSortingThreshold() { return 8; }
-  static bool getUseMortonIndex() { return true; }
+  static bool getOrderCellsByMortonIndex() { return true; }
   static bool getPreLoadLJMixingPtr() { return true; }
   static bool getUseIndexInSoAId() { return true; }
   static bool getReserveVLSizes() { return true; }
