@@ -398,9 +398,9 @@ class VerletClusterListsRebuilder {
           if (not clusterIterB->empty()) {
             const auto [aMin, aMax] = clusterIterA->getBoundingBox();
             const auto [bMin, bMax] = clusterIterB->getBoundingBox();
-             if (bMin[2] > aMax[2] + interactionLength) {
-                break;   
-            }
+            // if (bMin[2] > aMax[2] + interactionLength) {
+            //    break;   
+           // }
             const auto boxDistSquared = boxDistanceSquared(aMin, aMax, bMin, bMax);
             if (boxDistSquared <= _interactionLengthSqr) {
               clusterIterA->addNeighbor(*clusterIterB);
