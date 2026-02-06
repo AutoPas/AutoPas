@@ -585,14 +585,14 @@ class LJFunctor
     }
   }
 
-  void SoAFunctorVerletOptimizedCompactSoA(autopas::VerletListsLJCompactSoA<Particle_T> &compactSoA, const size_t indexFirst,
+  void SoAFunctorVerletOptimizedCompactAoS(autopas::VerletListsLJCompactAoS<Particle_T> &compactAoS, const size_t indexFirst,
                     const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList,
                     bool newton3) final{
-    if (compactSoA._soa.size() == 0 or neighborList.empty()) return;
+    if (compactAoS._soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
-      SoAFunctorVerletOptimizedCompactSoA<true>(compactSoA, indexFirst, neighborList);
+      SoAFunctorVerletOptimizedCompactAoSImpl<true>(compactAoS, indexFirst, neighborList);
     } else {
-      SoAFunctorVerletOptimizedCompactSoA<false>(compactSoA, indexFirst, neighborList);
+      SoAFunctorVerletOptimizedCompactAoSImpl<false>(compactAoS, indexFirst, neighborList);
     }
   }
 
@@ -1237,8 +1237,8 @@ class LJFunctor
           ownedStateArr[tmpJ] = ownedStatePtr[indexInSoAJ] == autopas::OwnershipState::dummy ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
 
           if constexpr (useMixing) {
-            const size_t typeIdJ = typeIdPtr[indexInSoAJ];
-            const PackedLJMixingData mixingDataJ = computedLJMixingDataRow[typeIdJ];
+            const auto typeIdJ = typeIdPtr[indexInSoAJ];
+            const PackedLJMixingData &mixingDataJ = computedLJMixingDataRow[typeIdJ];
             sigmaSquareds[tmpJ] = mixingDataJ.sigmaSquared;
             epsilon24s[tmpJ] = mixingDataJ.epsilon24;
             if constexpr (applyShift) {
@@ -1400,11 +1400,13 @@ class LJFunctor
         continue;
       }
 
+      const auto typeIdJ = typeIdPtr[j];
+
       if constexpr (useMixing) {
-        sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeIdPtr[indexFirst], typeIdPtr[j]);
-        epsilon24 = _PPLibrary->getMixing24Epsilon(typeIdPtr[indexFirst], typeIdPtr[j]);
+        sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeIdI, typeIdJ);
+        epsilon24 = _PPLibrary->getMixing24Epsilon(typeIdI, typeIdJ);
         if constexpr (applyShift) {
-          shift6 = _PPLibrary->getMixingShift6(typeIdPtr[indexFirst], typeIdPtr[j]);
+          shift6 = _PPLibrary->getMixingShift6(typeIdI, typeIdJ);
         }
       }
 
@@ -1510,38 +1512,35 @@ class LJFunctor
 
   #pragma code_align (64)
   template <bool newton3>
-  void SoAFunctorVerletOptimizedCompactSoA(autopas::VerletListsLJCompactSoA<Particle_T> &compactSoA, const size_t indexFirst,
+  void SoAFunctorVerletOptimizedCompactAoSImpl(autopas::VerletListsLJCompactAoS<Particle_T> &compactAoS, const size_t indexFirst,
                             const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList) {
 
-    const auto *const __restrict xPtr = compactSoA._soa.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const __restrict yPtr = compactSoA._soa.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const __restrict zPtr = compactSoA._soa.template begin<Particle_T::AttributeNames::posZ>();
-
-    auto *const __restrict forceXPtr = compactSoA._soa.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict forceYPtr = compactSoA._soa.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict forceZPtr = compactSoA._soa.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict forceXPtr = compactAoS._soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict forceYPtr = compactAoS._soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict forceZPtr = compactAoS._soa.template begin<Particle_T::AttributeNames::forceZ>();
 
     SoAFloatPrecision forceXAcc = 0;
     SoAFloatPrecision forceYAcc = 0;
     SoAFloatPrecision forceZAcc = 0;
 
-    [[maybe_unused]] const auto *const __restrict typeIdPtr = compactSoA._typeIds.data();
-    const auto *const __restrict ownedStatePtr = compactSoA._ownershipStates.data();
+    const auto *const __restrict compactDataPtr = compactAoS._compactParticles.data();
 
     const size_t neighborListSize = neighborList.size();
     const autopas::SoAIndexIntType *const __restrict neighborListPtr = neighborList.data();
 
-    const SoAFloatPrecision xI = xPtr[indexFirst];
-    const SoAFloatPrecision yI = yPtr[indexFirst];
-    const SoAFloatPrecision zI = zPtr[indexFirst];
+    const auto particleI = compactDataPtr[indexFirst];
 
-    const size_t typeIdI = static_cast<size_t>(typeIdPtr[indexFirst]);
 
-    // checks whether particle i is owned.
-    const auto ownedStateI = ownedStatePtr[indexFirst];
+    const auto typeIdI = particleI.typeId;
+    const auto ownedStateI = particleI.ownershipState;
+
     if (ownedStateI == 0) {
       return;
     }
+
+    const SoAFloatPrecision xI = particleI.posX;
+    const SoAFloatPrecision yI = particleI.posY;
+    const SoAFloatPrecision zI = particleI.posZ;
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
@@ -1607,14 +1606,19 @@ class LJFunctor
         #pragma omp simd safelen(vecSize)
         for (size_t tmpJ = 0; tmpJ < vecSize; tmpJ++) {
           const autopas::SoAIndexIntType indexInSoAJ = neighborListPtrWithOffset[tmpJ];
-          xArr[tmpJ] = xPtr[indexInSoAJ];
+          const auto particleJ = compactDataPtr[indexInSoAJ];
+          /*const auto ownedStateAndTypeIdJ = ownedStateAndTypeIdPtr[indexInSoAJ];*/
+          /*xArr[tmpJ] = xPtr[indexInSoAJ];
           yArr[tmpJ] = yPtr[indexInSoAJ];
-          zArr[tmpJ] = zPtr[indexInSoAJ];
-          ownedStateArr[tmpJ] = ownedStatePtr[indexInSoAJ] == 0 ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
+          zArr[tmpJ] = zPtr[indexInSoAJ];*/
+          xArr[tmpJ] = particleJ.posX;
+          yArr[tmpJ] = particleJ.posY;
+          zArr[tmpJ] = particleJ.posZ;
+          ownedStateArr[tmpJ] = particleJ.ownershipState == 0 ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
 
           if constexpr (useMixing) {
-            const size_t typeIdJ = static_cast<size_t>(typeIdPtr[indexInSoAJ]);
-            const PackedLJMixingData mixingDataJ = computedLJMixingDataRow[typeIdJ];
+            const size_t typeIdJ = particleJ.typeId;
+            const PackedLJMixingData &mixingDataJ = computedLJMixingDataRow[typeIdJ];
             sigmaSquareds[tmpJ] = mixingDataJ.sigmaSquared;
             epsilon24s[tmpJ] = mixingDataJ.epsilon24;
             if constexpr (applyShift) {
@@ -1777,21 +1781,21 @@ class LJFunctor
       }
 
       if constexpr (useMixing) {
-        sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeIdPtr[indexFirst], typeIdPtr[j]);
-        epsilon24 = _PPLibrary->getMixing24Epsilon(typeIdPtr[indexFirst], typeIdPtr[j]);
+        sigmaSquared = _PPLibrary->getMixingSigmaSquared(compactDataPtr[indexFirst].typeId, compactDataPtr[j].typeId);
+        epsilon24 = _PPLibrary->getMixing24Epsilon(compactDataPtr[indexFirst].typeId, compactDataPtr[j].typeId);
         if constexpr (applyShift) {
-          shift6 = _PPLibrary->getMixingShift6(typeIdPtr[indexFirst], typeIdPtr[j]);
+          shift6 = _PPLibrary->getMixingShift6(compactDataPtr[indexFirst].typeId, compactDataPtr[j].typeId);
         }
       }
 
-      const auto ownedStateJ = ownedStatePtr[j];
+      const auto ownedStateJ = compactDataPtr[j].ownershipState;
       if (ownedStateJ == 0) {
         continue;
       }
 
-      const SoAFloatPrecision drX = xI - xPtr[j];
-      const SoAFloatPrecision drY = yI - yPtr[j];
-      const SoAFloatPrecision drZ = zI - zPtr[j];
+      const SoAFloatPrecision drX = xI - compactDataPtr[j].posX;
+      const SoAFloatPrecision drY = yI - compactDataPtr[j].posY;
+      const SoAFloatPrecision drZ = zI - compactDataPtr[j].posZ;
 
       const SoAFloatPrecision drX2 = drX * drX;
       const SoAFloatPrecision drY2 = drY * drY;

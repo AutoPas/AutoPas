@@ -12,7 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
-#include "autopas/utils/VerletListsLJCompactSoA.h"
+#include "autopas/utils/VerletListsLJCompactAoS.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
@@ -114,10 +114,9 @@ class Functor {
     SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
-
   template <class ParticleCell>
-  void CompactSoALoader(ParticleCell &cell, VerletListsLJCompactSoA<Particle_T> &compactSoA, size_t offset, bool skipSoAResize) {
-    CompactSoALoaderImpl(cell, compactSoA, offset, skipSoAResize,std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+  void CompactAoSLoader(ParticleCell &cell, VerletListsLJCompactAoS<Particle_T> &compactAoS, size_t offset, bool skipSoAResize) {
+    CompactAoSLoaderImpl(cell, compactAoS, offset, skipSoAResize,std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
   /**
@@ -243,7 +242,7 @@ class Functor {
   }
 
   template <typename cell_t, std::size_t... I>
-  void CompactSoALoaderImpl(cell_t &cell, VerletListsLJCompactSoA<Particle_T> &compactSoA, size_t offset, bool skipSoAResize,
+  void CompactAoSLoaderImpl(cell_t &cell, VerletListsLJCompactAoS<Particle_T> &compactSoA, size_t offset, bool skipSoAResize,
                      std::index_sequence<I...>) {
     if (not skipSoAResize) {
       compactSoA.resize(offset + cell.size());
@@ -257,8 +256,8 @@ class Functor {
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] auto const attributePointers = std::make_tuple(compactSoA._soa.template begin<Functor_T::getNeededAttr()[I]>()...);
-    auto *typeIds = compactSoA._typeIds.data();
-    auto *ownerShipStates = compactSoA._ownershipStates.data();
+    // auto *ownedStatesAndTypes = compactSoA._ownedStateAndType.data();
+    auto *compactParticles = compactSoA._compactParticles.data();
 
     auto cellIter = cell.begin();
     // load particles in SoAs
@@ -271,8 +270,8 @@ class Functor {
        * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
        */
       (( (std::get<I> (attributePointers)) [particleIndex] = cellIter->template get <(Functor_T::getNeededAttr()) [I]> () ), ...);
-      typeIds[particleIndex] = static_cast<uint8_t>(cellIter->getTypeId());
-      ownerShipStates[particleIndex] = static_cast<uint8_t>(cellIter->getOwnershipState());
+      compactParticles[particleIndex] = {cellIter->getR()[0], cellIter->getR()[1], cellIter->getR()[2],
+                                         uint32_t(cellIter->getOwnershipState()), uint32_t(cellIter->getTypeId())};
 
     }
   }

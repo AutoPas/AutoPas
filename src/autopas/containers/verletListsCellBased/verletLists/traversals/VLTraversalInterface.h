@@ -44,9 +44,9 @@ class VLTraversalInterface {
 
   void setUseOptimizedLJFunctor(bool preloadMixingLJPointer) { _useOptimizedLJFunctor = preloadMixingLJPointer; }
 
-  [[nodiscard]] bool getUseCompactSoA() const { return _useCompactSoA; }
+  [[nodiscard]] bool getUseCompactAoS() const { return _useCompactAoS; }
 
-  void setUseCompactSoA(bool useCompactSoA) { _useCompactSoA = useCompactSoA; }
+  void setUseCompactAoS(bool useCompactAoS) { _useCompactAoS = useCompactAoS; }
 
  protected:
   /**
@@ -65,7 +65,7 @@ class VLTraversalInterface {
 
   bool _useOptimizedLJFunctor = false;
 
-  bool _useCompactSoA = false;
+  bool _useCompactAoS = false;
 };
 
 }  // namespace autopas

@@ -75,8 +75,8 @@ public:
         verletTraversalInterface->setUseOptimizedLJFunctor(true);
       }
 
-      if (this->_useCompactSoA) {
-        verletTraversalInterface->setUseCompactSoA(true);
+      if (this->_useCompactAoS) {
+        verletTraversalInterface->setUseCompactAoS(true);
       }
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");

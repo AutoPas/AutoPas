@@ -10,10 +10,10 @@
 #include <type_traits>
 
 #include "Functor.h"
+#include "autopas/containers/verletListsCellBased/verletLists/SoAIndexIntType.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
-#include "autopas/containers/verletListsCellBased/verletLists/SoAIndexIntType.h"
 
 namespace autopas {
 
@@ -90,12 +90,12 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   virtual void SoAFunctorVerletOptimized(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                      const std::vector<SoAIndexIntType, AlignedAllocator<SoAIndexIntType>> &neighborList,
-                      bool newton3)  {
+                      const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList,
+                      bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerletPreloadMixingLJ: not implemented", this->getName());
   }
 
-  virtual void SoAFunctorVerletOptimizedCompactSoA(VerletListsLJCompactSoA<Particle_T> &verletListsLJCompactSoA, const size_t indexFirst,
+  virtual void SoAFunctorVerletOptimizedCompactAoS(VerletListsLJCompactAoS<Particle_T> &compactAoS, const size_t indexFirst,
                     const std::vector<SoAIndexIntType, AlignedAllocator<SoAIndexIntType>> &neighborList,
                     bool newton3)  {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerletPreloadMixingLJ: not implemented", this->getName());

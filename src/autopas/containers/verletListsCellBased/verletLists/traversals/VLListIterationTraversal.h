@@ -13,7 +13,7 @@
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/VerletListsLJCompactSoA.h"
+#include "autopas/utils/VerletListsLJCompactAoS.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -56,15 +56,13 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
         _offsets[i + 1] = _offsets[i] + cells[cellId].size();
       }
-
-      if (this->_useCompactSoA) {
-        _compactSoA.resize(_offsets.back());
+      if (this->_useCompactAoS) {
+        _compactAoS.resize(_offsets.back());
         AUTOPAS_OPENMP(parallel for)
         for (size_t i = 0; i < cells.size(); ++i) {
           const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-          _functor->CompactSoALoader(cells[cellId], _compactSoA, _offsets[i], /*skipSoAResize*/ true);
+          _functor->CompactAoSLoader(cells[cellId], _compactAoS, _offsets[i], /*skipSoAResize*/ true);
         }
-
       } else {
         _soa.resizeArrays(_offsets.back());
         AUTOPAS_OPENMP(parallel for)
@@ -80,11 +78,11 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   void endTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      if (this->_useCompactSoA) {
+      if (this->_useCompactAoS) {
         AUTOPAS_OPENMP(parallel for)
         for (size_t i = 0; i < cells.size(); ++i) {
           const size_t cellId = this->_cellsByMortonIndex ? (*this->_cellsByMortonIndex)[i] : i;
-          _functor->SoAExtractor(cells[cellId], _compactSoA._soa, _offsets[i]);
+          _functor->SoAExtractor(cells[cellId], _compactAoS._soa, _offsets[i]);
         }
       } else {
         AUTOPAS_OPENMP(parallel for)
@@ -132,10 +130,10 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         // LIKWID_MARKER_START("force calculation SoA");
         if (this->_useOptimizedLJFunctor) {
           if (not _useNewton3) {
-            if (this->_useCompactSoA) {
+            if (this->_useCompactAoS) {
               AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
               for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-                _functor->SoAFunctorVerletOptimizedCompactSoA(_compactSoA, particleIndex,
+                _functor->SoAFunctorVerletOptimizedCompactAoS(_compactAoS, particleIndex,
                                                               soaNeighborLists[particleIndex], _useNewton3);
               }
             } else {
@@ -188,7 +186,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    */
   SoA<typename ParticleType::SoAArraysType> _soa;
 
-  VerletListsLJCompactSoA<ParticleType> _compactSoA;
+  VerletListsLJCompactAoS<ParticleType> _compactAoS;
 
   std::vector<size_t> _offsets;
 };
