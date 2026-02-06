@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/VerletListsLJCompactSoA.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
@@ -113,6 +114,12 @@ class Functor {
     SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
+
+  template <class ParticleCell>
+  void CompactSoALoader(ParticleCell &cell, VerletListsLJCompactSoA<Particle_T> &compactSoA, size_t offset, bool skipSoAResize) {
+    CompactSoALoaderImpl(cell, compactSoA, offset, skipSoAResize,std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+  }
+
   /**
    * Copies the data stored in the soa back into the cell.
    *
@@ -126,6 +133,12 @@ class Functor {
   void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
     SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
   }
+
+  /*
+  template <typename ParticleCell>
+  void CompactSoAExtractor(ParticleCell &cell, VerletListsLJCompactSoA<Particle_T> compactSoA, size_t offset) {
+    CompactSoAExtractorImpl(cell, compactSoA, offset, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
+  }*/
 
   /**
    * Specifies whether the functor is capable of Newton3-like functors.
@@ -229,6 +242,41 @@ class Functor {
     }
   }
 
+  template <typename cell_t, std::size_t... I>
+  void CompactSoALoaderImpl(cell_t &cell, VerletListsLJCompactSoA<Particle_T> &compactSoA, size_t offset, bool skipSoAResize,
+                     std::index_sequence<I...>) {
+    if (not skipSoAResize) {
+      compactSoA.resize(offset + cell.size());
+    }
+
+    if (cell.isEmpty()) return;
+
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * in the following loop.
+     */
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
+    [[maybe_unused]] auto const attributePointers = std::make_tuple(compactSoA._soa.template begin<Functor_T::getNeededAttr()[I]>()...);
+    auto *typeIds = compactSoA._typeIds.data();
+    auto *ownerShipStates = compactSoA._ownershipStates.data();
+
+    auto cellIter = cell.begin();
+    // load particles in SoAs
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
+      /**
+       * The following statement writes the values of all attributes defined in neededAttr into the respective position
+       * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
+       * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
+       * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[0]>()),
+       * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
+       */
+      (( (std::get<I> (attributePointers)) [particleIndex] = cellIter->template get <(Functor_T::getNeededAttr()) [I]> () ), ...);
+      typeIds[particleIndex] = static_cast<uint8_t>(cellIter->getTypeId());
+      ownerShipStates[particleIndex] = static_cast<uint8_t>(cellIter->getOwnershipState());
+
+    }
+  }
+
   /**
    * Implements extraction of SoA buffers.
    * @tparam cell_t Cell type.
@@ -262,6 +310,34 @@ class Functor {
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(attributePointers)[particleIndex]), ...);
     }
   }
+
+
+  /*
+  template <typename cell_t, std::size_t... I>
+  void CompactSoAExtractorImpl(cell_t &cell, VerletListsLJCompactSoA<Particle_T> compactSoA, size_t offset, std::index_sequence<I...>) {
+    if (cell.isEmpty()) return;
+
+    /**
+     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * in the following loop.
+     #1#
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
+    [[maybe_unused]] auto const attributePointers = std::make_tuple(compactSoA._soa.template begin<Functor_T::getComputedAttr()[I]>()...);
+
+    auto cellIter = cell.begin();
+    // write values in SoAs back to particles
+    for (size_t particleIndex = offset; cellIter != cell.end(); ++cellIter, ++particleIndex) {
+      /**
+       * The following statement writes the value of all attributes defined in computedAttr back into the particle.
+       * I represents the index inside computedAttr.
+       * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
+       * (std::index_sequence<I...> = 0, 1):
+       * (cellIter->template set<Functor_T::getComputedAttr()[0]>(std::get<0>(pointer)[i]),
+       * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
+       #1#
+      (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(attributePointers)[particleIndex]), ...);
+    }
+  }*/
 
   double _cutoff;
 };

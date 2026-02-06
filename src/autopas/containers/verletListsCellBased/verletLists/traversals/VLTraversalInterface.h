@@ -6,10 +6,8 @@
 
 #pragma once
 
-#include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
-#include "autopas/options/DataLayoutOption.h"
 #include "autopas/containers/verletListsCellBased/verletLists/SoAIndexIntType.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 
 namespace autopas {
 
@@ -42,7 +40,13 @@ class VLTraversalInterface {
     _soaNeighborLists = &soaNeighborLists;
   }
 
-  virtual void setPreloadMixingLJPtr(bool preloadMixingLJPtr) = 0;
+  [[nodiscard]] bool getUseOptimizedLJFunctor() const { return _useOptimizedLJFunctor; }
+
+  void setUseOptimizedLJFunctor(bool preloadMixingLJPointer) { _useOptimizedLJFunctor = preloadMixingLJPointer; }
+
+  [[nodiscard]] bool getUseCompactSoA() const { return _useCompactSoA; }
+
+  void setUseCompactSoA(bool useCompactSoA) { _useCompactSoA = useCompactSoA; }
 
  protected:
   /**
@@ -58,6 +62,10 @@ class VLTraversalInterface {
    * The SoA neighbor list of the verlet lists container.
    */
   std::vector<std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>>> *_soaNeighborLists = nullptr;
+
+  bool _useOptimizedLJFunctor = false;
+
+  bool _useCompactSoA = false;
 };
 
 }  // namespace autopas
