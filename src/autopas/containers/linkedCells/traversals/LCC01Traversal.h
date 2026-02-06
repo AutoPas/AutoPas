@@ -504,7 +504,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTr
 
 template <class ParticleCell, class PairwiseFunctor, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::resizeBuffers() {
-  const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
+  const auto numThreads = static_cast<size_t>(autopas_get_preferred_num_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);
     const auto cellOffsetsSize = _cellOffsets.size();

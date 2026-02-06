@@ -87,7 +87,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
 
-    auto maxNumThreads = autopas_get_max_threads();
+    auto maxNumThreads = autopas_get_preferred_num_threads();
     for (int color = 0; color < _numColors; color++) {
       _aosNeighborList[color].resize(maxNumThreads);
       for (auto &colorList : _aosNeighborList[color]) {
