@@ -11,7 +11,7 @@
 
 namespace autopas {
 
-void TunerManager::addAutoTuner(InteractionTypeOption::Value interactionType, std::unique_ptr<AutoTuner> tuner) {
+void TunerManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const InteractionTypeOption::Value interactionType) {
   _autoTuners[interactionType] = std::move(tuner);
   setCommonContainerOption();
 }
@@ -45,9 +45,9 @@ void TunerManager::setCommonContainerOption() {
   }
 }
 
-void TunerManager::applyContainerConstraint(ContainerOption::Value container) {
+void TunerManager::applyContainerConstraint(ContainerOption containerOption) {
   for (const auto &tuner : _autoTuners | std::views::values) {
-    tuner->setContainerConstraint(container);
+    tuner->setContainerConstraint(containerOption);
     tuner->forceRetune();
     tuner->tuneConfiguration();
   }

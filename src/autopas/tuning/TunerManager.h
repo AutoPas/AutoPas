@@ -20,12 +20,29 @@ class TunerManager {
  public:
   TunerManager() = default;
 
-  void addAutoTuner(InteractionTypeOption::Value interactionType, std::unique_ptr<AutoTuner> tuner);
+  /**
+   * Add an AutoTuner to the TunerManager, which will take over ownership.
+   * @param interactionType
+   * @param tuner A unique_ptr to the new tuner.
+   */
+  void addAutoTuner(std::unique_ptr<AutoTuner> tuner, InteractionTypeOption::Value interactionType);
+
+  /**
+   * @return A reference to the map of AutoTuners.
+   */
+  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &getAutoTuners() { return _autoTuners; }
 
  private:
+  /**
+   * Find all container options that are part of all currently managed AutoTuner instances.
+   */
   void setCommonContainerOption();
 
-  void applyContainerConstraint(ContainerOption::Value container);
+  /**
+   * Constrain all AutoTuners to the given container options and refresh their config queues.
+   * @param containerOption
+   */
+  void applyContainerConstraint(ContainerOption containerOption);
 
   /**
    * Vector of all allowed container options with configurations for all interaction types.
