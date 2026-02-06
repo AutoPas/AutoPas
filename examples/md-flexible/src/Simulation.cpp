@@ -183,7 +183,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
   _autoPasContainer->setOrderCellsByMortonIndex(_configuration.orderCellsByMortonIndex.value);
-  _autoPasContainer->setUseIndexInSoAId(_configuration.useCompactSoA.value);
+  _autoPasContainer->setUseIndexInSoAId(_configuration.useCompactAoS.value);
   _autoPasContainer->setReserveVLSizes(_configuration.reserveVLSizes.value);
   _autoPasContainer->setUseOptimizedLJFunctor(_configuration.useOptimizedLJFunctor.value);
   _autoPasContainer->setBucketSortParticles(_configuration.bucketSortParticles.value);

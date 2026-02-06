@@ -153,7 +153,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
                                                             autopas::LoadEstimatorOption::none,
                                                             _orderCellsByMortonIndex,
                                                             _useOptimizedLJFunctor,
-                                                            _useCompactSoA,
+                                                            _useCompactAoS,
                                                             _reserveVLSizes,
                                                             _bucketSortParticles,
                                                             _sortVerletLists,

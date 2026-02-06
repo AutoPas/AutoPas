@@ -839,7 +839,7 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> useOptimizedLJFunctor{false, "preload-lj-mixing-ptrs", true,
     "If the pointer to access LJ Mixing data should be preloaded in LJFunctor for VerletListsSoa. Possible Values: (true false)"};
 
-  MDFlexOption<bool, __LINE__> useCompactSoA{false, "use-compact-soa", true,
+  MDFlexOption<bool, __LINE__> useCompactAoS{false, "use-compact-aos", true,
     "If a indexInSoA should be used per particle instead of a Map to store the index of a particle in the SoA data for VerletListsSoa. Possible Values: (true false)"};
 
   MDFlexOption<bool, __LINE__> reserveVLSizes{false, "reserve-vl-sizes", true,

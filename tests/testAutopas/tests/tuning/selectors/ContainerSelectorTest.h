@@ -19,7 +19,7 @@ class ContainerSelectorTest : public AutoPasTestBase {
   const unsigned int verletRebuildFrequency = 2;
   const bool orderCellsByMortonIndex = true;
   const bool useOptimizedLJFunctor = true;
-  const bool useCompactSoA = true;
+  const bool useCompactAoS = true;
   const bool reserveVLSizes = true;
   const bool bucketSortParticles = true;
   const bool sortVerletLists = true;

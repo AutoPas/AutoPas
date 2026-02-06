@@ -54,7 +54,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &sortingThreshold = containerInfo.sortingThreshold;
   const auto &orderCellsByMortonIndex = containerInfo.orderCellsByMortonIndex;
   const auto &useOptimizedLJFunctor = containerInfo.useOptimizedLJFunctor;
-  const auto &useCompactSoA = containerInfo.useCompactSoA;
+  const auto &useCompactAoS = containerInfo.useCompactAoS;
   const auto &reserveVLSizes = containerInfo.reserveVLSizes;
   const auto &bucketSortParticles = containerInfo.bucketSortParticles;
   const auto &sortVerletLists = containerInfo.sortVerletLists;
@@ -110,7 +110,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       container = std::make_unique<VerletListsSoA<Particle_T>>(
       boxMin, boxMax, cutoff, verletSkin, VerletListsSoA<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
       container->setUseOptimizedLJFunctor(useOptimizedLJFunctor);
-      container->setUseIndexInSoAId(useCompactSoA);
+      container->setUseIndexInSoAId(useCompactAoS);
       container->setReserveVLSizes(reserveVLSizes);
       container->setOrderCellsByMortonIndex(orderCellsByMortonIndex);
       container->setBucketSortParticles(bucketSortParticles);

@@ -20,7 +20,7 @@ class AllContainersTestsBase : public AutoPasTestBase {
   const double cellSizeFactor = 1;
   const bool orderCellsByMortonIndex = true;
   const bool useOptimizedLJFunctor = true;
-  const bool useCompactSoA = true;
+  const bool useCompactAoS = true;
   const bool reserveVLSizes = true;
   bool bucketSortParticles = true;
   bool sortVerletLists = true;
@@ -38,7 +38,7 @@ class AllContainersTestsBase : public AutoPasTestBase {
                                                       autopas::LoadEstimatorOption::none,
                                                       orderCellsByMortonIndex,
                                                       useOptimizedLJFunctor,
-                                                      useCompactSoA,
+                                                      useCompactAoS,
                                                       reserveVLSizes,
                                                       bucketSortParticles,
                                                       sortVerletLists,

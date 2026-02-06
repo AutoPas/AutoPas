@@ -46,7 +46,7 @@ class ContainerSelectorInfo {
                                  double cutoff, double cellSizeFactor, double verletSkin,
                                  unsigned int verletClusterSize, size_t sortingThreshold,
                                  LoadEstimatorOption loadEstimator, bool orderCellsByMortonIndex,
-                                 bool useOptimizedLJFunctor, bool useCompactSoA, bool reserveVLSizes,
+                                 bool useOptimizedLJFunctor, bool useCompactAoS, bool reserveVLSizes,
                                  bool bucketSortParticles, bool sortVerletLists, size_t sortingFrequency)
       : boxMin(boxMin),
         boxMax(boxMax),
@@ -58,7 +58,7 @@ class ContainerSelectorInfo {
         loadEstimator(loadEstimator),
         orderCellsByMortonIndex(orderCellsByMortonIndex),
         useOptimizedLJFunctor(useOptimizedLJFunctor),
-        useCompactSoA(useCompactSoA),
+        useCompactAoS(useCompactAoS),
         reserveVLSizes(reserveVLSizes),
         bucketSortParticles(bucketSortParticles),
         sortVerletLists(sortVerletLists),
@@ -134,7 +134,7 @@ class ContainerSelectorInfo {
 
   bool orderCellsByMortonIndex = false;
   bool useOptimizedLJFunctor = false;
-  bool useCompactSoA = false;
+  bool useCompactAoS = false;
   bool reserveVLSizes = false;
   bool bucketSortParticles = false;
   bool sortVerletLists = false;

@@ -854,11 +854,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.useOptimizedLJFunctor.description;
 
         config.useOptimizedLJFunctor.value = node[config.useOptimizedLJFunctor.name].as<bool>();
-      } else if (key == config.useCompactSoA.name) {
+      } else if (key == config.useCompactAoS.name) {
         expected = "Boolean Value";
-        description = config.useCompactSoA.description;
+        description = config.useCompactAoS.description;
 
-        config.useCompactSoA.value = node[config.useCompactSoA.name].as<bool>();
+        config.useCompactAoS.value = node[config.useCompactAoS.name].as<bool>();
       } else if (key == config.reserveVLSizes.name) {
         expected = "Boolean Value";
         description = config.reserveVLSizes.description;

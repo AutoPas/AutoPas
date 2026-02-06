@@ -476,7 +476,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   const std::array<double, 3> boxMaxLocal{33., 11., 11.};
   const bool orderCellsByMortonIndex = true;
   const bool useOptimizedLJFunctor = true;
-  const bool useCompactSoA = true;
+  const bool useCompactAoS = true;
   const bool reserveVLSizes = true;
   bool bucketSortParticles = true;
   bool sortVerletLists = true;
@@ -488,7 +488,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   const autopas::ContainerSelectorInfo containerSelectorInfo{boxMinLocal,         boxMaxLocal,       cutoffLocal,
                                                              conf.cellSizeFactor, skinLocal,         clusterSize,
                                                              sortingThreshold,    conf.loadEstimator, orderCellsByMortonIndex,
-                                                             useOptimizedLJFunctor, useCompactSoA, reserveVLSizes,
+                                                             useOptimizedLJFunctor, useCompactAoS, reserveVLSizes,
                                                              bucketSortParticles, sortVerletLists, sortingFrequency};
 
 

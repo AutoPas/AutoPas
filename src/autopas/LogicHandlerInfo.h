@@ -47,7 +47,7 @@ class LogicHandlerInfo {
 
   bool orderCellsByMortonIndex = false;
   bool useOptimizedLJFunctor = false;
-  bool useCompactSoA = false;
+  bool useCompactAoS = false;
   bool reserveVLSizes = false;
   bool bucketSortParticles = false;
   bool sortVerletLists = false;

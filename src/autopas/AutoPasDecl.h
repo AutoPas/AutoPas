@@ -1121,9 +1121,9 @@ class AutoPas {
 
   void setUseOptimizedLJFunctor(bool useOptimizedLJFunctor) { _useOptimizedLJFunctor = useOptimizedLJFunctor; }
 
-  [[nodiscard]] bool getuseCompactSoA() const { return _useCompactSoA; }
+  [[nodiscard]] bool getUseCompactAoS() const { return _useCompactAoS; }
 
-  void setUseIndexInSoAId(bool useCompactSoA) { _useCompactSoA = useCompactSoA; }
+  void setUseIndexInSoAId(bool useCompactAoS) { _useCompactAoS = useCompactAoS; }
 
   [[nodiscard]] bool getReserveVLSizes() const { return _reserveVLSizes; }
 
@@ -1250,7 +1250,7 @@ class AutoPas {
 
   bool _orderCellsByMortonIndex = false;
   bool _useOptimizedLJFunctor = false;
-  bool _useCompactSoA = false;
+  bool _useCompactAoS = false;
   bool _reserveVLSizes = false;
   bool _bucketSortParticles = false;
   bool _sortVerletLists = false;

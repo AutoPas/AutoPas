@@ -11,7 +11,7 @@
 
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   autopas::ContainerSelectorInfo containerInfo(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, 64, 8,
-  autopas::LoadEstimatorOption::none, orderCellsByMortonIndex, useOptimizedLJFunctor, useCompactSoA, reserveVLSizes,
+  autopas::LoadEstimatorOption::none, orderCellsByMortonIndex, useOptimizedLJFunctor, useCompactAoS, reserveVLSizes,
   bucketSortParticles, sortVerletLists, sortingFrequency);
 
   // test all individual options

@@ -34,7 +34,7 @@ class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<
       size_t numHaloParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cellSizeFactor,
       double cutoff, double skin, unsigned int rebuildFrequency, double interactionLength,
       Vector3DList particlePositions, Vector3DList haloParticlePositions,
-      bool orderCellsByMortonIndex, bool useOptimizedLJFunctor, bool useCompactSoA, bool reserveVLSizes,
+      bool orderCellsByMortonIndex, bool useOptimizedLJFunctor, bool useCompactAoS, bool reserveVLSizes,
       bool bucketSortParticles, bool sortVerletLists, size_t sortingFrequency);
 
   MockPairwiseFunctor<Molecule> mockFunctor;

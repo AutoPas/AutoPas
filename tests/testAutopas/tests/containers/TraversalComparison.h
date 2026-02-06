@@ -105,7 +105,7 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
 
   static constexpr bool _orderCellsByMortonIndex = true;
   static constexpr bool _useOptimizedLJFunctor = true;
-  static constexpr bool _useCompactSoA = true;
+  static constexpr bool _useCompactAoS = true;
   static constexpr bool _reserveVLSizes = true;
   static constexpr bool _bucketSortParticles = true;
   static constexpr bool _sortVerletLists = true;

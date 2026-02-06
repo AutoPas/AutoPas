@@ -40,7 +40,7 @@ TEST_P(ParticleCounterTest, testGetNumberOfParticles) {
                                                             autopas::LoadEstimatorOption::none,
                                                             _orderCellsByMortonIndex,
                                                             _useOptimizedLJFunctor,
-                                                            _useCompactSoA,
+                                                            _useCompactAoS,
                                                             _reserveVLSizes,
                                                             _bucketSortParticles,
                                                             _sortVerletLists,
