@@ -96,7 +96,7 @@ void AutoPas<Particle_T>::init() {
     }
   }();
 
-  _tunerManager = std::make_shared<TunerManager>();
+  _tunerManager = std::make_shared<TunerManager>(_autoTunerInfo);
   // Create autotuners for each interaction type
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(

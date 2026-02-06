@@ -295,6 +295,18 @@ class AutoTuner {
    */
   std::set<ContainerOption> getSearchSpaceContainers() const;
 
+  /**
+   * Increments the tuning phase counter by one.
+   */
+  void incrementTuningPhase();
+
+  /**
+   * Manually set the AutoTuners tuning state.
+   * Todo: Can this be removed?
+   * @param tuningState
+   */
+  void setTuningState(bool tuningState);
+
  private:
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
@@ -474,10 +486,9 @@ class AutoTuner {
   bool _earlyStoppingOfResampling{false};
 
   /**
-   * Used only for triggering rebuilds when configurations switch during tuning phases, which occurs when
-   * _iterationBaseline % _maxSamples == 0. _iterationBaseline may therefore be modified to "skip" iterations e.g. when
-   * early stopping is used."
+   * Is set to true if the current configuration is different to the previous configuration and therefore a rebuild is
+   * required.
    */
-  size_t _iterationBaseline{0};
+  bool _requiresRebuild{false};
 };
 }  // namespace autopas

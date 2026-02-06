@@ -11,9 +11,29 @@
 
 namespace autopas {
 
+TunerManager::TunerManager(const AutoTunerInfo &autoTunerInfo) : _tuningInterval(autoTunerInfo.tuningInterval) {}
+
 void TunerManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const InteractionTypeOption::Value interactionType) {
   _autoTuners[interactionType] = std::move(tuner);
   setCommonContainerOption();
+}
+
+void TunerManager::bumpTunerCounters() {
+  ++_iteration;
+  const bool newTuningPhaseStart = _iteration % _tuningInterval == 0;
+
+  for (const auto &autoTuner : _autoTuners | std::views::values) {
+    autoTuner->bumpIterationCounters();
+    if (newTuningPhaseStart) {
+      autoTuner->incrementTuningPhase();
+      autoTuner->setTuningState(true);
+    }
+  }
+}
+
+bool TunerManager::requiresRebuilding() {
+  return std::ranges::any_of(_autoTuners,
+                             [](const auto &tunerEntry) { return tunerEntry.second->willRebuildNeighborLists(); });
 }
 
 void TunerManager::setCommonContainerOption() {

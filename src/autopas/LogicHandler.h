@@ -162,22 +162,18 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
+    _tunerManager->bumpTunerCounters();
+
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
 
     if (_functorCalls > 0) {
-      // Bump iteration counters for all autotuners
-      for (const auto &[interactionType, autoTuner] : _tunerManager->getAutoTuners()) {
-        const bool needsToWait = checkTuningStates(interactionType);
-        // Called before bumpIterationCounters as it would return false after that.
-        if (autoTuner->inLastTuningIteration()) {
-          _iterationAtEndOfLastTuningPhase = _iteration;
-        }
-        autoTuner->bumpIterationCounters(needsToWait);
-      }
-
+      // Called before bumpIterationCounters as it would return false after that.
+      // if (_tunerManager->inLastTuningIteration()) {
+      //   _iterationAtEndOfLastTuningPhase = _iteration;
+      // }
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
         _stepsSinceLastListRebuild = 0;
@@ -1173,17 +1169,11 @@ bool LogicHandler<Particle_T>::getNeighborListsInvalidDoDynamicRebuild() {
 
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
-  // Implement rebuild indicator as function, so it is only evaluated when needed.
-  const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
-    return _interactionTypes.count(interactionOption) != 0 and
-           _tunerManager->getAutoTuners()[interactionOption]->willRebuildNeighborLists();
-  };
-
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
       or getNeighborListsInvalidDoDynamicRebuild()
 #endif
-      or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
+      or _tunerManager->requiresRebuilding()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
