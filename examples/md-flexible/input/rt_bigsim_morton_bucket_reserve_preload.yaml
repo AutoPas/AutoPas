@@ -1,6 +1,6 @@
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 ## md-flexible compiled for multi-site molecules.
-container                         :  [VerletLists]
+container                         :  [VerletListsSoA]
 verlet-rebuild-frequency          :  10
 verlet-skin-radius                :  1.0
 verlet-cluster-size               :  4
@@ -35,28 +35,28 @@ Objects:
   CubeGrid:
     0:
       particles-per-dimension     :  [ 50, 20, 50 ]
-      particle-spacing            :  1.2
+      particle-spacing            :  0.8
       bottomLeftCorner            :  [ 0.6, 0.6, 0.6 ]
       velocity                    :  [ 0, 0, 0 ]
       particle-type-id            :  0
     1:
       particles-per-dimension     :  [ 50, 20, 50 ]
-      particle-spacing            :  1.2
+      particle-spacing            :  0.8
       bottomLeftCorner            :  [ 0.6, 24.6, 0.6 ]
       velocity                    :  [ 0, 0, 0 ]
       particle-type-id            :  1
 thermostat:
-  initialTemperature              :  40
-  targetTemperature               :  40
+  initialTemperature              :  20
+  targetTemperature               :  20
   deltaTemperature                :  0.5
   thermostatInterval              :  25
   addBrownianMotion               :  true
 
-order-cells-by-morton-id          :  false
-preload-lj-mixing-ptrs            :  false
-use-soa-index                     :  false
-reserve-vl-sizes                  :  false
-bucket-sort-particles             :  false
+order-cells-by-morton-id          :  true
+preload-lj-mixing-ptrs            :  true
+use-soa-index                     :  true
+reserve-vl-sizes                  :  true
+bucket-sort-particles             :  true
 sort-verlet-lists                 :  false
 sorting-frequency                 :  4
 
