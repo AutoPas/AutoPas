@@ -1,0 +1,56 @@
+/**
+ * @file TunerManager.cpp
+ * @author muehlhaeusser
+ * @date 06.02.2026
+ */
+
+#include "autopas/tuning/TunerManager.h"
+
+#include <ranges>
+#include <set>
+
+namespace autopas {
+
+void TunerManager::addAutoTuner(InteractionTypeOption::Value interactionType, std::unique_ptr<AutoTuner> tuner) {
+  _autoTuners[interactionType] = std::move(tuner);
+  setCommonContainerOption();
+}
+
+void TunerManager::setCommonContainerOption() {
+  if (_autoTuners.empty()) return;
+
+  // Calculate Intersection of Supported Containers for all interaction types
+  bool first = true;
+  std::set<ContainerOption> intersectionSet;
+
+  for (const auto &tuner : _autoTuners | std::views::values) {
+    std::set<ContainerOption> tunerContainers = tuner->getSearchSpaceContainers();
+
+    if (first) {
+      intersectionSet = tunerContainers;
+      first = false;
+    } else {
+      std::set<ContainerOption> result;
+      std::ranges::set_intersection(intersectionSet, tunerContainers, std::inserter(result, result.begin()));
+      intersectionSet = result;
+    }
+  }
+
+  // Convert to a vector for deterministic ordering
+  _commonContainerOptions.assign(intersectionSet.begin(), intersectionSet.end());
+
+  // Initial Setup: Restrict all tuners to the first container immediately
+  if (!_commonContainerOptions.empty()) {
+    applyContainerConstraint(_commonContainerOptions[0]);
+  }
+}
+
+void TunerManager::applyContainerConstraint(ContainerOption::Value container) {
+  for (const auto &tuner : _autoTuners | std::views::values) {
+    tuner->setContainerConstraint(container);
+    tuner->forceRetune();
+    tuner->tuneConfiguration();
+  }
+}
+
+}  // namespace autopas

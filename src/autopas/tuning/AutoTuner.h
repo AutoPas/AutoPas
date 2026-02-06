@@ -271,6 +271,30 @@ class AutoTuner {
    */
   void checkEarlyStoppingCondition();
 
+  /**
+   * Tune available algorithm configurations.
+   *
+   * It is assumed this function is only called for relevant functors and that at least two configurations are allowed.
+   * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
+   * The function returns true if the selected config is not yet the optimum but something that should be sampled.
+   *
+   * @return true iff still in tuning phase.
+   */
+  bool tuneConfiguration();
+
+  /**
+   * Restricts the tuning process to a specific container type.
+   * Configurations using other containers will be ignored/filtered out during tuning.
+   * @param container The container type to allow.
+   */
+  void setContainerConstraint(ContainerOption container);
+
+  /**
+   * Get the set of all container types present in the search space.
+   * Used by the Coordinator to calculate the intersection.
+   */
+  std::set<ContainerOption> getSearchSpaceContainers() const;
+
  private:
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
@@ -287,17 +311,6 @@ class AutoTuner {
   [[nodiscard]] long estimateRuntimeFromSamples() const;
 
   /**
-   * Tune available algorithm configurations.
-   *
-   * It is assumed this function is only called for relevant functors and that at least two configurations are allowed.
-   * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
-   * The function returns true if the selected config is not yet the optimum but something that should be sampled.
-   *
-   * @return true iff still in tuning phase.
-   */
-  bool tuneConfiguration();
-
-  /**
    * Strategy how to reduce the sampled values to one value.
    */
   SelectorStrategyOption _selectorStrategy;
@@ -307,6 +320,12 @@ class AutoTuner {
    * The strategies are always applied in the order they are in this vector.
    */
   std::vector<std::unique_ptr<TuningStrategyInterface>> _tuningStrategies;
+
+  /**
+   * The container type we are currently restricted to.
+   * If std::nullopt, no restriction is active.
+   */
+  std::optional<ContainerOption> _containerConstraint{std::nullopt};
 
   /**
    * Counter for the current simulation iteration.

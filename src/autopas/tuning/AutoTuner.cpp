@@ -471,4 +471,14 @@ void AutoTuner::checkEarlyStoppingCondition() {
     _iterationBaseline += skippedSamples;
   }
 }
+
+void AutoTuner::setContainerConstraint(ContainerOption container) { _containerConstraint = container; }
+
+std::set<ContainerOption> AutoTuner::getSearchSpaceContainers() const {
+  std::set<ContainerOption> containers;
+  for (const auto &conf : _searchSpace) {
+    containers.insert(conf.container);
+  }
+  return containers;
+}
 }  // namespace autopas
