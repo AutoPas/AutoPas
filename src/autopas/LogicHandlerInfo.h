@@ -46,8 +46,8 @@ class LogicHandlerInfo {
   double deltaT{0};
 
   bool orderCellsByMortonIndex = false;
-  bool preloadLJMixingPtr = false;
-  bool useSoAIndex = false;
+  bool useOptimizedLJFunctor = false;
+  bool useCompactSoA = false;
   bool reserveVLSizes = false;
   bool bucketSortParticles = false;
   bool sortVerletLists = false;

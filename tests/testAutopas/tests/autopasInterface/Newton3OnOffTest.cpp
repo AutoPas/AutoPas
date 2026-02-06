@@ -44,7 +44,7 @@ INSTANTIATE_TEST_SUITE_P(
           Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff(),
           Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkin(), Newton3OnOffTest::getClusterSize(),
           Newton3OnOffTest::getSortingThreshold(), autopas::LoadEstimatorOption::none,
-          Newton3OnOffTest::getOrderCellsByMortonIndex(), Newton3OnOffTest::getPreLoadLJMixingPtr(),
+          Newton3OnOffTest::getOrderCellsByMortonIndex(), Newton3OnOffTest::getUseOptimizedLJFunctor(),
           Newton3OnOffTest::getUseIndexInSoAId(), Newton3OnOffTest::getReserveVLSizes(),
           Newton3OnOffTest::getBucketSortParticles(), Newton3OnOffTest::getSortVerletLists(), Newton3OnOffTest::getSortingFrequency());
 
@@ -122,7 +122,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(),
                                                      getVerletSkin(), getClusterSize(), getSortingThreshold(),
                                                      autopas::LoadEstimatorOption::none, getOrderCellsByMortonIndex(),
-                                                     getPreLoadLJMixingPtr(), getUseIndexInSoAId(), getReserveVLSizes(),
+                                                     getUseOptimizedLJFunctor(), getUseIndexInSoAId(), getReserveVLSizes(),
                                                      getBucketSortParticles(), getSortVerletLists(),
                                                      getSortingFrequency());
   auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(containerOption, containerInfo);

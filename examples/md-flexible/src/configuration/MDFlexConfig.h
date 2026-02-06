@@ -836,10 +836,10 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> orderCellsByMortonIndex{false, "order-cells-by-morton-id", true,
                                                    "If Morton Indexing should be used for sorting the cells before traversal in VerletListsSoA. Possible Values: (true false)"};
 
-  MDFlexOption<bool, __LINE__> preloadLJMixingPtr{false, "preload-lj-mixing-ptrs", true,
+  MDFlexOption<bool, __LINE__> useOptimizedLJFunctor{false, "preload-lj-mixing-ptrs", true,
     "If the pointer to access LJ Mixing data should be preloaded in LJFunctor for VerletListsSoa. Possible Values: (true false)"};
 
-  MDFlexOption<bool, __LINE__> useSoAIndex{false, "use-soa-index", true,
+  MDFlexOption<bool, __LINE__> useCompactSoA{false, "use-compact-soa", true,
     "If a indexInSoA should be used per particle instead of a Map to store the index of a particle in the SoA data for VerletListsSoa. Possible Values: (true false)"};
 
   MDFlexOption<bool, __LINE__> reserveVLSizes{false, "reserve-vl-sizes", true,

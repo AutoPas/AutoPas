@@ -19,8 +19,8 @@ class AllContainersTestsBase : public AutoPasTestBase {
   const unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = 1;
   const bool orderCellsByMortonIndex = true;
-  const bool preloadLJMixingPtr = true;
-  const bool useSoAIndex = true;
+  const bool useOptimizedLJFunctor = true;
+  const bool useCompactSoA = true;
   const bool reserveVLSizes = true;
   bool bucketSortParticles = true;
   bool sortVerletLists = true;
@@ -37,8 +37,8 @@ class AllContainersTestsBase : public AutoPasTestBase {
                                                       8,
                                                       autopas::LoadEstimatorOption::none,
                                                       orderCellsByMortonIndex,
-                                                      preloadLJMixingPtr,
-                                                      useSoAIndex,
+                                                      useOptimizedLJFunctor,
+                                                      useCompactSoA,
                                                       reserveVLSizes,
                                                       bucketSortParticles,
                                                       sortVerletLists,

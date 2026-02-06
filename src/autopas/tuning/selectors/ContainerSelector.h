@@ -53,8 +53,8 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &loadEstimator = containerInfo.loadEstimator;
   const auto &sortingThreshold = containerInfo.sortingThreshold;
   const auto &orderCellsByMortonIndex = containerInfo.orderCellsByMortonIndex;
-  const auto &preloadLJMixingPtr = containerInfo.preloadLJMixingPtr;
-  const auto &useSoAIndex = containerInfo.useSoAIndex;
+  const auto &useOptimizedLJFunctor = containerInfo.useOptimizedLJFunctor;
+  const auto &useCompactSoA = containerInfo.useCompactSoA;
   const auto &reserveVLSizes = containerInfo.reserveVLSizes;
   const auto &bucketSortParticles = containerInfo.bucketSortParticles;
   const auto &sortVerletLists = containerInfo.sortVerletLists;
@@ -80,7 +80,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     case ContainerOption::verletLists: {
       container = std::make_unique<VerletLists<Particle_T>>(
           boxMin, boxMax, cutoff, verletSkin, VerletLists<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
-      container->setPreloadLJMixingIndex(preloadLJMixingPtr);
+      container->setUseOptimizedLJFunctor(useOptimizedLJFunctor);
       break;
     }
     case ContainerOption::verletListsCells: {
@@ -109,8 +109,8 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     case ContainerOption::verletListsSoA: {
       container = std::make_unique<VerletListsSoA<Particle_T>>(
       boxMin, boxMax, cutoff, verletSkin, VerletListsSoA<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
-      container->setPreloadLJMixingIndex(preloadLJMixingPtr);
-      container->setUseIndexInSoAId(useSoAIndex);
+      container->setUseOptimizedLJFunctor(useOptimizedLJFunctor);
+      container->setUseIndexInSoAId(useCompactSoA);
       container->setReserveVLSizes(reserveVLSizes);
       container->setOrderCellsByMortonIndex(orderCellsByMortonIndex);
       container->setBucketSortParticles(bucketSortParticles);

@@ -419,13 +419,13 @@ class ParticleContainerInterface {
 
   void setOrderCellsByMortonIndex(bool orderCellsByMortonIndex) { _orderCellsByMortonIndex = orderCellsByMortonIndex; }
 
-  [[nodiscard]] bool getPreloadMixingPtr() const { return _preloadLJMixingPtr; }
+  [[nodiscard]] bool getPreloadMixingPtr() const { return _useOptimizedLJFunctor; }
 
-  void setPreloadLJMixingIndex(bool preloadLJMixingIndex) { _preloadLJMixingPtr = preloadLJMixingIndex; }
+  void setUseOptimizedLJFunctor(bool useOptimizedLJFunctor) { _useOptimizedLJFunctor = useOptimizedLJFunctor; }
 
-  [[nodiscard]] bool getUseSoAIndex() const { return _useSoAIndex; }
+  [[nodiscard]] bool getuseCompactSoA() const { return _useCompactSoA; }
 
-  void setUseIndexInSoAId(bool useSoAIndex) { _useSoAIndex = useSoAIndex; }
+  void setUseIndexInSoAId(bool useCompactSoA) { _useCompactSoA = useCompactSoA; }
 
   [[nodiscard]] bool getReserveVLSizes() const { return _reserveVLSizes; }
 
@@ -457,8 +457,8 @@ class ParticleContainerInterface {
   double _skin;
 
   bool _orderCellsByMortonIndex = false;
-  bool _preloadLJMixingPtr = false;
-  bool _useSoAIndex = false;
+  bool _useOptimizedLJFunctor = false;
+  bool _useCompactSoA = false;
   bool _reserveVLSizes = false;
   bool _bucketSortParticles = false;
   bool _sortVerletLists = false;

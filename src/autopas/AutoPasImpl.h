@@ -83,8 +83,8 @@ void AutoPas<Particle_T>::init() {
 
   _logicHandlerInfo.sortingThreshold = _sortingThreshold;
   _logicHandlerInfo.orderCellsByMortonIndex = _orderCellsByMortonIndex;
-  _logicHandlerInfo.useSoAIndex = _useSoAIndex;
-  _logicHandlerInfo.preloadLJMixingPtr = _preloadLJMixingPtr;
+  _logicHandlerInfo.useCompactSoA = _useCompactSoA;
+  _logicHandlerInfo.useOptimizedLJFunctor = _useOptimizedLJFunctor;
   _logicHandlerInfo.reserveVLSizes = _reserveVLSizes;
   _logicHandlerInfo.bucketSortParticles = _bucketSortParticles;
   _logicHandlerInfo.sortVerletLists = _sortVerletLists;

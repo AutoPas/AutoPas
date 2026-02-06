@@ -1117,13 +1117,13 @@ class AutoPas {
 
   void setOrderCellsByMortonIndex(bool orderCellsByMortonIndex) { _orderCellsByMortonIndex = orderCellsByMortonIndex; }
 
-  [[nodiscard]] bool getPreloadLJMixingPtr() const { return _preloadLJMixingPtr; }
+  [[nodiscard]] bool getUseOptimizedLJFunctor() const { return _useOptimizedLJFunctor; }
 
-  void setPreloadLJMixingIndex(bool preloadLJMixingIndex) { _preloadLJMixingPtr = preloadLJMixingIndex; }
+  void setUseOptimizedLJFunctor(bool useOptimizedLJFunctor) { _useOptimizedLJFunctor = useOptimizedLJFunctor; }
 
-  [[nodiscard]] bool getUseSoAIndex() const { return _useSoAIndex; }
+  [[nodiscard]] bool getuseCompactSoA() const { return _useCompactSoA; }
 
-  void setUseIndexInSoAId(bool useSoAIndex) { _useSoAIndex = useSoAIndex; }
+  void setUseIndexInSoAId(bool useCompactSoA) { _useCompactSoA = useCompactSoA; }
 
   [[nodiscard]] bool getReserveVLSizes() const { return _reserveVLSizes; }
 
@@ -1249,8 +1249,8 @@ class AutoPas {
   void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
 
   bool _orderCellsByMortonIndex = false;
-  bool _preloadLJMixingPtr = false;
-  bool _useSoAIndex = false;
+  bool _useOptimizedLJFunctor = false;
+  bool _useCompactSoA = false;
   bool _reserveVLSizes = false;
   bool _bucketSortParticles = false;
   bool _sortVerletLists = false;

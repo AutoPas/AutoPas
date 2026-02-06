@@ -37,7 +37,7 @@ class Newton3OnOffTest
   static int getClusterSize() { return 4; }
   static int getSortingThreshold() { return 8; }
   static bool getOrderCellsByMortonIndex() { return true; }
-  static bool getPreLoadLJMixingPtr() { return true; }
+  static bool getUseOptimizedLJFunctor() { return true; }
   static bool getUseIndexInSoAId() { return true; }
   static bool getReserveVLSizes() { return true; }
   static bool getBucketSortParticles() { return true; }

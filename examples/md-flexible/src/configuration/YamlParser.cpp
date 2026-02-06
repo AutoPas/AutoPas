@@ -849,16 +849,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.orderCellsByMortonIndex.description;
 
         config.orderCellsByMortonIndex.value = node[config.orderCellsByMortonIndex.name].as<bool>();
-      } else if (key == config.preloadLJMixingPtr.name) {
+      } else if (key == config.useOptimizedLJFunctor.name) {
         expected = "Boolean Value";
-        description = config.preloadLJMixingPtr.description;
+        description = config.useOptimizedLJFunctor.description;
 
-        config.preloadLJMixingPtr.value = node[config.preloadLJMixingPtr.name].as<bool>();
-      } else if (key == config.useSoAIndex.name) {
+        config.useOptimizedLJFunctor.value = node[config.useOptimizedLJFunctor.name].as<bool>();
+      } else if (key == config.useCompactSoA.name) {
         expected = "Boolean Value";
-        description = config.useSoAIndex.description;
+        description = config.useCompactSoA.description;
 
-        config.useSoAIndex.value = node[config.useSoAIndex.name].as<bool>();
+        config.useCompactSoA.value = node[config.useCompactSoA.name].as<bool>();
       } else if (key == config.reserveVLSizes.name) {
         expected = "Boolean Value";
         description = config.reserveVLSizes.description;
