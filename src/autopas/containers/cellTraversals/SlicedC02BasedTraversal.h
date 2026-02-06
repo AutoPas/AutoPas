@@ -88,7 +88,7 @@ void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &
 
   for (size_t offset = 0; offset < 2; offset++) {
     // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-    AUTOPAS_OPENMP(parallel for schedule(dynamic, 1))
+    AUTOPAS_OPENMP(parallel for schedule(dynamic, 1) num_threads(autopas::autopas_get_preferred_num_threads()))
     for (size_t slice = offset; slice < numSlices; slice += 2) {
       array<unsigned long, 3> myStartArray{0, 0, 0};
       for (size_t i = 0; i < slice; ++i) {

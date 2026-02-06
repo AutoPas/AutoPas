@@ -193,7 +193,10 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
     }
 
     // Since there are no loop dependencies merge all for loops and create 10 chunks per thread.
-    AUTOPAS_OPENMP(parallel for collapse(3) schedule(dynamic, std::max(cells.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+    const auto numThreads = autopas::autopas_get_preferred_num_threads();
+    AUTOPAS_OPENMP(parallel for collapse(3) schedule(dynamic, std::max(cells.size() / (numThreads * 10), 1ul)) \
+      num_threads(numThreads) \
+    )
     for (int z = 0; z < zEnd; ++z) {
       for (int y = 0; y < yEnd; ++y) {
         for (int x = 0; x < xEnd; ++x) {

@@ -182,7 +182,8 @@ void AutoPas<Particle_T>::addParticlesAux(size_t numParticlesToAdd, size_t numHa
                                           F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
-  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
+  const auto numThreads = autopas::autopas_get_preferred_num_threads();
+  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / numThreads)) num_threads(numThreads))
   for (auto i = 0; i < collectionSize; ++i) {
     loopBody(i);
   }
@@ -204,7 +205,7 @@ template <class Collection, class F>
 void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
@@ -263,7 +264,7 @@ template <class Collection, class F>
 void AutoPas<Particle_T>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);

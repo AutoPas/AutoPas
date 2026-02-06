@@ -172,7 +172,7 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor>::processBasePack32(std::vecto
 template <class ParticleCell, class PairwiseFunctor>
 void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
-  AUTOPAS_OPENMP(parallel) {
+  AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads())) {
     for (int color = 0; color < 4; ++color) {
       traverseSingleColor(cells, color);
 

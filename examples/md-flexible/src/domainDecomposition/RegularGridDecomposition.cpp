@@ -269,8 +269,10 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
                                        std::remove_reference_t<decltype(emigrants)> :                     \
                                            omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
       // make sure each buffer gets filled equally while not inducing scheduling overhead
+      const auto numThreads = autopas::autopas_get_preferred_num_threads();
       AUTOPAS_OPENMP(parallel for reduction(vecMergeParticle : emigrants) \
-                                  schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / autopas::autopas_get_max_threads())))
+                                  schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / numThreads)) \
+                                  num_threads(numThreads))
       // we can't use range based for loops here because clang accepts this only starting with version 11
       for (size_t i = 0; i < _receivedParticlesBuffer.size(); ++i) {
         const auto &particle = _receivedParticlesBuffer[i];

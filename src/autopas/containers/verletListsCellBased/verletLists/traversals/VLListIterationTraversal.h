@@ -53,7 +53,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
       _soa.resizeArrays(offsets.back());
 
-      AUTOPAS_OPENMP(parallel for)
+      AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
       for (size_t i = 0; i < cells.size(); ++i) {
         _functor->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
       }
@@ -80,7 +80,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         if (not _useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic))
+          AUTOPAS_OPENMP(parallel for schedule(dynamic) num_threads(autopas::autopas_get_preferred_num_threads()))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
@@ -106,7 +106,10 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       case DataLayoutOption::soa: {
         if (not _useNewton3) {
           /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          const auto numThreads = autopas::autopas_get_preferred_num_threads();
+          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (numThreads * 10), 1ul)) \
+            num_threads(numThreads) \
+          )
           for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
             _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
           }

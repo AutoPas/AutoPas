@@ -58,7 +58,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
     utils::Timer timer;
     timer.start();
     loads.resize(maxDimensionLength);
-    AUTOPAS_OPENMP(parallel for schedule(static, 1))
+    AUTOPAS_OPENMP(parallel for schedule(static, 1) num_threads(autopas::autopas_get_preferred_num_threads()))
     for (auto x = 0; x < maxDimensionLength; x++) {
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;

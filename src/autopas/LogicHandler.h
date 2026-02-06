@@ -642,7 +642,7 @@ class LogicHandler {
     // Initialize the maximum velocity to zero
     double maxVelocity = 0;
     // Iterate over the owned particles in container to determine maximum velocity
-    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity) num_threads(autopas::autopas_get_preferred_num_threads()))
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
       double tempVelAbs = sqrt(dot(tempVel, tempVel));
@@ -1146,7 +1146,7 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel)
+  AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
@@ -1200,7 +1200,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild) num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
@@ -1498,7 +1498,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferContainerAoS(
   };
 
   // one halo and particle buffer pair per thread
-  AUTOPAS_OPENMP(parallel for schedule(static, 1) default(shared))
+  AUTOPAS_OPENMP(parallel for schedule(static, 1) default(shared) num_threads(autopas::autopas_get_preferred_num_threads()))
   for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
     auto &particleBuffer = particleBuffers[bufferId];
     auto &haloParticleBuffer = haloParticleBuffers[bufferId];
@@ -1563,7 +1563,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferBufferAoS(
   // This saves expensive locks.
 
   // We can not use collapse here without locks, otherwise races would occur.
-  AUTOPAS_OPENMP(parallel for)
+  AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
   for (size_t bufferIdxI = 0; bufferIdxI < particleBuffers.size(); ++bufferIdxI) {
     for (size_t bufferIdxJOffset = 0; bufferIdxJOffset < particleBuffers.size(); ++bufferIdxJOffset) {
       // Let each bufferI use a different starting point for bufferJ to minimize false sharing
@@ -1604,7 +1604,7 @@ template <bool newton3, class PairwiseFunctor>
 void LogicHandler<Particle_T>::remainderHelperBufferBufferSoA(
     PairwiseFunctor *f, std::vector<FullParticleCell<Particle_T>> &particleBuffers) {
   // we can not use collapse here without locks, otherwise races would occur.
-  AUTOPAS_OPENMP(parallel for)
+  AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
   for (size_t i = 0; i < particleBuffers.size(); ++i) {
     for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
       auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
@@ -1641,7 +1641,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferHaloBufferAoS(
     PairwiseFunctor *f, std::vector<FullParticleCell<Particle_T>> &particleBuffers,
     std::vector<FullParticleCell<Particle_T>> &haloParticleBuffers) {
   // Here, phase / color based parallelism turned out to be more efficient than tasks
-  AUTOPAS_OPENMP(parallel)
+  AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads()))
   for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
     AUTOPAS_OPENMP(for)
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
@@ -1663,7 +1663,7 @@ void LogicHandler<Particle_T>::remainderHelperBufferHaloBufferSoA(
     PairwiseFunctor *f, std::vector<FullParticleCell<Particle_T>> &particleBuffers,
     std::vector<FullParticleCell<Particle_T>> &haloParticleBuffers) {
   // Here, phase / color based parallelism turned out to be more efficient than tasks
-  AUTOPAS_OPENMP(parallel)
+  AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads()))
   for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
     AUTOPAS_OPENMP(for)
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
@@ -1761,7 +1761,7 @@ template <class TriwiseFunctor>
 void LogicHandler<Particle_T>::remainderHelper3bBufferBufferBufferAoS(const std::vector<Particle_T *> &bufferParticles,
                                                                       const size_t numOwnedBufferParticles,
                                                                       TriwiseFunctor *f) {
-  AUTOPAS_OPENMP(parallel for)
+  AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto i = 0; i < numOwnedBufferParticles; ++i) {
     Particle_T &p1 = *bufferParticles[i];
 
@@ -1791,7 +1791,7 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferBufferContainerAoS(
   const auto interactionLengthInv = 1. / container.getInteractionLength();
   const double cutoff = container.getCutoff();
 
-  AUTOPAS_OPENMP(parallel for)
+  AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto i = 0; i < bufferParticles.size(); ++i) {
     Particle_T &p1 = *bufferParticles[i];
     const auto pos = p1.getR();
@@ -1965,6 +1965,9 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
+  if (autoTuner.getCurrentConfig().threadCount != 0) {
+    autopas_set_preferred_num_threads(autoTuner.getCurrentConfig().threadCount);
+  }
   const IterationMeasurements measurements = computeInteractions(*functor, *traversalPtr);
 
   /// Debug Output

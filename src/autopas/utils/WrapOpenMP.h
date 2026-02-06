@@ -42,6 +42,18 @@ namespace autopas {
  */
 #define AUTOPAS_OPENMP(args) AUTOPAS_DO_PRAGMA(omp args)
 
+extern int _autopas_prefered_num_threads;
+/**
+ * Set the number of threads to use in OpenMP for loop annotations
+ * @param n the number of threads
+ */
+inline void autopas_set_preferred_num_threads(int n) {}
+/**
+ * Get the number of threads to use in OpenMP for loop annotations
+ * @return the number of threads
+ */
+inline int autopas_get_preferred_num_threads() { return 1; }
+
 /**
  * Wrapper for omp_get_thread_num().
  * @return Id of the current thread.
@@ -124,6 +136,17 @@ class AutoPasLock {
  * Empty macro to throw away any arguments.
  */
 #define AUTOPAS_OPENMP(args)
+
+/**
+ * Set the number of threads to use in OpenMP for loop annotations
+ * @param n the number of threads (Ignored without OpenMP support)
+ */
+inline void autopas_set_preferred_num_threads(int n) {}
+/**
+ * Get the number of threads to use in OpenMP for loop annotations
+ * @return the number of threads (Always 1 without OpenMP support)
+ */
+inline int autopas_get_preferred_num_threads() { return 1; }
 
 /**
  * Dummy for omp_set_lock() when no OpenMP is available.

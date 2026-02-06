@@ -570,7 +570,7 @@ bool Simulation::calculateTriwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer) num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }

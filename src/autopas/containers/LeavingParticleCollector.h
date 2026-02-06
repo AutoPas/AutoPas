@@ -100,7 +100,7 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   // loops without having a barrier between outer loop iterations.
   // The way this works is that all threads iterate the outer loop but due to the way the iterators are parallelized,
   // each thread only picks its iterations of the inner loops, hence nothing is done multiple times.
-  AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : leavingParticles))
+  AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : leavingParticles) num_threads(autopas::autopas_get_preferred_num_threads()))
   for (const auto &[regionStart, regionEnd] : haloVolumes) {
     for (auto iter = container.getRegionIterator(regionStart, regionEnd, autopas::IteratorBehavior::ownedOrHalo);
          iter.isValid(); ++iter) {

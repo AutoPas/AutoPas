@@ -225,7 +225,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     }
     // Step 2: Remove particles from _towers
     bool deletedSomething = false;
-    AUTOPAS_OPENMP(parallel for reduction(|| : deletedSomething))
+    AUTOPAS_OPENMP(parallel for reduction(|| : deletedSomething) num_threads(autopas::autopas_get_preferred_num_threads()))
     // Thanks to clang 13 this has to be a index based loop instead of a range based
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
       auto &tower = _towerBlock[i];
@@ -366,12 +366,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     // First delete all halo particles.
     this->deleteHaloParticles();
     // Delete dummy particles.
-    AUTOPAS_OPENMP(parallel for)
+    AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
     for (size_t i = 0ul; i < _towerBlock.size(); ++i) {
       _towerBlock[i].deleteDummyParticles();
     }
     // Delete dummy particles also from the _particlesToAdd vector
-    AUTOPAS_OPENMP(parallel for)
+    AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
     for (size_t i = 0ul; i < _particlesToAdd.size(); ++i) {
       _particlesToAdd[i].erase(std::remove_if(_particlesToAdd[i].begin(), _particlesToAdd[i].end(),
                                               [](const auto &p) { return p.isDummy(); }),
@@ -384,7 +384,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
     AUTOPAS_OPENMP(declare reduction(
         vecMergeParticle : std::vector<Particle_T> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
-    AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : invalidParticles)) {
+    AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : invalidParticles) num_threads(autopas::autopas_get_preferred_num_threads())) {
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
           invalidParticles.push_back(*iter);
@@ -891,7 +891,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   void loadParticlesIntoSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
     /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    AUTOPAS_OPENMP(parallel for schedule(dynamic) num_threads(autopas::autopas_get_preferred_num_threads()))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].loadSoA(functor);
     }
@@ -906,7 +906,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   void extractParticlesFromSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
     /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    AUTOPAS_OPENMP(parallel for schedule(dynamic) num_threads(autopas::autopas_get_preferred_num_threads()))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].extractSoA(functor);
     }
@@ -1037,7 +1037,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     const auto towersPerDimX = _towerBlock.getTowersPerDim()[0];
     const auto towersPerDimY = _towerBlock.getTowersPerDim()[1];
     /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2))
+    AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2) num_threads(autopas::autopas_get_preferred_num_threads()))
     for (size_t x = 0; x < towersPerDimX; x++) {
       for (size_t y = 0; y < towersPerDimY; y++) {
         auto &tower = _towerBlock.getTowerByIndex2D(x, y);

@@ -108,7 +108,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
     if (this->_cells) {
       auto &cells = *(this->_cells);
       /// @todo find a condition on when to use omp or when it is just overhead
-      AUTOPAS_OPENMP(parallel for)
+      AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.storeDataLayout(cells[i]);
       }
@@ -128,7 +128,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
     if (this->_cells) {
       auto &cells = *(this->_cells);
       /// @todo find a condition on when to use omp or when it is just overhead
-      AUTOPAS_OPENMP(parallel for)
+      AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.loadDataLayout(cells[i]);
       }
