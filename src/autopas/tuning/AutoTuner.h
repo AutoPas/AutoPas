@@ -274,6 +274,11 @@ class AutoTuner {
   bool tuneConfiguration();
 
   /**
+   * Selects the best configuration for the current container from the evidence collection.
+   */
+  void selectBestConfiguration();
+
+  /**
    * Restricts the tuning process to a specific container type.
    * Configurations using other containers will be ignored/filtered out during tuning.
    * @param container The container type to allow.
@@ -290,13 +295,6 @@ class AutoTuner {
    * Increments the tuning phase counter by one.
    */
   void incrementTuningPhase();
-
-  /**
-   * Manually set the AutoTuners tuning state.
-   * Todo: Can this be removed?
-   * @param tuningState
-   */
-  void setTuningState(bool tuningState);
 
  private:
   /**

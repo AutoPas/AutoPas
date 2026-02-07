@@ -242,9 +242,7 @@ std::vector<Particle_T> AutoPas<Particle_T>::resizeBox(const std::array<double, 
 
 template <class Particle_T>
 void AutoPas<Particle_T>::forceRetune() {
-  for (auto &[interaction, tuner] : _tunerManager->getAutoTuners()) {
-    tuner->forceRetune();
-  }
+  _tunerManager->forceRetune();
 }
 
 template <class Particle_T>
@@ -357,12 +355,8 @@ const autopas::ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getC
 }
 
 template <class Particle_T>
-bool AutoPas<Particle_T>::searchSpaceIsTrivial() {
-  bool isTrivial = true;
-  for (auto &[interaction, tuner] : _tunerManager->getAutoTuners()) {
-    isTrivial = isTrivial and tuner->searchSpaceIsTrivial();
-  }
-  return isTrivial;
+bool AutoPas<Particle_T>::searchSpaceIsTrivial() const {
+  return _tunerManager->allSearchSpacesAreTrivial();
 }
 
 }  // namespace autopas

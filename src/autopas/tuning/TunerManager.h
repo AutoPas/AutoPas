@@ -61,6 +61,11 @@ class TunerManager {
   bool tuningPhaseJustFinished() const;
 
   /**
+   * Force all AutoTuners to start a new tuning phase immediately.
+   */
+  void forceRetune();
+
+  /**
    * @return A reference to the map of AutoTuners.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &getAutoTuners() { return _autoTuners; }

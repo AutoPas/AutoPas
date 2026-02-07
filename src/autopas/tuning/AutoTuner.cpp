@@ -181,16 +181,23 @@ bool AutoTuner::tuneConfiguration() {
   if (_configQueue.empty()) {
     // If the queue is empty we are done tuning.
     _endOfTuningPhase = true;
-    const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase, _containerConstraint);
-    _configQueue.push_back(optConf);
-    _isTuning = false;
-    // Fill up sample buffer to indicate we are not collecting samples anymore.
-    _samplesRebuildingNeighborLists.resize(_maxSamples);
+    selectBestConfiguration();
   }
   tuningTimer.stop();
 
   _earlyStoppingOfResampling = false;
   return _isTuning;
+}
+
+void AutoTuner::selectBestConfiguration() {
+  // If there are still queued up configurations, clear them.
+  _configQueue.clear();
+  // Find and push_back the optimal configuration for the current container.
+  const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase, _containerConstraint);
+  _configQueue.push_back(optConf);
+  _isTuning = false;
+  // Fill up sample buffer to indicate we are not collecting samples anymore.
+  _samplesRebuildingNeighborLists.resize(_maxSamples);
 }
 
 const Configuration &AutoTuner::getCurrentConfig() const {
@@ -451,7 +458,7 @@ void AutoTuner::incrementTuningPhase() {
   }
   // New tuning is about to begin
   _requiresRebuild = true;
+  // Incrementing the tuning phase means we are about to start tuning.
+  _isTuning = true;
 }
-
-void AutoTuner::setTuningState(const bool tuningState) { _isTuning = tuningState; }
 }  // namespace autopas

@@ -29,7 +29,7 @@ Configuration TunerManager::rejectConfig(const Configuration &configuration, boo
         _autoTuners.at(configuration.interactionType)->rejectConfig(configuration, indefinitely);
     return newConfiguration;
 
-  } catch (utils::ExceptionHandler::AutoPasException &e) {
+  } catch (utils::ExceptionHandler::AutoPasException) {
     // Rejected config was the only one for this container
     rejectCurrentContainer();
     return _autoTuners.at(configuration.interactionType)->getCurrentConfig();
@@ -51,6 +51,12 @@ bool TunerManager::allSearchSpacesAreTrivial() const {
 }
 
 bool TunerManager::tuningPhaseJustFinished() const { return _tuningJustFinished; }
+
+void TunerManager::forceRetune() {
+  for (const auto &autoTuner : _autoTuners | std::views::values) {
+    autoTuner->forceRetune();
+  }
+}
 
 void TunerManager::setCommonContainerOption() {
   if (_autoTuners.empty()) return;
@@ -97,7 +103,6 @@ void TunerManager::bumpTunerCounters() {
     autoTuner->bumpIterationCounters();
     if (newTuningPhaseStart) {
       autoTuner->incrementTuningPhase();
-      autoTuner->setTuningState(true);
     }
   }
 }
@@ -167,9 +172,7 @@ void TunerManager::selectBestContainer() {
 
   for (const auto &tuner : _autoTuners | std::views::values) {
     tuner->setContainerConstraint(bestContainer);
-    // Tune one more time with empty configQueue, which makes the AutoTuner select the best configuration.
-    tuner->setTuningState(true);
-    tuner->tuneConfiguration();
+    tuner->selectBestConfiguration();
     _tuningJustFinished = true;
   }
 }
