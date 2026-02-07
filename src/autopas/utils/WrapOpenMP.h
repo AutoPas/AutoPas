@@ -47,12 +47,12 @@ extern int _autopas_prefered_num_threads;
  * Set the number of threads to use in OpenMP for loop annotations
  * @param n the number of threads
  */
-inline void autopas_set_preferred_num_threads(int n) {}
+inline void autopas_set_preferred_num_threads(int n) { _autopas_prefered_num_threads = n; }
 /**
  * Get the number of threads to use in OpenMP for loop annotations
  * @return the number of threads
  */
-inline int autopas_get_preferred_num_threads() { return 1; }
+inline int autopas_get_preferred_num_threads() { return _autopas_prefered_num_threads; }
 
 /**
  * Wrapper for omp_get_thread_num().
