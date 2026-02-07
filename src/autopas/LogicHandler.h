@@ -162,7 +162,7 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
-    _tunerManager->bumpTunerCounters();
+    _tunerManager->updateAutoTuners();
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
@@ -1891,7 +1891,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     autoTuner.receiveLiveInfo(info);
   }
 
-  auto [configuration, stillTuning] = autoTuner.getNextConfig();
+  auto configuration = autoTuner.getCurrentConfig();
+  auto stillTuning = autoTuner.inTuningPhase();
 
   // loop as long as we don't get a valid configuration
   do {
@@ -1901,7 +1902,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
-    std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
+    configuration = _tunerManager->rejectConfig(configuration, rejectIndefinitely);
+    stillTuning = autoTuner.inTuningPhase();
   } while (true);
 }
 
@@ -1947,7 +1949,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
   auto &autoTuner = *_tunerManager->getAutoTuners()[interactionType];
-  autoTuner.logTuningResult(stillTuning, tuningTimer.getTotalTime());
+  autoTuner.logTuningResult(tuningTimer.getTotalTime());
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -2043,6 +2045,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
                         containerInfo != _currentContainerSelectorInfo)) {
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
+    _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};

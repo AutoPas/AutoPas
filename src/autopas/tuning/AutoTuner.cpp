@@ -40,12 +40,16 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
-      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
+      _energySensor(utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _pdBinDensityStdDevOfLastTenIterations.reserve(10);
   _pdBinMaxDensityOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {
-    autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
+    utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
+  }
+  // AutoTuner will start out with tuning if there are more than one configuration.
+  if (_searchSpace.size() > 1) {
+    _isTuning = true;
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
   AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening {}.", _useLOESSSmoothening ? "enabled" : "disabled");
@@ -61,7 +65,7 @@ void AutoTuner::addDomainSimilarityStatistics(double pdBinDensityStdDev, double 
   _pdBinMaxDensityOfLastTenIterations.push_back(pdBinMaxDensity);
 }
 
-void AutoTuner::logTuningResult(bool tuningIteration, long tuningTime) const {
+void AutoTuner::logTuningResult(long tuningTime) const {
   // only log if we are at the end of a tuning phase
   if (_endOfTuningPhase) {
     // This string is part of several older scripts, hence it is not recommended to change it.
@@ -87,6 +91,19 @@ void AutoTuner::forceRetune() {
 bool AutoTuner::tuneConfiguration() {
   utils::Timer tuningTimer;
   tuningTimer.start();
+
+  _requiresRebuild = false;
+  // If we are not (yet) tuning or there is nothing to tune return immediately.
+  if (not inTuningPhase()) {
+    return false;
+  }
+  if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
+    // If we are still collecting samples from one config return immediately.
+    return true;
+  }
+
+  // We are looking for a new config, so we will require a rebuild
+  _requiresRebuild = true;
 
   // We finished collection samples for this config so remove it from the queue
   _configQueue.pop_back();
@@ -164,7 +181,7 @@ bool AutoTuner::tuneConfiguration() {
   if (_configQueue.empty()) {
     // If the queue is empty we are done tuning.
     _endOfTuningPhase = true;
-    const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase);
+    const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase, _containerConstraint);
     _configQueue.push_back(optConf);
     _isTuning = false;
     // Fill up sample buffer to indicate we are not collecting samples anymore.
@@ -182,22 +199,6 @@ const Configuration &AutoTuner::getCurrentConfig() const {
         "AutoTuner::getCurrentConfig(): Cannot get the current Configuration as the config queue is empty");
   }
   return _configQueue.back();
-}
-
-std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
-  // If we are not (yet) tuning or there is nothing to tune return immediately.
-  if (not inTuningPhase()) {
-    return {getCurrentConfig(), false};
-  } else if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
-    // If we are still collecting samples from one config return immediately.
-    return {getCurrentConfig(), true};
-  } else {
-    // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
-    // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
-    const bool stillTuning = tuneConfiguration();
-    _earlyStoppingOfResampling = false;
-    return {getCurrentConfig(), stillTuning};
-  }
 }
 
 std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely) {
@@ -221,16 +222,7 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
                                             [](const auto &conf) { return conf.toShortString(false); }));
   });
 
-  // let all strategies optimize the queue in the order they are defined.
-  // If any is still tuning consider the tuning phase still ongoing.
-  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
-    tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
-    AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): (Size={}) {}",
-               tuningStrategy->getOptionType().to_string(), _configQueue.size(),
-               utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
-                                            [](const auto &conf) { return conf.toShortString(false); }));
-  });
-  const auto stillTuning = not _configQueue.empty();
+  const auto stillTuning = tuneConfiguration();
   return {getCurrentConfig(), stillTuning};
 }
 
@@ -400,11 +392,7 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
-bool AutoTuner::inTuningPhase() const {
-  // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
-  // been called yet.
-  return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
-}
+bool AutoTuner::inTuningPhase() const { return (_isTuning or _forceRetune) and not searchSpaceIsTrivial(); }
 
 bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
 

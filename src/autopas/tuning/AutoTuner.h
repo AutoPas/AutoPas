@@ -128,13 +128,6 @@ class AutoTuner {
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
   /**
-   * Ask the tuner for the next configuration to use.
-   * This either returns the already selected config or triggers a step of the tuning process.
-   * @return Tuple<Next configuration to use, still tuning>.
-   */
-  [[nodiscard]] std::tuple<Configuration, bool> getNextConfig();
-
-  /**
    * Tell the tuner that the given config is not applicable.
    * Since this operation might change the suggestion what configuration to try next, this next suggestion is returned.
    *
@@ -162,10 +155,9 @@ class AutoTuner {
 
   /**
    * After a tuning phase has finished, write the result to a file.
-   * @param tuningIteration
    * @param tuningTime
    */
-  void logTuningResult(bool tuningIteration, long tuningTime) const;
+  void logTuningResult(long tuningTime) const;
 
   /**
    * Initialize pmt sensor.
