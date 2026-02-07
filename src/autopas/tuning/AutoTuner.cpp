@@ -47,10 +47,6 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
   if (_searchSpace.empty()) {
     utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
-  // AutoTuner will start out with tuning if there are more than one configuration.
-  if (_searchSpace.size() > 1) {
-    _isTuning = true;
-  }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
   AutoPasLog(DEBUG, "AutoTuner constructed with LOESS Smoothening {}.", _useLOESSSmoothening ? "enabled" : "disabled");
 }
@@ -99,6 +95,9 @@ bool AutoTuner::tuneConfiguration() {
   }
   if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
     // If we are still collecting samples from one config return immediately.
+    if (getCurrentNumSamples() == 0) {
+      _requiresRebuild = true;
+    }
     return true;
   }
 
@@ -316,6 +315,14 @@ void AutoTuner::bumpIterationCounters() {
   ++_iteration;
   AutoPasLog(DEBUG, "Iteration: {}", _iteration);
   _endOfTuningPhase = false;
+
+  if (_iteration % _tuningInterval == 0) {
+    ++_tuningPhase;
+    if (_isTuning and not _iteration == 0) {
+      AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
+                 _tuningInterval);
+    }
+  }
 }
 
 bool AutoTuner::willRebuildNeighborLists() const { return _requiresRebuild; }
@@ -399,7 +406,11 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
-bool AutoTuner::inTuningPhase() const { return (_isTuning or _forceRetune) and not searchSpaceIsTrivial(); }
+bool AutoTuner::inTuningPhase() const {
+  // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
+  // been called yet.
+  return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
+}
 
 bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
 
@@ -448,17 +459,5 @@ std::set<ContainerOption> AutoTuner::getSearchSpaceContainers() const {
     containers.insert(conf.container);
   }
   return containers;
-}
-
-void AutoTuner::incrementTuningPhase() {
-  ++_tuningPhase;
-  if (_isTuning) {
-    AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
-               _tuningInterval);
-  }
-  // New tuning is about to begin
-  _requiresRebuild = true;
-  // Incrementing the tuning phase means we are about to start tuning.
-  _isTuning = true;
 }
 }  // namespace autopas

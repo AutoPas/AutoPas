@@ -108,7 +108,7 @@ class TunerManager {
    * Marks the current container as invalid as at least one autotuner couldn't find a valid configuration with it.
    * @return true if a new container is available, false if we ran out of options.
    */
-  void rejectCurrentContainer();
+  bool rejectCurrentContainer();
 
   /**
    * All AutoTuners used in this instance of AutoPas.

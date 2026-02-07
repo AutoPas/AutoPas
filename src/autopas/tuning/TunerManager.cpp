@@ -29,9 +29,12 @@ Configuration TunerManager::rejectConfig(const Configuration &configuration, boo
         _autoTuners.at(configuration.interactionType)->rejectConfig(configuration, indefinitely);
     return newConfiguration;
 
-  } catch (utils::ExceptionHandler::AutoPasException) {
+  } catch (utils::ExceptionHandler::AutoPasException &exception) {
     // Rejected config was the only one for this container
-    rejectCurrentContainer();
+    bool couldChangeContainer = rejectCurrentContainer();
+    if (not couldChangeContainer) {
+      throw;
+    }
     return _autoTuners.at(configuration.interactionType)->getCurrentConfig();
   }
 }
@@ -56,6 +59,8 @@ void TunerManager::forceRetune() {
   for (const auto &autoTuner : _autoTuners | std::views::values) {
     autoTuner->forceRetune();
   }
+  _currentContainerIndex = 0;
+  applyContainerConstraint(_commonContainerOptions[_currentContainerIndex]);
 }
 
 void TunerManager::setCommonContainerOption() {
@@ -97,21 +102,20 @@ void TunerManager::applyContainerConstraint(ContainerOption containerOption) {
 
 void TunerManager::bumpTunerCounters() {
   ++_iteration;
-  const bool newTuningPhaseStart = _iteration % _tuningInterval == 0;
+  bool wasStillTuning = false;
 
   for (const auto &autoTuner : _autoTuners | std::views::values) {
+    wasStillTuning = wasStillTuning or autoTuner->inTuningPhase();
     autoTuner->bumpIterationCounters();
-    if (newTuningPhaseStart) {
-      autoTuner->incrementTuningPhase();
-    }
+  }
+  // New tuning phase is starting
+  if (_iteration % _tuningInterval == 0 and not wasStillTuning) {
+    _currentContainerIndex = 0;
+    applyContainerConstraint(_commonContainerOptions[_currentContainerIndex]);
   }
 }
 
 void TunerManager::tuneConfigurations() {
-  if (allSearchSpacesAreTrivial()) {
-    return;
-  }
-
   if (_tuningJustFinished) {
     _tuningJustFinished = false;
   }
@@ -167,23 +171,23 @@ void TunerManager::selectBestContainer() {
     }
   }
 
-  AutoPasLog(INFO, "TunerManager: Tuning Finished. Best Container is {} with total time {} ns.",
+  AutoPasLog(DEBUG, "TunerManager: Tuning Finished. Best Container is {} with total time {} ns.",
              bestContainer.to_string(), minTime);
 
   for (const auto &tuner : _autoTuners | std::views::values) {
     tuner->setContainerConstraint(bestContainer);
     tuner->selectBestConfiguration();
-    _tuningJustFinished = true;
   }
+  _tuningJustFinished = true;
 }
 
-void TunerManager::rejectCurrentContainer() {
+bool TunerManager::rejectCurrentContainer() {
   // Remove container from tuning phases
   _commonContainerOptions.erase(_commonContainerOptions.begin() + _currentContainerIndex);
 
   if (_commonContainerOptions.empty()) {
     // The only allowed container option was rejected.
-    throw utils::ExceptionHandler::AutoPasException("No configuration available for the allowed containers.");
+    return false;
   }
 
   if (_currentContainerIndex < _commonContainerOptions.size()) {
@@ -193,6 +197,7 @@ void TunerManager::rejectCurrentContainer() {
     // Last container was rejected, so tuning is finished
     selectBestContainer();
   }
+  return true;
 }
 
 }  // namespace autopas

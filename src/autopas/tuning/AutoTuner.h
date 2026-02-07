@@ -291,11 +291,6 @@ class AutoTuner {
    */
   std::set<ContainerOption> getSearchSpaceContainers() const;
 
-  /**
-   * Increments the tuning phase counter by one.
-   */
-  void incrementTuningPhase();
-
  private:
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
