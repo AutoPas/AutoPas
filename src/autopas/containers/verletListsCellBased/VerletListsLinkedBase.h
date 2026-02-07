@@ -54,15 +54,6 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
     }
   }
 
-  /**
-   * Set the number of time-steps since last neighbor list rebuild
-   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
-   */
-  void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
-    this->_stepsSinceLastRebuild = stepsSinceLastRebuild;
-    _linkedCells.setStepsSinceLastRebuild(stepsSinceLastRebuild);
-  }
-
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
   }

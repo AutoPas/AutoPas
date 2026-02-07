@@ -50,6 +50,8 @@ bool TunerManager::allSearchSpacesAreTrivial() const {
   return true;
 }
 
+bool TunerManager::tuningPhaseJustFinished() const { return _tuningJustFinished; }
+
 void TunerManager::setCommonContainerOption() {
   if (_autoTuners.empty()) return;
 

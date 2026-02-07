@@ -169,19 +169,15 @@ class LogicHandler {
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (_functorCalls > 0) {
-      // Called before bumpIterationCounters as it would return false after that.
-      // if (_tunerManager->inLastTuningIteration()) {
-      //   _iterationAtEndOfLastTuningPhase = _iteration;
-      // }
-      // We will do a rebuild in this timestep
-      if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-        _stepsSinceLastListRebuild = 0;
-      }
-      ++_stepsSinceLastListRebuild;
-      _currentContainer->setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
-      ++_iteration;
+    if (_tunerManager->tuningPhaseJustFinished()) {
+      _iterationAtEndOfLastTuningPhase = _iteration;
     }
+    // We will do a rebuild in this timestep
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+      _stepsSinceLastListRebuild = 0;
+    }
+    ++_stepsSinceLastListRebuild;
+    ++_iteration;
 
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
@@ -548,19 +544,6 @@ class LogicHandler {
    * @return
    */
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
-
-  /**
-   * Check if other autotuners for any other interaction types are still in a tuning phase.
-   * @param interactionType
-   * @return bool whether other tuners are still tuning.
-   */
-  bool checkTuningStates(const InteractionTypeOption &interactionType) {
-    // Goes over all pairs in _autoTunerRefs and returns true as soon as one is `inTuningPhase()`.
-    // The tuner associated with the given interaction type is ignored.
-    return std::any_of(
-        std::begin(_tunerManager->getAutoTuners()), std::end(_tunerManager->getAutoTuners()),
-        [&](const auto &entry) { return not(entry.first == interactionType) and entry.second->inTuningPhase(); });
-  }
 
   /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
@@ -1059,22 +1042,18 @@ class LogicHandler {
   /**
    * Steps since last rebuild
    */
-  unsigned int _stepsSinceLastListRebuild{0};
-
-  /**
-   * Total number of functor calls of all interaction types.
-   */
-  unsigned int _functorCalls{0};
+  size_t _stepsSinceLastListRebuild{0};
 
   /**
    * The current iteration number.
+   * Initialized as max such that ++_iteration == 0 for the first iteration.
    */
-  unsigned int _iteration{0};
+  size_t _iteration{std::numeric_limits<size_t>::max()};
 
   /**
    * The iteration number at the end of last tuning phase.
    */
-  unsigned int _iterationAtEndOfLastTuningPhase{0};
+  size_t _iterationAtEndOfLastTuningPhase{0};
 
   /**
    * Atomic tracker of the number of owned particles.
@@ -2006,7 +1985,6 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   } else {
     AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
   }
-  ++_functorCalls;
   return stillTuning;
 }
 

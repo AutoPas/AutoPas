@@ -108,9 +108,8 @@ class AutoTuner {
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
-   * @param needToWait If tuner should wait for other tuners.
    */
-  void bumpIterationCounters(bool needToWait = false);
+  void bumpIterationCounters();
 
   /**
    * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
@@ -333,17 +332,16 @@ class AutoTuner {
 
   /**
    * Counter for the current simulation iteration.
-   * The first iteration has number 0.
+   * Initialized as max, so ++_iteration == 0 for the first iteration.
    */
-  size_t _iteration{0};
+  size_t _iteration{std::numeric_limits<size_t>::max()};
 
   /**
    * The number of the current tuning phase.
    * If we are currently between phases this is the number of the last phase.
-   * The first tuning phase has number 0.
-   * See bumpIterationCounters() for more details.
+   * Initialized as max, so ++_tuningPhase == 0 for the first tuning phase.
    */
-  size_t _tuningPhase{0};
+  size_t _tuningPhase{std::numeric_limits<size_t>::max()};
 
   /**
    * Fixed interval at which tuning phases are started.

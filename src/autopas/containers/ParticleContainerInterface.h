@@ -276,22 +276,6 @@ class ParticleContainerInterface {
   [[nodiscard]] virtual double getVerletSkin() const = 0;
 
   /**
-   * Return the number of time-steps since last neighbor list rebuild
-   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
-   * return 0
-   * @return steps since last rebuild
-   */
-  [[nodiscard]] virtual size_t getStepsSinceLastRebuild() const { return _stepsSinceLastRebuild; }
-
-  /**
-   * Set the number of time-steps since last neighbor list rebuild
-   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
-   */
-  virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
-    _stepsSinceLastRebuild = stepsSinceLastRebuild;
-  }
-
-  /**
    * Return the interaction length (cutoff+skin) of the container.
    * @return interaction length
    */
@@ -414,13 +398,6 @@ class ParticleContainerInterface {
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
  protected:
-  /**
-   * Stores the number of time-steps since last neighbor list rebuild
-   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
-   * be 0
-   */
-  size_t _stepsSinceLastRebuild{0};
-
   /**
    * Skin distance a particle is allowed to move in one time-step.
    */

@@ -56,6 +56,11 @@ class TunerManager {
   bool allSearchSpacesAreTrivial() const;
 
   /**
+   * @return True, if the tuning phase just finished for all AutoTuners.
+   */
+  bool tuningPhaseJustFinished() const;
+
+  /**
    * @return A reference to the map of AutoTuners.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &getAutoTuners() { return _autoTuners; }

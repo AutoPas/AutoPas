@@ -305,7 +305,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   }
 }
 
-void AutoTuner::bumpIterationCounters(bool needToWait) {
+void AutoTuner::bumpIterationCounters() {
   ++_iteration;
   AutoPasLog(DEBUG, "Iteration: {}", _iteration);
   _endOfTuningPhase = false;
