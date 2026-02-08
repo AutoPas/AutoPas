@@ -238,27 +238,27 @@ class VerletListHelpers {
       if (soa.size() == 0) return;
       //LIKWID_MARKER_START("distance calculation - single cell");
 
-      const double cutoffSquared = this->_interactionLengthSquared;
+      const double interactionLength2 = this->_interactionLengthSquared;
 
-      const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
-      const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
-      const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+      const double *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+      const double *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+      const double *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
       auto const startIndex = soa.getParticlesIndexInSoAStart();
 
-      size_t numPart = soa.size();
-      for (size_t i = 0; i < numPart; ++i) {
+      size_t numParticlesCell = soa.size();
+      for (size_t i = 0; i < numParticlesCell; ++i) {
         auto &currentListSoAI = _verletListsSoA[startIndex + i];
 
-        const double xi = xptr[i];
-        const double yi = yptr[i];
-        const double zi = zptr[i];
+        const double xI = xPtr[i];
+        const double yI = yPtr[i];
+        const double zI = zPtr[i];
 
-        for (size_t j = i + 1; j < numPart; ++j) {
-          const double drx = xi - xptr[j];
-          const double dry = yi - yptr[j];
-          const double drz = zi - zptr[j];
+        for (size_t j = i + 1; j < numParticlesCell; ++j) {
+          const double drX = xI - xPtr[j];
+          const double drY = yI - yPtr[j];
+          const double drZ = zI - zPtr[j];
 
-          if (drx*drx + dry*dry + drz*drz < cutoffSquared) {
+          if (drX*drX + drY*drY + drZ*drZ < interactionLength2) {
             currentListSoAI.push_back(startIndex + j);
             if (not newton3) {
               // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
@@ -279,42 +279,56 @@ class VerletListHelpers {
       if (soa1.size() == 0 || soa2.size() == 0) return;
       // LIKWID_MARKER_START("distance calculation - cell pair - SoA");
 
-      const double cutoffSquared = this->_interactionLengthSquared;
+      const double interactionLength2 = this->_interactionLengthSquared;
 
-      const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
-      const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
-      const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+      const double *const __restrict xPtr1 = soa1.template begin<Particle_T::AttributeNames::posX>();
+      const double *const __restrict yPtr1 = soa1.template begin<Particle_T::AttributeNames::posY>();
+      const double *const __restrict zPtr1 = soa1.template begin<Particle_T::AttributeNames::posZ>();
       auto const startIndex1 = soa1.getParticlesIndexInSoAStart();
 
-      const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
-      const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
-      const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+      const double *const __restrict xPtr2 = soa2.template begin<Particle_T::AttributeNames::posX>();
+      const double *const __restrict yPtr2 = soa2.template begin<Particle_T::AttributeNames::posY>();
+      const double *const __restrict zPtr2 = soa2.template begin<Particle_T::AttributeNames::posZ>();
       auto const startIndex2 = soa2.getParticlesIndexInSoAStart();
 
-      size_t numPart1 = soa1.size();
-      size_t numPart2 = soa2.size();
+      size_t numParticlesCell1 = soa1.size();
+      size_t numParticlesCell2 = soa2.size();
 
       thread_local std::vector<size_t> verletTemp;
-      verletTemp.resize(numPart2);
+      verletTemp.resize(numParticlesCell2);
+      constexpr size_t vecSize = 48;
+      std::array<size_t, vecSize> maskArr;
 
-      for (size_t i = 0; i < numPart1; ++i) {
+      for (size_t i = 0; i < numParticlesCell1; ++i) {
         size_t tempPos = 0;
-        auto  &currentListSoA = _verletListsSoA[startIndex1 + i];
-        const double x1 = x1ptr[i];
-        const double y1 = y1ptr[i];
-        const double z1 = z1ptr[i];
+        auto &currentListSoA = _verletListsSoA[startIndex1 + i];
 
-        for (size_t j = 0; j < numPart2; ++j) {
-          const double drx = x1 - x2ptr[j];
-          const double dry = y1 - y2ptr[j];
-          const double drz = z1 - z2ptr[j];
+        const double x1 = xPtr1[i];
+        const double y1 = yPtr1[i];
+        const double z1 = zPtr1[i];
 
-          const bool mask = drx*drx + dry*dry + drz*drz < cutoffSquared;
-          verletTemp[tempPos] = startIndex2 + j;
-          tempPos += mask;
+        for (size_t jOff = 0; jOff < numParticlesCell2; jOff += vecSize) {
+          const size_t traversalBlock = std::min(vecSize, numParticlesCell2 - jOff);
+
+          #pragma omp simd
+          for (size_t tempJ = 0; tempJ < traversalBlock; ++tempJ) {
+            const size_t j = jOff + tempJ;
+            const double drX = x1 - xPtr2[j];
+            const double drY = y1 - yPtr2[j];
+            const double drZ = z1 - zPtr2[j];
+            const double dr2 = drX*drX + drY*drY + drZ*drZ;
+            maskArr[tempJ] = (dr2 < interactionLength2);
+          }
+
+          for (size_t tempJ = 0; tempJ < traversalBlock; ++tempJ) {
+            verletTemp[tempPos] = startIndex2 + (jOff + tempJ);
+            tempPos += maskArr[tempJ];
+          }
         }
 
-        currentListSoA.insert(currentListSoA.end(), verletTemp.begin(), verletTemp.begin() + tempPos);
+        currentListSoA.insert(currentListSoA.end(),
+                              verletTemp.begin(),
+                              verletTemp.begin() + tempPos);
       }
       // LIKWID_MARKER_STOP("distance calculation - cell pair - SoA");
     }
