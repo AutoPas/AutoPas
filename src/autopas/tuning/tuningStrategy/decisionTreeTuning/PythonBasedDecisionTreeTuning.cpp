@@ -103,7 +103,7 @@ std::string PythonBasedDecisionTreeTuning::getPredictionFromPython() {
     const py::object result = _decisionTreeTuningPyObj.attr("predict")(liveInfoJson.dump());
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     pythonPredictionTimer.stop();
-    AutoPasLog(TRACE, "Python prediction took {} ms.", pythonPredictionTimer.getTotalTime());
+    AutoPasLog(TRACE, "Python prediction took {} ns.", pythonPredictionTimer.getTotalTime());
 #endif
     return result.cast<std::string>();
 

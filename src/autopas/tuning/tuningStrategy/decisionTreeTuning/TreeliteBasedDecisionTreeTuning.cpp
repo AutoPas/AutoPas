@@ -130,7 +130,7 @@ std::string TreeliteBasedDecisionTreeTuning::getPredictionFromTreelite() {
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timer.stop();
-    AutoPasLog(TRACE, "Treelite prediction took {} ms.", timer.getTotalTime());
+    AutoPasLog(TRACE, "Treelite prediction took {} ns.", timer.getTotalTime());
 #endif
     return result;
 
