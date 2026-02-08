@@ -169,7 +169,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
     for (int color = 0; color < _numColors; color++) {
       unsigned int maxThreads = _aosNeighborList[color].size();
       _soaNeighborList[color].resize(maxThreads);
-      const auto numThreads = std::clamp((unsigned int) autopas::autopas_get_preferred_num_threads(), 1u, maxThreads);
+      const auto numThreads = std::clamp(static_cast<unsigned int>(autopas_get_preferred_num_threads()), 1u, maxThreads);
       AUTOPAS_OPENMP(parallel num_threads(numThreads))
       AUTOPAS_OPENMP(for schedule(static))
       for (unsigned int thread = 0; thread < maxThreads; thread++) {
@@ -211,7 +211,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
 
     _soa.resizeArrays(offsets.back());
 
-    AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
+    AUTOPAS_OPENMP(parallel for num_threads(autopas_get_preferred_num_threads()))
     for (size_t i = 0; i < cells.size(); ++i) {
       f->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
     }

@@ -62,7 +62,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
     if (this->_cells) {
       auto &cells = *(this->_cells);
       /// @todo find a condition on when to use omp or when it is just overhead
-      AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
+      AUTOPAS_OPENMP(parallel for num_threads(autopas_get_preferred_num_threads()))
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.loadDataLayout(cells[i]);
       }
@@ -76,7 +76,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
     if (this->_cells) {
       auto &cells = *(this->_cells);
       /// @todo find a condition on when to use omp or when it is just overhead
-      AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
+      AUTOPAS_OPENMP(parallel for num_threads(autopas_get_preferred_num_threads()))
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.storeDataLayout(cells[i]);
       }
@@ -133,7 +133,7 @@ inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTrav
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
-  AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads())) {
+  AUTOPAS_OPENMP(parallel num_threads(autopas_get_preferred_num_threads())) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
       AUTOPAS_OPENMP(single) {

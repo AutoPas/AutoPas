@@ -97,7 +97,7 @@ void VVLAsBuildTraversal<ParticleCell, Particle_T, PairwiseFunctor>::iterateAoS(
     VerletNeighborListAsBuild<Particle_T> &neighborList) {
   const auto &list = neighborList.getAoSNeighborList();
   const auto maxThreads = list[0].size();
-  const auto numThreads = std::clamp((size_t) autopas::autopas_get_preferred_num_threads(), 1ul, maxThreads);
+  const auto numThreads = std::clamp(static_cast<size_t>(autopas_get_preferred_num_threads()), 1ul, maxThreads);
   AUTOPAS_OPENMP(parallel num_threads(numThreads)) {
     constexpr int numColors = 8;
     for (int color = 0; color < numColors; color++) {
@@ -119,7 +119,7 @@ void VVLAsBuildTraversal<ParticleCell, Particle_T, PairwiseFunctor>::iterateSoA(
     VerletNeighborListAsBuild<Particle_T> &neighborList) {
   const auto &soaNeighborList = neighborList.getSoANeighborList();
   const auto maxThreads = soaNeighborList[0].size();
-  const auto numThreads = std::clamp((size_t) autopas::autopas_get_preferred_num_threads(), 1ul, maxThreads);
+  const auto numThreads = std::clamp(static_cast<size_t>(autopas_get_preferred_num_threads()), 1ul, maxThreads);
   AUTOPAS_OPENMP(parallel num_threads(numThreads)) {
     constexpr int numColors = 8;
     for (int color = 0; color < numColors; color++) {

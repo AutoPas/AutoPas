@@ -77,7 +77,7 @@ class VLCNeighborListInterface {
         [](const size_t &partialSum, const auto &cell) { return partialSum + cell.size(); }, 0);
     _soa.resizeArrays(offsets.back());
 
-    AUTOPAS_OPENMP(parallel for num_threads(autopas::autopas_get_preferred_num_threads()))
+    AUTOPAS_OPENMP(parallel for num_threads(autopas_get_preferred_num_threads()))
     for (size_t i = 0; i < cells.size(); ++i) {
       f->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
     }

@@ -88,7 +88,7 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
     omp_set_schedule(omp_sched_static, 1);
   }
 #endif
-  AUTOPAS_OPENMP(parallel for schedule(runtime) num_threads(autopas::autopas_get_preferred_num_threads()))
+  AUTOPAS_OPENMP(parallel for schedule(runtime) num_threads(autopas_get_preferred_num_threads()))
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();
     array<unsigned long, 3> myStartArray{0, 0, 0};
