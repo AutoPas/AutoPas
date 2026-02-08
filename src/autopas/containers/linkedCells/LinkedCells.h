@@ -519,7 +519,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
       const std::array<double, 3> &boxMax, std::array<double, 3> boxMinWithSafetyMargin,
       std::array<double, 3> boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
-    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_preferred_num_threads();
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
     // helper function to determine if the cell can even contain particles of interest to the iterator
     auto cellIsRelevant = [&]() -> bool {

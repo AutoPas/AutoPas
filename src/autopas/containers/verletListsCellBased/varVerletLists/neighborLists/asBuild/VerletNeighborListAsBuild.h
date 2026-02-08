@@ -87,7 +87,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
 
-    auto maxNumThreads = autopas_get_preferred_num_threads();
+    auto maxNumThreads = autopas_get_max_threads();
     for (int color = 0; color < _numColors; color++) {
       _aosNeighborList[color].resize(maxNumThreads);
       for (auto &colorList : _aosNeighborList[color]) {
@@ -167,12 +167,12 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
     }
 
     for (int color = 0; color < _numColors; color++) {
-      unsigned int numThreads = _aosNeighborList[color].size();
-      numThreads = std::clamp(numThreads, 1u, static_cast<unsigned int>(autopas::autopas_get_preferred_num_threads()));
-      _soaNeighborList[color].resize(numThreads);
+      unsigned int maxThreads = _aosNeighborList[color].size();
+      _soaNeighborList[color].resize(maxThreads);
+      const auto numThreads = std::clamp((unsigned int) autopas::autopas_get_preferred_num_threads(), 1u, maxThreads);
       AUTOPAS_OPENMP(parallel num_threads(numThreads))
       AUTOPAS_OPENMP(for schedule(static))
-      for (unsigned int thread = 0; thread < numThreads; thread++) {
+      for (unsigned int thread = 0; thread < maxThreads; thread++) {
         auto &currentThreadList = _soaNeighborList[color][thread];
         currentThreadList.clear();
         for (const auto &pair : _aosNeighborList[color][thread]) {

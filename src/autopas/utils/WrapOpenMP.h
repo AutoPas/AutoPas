@@ -42,18 +42,6 @@ namespace autopas {
  */
 #define AUTOPAS_OPENMP(args) AUTOPAS_DO_PRAGMA(omp args)
 
-extern int _autopas_prefered_num_threads;
-/**
- * Set the number of threads to use in OpenMP for loop annotations
- * @param n the number of threads
- */
-inline void autopas_set_preferred_num_threads(int n) { _autopas_prefered_num_threads = n; }
-/**
- * Get the number of threads to use in OpenMP for loop annotations
- * @return the number of threads
- */
-inline int autopas_get_preferred_num_threads() { return _autopas_prefered_num_threads; }
-
 /**
  * Wrapper for omp_get_thread_num().
  * @return Id of the current thread.
@@ -77,6 +65,18 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
  * @param n New max number of threads.
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
+
+inline int _autopas_preferred_num_threads = autopas_get_max_threads();
+/**
+ * Set the number of threads to use in OpenMP for loop annotations
+ * @param n the number of threads
+ */
+inline void autopas_set_preferred_num_threads(int n) { _autopas_preferred_num_threads = n; }
+/**
+ * Get the number of threads to use in OpenMP for loop annotations
+ * @return the number of threads
+ */
+inline int autopas_get_preferred_num_threads() { return _autopas_preferred_num_threads; }
 
 /**
  * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.
@@ -138,17 +138,6 @@ class AutoPasLock {
 #define AUTOPAS_OPENMP(args)
 
 /**
- * Set the number of threads to use in OpenMP for loop annotations
- * @param n the number of threads (Ignored without OpenMP support)
- */
-inline void autopas_set_preferred_num_threads(int n) {}
-/**
- * Get the number of threads to use in OpenMP for loop annotations
- * @return the number of threads (Always 1 without OpenMP support)
- */
-inline int autopas_get_preferred_num_threads() { return 1; }
-
-/**
  * Dummy for omp_set_lock() when no OpenMP is available.
  * @return Always 0.
  */
@@ -171,6 +160,17 @@ inline int autopas_get_max_threads() { return 1; }
  * Does nothing when OpenMP is disabled.
  */
 inline void autopas_set_num_threads(int /* n */) {}
+
+/**
+ * Set the number of threads to use in OpenMP for loop annotations
+ * @param n the number of threads (Ignored without OpenMP support)
+ */
+inline void autopas_set_preferred_num_threads(int n) {}
+/**
+ * Get the number of threads to use in OpenMP for loop annotations
+ * @return the number of threads (Always 1 without OpenMP support)
+ */
+inline int autopas_get_preferred_num_threads() { return 1; }
 
 /**
  * AutoPasLock for the sequential case.

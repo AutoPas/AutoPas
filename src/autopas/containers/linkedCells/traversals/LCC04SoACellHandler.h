@@ -376,7 +376,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
 
 template <class ParticleCell, class PairwiseFunctor>
 void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::resizeBuffers() {
-  const auto numThreads = static_cast<size_t>(autopas_get_preferred_num_threads());
+  const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);
     const auto cellOffsetsSize = _overlap[0] + 1;

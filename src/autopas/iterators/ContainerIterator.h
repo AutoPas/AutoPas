@@ -241,9 +241,8 @@ class ContainerIterator {
                     ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,
                     const std::array<double, 3> &regionMax)
       : _container(&container),
-        _behavior(behavior)
-        ,_vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_preferred_num_threads())
-  {
+        _behavior(behavior),
+        _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate) {
       // store pointers to all additional vectors
       _additionalVectors.insert(_additionalVectors.end(), additionalVectorsToIterate->begin(),

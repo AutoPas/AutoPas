@@ -82,7 +82,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
     auto loadEstimationTime = timer.stop();
     AutoPasLog(DEBUG, "load estimation took {} nanoseconds", loadEstimationTime);
 
-    auto numSlices = (size_t)autopas_get_preferred_num_threads();
+    auto numSlices = (size_t)autopas_get_max_threads();
     AutoPasLog(DEBUG, "{} threads available.", numSlices);
     // using greedy algorithm to assign slice thicknesses. May lead to less slices being used.
     unsigned int totalThickness = 0;

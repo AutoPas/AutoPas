@@ -99,7 +99,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       : ParticleContainerInterface<Particle_T>(skin),
         _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
-        _particlesToAdd(autopas_get_preferred_num_threads()),
+        _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
@@ -1062,7 +1062,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
     constexpr int minNumClusterPairsPerThread = 1000;
     auto numThreads =
-        std::clamp(static_cast<int>(numClusterPairs / minNumClusterPairsPerThread), 1, autopas_get_preferred_num_threads());
+        std::clamp(static_cast<int>(numClusterPairs / minNumClusterPairsPerThread), 1, autopas_get_max_threads());
 
     size_t numClusterPairsPerThread =
         std::max(static_cast<unsigned long>(std::ceil(static_cast<double>(numClusterPairs) / numThreads)), 1ul);
@@ -1178,7 +1178,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
       const std::array<double, 3> &boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
-    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_preferred_num_threads();
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
     // helper function to determine if the cell can even contain particles of interest to the iterator
     auto towerIsRelevant = [&]() -> bool {

@@ -342,7 +342,7 @@ class LiveInfo {
     infos["skin"] = skin;
     infos["rebuildFrequency"] = rebuildFrequency;
     infos["particleSize"] = sizeof(Particle_T);
-    infos["threadCount"] = static_cast<size_t>(autopas_get_preferred_num_threads());
+    infos["threadCount"] = static_cast<size_t>(autopas_get_preferred_num_threads()); // NOTE: May not be true everywhere (may use more)
 
     infos["numOwnedParticles"] = numOwnedParticles;
 

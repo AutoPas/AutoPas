@@ -469,7 +469,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
                                                     const std::array<double, 3> &boxMin,
                                                     const std::array<double, 3> &boxMax) const {
     // Find the indices for the next particle
-    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_preferred_num_threads();
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
     do {
       // advance to the next particle

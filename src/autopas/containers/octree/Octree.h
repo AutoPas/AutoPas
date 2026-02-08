@@ -493,9 +493,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       const std::array<double, 3> &boxMaxWithSafetyMargin) const {
     // TODO: parallelize at the higher tree levels. Choose tree level to parallelize via log_8(numThreads)
     const size_t minLevel = 0;
-    //        (iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_preferred_num_threads() == 1
+    //        (iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1
     //            ? 0
-    //            : static_cast<size_t>(std::ceil(std::log(static_cast<double>(autopas_get_preferred_num_threads())) /
+    //            : static_cast<size_t>(std::ceil(std::log(static_cast<double>(autopas_get_num_threads())) /
     //            std::log(8.)));
     OctreeNodeInterface<Particle_T> *currentCellInterfacePtr = currentCellPtr;
     OctreeLeafNode<Particle_T> *currentLeafCellPtr = nullptr;
@@ -542,7 +542,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
           }
           // special case: the current thread should ALSO iterate halo particles
           if ((iteratorBehavior & IteratorBehavior::halo)
-              /* FIXME: for parallelization: and ((iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_preferred_num_threads() == 1) */) {
+              /* FIXME: for parallelization: and ((iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1) */) {
             currentCellInterfacePtr = this->_cells[HALO].getRaw();
           } else {
             // don't jump to the halo tree -> set invalid parameters and return
