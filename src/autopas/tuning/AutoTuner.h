@@ -288,6 +288,7 @@ class AutoTuner {
   /**
    * Get the set of all container types present in the search space.
    * Used by the Coordinator to calculate the intersection.
+   * @return set of all container types present in the search space.
    */
   std::set<ContainerOption> getSearchSpaceContainers() const;
 

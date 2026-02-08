@@ -16,6 +16,12 @@
 
 namespace autopas {
 
+/**
+ * The TunerManager is responsible for coordinating the AutoTuner(s)
+ * In the case of multiple AutoTuners it ensures that configurations are selected with the same container for all
+ * tuners. Otherwise, neighbor lists would need to be rebuilt every time the interaction type (e.g. pairwise and
+ * triwise) is switched.
+ */
 class TunerManager {
  public:
   /**
@@ -33,8 +39,9 @@ class TunerManager {
 
   /**
    * Prepare AutoTuners for the next time step. Bumps internal counters and tunes configurations.
+   * @param currentIteration
    */
-  void updateAutoTuners();
+  void updateAutoTuners(size_t currentIteration);
 
   /**
    * Reject given configuration from the AutoTuners config queue and search space (if indefinitely==true). Also handles
@@ -83,11 +90,6 @@ class TunerManager {
   void applyContainerConstraint(ContainerOption containerOption);
 
   /**
-   * Increment iteration counters also for all AutoTuners. Should be called exactly once per time step.
-   */
-  void bumpTunerCounters();
-
-  /**
    * Let all AutoTuners tune their configuration for the time step ahead.
    */
   void tuneConfigurations();
@@ -130,11 +132,6 @@ class TunerManager {
    * Index to track the active container option during tuning.
    */
   size_t _currentContainerIndex = 0;
-
-  /**
-   * Iteration counter. Starts at max value, so ++_iteration == 0 in the first time step.
-   */
-  size_t _iteration = std::numeric_limits<size_t>::max();
 
   /**
    * New tuning phase starting at multiples of _tuningInterval.

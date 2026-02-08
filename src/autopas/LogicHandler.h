@@ -162,7 +162,9 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
-    _tunerManager->updateAutoTuners();
+    ++_iteration;
+
+    _tunerManager->updateAutoTuners(_iteration);
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
@@ -177,7 +179,6 @@ class LogicHandler {
       _stepsSinceLastListRebuild = 0;
     }
     ++_stepsSinceLastListRebuild;
-    ++_iteration;
 
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
@@ -1260,7 +1261,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     double rebuildFrequencyEstimate =
         getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
     double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
-    // The user defined rebuild frequnecy is considered as the upper bound.
+    // The user defined rebuild frequency is considered as the upper bound.
     // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
     // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
     // buffer interactions.

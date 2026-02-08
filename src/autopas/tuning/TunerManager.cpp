@@ -18,9 +18,23 @@ void TunerManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const Interact
   setCommonContainerOption();
 }
 
-void TunerManager::updateAutoTuners() {
-  bumpTunerCounters();
-  tuneConfigurations();
+void TunerManager::updateAutoTuners(const size_t currentIteration) {
+  bool anyTunerWasTuning = false;
+
+  // Bump counters and check if they were tuning
+  for (const auto &tuner : _autoTuners | std::views::values) {
+    anyTunerWasTuning = anyTunerWasTuning or tuner->inTuningPhase();
+    tuner->bumpIterationCounters();
+  }
+
+  // Start new tuning phase if needed
+  if (currentIteration % _tuningInterval == 0 and not anyTunerWasTuning) {
+    _currentContainerIndex = 0;
+    applyContainerConstraint(_commonContainerOptions[_currentContainerIndex]);
+  } else {
+    // Tune configurations if we didn't just start a new phase
+    tuneConfigurations();
+  }
 }
 
 Configuration TunerManager::rejectConfig(const Configuration &configuration, bool indefinitely) {
@@ -97,21 +111,6 @@ void TunerManager::applyContainerConstraint(ContainerOption containerOption) {
     tuner->setContainerConstraint(containerOption);
     tuner->forceRetune();
     tuner->tuneConfiguration();
-  }
-}
-
-void TunerManager::bumpTunerCounters() {
-  ++_iteration;
-  bool wasStillTuning = false;
-
-  for (const auto &autoTuner : _autoTuners | std::views::values) {
-    wasStillTuning = wasStillTuning or autoTuner->inTuningPhase();
-    autoTuner->bumpIterationCounters();
-  }
-  // New tuning phase is starting
-  if (_iteration % _tuningInterval == 0 and not wasStillTuning) {
-    _currentContainerIndex = 0;
-    applyContainerConstraint(_commonContainerOptions[_currentContainerIndex]);
   }
 }
 
