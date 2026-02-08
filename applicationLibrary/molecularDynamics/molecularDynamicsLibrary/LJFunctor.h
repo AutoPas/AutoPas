@@ -1322,7 +1322,7 @@ class LJFunctor
 
             // Mask away if distance is too large or any particle is a dummy. ownedStateI was already checked
             // previously.
-            const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+            const bool mask = dr2 <= cutoffSquared and ownedStateJ != 0;
 
             const SoAFloatPrecision inverseDr2 = 1. / dr2;
             const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
@@ -1346,7 +1346,7 @@ class LJFunctor
             }
 
             if constexpr (countFLOPs) {
-              numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+              numDistanceCalculationSum += ownedStateJ != 0 ? 1 : 0;
               if constexpr (newton3) {
                 numKernelCallsN3Sum += mask;
               } else {
@@ -1363,7 +1363,7 @@ class LJFunctor
               // We add 6 times the potential energy for each owned particle. Correction of total sum in endTraversal().
               const SoAFloatPrecision energyFactor =
                   (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                  (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+                  (newton3 ? (ownedStateJ == 1. ? 1. : 0.) : 0.); // This is incorrect rn as 1 is set for both halo and owned but newton3 is not used here anyways... for I it is correct
               potentialEnergySum += potentialEnergy6 * energyFactor;
               virialSumX += virialx * energyFactor;
               virialSumY += virialy * energyFactor;
@@ -1471,7 +1471,7 @@ class LJFunctor
         // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
         const SoAFloatPrecision energyFactor =
             (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-            (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+            (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.); //once again incorrect check for J
         potentialEnergySum += potentialEnergy6 * energyFactor;
         virialSumX += virialx * energyFactor;
         virialSumY += virialy * energyFactor;

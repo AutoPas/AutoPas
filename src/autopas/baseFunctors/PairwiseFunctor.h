@@ -92,13 +92,13 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   virtual void SoAFunctorVerletOptimized(SoAView<SoAArraysType> soa, const size_t indexFirst,
                       const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList,
                       bool newton3) {
-    utils::ExceptionHandler::exception("{}::SoAFunctorVerletPreloadMixingLJ: not implemented", this->getName());
+    utils::ExceptionHandler::exception("{}::SoAFunctorVerletOptimized: not implemented", this->getName());
   }
 
   virtual void SoAFunctorVerletOptimizedCompactAoS(VerletListsLJCompactAoS<Particle_T> &compactAoS, const size_t indexFirst,
                     const std::vector<SoAIndexIntType, AlignedAllocator<SoAIndexIntType>> &neighborList,
                     bool newton3)  {
-    utils::ExceptionHandler::exception("{}::SoAFunctorVerletPreloadMixingLJ: not implemented", this->getName());
+    utils::ExceptionHandler::exception("{}::SoAFunctorVerletOptimizedCompactAoS: not implemented", this->getName());
   }
 
   /**

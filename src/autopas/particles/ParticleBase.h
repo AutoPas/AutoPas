@@ -106,7 +106,9 @@ class ParticleBase {
    */
   OwnershipState _ownershipState;
 
-  size_t _indexInSoA;
+  idType _indexInSoA;
+
+  idType _typeId;
 
  public:
   /**
@@ -188,6 +190,9 @@ class ParticleBase {
 
   size_t getIndexInSoA() const { return _indexInSoA; }
   void setIndexInSoA(size_t indexInSoA) { _indexInSoA = indexInSoA; }
+
+  size_t getTypeId() const { return _typeId; }
+  void setTypeId(size_t typeId) { _typeId = typeId; }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**
@@ -357,9 +362,9 @@ class ParticleBase {
    * owned is currently used as a floatType to ease calculations within the functors.
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, idType /*liveId*/, floatType /*x*/,
+      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, idType /*indexInSoA*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+                                       floatType /*fz*/, idType /*typeId*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -395,6 +400,8 @@ class ParticleBase {
       return getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
       return getF()[2];
+    } else if constexpr (attribute == AttributeNames::typeId) {
+      return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
@@ -426,6 +433,8 @@ class ParticleBase {
       _f[1] = value;
     } else if constexpr (attribute == AttributeNames::forceZ) {
       _f[2] = value;
+    } else if constexpr (attribute == AttributeNames::typeId) {
+      setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
