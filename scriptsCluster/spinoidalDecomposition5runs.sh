@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J NoEarlyStoppingVCLC06
+#SBATCH -J EarlyStoppingVCLC06
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
