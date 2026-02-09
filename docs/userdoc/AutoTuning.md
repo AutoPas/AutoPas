@@ -31,6 +31,8 @@ For example, the rules-based tuning strategy can be used to filter out the Direc
 Multiple strategies can be activated at the same time.
 They are all applied in every decision process in the order they are specified in the vector of `TuningStrategyOption`s passed to AutoPas.
 
+If using a python-based machine learning tuning strategy, consult [Python-based Machine Learning Tuning Strategies](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/PythonBasedMachineLearningTuning.md).
+
 ### Sampling, Selecting, and Smoothing
 For each evidence, AutoPas combines multiple subsequent measurements, called samples.
 This is necessary for two reasons.
