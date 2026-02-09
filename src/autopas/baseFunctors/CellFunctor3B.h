@@ -195,7 +195,8 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCell(Pa
     return;
   }
 
-  switch (_dataLayout) {
+  // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
+  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       processCellAoS(cell);
       break;
@@ -229,7 +230,8 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellPai
     return;
   }
 
-  switch (_dataLayout) {
+  // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
+  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
         processCellPairAoSN3(cell1, cell2, sortingDirection);
@@ -269,7 +271,8 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellTri
     return;
   }
 
-  switch (_dataLayout) {
+  // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
+  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
         processCellTripleAoSN3(cell1, cell2, cell3, sortingDirection);

@@ -8,8 +8,8 @@ define_list VerletListsContainer = "VerletLists", "VerletClusterLists", "VerletL
 # this container in their implementation. Thus, if the domain has a lot more empty cells than particles, do not use them, use VerletClusterLists.
 
 # The overhead consists of at least accessing the std::vector 
-define maxFactorOfEmptyCellsOverNumParticles = 100.0;
-define isDomainExtremelyEmpty = numEmptyCells / numParticles > maxFactorOfEmptyCellsOverNumParticles;
+define maxFactorOfEmptyCellsOvernumOwnedParticles = 100.0;
+define isDomainExtremelyEmpty = numEmptyCells / numOwnedParticles > maxFactorOfEmptyCellsOvernumOwnedParticles;
 
 if isDomainExtremelyEmpty:
 	define_list AllExceptClusterLists = "LinkedCells", "LinkedCellsReferences", "VarVerletListsAsBuild", "VerletLists", "VerletListsCells", "PairwiseVerletLists", "Octree";
@@ -30,7 +30,7 @@ define neighborVolumeRel = VL_NeighborVolume / LC_NeighborVolume;
 # Define magic number when it is surely not worth it to use VL over LC in terms of the number of neighbor distance calculations
 define maxReasonableNeighborVolumeRel = 0.9;
 
-# This holds only if the domain is not extremely empty. Does it also hold with not being extremely empty, but numParticlesPerCell << 1?
+# This holds only if the domain is not extremely empty. Does it also hold with not being extremely empty, but numOwnedParticlesPerCell << 1?
 if neighborVolumeRel > maxReasonableNeighborVolumeRel and not isDomainExtremelyEmpty:
 	[container="LinkedCells", traversal="lc_c08"] >= [container=VerletListsContainer] with same dataLayout, newton3;
 endif
@@ -39,25 +39,25 @@ endif
 # Next Comment
 
 
-# if numParticles > LCVLThreshold and avgParticlesPerCell > LCVLThresholdPerCell:
+# if numOwnedParticles > LCVLThreshold and meanParticlesPerCell > LCVLThresholdPerCell:
 # 	[container="LinkedCells", dataLayout="SoA", newton3="enabled", traversal="lc_c08"] >= [container=VerletListsContainer];
 # endif
 
-if numParticles > 1000: [container="LinkedCells"] >= [container="DirectSum"]; endif
+if numOwnedParticles > 1000: [container="LinkedCells"] >= [container="DirectSum"]; endif
 
-if numParticles < 100: [container="DirectSum"] >= [container="LinkedCells"]; endif
+if numOwnedParticles < 100: [container="DirectSum"] >= [container="LinkedCells"]; endif
 
-# if numCells < numParticles and numParticles > 50000:
+# if numCells < numOwnedParticles and numOwnedParticles > 50000:
 # 	[container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS", newton3="enabled"] with same traversal;
 # 	[container="LinkedCells", newton3="enabled"] >= [container="LinkedCells", newton3="disabled"] with same traversal;
 # endif
 
-if avgParticlesPerCell < 6:
+if meanParticlesPerCell < 6:
     [container="VerletListsCells", dataLayout="AoS"] >= [container="VerletListsCells", dataLayout="SoA"] with same newton3, traversal, loadEstimator;
 endif
 
 [container="VarVerletListsAsBuild", dataLayout="AoS"] >= [container="VarVerletListsAsBuild", dataLayout="SoA"] with same newton3, traversal;
 
-if avgParticlesPerCell < 100:
+if meanParticlesPerCell < 100:
     [container="VerletListsCells"] >= [container="PairwiseVerletLists"];
 endif

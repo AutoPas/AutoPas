@@ -13,6 +13,7 @@
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/options/ContainerOption.h"
+#include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
@@ -142,15 +143,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     if (collectedSamples == autoTunerInfo.maxSamples) {
       collectedSamples = 0;
       logicHandler.getContainer().deleteAllParticles();
-      // add particles, so VerletClusterLists uses more than one tower, otherwise its traversals are invalid.
-      if (logicHandler.getContainer().getContainerType() == autopas::ContainerOption::verletClusterLists) {
-        const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
-        const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
-        const std::array<double, 3> offset = {0.125, 0.125, 0.125};
-        Molecule defaultParticle{};
-        autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), particlesPerDim,
-                                                                   defaultParticle, spacing, offset);
-      }
     }
 
     // Should not have any leaving particles in this test
@@ -731,77 +723,69 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
  */
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   const unsigned int verletRebuildFrequency = 20;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 3,
-  };
+  const autopas::AutoTunerInfo autoTunerInfo{.selectorStrategy = autopas::options::SelectorStrategyOption::fastestMean,
+                                             .tuningInterval = 1000,
+                                             .maxSamples = 3};
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   // Use configurations with N3, otherwise there are more calls to AoSFunctor
   const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
-  auto &autoTuner = *tunerMap[autopas::InteractionTypeOption::pairwise];
 
-  using ::testing::_;
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _, _))
-      .Times(testing::AtLeast(0));
-  EXPECT_CALL(functor, SoAExtractor(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
-      .Times(testing::AtLeast(0));
-  EXPECT_CALL(functor, SoAFunctorPair(_, _, _)).Times(testing::AtLeast(0));
-  EXPECT_CALL(functor, SoAFunctorSingle(_, _)).Times(testing::AtLeast(0));
-  logicHandler.getContainer().addParticle((Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0}));
-  logicHandler.getContainer().addParticle((Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0}));
+  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
 
-  using namespace std::literals;
+  // Iteration 0, Config 0, Rebuilding Neighbor List
+  const auto [config0a, stillTuning0a] = autoTuner.getNextConfig();
+  autoTuner.addMeasurement(40000, true);
+  // Sanity check that autoTuner is still tuning
+  EXPECT_EQ(stillTuning0a, true);
 
-  auto dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(100ms); }));
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+  // Iteration 1, Config 0, Not Rebuilding
+  const auto [config0b, stillTuning0b] = autoTuner.getNextConfig();
+  autoTuner.addMeasurement(30000, false);
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config0a, config0b);
+  // Sanity check that autoTuner is still tuning
+  EXPECT_EQ(stillTuning0b, true);
 
-  auto firstConfig = autoTuner.getCurrentConfig();
+  // Iteration 2, Config 0, Not Rebuilding
+  const auto [config0c, stillTuning0c] = autoTuner.getNextConfig();
+  autoTuner.addMeasurement(35000, false);
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config0a, config0c);
+  // Sanity check that autoTuner is still tuning
+  EXPECT_EQ(stillTuning0c, true);
 
-  dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+  // Iteration 3, Config 1, Rebuilding Neighbor List
+  const auto [config1a, stillTuning1a] = autoTuner.getNextConfig();
+  autoTuner.addMeasurement(300000, true);
+  // Sanity check that configuration did change
+  ASSERT_NE(config0a, config1a);
+  // Sanity check that autoTuner is still tuning
+  EXPECT_EQ(stillTuning1a, true);
 
-  dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+  // Iteration 4, Config 1, Not Rebuilding
+  const auto [config1b, stillTuning1b] = autoTuner.getNextConfig();
+  autoTuner.addMeasurement(25000, false);
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config1a, config1b);
+  // Sanity check that autoTuner is still tuning
+  EXPECT_EQ(stillTuning1b, true);
 
-  // Here, second config will start to be tuned
+  // Iteration 5, Config 1, Not Rebuilding
+  const auto [config1c, stillTuning1c] = autoTuner.getNextConfig();
+  autoTuner.addMeasurement(15000, false);
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config1a, config1c);
+  // Sanity check that autoTuner is no longer tuning
+  EXPECT_EQ(stillTuning1c, true);
 
-  dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(300ms); }));
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+  const auto [config, stillTuning] = autoTuner.getNextConfig();
 
-  auto secondConfig = autoTuner.getCurrentConfig();
-
-  dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-
-  dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-
-  // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 350 = 300 + 2 * 25)
-  dummyParticlesVec = logicHandler.updateContainer();
-  EXPECT_CALL(functor, AoSFunctor).Times(1);
-  logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-
-  EXPECT_EQ(autoTuner.getCurrentConfig(), firstConfig);
-  EXPECT_NE(autoTuner.getCurrentConfig(), secondConfig);
+  // Expected Weighted Averages
+  // Config 1: ( 40000*1 + (30000+35000)/2. * 19) / 20 = 32875
+  // Config 2: (300000*1 + (25000+15000)/2. * 19) / 20 = 34000
+  // => Config 1 is optimal
+  EXPECT_EQ(autoTuner.getCurrentConfig(), config0a);
+  EXPECT_NE(autoTuner.getCurrentConfig(), config1a);
 }
 
 /**

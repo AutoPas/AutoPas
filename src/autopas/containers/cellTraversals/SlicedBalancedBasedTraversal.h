@@ -51,8 +51,8 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
     this->_sliceThickness.clear();
 
     // estimate loads along longest axis
-    auto maxDimension = this->_dimsPerLength[0];
-    auto maxDimensionLength = this->_cellsPerDimension[this->_dimsPerLength[0]];
+    auto maxDimension = this->_dimsSortedByLength[0];
+    auto maxDimensionLength = this->_cellsPerDimension[this->_dimsSortedByLength[0]];
 
     std::vector<unsigned long> loads;
     utils::Timer timer;

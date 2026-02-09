@@ -33,7 +33,7 @@ namespace autopas {
  * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
- * @tparam ParticleCell type of the ParticleCells that are used to store the particles
+ * @tparam Particle_T type of the Particle
  */
 template <class Particle_T>
 class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle_T>> {
@@ -45,22 +45,23 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    *  Type of the ParticleCell.
    */
-  using ReferenceCell = ReferenceParticleCell<Particle_T>;
+  using ParticleCellType = ReferenceParticleCell<Particle_T>;
+
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param rebuildFrequency
    * @param cellSizeFactor cell size factor relative to cutoff
+   * @param sortingThreshold number of particles in two cells from which sorting should be performed
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                        const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
+                        const double skin, const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency),
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
@@ -69,11 +70,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCellsReferences; }
 
-  /**
-   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-   */
-  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::ReferenceParticleCell; }
-
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _cellBlock.reserve(numParticles + numParticlesHaloEstimate);
   }
@@ -81,7 +77,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticleImpl(const ParticleType &p) override {
+  void addParticleImpl(const Particle_T &p) override {
     addParticleLock.lock();
     _particleList.push_back(p);
     updateDirtyParticleReferences();
@@ -91,7 +87,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const Particle_T &haloParticle) override {
     addParticleLock.lock();
     _particleList.push_back(haloParticle);
     updateDirtyParticleReferences();
@@ -101,7 +97,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(const ParticleType &haloParticle) override {
+  bool updateHaloParticle(const Particle_T &haloParticle) override {
     auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
@@ -111,6 +107,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
     AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
+  }
+
+  /**
+   * Deletes all particles from the container.
+   */
+  void deleteAllParticles() override {
+    _particleList.clearAllParticles();
+    CellBasedParticleContainer<ParticleCellType>::deleteAllParticles();
   }
 
   /**
@@ -126,7 +130,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @return load estimator function object.
    */
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
-    switch (this->_loadEstimator) {
+    // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
+    switch (static_cast<LoadEstimatorOption::Value>(this->_loadEstimator)) {
       case LoadEstimatorOption::squaredParticlesPerCell: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
@@ -161,7 +166,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         if (it->isDummy()) {
           continue;
         }
-        ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
+        ParticleCellType &cell = _cellBlock.getContainingCell(it->getR());
         auto address = &(*it);
         cell.addParticleReference(address);
       }
@@ -172,14 +177,15 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellPairTraversal) {
+      cellPairTraversal->setSortingThreshold(this->_sortingThreshold);
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCellsReferences::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
@@ -277,24 +283,30 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     return {retPtr, cellIndex, particleIndex};
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
+   */
   bool deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(particle);
     return false;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
+   */
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
     return false;
   }
 
-  std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+  std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
-      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+      return LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
 
-    std::vector<ParticleType> invalidParticles;
+    std::vector<Particle_T> invalidParticles;
 
     // for exception handling in parallel region
     bool exceptionCaught{false};
@@ -302,7 +314,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
     AUTOPAS_OPENMP(parallel) {
       // private for each thread!
-      std::vector<ParticleType> myInvalidParticles, myInvalidNotOwnedParticles;
+      std::vector<Particle_T> myInvalidParticles, myInvalidNotOwnedParticles;
       AUTOPAS_OPENMP(for)
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
@@ -382,17 +394,23 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                  this->getCellBlock().getCellLength(), 0);
   }
 
-  ContainerIterator<ParticleType, true, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+  /**
+   * @copydoc ParticleContainerInterface::begin()
+   */
+  ContainerIterator<Particle_T, true, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
   }
 
-  ContainerIterator<ParticleType, false, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+  /**
+   * @copydoc ParticleContainerInterface::begin()
+   */
+  ContainerIterator<Particle_T, false, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+    return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -429,17 +447,23 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+  /**
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   */
+  [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+  /**
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   */
+  [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -512,19 +536,19 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */
-  internal::CellBlock3D<ReferenceCell> &getCellBlock() { return _cellBlock; }
+  internal::CellBlock3D<ParticleCellType> &getCellBlock() { return _cellBlock; }
 
   /**
    * @copydoc getCellBlock()
    * @note const version
    */
-  const internal::CellBlock3D<ReferenceCell> &getCellBlock() const { return _cellBlock; }
+  const internal::CellBlock3D<ParticleCellType> &getCellBlock() const { return _cellBlock; }
 
   /**
    * Returns reference to the data of LinkedCellsReferences
    * @return the data
    */
-  std::vector<ReferenceCell> &getCells() { return this->_cells; }
+  std::vector<ParticleCellType> &getCells() { return this->_cells; }
 
  protected:
   /**
@@ -595,15 +619,15 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * object that stores the actual Particles and keeps track of the references.
    */
-  ParticleVector<ParticleType> _particleList;
+  ParticleVector<Particle_T> _particleList;
   /**
    * object to manage the block of cells.
    */
-  internal::CellBlock3D<ReferenceCell> _cellBlock;
+  internal::CellBlock3D<ParticleCellType> _cellBlock;
   /**
    * load estimation algorithm for balanced traversals.
    */
-  autopas::LoadEstimatorOption _loadEstimator;
+  LoadEstimatorOption _loadEstimator;
   /**
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */
