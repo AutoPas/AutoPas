@@ -1,0 +1,36 @@
+functor                          :  Lennard-Jones (12-6) AVX # This potentially needs to be changed
+cutoff                           :  3
+verlet-skin-radius               :  $skin
+verlet-rebuild-frequency         :  10
+deltaT                           :  0
+iterations                       :  3500
+boundary-type                    : [none, none, none]
+box-min                          :  [0, 0, 0]
+box-max                          :  [40, 40, 40]
+globalForce                      :  [0, 0, 0]
+data-layout                          :  [AoS, SoA]
+traversal                            :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+newton3                          : [enabled, disabled]
+cell-size                        : [0.33, 0.5, 1]
+tuning-interval                  :  300000
+tuning-samples                   : 10
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+  1:
+    epsilon                      :  1.
+    sigma                        :  0.5
+    mass                         :  2.
+# We need a "CubeUniform" of zero particles to keep md-flexible happy
+Objects:
+  CubeUniform:
+    0:
+      numberOfParticles              :  0
+      box-length                     :  [20, 20, 20]
+      bottomLeftCorner               :  [0, 0, 0]
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+no-progress-bar                  :  true
+fastParticlesThrow               :  true
