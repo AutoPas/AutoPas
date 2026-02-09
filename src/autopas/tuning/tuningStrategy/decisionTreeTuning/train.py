@@ -15,6 +15,11 @@ from sklearn.multioutput import MultiOutputClassifier
 import pickle
 import numpy as np
 
+import json
+import treelite
+import treelite.sklearn
+
+
 def extract_filename(path_to_file: str) -> str:
     """
     Extract the filename from a path.
@@ -222,13 +227,17 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_estimators
 
 def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_model: RandomForestClassifier,
                              pairwise_label_encoder: dict, triwise_label_encoder: dict, features: list,
-                             output_file: str) -> None:
+                             output_files: list) -> None:
     """
     Save the trained models, LabelEncoder, and feature list to a file.
 
     This function saves the trained RandomForestClassifier models and LabelEncoders for both pairwise and triwise
     interactions, as well as the list of features used, as a dictionary in a pickle file so they can be loaded together
     later for making predictions.
+
+    Additionally, it attempts to export Treelite (.tl) models for pairwise and/or triwise interactions. For each successful
+    export, a matching '<model>_classes.txt' file with label encoder's class mapping is created. If at least one Treelite 
+    model is successfully created, the feature list is written once to `features.json`.
 
     Args:
         pairwise_model (RandomForestClassifier): The trained RandomForestClassifier model for pairwise interactions.
@@ -238,18 +247,88 @@ def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_mod
         triwise_label_encoder (LabelEncoder): The LabelEncoder used for encoding the target variable (i.e. alg.
         config.).
         features (list): The list of feature column names.
-        output_file (str): Path to save the model, encoders, and features.
+        output_file (list): The list of paths to save the models, encoders, and features.
     """
-    combined_data = {
-        'pairwise_model': pairwise_model,
-        'triwise_model': triwise_model,
-        'pairwise_label_encoder': pairwise_label_encoder,
-        'triwise_label_encoder': triwise_label_encoder,
-        'features': features
-    }
-    print(combined_data)
-    with open(output_file, 'wb') as f:
-        pickle.dump(combined_data, f)
+
+    def _is_ext(name: str, ext: str) -> bool:
+        return name.lower().endswith(ext)
+
+    def _strip_ext(name: str, ext: str) -> str:
+        return name[:-len(ext)] if _is_ext(name, ext) else name
+
+    def _treelite_skip_reason(model, encoder) -> str | None:
+        if model is None or encoder is None:
+            return "no tuning results found"
+        if getattr(model, "n_classes_", 0) < 2:
+            return "trained model has < 2 classes"
+
+    # Save to .pkl
+    for output_file in output_files:
+        if not _is_ext(output_file, ".pkl"):
+            continue
+        
+        combined_data = {
+            'pairwise_model': pairwise_model,
+            'triwise_model': triwise_model,
+            'pairwise_label_encoder': pairwise_label_encoder,
+            'triwise_label_encoder': triwise_label_encoder,
+            'features': features
+        }
+        print(combined_data)
+        with open(output_file, 'wb') as f:
+            pickle.dump(combined_data, f)
+
+    tl_created = False
+
+    # Save to .tl and .txt
+    for output_file in output_files:
+        if not _is_ext(output_file, ".tl"):
+            continue
+
+        base = _strip_ext(output_file, ".tl")
+        classes_file = f"{base}_classes.txt"
+
+        if "pairwise" in base.lower():
+            reason = _treelite_skip_reason(pairwise_model, pairwise_label_encoder)
+            if reason is not None:
+                print(f"Skipping {output_file}: {reason}")
+                continue
+
+            tl_model = treelite.sklearn.import_model(pairwise_model)
+            tl_model.serialize(output_file)
+
+            np.savetxt(classes_file, pairwise_label_encoder.classes_, fmt="%s")
+            
+            print(f"Saved model: {output_file}")
+            print(f"Saved classes: {classes_file}")
+
+            tl_created = True
+
+        elif "triwise" in base.lower():
+            reason = _treelite_skip_reason(triwise_model, triwise_label_encoder)
+            if reason is not None:
+                print(f"Skipping {output_file}: {reason}")
+                continue
+
+            tl_model = treelite.sklearn.import_model(triwise_model)
+            tl_model.serialize(output_file)
+
+            np.savetxt(classes_file, triwise_label_encoder.classes_, fmt="%s")
+            
+            print(f"Saved model: {output_file}")
+            print(f"Saved classes: {classes_file}")
+
+            tl_created = True
+
+        else:
+            print(f"Skipping .tl output '{output_file}': filename must contain 'pairwise' or 'triwise'.")
+
+    # Dump features.json only if at least one treelite model was created
+    if tl_created:
+        with open("features.json", "w") as f:
+            json.dump(list(features), f)
+        print("Saved features: features.json")
+
 
 def main():
     """
@@ -268,7 +347,9 @@ def main():
     parser.add_argument('--test-size', type=float, default=0.1, help="Test set size as a fraction (default: 0.1).")
     parser.add_argument('--n-estimators', type=int, default=100,
                         help="Number of estimators (trees) in the RandomForest (default: 100).")
-    parser.add_argument('--output-file', type=str, default='model.pkl', help="Output file to save models and encoders.")
+    parser.add_argument('--output-files', type=str, nargs='+', 
+                        default=['model.pkl', 'model_pairwise.tl', 'model_triwise.tl'], 
+                        help="Output file to save models and encoders. Supported: .pkl and .tl files.")
     args = parser.parse_args()
 
     print("Loading and merging data...")
@@ -297,8 +378,8 @@ def main():
         model_triwise = train_model(X, y, args.test_size, args.n_estimators)
 
 
-    print(f"Saving models and encoders to {args.output_file}...")
-    save_models_and_encoders(model_pairwise, model_triwise, label_encoder_pairwise, label_encoder_triwise, args.features, args.output_file)
+    print(f"Saving models and encoders to {args.output_files}...")
+    save_models_and_encoders(model_pairwise, model_triwise, label_encoder_pairwise, label_encoder_triwise, args.features, args.output_files)
 
     print("Model training and saving complete.")
 

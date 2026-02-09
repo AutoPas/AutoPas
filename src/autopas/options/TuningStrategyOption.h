@@ -80,7 +80,9 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
     /**
      * Decision tree based tuning strategy
      */
-    decisionTreeTuning,
+    pythonBasedDecisionTreeTuning,
+
+    treeliteBasedDecisionTreeTuning,
   };
 
   /**
@@ -133,7 +135,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
         {TuningStrategyOption::sortByName, "sort-by-name"},
         {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
-        {TuningStrategyOption::decisionTreeTuning, "decision-tree-tuning"},
+        {TuningStrategyOption::pythonBasedDecisionTreeTuning, "python-based-decision-tree-tuning"},
+        {TuningStrategyOption::treeliteBasedDecisionTreeTuning, "treelite-based-decision-tree-tuning"},
     };
   }
 

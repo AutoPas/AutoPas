@@ -88,6 +88,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.ruleFilename,
       config.fuzzyRuleFilename,
       config.modelFilename,
+      config.modelPairwiseFilename,
+      config.modelTriwiseFilename,
       config.confidenceThreshold,
       config.selectorStrategy,
       config.traversalOptions,
@@ -613,6 +615,22 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.modelFilename.value = optarg;
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::parse(): model-Filename " + config.modelFilename.value + " not found!");
+        }
+        break;
+      }
+      case decltype(config.modelPairwiseFilename)::getoptChar: {
+        config.modelPairwiseFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): model-pairwise-filename " + config.modelPairwiseFilename.value +
+                                   " not found!");
+        }
+        break;
+      }
+      case decltype(config.modelTriwiseFilename)::getoptChar: {
+        config.modelTriwiseFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): model-triwise-filename " + config.modelTriwiseFilename.value +
+                                   " not found!");
         }
         break;
       }

@@ -8,7 +8,7 @@ import json
 import os
 import numpy as np
 
-class DecisionTreeTuning:
+class PythonBasedDecisionTreeTuning:
     """
     Stores and predicts with a trained Decision Tree model, label encoder, and the live info features that it
     takes as input.

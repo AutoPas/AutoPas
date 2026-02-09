@@ -531,8 +531,25 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
       } else if (key == config.modelFilename.name) {
         expected = "String";
         description = config.modelFilename.description;
+
         config.modelFilename.value = node[key].as<std::string>();
         if (config.modelFilename.value.empty()) {
+          throw std::runtime_error("Parsed rule filename is empty!");
+        }
+      } else if (key == config.modelPairwiseFilename.name) {
+        expected = "String";
+        description = config.modelPairwiseFilename.description;
+
+        config.modelPairwiseFilename.value = node[key].as<std::string>();
+        if (config.modelPairwiseFilename.value.empty()) {
+          throw std::runtime_error("Parsed rule filename is empty!");
+        }
+      } else if (key == config.modelTriwiseFilename.name) {
+        expected = "String";
+        description = config.modelTriwiseFilename.description;
+
+        config.modelTriwiseFilename.value = node[key].as<std::string>();
+        if (config.modelTriwiseFilename.value.empty()) {
           throw std::runtime_error("Parsed rule filename is empty!");
         }
       } else if (key == config.confidenceThreshold.name) {
