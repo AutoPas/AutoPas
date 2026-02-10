@@ -2002,12 +2002,12 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
       const auto measurement = [&]() {
         switch (autoTuner.getTuningMetric()) {
           case TuningMetricOption::time:
-            return measurements.timeTotal;
+            return std::make_pair(measurements.timeRebuild, measurements.timeComputeInteractions + measurements.timeRemainderTraversal);
           case TuningMetricOption::energy:
-            return measurements.energyTotal;
+            return std::make_pair(measurements.energyTotal, 0l);
           default:
             utils::ExceptionHandler::exception("LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
-            return 0l;
+            return std::make_pair(0l, 0l);
         }
       }();
       autoTuner.addMeasurement(measurement, rebuildIteration);
