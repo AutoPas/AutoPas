@@ -241,8 +241,8 @@ void AutoTuner::addMeasurement(std::pair<long, long> sample, bool neighborListRe
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
   AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
-    _samplesRebuildingNeighborLists.push_back(sample.first);
-    _samplesNotRebuildingNeighborLists.push_back(sample.second);
+  _samplesRebuildingNeighborLists.push_back(sample.first);
+  _samplesNotRebuildingNeighborLists.push_back(sample.second);
 
   checkEarlyStoppingCondition();
 
@@ -354,9 +354,7 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
           _energySensor.getNanoJoules()};
 }
 
-size_t AutoTuner::getCurrentNumSamples() const {
-  return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
-}
+size_t AutoTuner::getCurrentNumSamples() const { return _samplesNotRebuildingNeighborLists.size(); }
 
 long AutoTuner::estimateRuntimeFromSamples() const {
   // reduce samples for rebuild and non-rebuild iterations with the given selector strategy

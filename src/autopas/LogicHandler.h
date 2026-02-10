@@ -1307,6 +1307,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   utils::Timer timerRebuild;
   utils::Timer timerComputeInteractions;
   utils::Timer timerComputeRemainder;
+  long energyTotalRebuild;
 
   const bool energyMeasurementsPossible = autoTuner.resetEnergy();
 
@@ -1328,6 +1329,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     }
 #endif
     timerRebuild.stop();
+    std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
 
@@ -1356,7 +1358,10 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyWatts : nanD,
           energyMeasurementsPossible ? energyJoules : nanD,
           energyMeasurementsPossible ? energyDeltaT : nanD,
-          energyMeasurementsPossible ? energyTotal : nanL};
+          energyMeasurementsPossible ? energyTotal : nanL,
+          energyMeasurementsPossible ? energyTotalRebuild : nanL,
+          energyMeasurementsPossible ? energyTotal - energyTotalRebuild
+                                     : nanL};  // ComputeInteractions + Remainder Traversal energy consumption
 }
 
 template <typename Particle_T>
@@ -2002,9 +2007,10 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
       const auto measurement = [&]() {
         switch (autoTuner.getTuningMetric()) {
           case TuningMetricOption::time:
-            return std::make_pair(measurements.timeRebuild, measurements.timeComputeInteractions + measurements.timeRemainderTraversal);
+            return std::make_pair(measurements.timeRebuild,
+                                  measurements.timeComputeInteractions + measurements.timeRemainderTraversal);
           case TuningMetricOption::energy:
-            return std::make_pair(measurements.energyTotal, 0l);
+            return std::make_pair(measurements.energyTotalRebuild, measurements.energyTotalNonRebuild);
           default:
             utils::ExceptionHandler::exception("LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
             return std::make_pair(0l, 0l);
