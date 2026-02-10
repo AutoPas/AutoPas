@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <algorithm>
 #include <cstddef>
 #include <map>
 #include <vector>
 
+#include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
 
@@ -46,9 +46,11 @@ class EvidenceCollection {
   /**
    * Retrieve the configuration with the lowest evidence value for the given tuning phase.
    * @param tuningPhase The tuning phase for which the optimum should be returned.
+   * @param containerConstraint The container for which the optimum should be returned.
    * @return The optimal configuration.
    */
-  std::tuple<Configuration, Evidence> getOptimalConfiguration(size_t tuningPhase) const;
+  std::tuple<Configuration, Evidence> getOptimalConfiguration(
+      size_t tuningPhase, std::optional<ContainerOption> containerConstraint = std::nullopt) const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.

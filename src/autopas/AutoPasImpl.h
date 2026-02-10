@@ -57,7 +57,7 @@ AutoPas<Particle_T>::~AutoPas() {
 
 template <class Particle_T>
 AutoPas<Particle_T> &AutoPas<Particle_T>::operator=(AutoPas &&other) noexcept {
-  _autoTuners = std::move(other._autoTuners);
+  _tunerManager = std::move(other._tunerManager);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
@@ -96,6 +96,7 @@ void AutoPas<Particle_T>::init() {
     }
   }();
 
+  _tunerManager = std::make_shared<TunerManager>(_autoTunerInfo);
   // Create autotuners for each interaction type
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
@@ -113,14 +114,14 @@ void AutoPas<Particle_T>::init() {
       tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
     }
     auto tunerOutputSuffix = _outputSuffix + "_" + interactionType.to_string();
-    _autoTuners.emplace(interactionType,
-                        std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                             _verletRebuildFrequency, tunerOutputSuffix));
+    _tunerManager->addAutoTuner(std::make_unique<AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                            _verletRebuildFrequency, tunerOutputSuffix),
+                                interactionType);
   }
 
   // Create logic handler
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
+      _tunerManager, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
 template <class Particle_T>
@@ -241,9 +242,7 @@ std::vector<Particle_T> AutoPas<Particle_T>::resizeBox(const std::array<double, 
 
 template <class Particle_T>
 void AutoPas<Particle_T>::forceRetune() {
-  for (auto &[interaction, tuner] : _autoTuners) {
-    tuner->forceRetune();
-  }
+  _tunerManager->forceRetune();
 }
 
 template <class Particle_T>
@@ -356,12 +355,8 @@ const autopas::ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getC
 }
 
 template <class Particle_T>
-bool AutoPas<Particle_T>::searchSpaceIsTrivial() {
-  bool isTrivial = true;
-  for (auto &[interaction, tuner] : _autoTuners) {
-    isTrivial = isTrivial and tuner->searchSpaceIsTrivial();
-  }
-  return isTrivial;
+bool AutoPas<Particle_T>::searchSpaceIsTrivial() const {
+  return _tunerManager->allSearchSpacesAreTrivial();
 }
 
 }  // namespace autopas

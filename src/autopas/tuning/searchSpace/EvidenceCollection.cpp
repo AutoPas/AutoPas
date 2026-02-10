@@ -31,7 +31,8 @@ Evidence &EvidenceCollection::modifyLastEvidence(const Configuration &configurat
   return _evidenceMap[configuration].back();
 }
 
-std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(size_t tuningPhase) const {
+std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
+    size_t tuningPhase, const std::optional<ContainerOption> containerConstraint) const {
   if (_evidenceMap.empty()) {
     utils::ExceptionHandler::exception(
         "EvidenceCollection::getLatestOptimalConfiguration(): Trying to determine the optimal configuration but there "
@@ -40,6 +41,9 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
   Configuration optimalConf{};
   Evidence optimalEvidence{0, 0, std::numeric_limits<decltype(Evidence::value)>::max()};
   for (const auto &[conf, evidenceVec] : _evidenceMap) {
+    if (containerConstraint.has_value() and conf.container != containerConstraint.value()) {
+      continue;
+    }
     // reverse iteration of the evidence vector because we are probably interested in the latest evidence.
     for (auto evidenceIter = evidenceVec.rbegin(); evidenceIter != evidenceVec.rend(); ++evidenceIter) {
       if (evidenceIter->tuningPhase == tuningPhase and optimalEvidence.value > evidenceIter->value) {
