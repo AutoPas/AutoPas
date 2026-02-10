@@ -77,9 +77,32 @@ template <class Particle_T>
             }
 
             bool updateHaloParticle(const Particle_T &haloParticle) override {
-                // TODO
+              _haloParticles.template sync<HostSpace::execution_space>();
 
-                return false;
+              const auto skinHalf = this->getVerletSkin() * 0.5;
+
+              for (int i = 0; i < numberOfHalo; ++i) {
+                const auto id = _haloParticles.template operator()<Particle_T::AttributeNames::id, true, true>(i);
+                if (id == haloParticle.getID()) {
+                  const typename Particle_T::ParticleSoAFloatPrecision x1 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
+                  const typename Particle_T::ParticleSoAFloatPrecision x2 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
+                  const typename Particle_T::ParticleSoAFloatPrecision x3 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
+
+                  const typename Particle_T::ParticleSoAFloatPrecision dX = x1 - haloParticle.getR().at(0);
+                  const typename Particle_T::ParticleSoAFloatPrecision dY = x2 - haloParticle.getR().at(1);
+                  const typename Particle_T::ParticleSoAFloatPrecision dZ = x3 - haloParticle.getR().at(2);
+
+                  const typename Particle_T::ParticleSoAFloatPrecision distanceSqr = dX*dX + dY*dY + dZ*dZ;
+
+                  if (distanceSqr < skinHalf*skinHalf) {
+                    _haloParticles.addParticle(i, haloParticle);
+                    _haloParticles.template markModified<HostSpace::execution_space>();
+                    return true;
+                  }
+                }
+              }
+
+              return false;
             }
 
             void deleteHaloParticles() override {
@@ -92,13 +115,20 @@ template <class Particle_T>
             }
 
             size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
-                size_t number = numberOfOwned;
-                // TODO: implement
-                return number;
+              size_t number = 0;
+              if (behavior & 0b1) {
+                number += numberOfOwned;
+              }
+              if (behavior & 0b10) {
+                number += numberOfHalo;
+              }
+              // TODO: other behaviors (Actually, dummies can be somewhere in both? lists)
+              // maybe find dummies in owned list with the help of reduceKokkos()
+              return number;
             }
 
             size_t size() const override {
-                return numberOfHalo + numberOfOwned;
+              return numberOfHalo + numberOfOwned;
             }
 
             void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -117,8 +147,16 @@ template <class Particle_T>
             }
 
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
-                //TODO
+              if (keepNeighborListsValid) {
+                // TODO: collect particles and mark non owned as dummy
+                // i.e.: those particles which are outside of the box shall be returned, halo particles should be marked as dummies
                 return {};
+              }
+              deleteHaloParticles();
+              // TODO: delete dummy particles
+              // TODO: determine those particles which are not inside of the box and return them
+
+              return {};
             }
 
             [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
@@ -179,8 +217,6 @@ template <class Particle_T>
             template <class ExecSpace, typename Lambda>
             void forEachKokkos(Lambda& forEachLambda, IteratorBehavior behavior) {
 
-              const size_t numParticles = getNumberOfParticles(behavior);
-
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS();
                 _soaUpToDate = false;
@@ -188,24 +224,33 @@ template <class Particle_T>
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
                 _ownedParticles.template sync<ExecSpace>();
+                _haloParticles.template sync<ExecSpace>();
                 _aosUpToDate = false;
               }
 
-              auto& owned = _ownedParticles;
               // TODO: make sure that no AoS runs on Cuda
-              // TODO: consider behavior
-              Kokkos::parallel_for("forEachKokkos", Kokkos::RangePolicy<ExecSpace>(0, numParticles), KOKKOS_LAMBDA(int i)  {
+              if (behavior & 0b1) {
+                auto& owned = _ownedParticles;
+                Kokkos::parallel_for("forEachKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i)  {
                   forEachLambda(i, owned);
                 });
+              }
+              if (behavior & 0b10) {
+                auto& halo = _haloParticles;
+                Kokkos::parallel_for("forEachKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i)  {
+                  forEachLambda(i, halo);
+                });
+              }
+              // TODO: consider other behavior such as dummies, container only, ...
 
               if (_dataLayout == DataLayoutOption::soa) {
                 _ownedParticles.template markModified<ExecSpace>();
+                _haloParticles.template markModified<ExecSpace>();
               }
             }
 
             template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
             void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior) {
-              size_t numParticles = getNumberOfParticles(behavior);
 
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS();
@@ -213,13 +258,22 @@ template <class Particle_T>
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
                 _ownedParticles.template sync<ExecSpace>();
+                _haloParticles.template sync<ExecSpace>();
               }
 
-              auto& owned = _ownedParticles;
-              Kokkos::parallel_reduce("reduceKokkos", Kokkos::RangePolicy<ExecSpace>(0, numParticles), KOKKOS_LAMBDA(int i, Result& localResult)  {
-                  // TODO: consider behavior
+              if (behavior & 0b1) {
+                auto& owned = _ownedParticles;
+                Kokkos::parallel_reduce("reduceKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   reduceLambda(i, owned, localResult);
                 }, Reduction(result));
+              }
+              if (behavior & 0b10) {
+                auto& halo = _haloParticles;
+                Kokkos::parallel_reduce("reduceKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i, Result& localResult)  {
+                  reduceLambda(i, halo, localResult);
+                }, Reduction(result));
+              }
+              // TODO: consider other behavior such as dummies, container only, ...
             }
 
             [[nodiscard]] double getCutoff() const final { return 0; }

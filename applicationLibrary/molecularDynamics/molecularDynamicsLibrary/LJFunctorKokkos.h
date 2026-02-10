@@ -1,5 +1,5 @@
 /**
- * @file FunctorKokkos.h
+ * @file LJFunctorKokkos.h
  * @date 11.12.2025
  * @author Luis Gall
  */
@@ -97,7 +97,7 @@ public:
 
                             // TODO: consider newton3 if enabled
                             fxAcc += fX;
-                            fxAcc += fY;
+                            fyAcc += fY;
                             fzAcc += fZ;
                         }
                     }

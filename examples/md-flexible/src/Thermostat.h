@@ -17,6 +17,15 @@
  * Thermostat to adjust the Temperature of the Simulation.
  */
 namespace Thermostat {
+
+#ifdef KOKKOS_ENABLE_CUDA
+using DeviceSpace = Kokkos::CudaSpace;
+constexpr bool ForEachHostFlag = false;
+#else
+using DeviceSpace = Kokkos::HostSpace;
+constexpr bool ForEachHostFlag = true;
+#endif
+
 /**
  * Calculates temperature of system.
  * Assuming dimension-less units and Boltzmann constant = 1.
@@ -94,6 +103,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     numParticleMap[typeID] = 0ul;
   }
 
+  // TODO: forEachKokkos
   AUTOPAS_OPENMP(parallel) {
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
@@ -265,14 +275,21 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   }
 
   // TODO: forEachKokkos()
-  // Scale velocities (and angular velocities) with the scaling map
-  AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    std::array newVel = iter->getV() * scalingMap[iter->getTypeId()];
-    iter->setV(newVel);
+  bool kokkosForEach = autopas.containerAllowsKokkos();
+  if (!kokkosForEach) {
+    // Scale velocities (and angular velocities) with the scaling map
+    AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      std::array newVel = iter->getV() * scalingMap[iter->getTypeId()];
+      iter->setV(newVel);
 #if MD_FLEXIBLE_MODE == MULTISITE
-    iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
+      iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
+    }
+  } else {
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+
+    }, autopas::IteratorBehavior::owned); // TODO: decide iterator behavior
   }
   const auto currentTemperatures = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 }
