@@ -23,6 +23,11 @@ endif ()
 
 add_library(autopas STATIC ${MY_SRC})
 
+if (AUTOPAS_ENABLE_PYTHON_BASED_TUNING)
+    # Include JSON
+    target_include_directories(autopas PRIVATE "${CMAKE_SOURCE_DIR}/libs/json")
+endif ()
+
 target_link_libraries(
     autopas
     PUBLIC
@@ -37,8 +42,9 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
     PRIVATE
-        # harmony are only needed privately when building AutoPas.
+        # harmony and pybind11 are only needed privately when building AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony>
+        $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:pybind11::embed>
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
@@ -52,8 +58,10 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:AUTOPAS_ENABLE_PYTHON_BASED_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
+        AUTOPAS_SOURCE_DIR="${AUTOPAS_SOURCE_DIR}"
         _USE_MATH_DEFINES
 )
 

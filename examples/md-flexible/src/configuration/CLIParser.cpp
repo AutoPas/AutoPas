@@ -87,6 +87,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.relativeOptimumRange,
       config.ruleFilename,
       config.fuzzyRuleFilename,
+      config.modelFilename,
+      config.confidenceThreshold,
       config.selectorStrategy,
       config.traversalOptions,
       config.traversalOptions3B,
@@ -604,6 +606,27 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::parse(): fuzzy-rule-File " + config.fuzzyRuleFilename.value +
                                    " not found!");
+        }
+        break;
+      }
+      case decltype(config.modelFilename)::getoptChar: {
+        config.modelFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): model-Filename " + config.modelFilename.value + " not found!");
+        }
+        break;
+      }
+      case decltype(config.confidenceThreshold)::getoptChar: {
+        // the confidence should be a double between 0 and 1
+        try {
+          config.confidenceThreshold.value = stod(strArg);
+          if (config.confidenceThreshold.value < 0 or config.confidenceThreshold.value > 1) {
+            cerr << "Confidence threshold has to be a double between 0 and 1!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing confidence threshold: " << optarg << endl;
+          displayHelp = true;
         }
         break;
       }

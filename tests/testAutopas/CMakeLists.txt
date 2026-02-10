@@ -18,7 +18,9 @@ target_link_libraries(
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
+        $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:pybind11::embed>
 )
+
 
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are

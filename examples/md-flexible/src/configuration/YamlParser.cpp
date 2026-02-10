@@ -528,6 +528,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.fuzzyRuleFilename.value.empty()) {
           throw std::runtime_error("Parsed rule filename is empty!");
         }
+      } else if (key == config.modelFilename.name) {
+        expected = "String";
+        description = config.modelFilename.description;
+        config.modelFilename.value = node[key].as<std::string>();
+        if (config.modelFilename.value.empty()) {
+          throw std::runtime_error("Parsed rule filename is empty!");
+        }
+      } else if (key == config.confidenceThreshold.name) {
+        expected = "Floating-point Value between 0 and 1";
+        description = config.confidenceThreshold.description;
+
+        config.confidenceThreshold.value = node[key].as<double>();
+        if (config.confidenceThreshold.value < 0 or config.confidenceThreshold.value > 1) {
+          throw std::runtime_error("Confidence threshold has to be between 0 and 1!");
+        }
       } else if (key == config.verletRebuildFrequency.name) {
         expected = "Unsigned Integer >= 1";
         description = config.verletRebuildFrequency.description;

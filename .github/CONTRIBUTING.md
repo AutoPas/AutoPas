@@ -168,6 +168,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * For Bayesian based tuning strategies your option will also have to be integrated into [`FeatureVector`](/src/autopas/tuning/utils/FeatureVector.h) and [`FeatureVectorEncoder`](/src/autopas/tuning/utils/FeatureVectorEncoder.h).
   * Extend [`FeatureVectorEncoder`](/src/autopas/tuning/utils/FeatureVectorEncoder.h) by modifying `setAllowedOptions()`, `convertToTunable()` and `convertFromTunable()`. If the new option wasn't merged with another one you may have to add a new index to `DiscreteIndices` or `ContinuousIndices`
   * Make sure to declare your option by calling `configureTuningParameter()` in [`ActiveHarmony::resetHarmony()`](/src/autopas/tuning/tuningStrategy/ActiveHarmony.cpp).
+  * For Decision Tree Based Tuning, your option will have to be integrated into the training and prediction scripts in [`src/autopas/tuning/tuningStrategy/decisionTreeTuning`](src/autopas/tuning/tuningStrategy/decisionTreeTuning). 
 * In [`AutoPasConfigurationCommunicator`](/src/autopas/utils/AutoPasConfigurationCommunicator.h):
   * Change the size and (de-)serialization of SerializedConfiguration
   * Add the new option to all appropriate functions and adjust their functioning respectively.
