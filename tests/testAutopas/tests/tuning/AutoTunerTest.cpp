@@ -734,13 +734,13 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 0, Config 0, Rebuilding Neighbor List
   const auto [config0a, stillTuning0a] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(40000, true);
+  autoTuner.addMeasurement(std::make_pair(10000, 30000), true);
   // Sanity check that autoTuner is still tuning
   EXPECT_EQ(stillTuning0a, true);
 
   // Iteration 1, Config 0, Not Rebuilding
   const auto [config0b, stillTuning0b] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(30000, false);
+  autoTuner.addMeasurement(std::make_pair(0, 30000), false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config0a, config0b);
   // Sanity check that autoTuner is still tuning
@@ -748,7 +748,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 2, Config 0, Not Rebuilding
   const auto [config0c, stillTuning0c] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(35000, false);
+  autoTuner.addMeasurement(std::make_pair(0, 35000), false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config0a, config0c);
   // Sanity check that autoTuner is still tuning
@@ -756,7 +756,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 3, Config 1, Rebuilding Neighbor List
   const auto [config1a, stillTuning1a] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(300000, true);
+  autoTuner.addMeasurement(std::make_pair(275000, 25000), true);
   // Sanity check that configuration did change
   ASSERT_NE(config0a, config1a);
   // Sanity check that autoTuner is still tuning
@@ -764,7 +764,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 4, Config 1, Not Rebuilding
   const auto [config1b, stillTuning1b] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(25000, false);
+  autoTuner.addMeasurement(std::make_pair(0, 25000), false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config1a, config1b);
   // Sanity check that autoTuner is still tuning
@@ -772,7 +772,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 5, Config 1, Not Rebuilding
   const auto [config1c, stillTuning1c] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(15000, false);
+  autoTuner.addMeasurement(std::make_pair(0, 15000), false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config1a, config1c);
   // Sanity check that autoTuner is no longer tuning
@@ -802,14 +802,13 @@ TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
 
   const auto [config, _] = autoTuner.getNextConfig();
 
-  constexpr long sampleWithRebuild = 10;
-  constexpr long sampleWithoutRebuild = 2;
-  autoTuner.addMeasurement(sampleWithRebuild, true);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  constexpr long sampleRebuild = 10;
+  constexpr long sampleNonRebuild = 2;
+  autoTuner.addMeasurement(std::make_pair(sampleRebuild, sampleNonRebuild), true);
+  autoTuner.addMeasurement(std::make_pair(0, sampleNonRebuild), false);
+  autoTuner.addMeasurement(std::make_pair(0, sampleNonRebuild), false);
 
-  constexpr long expectedEvidence =
-      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
   EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
 }
 
@@ -828,16 +827,15 @@ TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
 
   const auto [config, _] = autoTuner.getNextConfig();
 
-  constexpr long sampleWithRebuild = 10;
-  constexpr long sampleWithoutRebuild = 2;
-  autoTuner.addMeasurement(sampleWithRebuild, true);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
-  autoTuner.addMeasurement(sampleWithRebuild, true);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  constexpr long sampleRebuild = 8;
+  constexpr long sampleNonRebuild = 2;
+  autoTuner.addMeasurement(std::make_pair(sampleRebuild, sampleNonRebuild), true);
+  autoTuner.addMeasurement(std::make_pair(0, sampleNonRebuild), false);
+  autoTuner.addMeasurement(std::make_pair(0, sampleNonRebuild), false);
+  autoTuner.addMeasurement(std::make_pair(sampleRebuild, sampleNonRebuild), true);
+  autoTuner.addMeasurement(std::make_pair(0, sampleNonRebuild), false);
 
-  constexpr long expectedEvidence =
-      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
   EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
 }
 
@@ -863,7 +861,7 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
   // Fill the search space with random data so the slow config filter can work
   for (const auto conf : searchSpace) {
     const auto iDontCare = autoTuner.getNextConfig();
-    autoTuner.addMeasurement(42, true);
+    autoTuner.addMeasurement(std::make_pair(30, 12), true);
     autoTuner.bumpIterationCounters();
   }
 
