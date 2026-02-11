@@ -11,6 +11,8 @@
 #include <concepts>
 #include <type_traits>
 
+#include "autopas/utils/ContainerConcept.h"
+
 namespace autopas::utils {
 
 /**
@@ -90,6 +92,23 @@ bool almostEqualUlps(FloatType lhs, FloatType rhs, unsigned int ulpDistance = MA
 }
 
 /**
+ * Function for comparing closeness of two floating point numbers using ULP (Units in the Last Place) method.
+ *
+ * @tparam Container must be container type (array, set, vector)
+ * @param lhs The left hand side floating point number to compare.
+ * @param rhs The right hand side floating point number to compare.
+ * @param ulpDistance The maximum acceptable ULP distance between the two floating points
+ *      for which they would be considered near each other. This is optional and by default, it will be {@link
+ * MAX_ULP_DISTANCE}.
+ * @return true if the UPL distance for all elements of lhs and rhs is less than or equal to the provided value
+ */
+template <Container Container>
+bool almostEqualUlps(Container lhs, Container rhs, unsigned int ulpDistance = MAX_ULP_DISTANCE) {
+  return std::ranges::equal(lhs, rhs,
+                            [&ulpDistance](auto lhs, auto rhs) { return almostEqualUlps(lhs, rhs, ulpDistance); });
+}
+
+/**
  * Function to check if two floating point numbers are relatively equal to each other within a given error range or
  * tolerance.
  *
@@ -99,16 +118,33 @@ bool almostEqualUlps(FloatType lhs, FloatType rhs, unsigned int ulpDistance = MA
  * @param epsilon The tolerance for comparison. Two numbers that are less than epsilon apart are considered equal.
  *                The default value is {@link EPSILON_ALMOST_EQUAL}.
  *
- * @return boolean value - Returns `true` if the absolute difference between `lhs` and `rhs` is less than or equal to
- *                         the relative error factored by the larger of the magnitude of `lhs` and `rhs`. Otherwise,
- * `false`.
+ * @return boolean value - Returns `true` if the absolute difference between `lhs` and `rhs` is less than or equal
+ * to the relative error factored by the larger of the magnitude of `lhs` and `rhs`. Otherwise, `false`.
  * @see https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
  */
 template <std::floating_point FloatType>
-bool almostEqualRelative(FloatType lhs, FloatType rhs, FloatType epsilon = EPSILON_ALMOST_EQUAL) {
+bool almostEqualRelative(FloatType lhs, FloatType rhs, double epsilon = EPSILON_ALMOST_EQUAL) {
   const FloatType diff = std::abs(rhs - lhs);
   const FloatType largerValue = std::max(std::abs(rhs), std::abs(lhs));
   return diff <= largerValue * epsilon;
+}
+
+/**
+ * Function to check if two floating point numbers are relatively equal to each other within a given error range or
+ * tolerance.
+ *
+ * @tparam Container must be container type (array, set, vector)
+ * @param lhs The first floating-point number to be compared.
+ * @param rhs The second floating-point number to be compared.
+ * @param epsilon The tolerance for comparison. Two numbers that are less than epsilon apart are considered equal.
+ *                The default value is {@link EPSILON_ALMOST_EQUAL}.
+ *
+ * @return true if the relative comparison yields true for all elements of lhs and rhs
+ */
+template <Container Container>
+bool almostEqualRelative(Container lhs, Container rhs, double epsilon = EPSILON_ALMOST_EQUAL) {
+  return std::ranges::equal(lhs, rhs,
+                            [&epsilon](auto lhs, auto rhs) { return almostEqualRelative(lhs, rhs, epsilon); });
 }
 
 }  // namespace autopas::utils

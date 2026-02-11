@@ -10,59 +10,12 @@
 #include <array>
 #include <iomanip>
 #include <numeric>
-#include <set>
 #include <sstream>
 #include <vector>
 
+#include "autopas/utils/ContainerConcept.h"
+
 namespace autopas::utils::ArrayUtils {
-
-// specialize a type for containers of type array and vector for use with templated overloaded stream operator.
-/**
- * Collection of structs that define what we consider a container.
- */
-namespace is_container_impl {
-/**
- * Default case: T is not a container.
- * @tparam T
- */
-template <typename T>
-struct is_container : std::false_type {};
-/**
- * Specialization to allow std::array.
- * @tparam T
- * @tparam N
- */
-template <typename T, std::size_t N>
-struct is_container<std::array<T, N>> : std::true_type {};
-
-/**
- * Specialization to allow std::vector.
- * @tparam Args
- */
-template <typename... Args>
-struct is_container<std::vector<Args...>> : std::true_type {};
-
-/**
- * Specialization to allow std::vector.
- * @tparam Args
- */
-template <typename... Args>
-struct is_container<std::set<Args...>> : std::true_type {};
-
-}  // namespace is_container_impl
-
-/**
- * @tparam T Type to check.
- * Type trait to check if a given type  is a container for use with overloaded stream operator.
- * @struct is_container
- * @var is_container::value
- * bool value true if given type is a container false if not
- */
-template <typename T>
-struct is_container {
-  static constexpr bool const value =
-      autopas::utils::ArrayUtils::is_container_impl::is_container<std::decay_t<T>>::value;
-};
 
 /**
  * Creates a new array by performing an element-wise static_cast<>.
@@ -176,9 +129,8 @@ template <class Container>
  * @return string representation of a container
  */
 
-template <class Container>
-std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std::ostream &> operator<<(
-    std::ostream &os, const Container &container) {
+template <Container Container>
+std::ostream &operator<<(std::ostream &os, const Container &container) {
   const std::string &delimiter = ", ";
   const std::array<std::string, 2> &surround = {"[", "]"};
 
@@ -198,8 +150,7 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
  */
 template <class OuterContainerT>
 void balanceVectors(OuterContainerT &vecvec) {
-  balanceVectors(
-      vecvec, [](auto &innerContainer) -> auto & { return innerContainer; });
+  balanceVectors(vecvec, [](auto &innerContainer) -> auto & { return innerContainer; });
 }
 
 /**
