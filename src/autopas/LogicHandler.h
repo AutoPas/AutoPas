@@ -1310,13 +1310,12 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   long energyTotalRebuild;
 
   const bool energyMeasurementsPossible = autoTuner.resetEnergy();
-
   timerTotal.start();
+  timerRebuild.start();
   functor.initTraversal();
 
   // if lists are not valid -> rebuild;
   if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-    timerRebuild.start();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
 #endif
@@ -1328,10 +1327,10 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
       _numRebuildsInNonTuningPhase++;
     }
 #endif
-    timerRebuild.stop();
-    std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
+  timerRebuild.stop();
+  std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
 
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
