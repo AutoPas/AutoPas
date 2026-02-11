@@ -734,7 +734,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 0, Config 0, Rebuilding Neighbor List
   const auto [config0a, stillTuning0a] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(std::make_pair(10000, 30000), true);
+  autoTuner.addMeasurement(std::make_pair(200000, 25000), true);
   // Sanity check that autoTuner is still tuning
   EXPECT_EQ(stillTuning0a, true);
 
@@ -756,7 +756,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 3, Config 1, Rebuilding Neighbor List
   const auto [config1a, stillTuning1a] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(std::make_pair(275000, 25000), true);
+  autoTuner.addMeasurement(std::make_pair(5500000, 25000), true);
   // Sanity check that configuration did change
   ASSERT_NE(config0a, config1a);
   // Sanity check that autoTuner is still tuning
@@ -781,8 +781,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   const auto [config, stillTuning] = autoTuner.getNextConfig();
 
   // Expected Weighted Averages
-  // Config 1: ( 40000*1 + (30000+35000)/2. * 19) / 20 = 32875
-  // Config 2: (300000*1 + (25000+15000)/2. * 19) / 20 = 34000
+  // Config 1: (200000 + 0 + 0) / 3 / 20 + (25000 + 30000 + 35000) / 3 = 40000
+  // Config 2: (5500000 + 0 + 0) / 3 / 20 + (25000 + 25000 + 15000) / 3  = 113333.33
   // => Config 1 is optimal
   EXPECT_EQ(autoTuner.getCurrentConfig(), config0a);
   EXPECT_NE(autoTuner.getCurrentConfig(), config1a);
