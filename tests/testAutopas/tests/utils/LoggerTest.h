@@ -7,9 +7,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <spdlog/common.h>
 
-#include <algorithm>
 #include <ostream>
 
 #include "AutoPasTestBase.h"
@@ -22,21 +20,3 @@ class LoggerTest : public AutoPasTestBase {
  private:
   std::stringstream stream;
 };
-
-// Helper:
-
-// class ScopedRedirect {
-//  public:
-//   ScopedRedirect(std::ostream &inOriginal, std::ostream &inRedirect) : mOriginal(inOriginal), mRedirect(inRedirect) {
-//     mOriginal.rdbuf(mRedirect.rdbuf(mOriginal.rdbuf()));
-//   }
-//
-//   ~ScopedRedirect() { mOriginal.rdbuf(mRedirect.rdbuf(mOriginal.rdbuf())); }
-//
-//  private:
-//   ScopedRedirect(const ScopedRedirect &);
-//   ScopedRedirect &operator=(const ScopedRedirect &);
-//
-//   std::ostream &mOriginal;
-//   std::ostream &mRedirect;
-// };
