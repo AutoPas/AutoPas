@@ -978,7 +978,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   // 1) Sample first config (accepted).
   const auto [config1, stillTuning1] = autoTuner.getNextConfig();
   EXPECT_TRUE(stillTuning1);
-  autoTuner.addMeasurement(200, /*neighborListRebuilt*/ true);
+  autoTuner.addMeasurement(std::make_pair(180, 20), /*neighborListRebuilt*/ true);
   autoTuner.bumpIterationCounters();
 
   // 2) Second config is rejected, should immediately get the next one.
@@ -989,7 +989,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   EXPECT_TRUE(stillTuningAfterReject2);
 
   // 3) Sample third config (accepted). Make it faster than config1 so it becomes the optimum.
-  autoTuner.addMeasurement(100, /*neighborListRebuilt*/ true);
+  autoTuner.addMeasurement(std::make_pair(90, 10), /*neighborListRebuilt*/ true);
   autoTuner.bumpIterationCounters();
 
   // 4) Final config is rejected.
