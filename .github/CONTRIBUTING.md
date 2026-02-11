@@ -128,9 +128,9 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Create a new `case` statement in [`StaticContainerSelector`](/src/autopas/utils/StaticContainerSelector.h).
 * Add a case for the new container in [`ContainerSelector::generateContainer()`](/src/autopas/tuning/selectors/ContainerSelector.h).
 * Check [`CompatibleVectorizationPattern::allCompatibleVectorizationPattern()`](...) is correct.
-  * By default, all vectorization patterns are compatible with the container. 
-  * This should function correctly for containers which use SoAFunctor Single and Pair.
   * Containers which use SoAFunctorVerlet, or otherwise only support the traditional 1xVecLength vectorization pattern, should specify this.
+  * Otherwise, by default, all vectorization patterns are compatible with the container. 
+  * This should function correctly for containers which use SoAFunctor Single and Pair.
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp) and [`StringUtilsTest::parseContainerOptionsTest`](/tests/testAutopas/tests/utils/StringUtilsTest.cpp)).
 * Add new unit tests for your container.
