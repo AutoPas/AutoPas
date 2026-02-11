@@ -14,6 +14,7 @@ Please keep in mind the following notes while working.
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
+* Don't use pointers for non-owned optional variables, wherever possible, as these do not indicate that the variable is not owned by that scope or object. Use `utils::optRef` (short-hand alias for an optional reference `std::optional<std::reference_wrapper<T>>`) instead.
 * `using` instead of `typedef`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningful error message")` instead.
 
