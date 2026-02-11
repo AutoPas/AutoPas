@@ -83,10 +83,6 @@ class LJFunctorHWY
                                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquareAoS{cutoff * cutoff},
-        _potentialEnergySum{0.},
-        _virialSum{0., 0., 0.},
-        _aosThreadData{},
-        _postProcessed{false},
         _PPLibrary{particlePropertiesLibrary} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
@@ -126,8 +122,8 @@ class LJFunctorHWY
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
    */
-  bool isVecPatternAllowed(const VectorizationPattern vecPattern) override final {
-    return std::find(_vecPatternsAllowed.begin(), _vecPatternsAllowed.end(), vecPattern) != _vecPatternsAllowed.end();
+  bool isVecPatternAllowed(const VectorizationPattern vecPattern) final {
+    return std::ranges::find(_vecPatternsAllowed, vecPattern) != _vecPatternsAllowed.end();
   }
 
   /**
@@ -516,7 +512,7 @@ class LJFunctorHWY
     ownedMaskI = highway::RebindMask(tag_double, ownedMaskILong);
   }
 
-  template <bool remainder, bool reversed, VectorizationPattern vecPattern>
+  template <bool remainder, VectorizationPattern vecPattern>
   static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
                                      double *const __restrict fz2Ptr, const size_t i, const size_t j,
@@ -663,7 +659,6 @@ class LJFunctorHWY
     }
   }
 
-  template <bool newton3>
   inline void computeGlobals(const VectorDouble &virialSumX, const VectorDouble &virialSumY,
                              const VectorDouble &virialSumZ, const VectorDouble &uPotSum) {
     const int threadnum = autopas::autopas_get_thread_num();
@@ -678,6 +673,39 @@ class LJFunctorHWY
     _aosThreadData[threadnum].potentialEnergySum += globals[3];
   }
 
+  /**
+   * Helper function that handles an iteration of the outer-loop (the loop that changes "i").
+   * @tparam reversed Whether iterating backwards over the outer-loop.
+   * @tparam newton3
+   * @tparam remainderI True iff the "i" vector register is not fully filled, i.e. there are less than _vecLength
+   * elements of the SoA to iterate over.
+   * @tparam vecPattern
+   * @param i index of SoA 1 from which the vector register is filled. E.g. with reversed=false, and the VecLength x 1
+   * pattern used, the vector register will be filled with elements i, i+1, i+2, ..., i+_vecLength-1. With reversed=true,
+   * this is instead i-_vecLength+1, i-_vecLength+2, ..., i-1, i.
+   * @param xPtr1
+   * @param yPtr1
+   * @param zPtr1
+   * @param ownedStatePtr1
+   * @param xPtr2
+   * @param yPtr2
+   * @param zPtr2
+   * @param ownedStatePtr2
+   * @param fxPtr1
+   * @param fyPtr1
+   * @param fzPtr1
+   * @param fxPtr2
+   * @param fyPtr2
+   * @param fzPtr2
+   * @param typeIDptr1
+   * @param typeIDptr2
+   * @param virialSumX
+   * @param virialSumY
+   * @param virialSumZ
+   * @param uPotSum
+   * @param restI In the remainder case, this is the number of elements left in the SoA.
+   * @param jVecEnd The end index for the inner "j" loop.
+   */
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
   inline void handleILoopBody(
       const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
@@ -760,7 +788,7 @@ class LJFunctorHWY
     }
 
     if constexpr (calculateGlobals) {
-      computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -820,7 +848,7 @@ class LJFunctorHWY
     }
 
     if constexpr (calculateGlobals) {
-      computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -913,7 +941,7 @@ class LJFunctorHWY
   template <bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
   inline void fillPhysicsRegisters(const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
                                    VectorDouble &epsilon24s, VectorDouble &sigmaSquareds, VectorDouble &shift6s,
-                                   const unsigned int j, const unsigned int restI, const unsigned int restJ) {
+                                   const unsigned int restI, const unsigned int restJ) const {
     // We overestimate the array size. This should be a tight/perfect upper bound on x86, and should never be large
     // enough on e.g. ARM/RISC-V to cause issues.
     HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
@@ -1037,7 +1065,7 @@ class LJFunctorHWY
     VectorDouble z2;
     MaskDouble ownedMaskJ;
 
-    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedMaskJ, restJ);
+    fillJRegisters<remainderJ, vecPattern>(x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedMaskJ, restJ);
 
     // distance calculations
     const auto drX = highway::Sub(x1, x2);
@@ -1241,7 +1269,7 @@ class LJFunctorHWY
     fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
 
     if constexpr (calculateGlobals) {
-      computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -1417,11 +1445,11 @@ class LJFunctorHWY
 
   // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};
-  std::array<double, 3> _virialSum;
+  std::array<double, 3> _virialSum{0., 0., 0.};
   std::vector<AoSThreadData> _aosThreadData{};
 
-  // flag to indicate wether post processing has been performed.
-  bool _postProcessed;
+  // flag to indicate whether post-processing has been performed.
+  bool _postProcessed{false};
 
   // The Vectorization Pattern currently used in the SoA functor.
   VectorizationPattern _vecPattern{};

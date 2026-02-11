@@ -527,6 +527,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
   EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctor.getVirial(), _maxError) << "global virial";
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the AoS case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
   if (mixing) {
@@ -536,6 +539,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Verlet case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
   // different vectorization patterns are currently not supported for Verlet Functor
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
@@ -546,6 +552,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Single (with aligned views) case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
@@ -555,6 +564,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Single (with unaligned views) case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
@@ -564,6 +576,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Pair (with aligned views) case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
@@ -573,6 +588,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsAlignedAccess) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Pair (with unaligned views) case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {

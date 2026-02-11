@@ -48,8 +48,8 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    * @param pattern
    */
   template <bool mixing>
-  void testLJFunctorvsLJFunctorHWYTwoCells(const bool newton3, const bool doDeleteSomeParticles,
-                                           const bool useUnalignedViews, const VectorizationPattern pattern);
+  void testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
+    VectorizationPattern pattern);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
@@ -65,8 +65,8 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    * @param pattern
    */
   template <bool mixing>
-  void testLJFunctorvsLJFunctorHWYOneCell(const bool newton3, const bool doDeleteSomeParticles,
-                                          const bool useUnalignedViews, const VectorizationPattern pattern);
+  void testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
+    VectorizationPattern pattern);
 
   /**
    * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
@@ -76,7 +76,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    * @param doDeleteSomeParticles
    */
   template <bool mixing>
-  void testLJFunctorvsLJFunctorHWYVerlet(const bool newton3, const bool doDeleteSomeParticles);
+  void testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Create two cells and compare the HWY AoSFunctor to the Autovec functor.
@@ -86,7 +86,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    * @param doDeleteSomeParticles
    */
   template <bool mixing>
-  void testLJFunctorvsLJFunctorHWYAoS(const bool newton3, const bool doDeleteSomeParticles);
+  void testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Checks that two non empty SoAs' particles are equal
