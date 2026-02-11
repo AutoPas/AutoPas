@@ -1044,7 +1044,7 @@ class LogicHandler {
   /**
    * The current container holding the particles.
    */
-  std::unique_ptr<ParticleContainerInterface<Particle_T>> _currentContainer;
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> _currentContainer{nullptr};
 
   /**
    * The current configuration for the container.
@@ -1903,6 +1903,11 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     autoTuner.receiveLiveInfo(info);
   }
 
+  size_t numRejectedConfigs = 0;
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  utils::Timer selectConfigurationTimer;
+  selectConfigurationTimer.start();
+#endif
   auto [configuration, stillTuning] = autoTuner.getNextConfig();
 
   // loop as long as we don't get a valid configuration
@@ -1911,9 +1916,15 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
     if (traversalPtr) {
       functor.setVecPattern(configuration.vecPattern);
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+      selectConfigurationTimer.stop();
+      AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.",
+                 selectConfigurationTimer.getTotalTime(), numRejectedConfigs);
+#endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
+    numRejectedConfigs++;
     std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
   } while (true);
 }
@@ -2048,19 +2059,35 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
+  std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
                             _verletClusterSize, _sortingThreshold, config.loadEstimator);
-  auto containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
-  const auto traversalInfo = containerPtr->getTraversalSelectorInfo();
+
+  // If we have no current container or needs to be updated to the new config.container, we need to generate a new
+  // container.
+  const bool generateNewContainer = _currentContainer == nullptr or
+                                    _currentContainer->getContainerType() != config.container or
+                                    containerInfo != _currentContainerSelectorInfo;
+
+  if (generateNewContainer) {
+    // For now, set the local containerPtr to the new container. We do not copy the particles over and set the member
+    // _currentContainer until after we know that the traversal is applicable to the domain.
+    containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
+  }
+
+  const auto traversalInfo =
+      generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
 
   // Generates a traversal if applicable, otherwise returns a nullptr
-  auto traversalPtr = TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(
-      config, functor, containerPtr->getTraversalSelectorInfo());
+  auto traversalPtr =
+      TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(config, functor, traversalInfo);
 
-  if (traversalPtr and (_currentContainer->getContainerType() != containerPtr->getContainerType() or
-                        containerInfo != _currentContainerSelectorInfo)) {
+  // If the traversal is applicable to the domain, and the configuration requires generating a new container,
+  // update the member _currentContainer with setCurrentContainer, copying the particle data over, and update
+  // _currentContainerSelectorInfo.
+  if (traversalPtr and generateNewContainer) {
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
   }
