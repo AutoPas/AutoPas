@@ -681,8 +681,8 @@ class LJFunctorHWY
    * elements of the SoA to iterate over.
    * @tparam vecPattern
    * @param i index of SoA 1 from which the vector register is filled. E.g. with reversed=false, and the VecLength x 1
-   * pattern used, the vector register will be filled with elements i, i+1, i+2, ..., i+_vecLength-1. With reversed=true,
-   * this is instead i-_vecLength+1, i-_vecLength+2, ..., i-1, i.
+   * pattern used, the vector register will be filled with elements i, i+1, i+2, ..., i+_vecLength-1. With
+   * reversed=true, this is instead i-_vecLength+1, i-_vecLength+2, ..., i-1, i.
    * @param xPtr1
    * @param yPtr1
    * @param zPtr1

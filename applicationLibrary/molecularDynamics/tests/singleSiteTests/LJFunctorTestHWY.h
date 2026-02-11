@@ -49,7 +49,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    */
   template <bool mixing>
   void testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
-    VectorizationPattern pattern);
+                                           VectorizationPattern pattern);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
@@ -66,7 +66,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    */
   template <bool mixing>
   void testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
-    VectorizationPattern pattern);
+                                          VectorizationPattern pattern);
 
   /**
    * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
