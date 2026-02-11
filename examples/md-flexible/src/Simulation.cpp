@@ -84,7 +84,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr),
       _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
@@ -92,9 +91,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
-    _vtkWriter =
-        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+    _vtkWriter = ParallelVtkWriter(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
                                             std::to_string(_configuration.iterations.value).size());
+  } else {
+    _vtkWriter = std::nullopt;
   }
 
   const auto rank = _domainDecomposition->getDomainIndex();

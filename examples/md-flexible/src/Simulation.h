@@ -263,7 +263,7 @@ class Simulation {
   /**
    * Parallel VTK file writer.
    */
-  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
+  std::optional<ParallelVtkWriter> _vtkWriter;
 
   /**
    * Defines, if vtk files should be created or not.
