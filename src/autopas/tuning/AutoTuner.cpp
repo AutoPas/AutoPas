@@ -162,6 +162,8 @@ bool AutoTuner::tuneConfiguration() {
     const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase);
     _configQueue.push_back(optConf);
     _isTuning = false;
+    // Fill up sample buffer to indicate we are not collecting samples anymore.
+    _samplesRebuildingNeighborLists.resize(_maxSamples);
     _iterationBaseline = 0;
   }
   tuningTimer.stop();
