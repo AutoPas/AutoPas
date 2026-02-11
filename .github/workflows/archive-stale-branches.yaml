@@ -34,7 +34,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          AGE_CUTOFF=800 # In days
+          AGE_CUTOFF=700 # In days
+          MAIN_BRANCH=master
+          
           # Fetch all branches
           gh api repos/${{ github.repository }}/branches | jq -r '.[].name' > branches.txt
 
@@ -47,7 +49,8 @@ jobs:
             fi
             
             # Skip if open PR exists
-            if gh pr list --head $branch; then
+            open_prs=$(gh pr list --head "$branch" --json number --jq 'length')
+            if [ "$open_prs" -gt 0 ]; then
               echo "There exists an open PR for branch $branch..."
               continue
             fi
@@ -62,24 +65,24 @@ jobs:
           if [ $branchAgeDays -lt $AGE_CUTOFF ]; then
             echo "  Branch $branch is still active. Last commit $branchAgeDays days ago. Skipping..."
           else
-            echo "  Branch $branch is $branchAgeDays minutes old. Archiving..."
+            echo "  Branch $branch is $branchAgeDays days old. Archiving..."
 
             # Get number of new commits
-            commitCount=$(gh api repos/${{ github.repository }}/compare/master...$branch --jq '.commits | length')
+            commitCount=$(gh api repos/${{ github.repository }}/compare/$MAIN_BRANCH...$branch --jq '.commits | length')
           
             if [ $commitCount -gt 0 ]; then
               # Format the last commit date
               lastCommitDateF=$(date -u -d "$lastCommitDate" +"%B %d, %Y")
 
-              # Get the first commit date
-              firstCommitDate=$(gh api repos/${{ github.repository }}/branches/$branch --jq '.commit.committer.date')
+              # Get the first commit date (index 0 is the oldest commit in the diff)
+              firstCommitDate=$(gh api repos/${{ github.repository }}/compare/$MAIN_BRANCH...$branch --jq '.commits[0].commit.committer.date')
               firstCommitDateF=$(date -u -d "$firstCommitDate" +"%B %d, %Y")
 
               # Get contributors to the branch
-              contributors=$(gh api repos/${{ github.repository }}/compare/master...$branch --jq '.commits[] | "  - \(.commit.author.name) (@\(.author.login))  "' | sort | uniq)
+              contributors=$(gh api repos/${{ github.repository }}/compare/$MAIN_BRANCH...$branch --jq '.commits[] | "  - \(.commit.author.name) (@\(.author.login))  "' | sort | uniq)
 
               # Get a summary of the branch changes using Google's Gemini AI
-              diff=$(git diff origin/master...origin/$branch)
+              diff=$(git diff origin/$MAIN_BRANCH...origin/$branch)
               summary=$(python .github/workflows/create_pr_summary.py <<< "$diff")
 
               # Create the PR body with contributors
@@ -95,30 +98,31 @@ jobs:
           
               # Create PR, close PR, and delete the branch
               echo "  Create PR for ${branch}..."
-              prURL=$(gh pr create --title "Archive branch \"$branch\"" --body "$prBody" --base master --head $branch --dry-run)
+              gh pr create --title "[Archive] Branch \"$branch\"" --body "$prBody" --base main --head $branch >/dev/null 2>&1 || true
 
               # Wait for the PR to be created and close it
               maxRetries=5
               retryInterval=5  # seconds
+              prURL=$(gh pr list --head "$branch" --state open --json url --jq '.[0].url')
 
               for ((i=1; i <= $maxRetries; i++)); do
                 if gh pr view $prURL &>/dev/null; then
                   echo "  Closing the PR..."
                   gh pr close $prURL
-                  # git push origin --delete $branch
+                  git push origin --delete $branch
                   echo "  Branch $branch archived and deleted."
-                  break 2
+                  break
                 fi
-                  echo "  Waiting for PR $prNumber to be created. Retrying in $retryInterval seconds..."
+                  echo "  Waiting for PR $prURL to be created. Retrying in $retryInterval seconds..."
                   sleep $retryInterval
               done
           
-              if [[ -z "$prNumber" ]]; then
+              if [[ -z "$prURL" ]]; then
                 echo "  Failed to find and close the PR after $maxRetries retries."
               fi
             else
-              echo "  No commits between $branch and master. Deleting branch directly..."
-              # git push origin --delete $branch
+              echo "  No commits between $branch and $MAIN_BRANCH. Deleting branch directly..."
+              git push origin --delete $branch
             fi
           fi
           
