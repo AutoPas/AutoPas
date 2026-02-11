@@ -38,13 +38,14 @@ jobs:
           MAIN_BRANCH=master
           
           # Fetch all branches
-          gh api repos/${{ github.repository }}/branches | jq -r '.[].name' > branches.txt
+          git branch -r | grep -v '\->' | sed 's/origin\///' > branches.txt
 
           # Loop through branches
           while read branch; do
+          
             # Skip main branch
             if [ "$branch" = "master" ] || [ "$branch" = "main" ]; then
-              echo "Skipping main branch: ${branch}..."
+              echo "  Main branch: ${branch}. Skipping..."
               continue
             fi
             
