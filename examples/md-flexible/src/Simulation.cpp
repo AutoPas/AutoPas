@@ -31,6 +31,10 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonPairwiseFunctorType *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriwiseFunctorType *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -877,6 +881,15 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "MD-Flexible was not compiled with support for LJFunctor HWY. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_HWY=ON`.");
 #endif
+      case MDFlexConfig::FunctorOption::kr: {
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+        return f(KryptonPairwiseFunctorType{cutoff});
+#else
+        throw std::runtime_error(
+            "MD-Flexible was not compiled with support for the Krypton Pair Functor. Activate it via `cmake "
+            "-DMD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
+#endif
+      }
     }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
@@ -897,6 +910,15 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTellerMuto Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption3B::kr: {
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+      return f(KryptonTriwiseFunctorType{cutoff});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for Krypton 3Body Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
 #endif
     }
     default: {
