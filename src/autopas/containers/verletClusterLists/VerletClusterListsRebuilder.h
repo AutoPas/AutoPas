@@ -398,6 +398,7 @@ class VerletClusterListsRebuilder {
           if (not clusterIterB->empty()) {
             const auto [aMin, aMax] = clusterIterA->getBoundingBox();
             const auto [bMin, bMax] = clusterIterB->getBoundingBox();
+            // stop condition Early stopping 
              if (bMin[2] > aMax[2] + interactionLength) {
                 break;   
             }
